@@ -17,6 +17,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
+from datamodel_code_generator._option_names import option_flag, toml_value
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import LiteralType
@@ -42,6 +43,8 @@ from datamodel_code_generator.enums import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Set as AbstractSet
+
     from typing_extensions import Unpack
 
     from datamodel_code_generator.__main__ import TomlValue
@@ -216,11 +219,7 @@ class PresetConfigItem:
     @property
     def pyproject_value(self) -> bool | str | list[str]:
         """Return the value to render through existing config export helpers."""
-        if isinstance(self.value, Enum):
-            return str(self.value.value)
-        if isinstance(self.value, tuple):
-            return [str(value.value) for value in self.value]
-        return self.value
+        return toml_value(self.value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +229,16 @@ class ResolvedPresetConfig:
     target_python_version: PythonVersion | None
     items: tuple[PresetConfigItem, ...]
     force_field_constraints: bool
+
+    def updates(self) -> dict[str, PresetConfigValue | PythonVersion]:
+        """Return the config updates a preset makes, in the order they are applied."""
+        updates: dict[str, PresetConfigValue | PythonVersion] = {}
+        if self.target_python_version is not None:
+            updates["target_python_version"] = self.target_python_version
+        updates.update((item.field_name, item.applied_value) for item in self.items)
+        if self.force_field_constraints:
+            updates["field_constraints"] = True
+        return updates
 
 
 class PresetConfig(BaseGenerateConfig):
@@ -358,8 +367,7 @@ def _ensure_preset_enum_config_value(
 
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to its CLI option spelling."""
-    option_name = item.field_name.replace("_", "-")
-    option = f"--{option_name}"
+    option = option_flag(item.field_name)
     if option not in CLI_OPTION_META:  # pragma: no cover
         msg = f"Preset field {item.field_name!r} does not map to a documented CLI option"
         raise PresetError(msg)
@@ -370,7 +378,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     if item.value:
         return f"{option} {' '.join(str(value.value) for value in item.value)}"
 
-    negative_option = f"--no-{option_name}"
+    negative_option = option_flag(item.field_name, negative=True)
     if negative_option not in CLI_OPTION_META:  # pragma: no cover
         msg = f"Preset field {item.field_name!r} does not map to a documented negative CLI option"
         raise PresetError(msg)
@@ -1248,6 +1256,22 @@ def resolve_preset_config_updates(
         target_python_version=target_python_version_update,
         items=items,
         force_field_constraints=_resolve_force_field_constraints(use_annotated=use_annotated, items=items),
+    )
+
+
+def _resolve_config_preset(
+    preset: PresetName | str, config: BaseGenerateConfig, explicit_fields: AbstractSet[str]
+) -> ResolvedPresetConfig:
+    """Resolve a preset for the input type, model type and target Python version of a config."""
+    return resolve_preset_config_updates(
+        preset,
+        context=PresetContext(
+            input_file_type=config.input_file_type,
+            output_model_type=config.output_model_type,
+            target_python_version=config.target_python_version,
+        ),
+        use_annotated=config.use_annotated,
+        explicit_fields=set(explicit_fields),
     )
 
 

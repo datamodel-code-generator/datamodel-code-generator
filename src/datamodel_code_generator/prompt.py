@@ -15,7 +15,8 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory
+from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest
 from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
@@ -263,17 +264,9 @@ def _negative_option(action: Action, fallback: str) -> str:
     return fallback
 
 
-def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
-    """Map argparse destination names to actions."""
-    if parser is None:
-        return {}
-    return {action.dest: action for action in parser._actions if action.option_strings}  # noqa: SLF001
-
-
 def _format_current_option(key: str, value: Any, action: Action | None) -> str | None:
     """Format a current CLI option as a shell-like line."""
-    cli_key = key.replace("_", "-")
-    fallback = f"--{cli_key}"
+    fallback = option_flag(key)
 
     if isinstance(value, bool):
         match action:

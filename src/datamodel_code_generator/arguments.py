@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast, get_args
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
+from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import DeprecationFormat, deprecation_message
 from datamodel_code_generator.enums import (
@@ -95,16 +96,10 @@ def _dataclass_arguments(value: str) -> DataclassArguments:
 
 def _external_ref_mapping(value: str) -> str:
     """Validate FILE_PATH=PYTHON_PACKAGE mapping format."""
-    if "=" not in value:
-        msg = (
-            f"Invalid --external-ref-mapping format: {value!r}. "
-            "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
-        )
-        raise ArgumentTypeError(msg)
-    file_path, python_package = value.rsplit("=", maxsplit=1)
-    if not file_path.strip() or not python_package.strip():
-        msg = f"Invalid --external-ref-mapping format: {value!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
-        raise ArgumentTypeError(msg)
+    try:
+        split_external_ref_mapping(value)
+    except ValueError as error:
+        raise ArgumentTypeError(str(error)) from None
     return value
 
 

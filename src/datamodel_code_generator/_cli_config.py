@@ -13,6 +13,7 @@ from urllib.parse import ParseResult, urlparse
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -286,21 +287,10 @@ def _get_config_class() -> type[Config]:
             if raw is not None and isinstance(raw, list):
                 mapping: dict[str, str] = {}
                 for item in raw:
-                    if not isinstance(item, str) or "=" not in item:
-                        msg = (
-                            f"Invalid --external-ref-mapping format: {item!r}. "
-                            "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
-                        )
-                        raise Error(msg)
-                    file_path, python_package = item.rsplit("=", maxsplit=1)
-                    file_path = file_path.strip()
-                    python_package = python_package.strip()
-                    if not file_path or not python_package:
-                        msg = (
-                            f"Invalid --external-ref-mapping format: {item!r}. "
-                            "Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
-                        )
-                        raise Error(msg)
+                    try:
+                        file_path, python_package = split_external_ref_mapping(item)
+                    except ValueError as error:
+                        raise Error(str(error)) from None
                     mapping[file_path] = python_package
                 values["external_ref_mapping"] = mapping
             return values

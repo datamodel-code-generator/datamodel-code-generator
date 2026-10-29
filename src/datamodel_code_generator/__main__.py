@@ -102,7 +102,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import nullcontext, redirect_stdout, suppress
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
-from functools import lru_cache, partial
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
@@ -128,6 +128,7 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
+from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -307,6 +308,15 @@ def _create_config(
     return config
 
 
+def _preset_explicit_fields(
+    pyproject_config: Mapping[str, _RawConfigValue], cli_config_args: Mapping[str, _RawConfigValue]
+) -> set[str]:
+    """Return the fields a preset leaves alone: the command line's when it selects the preset, else every one set."""
+    fields = set(cli_config_args) if "preset" in cli_config_args else {*pyproject_config, *cli_config_args}
+    fields.discard("preset")
+    return fields
+
+
 def _apply_preset(
     config: Config,
     pyproject_config: Mapping[str, _RawConfigValue],
@@ -318,37 +328,17 @@ def _apply_preset(
     if preset_name is None:
         return
 
-    explicit_fields = set(cli_config_args) if preset_from_cli else set(pyproject_config) | set(cli_config_args)
-    explicit_fields.discard("preset")
-
-    from datamodel_code_generator.preset import (  # noqa: PLC0415
-        PresetContext,
-        PresetError,
-        resolve_preset_config_updates,
-    )
+    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
 
     try:
-        preset_config = resolve_preset_config_updates(
-            preset_name,
-            context=PresetContext(
-                input_file_type=config.input_file_type,
-                output_model_type=config.output_model_type,
-                target_python_version=config.target_python_version,
-            ),
-            use_annotated=config.use_annotated,
-            explicit_fields=explicit_fields,
+        preset_config = _resolve_config_preset(
+            preset_name, config, _preset_explicit_fields(pyproject_config, cli_config_args)
         )
     except PresetError as e:
         raise Error(str(e)) from e
 
-    if preset_config.target_python_version is not None:
-        config.target_python_version = preset_config.target_python_version
-
-    for item in preset_config.items:
-        setattr(config, item.field_name, item.applied_value)
-
-    if preset_config.force_field_constraints:
-        config.field_constraints = True
+    for name, value in preset_config.updates().items():
+        setattr(config, name, value)
 
 
 def _resolve_cli_config(pyproject_config: Mapping[str, Any], cli_config_args: Mapping[str, _RawConfigValue]) -> Config:
@@ -671,7 +661,7 @@ _UNRESOLVED_REMOTE_LOCKS = _UnresolvedRemoteLocks()
 def _validate_job_watch_settings(name: str, config: Mapping[str, Any]) -> None:
     """Keep the persistent scheduler outside profile and job configs."""
     if fields := BATCH_OUTER_CONFIG_FIELDS & _normalize_pyproject_config(config).keys():
-        options = ", ".join(f"--{field.replace('_', '-')}" for field in sorted(fields))
+        options = ", ".join(option_flag(field) for field in sorted(fields))
         msg = (
             f"{options} cannot be used in Job '{name}'; define watch settings at the CLI "
             "or [tool.datamodel-codegen] base level"
@@ -731,7 +721,7 @@ def _get_job_config(  # noqa: PLR0913
     if command_only_fields := [
         field_name for field_name in sorted(BATCH_COMMAND_ONLY_CONFIG_FIELDS) if getattr(config, field_name)
     ]:
-        options = ", ".join(f"--{field_name.replace('_', '-')}" for field_name in command_only_fields)
+        options = ", ".join(option_flag(field_name) for field_name in command_only_fields)
         msg = f"Job '{name}' cannot use {options}; jobs must generate code"
         raise Error(msg)
 
@@ -966,13 +956,13 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
         if getattr(args, field_name, None) is not None
     ]
     if command_only_cli_options:
-        options = ", ".join(f"--{field_name.replace('_', '-')}" for field_name in command_only_cli_options)
+        options = ", ".join(option_flag(field_name) for field_name in command_only_cli_options)
         msg = f"{options} cannot be used with --job or --all-jobs; jobs must generate code"
         raise Error(msg)
 
     cli_config_args = _explicit_config_args(args)
     if unsafe_fields := BATCH_UNSAFE_CLI_FIELDS & cli_config_args.keys():
-        options = ", ".join(f"--{field.replace('_', '-')}" for field in sorted(unsafe_fields))
+        options = ", ".join(option_flag(field) for field in sorted(unsafe_fields))
         msg = f"{options} cannot be used with --job or --all-jobs; define it in each job"
         raise Error(msg)
 
@@ -1077,7 +1067,7 @@ def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
 
 def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
     """Return pyproject.toml configuration data from CLI arguments."""
-    return {key.replace("_", "-"): value for key, value in _cli_config_values(args).items()}
+    return hyphenated(_cli_config_values(args))
 
 
 def _toml_key(key: str) -> str:
@@ -1364,49 +1354,36 @@ def _format_cli_mapping(key: str, value: Mapping[str, Any]) -> str:
     return shlex.quote(_compact_json(value))
 
 
-@lru_cache(maxsize=1)
-def _negative_boolean_options() -> dict[str, str]:
-    """Index parser-defined negative flags only when command generation needs them."""
-    from argparse import BooleanOptionalAction  # noqa: PLC0415
-
-    negative_options: dict[str, str] = {}
-    for action in arg_parser._actions:  # noqa: SLF001
-        if not isinstance(action, BooleanOptionalAction):
-            continue
-        for option in action.option_strings:
-            if option.startswith("--no-"):
-                negative_options[action.dest] = option
-    return negative_options
-
-
 def generate_cli_command(config: dict[str, TomlValue]) -> str:
     """Generate CLI command from pyproject.toml configuration."""
+    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+
     parts: list[str] = ["datamodel-codegen"]
 
     for key, value in sorted(config.items()):
         if key in EXCLUDED_CONFIG_OPTIONS:
             continue
 
-        cli_key = key.replace("_", "-")
+        option = option_flag(key)
 
         if isinstance(value, bool):
             if value:
-                parts.append(f"--{cli_key}")
-            elif negative_option := _negative_boolean_options().get(key):
-                parts.append(negative_option)
+                parts.append(option)
+            elif negative := _negative_option(key):
+                parts.append(negative)
         elif isinstance(value, list):
-            parts.extend((f"--{cli_key}", _format_cli_value(cast("list[str]", value))))
+            parts.extend((option, _format_cli_value(cast("list[str]", value))))
         elif isinstance(value, Mapping):
             if argument := _format_cli_mapping(key, value):
-                parts.extend((f"--{cli_key}", argument))
+                parts.extend((option, argument))
         else:
-            parts.extend((f"--{cli_key}", _format_cli_value(str(value))))
+            parts.extend((option, _format_cli_value(str(value))))
 
     return " ".join(parts)
 
 
 def _hyphenated_config_data(config: Mapping[str, Any]) -> dict[str, Any]:
-    return {key.replace("_", "-"): _json_ready(value) for key, value in sorted(config.items())}
+    return {key: _json_ready(value) for key, value in hyphenated(config, ordered=True).items()}
 
 
 def _generated_files_from_result(result: str | Mapping[tuple[str, ...], str]) -> list[GeneratedFilePayload]:
@@ -1526,12 +1503,14 @@ def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace, c
 
 def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
     """Return the CLI arguments for configuration values keyed by field name, as an argument list."""
+    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+
     arguments: list[str] = []
     for key, value in sorted(config.items()):
-        option = f"--{key.replace('_', '-')}"
+        option = option_flag(key)
         match value:
             case bool():
-                negative = _negative_boolean_options().get(key)
+                negative = _negative_option(key)
                 arguments.extend([option] if value else [negative] if negative else [])
             case list() | tuple():
                 arguments.extend([option, *(str(item) for item in value)])
@@ -1613,7 +1592,6 @@ def _run_recommend_options(  # noqa: PLR0913
         render_text,
     )
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
-        _flag,
         _selected_target,
         _target_options_error,
         implied_target_settings,
@@ -1627,13 +1605,11 @@ def _run_recommend_options(  # noqa: PLR0913
         config = config.model_copy(update=implied_target_settings(config, config.model_fields_set))
 
     preset_on_command_line = "preset" in cli_config_args
-    explicit = set(cli_config_args) if preset_on_command_line else {*pyproject_config, *cli_config_args}
-    explicit.discard("preset")
     try:
         recommendation = recommend_options(
             RecommendRequest(
                 config=config,
-                explicit_fields=frozenset(explicit),
+                explicit_fields=frozenset(_preset_explicit_fields(pyproject_config, cli_config_args)),
                 cli_values=_cli_config_values(args),
                 has_project_config=bool(pyproject_config),
                 preset_on_command_line=preset_on_command_line,
@@ -1643,7 +1619,7 @@ def _run_recommend_options(  # noqa: PLR0913
                 selector=selector,
                 mode=args.recommend_options if isinstance(args.recommend_options, str) else None,
                 response_observer=_recommend_lock_observer(config, pyproject_path),
-                target=None if target is None else _flag(target[0]),
+                target=None if target is None else option_flag(target[0]),
             )
         )
     except (Error, RemoteLockError) as e:
@@ -1659,7 +1635,7 @@ def _run_recommend_options(  # noqa: PLR0913
         None
         if recommendation.config_values is None
         else _format_pyproject_config(
-            {key.replace("_", "-"): value for key, value in sorted(recommendation.config_values.items())},
+            hyphenated(recommendation.config_values, ordered=True),
             recommendation.table,
         )
     )
@@ -1816,7 +1792,6 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     """
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _TARGET_SELECTORS,
-        _flag,
         _option_list,
         _selected_target,
         _target_options_error,
@@ -1826,8 +1801,12 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
         (
-            _flag(selector),
-            [_flag(field, negative=value is False) for field, value in explicit.items() if field.startswith(prefix)],
+            option_flag(selector),
+            [
+                option_flag(field, negative=value is False)
+                for field, value in explicit.items()
+                if field.startswith(prefix)
+            ],
         )
         for selector, prefix in unselected
     ]
@@ -1838,7 +1817,7 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     ]:
         return errors
     if config.input_model and (selected := _selected_target(config)) is not None:
-        return [f"{_flag(selected[0])} cannot be used with --input-model"]
+        return [f"{option_flag(selected[0])} cannot be used with --input-model"]
     return [] if (problem := _target_options_error(config)) is None else [problem]
 
 

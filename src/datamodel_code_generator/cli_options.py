@@ -13,10 +13,11 @@ tests/cli_doc/test_cli_options_sync.py.
 from __future__ import annotations
 
 import re
+from argparse import BooleanOptionalAction
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator.deprecations import deprecation_message
@@ -28,6 +29,9 @@ from datamodel_code_generator.enums import (
     ReuseScope,
     TargetPydanticVersion,
 )
+
+if TYPE_CHECKING:
+    from argparse import Action, ArgumentParser
 
 
 class OptionCategory(str, Enum):
@@ -638,6 +642,29 @@ def _build_option_string_groups_from_argparse() -> dict[str, tuple[str, ...]]:
         for option in options:
             groups[option] = options
     return groups
+
+
+def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
+    """Map argparse destination names to the actions that have option strings."""
+    if parser is None:
+        return {}
+    return {action.dest: action for action in parser._actions if action.option_strings}  # noqa: SLF001
+
+
+@lru_cache(maxsize=1)
+def _option_actions() -> dict[str, Action]:
+    """Index the actions of the command-line parser by destination, when a caller first needs them."""
+    from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
+
+    return _actions_by_dest(argument_parser)
+
+
+def _negative_option(dest: str) -> str | None:
+    """Return the --no- flag the parser defines for a boolean destination, or None."""
+    action = _option_actions().get(dest)
+    if not isinstance(action, BooleanOptionalAction):
+        return None
+    return next((option for option in action.option_strings if option.startswith("--no-")), None)
 
 
 @lru_cache(maxsize=1)

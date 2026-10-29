@@ -7,6 +7,7 @@ import textwrap
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text, option_arguments
 from datamodel_code_generator._recommend._signals import Signals
 
@@ -227,12 +228,8 @@ def _signal_lines(signals: Signals, input_file_type: str | None) -> list[str]:
     ]
 
 
-def _flag(name: str) -> str:
-    return f"--{name.replace('_', '-')}"
-
-
 def _disagreement_text(disagreement: Disagreement, preset: str) -> str:
-    flag = _flag(disagreement.field)
+    flag = option_flag(disagreement.field)
     text = (
         f"{flag} is set to {_value_text(disagreement.configured)}; the rules suggest "
         f"{_value_text(disagreement.recommended)}"
@@ -462,9 +459,7 @@ def recommendation_payload(recommendation: Recommendation, *, content: str, argu
         trial=_trial_payload(recommendation.trial),
         notes=recommendation.notes,
         arguments=arguments,
-        config=None
-        if config is None
-        else _nested(recommendation.table, {name.replace("_", "-"): value for name, value in sorted(config.items())}),
+        config=None if config is None else _nested(recommendation.table, hyphenated(config, ordered=True)),
         config_complete=recommendation.config_complete,
         content=content,
     )
