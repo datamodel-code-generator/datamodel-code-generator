@@ -191,14 +191,15 @@ class _TargetUnicode:
     def case(self) -> dict[str, _Case]:
         """Return the case data of each character whose case data differs between targets."""
         cases: dict[str, _Case] = {}
-        for code_point, changes in self._data.CASE_CHANGES.items():
-            character = chr(code_point)
-            case = _Case(character, character, character, character, 0)
-            for index, upper, lower, title, fold, flags in changes:
-                if index > self._index:
-                    break
-                case = _Case(upper or character, lower or character, title or character, fold or character, flags)
-            cases[character] = case
+        for (first, last), changes in self._data.CASE_CHANGES.items():
+            for code_point in range(first, last + 1):
+                character = chr(code_point)
+                case = _Case(character, character, character, character, 0)
+                for index, upper, lower, title, fold, flags in changes:
+                    if index > self._index:
+                        break
+                    case = _Case(upper or character, lower or character, title or character, fold or character, flags)
+                cases[character] = case
         return cases
 
     @cached_property
@@ -210,14 +211,15 @@ class _TargetUnicode:
     def normalization(self) -> dict[str, _Normalization]:
         """Return the normalization data of each character whose data differs between targets."""
         items: dict[str, _Normalization] = {}
-        for code_point, changes in self._data.NORMALIZATION_CHANGES.items():
-            character = chr(code_point)
-            item = _Normalization(character, character, 0)
-            for index, canonical, compatibility, combining in changes:
-                if index > self._index:
-                    break
-                item = _Normalization(canonical or character, compatibility or character, combining)
-            items[character] = item
+        for (first, last), changes in self._data.NORMALIZATION_CHANGES.items():
+            for code_point in range(first, last + 1):
+                character = chr(code_point)
+                item = _Normalization(character, character, 0)
+                for index, canonical, compatibility, combining in changes:
+                    if index > self._index:
+                        break
+                    item = _Normalization(canonical or character, compatibility or character, combining)
+                items[character] = item
         return items
 
     @cached_property
