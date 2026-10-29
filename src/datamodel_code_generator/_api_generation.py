@@ -350,8 +350,9 @@ def _remote_lock(
         _prepare_atomic_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
         _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
     )
+    from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
 
-    if config.update_lock and not config.remote_lock_resolved:
+    if owns_lock_update(config):
         config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         package = Path(os.path.abspath(cwd / target.output.expanduser()))  # noqa: PTH100
         if any(lockfile.is_relative_to(root) or root.is_relative_to(lockfile) for root in (package, package.resolve())):
@@ -961,9 +962,12 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         return []
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagedFile,
-        StagingDirectory,
         close_anchor,
         publication_anchor,
+    )
+    from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
+        _open_lock_staging,  # pyright: ignore[reportPrivateUsage]
+        _staged_lock,  # pyright: ignore[reportPrivateUsage]
     )
 
     cwd = target.cwd
@@ -972,10 +976,10 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
     for artifact in changed:
         if artifact.kind == "remote_lock":
             lock = cast("RemoteReferenceLock", target.lock)
-            stack.callback(close_anchor, anchor := publication_anchor(lock.path.parent))
-            lock_staging = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
+            anchor, lock_staging = _open_lock_staging(lock.path.parent)
+            stack.callback(close_anchor, anchor)
             stack.callback(_quietly, lock_staging.cleanup)
-            files.append(cast("StagedFile", lock.stage(lock_staging))._replace(anchor=anchor))
+            files.append(_staged_lock(lock, lock_staging, anchor))
             continue
         destination = (directory := target.directory(artifact)) or artifact.path
         if (place := places.get(destination)) is None:

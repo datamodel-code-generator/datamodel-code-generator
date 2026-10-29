@@ -18,7 +18,7 @@ import os
 import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeGuard, cast
+from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
 from datamodel_code_generator._url_redaction import redact_url
@@ -27,11 +27,12 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import TextIO
 
-    from datamodel_code_generator._publication import StagedFile, StagingDirectory
+    from datamodel_code_generator._publication import PublicationAnchor, StagedFile, StagingDirectory
 
 
 _LOCK_VERSION = 1
 _SHA256_PREFIX = "sha256:"
+_LOCK_STAGING_PREFIX: Final = ".datamodel-codegen-lock-"
 
 
 class RemoteLockError(Exception):
@@ -168,6 +169,33 @@ def _read_entries(path: Path) -> dict[str, RemoteLockEntry]:
 def _remove_temporary_file(path: Path) -> None:
     with contextlib.suppress(OSError):
         path.unlink()
+
+
+def _open_lock_staging(directory: Path) -> tuple[PublicationAnchor, StagingDirectory]:
+    """Hold the directory a lock update is published into and reserve the private staging of the update there.
+
+    The anchor is released again when the staging cannot be reserved.
+    """
+    from datamodel_code_generator._publication import (  # noqa: PLC0415
+        StagingDirectory,
+        publication_anchor,
+        release_all,
+    )
+
+    anchor = publication_anchor(directory)
+    try:
+        return anchor, StagingDirectory.create(anchor, prefix=_LOCK_STAGING_PREFIX)
+    except BaseException:
+        release_all((anchor,))
+        raise
+
+
+def _staged_lock(
+    lock: RemoteReferenceLock, staging: StagingDirectory, anchor: PublicationAnchor, target: Path | None = None
+) -> StagedFile:
+    """Stage a lock update for the publication journal: published to ``target`` (the lock's path) through ``anchor``."""
+    target = lock.path if target is None else target
+    return cast("StagedFile", lock.stage(staging))._replace(target=target, resolved_target=target, anchor=anchor)
 
 
 def _nearest_existing_directory(path: Path) -> Path:
@@ -340,22 +368,15 @@ class RemoteReferenceLock:
             self.discard_stage()
             msg = "Cannot commit remote lock after legacy Path staging; call discard_stage() before committing."
             raise RemoteLockError(msg)
-        from datamodel_code_generator._publication import (  # noqa: PLC0415
-            StagingDirectory,
-            close_anchor,
-            publication_anchor,
-            publish_staged_files,
-        )
+        from datamodel_code_generator._publication import close_anchor, publish_staged_files  # noqa: PLC0415
 
         anchor = None
         staging_directory = None
         try:
             target = self.path if self.path.is_absolute() else Path.cwd() / self.path
             target = target.expanduser().parent.resolve(strict=False) / target.name
-            anchor = publication_anchor(target.parent)
-            staging_directory = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
-            staged_source = cast("StagedFile", self.stage(staging_directory))
-            publish_staged_files((staged_source._replace(target=target, resolved_target=target, anchor=anchor),))
+            anchor, staging_directory = _open_lock_staging(target.parent)
+            publish_staged_files((_staged_lock(self, staging_directory, anchor, target),))
         except OSError as exc:
             with contextlib.suppress(OSError):
                 self.discard_stage()

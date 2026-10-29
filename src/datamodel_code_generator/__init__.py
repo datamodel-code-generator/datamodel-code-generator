@@ -128,7 +128,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
     from datamodel_code_generator._project_config import load_pyproject_config
-    from datamodel_code_generator._publication import PublicationAnchor, StagedFile
+    from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._types import (
         AsyncAPIParserConfigDict,
@@ -1785,10 +1785,10 @@ def generate(
         return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
 
-    atomic_remote_update = (
-        config.update_lock
-        and not config.remote_lock_resolved
-        and (config.output is not None or config.emit_model_metadata is not None)
+    from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
+
+    atomic_remote_update = owns_lock_update(config) and (
+        config.output is not None or config.emit_model_metadata is not None
     )
     if config.output is not None and _uses_legacy_process_state(config):
         with PROCESS_STATE_LOCK:
@@ -1833,13 +1833,11 @@ def _prepare_atomic_generation_remote_lock(
     input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
 ) -> tuple[GenerateConfig, Path, RemoteReferenceLock]:
     """Prepare the existing atomic update policy without resolving the original config."""
+    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    lockfile = config.lockfile.expanduser() if config.lockfile is not None else caller_cwd / "datamodel-codegen.lock"
-    if not lockfile.is_absolute():
-        lockfile = caller_cwd / lockfile
-    canonical_lockfile = lockfile.resolve(strict=False)
+    canonical_lockfile = remote_lock_plan(config, caller_cwd, "resolved").canonical_path
     _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
@@ -1855,12 +1853,12 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
     """Generate into private staging and publish output, metadata, and update lock together."""
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
-        publication_anchor,
         publish_staged_files,
         release_all,
         stage_artifact,
         staged_artifact_files,
     )
+    from datamodel_code_generator.remote_lock import _open_lock_staging, _staged_lock  # noqa: PLC0415
 
     config, canonical_lockfile, remote_lock = _prepare_atomic_generation_remote_lock(input_, config, caller_cwd)
     contexts: list[tempfile.TemporaryDirectory[str]] = []
@@ -1903,16 +1901,14 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
                 resolved_metadata_parent,
                 metadata_anchor,
             ))
-        lock_anchor = publication_anchor(canonical_lockfile.parent)
-        lock_staging = StagingDirectory.create(lock_anchor, prefix=".datamodel-codegen-lock-")
+        lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
         staged_config = config.model_copy(update=staged_updates)
         staged_config._logical_output = config.output  # noqa: SLF001
         staged_config._logical_model_metadata = config.emit_model_metadata  # noqa: SLF001
         staged_config.resolve_remote_lock(remote_lock)
         generated = _run_generation(input_, staged_config, caller_cwd, use_output_cwd=use_output_cwd)
         publication_files = [file for artifact in staged_artifacts for file in staged_artifact_files(*artifact)]
-        staged_lock = cast("StagedFile", remote_lock.stage(lock_staging))
-        publication_files.append(staged_lock._replace(anchor=lock_anchor))
+        publication_files.append(_staged_lock(remote_lock, lock_staging, lock_anchor))
         publish_staged_files(publication_files)
         remote_lock.mark_committed()
     except BaseException:
@@ -2072,23 +2068,21 @@ def _resolve_generation_remote_lock(
             getattr(remote_lock, "path", None),
         )
     else:
-        default_lockfile = caller_cwd / "datamodel-codegen.lock"
-        lockfile = config.lockfile.expanduser() if config.lockfile is not None else default_lockfile
-        if not lockfile.is_absolute():
-            lockfile = (caller_cwd / lockfile).resolve()
-        use_remote_lock = config.update_lock or config.locked or lockfile.is_file()
+        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+
+        plan = remote_lock_plan(config, caller_cwd, "legacy-api-lockfile-as-written")
         _validate_generation_path_conflicts(
             input_,
             config.output,
             config.emit_model_metadata,
-            lockfile if use_remote_lock else None,
+            plan.canonical_path if plan.active else None,
         )
-        if use_remote_lock:
+        if plan.active:
             config = config.model_copy()
             from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
             remote_lock = RemoteReferenceLock.open(
-                lockfile,
+                plan.canonical_path,
                 update=config.update_lock,
                 locked=config.locked,
             )

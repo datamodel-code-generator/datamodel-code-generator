@@ -946,6 +946,28 @@ names = ["_negative_option", "_option_actions"]
 what = "looks up the --no- option of a config field outside the core"
 audit = "C14-B9"
 
+[homes.Hx-remote-lock-plan]
+decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"
+core = ["_lock_plan.py"]
+
+[homes.Hx-remote-lock-plan.signatures.lockfile-read]
+kind = "name"
+names = ["lockfile"]
+receivers = ["config", "effective", "generate_config", "model_config", "prepared", "settings", "staged_config"]
+what = "reads the lockfile option; call _lock_plan.py:remote_lock_plan"
+audit = "C17-8"
+
+[homes.Hx-lock-staging]
+decision = "how a remote lock update is staged for the publication journal: the held directory it is published into, its private staging there and the staged file"
+core = ["remote_lock.py:_open_lock_staging", "remote_lock.py:_staged_lock"]
+
+[homes.Hx-lock-staging.signatures.private-staging]
+kind = "call"
+names = ["create"]
+keywords = ["prefix"]
+what = "reserves private staging for a lock update; call remote_lock.py:_open_lock_staging"
+audit = "C17-7"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
@@ -1241,6 +1263,10 @@ fix = "G05"
 [legacy_rows."legacy-inline-variants-at-first-ask"]
 home = "H11"
 fix = "G05"
+
+[legacy_rows."legacy-api-lockfile-as-written"]
+home = "Hx-remote-lock-plan"
+fix = "#5583"
 
 [legacy_rows."legacy-predicted-tag-names"]
 home = "H11"
