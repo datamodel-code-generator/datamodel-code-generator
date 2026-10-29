@@ -272,7 +272,7 @@ def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict
 
     def refer(reference: OperationRef | SchemaRef) -> JSONValue:
         if isinstance(reference, SchemaRef):
-            return protocols.source(reference)
+            return {"document": protocols.documents[reference], "pointer": reference.pointer}
         return request.documents.operation(protocols.operations[reference].id)
 
     return {helper.name: portable(helper.tree, refer) for helper in protocols.helpers}
