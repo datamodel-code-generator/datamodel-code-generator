@@ -88,6 +88,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,
 )
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
@@ -129,8 +130,6 @@ from datamodel_code_generator.model._decisions.tag_value import (
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     _field_source_name,
-    _linearize_depth_first,
-    _sort_for_mro,
     get_inherited_fields,
     sanitize_module_name,
 )
@@ -8321,7 +8320,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _sort_inherited_base_classes_for_mro(self, base_classes: list[Reference]) -> list[Reference]:
         """Match the stable descendant-before-ancestor ordering used at render time."""
-        return _sort_for_mro(
+        return sort_descendants_first(
             base_classes,
             lambda base: base.path or None,
             lambda base: self._get_inherited_schema_ancestor_paths(base.path),
@@ -8339,7 +8338,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if direct_refs not in self._inherited_schema_linearization_cache:
             self._inherited_schema_linearization_cache[direct_refs] = tuple(
-                _linearize_depth_first(
+                linearize(
                     list(direct_refs),
                     lambda ref: ref,
                     lambda ref: [

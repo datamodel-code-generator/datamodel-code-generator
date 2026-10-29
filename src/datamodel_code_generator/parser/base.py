@@ -16,7 +16,7 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from itertools import chain, pairwise
+from itertools import chain
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -57,6 +57,7 @@ from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._mro import c3_merge
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
@@ -108,7 +109,6 @@ from datamodel_code_generator.model.base import (
     _bind_builtin_names,
     _overlay_constraints,
     _set_nested_model_default_factory_order,
-    c3_merge,
     forget_model_memos,
     get_resolve_reference_action_capabilities,
 )
@@ -3092,13 +3092,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     consumed.append(parent)
                 sequences.append(sequence)
             sequences.append(parents[index])
-            merged = c3_merge([sequence.copy() for sequence in sequences], key=str)
-            order = {item: position for position, item in enumerate(merged)}
-            if any(
-                len(sequence) != len(set(sequence))
-                or any(order[left] >= order[right] for left, right in pairwise(sequence))
-                for sequence in sequences
-            ):
+            if (merged := c3_merge([sequence.copy() for sequence in sequences], str, rule="python")) is None:
                 msg = (
                     f"Generated model {label(index)} has inconsistent method resolution order for generated bases "
                     + ", ".join(map(label, parents[index]))

@@ -31,6 +31,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
 )
+from datamodel_code_generator._mro import linearize
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
@@ -2013,51 +2014,6 @@ def _wire_name(field: DataModelFieldBase) -> str:
     return field_source_name(name=field.name, original_name=field.original_name, alias=field.alias) or ""
 
 
-def _linearize(symbol: SymbolId, bases: dict[SymbolId, tuple[SymbolId, ...]]) -> tuple[SymbolId, ...] | None:
-    """Return a class's C3 method resolution order, or None when it has none."""
-    mro: dict[SymbolId, tuple[SymbolId, ...]] = {}
-    pending = [(symbol, False)]
-    active: set[SymbolId] = set()
-    while pending:
-        current, leaving = pending.pop()
-        if current in mro:
-            continue
-        if leaving:
-            active.discard(current)
-            parents = bases[current]
-            sequences = [mro[parent] for parent in parents]
-            if (merged := _c3((*sequences, parents) if len(parents) > 1 else tuple(sequences))) is None:
-                return None
-            mro[current] = (current, *merged)
-            continue
-        if current in active:
-            return None
-        active.add(current)
-        pending.append((current, True))
-        pending.extend((parent, False) for parent in reversed(bases[current]))
-    return mro[symbol]
-
-
-def _c3(sequences: tuple[tuple[SymbolId, ...], ...]) -> tuple[SymbolId, ...] | None:
-    """Merge base linearizations by C3 head selection, or return None when no order exists."""
-    remaining = [list(sequence) for sequence in sequences if sequence]
-    result: list[SymbolId] = []
-    while remaining:
-        candidate = next(
-            (sequence[0] for sequence in remaining if not any(sequence[0] in other[1:] for other in remaining)),
-            None,
-        )
-        if candidate is None:
-            return None
-        result.append(candidate)
-        remaining = [
-            rest
-            for sequence in remaining
-            if (rest := [item for item in sequence if item != candidate] if sequence[0] == candidate else sequence)
-        ]
-    return tuple(result)
-
-
 class _ShapeError(Exception):
     """A schema whose values no builtin parameter or form encoding writes, at the location that says so."""
 
@@ -2958,7 +2914,11 @@ class _Models:
             if symbol.kind == "enum":
                 continue
             functional = symbol.facts is not None and symbol.facts.functional_typeddict
-            order = self.parent_first(symbol.id, bases) if functional else _linearize(symbol.id, bases)
+            order = (
+                self.parent_first(symbol.id, bases)
+                if functional
+                else linearize([symbol.id], lambda item: item, bases.__getitem__, rule="python")
+            )
             if order is None or any(owner in unknown for owner in order):
                 continue
             fields: dict[str, tuple[DataModel, DataModelFieldBase]] = {}
