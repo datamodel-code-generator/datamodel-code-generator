@@ -11,21 +11,16 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_constant(_parent: _Scope, plan: Any) -> str:
         _parts: list[str] = []
-        _value_0 = _stringify(_getattr(plan, "name"))
-        _value_1 = _stringify(_getattr(plan, "annotation"))
-        _value_2 = _stringify(_getattr(plan, "constructor"))
-        _parts.append(f"{_value_0}: {_value_1} = {_value_2}(")
+        _parts.append(
+            f"{_stringify(_getattr(plan, 'name'))}: {_stringify(_getattr(plan, 'annotation'))} = {_stringify(_getattr(plan, 'constructor'))}("
+        )
         for argument in _getattr(plan, "arguments"):
-            _value_3 = _stringify(_getattr(argument, "keyword"))
-            _value_4 = _stringify(_getattr(argument, "value"))
-            _parts.append(f"\n    {_value_3}={_value_4},")
+            _parts.append(
+                f"\n    {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},"
+            )
         _parts.append("\n)")
         return "".join(_parts)
 
@@ -36,24 +31,19 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_root_annotation = _scope.get("root_annotation")
     _context_schemes = _scope.get("schemes")
     _parts: list[str] = []
-    _value_5 = _stringify(_context_docstring)
-    _value_6 = _stringify(_context_imports)
-    _parts.append(f'"""{_value_5}"""\n\nfrom __future__ import annotations\n\n{_value_6}')
+    _parts.append(
+        f'"""{_stringify(_context_docstring)}"""\n\nfrom __future__ import annotations\n\n{_stringify(_context_imports)}'
+    )
     for plan in _context_schemes:
-        _value_7 = _stringify(_macro_constant(_scope, plan))
-        _parts.append(f"\n\n\n{_value_7}")
+        _parts.append(f"\n\n\n{_stringify(_macro_constant(_scope, plan))}")
     _parts.append("\n\n\n")
     if _context_root:
-        _value_8 = _stringify(_context_root_annotation)
-        _parts.append(f"ROOT_SCHEMES: {_value_8} = (")
+        _parts.append(f"ROOT_SCHEMES: {_stringify(_context_root_annotation)} = (")
         for name in _context_root:
-            _value_9 = _stringify(name)
-            _parts.append(f"\n    {_value_9},")
+            _parts.append(f"\n    {_stringify(name)},")
         _parts.append("\n)")
     else:
-        _value_10 = _stringify(_context_root_annotation)
-        _parts.append(f"ROOT_SCHEMES: {_value_10} = ()")
+        _parts.append(f"ROOT_SCHEMES: {_stringify(_context_root_annotation)} = ()")
     for plan in _context_operations:
-        _value_11 = _stringify(_macro_constant(_scope, plan))
-        _parts.append(f"\n\n\n{_value_11}")
+        _parts.append(f"\n\n\n{_stringify(_macro_constant(_scope, plan))}")
     return "".join(_parts)

@@ -2,8 +2,6 @@
 # Source: PydanticV2TypeAlias.jinja2 (sha256:295d39d20574add4)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     getattr_ as _getattr,
@@ -12,10 +10,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 
 from .typealiasannotation import render_with_scope as _include_0
 from .typealiastype import render_with_scope as _include_1
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:

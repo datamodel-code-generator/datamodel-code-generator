@@ -6,7 +6,7 @@ project's built-in templates.  Custom templates continue to use Jinja itself.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from pprint import pformat
 from typing import Any
 
@@ -136,6 +136,11 @@ def concat(*values: Any) -> str:
 
 def namespace(**values: Any) -> Namespace:
     return Namespace(**values)
+
+
+def render(render_with_scope: Callable[[Scope], str], /, **context: Any) -> str:
+    """Render a generated template from its context, the one entry every generated renderer shares."""
+    return render_with_scope(Scope(context))
 
 
 def filter_default(value: Any, default_value: Any = "", boolean: bool = False) -> Any:  # noqa: FBT001, FBT002

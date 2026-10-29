@@ -13,20 +13,14 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_get_type_hint(_parent: _Scope, _fields: Any, use_base_type: Any) -> str:
         _parts: list[str] = []
         if _fields:
             if use_base_type:
-                _value_0 = _stringify(_getattr(_getitem(_fields, 0), "base_type_hint"))
-                _parts.append(f"{_value_0}")
+                _parts.append(f"{_stringify(_getattr(_getitem(_fields, 0), 'base_type_hint'))}")
             else:
-                _value_1 = _stringify(_getattr(_getitem(_fields, 0), "type_hint"))
-                _parts.append(f"{_value_1}")
+                _parts.append(f"{_stringify(_getattr(_getitem(_fields, 0), 'type_hint'))}")
         return "".join(_parts)
 
     _context_class_name = _scope.get("class_name")
@@ -36,16 +30,13 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
     use_base_type = _context_config and _getattr(_context_config, "regex_engine")
-    _value_2 = _stringify(_context_class_name)
-    _value_3 = _stringify(_macro_get_type_hint(_scope, _context_fields, use_base_type))
-    _parts.append(f"{_value_2} = RootModel[{_value_3}]")
+    _parts.append(
+        f"{_stringify(_context_class_name)} = RootModel[{_stringify(_macro_get_type_hint(_scope, _context_fields, use_base_type))}]"
+    )
     if _is_defined(_context_comment):
-        _value_4 = _stringify(_context_comment)
-        _parts.append(f"  # {_value_4}")
+        _parts.append(f"  # {_stringify(_context_comment)}")
     if _context_description:
-        _value_5 = _stringify(_context_description)
-        _parts.append(f"\n{_value_5}")
+        _parts.append(f"\n{_stringify(_context_description)}")
     elif _context_fields and _getattr(_getitem(_context_fields, 0), "docstring"):
-        _value_6 = _stringify(_getattr(_getitem(_context_fields, 0), "docstring"))
-        _parts.append(f"\n{_value_6}")
+        _parts.append(f"\n{_stringify(_getattr(_getitem(_context_fields, 0), 'docstring'))}")
     return "".join(_parts)

@@ -2,17 +2,11 @@
 # Source: client.jinja2 (sha256:c76a76095480c8ff)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     getattr_ as _getattr,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -44,147 +38,96 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_unset = _scope.get("unset")
     _context_view_keywords = _scope.get("view_keywords")
     _parts: list[str] = []
-    _value_0 = _stringify(_context_docstring)
-    _value_1 = _stringify(_context_imports)
-    _parts.append(f'"""{_value_0}"""\n\nfrom __future__ import annotations\n\n{_value_1}')
+    _parts.append(
+        f'"""{_stringify(_context_docstring)}"""\n\nfrom __future__ import annotations\n\n{_stringify(_context_imports)}'
+    )
     if _context_lazy_imports:
-        _value_2 = _stringify(_context_type_checking)
-        _parts.append(f"\n\nif {_value_2}:")
+        _parts.append(f"\n\nif {_stringify(_context_type_checking)}:")
         for item in _context_lazy_imports:
-            _value_3 = _stringify(_getattr(item, "module"))
-            _value_4 = _stringify(_getattr(item, "name"))
-            _parts.append(f"\n    from {_value_3} import {_value_4}")
+            _parts.append(
+                f"\n    from {_stringify(_getattr(item, 'module'))} import {_stringify(_getattr(item, 'name'))}"
+            )
     _parts.append("\n\n")
     if _getattr(_context_defaults, "arguments"):
-        _value_5 = _stringify(_getattr(_context_defaults, "constructor"))
-        _parts.append(f"_DEFAULTS = {_value_5}(")
+        _parts.append(f"_DEFAULTS = {_stringify(_getattr(_context_defaults, 'constructor'))}(")
         for argument in _getattr(_context_defaults, "arguments"):
-            _value_6 = _stringify(_getattr(argument, "keyword"))
-            _value_7 = _stringify(_getattr(argument, "value"))
-            _parts.append(f"\n    {_value_6}={_value_7},")
+            _parts.append(
+                f"\n    {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},"
+            )
         _parts.append("\n)")
     else:
-        _value_8 = _stringify(_getattr(_context_defaults, "constructor"))
-        _parts.append(f"_DEFAULTS = {_value_8}()")
-    _value_9 = _stringify(_context_name)
-    _value_10 = _stringify(_context_core)
-    _value_11 = _stringify(_context_core)
-    _value_12 = _stringify(_context_name)
+        _parts.append(f"_DEFAULTS = {_stringify(_getattr(_context_defaults, 'constructor'))}()")
     _parts.append(
-        f'\n\n\nclass {_value_9}View:\n    """Typed operations and request option layers sharing the root\'s native client."""\n\n    _core: {_value_10}\n\n    @classmethod\n    def _from_core(cls, core: {_value_11}) -> {_value_12}View:\n        view = cls.__new__(cls)\n        view._core = core\n        return view\n\n    def with_options(\n        self,\n        *,'
+        f'\n\n\nclass {_stringify(_context_name)}View:\n    """Typed operations and request option layers sharing the root\'s native client."""\n\n    _core: {_stringify(_context_core)}\n\n    @classmethod\n    def _from_core(cls, core: {_stringify(_context_core)}) -> {_stringify(_context_name)}View:\n        view = cls.__new__(cls)\n        view._core = core\n        return view\n\n    def with_options(\n        self,\n        *,'
     )
     for argument in _context_view_keywords:
-        _value_13 = _stringify(_getattr(argument, "name"))
-        _value_14 = _stringify(_getattr(argument, "annotation"))
-        _value_15 = _stringify(_getattr(argument, "default"))
-        _parts.append(f"\n        {_value_13}: {_value_14} = {_value_15},")
-    _value_16 = _stringify(_context_name)
+        _parts.append(
+            f"\n        {_stringify(_getattr(argument, 'name'))}: {_stringify(_getattr(argument, 'annotation'))} = {_stringify(_getattr(argument, 'default'))},"
+        )
     _parts.append(
-        f'\n    ) -> {_value_16}View:\n        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""\n        core = self._core.view('
+        f'\n    ) -> {_stringify(_context_name)}View:\n        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""\n        core = self._core.view('
     )
     for argument in _context_view_keywords:
-        _value_17 = _stringify(_getattr(argument, "name"))
-        _value_18 = _stringify(_getattr(argument, "name"))
-        _parts.append(f"\n            {_value_17}={_value_18},")
-    _value_19 = _stringify(_context_name)
-    _parts.append(f"\n        )\n        return {_value_19}View._from_core(core)\n\n    ")
+        _parts.append(
+            f"\n            {_stringify(_getattr(argument, 'name'))}={_stringify(_getattr(argument, 'name'))},"
+        )
+    _parts.append(f"\n        )\n        return {_stringify(_context_name)}View._from_core(core)\n\n    ")
     if _context_asynchronous:
         _parts.append("async ")
-    _value_20 = _stringify(_context_binary)
-    _value_21 = _stringify(_context_unset)
-    _value_22 = _stringify(_context_unset)
-    _value_23 = _stringify(_context_request_options)
-    _value_24 = _stringify(_context_raw)
     _parts.append(
-        f'def request_raw(\n        self,\n        method: str,\n        url: str,\n        *,\n        body: {_value_20} | {_value_21} = {_value_22},\n        options: {_value_23} | None = None,\n    ) -> {_value_24}:\n        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""\n        return '
+        f'def request_raw(\n        self,\n        method: str,\n        url: str,\n        *,\n        body: {_stringify(_context_binary)} | {_stringify(_context_unset)} = {_stringify(_context_unset)},\n        options: {_stringify(_context_request_options)} | None = None,\n    ) -> {_stringify(_context_raw)}:\n        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""\n        return '
     )
     if _context_asynchronous:
         _parts.append("await ")
-    _value_25 = _stringify(_context_cached_property)
-    _value_26 = _stringify(_context_name)
-    _value_27 = _stringify(_context_name)
     _parts.append(
-        f'self._core.request_raw(method, url, body=body, options=options)\n\n    @{_value_25}\n    def with_streaming_response(self) -> {_value_26}WithStreamingResponse:\n        """Raw requests that send on entering a block that streams the response."""\n        return {_value_27}WithStreamingResponse(self._core)'
+        f'self._core.request_raw(method, url, body=body, options=options)\n\n    @{_stringify(_context_cached_property)}\n    def with_streaming_response(self) -> {_stringify(_context_name)}WithStreamingResponse:\n        """Raw requests that send on entering a block that streams the response."""\n        return {_stringify(_context_name)}WithStreamingResponse(self._core)'
     )
     for resource in _context_resources:
-        _value_28 = _stringify(_context_cached_property)
-        _value_29 = _stringify(_getattr(resource, "name"))
-        _value_30 = _stringify(_getattr(resource, "class_name"))
-        _value_31 = _stringify(_getattr(resource, "namespace"))
-        _value_32 = _stringify(_getattr(resource, "module"))
-        _value_33 = _stringify(_getattr(resource, "class_name"))
-        _value_34 = _stringify(_getattr(resource, "class_name"))
         _parts.append(
-            f'\n\n    @{_value_28}\n    def {_value_29}(self) -> {_value_30}:\n        """The {_value_31} operations."""\n        from {_value_32} import {_value_33}\n\n        return {_value_34}(self._core)'
+            f'\n\n    @{_stringify(_context_cached_property)}\n    def {_stringify(_getattr(resource, "name"))}(self) -> {_stringify(_getattr(resource, "class_name"))}:\n        """The {_stringify(_getattr(resource, "namespace"))} operations."""\n        from {_stringify(_getattr(resource, "module"))} import {_stringify(_getattr(resource, "class_name"))}\n\n        return {_stringify(_getattr(resource, "class_name"))}(self._core)'
         )
     if _context_protocols:
-        _value_35 = _stringify(_context_cached_property)
-        _value_36 = _stringify(_context_protocols)
-        _value_37 = _stringify(_context_protocols_module)
-        _value_38 = _stringify(_context_protocols)
-        _value_39 = _stringify(_context_protocols)
         _parts.append(
-            f'\n\n    @{_value_35}\n    def protocols(self) -> {_value_36}:\n        """The protocol helpers of this API, by their dotted names."""\n        from {_value_37} import {_value_38}\n\n        return {_value_39}(self._core)'
+            f'\n\n    @{_stringify(_context_cached_property)}\n    def protocols(self) -> {_stringify(_context_protocols)}:\n        """The protocol helpers of this API, by their dotted names."""\n        from {_stringify(_context_protocols_module)} import {_stringify(_context_protocols)}\n\n        return {_stringify(_context_protocols)}(self._core)'
         )
-    _value_40 = _stringify(_context_name)
-    _value_41 = _stringify(_context_name)
-    _value_42 = _stringify(_context_class_docstring)
     _parts.append(
-        f'\n\n\nclass {_value_40}({_value_41}View):\n    """{_value_42}"""\n\n    def __init__(\n        self,\n        *,'
+        f'\n\n\nclass {_stringify(_context_name)}({_stringify(_context_name)}View):\n    """{_stringify(_context_class_docstring)}"""\n\n    def __init__(\n        self,\n        *,'
     )
     for argument in _context_credentials:
-        _value_43 = _stringify(_getattr(argument, "name"))
-        _value_44 = _stringify(_getattr(argument, "annotation"))
-        _parts.append(f"\n        {_value_43}: {_value_44} | None = None,")
+        _parts.append(
+            f"\n        {_stringify(_getattr(argument, 'name'))}: {_stringify(_getattr(argument, 'annotation'))} | None = None,"
+        )
     for argument in _context_client_keywords:
-        _value_45 = _stringify(_getattr(argument, "name"))
-        _value_46 = _stringify(_getattr(argument, "annotation"))
-        _value_47 = _stringify(_getattr(argument, "default"))
-        _parts.append(f"\n        {_value_45}: {_value_46} = {_value_47},")
+        _parts.append(
+            f"\n        {_stringify(_getattr(argument, 'name'))}: {_stringify(_getattr(argument, 'annotation'))} = {_stringify(_getattr(argument, 'default'))},"
+        )
     _parts.append(
         '\n    ) -> None:\n        """Borrow the native HTTP client given, or create one this root owns and closes."""'
     )
     if _context_helper_settings:
-        _value_48 = _stringify(_context_helper_settings)
-        _parts.append(f"\n        from {_value_48} import HelperSettings\n")
-    _value_49 = _stringify(_context_core)
-    _parts.append(f"\n        self._core = {_value_49}.create(\n            _DEFAULTS,")
+        _parts.append(f"\n        from {_stringify(_context_helper_settings)} import HelperSettings\n")
+    _parts.append(f"\n        self._core = {_stringify(_context_core)}.create(\n            _DEFAULTS,")
     for argument in _context_create:
-        _value_50 = _stringify(_getattr(argument, "keyword"))
-        _value_51 = _stringify(_getattr(argument, "value"))
-        _parts.append(f"\n            {_value_50}={_value_51},")
+        _parts.append(
+            f"\n            {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},"
+        )
     if _context_credentials:
-        _value_52 = _stringify(_context_scheme_credentials)
-        _parts.append(f"\n            credentials={_value_52}({{")
+        _parts.append(f"\n            credentials={_stringify(_context_scheme_credentials)}({{")
         for argument in _context_credentials:
-            _value_53 = _stringify(_getattr(argument, "scheme"))
-            _value_54 = _stringify(_getattr(argument, "name"))
-            _parts.append(f"\n                {_value_53}: {_value_54},")
+            _parts.append(
+                f"\n                {_stringify(_getattr(argument, 'scheme'))}: {_stringify(_getattr(argument, 'name'))},"
+            )
         _parts.append("\n            }),")
     _parts.append("\n        )")
     if _context_asynchronous:
-        _value_55 = _stringify(_context_self_type)
-        _value_56 = _stringify(_context_traceback)
-        _value_57 = _stringify(_context_add_secondary)
         _parts.append(
-            f'\n\n    async def aclose(self) -> None:\n        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""\n        await self._core.aclose()\n\n    async def __aenter__(self) -> {_value_55}:\n        """Return this client, which leaving the block closes."""\n        return self\n\n    async def __aexit__(\n        self,\n        exc_type: type[BaseException] | None,\n        exc: BaseException | None,\n        traceback: {_value_56} | None,\n    ) -> None:\n        """Close this client, keeping a close failure beside an error that leaves the block."""\n        try:\n            await self.aclose()\n        except Exception as error:\n            if exc is None:\n                raise\n            {_value_57}(exc, error)'
+            f'\n\n    async def aclose(self) -> None:\n        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""\n        await self._core.aclose()\n\n    async def __aenter__(self) -> {_stringify(_context_self_type)}:\n        """Return this client, which leaving the block closes."""\n        return self\n\n    async def __aexit__(\n        self,\n        exc_type: type[BaseException] | None,\n        exc: BaseException | None,\n        traceback: {_stringify(_context_traceback)} | None,\n    ) -> None:\n        """Close this client, keeping a close failure beside an error that leaves the block."""\n        try:\n            await self.aclose()\n        except Exception as error:\n            if exc is None:\n                raise\n            {_stringify(_context_add_secondary)}(exc, error)'
         )
     else:
-        _value_58 = _stringify(_context_self_type)
-        _value_59 = _stringify(_context_traceback)
-        _value_60 = _stringify(_context_add_secondary)
         _parts.append(
-            f'\n\n    def close(self) -> None:\n        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""\n        self._core.close()\n\n    def __enter__(self) -> {_value_58}:\n        """Return this client, which leaving the block closes."""\n        return self\n\n    def __exit__(\n        self,\n        exc_type: type[BaseException] | None,\n        exc: BaseException | None,\n        traceback: {_value_59} | None,\n    ) -> None:\n        """Close this client, keeping a close failure beside an error that leaves the block."""\n        try:\n            self.close()\n        except Exception as error:\n            if exc is None:\n                raise\n            {_value_60}(exc, error)'
+            f'\n\n    def close(self) -> None:\n        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""\n        self._core.close()\n\n    def __enter__(self) -> {_stringify(_context_self_type)}:\n        """Return this client, which leaving the block closes."""\n        return self\n\n    def __exit__(\n        self,\n        exc_type: type[BaseException] | None,\n        exc: BaseException | None,\n        traceback: {_stringify(_context_traceback)} | None,\n    ) -> None:\n        """Close this client, keeping a close failure beside an error that leaves the block."""\n        try:\n            self.close()\n        except Exception as error:\n            if exc is None:\n                raise\n            {_stringify(_context_add_secondary)}(exc, error)'
         )
-    _value_61 = _stringify(_context_name)
-    _value_62 = _stringify(_context_core)
-    _value_63 = _stringify(_context_binary)
-    _value_64 = _stringify(_context_unset)
-    _value_65 = _stringify(_context_unset)
-    _value_66 = _stringify(_context_request_options)
-    _value_67 = _stringify(_context_manager)
-    _value_68 = _stringify(_context_raw)
     _parts.append(
-        f'\n\n\nclass {_value_61}WithStreamingResponse:\n    """Raw requests to any absolute URL that send on entering a block that streams the response."""\n\n    def __init__(self, core: {_value_62}) -> None:\n        """Keep the client core the requests send through."""\n        self._core = core\n\n    def request_raw(\n        self,\n        method: str,\n        url: str,\n        *,\n        body: {_value_63} | {_value_64} = {_value_65},\n        options: {_value_66} | None = None,\n    ) -> {_value_67}[{_value_68}]:\n        """Return a block that sends the request on entry and yields its streaming response until exit."""\n        return self._core.stream_raw(method, url, body=body, options=options)'
+        f'\n\n\nclass {_stringify(_context_name)}WithStreamingResponse:\n    """Raw requests to any absolute URL that send on entering a block that streams the response."""\n\n    def __init__(self, core: {_stringify(_context_core)}) -> None:\n        """Keep the client core the requests send through."""\n        self._core = core\n\n    def request_raw(\n        self,\n        method: str,\n        url: str,\n        *,\n        body: {_stringify(_context_binary)} | {_stringify(_context_unset)} = {_stringify(_context_unset)},\n        options: {_stringify(_context_request_options)} | None = None,\n    ) -> {_stringify(_context_manager)}[{_stringify(_context_raw)}]:\n        """Return a block that sends the request on entry and yields its streaming response until exit."""\n        return self._core.stream_raw(method, url, body=body, options=options)'
     )
     return "".join(_parts)

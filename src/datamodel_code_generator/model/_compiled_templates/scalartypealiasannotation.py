@@ -2,16 +2,10 @@
 # Source: ScalarTypeAliasAnnotation.jinja2 (sha256:2239de40c7467ea7)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -19,10 +13,7 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_description = _scope.get("description")
     _context_py_type = _scope.get("py_type")
     _parts: list[str] = []
-    _value_0 = _stringify(_context_class_name)
-    _value_1 = _stringify(_context_py_type)
-    _parts.append(f"{_value_0}: TypeAlias = {_value_1}")
+    _parts.append(f"{_stringify(_context_class_name)}: TypeAlias = {_stringify(_context_py_type)}")
     if _context_description:
-        _value_2 = _stringify(_context_description)
-        _parts.append(f"\n{_value_2}")
+        _parts.append(f"\n{_stringify(_context_description)}")
     return "".join(_parts)

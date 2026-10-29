@@ -2,18 +2,12 @@
 # Source: TypedDict.jinja2 (sha256:27f3defc28aebd33)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
 )
 
 from .typeddictfunction import render_with_scope as _include_0
 from .typeddictclass import render_with_scope as _include_1
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:

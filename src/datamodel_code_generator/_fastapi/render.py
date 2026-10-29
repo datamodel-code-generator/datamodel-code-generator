@@ -639,7 +639,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         protocol = module.name(f"{package}.services", group.service)
         return templated(
             "implementation.jinja2",
-            implementation_template.render,
+            implementation_template.render_with_scope,
             protocol=group.service,
             services=f"{package}.services",
             entrypoint=f"{package}.main",
@@ -656,7 +656,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         module = UserModule(self.types, {"authorize", "requirement_sets", "credentials"}, package)
         return templated(
             "authorize.jinja2",
-            authorize_template.render,
+            authorize_template.render_with_scope,
             package=package,
             entrypoint=f"{package}.main",
             requirement_sets=module.name(package, "RequirementSets"),
@@ -702,7 +702,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         missing = module.local("_runtime.server.application", "missing_implementation") if owned else ""
         return templated(
             "main.jinja2",
-            main_template.render,
+            main_template.render_with_scope,
             app=f"{self.config.package}.main:app",
             services=self.services_package,
             implementations=sorted(owned, key=lambda item: casefold(item.module, target)),
@@ -718,7 +718,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """Return a package initializer of the facade role: its docstring, imports, and exports."""
         return templated(
             "facade.jinja2",
-            facade_template.render,
+            facade_template.render_with_scope,
             module=module,
             docstring=docstring,
             imports=imports,
@@ -744,7 +744,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     @staticmethod
     def openapi() -> Templated:
         """Return the module of the served document, which reads `openapi.json` beside it on first use."""
-        return templated("openapi.jinja2", openapi_template.render)
+        return templated("openapi.jinja2", openapi_template.render_with_scope)
 
     def readme(self) -> Templated:
         """Return the README of the target root: the operations, how to implement and connect them, and regeneration."""
@@ -760,7 +760,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
         return templated(
             "readme.jinja2",
-            readme_template.render,
+            readme_template.render_with_scope,
             title=info.get("title", config.package),
             package=config.package,
             model_package=config.model_package,
@@ -836,7 +836,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         any_ = module.name("typing", "Any")
         return templated(
             "application.jinja2",
-            application_template.render,
+            application_template.render_with_scope,
             final=final,
             options=options,
             routes=routes,
@@ -907,7 +907,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         final = module.name("typing", "Final")
         return templated(
             "router.jinja2",
-            router_template.render,
+            router_template.render_with_scope,
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
             routes=routes,
             api_router=router,
@@ -1011,7 +1011,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         schemes = [_scheme(module, scheme, self.scheme_names[scheme.name]) for scheme in self.plan.schemes]
         return templated(
             "security.jinja2",
-            security_template.render,
+            security_template.render_with_scope,
             schemes=schemes,
             exports=[repr(name) for name in sorted(self.scheme_names.values())],
             imports=module.imports(),
@@ -1080,7 +1080,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         ]
         return templated(
             "services.jinja2",
-            services_template.render,
+            services_template.render_with_scope,
             typevar=module.name("typing_extensions", "TypeVar") if any(group.secured for group in groups) else "",
             abstract=module.name("abc", "abstractmethod"),
             protocol_type=protocol,
@@ -1171,7 +1171,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         requests = "_runtime.server.requests"
         return templated(
             "contract.jinja2",
-            contract_template.render,
+            contract_template.render_with_scope,
             typed_dict=typed_dict,
             dependencies=dependencies,
             plans=plans,

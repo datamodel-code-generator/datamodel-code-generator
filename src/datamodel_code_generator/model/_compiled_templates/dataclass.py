@@ -2,8 +2,6 @@
 # Source: dataclass.jinja2 (sha256:203732cf64de114f)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     concat as _concat,
@@ -15,10 +13,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     _context_base_class = _scope.get("base_class")
     _context_class_name = _scope.get("class_name")
@@ -28,53 +22,39 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
     for decorator in _context_decorators:
-        _value_0 = _stringify(decorator)
-        _parts.append(f"{_value_0}\n")
+        _parts.append(f"{_stringify(decorator)}\n")
     args = []
     for k, v in _getattr((_context_dataclass_arguments or {}), "items")():
         if (v is not None) and (v is not False):
             _ = _getattr(args, "append")(_concat(k, "=", _filter_pprint(v)))
     if args:
-        _value_1 = _stringify(_filter_join(args, ", "))
-        _parts.append(f"\n@dataclass({_value_1})")
+        _parts.append(f"\n@dataclass({_stringify(_filter_join(args, ', '))})")
     else:
         _parts.append("\n@dataclass")
     if _context_base_class:
-        _value_2 = _stringify(_context_class_name)
-        _value_3 = _stringify(_context_base_class)
-        _parts.append(f"\nclass {_value_2}({_value_3}):")
+        _parts.append(f"\nclass {_stringify(_context_class_name)}({_stringify(_context_base_class)}):")
     else:
-        _value_4 = _stringify(_context_class_name)
-        _parts.append(f"\nclass {_value_4}:")
+        _parts.append(f"\nclass {_stringify(_context_class_name)}:")
     if _context_description:
-        _value_5 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_5}")
+        _parts.append(f"\n    {_stringify(_context_description)}")
     if (not _context_fields) and (not _context_description):
         _parts.append("\n    pass")
-    for field, _loop_last_6 in _loop_last_iter(_context_fields):
+    for field, _loop_last_0 in _loop_last_iter(_context_fields):
         if field.field:
-            _value_7 = _stringify(field.name)
-            _value_8 = _stringify(field.type_hint)
-            _value_9 = _stringify(field.field)
-            _parts.append(f"\n    {_value_7}: {_value_8} = {_value_9}")
+            _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)} = {_stringify(field.field)}")
         else:
-            _value_10 = _stringify(field.name)
-            _value_11 = _stringify(field.type_hint)
-            _parts.append(f"\n    {_value_10}: {_value_11}")
+            _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)}")
             if not (
                 (field.required and (not field.use_default_with_required))
                 or ((field.represented_default == "None") and field.strip_default_none)
             ):
-                _value_12 = _stringify(field.represented_default)
-                _parts.append(f" = {_value_12}")
+                _parts.append(f" = {_stringify(field.represented_default)}")
         if field.docstring:
-            _value_13 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_13}")
-            if field.use_inline_field_description and (not _loop_last_6):
+            _parts.append(f"\n    {_stringify(field.docstring)}")
+            if field.use_inline_field_description and (not _loop_last_0):
                 _parts.append("\n\n")
         elif field.inline_field_docstring:
-            _value_14 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_14}")
-            if not _loop_last_6:
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
+            if not _loop_last_0:
                 _parts.append("\n\n")
     return "".join(_parts)

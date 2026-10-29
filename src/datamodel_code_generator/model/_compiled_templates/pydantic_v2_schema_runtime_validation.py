@@ -2,8 +2,6 @@
 # Source: pydantic_v2/schema_runtime_validation.jinja2 (sha256:fc1a1c7d10e56aac)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     MISSING as _MISSING,
     Scope as _Scope,
@@ -17,10 +15,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
     setattr_ as _setattr,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -39,40 +33,39 @@ def render_with_scope(_scope: _Scope) -> str:
                 _parts.append(f"\n{_value_0}")
             _parts.append("\n    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (")
             for rule in _getattr(_context_schema_runtime_validation, "pattern_properties"):
-                _value_1 = _stringify(_filter_repr(getattr(rule, "declared_properties", _MISSING)))
-                _value_2 = _stringify(_filter_repr(getattr(rule, "rejected_patterns", _MISSING)))
                 _parts.append(
-                    f"\n        {{\n            'declared_properties': {_value_1},\n            'rejected_patterns': {_value_2},\n            'pattern_properties': "
+                    f"\n        {{\n            'declared_properties': {_stringify(_filter_repr(getattr(rule, 'declared_properties', _MISSING)))},\n            'rejected_patterns': {_stringify(_filter_repr(getattr(rule, 'rejected_patterns', _MISSING)))},\n            'pattern_properties': "
                 )
                 if _filter_length(getattr(rule, "pattern_properties", _MISSING)) == 1:
                     pattern_property = _getitem(getattr(rule, "pattern_properties", _MISSING), 0)
-                    _value_3 = _stringify(_filter_repr(_getitem(pattern_property, 0)))
-                    _value_4 = _stringify(_getattr(_getitem(pattern_property, 1), "type_hint"))
-                    _parts.append(f"(({_value_3}, {_value_4}),)")
+                    _parts.append(
+                        f"(({_stringify(_filter_repr(_getitem(pattern_property, 0)))}, {_stringify(_getattr(_getitem(pattern_property, 1), 'type_hint'))}),)"
+                    )
                 else:
                     _parts.append("(")
                     for pattern, data_type in getattr(rule, "pattern_properties", _MISSING):
-                        _value_5 = _stringify(_filter_repr(pattern))
-                        _value_6 = _stringify(data_type.type_hint)
-                        _parts.append(f"\n                ({_value_5}, {_value_6}),")
+                        _parts.append(
+                            f"\n                ({_stringify(_filter_repr(pattern))}, {_stringify(data_type.type_hint)}),"
+                        )
                     _parts.append("\n            )")
                 _parts.append(",\n            'additional_property_type': ")
                 if getattr(rule, "additional_property_type", _MISSING):
-                    _value_7 = _stringify(
-                        getattr(getattr(rule, "additional_property_type", _MISSING), "type_hint", _MISSING)
+                    _parts.append(
+                        f"{_stringify(getattr(getattr(rule, 'additional_property_type', _MISSING), 'type_hint', _MISSING))}"
                     )
-                    _parts.append(f"{_value_7}")
                 else:
                     _parts.append("None")
-                _value_8 = _stringify(_filter_repr(getattr(rule, "allow_unmatched", _MISSING)))
-                _parts.append(f",\n            'allow_unmatched': {_value_8},")
+                _parts.append(
+                    f",\n            'allow_unmatched': {_stringify(_filter_repr(getattr(rule, 'allow_unmatched', _MISSING)))},"
+                )
                 if getattr(rule, "python_regex_types", _MISSING):
-                    _value_9 = _stringify("\n            ")
-                    _value_10 = _stringify(_filter_repr(getattr(rule, "python_regex_types", _MISSING)))
-                    _parts.append(f"{_value_9}'python_regex_types': {_value_10},")
+                    _value_1 = _stringify("\n            ")
+                    _parts.append(
+                        f"{_value_1}'python_regex_types': {_stringify(_filter_repr(getattr(rule, 'python_regex_types', _MISSING)))},"
+                    )
                 _parts.append("\n        },")
-            _value_11 = _stringify("\n")
-            _parts.append(f"\n    )\n{_value_11}")
+            _value_2 = _stringify("\n")
+            _parts.append(f"\n    )\n{_value_2}")
             _setattr(schema_validator_state, "has_prior", True)
         for keyword, stem in [("oneOf", "one_of"), ("anyOf", "any_of"), ("not", "not")]:
             required_groups = _filter_list(
@@ -82,28 +75,25 @@ def render_with_scope(_scope: _Scope) -> str:
             )
             if required_groups:
                 if _getattr(schema_validator_state, "has_prior"):
-                    _value_12 = _stringify("\n")
-                    _parts.append(f"\n{_value_12}")
-                _value_13 = _stringify(stem)
-                _parts.append(f"\n    __json_schema_{_value_13}_required_groups__: ClassVar[tuple[Any, ...]] = (")
+                    _value_3 = _stringify("\n")
+                    _parts.append(f"\n{_value_3}")
+                _parts.append(
+                    f"\n    __json_schema_{_stringify(stem)}_required_groups__: ClassVar[tuple[Any, ...]] = ("
+                )
                 for rule in required_groups:
-                    _value_14 = _stringify(_filter_repr(getattr(rule, "groups", _MISSING)))
-                    _parts.append(f"\n        {_value_14},")
-                _value_15 = _stringify("\n")
-                _parts.append(f"\n    )\n{_value_15}")
+                    _parts.append(f"\n        {_stringify(_filter_repr(getattr(rule, 'groups', _MISSING)))},")
+                _value_4 = _stringify("\n")
+                _parts.append(f"\n    )\n{_value_4}")
                 _setattr(schema_validator_state, "has_prior", True)
         if _getattr(_context_schema_runtime_validation, "conditional_required"):
             if _getattr(schema_validator_state, "has_prior"):
-                _value_16 = _stringify("\n")
-                _parts.append(f"\n{_value_16}")
+                _value_5 = _stringify("\n")
+                _parts.append(f"\n{_value_5}")
             _parts.append("\n    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (")
             for rule in _getattr(_context_schema_runtime_validation, "conditional_required"):
-                _value_17 = _stringify(_filter_repr(getattr(rule, "condition", _MISSING)))
-                _value_18 = _stringify(_filter_repr(getattr(rule, "then_groups", _MISSING)))
-                _value_19 = _stringify(_filter_repr(getattr(rule, "else_groups", _MISSING)))
                 _parts.append(
-                    f"\n        {{\n            'condition': {_value_17},\n            'then_required_groups': {_value_18},\n            'else_required_groups': {_value_19},\n        }},"
+                    f"\n        {{\n            'condition': {_stringify(_filter_repr(getattr(rule, 'condition', _MISSING)))},\n            'then_required_groups': {_stringify(_filter_repr(getattr(rule, 'then_groups', _MISSING)))},\n            'else_required_groups': {_stringify(_filter_repr(getattr(rule, 'else_groups', _MISSING)))},\n        }},"
                 )
-            _value_20 = _stringify("\n")
-            _parts.append(f"\n    )\n{_value_20}")
+            _value_6 = _stringify("\n")
+            _parts.append(f"\n    )\n{_value_6}")
     return "".join(_parts)

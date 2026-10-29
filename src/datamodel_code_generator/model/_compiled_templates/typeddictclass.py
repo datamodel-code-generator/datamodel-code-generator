@@ -2,17 +2,11 @@
 # Source: TypedDictClass.jinja2 (sha256:47fb5bb08d5a4727)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     loop_last_iter as _loop_last_iter,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -21,26 +15,19 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_description = _scope.get("description")
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
-    _value_0 = _stringify(_context_class_name)
-    _value_1 = _stringify(_context_base_class)
-    _parts.append(f"class {_value_0}({_value_1}):")
+    _parts.append(f"class {_stringify(_context_class_name)}({_stringify(_context_base_class)}):")
     if _context_description:
-        _value_2 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_2}")
+        _parts.append(f"\n    {_stringify(_context_description)}")
     if (not _context_fields) and (not _context_description):
         _parts.append("\n    pass")
-    for field, _loop_last_3 in _loop_last_iter(_context_fields):
-        _value_4 = _stringify(field.name)
-        _value_5 = _stringify(field.type_hint)
-        _parts.append(f"\n    {_value_4}: {_value_5}")
+    for field, _loop_last_0 in _loop_last_iter(_context_fields):
+        _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)}")
         if field.docstring:
-            _value_6 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_6}")
-            if field.use_inline_field_description and (not _loop_last_3):
+            _parts.append(f"\n    {_stringify(field.docstring)}")
+            if field.use_inline_field_description and (not _loop_last_0):
                 _parts.append("\n\n")
         elif field.inline_field_docstring:
-            _value_7 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_7}")
-            if not _loop_last_3:
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
+            if not _loop_last_0:
                 _parts.append("\n\n")
     return "".join(_parts)

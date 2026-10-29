@@ -2,16 +2,10 @@
 # Source: facade.jinja2 (sha256:40332116e3e73ea4)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -19,15 +13,12 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_exports = _scope.get("exports")
     _context_imports = _scope.get("imports")
     _parts: list[str] = []
-    _value_0 = _stringify(_context_docstring)
-    _parts.append(f'"""{_value_0}"""')
+    _parts.append(f'"""{_stringify(_context_docstring)}"""')
     if _context_imports:
-        _value_1 = _stringify(_context_imports)
-        _parts.append(f"\n\n{_value_1}")
+        _parts.append(f"\n\n{_stringify(_context_imports)}")
     if _context_exports:
         _parts.append("\n\n__all__ = [")
         for name in _context_exports:
-            _value_2 = _stringify(name)
-            _parts.append(f'\n    "{_value_2}",')
+            _parts.append(f'\n    "{_stringify(name)}",')
         _parts.append("\n]")
     return "".join(_parts)

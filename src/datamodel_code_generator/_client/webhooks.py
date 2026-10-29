@@ -339,7 +339,7 @@ class _Webhooks:
             functions = tuple(self.function(module, event, key, asynchronous=mode) for mode in (False, True))
         return templated(
             "webhook.jinja2",
-            webhook_template.render,
+            webhook_template.render_with_scope,
             kind=kind if kind in {"none", "adapter"} else "builtin",
             name=helper.name,
             algorithm="" if key is None else _algorithm(signature).display,
