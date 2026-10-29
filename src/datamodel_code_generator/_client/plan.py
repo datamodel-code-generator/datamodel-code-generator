@@ -17,7 +17,6 @@ from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
-from datamodel_code_generator._openapi_codec_plan import takes_null
 from datamodel_code_generator._openapi_wire_plan import (
     body_kind,
     content_types,
@@ -43,13 +42,11 @@ from datamodel_code_generator._target_contract import (
     ConstructorType,
     LiteralScalar,
     LiteralSequence,
-    NoneType,
     PartFacts,
     PartSchema,
     SchemaSite,
     SourceLocation,
     TypeUseBinding,
-    UnionType,
 )
 from datamodel_code_generator._target_naming import (
     WINDOWS_DEVICES,
@@ -58,6 +55,7 @@ from datamodel_code_generator._target_naming import (
     operation_basis,
     path_placeholders,
 )
+from datamodel_code_generator._target_types import present, takes_null
 from datamodel_code_generator._target_unicode import casefold
 
 if TYPE_CHECKING:
@@ -765,10 +763,6 @@ class Planner:
             self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
         return media_type
 
-    def _takes_null(self, use: TypeUseBinding | None) -> bool:
-        """Return whether a JSON body's type admits null, as the server decides it: no schema, or a type that does."""
-        return use is None or takes_null(use.type, self.facts.symbols, self.facts.members)
-
     def media(self, operation: OperationContract, declaration: WireDeclaration, *, request: bool) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and form member plans."""
         media_type = self._declared(operation, declaration)
@@ -820,7 +814,9 @@ class Planner:
             media_type=media_type,
             kind=kind,
             use=use,
-            null=request and kind == "json" and self._takes_null(use),
+            null=request
+            and kind == "json"
+            and takes_null(None if use is None else use.type, self.facts.symbols, self.facts.members),
             fields=fields,
             additional=additional,
             encoded=encoded,
@@ -1220,14 +1216,9 @@ def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralSc
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
     if argument is None or use is None:
         return None
-    present = (
-        tuple(member for member in argument.members if not isinstance(member, NoneType))
-        if isinstance(argument, UnionType)
-        else (argument,)
-    )
-    if len(present) != 1:
+    if len(members := present(argument)) != 1:
         return None
-    scalar = present[0].base if isinstance(present[0], ConstructorType) else present[0]
+    scalar = members[0].base if isinstance(members[0], ConstructorType) else members[0]
     if not isinstance(scalar, BuiltinType):
         return None
     literal = use.default

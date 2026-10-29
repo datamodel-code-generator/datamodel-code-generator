@@ -1,0 +1,36 @@
+models shared True
+# merged_nullable in-process sync, in-process async
+get_work value
+  > GET /work?case=main
+  get_work(case='main')
+  < 200 application/json
+  = Home(street='main')
+get_work None
+  > GET /work?case=none
+  get_work(case='none')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getWork', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+get_office None
+  > GET /office?case=none
+  get_office(case='none')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getOffice', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+get_home value
+  > GET /home?case=main
+  get_home(case='main')
+  < 200 application/json
+  = Home(street='main')
+get_home None
+  > GET /home?case=none
+  get_home(case='none')
+  < 200 application/json
+  = None
+put_work value
+  > PUT /work?case=main [application/json]
+  put_work(case='main', body=Home(street='main'))
+  < 204 -
+  = None
+put_work None
+  > PUT /work?case=none [application/json]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]} [operation_id='putWork', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', truncated=False]

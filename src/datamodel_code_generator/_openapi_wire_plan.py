@@ -46,6 +46,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     WireDeclaration,
 )
+from datamodel_code_generator._target_types import present
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
@@ -934,8 +935,8 @@ class LexicalKinds:
         """Return the type a type stands for, through aliases, root models and a union with None alone."""
         seen: set[int] = set()
         while True:
-            if isinstance(value, UnionType) and len(present := _present(value)) == 1:
-                value = present[0]
+            if isinstance(value, UnionType) and len(members := present(value)) == 1:
+                value = members[0]
             elif (
                 isinstance(value, GeneratedSymbolType)
                 and value.symbol not in seen
@@ -995,10 +996,6 @@ class LexicalKinds:
             yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
         else:
             yield None
-
-
-def _present(value: UnionType) -> list[TypeView]:
-    return [member for member in value.members if not isinstance(member, NoneType)]
 
 
 def _type_name(value: TypeView) -> tuple[str | None, str]:

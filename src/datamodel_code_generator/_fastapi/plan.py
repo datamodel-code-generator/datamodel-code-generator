@@ -24,7 +24,7 @@ from datamodel_code_generator._fastapi.routes import (
     placeholders,
     route_path,
 )
-from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols, takes_null
+from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     body_kind,
@@ -55,11 +55,11 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralSequence,
     LiteralType,
-    NoneType,
     SourceLocation,
     UnionType,
 )
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
+from datamodel_code_generator._target_types import present, takes_null
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -1071,7 +1071,7 @@ class Planner:  # noqa: PLR0904
         match value:
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
                 return value
-            case UnionType() if len(members := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+            case UnionType() if len(members := present(value)) == 1:
                 return self.member(members[0])
             case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
                 return self.member(value.arguments[0])
@@ -1127,7 +1127,7 @@ class Planner:  # noqa: PLR0904
         kind: ValueKind | None = None
         match value:
             case UnionType():
-                found = {self.kind(member) for member in value.members if not isinstance(member, NoneType)}
+                found = {self.kind(member) for member in present(value)}
                 kind = found.pop() if len(found) == 1 else None
             case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
                 kind = "sequence" if self.kind(value.arguments[0]) == "scalar" else None
@@ -1223,7 +1223,7 @@ class Planner:  # noqa: PLR0904
             return replace(spec, media=planned)
         item = media[0]
         match item.kind:
-            case "json" if spec.required and self.takes_null(None if item.use is None else item.use.type):
+            case "json" if spec.required and self.json_null(item):
                 return spec
             case "json":
                 return replace(spec, decision=Decision(transport="fastapi_native"))
@@ -1232,10 +1232,6 @@ class Planner:  # noqa: PLR0904
             case _:
                 pass
         return spec
-
-    def takes_null(self, value: TypeView | None) -> bool:
-        """Return whether a type validates JSON null, as the generated models annotate it."""
-        return takes_null(value, self.symbols, self.members)
 
     def unsupported(self, operation: OperationContract, media: Iterable[MediaSpec], encoding: str = "") -> None:
         """Report request media that only the request body mode reads."""
@@ -1450,7 +1446,7 @@ class Planner:  # noqa: PLR0904
         return (
             media is not None
             and media.kind == "json"
-            and self.takes_null(None if media.use is None else media.use.type)
+            and takes_null(None if media.use is None else media.use.type, self.symbols, self.members)
         )
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
@@ -1724,7 +1720,7 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
     scalar: BuiltinType | ImportedType | None = None
     identity: tuple[str | None, str] = (None, "")
     match value:
-        case UnionType() if len(scalars := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+        case UnionType() if len(scalars := present(value)) == 1:
             if (constrained := _constrained(scalars[0], constraints)) is None:
                 return None
             members = tuple(constrained if item is scalars[0] else item for item in value.members)

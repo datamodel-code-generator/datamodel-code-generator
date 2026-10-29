@@ -41,13 +41,13 @@ from datamodel_code_generator._target_contract import (
     ImportedType,
     LiteralScalar,
     LiteralSequence,
-    NoneType,
     SourceExpression,
     UnionType,
 )
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role, templated
+from datamodel_code_generator._target_types import admits_none
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
@@ -1063,7 +1063,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     def body_type(self, module: Module, body: BodySpec) -> str:
         """Return the type the handler receives for a body, with None for an optional one."""
         kinds = module.union(*(self.media_type(module, media) for media in body.media))
-        if body.required or any(_nullable(_payload(media)) for media in body.media):
+        if body.required or any(admits_none(_payload(media)) for media in body.media):
             return kinds
         return module.optional(kinds)
 
@@ -1171,7 +1171,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         if (media := primary.media) is None or not _body_status(spec, str(primary.status)):
             return ["None"]
         payload = self.media_type(module, media)
-        if primary.null and (value := _payload(media)) is not None and not _nullable(value):
+        if primary.null and (value := _payload(media)) is not None and not admits_none(value):
             return [payload, "None"]
         return [payload]
 
@@ -1319,14 +1319,9 @@ def _payload(media: MediaSpec) -> TypeView | None:
     return None if media.kind == "binary" or media.use is None else media.use.type
 
 
-def _nullable(value: TypeView | None) -> bool:
-    """Return whether a type already takes None, so an optional input of it needs no None member."""
-    return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
-
-
 def _none(module: Module, text: str, value: TypeView | None) -> str:
     """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
-    return text if _nullable(value) else module.optional(text)
+    return text if admits_none(value) else module.optional(text)
 
 
 def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
@@ -1378,7 +1373,7 @@ def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
         text = "str"
     else:
         text = module.name("typing", "Any")
-    if parameter.required or parameter.default is not Default.ABSENT or _nullable(parameter.type):
+    if parameter.required or parameter.default is not Default.ABSENT or admits_none(parameter.type):
         return text
     return module.optional(text)
 

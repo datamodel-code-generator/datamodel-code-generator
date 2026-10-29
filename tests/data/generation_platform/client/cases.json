@@ -1716,6 +1716,33 @@
       ]
     ]
   },
+  "merged-nullable-reference": {
+    "input": "merged-nullable-reference.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "strict_nullable": true,
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "type-spellings-reuse": {
     "input": "type-spellings-reuse.yaml",
     "backends": [

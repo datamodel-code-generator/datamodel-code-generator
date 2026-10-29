@@ -190,6 +190,8 @@ media	main/generation_platform/client/packages/media/typing_TypedDict//*.py
 media-errors	main/generation_platform/client/media-errors.txt
 media-item-parts	main/generation_platform/client/media-item-parts.txt
 media-item-parts	main/generation_platform/client/packages/media-item-parts/pydantic_v2_BaseModel//*.py
+merged-nullable-reference	main/generation_platform/client/merged-nullable-reference.txt
+merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/pydantic_v2_BaseModel//*.py
 method-collisions	main/generation_platform/client/method-collisions.txt
 method-collisions	main/generation_platform/client/packages/method-collisions/pydantic_v2_BaseModel//*.py
 method-collisions-suffix	main/generation_platform/client/method-collisions-suffix.txt
