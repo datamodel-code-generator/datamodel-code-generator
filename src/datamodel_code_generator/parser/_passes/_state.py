@@ -38,7 +38,6 @@ __all__ = [
     "FinishRun",
     "Forwarder",
     "ForwarderMap",
-    "ModuleContextFields",
     "ModuleContextView",
     "ModuleModels",
     "ModulePath",
@@ -77,8 +76,6 @@ class Forwarder:
 
 
 ForwarderMap: TypeAlias = dict[ModulePath, Forwarder]
-ModuleContextFields: TypeAlias = "tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]"
-"""The fields of ``parser/base.py:ModuleContext`` in order, for the passes that unpack it."""
 
 
 class ModuleContextView(Protocol):
@@ -147,13 +144,10 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     def assign(self, model: DataModel, module_name: str, *, keep: bool = False) -> None:
         """Give ``model`` the module name, or with ``keep`` only when it has none yet."""
         path = model.path
-        if keep:
-            if path not in self:
-                self[path] = self.assigned[path] = module_name
-            self.by_key.setdefault(model_key_of(model.reference), module_name)
-            return
-        self[path] = self.assigned[path] = module_name
-        self.by_key[model_key_of(model.reference)] = module_name
+        if not keep or path not in self:
+            self[path] = self.assigned[path] = module_name
+        if (key := model_key_of(model.reference)) not in self.by_key or not keep:
+            self.by_key[key] = module_name
 
     def forget(self, models: Iterable[DataModel]) -> None:
         """Drop the entries by key of models that moved to another path, whose entries by path name them no more.
@@ -419,7 +413,6 @@ class _ModuleState(Generic[ConfigT]):
     unused_models_start: int = dataclasses.field(init=False)
     model_list_before_override_removal: list[DataModel] = dataclasses.field(init=False)
     current_unused_models: Sequence[DataModel] = ()
-    live_models: list[DataModel] = dataclasses.field(init=False)
 
 
 @final

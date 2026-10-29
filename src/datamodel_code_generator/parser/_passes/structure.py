@@ -35,11 +35,11 @@ from datamodel_code_generator.parser._passes._shared import (
     RootModelTypeHost,
     TargetPythonVersionHost,
     _parsed_rule_data_types,
-    _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
     redirect_collapsed_reuse_users,
     replace_model_in_list,
     require_update_action,
+    without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import Forwarder, _ModuleNames
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, declared_union_tags
@@ -52,7 +52,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
-    from datamodel_code_generator.model.base import BaseClassDataType
     from datamodel_code_generator.parser._model_shapes import ModelShapes, ShapeRow
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
@@ -180,10 +179,9 @@ def _module_key(
     return tuple(data_model.module_path)
 
 
-def _group_models_by_module(
-    data_models: Iterable[DataModel], module_split_mode: ModuleSplitMode | None, target_python_version: PythonVersion
-) -> ModuleModels:
-    """Group models by output module and include required empty package levels."""
+def _group_models_by_module(parser: StructureHost, state: _StructureState, data_models: Iterable[DataModel]) -> None:
+    """Group models into the output modules of ``state``, with the required empty package levels, and index them."""
+    module_split_mode, target_python_version = state.module_split_mode, parser.target_python_version
 
     def sort_key(data_model: DataModel) -> tuple[int, ModulePath]:
         key = _module_key(data_model, module_split_mode, target_python_version)
@@ -202,21 +200,20 @@ def _group_models_by_module(
             )
         module_models.append((module, models))
         previous_module = module
-    return module_models
+    state.module_models = module_models
+    _index_module_models(state)
 
 
-def _index_module_models(
-    module_models: ModuleModels, module_split_mode: ModuleSplitMode | None
-) -> tuple[dict[DataModel, tuple[ModulePath, list[DataModel]]], _ModuleNames]:
-    """Build model lookups for already-grouped output modules."""
+def _index_module_models(state: _StructureState) -> None:
+    """Index the models of the output modules of ``state``, which are grouped already."""
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = {}
     model_path_to_module_name = _ModuleNames()
-    for module, models in module_models:
+    for module, models in state.module_models:
         for model in models:
             model_to_module_models[model] = module, models
-            if module_split_mode == ModuleSplitMode.Single:
+            if state.module_split_mode == ModuleSplitMode.Single:
                 model_path_to_module_name.assign(model, ".".join(module))
-    return model_to_module_models, model_path_to_module_name
+    state.model_to_module_models, state.model_path_to_module_name = model_to_module_models, model_path_to_module_name
 
 
 def _merged_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
@@ -259,11 +256,16 @@ def get_module_directory(module: tuple[str, ...]) -> tuple[str, ...]:
     return module[:-1]
 
 
-def _distinct_bases(row: ShapeRow, bases: Iterable[BaseClassDataType]) -> Iterable[BaseClassDataType]:
-    """Return the bases of a merged model's child once each, told apart as the user of the row tells them."""
-    if row.base_dedup == "by-type-hint":
-        return {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
-    return {id(base.reference): base for base in bases}.values()
+def _distinct_bases(parser: StructureHost, row: ShapeRow, model: DataModel) -> None:
+    """Give each child of a merged model its bases once each, told apart as the user of the row tells them."""
+    for child in model.reference.iter_data_model_children():
+        bases = child.base_classes
+        parser._graph_builder.set_base_classes(  # noqa: SLF001
+            child,
+            {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
+            if row.base_dedup == "by-type-hint"
+            else {id(base.reference): base for base in bases}.values(),
+        )
 
 
 def renders_as_duplicate(
@@ -321,8 +323,6 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         else None
     )
     for model in parser._reuse_groups.site_models_last(models):  # noqa: SLF001
-        if model in models_to_remove:  # pragma: no cover
-            continue
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
         if parser._is_root_model(model) and (  # noqa: SLF001
             model_key_of(model.reference) not in parser._declared_class_stand_ins  # noqa: SLF001
@@ -355,12 +355,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
             parser._graph_builder.redirect_reference_users(  # noqa: SLF001
                 duplicate_model.reference, model.reference, merged=True
             )
-            # Deduplicate base_classes in all DataModel children
-            for child in duplicate_model.reference.iter_data_model_children():
-                parser._graph_builder.set_base_classes(  # noqa: SLF001
-                    child,
-                    _distinct_bases(shapes.row, child.base_classes),
-                )
+            _distinct_bases(parser, shapes.row, duplicate_model)
             models_to_remove.add(duplicate_model)
 
     if parser.reuse_model and parser.collapse_reuse_models:
@@ -398,11 +393,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
 
             for canonical, duplicate in duplicates:
                 redirect_collapsed_reuse_users(parser, duplicate, canonical)
-                for child in duplicate.reference.iter_data_model_children():
-                    parser._graph_builder.set_base_classes(  # noqa: SLF001
-                        child,
-                        _distinct_bases(shapes.row, child.base_classes),
-                    )
+                _distinct_bases(parser, shapes.row, duplicate)
                 models_to_remove.add(duplicate)
 
     # Batch removal: O(n) instead of O(n²)
@@ -425,10 +416,9 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
     for model in models:
         model._write_pre_render_nullability()  # noqa: SLF001
         remember_nested_factory_order_before_nullability(model)
-    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
-        models = [model for model in models if model_key_of(model.reference) not in stand_ins]
+    models = without_stand_ins(parser, models)
     exclude_names = {i.alias or i.import_ for m in models for i in m.imports}
-    if stand_ins:
+    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
         exclude_names.update(
             import_.alias or import_.import_
             for model in models
@@ -538,7 +528,7 @@ def validate_shared_module_name(
         raise Error(msg)
 
 
-def create_shared_module_from_duplicates(  # noqa: PLR0912, PLR0915
+def create_shared_module_from_duplicates(  # noqa: PLR0912
     parser: StructureHost,
     module_models: list[tuple[tuple[str, ...], list[DataModel]]],
     duplicates: list[tuple[tuple[str, ...], DataModel, tuple[str, ...], DataModel]],
@@ -575,30 +565,26 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912, PLR0915
 
     for duplicate_module, duplicate_model, _, canonical_model in duplicates:
         shared_ref = canonical_to_shared_ref[canonical_model]
-        models_set = module_models_sets.get(duplicate_module)
-        if not models_set or duplicate_model not in models_set:  # pragma: no cover
+        if duplicate_model not in module_models_sets.get(duplicate_module, ()):  # pragma: no cover
             msg = f"Duplicate model {duplicate_model.name} not found in module {duplicate_module}"
             raise RuntimeError(msg)
 
-        for module, models in module_models:  # pragma: no branch
-            if module != duplicate_module:
-                continue
-            if isinstance(duplicate_model, Enum) or not supports_inheritance or parser.collapse_reuse_models:
-                redirect_collapsed_reuse_users(parser, duplicate_model, canonical_model)
-                models_to_remove[module].add(duplicate_model)
-                parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
-            else:
-                inherited_model = duplicate_model.create_reuse_model(shared_ref)
-                parser._graph_builder.redirect_model_reference_users(  # noqa: SLF001
-                    duplicate_model,
-                    reference_models if reference_models is not None else models,
-                    inherited_model.reference,
-                )
-                if model_key_of(shared_ref) in require_update:
-                    updated_models.append(inherited_model)
-                replace_model_in_list(models, duplicate_model, inherited_model)
-                parser._graph_builder.replace_model(duplicate_model, inherited_model)  # noqa: SLF001
-            break
+        models = next(listed for module, listed in module_models if module == duplicate_module)
+        if isinstance(duplicate_model, Enum) or not supports_inheritance or parser.collapse_reuse_models:
+            redirect_collapsed_reuse_users(parser, duplicate_model, canonical_model)
+            models_to_remove[duplicate_module].add(duplicate_model)
+            parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
+        else:
+            inherited_model = duplicate_model.create_reuse_model(shared_ref)
+            parser._graph_builder.redirect_model_reference_users(  # noqa: SLF001
+                duplicate_model,
+                reference_models if reference_models is not None else models,
+                inherited_model.reference,
+            )
+            if model_key_of(shared_ref) in require_update:
+                updated_models.append(inherited_model)
+            replace_model_in_list(models, duplicate_model, inherited_model)
+            parser._graph_builder.replace_model(duplicate_model, inherited_model)  # noqa: SLF001
 
     for canonical in canonical_models_seen:
         for module, models_set in module_models_sets.items():
@@ -669,17 +655,11 @@ def compute_internal_module_path(
         common = os.path.commonpath(path_strings)
         prefix = tuple(common.split("/")) if common else ()
 
-    base_module = (base_name,) if not prefix else (*prefix, base_name)
-
-    if base_module in existing_modules:
-        counter = 1
-        while True:
-            candidate = (*prefix, f"{base_name}_{counter}") if prefix else (f"{base_name}_{counter}",)
-            if candidate not in existing_modules:
-                return candidate
-            counter += 1
-
-    return base_module
+    candidate, counter = (*prefix, base_name), 0
+    while candidate in existing_modules:
+        counter += 1
+        candidate = (*prefix, f"{base_name}_{counter}")
+    return candidate
 
 
 def collect_scc_models(
@@ -718,8 +698,7 @@ def rename_and_relocate_scc_models(
     """
     internal_module_str = ".".join(internal_module)
     module_class_mappings: defaultdict[tuple[str, ...], list[tuple[str, str]]] = defaultdict(list)
-    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
-    named_models = [model for model in all_scc_models if model_key_of(model.reference) not in stand_ins]
+    named_models = without_stand_ins(parser, all_scc_models)
     original_class_names = [model.class_name for model in named_models]
     new_class_names = dict(zip(map(id, named_models), _merged_class_names(original_class_names), strict=True))
 
@@ -788,11 +767,6 @@ def _expanded_path(module: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(part for name in module for part in name.split("."))
 
 
-def _same_path(module: tuple[str, ...]) -> tuple[str, ...]:
-    """Return the module path as it is."""
-    return module
-
-
 def _failing_import_cycles(
     merges: list[set[tuple[str, ...]]],
     module_graph: GroupGraph[tuple[str, ...]],
@@ -810,7 +784,7 @@ def _failing_import_cycles(
     imports the modules below it that ``exporting`` names, and the ``_internal`` modules, to re-export their names;
     ``dotted`` places a module in the packages that the dots of its name make.
     """
-    place = _expanded_path if dotted else _same_path
+    place = _expanded_path if dotted else lambda module: module
     internal_nodes = [(place(compute_internal_module_path(merge, set())), index) for index, merge in enumerate(merges)]
     forwarded = {module: internal_nodes[index] for index, merge in enumerate(merges) for module in merge}
 
@@ -913,11 +887,8 @@ def _module_merges(
     for the class body that evaluates the rules, an alias written as a class for its rules included.
     A stand-in is no member of its module: its module imports nothing for it, and nothing imports it.
     """
-    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
-        module_models_list = [
-            (module, [model for model in models if model_key_of(model.reference) not in stand_ins])
-            for module, models in module_models_list
-        ]
+    if parser._base_stand_in_imports:  # noqa: SLF001
+        module_models_list = [(module, without_stand_ins(parser, models)) for module, models in module_models_list]
     snapshot = GraphSnapshot.MODULE_DEPENDENCIES
     keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
     module_of: dict[ModelKey, tuple[str, ...]] = {}
@@ -977,15 +948,12 @@ def _released_internal_forwarder(  # noqa: PLR0913, PLR0917
     It binds the merge's models to the class names that module gave them (``_merged_class_names`` over the merge alone),
     in the order it wrote them.
     """
-    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
     models = [model for model in grown_models if model_to_original_module[id(model)] in merge]
-    named = [model for model in models if model_key_of(model.reference) not in stand_ins]
+    named = without_stand_ins(parser, models)
     merged_names = dict(
         zip(map(id, named), _merged_class_names([released_names[id(model)] for model in named]), strict=True)
     )
-    order = _sort_models_by_class_body_references(
-        models, parser.pydantic_v2_root_model_type, _runtime_validation_reference_keys(models, same_module=False)
-    )
+    order = _sort_models_by_class_body_references(models, parser.pydantic_v2_root_model_type)
     return Forwarder(
         internal_module,
         tuple(sorted((internal_module, model.class_name, merged_names[id(model)]) for model in named)),
@@ -1022,7 +990,6 @@ def resolve_circular_imports(  # noqa: PLR0914
     released_internal_modules = frozenset(released_paths.values())
     internal_modules_created: set[tuple[str, ...]] = set()
     released_forwarders: list[tuple[str, ...]] = []
-    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
 
     result_modules: dict[tuple[str, ...], list[DataModel]] = {
         module: list(models) for module, models in module_models_list
@@ -1057,11 +1024,7 @@ def resolve_circular_imports(  # noqa: PLR0914
                     released_internal_modules,
                 )
                 released_forwarders.append(released_path)
-        all_scc_models = _sort_models_by_class_body_references(
-            all_scc_models,
-            parser.pydantic_v2_root_model_type,
-            _runtime_validation_reference_keys(all_scc_models, same_module=False),
-        )
+        all_scc_models = _sort_models_by_class_body_references(all_scc_models, parser.pydantic_v2_root_model_type)
 
         for scc_module in merge:
             module_models = result_modules[scc_module]
@@ -1074,35 +1037,24 @@ def resolve_circular_imports(  # noqa: PLR0914
                     tuple((internal_module, new_name, original_name) for original_name, new_name in sorted_mappings),
                     tuple(
                         (released_names[id(model)], model.class_name)
-                        for model in module_models
-                        if moved and model_key_of(model.reference) not in stand_ins
+                        for model in (without_stand_ins(parser, module_models) if moved else ())
                     ),
                     released_internal_modules if moved else frozenset(),
                 )
         result_modules[internal_module] = all_scc_models
 
     new_module_models: list[tuple[tuple[str, ...], list[DataModel]]] = [
-        (internal_module, result_modules[internal_module])
-        for internal_module in sorted(internal_modules_created)
-        if internal_module in result_modules  # pragma: no branch
+        (internal_module, result_modules[internal_module]) for internal_module in sorted(internal_modules_created)
     ]
     new_module_models.extend((module, []) for module in sorted(released_forwarders))
-
-    for module, _ in module_models_list:
-        if module not in internal_modules_created:  # pragma: no branch
-            new_module_models.append((module, result_modules.get(module, [])))
+    new_module_models.extend((module, result_modules.get(module, [])) for module, _ in module_models_list)
 
     return new_module_models, internal_modules_created, forwarder_map
 
 
 def group_models_by_module(parser: StructureHost, state: _StructureState) -> None:
     """Group the sorted models into output modules and index them."""
-    state.module_models = _group_models_by_module(
-        state.sorted_data_models.values(), state.module_split_mode, parser.target_python_version
-    )
-    state.model_to_module_models, state.model_path_to_module_name = _index_module_models(
-        state.module_models, state.module_split_mode
-    )
+    _group_models_by_module(parser, state, state.sorted_data_models.values())
 
 
 def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) -> None:
@@ -1126,13 +1078,8 @@ def apply_forced_invalid_dotted_stdout_repair(parser: StructureHost, state: _Str
     if not parser._apply_forced_invalid_dotted_stdout_repair(state.module_models, state.module_split_mode):  # noqa: SLF001
         return
     live_model_ids = {id(model) for _, models in state.module_models for model in models}
-    state.module_models = _group_models_by_module(
-        (model for model in state.sorted_data_models.values() if id(model) in live_model_ids),
-        state.module_split_mode,
-        parser.target_python_version,
-    )
-    state.model_to_module_models, state.model_path_to_module_name = _index_module_models(
-        state.module_models, state.module_split_mode
+    _group_models_by_module(
+        parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
     )
 
 
@@ -1142,9 +1089,7 @@ def apply_reuse_model_tree_scope(parser: StructureHost, state: _StructureState) 
         return
     state.module_models.insert(0, shared_module_entry)
     if state.module_split_mode == ModuleSplitMode.Single:
-        state.model_to_module_models, state.model_path_to_module_name = _index_module_models(
-            state.module_models, state.module_split_mode
-        )
+        _index_module_models(state)
 
 
 def resolve_module_circular_imports(parser: StructureHost, state: _StructureState) -> None:

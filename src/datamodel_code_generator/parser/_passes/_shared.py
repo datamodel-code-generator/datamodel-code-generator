@@ -15,7 +15,7 @@ from functools import cache
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
 
-from typing_extensions import Protocol, final
+from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
@@ -578,14 +578,23 @@ class ImportOptionsHost(TargetPythonVersionHost, Protocol):
         """The modules ``--import-overrides`` routes imports through, by imported name."""
 
 
-class ModuleScopeView(Protocol):
-    """The internal modules of the run and the module name of each model."""
+class ModuleNamesView(Protocol):
+    """The internal modules of the run and the module name of each model, as naming a model in a module reads them."""
 
     @property
     def internal_modules(self) -> set[ModulePath]:
         """The internal modules that import cycles merged models into."""
 
     @property
+    def model_path_to_module_name(self) -> Mapping[str, str]:
+        """The module name of each model, by model path."""
+
+
+class ModuleScopeView(ModuleNamesView, Protocol):
+    """The internal modules of the run and the module name of each model."""
+
+    @property
+    @override
     def model_path_to_module_name(self) -> dict[str, str]:
         """The module name of each model, by model path."""
 
@@ -1105,9 +1114,14 @@ class _ReuseOptimizationContext:
 def _sort_models_by_class_body_references(
     models: list[DataModel],
     pydantic_v2_root_model_type: type[DataModel] | None,
-    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]],
+    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
 ) -> list[DataModel]:
-    """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
+    """Define first the models a class body evaluates: base classes, root types and runtime rule types.
+
+    The rule types are by default those the rules name in any module (``_runtime_validation_reference_keys``).
+    """
+    if runtime_validation_references is None:
+        runtime_validation_references = _runtime_validation_reference_keys(models, same_module=False)
     keyed = keyed_models(models, GraphSnapshot.CLASS_BODY_ORDER.value)
     order_index = {key: index for index, key in enumerate(keyed.models)}
     targets: dict[ModelKey, set[ModelKey]] = {}
@@ -1449,6 +1463,38 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     )
 
 
+def set_reference_expressions(  # noqa: PLR0913
+    host: ReferenceExpressionHost,
+    ctx: ModuleContextView,
+    naming: ModuleNamesView,
+    model: DataModel,
+    data_types: Iterable[DataType],
+    *,
+    members: KeyedModels | None,
+    producer: ImportProducer,
+) -> None:
+    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``ctx``.
+
+    A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``);
+    without ``members`` every one is. ``naming`` gives the module names of ``model`` and of the models named.
+    """
+    for data_type in data_types:
+        if (reference := data_type.reference) is None:
+            continue
+        set_reference_expression(
+            host,
+            data_type,
+            _get_model_module_name(model, naming.model_path_to_module_name),
+            _get_data_type_target_full_name(data_type, reference, naming.model_path_to_module_name),
+            ctx.imports,
+            ctx.scoped_model_resolver,
+            same_module=members is not None and members.key_of(reference) in members.models,
+            init=ctx.is_init,
+            internal_modules=naming.internal_modules,
+            producer=producer,
+        )
+
+
 def _declares_unique_items(field: DataModelFieldBase) -> bool:
     """Return whether a field declares ``uniqueItems: true``."""
     match field.constraints:
@@ -1587,6 +1633,13 @@ class BaseStandInHost(Protocol):
     @property
     def _base_stand_in_imports(self) -> dict[ModelKey, Import]:
         """The imports of the classes the stand-in models stand for, by model key."""
+
+
+def without_stand_ins(host: BaseStandInHost, models: list[DataModel]) -> list[DataModel]:
+    """Return ``models`` without the stand-ins, which are never written: a stand-in is no member of its module."""
+    if not (stand_ins := host._base_stand_in_imports):  # noqa: SLF001
+        return models
+    return [model for model in models if model_key_of(model.reference) not in stand_ins]
 
 
 class TypeOverrideHost(BaseStandInHost, Protocol):

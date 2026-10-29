@@ -220,20 +220,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     for model in unsorted_data_models:
         key = model_key_of(model.reference)
         reference_keys = get_reference_keys(model, key)
-        if not reference_keys:
-            sorted_data_models[key] = model
-            sorted_model_keys.add(key)
-        elif key in reference_keys and len(reference_keys) == 1:  # only self-referencing
-            sorted_data_models[key] = model
-            sorted_model_keys.add(key)
-            add_require_update_action_model(model, key)
-        elif not reference_keys - {key} - sorted_model_keys:  # reference classes have been resolved
-            sorted_data_models[key] = model
-            sorted_model_keys.add(key)
-            if key in reference_keys:
-                add_require_update_action_model(model, key)
-        else:
+        if reference_keys - {key} - sorted_model_keys:
             unresolved_references.append(model)
+            continue
+        sorted_data_models[key] = model
+        sorted_model_keys.add(key)
+        if key in reference_keys:
+            add_require_update_action_model(model, key)
 
     if unresolved_references:
         if sorted_model_count != len(sorted_data_models) and recursion_count:
@@ -259,30 +252,17 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             # Build lookup dict for O(1) index access instead of O(n) list.index()
             key_to_index = {model_key_of(m.reference): idx for idx, m in enumerate(unresolved_references)}
             for model in unresolved_references:
-                if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
-                    indexes = [
-                        key_to_index[reference_key]
-                        for f in model.fields
-                        for t in f.data_type.all_data_types
-                        if t.reference and (reference_key := universe.key_of(t.reference)) in key_to_index
-                    ]
-                else:
-                    indexes = [
-                        key_to_index[reference_key]
-                        for b in model.base_classes
-                        if b.reference and (reference_key := universe.key_of(b.reference)) in key_to_index
-                    ]
-
-                if indexes:
-                    ordered_models.append((
-                        max(indexes),
-                        model,
-                    ))
-                else:
-                    ordered_models.append((
-                        -1,
-                        model,
-                    ))
+                references = (
+                    (t.reference for f in model.fields for t in f.data_type.all_data_types)
+                    if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
+                    else (b.reference for b in model.base_classes)
+                )
+                indexes = [
+                    key_to_index[reference_key]
+                    for reference in references
+                    if reference and (reference_key := universe.key_of(reference)) in key_to_index
+                ]
+                ordered_models.append((max(indexes, default=-1), model))
 
             sorted_unresolved_models = [m[1] for m in sorted(ordered_models, key=operator.itemgetter(0))]
             if sorted_unresolved_models == unresolved_references:
@@ -313,17 +293,11 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             unresolved_model = reference_keys - {key} - sorted_model_keys
             base_model_keys = {universe.key_of(s.reference) for s in model.base_classes if s.reference}
             update_action_parent = require_update_action_model_keys.intersection(base_model_keys)
-            if not unresolved_model:
-                sorted_data_models[key] = model
-                sorted_model_keys.add(key)
-                if update_action_parent:
-                    add_require_update_action_model(model, key)
-                continue
-
             if not unresolved_model - unsorted_data_model_keys:
                 sorted_data_models[key] = model
                 sorted_model_keys.add(key)
-                add_require_update_action_model(model, key)
+                if unresolved_model or update_action_parent:
+                    add_require_update_action_model(model, key)
                 continue
 
             # unresolved
