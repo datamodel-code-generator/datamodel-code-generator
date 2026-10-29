@@ -300,12 +300,6 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
     ): AllowlistEntry("Preserve the public ParserConfig default field model"),
     BoundaryKey(
         "src/datamodel_code_generator/parser/base.py",
-        "_is_pydantic_v2_data_model_field",
-        "backend-module-identity",
-        "datamodel_code_generator.model.pydantic_v2.base_model#DataModelField",
-    ): AllowlistEntry("Keep the production-unused private compatibility helper without eager backend imports"),
-    BoundaryKey(
-        "src/datamodel_code_generator/parser/base.py",
         "__getattr__",
         "backend-import",
         "datamodel_code_generator.model.dataclass",

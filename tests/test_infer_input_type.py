@@ -320,22 +320,6 @@ def test_public_detection_helpers_keep_parser_module_surface() -> None:
     assert xmlschema.XML_SCHEMA_TAG == "{http://www.w3.org/2001/XMLSchema}schema"
 
 
-def test_private_detection_reexports_preserve_identity_and_metadata() -> None:
-    """Legacy lightweight detection modules stay import-compatible."""
-    from datamodel_code_generator import _avro_detection as shared_avro_detection
-    from datamodel_code_generator import _xmlschema_detection as shared_xmlschema_detection
-    from datamodel_code_generator.parser import _avro_detection as legacy_avro_detection
-    from datamodel_code_generator.parser import _xmlschema_detection as legacy_xmlschema_detection
-
-    assert legacy_avro_detection.is_avro_schema_data is shared_avro_detection.is_avro_schema_data
-    assert legacy_xmlschema_detection.is_xml_schema_text is shared_xmlschema_detection.is_xml_schema_text
-    assert legacy_avro_detection.is_avro_schema_data.__module__ == "datamodel_code_generator.parser._avro_detection"
-    assert (
-        legacy_xmlschema_detection.is_xml_schema_text.__module__
-        == "datamodel_code_generator.parser._xmlschema_detection"
-    )
-
-
 def test_probe_infer_input_type_reports_subprocess_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test subprocess probe failures surface as bounded assertion failures."""
 

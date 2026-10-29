@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -42,21 +42,6 @@ class PythonTypeExpressionCollector:
         return LoadedInputModelSchema(_resolve_python_type_expressions(schema, self._expressions))
 
 
-def is_python_type_token(value: object) -> bool:
-    """Return whether a value belongs to the private, deliberately invalid syntax."""
-    return isinstance(value, str) and value.startswith(_PYTHON_TYPE_TOKEN_PREFIX) and value.endswith(">")
-
-
-def externalize_python_type_token(value: Any, expressions: Mapping[str, PythonTypeExpr] | None) -> Any:
-    """Preserve the historical token externalizer for private callers."""
-    if expressions is None or not isinstance(value, str) or (expression := expressions.get(value)) is None:
-        return value
-
-    from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-
-    return render_python_type_expr(expression)
-
-
 def _resolve_python_type_expressions(
     schema: dict[str, object],
     expressions: Mapping[str, PythonTypeExpr],
@@ -82,6 +67,4 @@ def _resolve_python_type_expressions(
 __all__ = [
     "LoadedInputModelSchema",
     "PythonTypeExpressionCollector",
-    "externalize_python_type_token",
-    "is_python_type_token",
 ]

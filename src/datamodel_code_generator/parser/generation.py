@@ -61,7 +61,6 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._holders import ChildList, HolderEdge
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -155,12 +154,10 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "force_field_assignment",
     "mark_forward_references",
     "mark_target_null",
-    "move_model",
     "override_type_import",
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
-    "remove_field",
     "rename_field",
     "rename_model",
     "replace_model",
@@ -283,14 +280,6 @@ class GenerationFacts:
     shared_data_type_fact_ids: dict[int, list[DataTypeId]] = field(default_factory=dict)
     sites: dict[SiteKey, RefSite] = field(default_factory=dict)
 
-    @property
-    def sites_by_owner(self) -> dict[ModelKey, tuple[SiteKey, ...]]:
-        """The sites of each owner model, in the order a full rebuild's traversal reaches them."""
-        owners: dict[ModelKey, list[SiteKey]] = {}
-        for key in sorted(self.sites, key=self.order_key):
-            owners.setdefault(self.sites[key].owner, []).append(key)
-        return {owner: tuple(keys) for owner, keys in owners.items()}
-
     def parse_order(self, model_id: ModelId) -> int:
         """Return the position of a model in the model list."""
         return self.model_facts[model_id].parse_order
@@ -298,74 +287,6 @@ class GenerationFacts:
     def order_key(self, data_type_id: DataTypeId) -> tuple[int, DataTypeId]:
         """Return the position of an occurrence in a full rebuild's traversal order."""
         return self.parse_order(self.data_type_facts[data_type_id].owner_model), data_type_id
-
-    @property
-    def holders_by_node(self) -> dict[NodeKey, tuple[HolderEdge, ...]]:
-        """The holders of every recorded node, by node in the order a full rebuild's traversal first reaches them."""
-        holders = _HolderIndex(self)
-        node_keys = dict.fromkeys(NodeKey(id(fact.data_type)) for fact in self._facts_in_order())
-        return {node_key: holders.holders_of(node_key) for node_key in node_keys}
-
-    @property
-    def child_list_owners(self) -> dict[int, dict[NodeKey, list[tuple[int, DataTypeId]]]]:
-        """The ``order_key`` of every recorded occurrence of each node that holds a list, by the ``id`` of the list.
-
-        Lists and nodes come in the order a full rebuild's traversal first reaches them.
-        """
-        owners: dict[int, dict[NodeKey, list[tuple[int, DataTypeId]]]] = {}
-        for fact in self._facts_in_order():
-            owners.setdefault(id(fact.data_type.data_types), {}).setdefault(NodeKey(id(fact.data_type)), []).append(
-                self.order_key(fact.id)
-            )
-        return owners
-
-    @property
-    def child_lists(self) -> dict[int, ChildList]:
-        """The lists of ``child_list_owners`` that more than one node holds."""
-        return {
-            list_id: ChildList(list_id, tuple(owners))
-            for list_id, owners in self.child_list_owners.items()
-            if len(owners) > 1
-        }
-
-    def _facts_in_order(self) -> list[DataTypeFact]:
-        return sorted(self.data_type_facts.values(), key=lambda fact: self.order_key(fact.id))
-
-
-@final
-class _HolderIndex:
-    """The holders of the nodes that a facts snapshot records, read from the models the first time they are asked for.
-
-    The edges of a model are walked from the model as the store recorded it, so the index is read right after the
-    refresh that recorded the facts.
-    """
-
-    __slots__ = ("_facts", "_holder_by_id")
-
-    def __init__(self, facts: GenerationFacts) -> None:
-        """Read the holders of ``facts`` on demand."""
-        self._facts = facts
-        self._holder_by_id: dict[DataTypeId, HolderEdge] = {}
-
-    def holders_of(self, node_key: NodeKey) -> tuple[HolderEdge, ...]:
-        """Return the holder of every recorded occurrence of a node in ``order_key`` order.
-
-        An edge repeats when its holder is shared too.
-        """
-        facts = self._facts
-        if (data_type_ids := facts.shared_data_type_fact_ids.get(node_key)) is None:
-            return (self._holder(facts.data_type_fact_by_object[node_key].id),)
-        return tuple(self._holder(data_type_id) for data_type_id in sorted(data_type_ids, key=facts.order_key))
-
-    def _holder(self, data_type_id: DataTypeId) -> HolderEdge:
-        if (holder := self._holder_by_id.get(data_type_id)) is not None:
-            return holder
-        facts = self._facts
-        model_id = facts.data_type_facts[data_type_id].owner_model
-        self._holder_by_id.update(
-            zip(facts.data_types_by_model[model_id], _holder_edges(facts.model_facts[model_id]), strict=True)
-        )
-        return self._holder_by_id[data_type_id]
 
 
 @record
@@ -939,27 +860,6 @@ def _walk_tree(  # noqa: PLR0913, PLR0917
             )
 
 
-def _holder_edges(model_fact: ModelFact) -> list[HolderEdge]:
-    """Return the holder of every data type occurrence of a model, in the order the store records the occurrences."""
-    model = model_fact.model
-    edges: list[HolderEdge] = []
-    for field_ in model.fields:
-        _collect_holder_edges(field_.data_type, HolderEdge(FieldKey(id(field_)), "field", None), edges)
-    model_key = model_key_of(model_fact.reference)
-    for base_index, base_class in enumerate(model.base_classes):
-        _collect_holder_edges(base_class, HolderEdge(model_key, "base", base_index), edges)
-    return edges
-
-
-def _collect_holder_edges(data_type: DataType, holder: HolderEdge, edges: list[HolderEdge]) -> None:
-    edges.append(holder)
-    node_key = NodeKey(id(data_type))
-    for index, nested_data_type in enumerate(data_type.data_types):
-        _collect_holder_edges(nested_data_type, HolderEdge(node_key, "nested", index), edges)
-    if data_type.dict_key:
-        _collect_holder_edges(data_type.dict_key, HolderEdge(node_key, "dict_key", None), edges)
-
-
 def _data_type_fact(data_type_id: DataTypeId, model_id: ModelId, occurrence: DataTypeOccurrence) -> DataTypeFact:
     """Record one data type occurrence of a model."""
     data_type, owner_field_index, role = occurrence
@@ -1044,27 +944,6 @@ class GenerationIndex:
         self._recorded_references_cache.clear()
         self._recorded_references_cache_version = self._store.facts_version
 
-    def model_fact(self, model: DataModel) -> ModelFact | None:
-        """Return the current fact for ``model`` if it is tracked."""
-        view = self._view()
-        facts = view.facts
-        model_id = view.model_id(model)
-        if model_id is None:
-            return None
-        return facts.model_facts.get(model_id)
-
-    def model_id_for_reference(self, reference: Reference) -> ModelId | None:
-        """Return the tracked model id for ``reference`` if it points to a model."""
-        return self._view().facts.model_by_ref_id.get(self._store.model_key(reference))
-
-    def model_for_reference(self, reference: Reference) -> DataModel | None:
-        """Return the tracked model for ``reference`` if it points to a model."""
-        facts = self._view().facts
-        model_id = facts.model_by_ref_id.get(self._store.model_key(reference))
-        if model_id is None:
-            return None
-        return facts.model_facts[model_id].model
-
     def data_type_facts_for_reference(self, reference: Reference) -> tuple[DataTypeFact, ...]:
         """Return data type occurrences that currently point at ``reference``."""
         facts = self._view().facts
@@ -1100,37 +979,15 @@ class GenerationIndex:
             reference_classes = reference_classes.union(additional_properties_references)
         return reference_classes
 
-    def reference_classes_for_model_including_dict_keys(self, model: DataModel) -> frozenset[str]:
-        """Return every referenced path for fallback-only dependency analysis."""
-        view = self._view()
-        facts = view.facts
-        model_id = view.model_id(model)
-        if model_id is None:
-            reference_classes = frozenset(model.reference_classes).union(
-                data_type.reference.path
-                for field in model.fields
-                for data_type in field.data_type.all_data_types
-                if data_type.reference is not None
-            )
-        else:
-            reference_classes = frozenset(
-                reference.path
-                for data_type_id in facts.data_types_by_model.get(model_id, ())
-                if (reference := facts.data_type_facts[data_type_id].reference) is not None
-            )
-        if len(additional_properties_references := model.additional_properties_reference_classes):
-            return reference_classes.union(additional_properties_references)
-        return reference_classes
-
     def referenced_keys_for_model(
         self, model: DataModel, keyed: KeyedModels, *, all_dict_keys: bool = False
     ) -> frozenset[ModelKey]:
         """Return the keys of the models that ``model`` references, whose paths `reference_classes_for_model` returns.
 
-        With ``all_dict_keys``, dict keys count as `reference_classes_for_model_including_dict_keys` counts them. The
-        references of the model (those its recorded data types hold, or for a model the facts do not record, its bases
-        and the data types of its fields) resolve against ``keyed``, and so do the paths of its additional-properties
-        snapshot, which for an unrecorded model only `reference_classes_for_model_including_dict_keys` reads.
+        With ``all_dict_keys``, the dict keys of every data type count too. The references of the model (those its
+        recorded data types hold, or for a model the facts do not record, its bases and the data types of its fields)
+        resolve against ``keyed``, and so do the paths of its additional-properties snapshot, which for an unrecorded
+        model count only with ``all_dict_keys``.
         """
         view = self._view()
         if (model_id := view.model_id(model)) is None:
@@ -1201,26 +1058,6 @@ class GenerationIndex:
             and (owner.dict_key is data_type or any(member is data_type for member in owner.data_types))
         )
 
-    def root_model_wrappers_for_reference(
-        self,
-        reference: Reference,
-        root_model_type: type[DataModel],
-    ) -> list[DataModel]:
-        """Return root-model wrappers whose field graph points at ``reference``."""
-        facts = self._view().facts
-        wrappers: list[DataModel] = []
-        seen: set[int] = set()
-        data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
-        if not data_type_ids:
-            return wrappers
-        for data_type_id in data_type_ids:
-            fact = facts.data_type_facts[data_type_id]
-            owner = facts.model_facts[fact.owner_model].model
-            if isinstance(owner, root_model_type) and id(owner) not in seen:
-                seen.add(id(owner))
-                wrappers.append(owner)
-        return wrappers
-
     def root_collapse_reference_usage(
         self,
         reference: Reference,
@@ -1248,29 +1085,6 @@ class GenerationIndex:
             if fact.role != "base" and owner is not excluded_model:
                 direct_refs.append(fact)
         return wrappers, direct_refs
-
-    def direct_non_root_refs_for_reference(
-        self,
-        reference: Reference,
-        *,
-        excluded_model: DataModel,
-        root_model_type: type[DataModel],
-    ) -> list[DataTypeFact]:
-        """Return non-wrapper field references to ``reference`` outside ``excluded_model``."""
-        facts = self._view().facts
-        direct_refs: list[DataTypeFact] = []
-        data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
-        if not data_type_ids:
-            return direct_refs
-        for data_type_id in data_type_ids:
-            fact = facts.data_type_facts[data_type_id]
-            if fact.role == "base":
-                continue
-            owner = facts.model_facts[fact.owner_model].model
-            if owner is excluded_model or isinstance(owner, root_model_type):
-                continue
-            direct_refs.append(fact)
-        return direct_refs
 
 
 @dataclass(slots=True)
@@ -1368,11 +1182,6 @@ class GenerationStore:  # noqa: PLR0904
         self._inlined_owners.clear()
         self._memo = ParseMemo()
         self._dirty = True
-
-    @property
-    def facts(self) -> GenerationFacts:
-        """Return the current facts snapshot."""
-        return self.current_facts()
 
     @property
     def facts_version(self) -> int:
@@ -1523,48 +1332,6 @@ class GenerationStore:  # noqa: PLR0904
             return False
         return self._root_collapse_apply_reference_deltas(deltas)
 
-    @property
-    def model_facts(self) -> dict[ModelId, ModelFact]:
-        """Compatibility access to model facts."""
-        self.refresh()
-        return self._facts.model_facts
-
-    @property
-    def data_type_facts(self) -> dict[DataTypeId, DataTypeFact]:
-        """Compatibility access to data type facts."""
-        self.refresh()
-        return self._facts.data_type_facts
-
-    @property
-    def data_type_fact_by_object(self) -> dict[int, DataTypeFact]:
-        """Compatibility access to data type facts by object id."""
-        self.refresh()
-        return self._facts.data_type_fact_by_object
-
-    @property
-    def model_by_path(self) -> dict[str, ModelId]:
-        """Compatibility access to model ids by path."""
-        self.refresh()
-        return self._facts.model_by_path
-
-    @property
-    def model_by_ref_id(self) -> dict[ModelKey, ModelId]:
-        """Compatibility access to model ids by the model key of their reference."""
-        self.refresh()
-        return self._facts.model_by_ref_id
-
-    @property
-    def data_types_by_model(self) -> dict[ModelId, tuple[DataTypeId, ...]]:
-        """Compatibility access to data type ids by owner model."""
-        self.refresh()
-        return self._facts.data_types_by_model
-
-    @property
-    def sites_by_target(self) -> defaultdict[ModelKey, OrderedSet[SiteKey]]:
-        """The reference sites of the type trees, by the model key of their target."""
-        self.refresh()
-        return self._facts.sites_by_target
-
     def builder(self) -> GraphBuilder:
         """Return the capability to change the graph of this store, through which every mutation goes."""
         return self._builder
@@ -1607,18 +1374,9 @@ class GenerationStore:  # noqa: PLR0904
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
 
-    def emitted_models(self) -> list[DataModel]:
-        """Return the models of the emitted universe: the parsed and built ones that are not retired, in that order."""
-        retired = self._retired_models
-        return [model for model in chain(self.models, self._built_models) if id(model) not in retired]
-
     def _universe_facts(self) -> _UniverseFacts:
         """Return the current facts of the parsed models with the ids they record each model under."""
         return _UniverseFacts(self.current_facts(), self._model_ids_by_object)
-
-    def model_id(self, model: DataModel) -> ModelId | None:
-        """Return the stable store id for ``model`` if it is tracked."""
-        return self._model_ids_by_object.get(id(model))
 
     def model_key(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
         """Return the model key that the facts record ``reference`` and its users under."""
@@ -1945,11 +1703,6 @@ class GenerationStore:  # noqa: PLR0904
         )
         if clear_duplicate_name:
             model.reference.duplicate_name = None
-
-    @deprecated("Use GenerationStore.builder().move_model() instead.", category=None)
-    def move_model(self, model: DataModel, *, new_path: str, new_file_path: Path | None = None) -> None:
-        """Update a model's reference path and optional output file path."""
-        self._builder.update_model_reference(model, new_path=new_path, new_file_path=new_file_path)
 
     @deprecated("Use GenerationStore.builder().replace_field_type() instead.", category=None)
     def replace_field_type(
@@ -2298,9 +2051,9 @@ class GenerationStore:  # noqa: PLR0904
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``.
 
-        The copy holds the same ``data_types`` list (a `ChildList`) and dict key as ``root_type`` and every other copy
-        of it, so each child has a holder edge from each of them (`GenerationIndex.inlined_holders_of`). The sites of
-        the copy are collapsed from the root model ``site`` names.
+        The copy holds the same ``data_types`` list and dict key as ``root_type`` and every other copy of it, so each
+        child has a holder edge from each of them (`GenerationIndex.inlined_holders_of`). The sites of the copy are
+        collapsed from the root model ``site`` names.
         """
         copied = root_type.model_copy()
         if (owners := self._inlined_owners.get(NodeKey(id(root_type)))) is None:
@@ -2342,15 +2095,6 @@ class GenerationStore:  # noqa: PLR0904
             model.fields.append(field_)
         else:
             model.fields.insert(index, field_)
-        self._model_changed(model)
-
-    @deprecated("Use GenerationStore.builder().remove_field() instead.", category=None)
-    def remove_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
-        """Remove a field from ``model`` and invalidate derived facts."""
-        model.fields.remove(field_)
-        if field_.parent is model:
-            field_.parent = None
-            field_.invalidate_semantic_caches(invalidate_parent=False)
         self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().set_fields() instead.", category=None)
@@ -2720,10 +2464,6 @@ class GraphBuilder:
         """Mark the None of a new reference type as the one the schema it references admits."""
         self._store.mark_target_null(data_type)  # ty: ignore[deprecated]
 
-    def move_model(self, model: DataModel, *, new_path: str, new_file_path: Path | None = None) -> None:
-        """Update a model's reference path and optional output file path."""
-        self._store.move_model(model, new_path=new_path, new_file_path=new_file_path)  # ty: ignore[deprecated]
-
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store."""
         self._store.note_changed_models(*models)  # ty: ignore[deprecated]
@@ -2770,10 +2510,6 @@ class GraphBuilder:
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes."""
         self._store.register_model(model)  # ty: ignore[deprecated]
-
-    def remove_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
-        """Remove a field from ``model`` and invalidate derived facts."""
-        self._store.remove_field(model, field_)  # ty: ignore[deprecated]
 
     def rename_field(self, field_: DataModelFieldBase, name: str, *, alias: str | None = None) -> None:
         """Rename a field through ``GenerationStore.rename_field``."""

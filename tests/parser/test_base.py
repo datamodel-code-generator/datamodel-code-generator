@@ -25,13 +25,11 @@ if TYPE_CHECKING:
 from datamodel_code_generator.model.dataclass import DataClass as DataclassModel
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
-from datamodel_code_generator.model.msgspec import Struct as MsgspecStruct
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField
 from datamodel_code_generator.model.pydantic_v2.base_model import Constraints
 from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass as PydanticDataclassModel
 from datamodel_code_generator.model.pydantic_v2.dataclass import DataModelField as PydanticDataclassField
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
-from datamodel_code_generator.model.pydantic_v2.root_model_type_alias import RootModelTypeAlias
 from datamodel_code_generator.model.runtime_validation import (
     PropertyCountRule,
     RequiredGroupsRule,
@@ -56,18 +54,11 @@ from datamodel_code_generator.parser.base import (
     ModuleContext,
     Parser,
     T,
-    _apply_constructor_field_adjustments,
-    _contains_model_reference,
     _copy_data_model_field,
     _copy_data_type,
     _copy_resolved_inherited_field,
-    _find_field,
     _get_inherited_type_modifiers,
-    _get_pydantic_v2_root_model_type,
-    _is_pydantic_v2_data_model_field,
     _merge_data_type_modifiers,
-    _needs_validate_default,
-    _unwrap_type_alias,
     add_model_path_to_list,
     alias_shadowed_imports,
     escape_characters,
@@ -93,12 +84,6 @@ class A(DataModel):
 
 class B(DataModel):
     """Test data model class B."""
-
-
-class FieldDependencyModel(DataModel):
-    """Test model whose field references require definition ordering."""
-
-    REQUIRES_FIELD_DEPENDENCY_ORDERING = True
 
 
 class C(Parser):
@@ -163,32 +148,6 @@ def test_parser_iterates_mapping_source_without_serializing_it() -> None:
     )
 
     assert next(parser.iter_source).raw_data is raw_source
-
-
-@pytest.mark.parametrize(
-    ("model_type", "expected"),
-    [
-        pytest.param(B, None, id="default-model"),
-        pytest.param(RootModel, RootModel, id="root-model"),
-        pytest.param(RootModelTypeAlias, RootModelTypeAlias, id="root-model-type-alias"),
-        pytest.param(FieldDependencyModel, FieldDependencyModel, id="custom-capability"),
-    ],
-)
-def test_field_dependency_ordering_capability(
-    model_type: type[DataModel],
-    expected: type[DataModel] | None,
-) -> None:
-    """Resolve field dependency ordering without importing a concrete backend in the parser."""
-    assert _get_pydantic_v2_root_model_type(model_type) is expected
-
-
-def test_field_dependency_ordering_capability_is_inherited() -> None:
-    """External RootModel subclasses preserve the existing MRO-based behavior."""
-
-    class ExternalRootModel(RootModel):
-        pass
-
-    assert _get_pydantic_v2_root_model_type(ExternalRootModel) is ExternalRootModel
 
 
 @pytest.mark.parametrize(
@@ -557,15 +516,6 @@ def _reference(path: str) -> Reference:
     return Reference(path=path, original_name=path, name=path)
 
 
-def test_pydantic_v2_data_model_field_compatibility_helper() -> None:
-    """Keep the public compatibility helper working with real field objects."""
-    pydantic_field = DataModelField(name="value", data_type=DataType(type="str"))
-    generic_field = DataModelFieldBase(name="value", data_type=DataType(type="str"))
-
-    assert _is_pydantic_v2_data_model_field(pydantic_field)
-    assert not _is_pydantic_v2_data_model_field(generic_field)
-
-
 @pytest.mark.parametrize(
     ("alias", "expected"),
     [
@@ -653,19 +603,6 @@ def test_dataclass_required_override_of_inherited_default_uses_exact_assignment(
     assert str(required_override) == expected_assignment
     assert unchanged_override.extras == {}
     assert new_required.extras == expected_new_extras
-
-
-def test_constructor_adjustment_promotes_msgspec_keyword_only_to_model() -> None:
-    """Backends that require model-level keyword-only state receive one adjustment."""
-    field = MsgspecField(name="value", data_type=DataType(type="str"), required=True)
-    model = MsgspecStruct(
-        fields=[field],
-        reference=_reference("Struct"),
-    )
-
-    _apply_constructor_field_adjustments(GenerationStore().builder(), model, (field, "keyword_only"), ())
-
-    assert model.has_keyword_only_definition()
 
 
 def test_apply_type_overrides_fast_path_preserves_models(parser_fixture: C) -> None:
@@ -806,140 +743,6 @@ def _create_override_required_models(
 
 def _override_required_fields(parser: C, models: list[BaseModel]) -> None:
     override_required_field(parser, models)
-
-
-def test_find_field_skips_non_matching_fields() -> None:
-    """Field lookup checks later fields after a non-matching field."""
-    first_field = DataModelField(
-        name="first",
-        original_name="first",
-        data_type=DataType(type="str"),
-    )
-    second_field = DataModelField(
-        name="second",
-        original_name="second",
-        data_type=DataType(type="int"),
-    )
-    model = BaseModel(fields=[first_field, second_field], reference=_reference("SearchModel"))
-
-    assert _find_field("second", [model]) is second_field
-
-
-def test_find_field_prefers_effective_override_and_original_name() -> None:
-    """Field lookup honors parent overrides and exact source names across direct bases."""
-    grandparent_reference = _reference("Grandparent")
-    grandparent_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="str"),
-    )
-    BaseModel(fields=[grandparent_field], reference=grandparent_reference)
-    parent_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="int"),
-    )
-    parent = BaseModel(
-        fields=[parent_field],
-        base_classes=[grandparent_reference],
-        reference=_reference("Parent"),
-    )
-    generated_name_collision = DataModelField(
-        name="target",
-        original_name="other",
-        data_type=DataType(type="bool"),
-    )
-    collision_base = BaseModel(
-        fields=[generated_name_collision],
-        reference=_reference("CollisionBase"),
-    )
-    exact_original_name = DataModelField(
-        name="target_field",
-        original_name="target",
-        data_type=DataType(type="float"),
-    )
-    exact_base = BaseModel(
-        fields=[exact_original_name],
-        reference=_reference("ExactBase"),
-    )
-
-    assert _find_field("value", [parent]) is parent_field
-    assert _find_field("target", [collision_base, exact_base]) is exact_original_name
-
-
-def test_find_field_follows_multiple_inheritance_mro() -> None:
-    """The first declared base wins when a nested model inherits duplicate fields."""
-    first_reference = _reference("FirstBase")
-    first_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="str"),
-    )
-    BaseModel(fields=[first_field], reference=first_reference)
-    second_reference = _reference("SecondBase")
-    second_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="int"),
-    )
-    BaseModel(fields=[second_field], reference=second_reference)
-    combined = BaseModel(
-        fields=[],
-        base_classes=[first_reference, second_reference],
-        reference=_reference("Combined"),
-    )
-
-    assert _find_field("value", [combined]) is first_field
-
-
-def test_find_field_follows_c3_diamond_mro() -> None:
-    """A later direct base takes precedence over an earlier base's shared ancestor."""
-    root_reference = _reference("RootBase")
-    root_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="str"),
-    )
-    BaseModel(fields=[root_field], reference=root_reference)
-    first_reference = _reference("FirstBranch")
-    BaseModel(fields=[], base_classes=[root_reference], reference=first_reference)
-    second_reference = _reference("SecondBranch")
-    second_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="int"),
-    )
-    BaseModel(fields=[second_field], base_classes=[root_reference], reference=second_reference)
-    diamond = BaseModel(
-        fields=[],
-        base_classes=[first_reference, second_reference],
-        reference=_reference("Diamond"),
-    )
-
-    assert _find_field("value", [diamond]) is second_field
-
-
-def test_find_field_handles_cyclic_generated_bases() -> None:
-    """Malformed cyclic inheritance terminates and keeps the nearest declaration."""
-    first_reference = _reference("FirstCycle")
-    second_reference = _reference("SecondCycle")
-    first_field = DataModelField(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="str"),
-    )
-    first = BaseModel(
-        fields=[first_field],
-        base_classes=[second_reference],
-        reference=first_reference,
-    )
-    second = BaseModel(
-        fields=[],
-        base_classes=[first_reference],
-        reference=second_reference,
-    )
-
-    assert _find_field("value", [first, second]) is first_field
 
 
 def test_override_required_field_copies_reference_type(parser_fixture: C) -> None:
@@ -2052,74 +1855,6 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
     rendered_module_code = BaseModel.render_module_code(models)
     assert "class _JsonSchemaRuntimeValidationBaseCore(BaseModel):" in rendered_module_code
     assert "class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):" in rendered_module_code
-
-
-def test_unwrap_type_alias_stops_on_recursive_alias() -> None:
-    """Test _unwrap_type_alias stops when a type alias resolves back to itself."""
-    alias_reference = Reference(path="Alias", original_name="Alias", name="Alias")
-    alias_data_type = DataType(reference=alias_reference)
-    alias_model = TypeStatement(fields=[DataModelField(data_type=alias_data_type)], reference=alias_reference)
-
-    assert alias_reference.source is alias_model
-    assert _unwrap_type_alias(alias_data_type) is alias_data_type
-
-
-def test_contains_model_reference_traverses_nested_data_types() -> None:
-    """Test _contains_model_reference walks nested container data types."""
-    model_reference = Reference(path="Item", original_name="Item", name="Item")
-    BaseModel(fields=[], reference=model_reference)
-
-    list_of_models = DataType(
-        is_list=True,
-        data_types=[DataType(reference=model_reference)],
-        use_union_operator=True,
-    )
-
-    assert _contains_model_reference(list_of_models) is True
-
-
-def test_contains_model_reference_traverses_dict_key() -> None:
-    """Test _contains_model_reference walks dict_key data types."""
-    model_reference = Reference(path="KeyModel", original_name="KeyModel", name="KeyModel")
-    BaseModel(fields=[], reference=model_reference)
-
-    dict_with_model_key = DataType(
-        is_dict=True,
-        dict_key=DataType(reference=model_reference),
-        use_union_operator=True,
-    )
-
-    assert _contains_model_reference(dict_with_model_key) is True
-
-
-def test_needs_validate_default_for_union_type_alias() -> None:
-    """Test _needs_validate_default resolves type aliases before checking union branches."""
-    a_reference = Reference(path="A", original_name="A", name="A")
-    b_reference = Reference(path="B", original_name="B", name="B")
-    BaseModel(fields=[], reference=a_reference)
-    BaseModel(fields=[], reference=b_reference)
-
-    union_data_type = DataType(
-        data_types=[DataType(reference=a_reference), DataType(reference=b_reference)],
-        use_union_operator=True,
-    )
-    alias_reference = Reference(path="Alias", original_name="Alias", name="Alias")
-    TypeStatement(fields=[DataModelField(data_type=union_data_type)], reference=alias_reference)
-
-    assert _needs_validate_default(DataType(reference=alias_reference)) is True
-
-
-def test_needs_validate_default_for_optional_single_model_union() -> None:
-    """Test _needs_validate_default returns True for A | None union."""
-    model_reference = Reference(path="A", original_name="A", name="A")
-    BaseModel(fields=[], reference=model_reference)
-
-    optional_model_union = DataType(
-        data_types=[DataType(reference=model_reference), DataType(type="None")],
-        use_union_operator=True,
-    )
-
-    assert _needs_validate_default(optional_model_union) is True
 
 
 def test_get_enum_discriminator_literal_with_escaped_value() -> None:

@@ -9,8 +9,6 @@ from typing import TypeVar
 
 TNode = TypeVar("TNode", bound=Hashable)
 
-_LEGACY_MODULE = "datamodel_code_generator.parser._graph"
-
 
 def stable_toposort(
     nodes: list[TNode],
@@ -68,7 +66,5 @@ def stable_toposort(
         )
     return result
 
-
-stable_toposort.__module__ = _LEGACY_MODULE
 
 __all__ = ["stable_toposort"]

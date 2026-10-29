@@ -231,9 +231,6 @@ from datamodel_code_generator.parser.base import (
     Parser,
     Source,
     _ConstNarrowing,
-    _copy_data_model_field,  # noqa: F401  # Preserve the existing parser helper export.
-    _copy_data_type,  # noqa: F401  # Preserve the existing parser helper export.
-    _copy_resolved_inherited_field,  # noqa: F401  # Preserve the existing parser helper export.
     _get_inherited_type_modifiers,
     get_special_path,
     title_to_class_name,
@@ -3284,9 +3281,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @classmethod
     def _get_contains_count_constraints(cls, obj: JsonSchemaObject) -> tuple[int | None, int | None]:
-        if not cls._contains_matches_every_item(obj):
-            return None, None
-
         min_contains = obj.extras.get("minContains")
         max_contains = obj.extras.get("maxContains")
         min_items = (
@@ -10171,15 +10165,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else:
                 yield candidate
 
-    def _iter_union_unique_items_paths(
-        self,
-        items: Sequence[JsonSchemaObject | bool],
-        path: UniqueItemsPath,
-        visited_refs: frozenset[_TargetNode],
-    ) -> Iterator[UniqueItemsPath]:
-        """Yield raw uniqueItems paths for parser inspection callers."""
-        yield from (rule.path for rule in self._iter_union_unique_items_rules(items, path, visited_refs))
-
     def _get_common_executable_unique_items_paths(
         self,
         data_types: Sequence[DataType],
@@ -10401,16 +10386,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 visited_refs,
                 include_properties=include_properties,
             )
-
-    def _iter_unique_items_paths(
-        self,
-        obj: JsonSchemaObject,
-        path: UniqueItemsPath,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-        property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsPath]:
-        """Yield raw uniqueItems paths for parser inspection callers."""
-        yield from (rule.path for rule in self._iter_unique_items_rules(obj, path, visited_refs, property_input_names))
 
     def _add_unique_items_validator(
         self,

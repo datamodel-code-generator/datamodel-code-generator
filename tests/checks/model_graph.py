@@ -181,7 +181,8 @@ def check_emitted_models(store: Any, written: Iterable[Any]) -> None:
     from datamodel_code_generator._url_redaction import redact_reference
 
     written_models = {id(model): model for model in written}
-    emitted = {id(model): model for model in store.emitted_models()}
+    retired = store._retired_models
+    emitted = {id(model): model for model in chain(store.models, store._built_models) if id(model) not in retired}
     for models, others, problem in (
         (written_models, emitted, "is written but is not an emitted model: it was never registered or was retired"),
         (emitted, written_models, "is an emitted model but is not written: it left the output without being retired"),
@@ -372,11 +373,8 @@ def _check_parents_are_holders(graph_mode: Mode, store: Any, model_ids: Iterable
 
     A mismatch that `KNOWN_PARENT_MISMATCHES` lists is left alone.
     """
-    from datamodel_code_generator._model_keys import NodeKey
-    from datamodel_code_generator.parser.generation import _HolderIndex
-
     facts = store._facts
-    holders = _HolderIndex(facts)
+    holders: dict[int, dict[int, set[int]]] = {}
     checked: set[int] = set()
     for model_id in model_ids:
         model_fact = facts.model_facts[model_id]
@@ -386,7 +384,7 @@ def _check_parents_are_holders(graph_mode: Mode, store: Any, model_ids: Iterable
                 continue
             checked.add(node_key)
             parent = fact.data_type.parent
-            if _parent_is_holder(parent, holders.holders_of(NodeKey(node_key))):
+            if parent is None or id(parent) in _holders_of(facts, node_key, holders):
                 continue
             if (mismatch := _parent_mismatch(store, parent)) in KNOWN_PARENT_MISMATCHES:
                 continue
@@ -411,15 +409,26 @@ def _parent_mismatch(store: Any, parent: object) -> ParentMismatch:
     return "dropped field"
 
 
-def _parent_is_holder(parent: object, edges: Iterable[Any]) -> bool:
-    """Return whether ``parent`` is unset or one of the field and node holders that ``edges`` name.
+def _holders_of(facts: Any, node_key: int, holders: dict[int, dict[int, set[int]]]) -> set[int]:
+    """Return the ids of the fields and nodes that hold a recorded occurrence of the node ``node_key``.
 
-    Only nodes with a reference or nested types get a ``parent`` when they are built, and a model is never one.
+    A model holds its base classes but is never a ``parent``, so it is left out. The holders of each model that records
+    an occurrence are read from the model once, in ``holders``, right after the refresh that recorded it.
     """
-    if parent is None:
-        return True
-    parent_key = id(parent)
-    return any(edge.holder == parent_key and edge.role != "base" for edge in edges)
+    data_type_ids = facts.shared_data_type_fact_ids.get(node_key) or (facts.data_type_fact_by_object[node_key].id,)
+    found: set[int] = set()
+    for model_id in {facts.data_type_facts[data_type_id].owner_model for data_type_id in data_type_ids}:
+        if (by_node := holders.get(model_id)) is None:
+            by_node = holders[model_id] = {}
+            model = facts.model_facts[model_id].model
+            stack = [(field_.data_type, field_) for field_ in model.fields]
+            stack.extend((child, base) for base in model.base_classes for child in _children(base))
+            while stack:
+                node, holder = stack.pop()
+                by_node.setdefault(id(node), set()).add(id(holder))
+                stack.extend((child, node) for child in _children(node))
+        found |= by_node.get(node_key, set())
+    return found
 
 
 def _node_in_cycle(roots: Iterable[Any], finished: set[int]) -> Any:

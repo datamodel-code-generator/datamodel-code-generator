@@ -8,7 +8,5 @@ canonical action filters forward references: True
 canonical action is formatter safe: True
 custom action filters forward references: False
 custom action is formatter safe: False
-legacy canonical action detection: True
-legacy custom action detection: False
 custom action output: ''
 backport-only imports: from typing_extensions import TypedDict

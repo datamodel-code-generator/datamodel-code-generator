@@ -252,7 +252,7 @@ adapters = ["parser/_passes/structure.py:delete_duplicate_models"]
 
 [homes.H21]
 decision = "model identity, holders and shared nodes of the generation graph"
-core = ["parser/_graph_ids.py", "parser/_holders.py", "parser/generation.py"]
+core = ["parser/_graph_ids.py", "parser/generation.py"]
 adapters = []
 
 [homes.H23]

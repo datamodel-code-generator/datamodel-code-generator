@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass
-from functools import cache, partial
+from functools import partial
 from itertools import chain, pairwise
 from pathlib import Path
 from typing import (
@@ -109,7 +109,6 @@ from datamodel_code_generator.model.base import (
     _set_nested_model_default_factory_order,
     c3_merge,
     forget_model_memos,
-    get_inherited_fields,
     get_resolve_reference_action_capabilities,
 )
 from datamodel_code_generator.model.enum import (
@@ -117,7 +116,6 @@ from datamodel_code_generator.model.enum import (
 )
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
-    _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
     prepare_output_model_config,
 )
 from datamodel_code_generator.parser._graph_ids import (
@@ -174,7 +172,6 @@ from datamodel_code_generator.parser._passes._shared import (
     register_runtime_expression,
     relative,
 )
-from datamodel_code_generator.parser._passes._shared import _unwrap_type_alias as _moved_unwrap_type_alias
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
     ModuleModels,
@@ -193,13 +190,6 @@ from datamodel_code_generator.parser._passes._state import (
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
 from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS, builtin_name_bindings
-from datamodel_code_generator.parser._passes.render_prep import (
-    _apply_constructor_field_adjustments as _moved_apply_constructor_field_adjustments,
-)
-from datamodel_code_generator.parser._passes.render_prep import (
-    _contains_model_reference as _moved_contains_model_reference,
-)
-from datamodel_code_generator.parser._passes.render_prep import _needs_validate_default as _moved_needs_validate_default
 from datamodel_code_generator.parser._pipeline import (
     Runner,
     anchor_parse_caller,
@@ -260,10 +250,6 @@ SPECIAL_PATH_FORMAT: str = _shared.SPECIAL_PATH_FORMAT
 get_special_path = _shared.get_special_path
 PydanticFloors = _state.PydanticFloors
 pydantic_floors_recorded = _state.pydantic_floors_recorded
-_apply_constructor_field_adjustments = _moved_apply_constructor_field_adjustments
-_contains_model_reference = _moved_contains_model_reference
-_needs_validate_default = _moved_needs_validate_default
-_unwrap_type_alias = _moved_unwrap_type_alias
 
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 
@@ -281,19 +267,6 @@ _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
 _DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
 
 
-@cache
-def _type_mro_contains_type(model_type: type[object], *, module: str, name: str) -> bool:
-    return any(base.__module__ == module and base.__name__ == name for base in model_type.__mro__)
-
-
-def _model_type(value: object | type[object]) -> type[object]:
-    return value if isinstance(value, type) else value.__class__
-
-
-def _is_pydantic_v2_data_model_field(value: object) -> bool:
-    return _type_mro_contains_type(_model_type(value), module=_PYDANTIC_V2_BASE_MODEL_MODULE, name="DataModelField")
-
-
 def _get_model_field_constructor(
     field_type: type[DataModelFieldBase],
 ) -> Callable[..., DataModelFieldBase]:
@@ -303,28 +276,9 @@ def _get_model_field_constructor(
     return field_type
 
 
-def _get_builtin_pydantic_v2_field_constructor(
-    field_type: type[DataModelFieldBase],
-) -> Callable[..., DataModelFieldBase] | None:
-    """Return a declared exact-class constructor through the legacy helper."""
-    constructor = _get_model_field_constructor(field_type)
-    return None if constructor is field_type else constructor
-
-
 def _get_field_dependency_ordering_model_type(model_type: type[DataModel]) -> type[DataModel] | None:
     """Return the configured model type when its fields require dependency ordering."""
     return model_type if model_type.REQUIRES_FIELD_DEPENDENCY_ORDERING else None
-
-
-def _get_pydantic_v2_root_model_type(model_type: type[DataModel]) -> type[DataModel] | None:
-    """Return the field-ordering model type through the legacy compatibility helper."""
-    return _get_field_dependency_ordering_model_type(model_type)
-
-
-def _is_pydantic_v2_dump_resolve_reference_action(value: object) -> bool:
-    """Query the output-owned action capability through the legacy helper."""
-    capabilities = get_resolve_reference_action_capabilities(value)
-    return capabilities.filter_forward_references and capabilities.generated_formatter_safe
 
 
 def __getattr__(name: str) -> Any:
@@ -469,11 +423,6 @@ def title_to_class_name(title: str) -> str:
     """Convert a schema title to a valid Python class name."""
     classname = _CLASS_NAME_SEPARATOR_PATTERN.sub(" ", title)
     return "".join(x for x in classname.title() if not x.isspace())
-
-
-def _find_field(field_name: str, models: list[DataModel]) -> DataModelFieldBase | None:
-    """Find a field using generated models' C3 inheritance order."""
-    return get_inherited_fields(models).get(field_name)
 
 
 def _copy_data_model_field(
@@ -930,45 +879,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
 
-    def _configure_legacy_run_context_attribute(self, attribute: str, value: object) -> None:
-        """Keep historical private state writes as a parser-local compatibility facade."""
-        context = self.run_context
-        diagnostic_source_path = context.diagnostic_source_path
-        formatter_cwd = context.formatter_cwd
-        preserve_circular_root_models = context.preserve_circular_root_models
-        match attribute:
-            case "diagnostic_source_path":
-                diagnostic_source_path = cast("Path | None", value)
-            case "formatter_cwd":
-                formatter_cwd = cast("Path | None", value)
-            case _:
-                preserve_circular_root_models = cast("bool", value)
-        self.configure_run_context(
-            diagnostic_source_path=diagnostic_source_path,
-            formatter_cwd=formatter_cwd,
-            preserve_circular_root_models=preserve_circular_root_models,
-            suppress_parse_warnings=context.suppress_parse_warnings,
-            prefetched_source=context.prefetched_source,
-            untyped_nullable_maps=context.untyped_nullable_maps,
-            yielding_names=context.yielding_names,
-        )
-
-    @property
-    def _diagnostic_source_path(self) -> Path | None:
-        return self.run_context.diagnostic_source_path
-
-    @_diagnostic_source_path.setter
-    def _diagnostic_source_path(self, value: Path | None) -> None:
-        self._configure_legacy_run_context_attribute("diagnostic_source_path", value)
-
-    @property
-    def _formatter_cwd(self) -> Path | None:
-        return self.run_context.formatter_cwd
-
-    @_formatter_cwd.setter
-    def _formatter_cwd(self, value: Path | None) -> None:
-        self._configure_legacy_run_context_attribute("formatter_cwd", value)
-
     @property
     def _field_option_kwargs(self) -> dict[str, Any]:
         """The configured field options that the field builders pass to the fields they build from a schema."""
@@ -979,14 +889,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             "use_field_description_example": self.use_field_description_example,
             "use_inline_field_description": self.use_inline_field_description,
         }
-
-    @property
-    def _preserve_circular_root_models(self) -> bool:
-        return self.run_context.preserve_circular_root_models
-
-    @_preserve_circular_root_models.setter
-    def _preserve_circular_root_models(self, value: bool) -> None:
-        self._configure_legacy_run_context_attribute("preserve_circular_root_models", value)
 
     @classmethod
     def _get_config_class(cls) -> type[ParserConfig]:

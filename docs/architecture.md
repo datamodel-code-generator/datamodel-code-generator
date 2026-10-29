@@ -98,7 +98,7 @@ raw data, and MCP tools convert to a JSON Schema-shaped document before using th
 GraphQL is the main parser that builds models directly from its own schema API.
 
 Ordering and module splitting use small graph helpers. `_scc.py` finds strongly connected components with an
-iterative Tarjan traversal so large graphs do not hit Python recursion limits. `parser/_graph.py` provides stable
+iterative Tarjan traversal so large graphs do not hit Python recursion limits. `_graph.py` provides stable
 topological ordering. Together they keep `sort_data_models()` deterministic and let `_build_module_structure()` move
 circular module SCCs into `_internal.py` forwarder modules when imports would otherwise cycle. The passes that read
 cycles or an order among models (module dependencies, class body order, circular root models, keep model order, alias

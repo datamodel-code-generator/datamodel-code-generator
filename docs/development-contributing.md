@@ -256,9 +256,8 @@ methods on `GenerationStore` are deprecated:
 - Replace field or nested data types with `replace_field_type(...)`,
   `replace_nested_data_type(...)`, or `set_nested_data_types(...)`.
 - Replace fields or base classes with `set_fields(...)`,
-  `append_field(...)`, `insert_field(...)`, `remove_field(...)`, or
-  `set_base_classes(...)`.
-- Rename generated models with `rename_model(...)`; move them with `move_model(...)` or
+  `append_field(...)`, `insert_field(...)`, or `set_base_classes(...)`.
+- Rename generated models with `rename_model(...)`; move them with
   `update_model_reference(...)`.
 - Report models whose fields, base classes, or data types changed without the
   store, for example through a model method, with `note_changed_models(...)`.
