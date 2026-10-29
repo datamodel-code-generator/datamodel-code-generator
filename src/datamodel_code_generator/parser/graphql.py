@@ -27,6 +27,7 @@ from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import SUBCLASS_BASE_CLASSES, EnumMemberValue, _enum_class
+from datamodel_code_generator.parser._null_facts import NullMode, NullSources, resolve_null_facts
 from datamodel_code_generator.parser.base import (
     DataType,
     Parser,
@@ -125,6 +126,11 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
     _config_class_name: ClassVar[str] = "GraphQLParserConfig"
     _collapses_list_item_root_models: ClassVar[bool] = False
+
+    @cached_property
+    def _null_mode(self) -> NullMode:
+        """The options that change how a field reads the null of its type (``parser/_null_facts.py``)."""
+        return NullMode(force_optional=self.force_optional_for_required_fields)
 
     def __init__(
         self,
@@ -383,12 +389,13 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             data_type.import_ = any_data_type.import_
 
         has_schema_default = self._has_schema_default(field)
-        required = (
-            (not self.force_optional_for_required_fields)
-            and (not final_data_type.is_optional)
-            and not has_schema_default
+        null_facts = resolve_null_facts(
+            NullSources(nullable=final_data_type.is_optional),
+            "graphql-field",
+            self._null_mode,
+            has_default=has_schema_default,
         )
-        nullable = False if has_schema_default and not final_data_type.is_optional else None
+        required = bool(null_facts.required)
 
         default = self._get_default(field, final_data_type, required=required)
         effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
@@ -410,7 +417,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             default=effective_default,
             data_type=final_data_type,
             required=required,
-            nullable=nullable,
+            nullable=null_facts.admits_null,
             extras=extras,
             alias=single_alias,
             validation_aliases=validation_aliases,

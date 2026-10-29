@@ -55,6 +55,8 @@ native-custom	main/generation_platform/fastapi/native-custom.txt
 native-custom	main/generation_platform/fastapi/packages/native-custom/
 native-generator	main/generation_platform/fastapi/native-generator.txt
 native-generator	main/generation_platform/fastapi/packages/native-generator/
+native-merged-null	main/generation_platform/fastapi/native-merged-null.txt
+native-merged-null	main/generation_platform/fastapi/packages/native-merged-null/
 native-readonly	main/generation_platform/fastapi/native-readonly.txt
 native-readonly	main/generation_platform/fastapi/packages/native-readonly/
 native-settings	main/generation_platform/fastapi/native-settings.txt

@@ -165,6 +165,7 @@ extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt
 headers	main/generation_platform/cross/headers.txt
+merged_nullable	main/generation_platform/cross/merged_nullable.txt
 ndjson	main/generation_platform/cross/ndjson.txt
 nullable	main/generation_platform/cross/nullable.txt
 pagination	main/generation_platform/cross/pagination.txt

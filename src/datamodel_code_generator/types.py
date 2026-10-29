@@ -610,6 +610,15 @@ def union_members(data_type: DataType) -> Sequence[DataType]:
     return data_type.data_types
 
 
+def written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading each member that is a union at its top level."""
+    for data_type in data_types:
+        if members := union_members(data_type):
+            yield from written_union_members(members)
+        else:
+            yield data_type
+
+
 def is_data_model_field(obj: object) -> TypeIs[DataModelFieldBase]:
     """Check if an object structurally owns a DataType."""
     return isinstance(getattr(obj, "data_type", None), DataType)
@@ -633,6 +642,15 @@ class Nullable(Protocol):
     def nullable(self) -> bool:
         """Return whether the type is nullable."""
         raise NotImplementedError
+
+
+def reference_names_nullable(reference: Reference | None) -> bool:
+    """Return whether a reference names a model that now admits null and is not a type alias (``reference_null``)."""
+    return (
+        reference is not None
+        and not getattr(source := reference.source, "is_alias", False)
+        and bool(getattr(source, "nullable", False))
+    )
 
 
 class DataType(_BaseModel):  # noqa: PLR0904
@@ -1007,10 +1025,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if len(self.data_types) > 1:
             union = _union_core()
             plan = union.assemble_union(
-                tuple(
-                    union.MemberFacts(is_any=(is_any := type_.type == ANY), optional_any=is_any and type_.is_optional)
-                    for type_ in self.data_types
-                ),
+                tuple(union.MemberFacts(is_any=type_.type == ANY, null=type_.is_optional) for type_ in self.data_types),
                 union.CONSTRUCTED,
             )
             if plan.rule == "optional-any-to-null":
@@ -1075,11 +1090,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _names_nullable_target(self) -> bool:
         """Return whether the model the type names now admits null and is not a type alias."""
-        return (
-            (reference := self.reference) is not None
-            and not getattr(source := reference.source, "is_alias", False)
-            and bool(getattr(source, "nullable", False))
-        )
+        return reference_names_nullable(self.reference)
 
     @property
     def names_nullable_model(self) -> bool:
@@ -1147,11 +1158,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def has_target_null(self) -> bool:
         """Whether the type's own None is the one its referenced schema admits (``--omit-redundant-reference-null``)."""
         return self._type_null.target
-
-    @property
-    def held_null_dropped(self) -> bool:
-        """Whether ``--omit-redundant-reference-null`` dropped the None of the model the type names."""
-        return self._type_null.held_dropped
 
     @property
     def admits_none(self) -> bool:
