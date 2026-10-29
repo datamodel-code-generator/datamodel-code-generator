@@ -22,6 +22,7 @@ from fastapi.security import (
     OAuth2,
     OpenIdConnect,
 )
+from fastapi.security.http import HTTPBase
 from fastapi.security.utils import get_authorization_scheme_param
 from typing_extensions import TypeVar
 
@@ -43,10 +44,6 @@ def _text(credential: str | None) -> str | None:
     return credential if credential is not None and credential.isascii() else None
 
 
-def _authorization(credentials: HTTPAuthorizationCredentials | None) -> HTTPAuthorizationCredentials | None:
-    return credentials if credentials is not None and credentials.credentials.isascii() else None
-
-
 class ASCIIAPIKeyHeader(APIKeyHeader):
     """FastAPI's `APIKeyHeader`, reading a key that is not ASCII as none."""
 
@@ -63,20 +60,19 @@ class ASCIIAPIKeyCookie(APIKeyCookie):
         return _text(await super().__call__(request))
 
 
-class ASCIIHTTPBearer(HTTPBearer):
+class _ASCIIAuthorization(HTTPBase):
+    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
+        """Return the credentials of the scheme's `Authorization` header, or None without ASCII ones."""
+        credentials = await super().__call__(request)
+        return credentials if credentials is not None and credentials.credentials.isascii() else None
+
+
+class ASCIIHTTPBearer(_ASCIIAuthorization, HTTPBearer):
     """FastAPI's `HTTPBearer`, reading a token that is not ASCII as none."""
 
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
-        """Return the credentials of a `Bearer` `Authorization` header, or None without an ASCII token."""
-        return _authorization(await super().__call__(request))
 
-
-class ASCIIHTTPDigest(HTTPDigest):
+class ASCIIHTTPDigest(_ASCIIAuthorization, HTTPDigest):
     """FastAPI's `HTTPDigest`, reading credentials that are not ASCII as none."""
-
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
-        """Return the credentials of a `Digest` `Authorization` header, or None without ASCII ones."""
-        return _authorization(await super().__call__(request))
 
 
 class OptionalHTTPBasic(HTTPBasic):

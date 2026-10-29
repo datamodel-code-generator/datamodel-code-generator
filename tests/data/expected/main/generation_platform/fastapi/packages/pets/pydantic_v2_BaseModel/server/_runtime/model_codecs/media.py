@@ -83,6 +83,7 @@ _NOT_JSON: Final = "A wire value must be made of JSON values and string keys"
 _CIRCULAR: Final = "A wire value must not refer to itself"
 _NON_FINITE: Final = "A wire number must be finite"
 _TOO_LARGE: Final = "A wire integer must not exceed the interpreter's decimal conversion limit"
+_VALUE_ERRORS: Final = (("Circular reference", _CIRCULAR), ("Out of range float", _NON_FINITE))
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,15 +109,8 @@ def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = Fals
     except TypeError:
         raise TypeError(_NOT_JSON) from None
     except ValueError as error:
-        raise ValueError(_value_error(str(error))) from None
-
-
-def _value_error(text: str) -> str:
-    if text.startswith("Circular reference"):
-        return _CIRCULAR
-    if text.startswith("Out of range float"):
-        return _NON_FINITE
-    return _TOO_LARGE
+        message = next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+        raise ValueError(message) from None
 
 
 def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> bytes:

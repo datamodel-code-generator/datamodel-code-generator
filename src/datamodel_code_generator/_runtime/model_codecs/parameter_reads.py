@@ -5,23 +5,25 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from itertools import starmap
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypeVar
 
 from .errors import MalformedError
 from .media import decode_form, media_kind, percent_decode, split_form, typed
+from .parameters import OWS
 from .unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from .media import JSONValue
+    from .media import JSONValue, LexicalKind
     from .parameters import ParameterLocation, ParameterPlan
+
+T = TypeVar("T")
 
 _DELIMITERS: Final = {"spaceDelimited": re.compile(rb"%20|\+| "), "pipeDelimited": re.compile(rb"%7[Cc]|\|")}
 _COMMA: Final = re.compile(rb",")
 _DOT: Final = re.compile(rb"\.")
 _PREFIXES: Final = {"label": b".", "matrix": b";"}
-_OWS: Final = " \t"
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,12 +53,9 @@ class RawParameters:
 
 
 def _object(plan: ParameterPlan, members: list[tuple[str, str]]) -> JSONValue:
-    declared = {field.name: field for field in plan.fields}
-    result: dict[str, JSONValue] = {}
-    for name, text in members:
-        field = declared.get(name, plan.additional)
-        result[name] = typed(text, "string" if field is None else field.kind)
-    return result
+    kinds: dict[str, LexicalKind] = {field.name: field.kind for field in plan.fields}
+    other: LexicalKind = "string" if plan.additional is None else plan.additional.kind
+    return {name: typed(text, kinds.get(name, other)) for name, text in members}
 
 
 def _collection(plan: ParameterPlan, parts: list[str], *, exploded_pairs: bool) -> JSONValue:
@@ -131,15 +130,11 @@ def _last(values: list[bytes]) -> bytes | UNSET:
     return values[-1] if values else UNSET
 
 
-def _member(plan: ParameterPlan, declared: set[str], name: str) -> bool:
-    """Return whether an exploded object parameter takes a pair of this name as one of its members."""
-    return name in declared or (plan.additional is not None and name not in plan.reserved_names)
-
-
-def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | UNSET:
+def _members(plan: ParameterPlan, pairs: list[tuple[str, T]]) -> list[tuple[str, T]]:
+    """Return the pairs an exploded object parameter takes as its members, by their names."""
     declared = {item.name for item in plan.fields}
-    members = [(name, text) for name, text in pairs if _member(plan, declared, name)]
-    return _object(plan, members) if members else UNSET
+    others = plan.additional is not None
+    return [(name, item) for name, item in pairs if name in declared or (others and name not in plan.reserved_names)]
 
 
 def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONValue | UNSET:
@@ -149,7 +144,8 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONVa
                 typed(percent_decode(value, plus=True), plan.kind) for name, value in pairs if name == plan.name
             ] or UNSET
         case "form", "object", True:
-            return _exploded_object(plan, [(name, percent_decode(value, plus=True)) for name, value in pairs])
+            members = _members(plan, [(name, percent_decode(value, plus=True)) for name, value in pairs])
+            return _object(plan, members) if members else UNSET
         case "deepObject", _, _:
             prefix = f"{plan.name}["
             members = [
@@ -170,7 +166,7 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONVa
 
 def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | UNSET:
     """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
-    texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
+    texts = [value.decode().strip(OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     if not texts:
         return UNSET
     if plan.shape == "scalar":
@@ -178,12 +174,12 @@ def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | UNSE
     if not (combined := ",".join(texts)):
         msg = "An empty header value cannot represent a container"
         raise MalformedError(msg)
-    return _collection(plan, [part.strip(_OWS) for part in combined.split(",")], exploded_pairs=plan.explode)
+    return _collection(plan, [part.strip(OWS) for part in combined.split(",")], exploded_pairs=plan.explode)
 
 
 def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | UNSET:
     if plan.shape == "object":
-        return _exploded_object(plan, pairs)
+        return _object(plan, pairs) if pairs else UNSET
     matching = [text for name, text in pairs if name == plan.name]
     if plan.shape == "array":
         return [typed(text, plan.kind) for text in matching] or UNSET
@@ -229,7 +225,7 @@ def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
         return _decode_header(plan, values)
     if not values:
         return UNSET
-    return values[0].decode().strip(_OWS)
+    return values[0].decode().strip(OWS)
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
@@ -242,12 +238,7 @@ def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
         (percent_decode(item.name or b"", plus=False) if form else (item.name or b"").decode("latin-1"), item)
         for item in fragments
     ]
-    declared = {item.name for item in plan.fields}
-    read = [
-        (name, item)
-        for name, item in named
-        if (_member(plan, declared, name) if plan.shape == "object" else name == plan.name)
-    ]
+    read = _members(plan, named) if plan.shape == "object" else [pair for pair in named if pair[0] == plan.name]
     if not all((item.name or b"").isascii() and item.value.isascii() for _, item in read):
         msg = "A cookie must be ASCII"
         raise MalformedError(msg)

@@ -41,7 +41,7 @@ _STYLES: Final = {
 }
 _NOT_HEADER_TEXT: Final = re.compile(r"[^\t\x20-\x7E]")
 _COOKIE_OCTETS: Final = re.compile(r"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
-_OWS: Final = " \t"
+OWS: Final = " \t"
 _UNENCODABLE: Final = "A parameter value is text that UTF-8 cannot encode, such as a lone surrogate"
 
 
@@ -181,16 +181,12 @@ def _encode_path(plan: ParameterPlan, entries: list[_Entry]) -> str:
     return text
 
 
-def _verbatim(text: str) -> str:
-    return text
-
-
 def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = False) -> list[_Entry]:
     """Return a query style's pairs, percent-encoded unless `raw` asks for the text form-data parts carry.
 
     Raw text cannot escape a delimiter, so a value or member name that holds the one its style joins with is refused.
     """
-    encode = _verbatim if raw else _percent(plan, _QUERY_KEPT)
+    encode: Callable[[str], str] = (lambda text: text) if raw else _percent(plan, _QUERY_KEPT)
     encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
     match plan.style, plan.shape, plan.explode:
@@ -220,7 +216,7 @@ def header_text(text: str) -> bool:
 
     It holds HTAB, SP, and visible ASCII only, without whitespace at either end.
     """
-    return not _NOT_HEADER_TEXT.search(text) and text == text.strip(_OWS)
+    return not _NOT_HEADER_TEXT.search(text) and text == text.strip(OWS)
 
 
 def _header_text(text: str, *, item: bool) -> str:
@@ -270,11 +266,8 @@ def _content(plan: ParameterPlan, value: JSONValue) -> str:
 
 
 def _querystring_text(plan: ParameterPlan, value: JSONValue) -> str:
-    match media_kind(plan.content_media_type or ""):
-        case "form":
-            return encode_form(value, plan.fields, plan.additional).decode("ascii")
-        case _:
-            pass
+    if media_kind(plan.content_media_type or "") == "form":
+        return encode_form(value, plan.fields, plan.additional).decode("ascii")
     return quote(_content(plan, value), safe="")
 
 
