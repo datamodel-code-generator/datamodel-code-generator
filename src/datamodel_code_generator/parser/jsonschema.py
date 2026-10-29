@@ -1391,7 +1391,8 @@ def _single_value_enum_as_const(
         isinstance(enum := value.get("enum"), list)
         and len(enum) == 1
         and "const" not in value
-        and (enum[0] is None or value.get("nullable") is not True)
+        and resolve_null_facts(replace(dump_null_sources(value), enum_null=enum[0] is None), "enum-as-const").rule
+        != "nullable-enum-not-const"
     ):
         result = {
             ("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()
@@ -2840,7 +2841,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         enum_values: list[Any] = []
         branches: list[JsonSchemaObject] = []
-        nullable = False
+        null_branches: list[NullSources] = []
         inferred_type: str | None = None
         read_as_const = self.use_single_value_enum_as_const or not self.read_const_beside_enum
 
@@ -2850,7 +2851,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if item is True:
                 return None
             if item.type == "null" and "const" not in item.extras:
-                nullable = True
+                null_branches.append(_type_null_sources(item))
                 continue
 
             if "const" not in item.extras:
@@ -2887,8 +2888,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             case list():
                 non_null_types = [t for t in parent_type if t != "null"]
                 final_type = non_null_types[0] if non_null_types else inferred_type
-                if "null" in parent_type:
-                    nullable = True
             case _:
                 pass
 
@@ -2897,7 +2896,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             [item.title for item in branches if item.title],
             [item.description or "" for item in branches],
             final_type,
-            nullable,
+            bool(self._null_facts(parent, "const-enum", parts=null_branches).admits_null),
             values_as_written,
         )
 
@@ -7659,7 +7658,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return (
             types,
-            bool(schema.nullable),
+            bool(self._null_facts(schema, "enforced-value").admits_null),
             {key: value.value if isinstance(value, UnionIntFloat) else value for key, value in constraints.items()},
             written,
         )
@@ -7945,7 +7944,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> frozenset[str]:
         """Infer JSON instance types accepted by an inherited schema."""
         schema, parent_ref, active = self._resolve_inherited_parent_property(schema, parent_ref, active)
-        nullable_types = frozenset(("null",)) if schema.nullable is True else frozenset()
+        nullable_types = (
+            frozenset(("null",)) if self._null_facts(schema, "inherited-types").admits_null else frozenset()
+        )
         direct_types: frozenset[str] = frozenset()
         match schema.type:
             case str() as schema_type:
@@ -14983,7 +14984,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and obj.read_as_const
             and "const" in obj.extras
             and (exact := self._exact_const_enum_value(obj))
-            and (exact[0] is None or obj.nullable is not True)
+            and resolve_null_facts(replace(_type_null_sources(obj), enum_null=exact[0] is None), "enum-as-const").rule
+            != "nullable-enum-not-const"
         )
 
     def _exact_const_enum_value(self, obj: JsonSchemaObject) -> tuple[Any, ...]:

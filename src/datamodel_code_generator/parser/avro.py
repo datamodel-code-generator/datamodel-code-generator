@@ -21,6 +21,7 @@ from datamodel_code_generator._avro_detection import (
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
 if TYPE_CHECKING:
@@ -43,7 +44,7 @@ _PHYSICAL_DEFAULT_OVERRIDES = frozenset({
 })
 
 STRING_SCHEMA: JsonSchema = {"type": "string"}
-NULL_SCHEMA: JsonSchema = {"type": "null"}
+NULL_SCHEMA: JsonSchema = null_schema()
 BOOLEAN_SCHEMA: JsonSchema = {"type": "boolean"}
 BYTES_SCHEMA: JsonSchema = {"type": "string", "format": "binary"}
 

@@ -1833,18 +1833,11 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._const_literal_enforces_constraints"]
 "F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enforced_value_keywords"]
-"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enum_positions_outside_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._extract_const_enum_from_combined"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
-"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-10" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_schema_types"]
-"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-06" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_type_shape"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
@@ -1936,7 +1929,6 @@ fix = "RP15b"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reads_enum_as_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
-"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
