@@ -51,10 +51,7 @@ from datamodel_code_generator.enums import (
     XMLSchemaVersion,
 )
 from datamodel_code_generator.model import pydantic_v2
-from datamodel_code_generator.model.base import (  # noqa: TC001 - used by Pydantic at runtime
-    DataModel,
-    DataModelFieldBase,
-)
+from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.scalar import DataTypeScalar
 from datamodel_code_generator.model.union import DataTypeUnion
 from datamodel_code_generator.types import DataTypeManager, StrictTypes
@@ -116,16 +113,30 @@ def _rebuild_config_model(model_type: type[BaseModel], types_namespace: dict[str
         model_type.model_rebuild(_types_namespace=types_namespace)
 
 
+_CONFIG_TYPES_NAMESPACE: dict[str, Any] = {
+    "ConstructorFieldOrder": ConstructorFieldOrder,
+    "DataModel": DataModel,
+    "DataModelFieldBase": DataModelFieldBase,
+    "DataTypeManager": DataTypeManager,
+    "DefaultValueType": DefaultValueType,
+    "OpenAPIAsDefinitions": OpenAPIAsDefinitions,
+    "StrictTypes": StrictTypes,
+    "UnionMode": UnionMode,
+}
+"""The names the deferred config models resolve when they are rebuilt."""
+
+
+def _config_types_namespace(*names: str) -> dict[str, Any]:
+    """Return the part of ``_CONFIG_TYPES_NAMESPACE`` a deferred model resolves when it is rebuilt."""
+    return {name: _CONFIG_TYPES_NAMESPACE[name] for name in names}
+
+
 def _rebuild_generate_config() -> None:
     _rebuild_config_model(
         GenerateConfig,
-        {
-            "ConstructorFieldOrder": ConstructorFieldOrder,
-            "DefaultValueType": DefaultValueType,
-            "OpenAPIAsDefinitions": OpenAPIAsDefinitions,
-            "StrictTypes": StrictTypes,
-            "UnionMode": UnionMode,
-        },
+        _config_types_namespace(
+            "ConstructorFieldOrder", "DefaultValueType", "OpenAPIAsDefinitions", "StrictTypes", "UnionMode"
+        ),
     )
 
 
