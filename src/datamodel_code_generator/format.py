@@ -7,7 +7,6 @@ along with PythonVersion enum and DatetimeClassType for output configuration.
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess  # noqa: S404
 import sys
@@ -40,15 +39,13 @@ DatetimeClassType = _format_types.DatetimeClassType
 Formatter = _format_types.Formatter
 PythonVersion = _format_types.PythonVersion
 PythonVersionMin = _format_types.PythonVersionMin
-
-
-DEFAULT_LINE_LENGTH = 88
-DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
-MAX_TOP_LEVEL_BLANK_LINES = 2
-MAX_SHORT_DEFAULT_OVERFLOW = 13
-LONG_TARGET_PREFIX_LENGTH = 30
-TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
-STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
+DEFAULT_LINE_LENGTH = _format_types.DEFAULT_LINE_LENGTH
+DEFAULT_KNOWN_FIRST_PARTY = _format_types.DEFAULT_KNOWN_FIRST_PARTY
+MAX_TOP_LEVEL_BLANK_LINES = _format_types.MAX_TOP_LEVEL_BLANK_LINES
+MAX_SHORT_DEFAULT_OVERFLOW = _format_types.MAX_SHORT_DEFAULT_OVERFLOW
+LONG_TARGET_PREFIX_LENGTH = _format_types.LONG_TARGET_PREFIX_LENGTH
+TYPE_ALIAS_INLINE_ARGUMENT_COUNT = _format_types.TYPE_ALIAS_INLINE_ARGUMENT_COUNT
+STRING_PREFIX_PATTERN = _format_types.STRING_PREFIX_PATTERN
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,13 +301,6 @@ def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> M
 _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_AliasSortCategory",
     "_ImportCategory",
-    "DEFAULT_LINE_LENGTH",
-    "DEFAULT_KNOWN_FIRST_PARTY",
-    "MAX_TOP_LEVEL_BLANK_LINES",
-    "MAX_SHORT_DEFAULT_OVERFLOW",
-    "LONG_TARGET_PREFIX_LENGTH",
-    "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
-    "STRING_PREFIX_PATTERN",
     "_is_valid_builtin_line_length",
     "_line_indent",
     "_indent_first_line",
@@ -585,14 +575,12 @@ class CodeFormatter:
 
         builtin_tool_config: dict[str, Any] | None = None
         if use_builtin:
-            is_valid_builtin_line_length = _builtin_formatter_global("_is_valid_builtin_line_length")
-            if builtin_format_line_length is not None and not is_valid_builtin_line_length(builtin_format_line_length):
-                msg = "builtin_format_line_length must be a positive integer"
-                raise ValueError(msg)
-            if (pyproject_toml_path := _builtin_formatter_global("_find_pyproject_toml")(settings_path)) is not None:
-                builtin_tool_config = load_toml(pyproject_toml_path).get("tool", {})
-            else:
-                builtin_tool_config = {}
+            _builtin_formatter_attr("_check_builtin_line_length")(
+                builtin_format_line_length, _builtin_formatter_global("_is_valid_builtin_line_length")
+            )
+            builtin_tool_config = _builtin_formatter_attr("_load_builtin_tool_config")(
+                settings_path, _builtin_formatter_global("_find_pyproject_toml"), load_toml
+            )
 
         self.builtin_line_length = (
             _builtin_formatter_global("_get_builtin_line_length")(

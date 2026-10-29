@@ -13,6 +13,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Mapping
@@ -597,11 +598,3 @@ def record_module_dependency(module: object) -> Path | None:
             module_path = Path(source_from_cache(str(module_path)))
     record_local_dependency(module_path)
     return module_path
-
-
-def _nearest_pyproject_toml(path: Path) -> Path | None:
-    for parent in (path, *path.parents):
-        candidate = parent / "pyproject.toml"
-        if candidate.is_file():
-            return candidate
-    return None

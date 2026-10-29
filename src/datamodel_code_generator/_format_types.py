@@ -7,6 +7,7 @@ dependencies such as subprocess, shutil, black, or isort.
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -136,6 +137,13 @@ EXTERNAL_FORMATTERS = frozenset({
     Formatter.RUFF_CHECK,
     Formatter.RUFF_FORMAT,
 })
+DEFAULT_LINE_LENGTH = 88
+DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
+MAX_TOP_LEVEL_BLANK_LINES = 2
+MAX_SHORT_DEFAULT_OVERFLOW = 13
+LONG_TARGET_PREFIX_LENGTH = 30
+TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
+STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
 
 # Keep the historical public pickle/repr path after moving these enums out of format.py.
 for _public_type in (DateClassType, DatetimeClassType, Formatter, PythonVersion):
@@ -145,7 +153,14 @@ del _public_type
 
 __all__ = [
     "DEFAULT_FORMATTERS",
+    "DEFAULT_KNOWN_FIRST_PARTY",
+    "DEFAULT_LINE_LENGTH",
     "EXTERNAL_FORMATTERS",
+    "LONG_TARGET_PREFIX_LENGTH",
+    "MAX_SHORT_DEFAULT_OVERFLOW",
+    "MAX_TOP_LEVEL_BLANK_LINES",
+    "STRING_PREFIX_PATTERN",
+    "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "DateClassType",
     "DatetimeClassType",
     "Formatter",
