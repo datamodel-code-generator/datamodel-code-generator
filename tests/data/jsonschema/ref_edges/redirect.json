@@ -6,6 +6,9 @@
     "value": {
       "$ref": "#/$defs/Kept"
     },
+    "again": {
+      "$ref": "#/$defs/Kept"
+    },
     "other": {
       "$ref": "#/properties/kept"
     },

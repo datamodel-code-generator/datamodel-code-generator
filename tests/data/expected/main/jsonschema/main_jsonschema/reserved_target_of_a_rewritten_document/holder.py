@@ -11,3 +11,4 @@ from . import box
 
 class Model(BaseModel):
     item: box.ItemModel | None = None
+    other: box.Other | None = None
