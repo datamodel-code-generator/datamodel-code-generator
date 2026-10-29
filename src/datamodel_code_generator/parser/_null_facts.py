@@ -96,7 +96,8 @@ NullSite: TypeAlias = Literal[
 * ``enforced-value``: the null a value schema enforces, beside its types
   (``JsonSchemaParser._enforced_value_keywords``).
 * ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
-  without a const (``JsonSchemaParser._extract_const_enum_from_combined``).
+  without a const; the parent's and the branches' ``type`` are read as written, without the mark of
+  ``legacy-nullable-as-type-list`` (``JsonSchemaParser._extract_const_enum_from_combined``).
 * ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
   whether that value is null (``parser/jsonschema.py:_single_value_enum_as_const``,
   ``JsonSchemaParser._reads_enum_as_const``).
@@ -301,7 +302,7 @@ NO_NULL_MODE: NullMode = NullMode()
 
 
 def null_schema() -> dict[str, Any]:
-    """Return the schema of null that converters write: a ``type`` of null."""
+    """Return the schema of null that converters and the null members of parse sites write: a ``type`` of null."""
     return {"type": "null"}
 
 

@@ -185,6 +185,7 @@ from datamodel_code_generator.parser._null_facts import (
     NullSite,
     NullSources,
     dump_null_sources,
+    null_schema,
     resolve_null_facts,
 )
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED
@@ -1398,6 +1399,10 @@ def _single_value_enum_as_const(
             ("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()
         }
     return {**result, _READ_AS_CONST_KEY: True} if "const" in result else result
+
+
+_NULL_TYPE_SOURCES: Final[NullSources] = NullSources(type_null=True)
+"""The null sources of a branch whose ``type`` is null as written, which ``_extract_const_enum_from_combined`` reads."""
 
 
 def _read_type(obj: JsonSchemaObject) -> str | list[str] | None:
@@ -2851,7 +2856,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if item is True:
                 return None
             if item.type == "null" and "const" not in item.extras:
-                null_branches.append(_type_null_sources(item))
+                null_branches.append(_NULL_TYPE_SOURCES)
                 continue
 
             if "const" not in item.extras:
@@ -2896,7 +2901,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             [item.title for item in branches if item.title],
             [item.description or "" for item in branches],
             final_type,
-            bool(self._null_facts(parent, "const-enum", parts=null_branches).admits_null),
+            bool(
+                resolve_null_facts(
+                    dump_null_sources({"type": parent.type}), "const-enum", parts=null_branches
+                ).admits_null
+            ),
             values_as_written,
         )
 
@@ -10013,7 +10022,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     "null",
                 ]
             elif null_member:
-                value = {"anyOf": [value, {"type": "null"}]}
+                value = {"anyOf": [value, null_schema()]}
             else:
                 value["nullable"] = True
         return self._schema_object({**value, **annotations, **own})
@@ -13167,7 +13176,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for item in combined_items:
                 updated_items.append(item)
                 if isinstance(item, JsonSchemaObject) and self._null_facts(item, "combined-branch").admits_null:
-                    updated_items.append(self._schema_object({"type": "null"}))
+                    updated_items.append(self._schema_object(null_schema()))
 
             if len(updated_items) != len(combined_items):
                 updates[field_name] = updated_items
