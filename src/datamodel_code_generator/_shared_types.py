@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from collections import UserDict
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from typing import TypeAlias, TypeVar
 
 TK = TypeVar("TK")
 TV = TypeVar("TV")
+
+ResponseObserver: TypeAlias = Callable[
+    [str, Sequence[tuple[str, str]] | None, Sequence[tuple[str, str]] | None, bytes], None
+]
+"""Take a remote fetch's URL, headers and query parameters as requested, and the body that answered them."""
 
 _LEGACY_MODULE = "datamodel_code_generator.parser"
 
@@ -52,4 +55,4 @@ class DefaultPutDict(UserDict[TK, TV]):
 LiteralType.__module__ = _LEGACY_MODULE
 DefaultPutDict.__module__ = _LEGACY_MODULE
 
-__all__ = ["DefaultPutDict", "LiteralType"]
+__all__ = ["DefaultPutDict", "LiteralType", "ResponseObserver"]

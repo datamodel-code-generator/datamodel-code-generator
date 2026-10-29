@@ -832,11 +832,10 @@ def _is_finite(number: float) -> bool:
     return isinstance(number, int) or isfinite(number)
 
 
-def _met_by_keyword(
-    values: Sequence[object], constraints: Mapping[str, float | str]
-) -> dict[str, tuple[bool | None, ...]]:
-    """Return, for each keyword of ``constraints``, whether each value meets it (None where the check cannot say)."""
-    return {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
+def _decided(values: Sequence[object], constraints: Mapping[str, float | str]) -> dict[str, tuple[bool | None, ...]]:
+    """Return, for each keyword of ``constraints`` the check decides on every value, whether each value meets it."""
+    met = {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
+    return {keyword: results for keyword, results in met.items() if None not in results}
 
 
 def literal_check(
@@ -846,9 +845,8 @@ def literal_check(
 
     ``constraints`` holds keywords of ``LITERAL_DECIDABLE_KEYWORDS`` with their limits, in the order to report them.
     """
-    met = _met_by_keyword(values, constraints)
-    decided = tuple(keyword for keyword, results in met.items() if None not in results)
-    return decided, tuple(all(met[keyword][index] for keyword in decided) for index in range(len(values)))
+    met = _decided(values, constraints)
+    return tuple(met), tuple(all(results[index] for results in met.values()) for index in range(len(values)))
 
 
 def literal_met_keywords(
@@ -858,11 +856,10 @@ def literal_met_keywords(
 
     With ``unmet_too`` also those no value meets, whose values stay as written with the unsatisfiable warning.
     """
-    met = _met_by_keyword(values, constraints)
     return frozenset(
         keyword
-        for keyword, results in met.items()
-        if None not in results and (all(results) or (unmet_too and not any(results)))
+        for keyword, results in _decided(values, constraints).items()
+        if all(results) or (unmet_too and not any(results))
     )
 
 

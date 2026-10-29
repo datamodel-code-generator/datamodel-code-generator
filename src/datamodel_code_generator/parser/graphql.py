@@ -44,7 +44,7 @@ except ImportError as exc:  # pragma: no cover
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
     from urllib.parse import ParseResult
 
@@ -71,6 +71,11 @@ def _input_field_default(field: graphql.GraphQLInputField) -> Any:
     if (default := getattr(field, "default", None)) is None:
         return field.default_value
     return graphql.coerce_input_literal(default.literal, field.type)  # ty: ignore[unresolved-attribute]
+
+
+def _non_typename_names(fields: Iterable[DataModelFieldBase]) -> set[str]:
+    """Return the names of the fields that are not ``__typename`` fields."""
+    return {cast("str", field.name) for field in fields if field.alias != "__typename"}
 
 
 def build_graphql_schema(schema_str: str, *, source: str | None = None) -> graphql.GraphQLSchema:
@@ -149,7 +154,6 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         self.data_model_scalar_type = self.config.data_model_scalar_type
         self.data_model_union_type = self.config.data_model_union_type
         self.use_standard_collections = self.config.use_standard_collections
-        self.use_union_operator = self.config.use_union_operator
 
     def _resolve_types(self, paths: list[str], schema: graphql.GraphQLSchema) -> None:
         root_types = {schema.query_type, schema.mutation_type, schema.subscription_type}
@@ -183,11 +187,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             )
         return self.data_model_field_type(
             name=field_name,
-            data_type=DataType(
-                literals=[name],
-                use_union_operator=self.use_union_operator,
-                use_standard_collections=self.use_standard_collections,
-            ),
+            data_type=self._graphql_data_type(literals=[name]),
             default=name,
             use_annotated=self.use_annotated,
             required=False,
@@ -200,27 +200,10 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             **self._data_model_field_common_kwargs(),
         )
 
-    def _get_default(  # noqa: PLR6301
-        self,
-        field: graphql.GraphQLField | graphql.GraphQLInputField,
-        final_data_type: DataType,  # noqa: ARG002
-        *,
-        required: bool,  # noqa: ARG002
-    ) -> Any:
-        if (
-            isinstance(field, graphql.GraphQLInputField)
-            and (default := _input_field_default(field)) is not graphql.pyutils.Undefined
-        ):
-            return default
-        return None
-
-    def _has_schema_default(  # noqa: PLR6301
-        self, field: graphql.GraphQLField | graphql.GraphQLInputField
-    ) -> bool:
-        """Return whether a GraphQL input field defines a schema default."""
-        return (
-            isinstance(field, graphql.GraphQLInputField)
-            and _input_field_default(field) is not graphql.pyutils.Undefined
+    def _graphql_data_type(self, **kwargs: Any) -> DataType:
+        """Return a data type that follows the parser's union operator and standard collections settings."""
+        return DataType(
+            use_union_operator=self.use_union_operator, use_standard_collections=self.use_standard_collections, **kwargs
         )
 
     def parse_scalar(self, scalar_graphql_object: graphql.GraphQLScalarType) -> None:
@@ -254,28 +237,14 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
     def parse_enum_as_str_type(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum as a str type alias when ignoring enum constraints."""
-        data_type = self.data_type_manager.get_data_type(Types.string)
-        data_model_type = self._create_data_model(
-            model_type=self.data_model_root_type,
-            reference=self.references[enum_object.name],
-            fields=[
-                self.data_model_field_type(
-                    required=True,
-                    data_type=data_type,
-                    **self._data_model_field_common_kwargs(),
-                )
-            ],
-            custom_base_class=self._resolve_base_class(enum_object.name),
-            custom_template_dir=self.custom_template_dir,
-            extra_template_data=self.extra_template_data,
-            path=self.current_source_path,
-            description=enum_object.description,
-        )
-        self._graph_builder.register_model(data_model_type)
+        self._parse_enum_as_root(enum_object, self.data_type_manager.get_data_type(Types.string))
 
     def parse_enum_as_literal(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum values as a Literal type."""
-        data_type = self.data_type(literals=list(enum_object.values.keys()))
+        self._parse_enum_as_root(enum_object, self.data_type(literals=list(enum_object.values.keys())))
+
+    def _parse_enum_as_root(self, enum_object: graphql.GraphQLEnumType, data_type: DataType) -> None:
+        """Register a root model of the enum whose required root field has ``data_type``."""
         data_model_type = self._create_data_model(
             model_type=self.data_model_root_type,
             reference=self.references[enum_object.name],
@@ -352,11 +321,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         class_name: str | None = None,
     ) -> DataModelFieldBase:
         """Parse a GraphQL field and return a data model field."""
-        final_data_type = DataType(
-            is_optional=True,
-            use_union_operator=self.use_union_operator,
-            use_standard_collections=self.use_standard_collections,
-        )
+        final_data_type = self._graphql_data_type(is_optional=True)
         data_type = final_data_type
         obj = field.type
 
@@ -364,11 +329,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             if graphql.is_list_type(obj):
                 data_type.is_list = True
 
-                new_data_type = DataType(
-                    is_optional=True,
-                    use_union_operator=self.use_union_operator,
-                    use_standard_collections=self.use_standard_collections,
-                )
+                new_data_type = self._graphql_data_type(is_optional=True)
                 data_type.data_types = [new_data_type]
                 new_data_type.parent = data_type
 
@@ -388,7 +349,10 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             data_type.type = any_data_type.type
             data_type.import_ = any_data_type.import_
 
-        has_schema_default = self._has_schema_default(field)
+        default = (
+            _input_field_default(field) if isinstance(field, graphql.GraphQLInputField) else graphql.pyutils.Undefined
+        )
+        has_schema_default = default is not graphql.pyutils.Undefined
         null_facts = resolve_null_facts(
             NullSources(nullable=final_data_type.is_optional),
             "graphql-field",
@@ -397,10 +361,9 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         required = bool(null_facts.required)
 
-        default = self._get_default(field, final_data_type, required=required)
         effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
             original_field_name,
-            default,
+            default if has_schema_default else None,
             has_default=has_schema_default,
             required=required,
             class_name=class_name,
@@ -532,24 +495,16 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         self.references: dict[str, Reference] = {}
         self._typename_collisions = None
 
-        self.support_graphql_types = {
-            graphql.type.introspection.TypeKind.SCALAR: [],
-            graphql.type.introspection.TypeKind.ENUM: [],
-            graphql.type.introspection.TypeKind.UNION: [],
-            graphql.type.introspection.TypeKind.INTERFACE: [],
-            graphql.type.introspection.TypeKind.OBJECT: [],
-            graphql.type.introspection.TypeKind.INPUT_OBJECT: [],
-        }
-
         # may be as a parameter in the future (??)
         mapper_from_graphql_type_to_parser_method = {
             graphql.type.introspection.TypeKind.SCALAR: self.parse_scalar,
             graphql.type.introspection.TypeKind.ENUM: self.parse_enum,
+            graphql.type.introspection.TypeKind.UNION: self.parse_union,
             graphql.type.introspection.TypeKind.INTERFACE: self.parse_interface,
             graphql.type.introspection.TypeKind.OBJECT: self.parse_object,
             graphql.type.introspection.TypeKind.INPUT_OBJECT: self.parse_input_object,
-            graphql.type.introspection.TypeKind.UNION: self.parse_union,
         }
+        self.support_graphql_types = {kind: [] for kind in mapper_from_graphql_type_to_parser_method}
 
         source_paths: list[str] = []
 
@@ -607,11 +562,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 ]
             ):
                 inherited_fields = get_inherited_fields(bases)
-                excludes = {
-                    cast("str", field.name)
-                    for field in (*source.fields, *inherited_fields.values())
-                    if field.alias != "__typename"
-                }
+                excludes = _non_typename_names((*source.fields, *inherited_fields.values()))
                 for field in conflicts:
                     wire_name = cast("str", field.name)
                     fields.pop(wire_name)
@@ -663,11 +614,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 if inherited_typename
                 else self.model_resolver.get_valid_field_name(
                     "typename__",
-                    excludes={
-                        cast("str", field.name)
-                        for field in (*source.fields, *inherited_fields.values())
-                        if field.alias != "__typename"
-                    },
+                    excludes=_non_typename_names((*source.fields, *inherited_fields.values())),
                     model_type=self.field_name_model_type,
                 )
             )

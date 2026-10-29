@@ -35,11 +35,7 @@ def _safe_float(value: str, *, source_safe_non_finite: bool = False) -> float | 
     except ValueError:
         return None
     match value:
-        case "INF" | "+INF":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
-        case "-INF":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
-        case "NaN":
+        case "INF" | "+INF" | "-INF" | "NaN":
             return _safe_non_finite_float(number) if source_safe_non_finite else number
     return number if isfinite(number) else None
 
@@ -61,36 +57,28 @@ def _normalize_timezone(value: str) -> str:
     return f"{value[:-1]}+00:00" if value.endswith("Z") else value
 
 
+def _safe_isoformat_expression(kind: str, value: str) -> _PythonExpression | None:
+    """Return ``datetime_module.<kind>.fromisoformat(...)`` of a value Python reads, with ``Z`` as ``+00:00``."""
+    normalized = _normalize_timezone(value.strip(XSD_WHITESPACE_CHARS))
+    with contextlib.suppress(ValueError):
+        getattr(datetime_module, kind).fromisoformat(normalized)
+        return _datetime_expression(f".{kind}.fromisoformat({normalized!r})")
+    return None
+
+
 def _safe_date_expression(value: str) -> _PythonExpression | None:
     value = value.strip(XSD_WHITESPACE_CHARS)
-    date_match = XML_DATE_PATTERN.match(value)
-    if date_match is None:
+    if (date_match := XML_DATE_PATTERN.match(value)) is None or value != date_match["date"]:
         return None
-    date_value = date_match["date"]
-    if value != date_value:
-        return None
-    with contextlib.suppress(ValueError):
-        datetime_module.date.fromisoformat(date_value)
-        return _datetime_expression(f".date.fromisoformat({date_value!r})")
-    return None
+    return _safe_isoformat_expression("date", value)
 
 
 def _safe_time_expression(value: str) -> _PythonExpression | None:
-    value = value.strip(XSD_WHITESPACE_CHARS)
-    normalized = _normalize_timezone(value)
-    with contextlib.suppress(ValueError):
-        datetime_module.time.fromisoformat(normalized)
-        return _datetime_expression(f".time.fromisoformat({normalized!r})")
-    return None
+    return _safe_isoformat_expression("time", value)
 
 
 def _safe_datetime_expression(value: str) -> _PythonExpression | None:
-    value = value.strip(XSD_WHITESPACE_CHARS)
-    normalized = _normalize_timezone(value)
-    with contextlib.suppress(ValueError):
-        datetime_module.datetime.fromisoformat(normalized)
-        return _datetime_expression(f".datetime.fromisoformat({normalized!r})")
-    return None
+    return _safe_isoformat_expression("datetime", value)
 
 
 def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
@@ -99,21 +87,11 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
     if duration_match is None:
         return None
 
-    days = duration_match["days"]
-    hours = duration_match["hours"]
-    minutes = duration_match["minutes"]
-    seconds = duration_match["seconds"]
-    if not any((days, hours, minutes, seconds)):
+    if not any(duration_match.group("days", "hours", "minutes", "seconds")):
         return None
 
-    arguments: list[str] = []
-    if days:
-        arguments.append(f"days={int(days)}")
-    if hours:
-        arguments.append(f"hours={int(hours)}")
-    if minutes:
-        arguments.append(f"minutes={int(minutes)}")
-    if seconds:
+    arguments = [f"{unit}={int(amount)}" for unit in ("days", "hours", "minutes") if (amount := duration_match[unit])]
+    if seconds := duration_match["seconds"]:
         seconds_in_microseconds = Decimal(seconds) * 1_000_000
         integral_microseconds = seconds_in_microseconds.to_integral_value()
         if seconds_in_microseconds != integral_microseconds:
