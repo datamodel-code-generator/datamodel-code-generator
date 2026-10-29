@@ -459,12 +459,16 @@ def _is_formatter_available(formatter: Formatter) -> bool:
     if formatter.value == "black":
         try:
             import black  # noqa: F401, PLC0415
-        except ImportError:
+        except ModuleNotFoundError as exc:
+            if exc.name != "black":
+                raise
             return False
     elif formatter.value == "isort":
         try:
             import isort  # noqa: F401, PLC0415
-        except ImportError:
+        except ModuleNotFoundError as exc:
+            if exc.name != "isort":
+                raise
             return False
     return True
 
@@ -596,13 +600,15 @@ class CodeFormatter:
                 formatter_name = missing_formatters[0].value
                 msg = (
                     f"{formatter_name} is not installed but was requested as an output formatter. "
-                    f"Install {formatter_name}, or pass --formatters builtin to use the built-in formatter."
+                    f"Install {formatter_name}, or use the built-in formatter with --formatters builtin "
+                    "(formatters=[Formatter.BUILTIN] in the Python API)."
                 )
             else:
                 formatter_names = " and ".join(formatter.value for formatter in missing_formatters)
                 msg = (
                     f"{formatter_names} are not installed but were requested as output formatters. "
-                    f"Install {formatter_names}, or pass --formatters builtin to use the built-in formatter."
+                    f"Install {formatter_names}, or use the built-in formatter with --formatters builtin "
+                    "(formatters=[Formatter.BUILTIN] in the Python API)."
                 )
             raise ImportError(msg)
 

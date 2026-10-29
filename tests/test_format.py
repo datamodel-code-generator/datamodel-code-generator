@@ -3000,6 +3000,44 @@ def test_default_black_and_isort_not_installed_raises_actionable_error(
         CodeFormatter(PythonVersionMin)
 
 
+def test_black_unimportable_real_helper_raises_actionable_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The real availability check reports a missing black with both remedies."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(sys.modules, "black", None)
+
+    with pytest.raises(
+        ImportError,
+        match=r"black is not installed.*--formatters builtin.*formatters=\[Formatter\.BUILTIN\]",
+    ):
+        CodeFormatter(PythonVersionMin, formatters=[Formatter.BLACK])
+
+
+@pytest.mark.parametrize("formatter", [Formatter.BLACK, Formatter.ISORT])
+def test_formatter_transitive_import_error_is_not_reported_as_missing(
+    formatter: Formatter,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A dependency missing inside an installed formatter is re-raised, not reported as the formatter missing."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, formatter.value)
+    real_import = __import__
+
+    def fake_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == formatter.value:
+            msg = "No module named 'formatter_dependency'"
+            raise ModuleNotFoundError(msg, name="formatter_dependency")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+
+    with pytest.raises(ModuleNotFoundError, match="formatter_dependency"):
+        format_module._is_formatter_available(formatter)
+
+
 def test_both_installed_no_missing_formatter_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
