@@ -21,6 +21,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -90,11 +91,6 @@ def _option_list(flags: Sequence[str]) -> str:
     return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
 
 
-def _flag(field: str, *, negative: bool = False) -> str:
-    """Return the option of a config field, or its --no- form."""
-    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
-
-
 def _selected_target(config: Any) -> tuple[str, str] | None:
     """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
     return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
@@ -110,10 +106,10 @@ def _target_options_error(config: Any, *, output: bool = True) -> str | None:
         return None
     selector, prefix = selected
     required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
-    if missing := [_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
-        return f"{_flag(selector)} requires {_option_list(missing)}"
+    if missing := [option_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
+        return f"{option_flag(selector)} requires {_option_list(missing)}"
     if (input_file_type := InputFileType(config.input_file_type)) is not InputFileType.OpenAPI:
-        return f"{_flag(selector)} requires --input-file-type openapi, not {input_file_type.value}"
+        return f"{option_flag(selector)} requires --input-file-type openapi, not {input_file_type.value}"
     return None
 
 

@@ -5,13 +5,13 @@ from __future__ import annotations
 import operator
 import re
 from dataclasses import dataclass
-from enum import Enum
 from functools import cache
 from importlib.resources import files
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from datamodel_code_generator._option_names import option_flag, toml_value
 from datamodel_code_generator._recommend._signals import (
     SignalName,
     normalize_name,
@@ -179,28 +179,17 @@ class Decision:
         return all(value is False for value in self.values.values())
 
 
-def toml_value(value: object) -> Any:
-    """Return a config value as pyproject.toml spells it, for comparing rule values with a configuration."""
-    if isinstance(value, Enum):
-        return str(value.value)
-    return [toml_value(item) for item in value] if isinstance(value, tuple | list) else value
-
-
-@cache
-def _option_strings() -> dict[str, tuple[str, ...]]:
-    from datamodel_code_generator.arguments import arg_parser  # noqa: PLC0415
-
-    return {action.dest: tuple(action.option_strings) for action in arg_parser._actions if action.option_strings}  # noqa: SLF001
-
-
 def option_arguments(field: str, value: OptionValue) -> list[str] | None:
     """Return the CLI arguments that set a config field to a value, or None when no option can express it."""
-    option = f"--{field.replace('_', '-')}"
+    option = option_flag(field)
     if value is True:
         return [option]
     if value is False:
-        negative = f"--no-{field.replace('_', '-')}"
-        return [negative] if negative in _option_strings().get(field, ()) else None
+        from datamodel_code_generator.cli_options import _option_actions  # noqa: PLC0415
+
+        negative = option_flag(field, negative=True)
+        action = _option_actions().get(field)
+        return [negative] if action is not None and negative in action.option_strings else None
     return [option, *value] if isinstance(value, list) else [option, value]
 
 

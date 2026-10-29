@@ -15,13 +15,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._option_names import option_flag, toml_value
 from datamodel_code_generator._recommend._rules import (
     Decision,
     OptionValue,
     decide,
     load_rules,
     option_arguments,
-    toml_value,
 )
 
 if TYPE_CHECKING:
@@ -285,24 +285,14 @@ def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
 
 def _avoided(decision: Decision) -> Option:
     """Return the options an avoiding rule argues against, as the arguments that would turn them on."""
-    return Option(decision, dict(decision.values), [f"--{name.replace('_', '-')}" for name in decision.values])
+    return Option(decision, dict(decision.values), [option_flag(name) for name in decision.values])
 
 
 def _resolve_preset(preset: str, request: RecommendRequest) -> ResolvedPresetConfig:
     """Resolve a preset for the fields the user left unset, the way ``--preset`` does."""
-    from datamodel_code_generator.preset import PresetContext, resolve_preset_config_updates  # noqa: PLC0415
+    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
 
-    config = request.config
-    return resolve_preset_config_updates(
-        preset,
-        context=PresetContext(
-            input_file_type=config.input_file_type,
-            output_model_type=config.output_model_type,
-            target_python_version=config.target_python_version,
-        ),
-        use_annotated=config.use_annotated,
-        explicit_fields=set(request.explicit_fields),
-    )
+    return _resolve_config_preset(preset, request.config, request.explicit_fields)
 
 
 def _preset_values(preset: str, request: RecommendRequest) -> dict[str, Any]:
@@ -381,7 +371,7 @@ def _start(decisions: Sequence[Decision], request: RecommendRequest, recommendat
     ]
     chosen = next((plan for plan in plans if not plan.blocked), plans[0])
     recommendation.notes.extend(
-        f"Starting from {chosen.preset}: no option sets --{name.replace('_', '-')} to {json.dumps(value)} on "
+        f"Starting from {chosen.preset}: no option sets {option_flag(name)} to {json.dumps(value)} on "
         f"{plan.preset} [{decision.rule.id}]."
         for plan in plans[: plans.index(chosen)]
         for decision, name, value in plan.blocked
@@ -408,7 +398,7 @@ def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
         if name in _SENSITIVE_FIELDS:
-            notes.append(f"--{name.replace('_', '-')} is not repeated here; add it to the command again.")
+            notes.append(f"{option_flag(name)} is not repeated here; add it to the command again.")
             continue
         if name == "url":
             notes.append("--url is repeated without its user information, query, and fragment; add them again.")
@@ -491,13 +481,7 @@ def _applied(options: Sequence[Option]) -> dict[str, Any]:
 
 def _preset_updates(preset: str, request: RecommendRequest) -> dict[str, Any]:
     """Return the config updates ``--preset`` makes, including the target and forced field constraints."""
-    resolved = _resolve_preset(preset, request)
-    updates: dict[str, Any] = {item.field_name: item.applied_value for item in resolved.items}
-    if resolved.target_python_version is not None:
-        updates["target_python_version"] = resolved.target_python_version
-    if resolved.force_field_constraints:
-        updates["field_constraints"] = True
-    return updates
+    return _resolve_preset(preset, request).updates()
 
 
 @dataclass(frozen=True, slots=True)

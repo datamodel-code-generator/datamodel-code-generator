@@ -660,9 +660,7 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
         InputFileType,
         PythonVersion,
     )
-    from datamodel_code_generator._recommend._rules import (  # ruff: ignore[import-outside-top-level, import-private-name]
-        toml_value,
-    )
+    from datamodel_code_generator._option_names import toml_value  # ruff: ignore[import-outside-top-level, import-private-name]
     from datamodel_code_generator.base_config import BaseGenerateConfig  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.preset import (  # ruff: ignore[import-outside-top-level]
         PresetContext,

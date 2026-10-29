@@ -271,18 +271,9 @@ def _given_fields(config: GenerateConfig) -> set[str]:
     """Return the fields a config sets: the ones it was given, and the ones its preset sets, applied later."""
     if config.preset is None:
         return set(config.model_fields_set)
-    from datamodel_code_generator.preset import PresetContext, resolve_preset_config_updates  # noqa: PLC0415
+    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
 
-    preset = resolve_preset_config_updates(
-        config.preset,
-        context=PresetContext(
-            input_file_type=config.input_file_type,
-            output_model_type=config.output_model_type,
-            target_python_version=config.target_python_version,
-        ),
-        use_annotated=config.use_annotated,
-        explicit_fields=config.model_fields_set,
-    )
+    preset = _resolve_config_preset(config.preset, config, config.model_fields_set)
     fixed = () if preset.target_python_version is None else ("target_python_version",)
     return {*config.model_fields_set, *fixed, *(item.field_name for item in preset.items)}
 
