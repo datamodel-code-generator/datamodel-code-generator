@@ -157,6 +157,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from urllib.parse import ParseResult
 
+    from datamodel_code_generator._lock_plan import RemoteLockPlan as _RemoteLockPlan
     from datamodel_code_generator._naming_hint import NamingHint
     from datamodel_code_generator._publication import (
         PublicationAnchor as _PublicationAnchor,
@@ -391,39 +392,16 @@ class _StagedJobPlan(NamedTuple):
     targets: list[Any] | None = None
 
 
-class _RemoteLockPlan(NamedTuple):
-    """The effective remote-lock policy for one resolved generation config."""
-
-    canonical_path: Path
-    literal_path: Path
-    policy: Literal["inactive", "verify", "locked", "update"]
-
-    @property
-    def active(self) -> bool:
-        return self.policy != "inactive"
-
-    @property
-    def read_only(self) -> bool:
-        """Whether the policy never replaces the lock artifact."""
-        return self.policy in {"verify", "locked"}
+def _lock_parent(pyproject_path: Path | None) -> Path:
+    """Return the directory of the default lock file: the pyproject.toml directory, or the working directory."""
+    return pyproject_path.parent if pyproject_path is not None else Path.cwd()
 
 
 def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLockPlan:
     """Resolve the project-relative default lock path without importing lock machinery."""
-    default_parent = pyproject_path.parent if pyproject_path is not None else Path.cwd()
-    path = config.lockfile or default_parent / "datamodel-codegen.lock"
-    literal_path = Path(os.path.abspath(path.expanduser()))  # noqa: PTH100
-    canonical_path = literal_path.resolve(strict=False)
-    policy: Literal["inactive", "verify", "locked", "update"]
-    if config.update_lock:
-        policy = "update"
-    elif config.locked:
-        policy = "locked"
-    elif canonical_path.is_file():
-        policy = "verify"
-    else:
-        policy = "inactive"
-    return _RemoteLockPlan(canonical_path, literal_path, policy)
+    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+
+    return remote_lock_plan(config, _lock_parent(pyproject_path), "lexical")
 
 
 def _watch_remote_lock_setup(
@@ -562,7 +540,11 @@ class _RemoteLockTransaction:
         if not any(plan.active for plan in plans):
             return None
         _validate_remote_lock_preflight(entries, plans)
-        from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock  # noqa: PLC0415
+        from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
+            RemoteLockError,
+            RemoteReferenceLock,
+            _open_lock_staging,
+        )
 
         collectors: dict[Path, Any] = {}
         anchors: dict[Path, _PublicationAnchor] = {}
@@ -580,16 +562,8 @@ class _RemoteLockTransaction:
                     plan.canonical_path, update=plan.policy == "update", locked=plan.read_only
                 )
                 if plan.canonical_path in publishable_paths:
-                    from datamodel_code_generator._publication import (  # noqa: PLC0415
-                        StagingDirectory,
-                        publication_anchor,
-                    )
-
-                    anchor = publication_anchor(plan.canonical_path.parent)
-                    anchors[plan.canonical_path] = anchor
-                    staging_contexts[plan.canonical_path] = StagingDirectory.create(
-                        anchor,
-                        prefix=".datamodel-codegen-lock-",
+                    anchors[plan.canonical_path], staging_contexts[plan.canonical_path] = _open_lock_staging(
+                        plan.canonical_path.parent
                     )
         except (OSError, RemoteLockError) as exc:
             from datamodel_code_generator._publication import release_all  # noqa: PLC0415
@@ -604,14 +578,14 @@ class _RemoteLockTransaction:
 
     def staged_files(self) -> tuple[_StagedFile, ...]:
         """Stage each updating lock once for the common publication journal."""
+        from datamodel_code_generator.remote_lock import _staged_lock  # noqa: PLC0415
+
         files: list[_StagedFile] = []
         try:
             for path, collector in self._collectors.items():
                 if path not in self._publishable_paths:
                     continue
-                staging_context = self._staging_contexts[path]
-                staged_file = cast("_StagedFile", collector.stage(staging_context))
-                files.append(staged_file._replace(anchor=self._anchors[path]))
+                files.append(_staged_lock(collector, self._staging_contexts[path], self._anchors[path]))
         except Exception as exc:
             with suppress(OSError):
                 self.discard()
@@ -1814,10 +1788,9 @@ def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None
     The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
     while a policy uses it: an update, a locked run, or an existing file to verify.
     """
-    if config.lockfile is not None:
-        return config.lockfile
-    plan = _remote_lock_plan(config, pyproject_path)
-    return None if plan.policy == "inactive" else plan.literal_path
+    from datamodel_code_generator._lock_plan import models_lockfile  # noqa: PLC0415
+
+    return models_lockfile(config, _lock_parent(pyproject_path))
 
 
 def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None) -> GenerateConfig:
