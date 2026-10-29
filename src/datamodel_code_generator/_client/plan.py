@@ -1124,7 +1124,9 @@ def _success(status: str, success_statuses: tuple[int, ...]) -> bool:
 
 
 def _error(status: str) -> bool:
-    return status in {"default", "4XX", "5XX"} or (status.isascii() and status.isdigit() and int(status) in ERROR_STATUSES)
+    return status in {"default", "4XX", "5XX"} or (
+        status.isascii() and status.isdigit() and int(status) in ERROR_STATUSES
+    )
 
 
 def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
