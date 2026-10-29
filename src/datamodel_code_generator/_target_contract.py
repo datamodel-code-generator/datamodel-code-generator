@@ -348,7 +348,6 @@ class FinalModelSymbol:
     bases: tuple[SymbolId, ...]
     fields: tuple[FieldSlot, ...]
     is_alias: bool
-    nullable: bool
     facts: BackendModelFacts | None
     values: tuple[LiteralScalar | None, ...] = ()
     source: str = ""

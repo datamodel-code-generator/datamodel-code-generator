@@ -5,7 +5,8 @@ A schema object admits null through its own keywords: a ``type`` of null or a ``
 ``enum``. :class:`NullSources` records them as written, and :func:`resolve_null_facts` returns what one site of
 ``parser/jsonschema.py`` reads from them, with the row of :data:`NullRule` the answer comes from. Every input is an
 immutable fact, so the function reads nothing else; the adapter ``parser/jsonschema.py:_null_sources`` reads the facts
-from the live schema object and ``JsonSchemaParser._null_mode`` the options.
+from the live schema object and ``JsonSchemaParser._null_mode`` the options. The converters write null in the forms of
+:data:`NullForm` (:func:`with_null`, :func:`null_schema`), which the sites then read as written.
 
 The sites disagree today on which sources count and whether ``nullable`` needs ``--strict-nullable``. The rows named
 ``legacy-*`` keep that output; the fix of each (G12, G01 decision 3) deletes its row.
@@ -23,12 +24,15 @@ if TYPE_CHECKING:
 __all__ = [
     "NO_NULL_MODE",
     "NullFacts",
+    "NullForm",
     "NullMode",
     "NullRule",
     "NullSite",
     "NullSources",
     "dump_null_sources",
+    "null_schema",
     "resolve_null_facts",
+    "with_null",
 ]
 
 NullSite: TypeAlias = Literal[
@@ -51,6 +55,11 @@ NullSite: TypeAlias = Literal[
     "enum-literal",
     "combined-branch",
     "inherited-child",
+    "inherited-types",
+    "enforced-value",
+    "const-enum",
+    "enum-as-const",
+    "graphql-field",
 ]
 """The parse sites that read where null comes from.
 
@@ -82,6 +91,18 @@ NullSite: TypeAlias = Literal[
   it admits null itself (``JsonSchemaParser._merge_inherited_type_shape_dict``,
   ``JsonSchemaParser._mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's
   own ``type`` and ``nullable``, ``parser/jsonschema.py:_dump_drops_inherited_null``).
+* ``inherited-types``: the null among the JSON types an inherited schema accepts, beside the types it collects
+  (``JsonSchemaParser._get_inherited_schema_types``).
+* ``enforced-value``: the null a value schema enforces, beside its types
+  (``JsonSchemaParser._enforced_value_keywords``).
+* ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
+  without a const; the parent's and the branches' ``type`` are read as written, without the mark of
+  ``legacy-nullable-as-type-list`` (``JsonSchemaParser._extract_const_enum_from_combined``).
+* ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
+  whether that value is null (``parser/jsonschema.py:_single_value_enum_as_const``,
+  ``JsonSchemaParser._reads_enum_as_const``).
+* ``graphql-field``: a GraphQL field, whose type's ``nullable`` is false under a non-null wrapper
+  (``parser/graphql.py:GraphQLParser.parse_field``).
 """
 
 NullRule: TypeAlias = Literal[
@@ -125,6 +146,13 @@ NullRule: TypeAlias = Literal[
     "inherited-typed-without-null",
     "inherited-declared-not-null",
     "inherited-keeps-null",
+    "nullable-beside-types",
+    "const-enum-null",
+    "nullable-enum-not-const",
+    "enum-as-const",
+    "graphql-defaulted-non-null",
+    "graphql-non-null",
+    "graphql-nullable",
 ]
 """The rows of :func:`resolve_null_facts`.
 
@@ -195,6 +223,28 @@ NullRule: TypeAlias = Literal[
 * ``inherited-typed-without-null``: a ``type`` without null, unless ``nullable: true``, drops the inherited null.
 * ``inherited-declared-not-null``: so does ``nullable: false`` beside no such ``type``.
 * ``inherited-keeps-null``: otherwise the inherited type keeps its null.
+* ``nullable-beside-types``: a site that collects the types itself, a ``type`` list holding null among them, adds null
+  for ``nullable: true``, also without ``--strict-nullable`` (``inherited-types``, ``enforced-value``).
+* ``const-enum-null``: the enum of consts lists null for a branch typed null without a const, or for the parent's
+  ``type`` list holding null; ``nullable`` does not count, as an Enum's ``nullable`` beside no null value adds none
+  (``enum-without-null``).
+* ``nullable-enum-not-const``: a one-value enum beside ``nullable: true`` and a value other than null stays an enum,
+  since a const does not carry ``nullable``.
+* ``enum-as-const``: otherwise the enum is read as its const, which holds its null value.
+* ``graphql-defaulted-non-null``: a non-null field with a default is optional and not nullable.
+* ``graphql-non-null``: a non-null field without one is required unless ``--force-optional``, with undecided
+  nullability.
+* ``graphql-nullable``: a nullable field is optional, with undecided nullability.
+"""
+
+
+NullForm: TypeAlias = Literal["member", "type-list"]
+"""How a converter writes that a schema admits null (:func:`with_null`).
+
+* ``member``: an ``anyOf`` member typed null after the schema's own ``anyOf`` members, or beside the schema in a new
+  ``anyOf`` (protobuf wrapper types); avro writes the null of its unions so too (:func:`null_schema`).
+* ``type-list``: null appended to the schema's ``type`` when that is one string, else ``member`` (xmlschema
+  ``nillable``).
 """
 
 
@@ -251,6 +301,20 @@ NO_NULL_MODE: NullMode = NullMode()
 """The mode of sites that no option changes."""
 
 
+def null_schema() -> dict[str, Any]:
+    """Return the schema of null that converters and the null members of parse sites write: a ``type`` of null."""
+    return {"type": "null"}
+
+
+def with_null(schema: dict[str, Any], form: NullForm) -> dict[str, Any]:
+    """Return a converted schema that also admits null, written in ``form``; nested values are shared with it."""
+    if form == "type-list" and isinstance(type_ := schema.get("type"), str):
+        return {**schema, "type": [type_, "null"]}
+    if "anyOf" in schema:
+        return {**schema, "anyOf": [*schema["anyOf"], null_schema()]}
+    return {"anyOf": [schema, null_schema()]}
+
+
 def dump_null_sources(dump: Mapping[str, Any]) -> NullSources:
     """Return the null sources of a dumped schema's own ``type`` and ``nullable``; members and ``enum`` are not read.
 
@@ -293,8 +357,9 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     """Return what ``site`` reads from the null ``sources`` of one schema object under ``mode``.
 
     The match returns for every site but ``inherited-child``, whose rows follow it. ``required`` and ``has_default``
-    are the required state and default of the field a site builds (``field``, ``array-field``); ``parts`` are the
-    sources of the typed parts an ``allOf`` merges (``all-of-map``, ``all-of-parts``).
+    are the required state and default of the field a site builds (``field``, ``array-field``, ``has_default`` also
+    ``graphql-field``); ``parts`` are the sources of the typed parts an ``allOf`` merges (``all-of-map``,
+    ``all-of-parts``) or of the null branches of a ``const-enum``.
     """
     type_null = sources.type_has_null
     match site:
@@ -384,6 +449,22 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
             if sources.nullable and not type_null:
                 return NullFacts("nullable-branch-adds-null", admits_null=True)
             return NullFacts("branch-keeps")
+        case "inherited-types" | "enforced-value":
+            return NullFacts("nullable-beside-types", admits_null=sources.nullable is True)
+        case "const-enum":
+            return NullFacts(
+                "const-enum-null", admits_null=sources.type_lists_null or any(part.type_null for part in parts)
+            )
+        case "enum-as-const":
+            if sources.nullable is True and not sources.enum_null:
+                return NullFacts("nullable-enum-not-const", admits_null=True)
+            return NullFacts("enum-as-const", admits_null=sources.enum_null)
+        case "graphql-field":
+            if sources.nullable is not False:
+                return NullFacts("graphql-nullable", required=False)
+            if has_default:
+                return NullFacts("graphql-defaulted-non-null", admits_null=False, required=False)
+            return NullFacts("graphql-non-null", required=not mode.force_optional)
     if sources.typed and not type_null and sources.nullable is not True:
         return NullFacts("inherited-typed-without-null", admits_null=False)
     if sources.nullable is False:

@@ -26,8 +26,8 @@ from datamodel_code_generator._client.pagination import (
     credential_place,
 )
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES, status_key
-from datamodel_code_generator._target_contract import NoneType, UnionType
 from datamodel_code_generator._target_module import TargetModule, TypeNames
+from datamodel_code_generator._target_types import without_none
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -101,17 +101,6 @@ def _response(spec: OperationSpec, status: int) -> ResponseSpec | None:
         return None
     keys = {response.status: response for response in spec.responses if response.success}
     return None if (key := status_key(status, keys)) is None else keys[key]
-
-
-def _nonnull(value: TypeView) -> TypeView:
-    """Return a type without None, as a result that reads null is refused at runtime.
-
-    The union of the other members keeps the discriminator its schema declares.
-    """
-    if not isinstance(value, UnionType) or not any(isinstance(member, NoneType) for member in value.members):
-        return value
-    members = tuple(member for member in value.members if not isinstance(member, NoneType))
-    return members[0] if len(members) == 1 else UnionType(members, value.preserve_order, value.discriminator)
 
 
 class _Polls:
@@ -399,7 +388,7 @@ class _Polls:
             message = f"The {what} schema {reference.pointer!r} of {name!r} is not the schema its pointer reads"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.schema", message, spec)
         schema = {"document": self.protocols.documents[reference], "pointer": reference.pointer}
-        return _Result(value=_nonnull(member.model_facts.type), steps=reached.steps, schema=schema)
+        return _Result(value=without_none(member.model_facts.type), steps=reached.steps, schema=schema)
 
     def result(
         self, helper: Helper, polled: _Source, created: list[_Source], problems: list[Diagnostic]

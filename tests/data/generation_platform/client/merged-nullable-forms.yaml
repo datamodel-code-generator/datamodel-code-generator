@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info: {title: Merged nullable forms, version: "1.0"}
+servers: [{url: "https://merged.example.com"}]
+paths:
+  /plain:
+    put:
+      operationId: putPlain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Plain"}
+      responses:
+        "200":
+          description: A plain address, which is never null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Plain"}
+  /wrap:
+    put:
+      operationId: putWrap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WrapPlain"}
+      responses:
+        "200":
+          description: A wrapped address, which is never null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WrapPlain"}
+  /wrap-nullable:
+    put:
+      operationId: putWrapNullable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WrapNullable"}
+      responses:
+        "200":
+          description: A wrapped address, which may be null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WrapNullable"}
+  /null-object:
+    get:
+      operationId: getNullObject
+      responses:
+        "200":
+          description: An address, which may be null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/NullObj"}
+components:
+  schemas:
+    NullObj:
+      type: [object, "null"]
+      properties:
+        street: {type: string}
+    Plain:
+      type: object
+      properties:
+        street: {type: string}
+    WrapNullable:
+      type: [object, "null"]
+      allOf:
+        - {$ref: "#/components/schemas/NullObj"}
+    WrapPlain:
+      allOf:
+        - {$ref: "#/components/schemas/NullObj"}

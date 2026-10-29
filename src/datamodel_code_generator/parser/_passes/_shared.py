@@ -63,7 +63,7 @@ from datamodel_code_generator.python_literal import (
     rewrite_runtime_imports,
 )
 from datamodel_code_generator.reference import ModelType, _source_path
-from datamodel_code_generator.types import DataType, DefaultValueRecipe
+from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
@@ -1235,9 +1235,9 @@ def _iter_discriminator_data_types(
     wrappers: list[DataModel] | None = None,
 ) -> Iterator[tuple[DataType, bool, int]]:
     for data_type in data_types:
-        if data_type.is_union and not _is_discriminator_container(data_type):
+        if members := union_members(data_type):
             yield from _iter_discriminator_data_types(
-                data_type.data_types,
+                members,
                 active_union_models,
                 can_update_discriminator=False,
                 discriminator_owner=discriminator_owner,

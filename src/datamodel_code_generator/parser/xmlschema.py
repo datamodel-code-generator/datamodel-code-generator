@@ -28,6 +28,7 @@ from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as 
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
 from datamodel_code_generator.parser import _xmlschema_literals
 from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._null_facts import with_null
 from datamodel_code_generator.parser._xmlschema_literals import (
     _PythonExpression,
     _safe_bool,
@@ -894,7 +895,7 @@ class _XMLSchemaConverter:
         if "fixed" in element.attrib:
             self._apply_fixed_value(schema, self._parse_literal(str(element.get("fixed")), schema))
         if element.get("nillable") in {"true", "1"}:
-            schema = self._make_nullable(schema)
+            schema = with_null(_copy_schema(schema), "type-list")
         if element.get("abstract") == "true":
             schema["x-xsd-abstract"] = True
         return schema
@@ -905,17 +906,6 @@ class _XMLSchemaConverter:
             schema["x-python-type"] = "Decimal"
         schema["const"] = fixed_value
         schema.setdefault("default", fixed_value)
-
-    def _make_nullable(self, schema: JsonSchema) -> JsonSchema:  # noqa: PLR6301
-        schema = _copy_schema(schema)
-        schema_type = schema.get("type")
-        if isinstance(schema_type, str):
-            schema["type"] = [schema_type, "null"]
-            return schema
-        if "anyOf" in schema:
-            schema["anyOf"] = [*schema["anyOf"], {"type": "null"}]
-            return schema
-        return {"anyOf": [schema, {"type": "null"}]}
 
     def _apply_occurs(self, element: ET.Element, schema: JsonSchema) -> JsonSchema:  # noqa: PLR6301
         min_occurs_value = element.get("minOccurs")
