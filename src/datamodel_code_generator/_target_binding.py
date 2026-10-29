@@ -17,13 +17,13 @@ from decimal import Decimal
 from functools import cached_property
 from math import isfinite
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult, unquote, urljoin
 
-from typing_extensions import Sentinel, override
+from typing_extensions import override
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._document_reader import document_statuses, string_key
+from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_schema import (
     MODEL_VALUE_POSITIONS,
@@ -33,10 +33,12 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BackendFieldFacts,
     BackendModelFacts,
     BackendSetting,
     BoundType,
+    BuiltinName,
     BuiltinType,
     ConstructorType,
     DeclarationId,
@@ -89,10 +91,13 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import admits_none, is_none, present
+from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
+from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.nullability import reference_null
+from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
@@ -119,6 +124,7 @@ FieldKind: TypeAlias = Literal[
 ]
 Direction: TypeAlias = Literal["request", "response", "neutral"]
 Projection: TypeAlias = Literal["value", "item_stream_array"]
+_DIRECTIONS: Final[tuple[Direction, ...]] = ("request", "response")
 
 _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
     pydantic_v2.BaseModel: "pydantic",
@@ -130,20 +136,7 @@ _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
 _ENUMS: Final = frozenset({Enum, IntEnum, StrEnum})
 _ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement, PydanticCompatibleTypeAlias})
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
-_BUILTINS: Final = {
-    "bool": BuiltinType("bool"),
-    "bytes": BuiltinType("bytes"),
-    "complex": BuiltinType("complex"),
-    "float": BuiltinType("float"),
-    "int": BuiltinType("int"),
-    "str": BuiltinType("str"),
-    "object": BuiltinType("object"),
-    "list": BuiltinType("list"),
-    "set": BuiltinType("set"),
-    "frozenset": BuiltinType("frozenset"),
-    "dict": BuiltinType("dict"),
-    "tuple": BuiltinType("tuple"),
-}
+_BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in get_args(BuiltinName)}
 _NULL: Final = frozenset({"null"})
 _ARRAY: Final = frozenset({"array"})
 _STRING: Final = frozenset({"string"})
@@ -161,12 +154,9 @@ _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
 })
 _SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 _DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
-_DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
-    bool: "bool",
-    int: "int",
-    float: "float",
-    str: "str",
-}
+_DEFAULT_KINDS: Final = cast(
+    "dict[type, Literal['bool', 'int', 'float', 'str']]", {kind: kind.__name__ for kind in (bool, int, float, str)}
+)
 _PARAMETER_FACTS: Final = (
     "name",
     "in",
@@ -190,20 +180,11 @@ _OPERATION_FACTS: Final = (
     "security",
     "servers",
 )
-_LINK_FACTS: Final = ("operationRef", "operationId", "parameters", "requestBody", "description", "server")
-_SECURITY_FACTS: Final = ("type", "description", "name", "in", "scheme", "bearerFormat", "flows", "openIdConnectUrl")
-_DATACLASS_PARAMETERS: Final = (
-    "init",
-    "repr",
-    "eq",
-    "order",
-    "unsafe_hash",
-    "frozen",
-    "match_args",
-    "kw_only",
-    "slots",
-    "weakref_slot",
-)
+_METADATA_FACTS: Final = {
+    "link": ("operationRef", "operationId", "parameters", "requestBody", "description", "server"),
+    "security_scheme": ("type", "description", "name", "in", "scheme", "bearerFormat", "flows", "openIdConnectUrl"),
+}
+_DATACLASS_PARAMETERS: Final = tuple(DataclassArguments.__annotations__)
 _MSGSPEC_PARAMETERS: Final = (
     "tag",
     "tag_field",
@@ -214,6 +195,12 @@ _MSGSPEC_PARAMETERS: Final = (
     "frozen",
     "rename",
 )
+_BACKEND_PARAMETERS: Final[dict[BackendName, tuple[str, ...]]] = {
+    "dataclass": _DATACLASS_PARAMETERS,
+    "pydantic_dataclass": _DATACLASS_PARAMETERS,
+    "msgspec": _MSGSPEC_PARAMETERS,
+    "typeddict": ("total", "closed"),
+}
 _PYDANTIC_CONFIGURATION: Final = (
     "extra",
     "strict",
@@ -224,12 +211,10 @@ _PYDANTIC_CONFIGURATION: Final = (
     "alias_generator",
     "regex_engine",
 )
-_SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
-    list: "list",
-    tuple: "tuple",
-    set: "set",
-    frozenset: "frozenset",
-}
+_SEQUENCES: Final = cast(
+    "dict[type, Literal['list', 'tuple', 'set', 'frozenset']]",
+    {kind: kind.__name__ for kind in (list, tuple, set, frozenset)},
+)
 _SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
 _PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
 _SLOT: Final = "\x00"
@@ -242,16 +227,13 @@ _CONTAINERS: Final = {
     "dict": "is_dict",
 }
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
-_WRAPPED: Final = frozenset({"alias", "root"})
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
     **dict.fromkeys(_CONTAINERS.values(), False),
     "is_optional": False,
     "dict_key": None,
-    "data_types": [],
     "reference": None,
     "parent": None,
-    "children": [],
 }
 
 
@@ -538,7 +520,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         walked = self._walked_schemas
         if walked and (parent := walked[-1]) is not None:
             tokens = path[parent[0] :]
-            declaration, value = parent[1].child(*tokens), _descend(parent[2], tokens)
+            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, _source_member)
         else:
             declaration = cast("SchemaLocation", obj.schema_location)
             value = self._reader.borrow(declaration)
@@ -601,14 +583,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
-        document = "/".join(path_parts)
-        facts: list[tuple[str, FrozenLiteral]] = []
-        written = self._document_as_written(specification)
-        for key in _DOCUMENT_FACTS:
-            if key in written:
-                with suppress(_UnsupportedError):
-                    facts.append((key, _freeze_literal(written[key], set())))
-        self.document_facts[document] = tuple(facts)
+        self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
         self._reader.versions.append(str(specification.get("openapi", "")))
         super()._parse_specification(specification, path_parts)
 
@@ -809,32 +784,16 @@ def _default(value: YamlValue) -> LiteralScalar | None:
     return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
 
 
-def _keywords(raw: dict[str, YamlValue]) -> tuple[tuple[str, FrozenLiteral], ...]:
-    """Return the title, description, deprecation, examples and default a schema declares, each with a literal."""
+def _keywords(
+    raw: dict[str, YamlValue], keys: tuple[str, ...] = _SCHEMA_KEYWORDS
+) -> tuple[tuple[str, FrozenLiteral], ...]:
+    """Return each of ``keys`` an object declares, with its literal; by default a schema's documentation keywords."""
     found: list[tuple[str, FrozenLiteral]] = []
-    for key in _SCHEMA_KEYWORDS:
+    for key in keys:
         if key in raw:
             with suppress(_UnsupportedError):
                 found.append((key, _freeze_literal(raw[key], set())))
     return tuple(found)
-
-
-def _value_kind(value: object) -> str:
-    """Return the JSON type an enum or const value gives a schema, any container as an object."""
-    match value:
-        case bool():
-            return "boolean"
-        case int():
-            return "integer"
-        case float():
-            return "number"
-        case None:
-            return "null"
-        case str():
-            return "string"
-        case _:
-            pass
-    return "object"
 
 
 def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumentId]) -> object:
@@ -861,7 +820,6 @@ _UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
 _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 _BAD_PERCENT: Final = re.compile(r"%(?![0-9a-fA-F]{2})")
 _BAD_ESCAPE: Final = re.compile(r"~(?![01])")
-_MISSING: Final = cast("YamlValue", Sentinel("_MISSING"))
 
 
 def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
@@ -893,15 +851,18 @@ def _schema_use(location: SourceLocation) -> TypeUseId:
     )
 
 
+_JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
+    "none": "null",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+    "str": "string",
+}
 _VALUE_SCHEMA_LISTS = tuple(
     keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SEQUENCE_SCHEMA_SHAPES
 )
 _VALUE_SCHEMA_MAPS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] == "map")
 _VALUE_SCHEMAS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SINGLE_SCHEMA_SHAPES)
-
-
-def _mapping(value: object) -> dict[str, YamlValue]:
-    return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
 def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
@@ -931,19 +892,17 @@ def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
     )
 
 
-def _json_type(value: object) -> str:
-    """Return the JSON type of an enum member's value."""
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "boolean"
-    if isinstance(value, int):
-        return "integer"
-    if isinstance(value, float | Decimal):
-        return "number"
-    if isinstance(value, str):
-        return "string"
-    return "object" if isinstance(value, dict) else "array"
+def _json_type(value: object, other: str | None = None) -> str:
+    """Return the JSON type of an enum or const value by its literal kind (H08).
+
+    Any other value is ``other``, or by default a number when it is a Decimal, an object when it is a dict, and an
+    array otherwise.
+    """
+    if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
+        return found
+    if other is not None:
+        return other
+    return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
 
 
 def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
@@ -1031,20 +990,13 @@ def _backend_value(value: object) -> KnownBackendValue:
 
 
 def _syntax_value(value: str) -> KnownBackendValue:
-    try:
-        literal = _literal_scalar(_python_literal(value))
-    except ValueError:
-        literal = None
-    return KnownBackendValue(literal if literal is not None else SourceExpression(value))
-
-
-def _python_literal(text: str) -> object:
     from ast import literal_eval  # noqa: PLC0415
 
     try:
-        return literal_eval(text)
-    except (SyntaxError, ValueError) as error:
-        raise ValueError(text) from error
+        literal = _literal_scalar(literal_eval(value))
+    except (SyntaxError, ValueError):
+        literal = None
+    return KnownBackendValue(literal if literal is not None else SourceExpression(value))
 
 
 def _ordered_union(
@@ -1069,11 +1021,21 @@ def _ordered_union(
     return UnionType(unique, preserve_order, discriminator, hint(unique))
 
 
+def _constraint_base(data_type: DataType, *, encoded: bool = False) -> str | None:
+    """Return the name of the scalar a constrained scalar constrains, as the model generator reads it, or None.
+
+    With ``encoded``, bytes decoded from base64 text with lengths constrain bytes.
+    """
+    if getattr(data_type, "annotated_string", False):
+        return "str"
+    if encoded and getattr(data_type, "annotated_bytes", False):
+        return "bytes"
+    return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+
+
 def _constrained_base(data_type: DataType) -> BuiltinType | ImportedType | None:
     """Return the scalar a constrained scalar constrains, as the model generator reads it, or None for any other."""
-    if getattr(data_type, "annotated_string", False):
-        return BuiltinType("str")
-    base = None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+    base = _constraint_base(data_type)
     return ImportedType(IMPORT_DECIMAL) if base == "Decimal" else None if base is None else _BUILTINS[base]
 
 
@@ -1239,10 +1201,6 @@ class _Binder:
             return model.fields[0].data_type
         return None
 
-    def root(self, model: DataModel) -> DataType | None:
-        """Return the type an alias or root model stands for: its field's, or that of the model its reuse inherits."""
-        return None if (field := self.root_field(model)) is None else field.data_type
-
     def root_field(self, model: DataModel) -> DataModelFieldBase | None:
         """Return the field of an alias or root model, or that of the model its reuse inherits."""
         while (
@@ -1392,10 +1350,6 @@ class _Hints:
         annotation, static = variants if len(variants) > 1 else (variants[0], None)
         return self.hint(annotation, None if static == annotation else static)
 
-    def optional(self, base: TypeView) -> ModelHint:
-        """Return the hint of a type that also takes None, in the configured type style."""
-        return self.composed(self.hint_type.model_construct(), base=base, is_optional=True)
-
     def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
@@ -1424,13 +1378,7 @@ class _Hints:
         annotation = copy.type_hint, [item for item in copy.imports if _identity(item) not in slotted]
         static = None
         if import_ is not None and data_type.is_func and kwargs:
-            base = (
-                "str"
-                if getattr(data_type, "annotated_string", False)
-                else "bytes"
-                if getattr(data_type, "annotated_bytes", False)
-                else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
-            )
+            base = _constraint_base(data_type, encoded=True)
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
         return self.hint(annotation, static)
 
@@ -1517,7 +1465,8 @@ class _Projector:
                 and self.binder.policies[id(self.binder.models[value.symbol])].kind == "model"
                 and self.binder.schema_null(reference, self.direction)
             ):
-                value = UnionType((value, NoneType()), preserve_order=False, hint=self.hints.optional(value))
+                hint = self.hints.composed(self.hints.hint_type.model_construct(), base=value, is_optional=True)
+                value = UnionType((value, NoneType()), preserve_order=False, hint=hint)
             return TypeProjection(self._imports(value))
         except _UnsupportedError:
             return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
@@ -1570,13 +1519,13 @@ class _Projector:
         if (
             self.inline
             and symbol not in self.inlined
-            and binder.policies[id(model := binder.models[symbol])].kind in _WRAPPED
-            and (root := binder.root(model)) is not None
+            and binder.policies[id(model := binder.models[symbol])].kind in WRAPPER_KINDS
+            and (root := binder.root_field(model)) is not None
         ):
             self.inlined.add(symbol)
             self.constrained = self.constrained or binder.constrains(model)
             try:
-                return self._project(root)
+                return self._project(root.data_type)
             finally:
                 self.inlined.discard(symbol)
         result: TypeView = GeneratedSymbolType(symbol)
@@ -1782,11 +1731,9 @@ class _Projector:
             case ConstructorType():
                 return replace(
                     value,
-                    callable=ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
+                    callable=self._imports(value.callable),
                     keywords=tuple((name, _argument_import(item, resolve)) for name, item in value.keywords),
-                    base=ImportedType(resolve(value.base.import_))
-                    if isinstance(value.base, ImportedType)
-                    else value.base,
+                    base=None if value.base is None else self._imports(value.base),
                 )
             case _:
                 pass
@@ -1956,15 +1903,7 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
     if (backend := policy.backend) is None or policy.kind == "custom" or model.decorators:
         return None
     values = _model_settings(model, backend)
-    match backend:
-        case "dataclass" | "pydantic_dataclass":
-            parameters = _DATACLASS_PARAMETERS
-        case "msgspec":
-            parameters = _MSGSPEC_PARAMETERS
-        case "typeddict":
-            parameters = ("total", "closed")
-        case _:
-            parameters = ()
+    parameters = _BACKEND_PARAMETERS.get(backend, ())
     configuration: tuple[BackendSetting, ...] = ()
     if backend in {"pydantic", "pydantic_dataclass"}:
         key = "config_items" if backend == "pydantic" else "_safe_config_items"
@@ -2039,7 +1978,10 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
-def _source_member(value: dict[str, YamlValue], key: str) -> YamlValue:
+def _source_member(value: YamlValue, key: str) -> YamlValue:
+    """Return a mapping's member by key, its canonical integer YAML key first, or another value's item by ``int``."""
+    if not isinstance(value, dict):
+        return cast("list[YamlValue]", value)[int(key)]
     if key.isascii() and key.isdecimal() and str(number := int(key)) == key and number in value:  # type: ignore[comparison-overlap]
         return value[number]  # type: ignore[index]
     return value[key]
@@ -2083,13 +2025,7 @@ def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
 
 
 def _wire_name(field: DataModelFieldBase) -> str:
-    return (
-        field.original_name
-        if field.original_name is not None
-        else field.alias
-        if field.alias is not None
-        else field.name or ""
-    )
+    return field_source_name(name=field.name, original_name=field.original_name, alias=field.alias) or ""
 
 
 def _linearize(symbol: SymbolId, bases: dict[SymbolId, tuple[SymbolId, ...]]) -> tuple[SymbolId, ...] | None:
@@ -2179,7 +2115,7 @@ class _SchemaNode:
         properties = value.get("properties")
         branches = value.get("allOf")
         required = value.get("required")
-        additional = value.get("additionalProperties", _MISSING)
+        additional = value.get("additionalProperties", MISSING)
         items = value.get("items")
         prefix = value.get("prefixItems")
         node = cls(
@@ -2193,7 +2129,7 @@ class _SchemaNode:
             ),
             tuple(name for name in required if isinstance(name, str)) if isinstance(required, list) else (),
             "absent"
-            if additional is _MISSING
+            if additional is MISSING
             else "false"
             if additional is False
             else "schema"
@@ -2204,7 +2140,7 @@ class _SchemaNode:
             isinstance(items, dict),
             len(items) if isinstance(items, list) else None,
             len(prefix) if isinstance(prefix, list) else None,
-            tuple(_mapping(value.get("patternProperties"))),
+            tuple(as_mapping(value.get("patternProperties"))),
             _schema_branches(value.get("anyOf")),
             _schema_branches(value.get("oneOf")),
         )
@@ -2216,18 +2152,6 @@ def _schema_branches(value: YamlValue) -> tuple[bool, ...] | None:
 
 
 _LEAF: Final = _SchemaNode()
-
-
-def _descend(value: YamlValue, tokens: Iterable[str], missing: YamlValue = None) -> YamlValue:
-    """Read the node raw pointer tokens name below a loaded value, or `missing` when the value lacks it."""
-    try:
-        for token in tokens:
-            value = (
-                _source_member(value, token) if isinstance(value, dict) else cast("list[YamlValue]", value)[int(token)]
-            )
-    except (KeyError, IndexError, TypeError, ValueError):
-        return missing
-    return value
 
 
 class _SchemaLocations:
@@ -2396,13 +2320,13 @@ class _Reader(_SchemaLocations):
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return _descend(self.loaded.get(declaration.document), declaration.tokens, missing)
+        return descend(self.loaded.get(declaration.document), declaration.tokens, _source_member, missing)
 
-    def node(self, declaration: SchemaLocation, raw: YamlValue = _MISSING) -> _SchemaNode | None:
+    def node(self, declaration: SchemaLocation, raw: YamlValue = MISSING) -> _SchemaNode | None:
         """Record and return where a loaded schema declares its members, None when its document lacks it."""
         if (node := self.nodes.get(declaration)) is not None:
             return node
-        if (value := self.borrow(declaration) if raw is _MISSING else raw) is None:
+        if (value := self.borrow(declaration) if raw is MISSING else raw) is None:
             return None
         node = self.nodes[declaration] = _SchemaNode.of(value)
         return node
@@ -2412,7 +2336,7 @@ class _Reader(_SchemaLocations):
 
         Identification keywords beside a reference say nothing of its values, and in OpenAPI 3.0 no sibling does.
         """
-        raw = _mapping(self.borrow(declaration))
+        raw = as_mapping(self.borrow(declaration))
         seen = {declaration}
         while (
             (self.legacy or raw.keys() - _IDENTIFIERS == {"$ref"})
@@ -2421,7 +2345,7 @@ class _Reader(_SchemaLocations):
             and target not in seen
         ):
             seen.add(target)
-            declaration, raw = target, _mapping(self.borrow(target))
+            declaration, raw = target, as_mapping(self.borrow(target))
         return declaration, raw
 
     def record(self, declaration: SchemaLocation, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
@@ -2435,7 +2359,7 @@ class _Reader(_SchemaLocations):
         kind = None if media is None else _media_kind(media)
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
-        form = self.nullable_branch(declaration) if kind in _FORMS else None
+        form = found[0] if kind in _FORMS and len(found := self.choices(declaration)) == 1 else None
         declared = form or declaration
         parts = (
             self.parts(declared, locate)
@@ -2477,11 +2401,6 @@ class _Reader(_SchemaLocations):
         )
         found = (location.child(keyword, str(index)) for index in range(len(branches)))
         return [branch for branch in found if self.kinds(branch) != _NULL]
-
-    def nullable_branch(self, declaration: SchemaLocation) -> SchemaLocation | None:
-        """Return the one branch of a union of a schema and null alone that is not null, None for another schema."""
-        found = self.choices(declaration)
-        return found[0] if len(found) == 1 else None
 
     def part(self, declaration: SchemaLocation, locate: _Locate) -> PartSchema:
         """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
@@ -2559,7 +2478,7 @@ class _Reader(_SchemaLocations):
             return None, order
         order = walked[declaration] = len(walked)
         low = order
-        raw = _mapping(self.borrow(declaration))
+        raw = as_mapping(self.borrow(declaration))
         found = declaration if self.raw_bytes(raw, formats) else None
         for child in self._subschemas(declaration, raw):
             if found is not None:
@@ -2589,7 +2508,7 @@ class _Reader(_SchemaLocations):
             if isinstance(branches := raw.get(keyword), list):
                 yield from (declaration.child(keyword, str(index)) for index in range(len(branches)))
         for keyword in _VALUE_SCHEMA_MAPS:
-            yield from (declaration.child(keyword, str(name)) for name in _mapping(raw.get(keyword)))
+            yield from (declaration.child(keyword, str(name)) for name in as_mapping(raw.get(keyword)))
         for keyword in _VALUE_SCHEMAS:
             if isinstance(raw.get(keyword), dict):
                 yield declaration.child(keyword)
@@ -2639,7 +2558,7 @@ class _Reader(_SchemaLocations):
     def resolved(self, declaration: SchemaLocation) -> tuple[dict[str, YamlValue], SchemaLocation]:
         """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
         location = self.resolve(declaration)[0]
-        return _mapping(self.borrow(location)), location
+        return as_mapping(self.borrow(location)), location
 
     def kinds(
         self, declaration: SchemaLocation, active: frozenset[SchemaLocation] = frozenset()
@@ -2652,18 +2571,11 @@ class _Reader(_SchemaLocations):
         if declaration in active:
             return None
         active |= {declaration}
-        kinds: frozenset[str] | None = None
-        match value.get("type"):
-            case str() as single:
-                kinds = frozenset({single})
-            case list() as many:
-                kinds = frozenset(str(item) for item in many)
-            case _:
-                pass
+        kinds = _json_types(value) if isinstance(value.get("type"), str | list) else None
         if kinds is None and isinstance(
             values := value.get("enum", [value["const"]] if "const" in value else None), list
         ):
-            kinds = frozenset(_value_kind(item) for item in values)
+            kinds = frozenset(_json_type(item, "object") for item in values)
         for keyword in ("allOf", "anyOf", "oneOf"):
             branches = value.get(keyword)
             if not isinstance(branches, list) or not branches:
@@ -2762,7 +2674,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return _descend(self.documents.get(declaration.document), declaration.tokens, missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, _source_member, missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -2781,14 +2693,13 @@ class _Models:
         output: Path,
         model_package: str,
     ) -> None:
-        self.binder = binder = _Binder(parser, results)
+        self.binder = _Binder(parser, results)
         self.documents = _Documents(parser)
         self.schemas = _SchemaLocations(parser.schema_locations, self.documents.ids)
         self.parser = parser
         self.attempt = attempt
         self.output = output
         self.model_package = model_package
-        self.projectors = {direction: binder.projector(direction) for direction in ("neutral", "request", "response")}
         self.ignored = [(item.declaration, item.use_site, item) for item in parser.ignored_declarations]
         self.ignored_declarations = {declaration for declaration, _, _ in self.ignored}
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
@@ -2845,13 +2756,7 @@ class _Models:
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
         special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return (
-            "request"
-            if special.startswith("read-write-request")
-            else "response"
-            if special.startswith("read-write-response")
-            else "neutral"
-        )
+        return next((found for found in _DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
@@ -2872,6 +2777,9 @@ class _Models:
                     for base in model.base_classes
                     if base.reference is not None and (final := binder.final(base.reference)) is not None
                 )
+                values = (
+                    [get_raw_enum_member_value(item.default) for item in model.fields] if policy.kind == "enum" else []
+                )
                 symbols.append(
                     FinalModelSymbol(
                         symbol,
@@ -2886,14 +2794,10 @@ class _Models:
                         slots,
                         model.IS_ALIAS,
                         _model_facts(model, policy),
-                        tuple(_literal_scalar(get_raw_enum_member_value(field.default)) for field in model.fields)
-                        if policy.kind == "enum"
-                        else (),
+                        tuple(map(_literal_scalar, values)),
                         binder.source(model.reference),
                         self.reused_discriminator(model),
-                        tuple(_json_type(get_raw_enum_member_value(field.default)) for field in model.fields)
-                        if policy.kind == "enum"
-                        else (),
+                        tuple(map(_json_type, values)),
                     )
                 )
         return tuple(symbols), tuple(artifacts)
@@ -2904,13 +2808,13 @@ class _Models:
         return (
             None
             if original is None or not original.fields
-            else self.projectors["neutral"].selector(original.fields[0].data_type)
+            else self.binder.projector("neutral").selector(original.fields[0].data_type)
         )
 
     def field_facts(self, symbols: tuple[FinalModelSymbol, ...]) -> None:
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             self.locations[symbol.id] = self.model_location(model)
-        projector = self.projectors["neutral"]
+        projector = self.binder.projector("neutral")
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             if (backend := symbol.backend) is None or symbol.kind == "enum":
                 continue
@@ -3009,7 +2913,7 @@ class _Models:
             return None
         active.add(symbol)
         field = model.fields[0]
-        value = self.projectors["neutral"].project(field.data_type).value
+        value = self.binder.projector("neutral").project(field.data_type).value
         direct = field.nullable is True or (field.nullable is None and field.required and bool(field.type_has_null))
         unknown = value is None
         references: list[SymbolId] = []
@@ -3292,7 +3196,7 @@ class _SchemaUses(_Models):
                 self.relocate(declaration, value.symbol)
             directional = [
                 self.directional(source, declaration, projection, direction, neutral)
-                for direction in (("request", "response") if self.variants else ())
+                for direction in (_DIRECTIONS if self.variants else ())
             ]
             if not acquired and not any(directional) and self.uses[neutral].type is None:
                 del self.uses[neutral]
@@ -3374,7 +3278,7 @@ class _SchemaUses(_Models):
                 self.nested(declaration.child(*keyword), child)
         if not own:
             return
-        projected = self.projectors["neutral"].project(data_type)
+        projected = self.binder.projector("neutral").project(data_type)
         candidates = self.helpers.setdefault(declaration, [])
         if projected in candidates:
             return
@@ -3450,7 +3354,7 @@ class _Contracts(_SchemaUses):
 
     def declared(self, declaration: SchemaLocation, raw: YamlValue) -> tuple[SchemaLocation, dict[str, YamlValue]]:
         """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
-        return self.parser.resolutions.get(declaration) or (declaration, _mapping(raw))
+        return self.parser.resolutions.get(declaration) or (declaration, as_mapping(raw))
 
     @staticmethod
     def named(raw: YamlValue, holder: SchemaLocation, kind: str) -> Iterator[tuple[str, YamlValue]]:
@@ -3462,7 +3366,7 @@ class _Contracts(_SchemaUses):
         def error_path(key: object) -> list[str]:
             return [str(holder.child(str(key)))]
 
-        for key, value in _mapping(raw).items():
+        for key, value in as_mapping(raw).items():
             yield string_key(key, kind, error_path), value
 
     def metadata(
@@ -3474,7 +3378,7 @@ class _Contracts(_SchemaUses):
         raw: YamlValue,
     ) -> WireDeclaration:
         """Freeze link, callback and security scheme metadata with every reference edge it follows."""
-        value = _mapping(raw)
+        value = as_mapping(raw)
         seen = {declaration}
         references: list[SourceReference] = []
         locate = self.documents.location
@@ -3498,7 +3402,7 @@ class _Contracts(_SchemaUses):
             if target in seen:
                 references.append(SourceReference(source, ref, location, "cycle"))
                 break
-            if (borrowed := self.documents.borrow(target, _MISSING)) is _MISSING:
+            if (borrowed := self.documents.borrow(target, MISSING)) is MISSING:
                 references.append(SourceReference(source, ref, location, "pointer_missing"))
                 break
             if not isinstance(borrowed, dict):
@@ -3507,19 +3411,12 @@ class _Contracts(_SchemaUses):
             references.append(SourceReference(source, ref, location, "resolved"))
             seen.add(target)
             declaration, value = target, borrowed
-        match kind:
-            case "link":
-                keys: tuple[str, ...] = _LINK_FACTS
-            case "security_scheme":
-                keys = _SECURITY_FACTS
-            case _:
-                keys = ()
         return WireDeclaration(
             kind,
             name,
             DeclarationId(locate(declaration, "declaration")),
             locate(use_site, "use"),
-            _facts(value, ("$ref", *keys), declaration),
+            _facts(value, ("$ref", *_METADATA_FACTS.get(kind, ())), declaration),
             references=tuple(references),
         )
 
@@ -3594,8 +3491,8 @@ class _Contracts(_SchemaUses):
     ) -> tuple[WireDeclaration, ...]:
         locate = self.documents.location
         values: list[WireDeclaration] = []
-        for name, value in _mapping(raw).items():
-            medium = _mapping(value)
+        for name, value in as_mapping(raw).items():
+            medium = as_mapping(value)
             media_declaration, media_use = declaration.child("content", name), use_site.child("content", name)
             uses: list[TypeUseId] = []
             for keyword in ("schema", "itemSchema"):
@@ -3639,7 +3536,7 @@ class _Contracts(_SchemaUses):
                 for property_name, encoding_value in self.named(
                     medium.get("encoding"), encoding_declaration, "encoding property name"
                 ):
-                    encoding = _mapping(encoding_value)
+                    encoding = as_mapping(encoding_value)
                     declared = encoding_declaration.child(property_name)
                     used = media_use.child("encoding", property_name)
                     encodings.append(
@@ -3839,7 +3736,7 @@ class _Contracts(_SchemaUses):
                 status,
             )
             for status, value in document_statuses(
-                _mapping(raw.get("responses")), lambda status: [str(declaration.child("responses", status))]
+                as_mapping(raw.get("responses")), lambda status: [str(declaration.child("responses", status))]
             ).items()
         )
         callbacks = tuple(
@@ -3850,7 +3747,7 @@ class _Contracts(_SchemaUses):
                 use_site.child("callbacks", name),
                 callback,
             )
-            for name, callback in _mapping(raw.get("callbacks")).items()
+            for name, callback in as_mapping(raw.get("callbacks")).items()
         )
         root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)
@@ -3899,7 +3796,7 @@ class _Contracts(_SchemaUses):
             raw = self.documents.documents[document]
             schemes = SchemaLocation(document, ("components", "securitySchemes"))
             for name, scheme in self.named(
-                _mapping(_mapping(raw).get("components")).get("securitySchemes"), schemes, "component name"
+                as_mapping(as_mapping(raw).get("components")).get("securitySchemes"), schemes, "component name"
             ):
                 use = schemes.child(name)
                 declarations.append(self.metadata("security_scheme", name, use, use, scheme))
@@ -4000,6 +3897,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model._decisions.enum_kind import LiteralValueKind
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole

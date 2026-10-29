@@ -47,6 +47,8 @@ from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_operations import described
+from datamodel_code_generator._target_operations import label as _label
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -836,7 +838,7 @@ def _handle(spec: PollingSpec, prefix: str, python_version: PythonVersion) -> st
 
 def _route(operation: OperationSpec) -> str:
     """Return the method and path that a helper's docstrings cite, escaped for their literals."""
-    return escape_docstring(f"{operation.contract.method.upper()} {operation.contract.path}") or ""
+    return escape_docstring(_label(operation.contract)) or ""
 
 
 def _docstring(spec: OperationSpec, *, schema: bool) -> str:
@@ -847,12 +849,9 @@ def _docstring(spec: OperationSpec, *, schema: bool) -> str:
     """
     if spec.description:
         return spec.description
-    if schema:
-        facts = {name: getattr(value, "value", None) for name, value in spec.contract.facts}
-        texts = [text.strip() for name in ("summary", "description") if isinstance(text := facts.get(name), str)]
-        if text := "\n\n".join(filter(None, texts)):
-            return text
-    return f"Call {spec.contract.method.upper()} {spec.contract.path}."
+    if schema and (text := described(spec.contract)):
+        return text
+    return f"Call {_label(spec.contract)}."
 
 
 def _sent_path(path: str) -> str:

@@ -120,6 +120,33 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
     _commit(temporary, path, overwrite=overwrite)
 
 
+class ReceivedBody:
+    """A response body as it is read: a success body whole, an error body up to its bounded prefix."""
+
+    __slots__ = ("chunks", "problem", "size", "success", "truncated")
+
+    def __init__(self, *, success: bool) -> None:
+        self.success = success
+        self.chunks: list[bytes] = []
+        self.size = 0
+        self.truncated = False
+        self.problem: DecodeError | None = None
+
+    def add(self, chunk: bytes) -> bool:
+        """Keep a chunk and return whether reading continues: an error body keeps only its bounded prefix."""
+        self.size += len(chunk)
+        if self.success or self.size <= MAX_ERROR_BODY_BYTES:
+            self.chunks.append(chunk)
+            return True
+        self.chunks.append(chunk[: len(chunk) - (self.size - MAX_ERROR_BODY_BYTES)])
+        self.truncated = True
+        return False
+
+    @property
+    def content(self) -> bytes:
+        return b"".join(self.chunks)
+
+
 class _Download:
     """One temporary download, kept where its thread created it, and the chunks waiting for its next write."""
 
@@ -257,9 +284,7 @@ class _Raw(Generic[SourceT, HandleT]):
             raise self._undecodable(body, error) from None
 
     def _undecodable(self, body: bytes, cause: BaseException) -> DecodeError:
-        error = response_failure(self._info, "invalid_syntax", body, cause)
-        error.operation_id = self._operation_id
-        return error
+        return response_failure(self._info, "invalid_syntax", body, cause, operation_id=self._operation_id)
 
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
@@ -272,15 +297,6 @@ class _Raw(Generic[SourceT, HandleT]):
     def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""
         return self._failure(self._decoder.failure(self._info, b"", truncated=True))
-
-    @staticmethod
-    def _prefix(parts: list[bytes], chunk: bytes, size: int) -> bool:
-        """Keep a chunk of an error body within its prefix limit and return whether reading continues."""
-        if size <= MAX_ERROR_BODY_BYTES:
-            parts.append(chunk)
-            return True
-        parts.append(chunk[: len(chunk) - (size - MAX_ERROR_BODY_BYTES)])
-        return False
 
     def _save(self, decoded: list[bytes]) -> None:
         self._body = b"".join(decoded)
@@ -338,16 +354,13 @@ class _Raw(Generic[SourceT, HandleT]):
     async def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""
         self._state = "streaming"
-        parts: list[bytes] = []
-        size = 0
-        problem: DecodeError | None = None
+        received = ReceivedBody(success=False)
         try:
             async for chunk in self._chunks():
-                size += len(chunk)
-                if not self._prefix(parts, chunk, size):
+                if not received.add(chunk):
                     break
         except DecodeError as error:
-            problem = error
+            received.problem = error
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
@@ -355,8 +368,9 @@ class _Raw(Generic[SourceT, HandleT]):
         except BaseException as error:
             await self._end("failed", error)
             raise
-        truncated = size > MAX_ERROR_BODY_BYTES or problem is not None
-        return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
+        problem = received.problem
+        truncated = received.truncated or problem is not None
+        return self._failure(self._decoder.failure(self._info, received.content, truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the native connection once."""

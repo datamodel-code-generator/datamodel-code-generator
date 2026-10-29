@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, cast
 
+from datamodel_code_generator._document_reader import MISSING, descend
 from datamodel_code_generator._generation_contract import AttemptId
 
 
@@ -45,13 +46,8 @@ class SourceLease:
 
     def exists(self, location: SourceLocation) -> bool:
         """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
-        value: YamlValue = self._raw[location.document]
-        try:
-            for token in location.pointer.split("/")[1:]:
-                value = _member(value, token.replace("~1", "/").replace("~0", "~"))
-        except (KeyError, IndexError, TypeError):
-            return False
-        return True
+        tokens = (token.replace("~1", "/").replace("~0", "~") for token in location.pointer.split("/")[1:])
+        return descend(self._raw[location.document], tokens, _member, MISSING, (LookupError, TypeError)) is not MISSING
 
     def documents(self) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
         """Return every held document and where it was read from, for a target that copies them into documentation.

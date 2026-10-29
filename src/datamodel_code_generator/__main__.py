@@ -602,14 +602,9 @@ class _RemoteLockTransaction:
                         prefix=".datamodel-codegen-lock-",
                     )
         except (OSError, RemoteLockError) as exc:
-            from datamodel_code_generator._publication import close_anchor  # noqa: PLC0415
+            from datamodel_code_generator._publication import release_all  # noqa: PLC0415
 
-            for context in staging_contexts.values():
-                with suppress(OSError):
-                    context.cleanup()
-            for anchor in anchors.values():
-                with suppress(OSError):
-                    close_anchor(anchor)
+            release_all((*staging_contexts.values(), *anchors.values()))
             raise Error(str(exc)) from exc
         return cls(collectors, anchors, staging_contexts, publishable_paths)
 
@@ -656,23 +651,14 @@ class _RemoteLockTransaction:
 
     def _close_anchors(self) -> None:
         """Release private staging and update-only destination handles exactly once."""
-        from datamodel_code_generator._publication import close_anchor  # noqa: PLC0415
+        from datamodel_code_generator._publication import release_all  # noqa: PLC0415
 
-        cleanup_error: OSError | None = None
-        for context in self._staging_contexts.values():
-            try:
-                context.cleanup()
-            except OSError as exc:  # noqa: PERF203 - every anchor must be released before reporting failure
-                cleanup_error = cleanup_error or exc
+        cleanup_errors = release_all(self._staging_contexts.values())
         self._staging_contexts.clear()
-        for anchor in self._anchors.values():
-            try:
-                close_anchor(anchor)
-            except OSError as exc:  # noqa: PERF203 - every anchor must be released before reporting failure
-                cleanup_error = cleanup_error or exc
+        cleanup_errors += release_all(self._anchors.values())
         self._anchors.clear()
-        if cleanup_error is not None:
-            raise cleanup_error
+        if cleanup_errors:
+            raise cleanup_errors[0]
 
 
 class _UnresolvedRemoteLocks:
@@ -2006,14 +1992,6 @@ def _run_target(  # noqa: PLR0913, PLR0917
     return result
 
 
-def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
-    """Create an on-disk staging directory on the target artifact's filesystem."""
-    staging_parent = Path(os.path.abspath(target.expanduser())).parent  # noqa: PTH100
-    while not staging_parent.exists():
-        staging_parent = staging_parent.parent
-    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=staging_parent)
-
-
 def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     """Redirect a write-mode job's artifacts to private, same-filesystem staging paths.
 
@@ -2026,7 +2004,7 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
         return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
     output = plan.config.output
-    from datamodel_code_generator._publication import publication_anchor  # noqa: PLC0415
+    from datamodel_code_generator._publication import stage_artifact  # noqa: PLC0415
 
     contexts: list[tempfile.TemporaryDirectory[str]] = []
     anchors: list[_PublicationAnchor] = []
@@ -2035,26 +2013,26 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
         output_anchor: _PublicationAnchor | None = None
         updates: dict[str, Path] = {}
         if output is not None:
-            output_context = _staging_directory_for(output)
-            contexts.append(output_context)
-            staged_output = Path(output_context.name) / (output.name or "output")
-            updates["output"] = staged_output
-            output_anchor = publication_anchor(
-                cast("Path", plan.resolved_output_root)
-                if output.is_dir()
-                else cast("Path", plan.resolved_output_parent)
+            staged_output, output_anchor = stage_artifact(
+                output,
+                "output",
+                cast("Path", plan.resolved_output_root if output.is_dir() else plan.resolved_output_parent),
+                contexts,
+                anchors,
             )
-            anchors.append(output_anchor)
+            updates["output"] = staged_output
         model_metadata = plan.config.emit_model_metadata
         staged_model_metadata: Path | None = None
         model_metadata_anchor: _PublicationAnchor | None = None
         if model_metadata is not None:
-            metadata_context = _staging_directory_for(model_metadata)
-            contexts.append(metadata_context)
-            staged_model_metadata = Path(metadata_context.name) / (model_metadata.name or "model-metadata.json")
+            staged_model_metadata, model_metadata_anchor = stage_artifact(
+                model_metadata,
+                "model-metadata.json",
+                cast("Path", plan.resolved_model_metadata_parent),
+                contexts,
+                anchors,
+            )
             updates["emit_model_metadata"] = staged_model_metadata
-            model_metadata_anchor = publication_anchor(cast("Path", plan.resolved_model_metadata_parent))
-            anchors.append(model_metadata_anchor)
 
         staged_config = plan.config.model_copy(update=updates)
         staged_config._logical_model_metadata = model_metadata  # noqa: SLF001
@@ -2072,8 +2050,9 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
             tuple(contexts),
         )
     except OSError as exc:
-        cleanup_errors = _cleanup_staging_resources(contexts, anchors)
-        if cleanup_error := _staging_cleanup_error(exc, cleanup_errors):
+        from datamodel_code_generator._publication import release_all  # noqa: PLC0415
+
+        if cleanup_error := _staging_cleanup_error(exc, release_all((*contexts, *anchors))):
             raise cleanup_error from exc
         raise
 
@@ -2096,42 +2075,6 @@ def _stage_job_plans(plans: Sequence[JobPlan]) -> tuple[_StagedJobPlan, ...]:
     return tuple(staged_plans)
 
 
-def _cleanup_staging_resources(
-    staging_contexts: Iterable[tempfile.TemporaryDirectory[str]],
-    anchors: Iterable[_PublicationAnchor | None],
-) -> tuple[OSError, ...]:
-    """Attempt every private staging cleanup and retain each cleanup failure."""
-    cleanup_errors = [
-        cleanup_error
-        for context in staging_contexts
-        if (cleanup_error := _cleanup_staging_context(context)) is not None
-    ]
-    cleanup_errors.extend(
-        cleanup_error for anchor in anchors if (cleanup_error := _close_staging_anchor(anchor)) is not None
-    )
-    return tuple(cleanup_errors)
-
-
-def _cleanup_staging_context(context: tempfile.TemporaryDirectory[str]) -> OSError | None:
-    """Clean one temporary directory while retaining its cleanup failure."""
-    try:
-        context.cleanup()
-    except OSError as exc:
-        return exc
-    return None
-
-
-def _close_staging_anchor(anchor: _PublicationAnchor | None) -> OSError | None:
-    """Release one directory descriptor while retaining its cleanup failure."""
-    if anchor is None or anchor.directory_fd is None:
-        return None
-    try:
-        os.close(anchor.directory_fd)
-    except OSError as exc:
-        return exc
-    return None
-
-
 def _staging_cleanup_error(primary: OSError | None, cleanup_errors: Sequence[OSError]) -> OSError | None:
     """Combine cleanup diagnostics without discarding the original staging failure."""
     if not cleanup_errors:
@@ -2144,13 +2087,17 @@ def _staging_cleanup_error(primary: OSError | None, cleanup_errors: Sequence[OSE
 
 def _cleanup_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> tuple[OSError, ...]:
     """Remove every private batch staging resource after a batch result is known."""
-    return _cleanup_staging_resources(
-        (context for staged_plan in staged_plans for context in staged_plan.staging_contexts),
-        (
-            anchor
-            for staged_plan in staged_plans
-            for anchor in (staged_plan.output_anchor, staged_plan.model_metadata_anchor)
-        ),
+    from datamodel_code_generator._publication import release_all  # noqa: PLC0415
+
+    return tuple(
+        release_all((
+            *(context for staged_plan in staged_plans for context in staged_plan.staging_contexts),
+            *(
+                anchor
+                for staged_plan in staged_plans
+                for anchor in (staged_plan.output_anchor, staged_plan.model_metadata_anchor)
+            ),
+        ))
     )
 
 
@@ -2170,26 +2117,16 @@ def _cleanup_job_transaction(
 
 def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
     """Return staged files paired with their final targets without removing directory extras."""
-    from datamodel_code_generator._publication import StagedFile  # noqa: PLC0415
+    from datamodel_code_generator._publication import StagedFile, staged_artifact_files  # noqa: PLC0415
 
     if staged_plan.staged_output is not None and staged_plan.output is not None:
-        if staged_plan.staged_output.is_file():
-            yield StagedFile(
-                staged_plan.staged_output,
-                staged_plan.output,
-                cast("Path", staged_plan.plan.resolved_output_parent) / staged_plan.output.name,
-                staged_plan.output_anchor,
-            )
-        else:
-            for generated_file in sorted(staged_plan.staged_output.rglob("*")):
-                if generated_file.is_file():
-                    relative_path = generated_file.relative_to(staged_plan.staged_output)
-                    yield StagedFile(
-                        generated_file,
-                        staged_plan.output / relative_path,
-                        cast("Path", staged_plan.resolved_output_root) / relative_path,
-                        staged_plan.output_anchor,
-                    )
+        yield from staged_artifact_files(
+            staged_plan.staged_output,
+            staged_plan.output,
+            cast("Path", staged_plan.resolved_output_root),
+            cast("Path", staged_plan.plan.resolved_output_parent),
+            staged_plan.output_anchor,
+        )
     if staged_plan.staged_model_metadata is not None and staged_plan.model_metadata is not None:
         yield StagedFile(
             staged_plan.staged_model_metadata,
@@ -2530,12 +2467,7 @@ def _run_single_remote_transaction(  # noqa: PLR0913, PLR0917
         print(f"Error: could not prepare command output staging: {exc}", file=sys.stderr)  # noqa: T201
         exit_code = Exit.ERROR
     finally:
-        cleanup_errors = _cleanup_staged_job_plans(staged_plans)
-        try:
-            remote_locks.discard()
-        except OSError as exc:
-            cleanup_errors += (exc,)
-        if cleanup_errors:
+        if cleanup_errors := _cleanup_job_transaction(staged_plans, remote_locks):
             cleanup_message = "; ".join(str(error) for error in cleanup_errors)
             print(  # noqa: T201
                 f"Error: could not clean up command transaction: {cleanup_message}",

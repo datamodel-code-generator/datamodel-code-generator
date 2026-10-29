@@ -27,7 +27,7 @@ from ..model_codecs.media import (
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
-from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
+from .errors import APIStatusError, ConfigurationError, DecodeError, request_failure, response_failure, status_error
 from .media import encode_text, most_specific, with_charset
 
 if TYPE_CHECKING:
@@ -335,7 +335,7 @@ class RequestBody:
             if media_type is not None:
                 raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
             if self.required:
-                raise _unencodable(("body",), operation_id)
+                raise request_failure(("body",), operation_id)
             return None
         selected, sent = (
             (value.media, value.sent) if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
@@ -346,9 +346,9 @@ class RequestBody:
                 return EncodedBody(media_type=multipart, content=parts)
             content = selected.encode(value, sent)
         except DecodeError as error:
-            raise _unencodable(error.location, operation_id, error.cause) from None
+            raise request_failure(error.location, operation_id, error.cause) from None
         except request_errors(selected.codec) as error:
-            raise _unencodable(("body",), operation_id, error) from None
+            raise request_failure(("body",), operation_id, error) from None
         return EncodedBody(media_type=sent, content=content)
 
     def _takes_null(self, operation_id: str | None, media_type: str | None) -> bool:
@@ -430,15 +430,6 @@ class Branch(Generic[T_co]):
         if (paged := self._paged) is None:
             return self.decode(body, info), None
         return paged(body, info)
-
-
-def _unencodable(
-    location: tuple[str | int, ...], operation_id: str | None, cause: BaseException | None = None
-) -> DecodeError:
-    """Return the failure of an argument its declared wire form cannot carry; the location never holds the value."""
-    return DecodeError(
-        reason="unencodable", direction="request", location=location, operation_id=operation_id, cause=cause
-    )
 
 
 class InvalidBodyError(Exception):

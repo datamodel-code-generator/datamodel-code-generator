@@ -23,14 +23,11 @@ from datamodel_code_generator._api_types import (
     NextSteps,
     OperationRef,
 )
-from datamodel_code_generator._target_documents import (
-    ROOT_URN,
-    DocumentTable,
-    RootInput,
+from datamodel_code_generator._target_config import (
+    _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
-    document_identity,
-    shown,
 )
+from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
 from datamodel_code_generator._target_unicode import casefold, nfc
 from datamodel_code_generator.base_config import implied_target_settings as implied_settings
 
@@ -235,15 +232,11 @@ def prepare_target(
     _check_pydantic_target(generator, backend.value, target, sentinel=False)
     if backend is DataModelType.MsgspecStruct and (
         missing := tuple(
-            Diagnostic(
-                code="E_CONFIG_VALUE",
-                severity="error",
-                stage="config",
-                message=(
-                    f"The {generator.kind} target needs model_config.{name} for {backend.value!r} models, so that "
-                    f"their {decoded} can be decoded"
-                ),
-                option_path=f"model_config.{name}",
+            _diagnostic(
+                "E_CONFIG_VALUE",
+                f"model_config.{name}",
+                f"The {generator.kind} target needs model_config.{name} for {backend.value!r} models, so that "
+                f"their {decoded} can be decoded",
             )
             for enabled, name, decoded in (
                 (model_config.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),

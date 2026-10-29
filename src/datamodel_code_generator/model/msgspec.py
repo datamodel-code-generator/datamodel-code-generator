@@ -8,7 +8,7 @@ from __future__ import annotations
 import keyword
 from ast import literal_eval
 from fractions import Fraction
-from functools import wraps
+from functools import partial, wraps
 from math import ceil, floor
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
@@ -53,11 +53,13 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _has_opaque_custom_base,
     _keeps_stripped_place,
     _model_key_of_model,
     _ModelKeys,
     _nested_model_factory,
     _NestedModelFactory,
+    _normalized_constraint_kwargs,
     _ValueFactory,
     linearize_data_models,
 )
@@ -81,13 +83,12 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
     NONE,
     DataType,
+    _copy_data_type,
     _create_context_data_type,
     _is_value_literal,
     _qualified_type_path,
     build_union,
     chain_as_tuple,
-    merge_normalized_constraint,
-    strict_number_constraint,
     union_members,
 )
 
@@ -426,15 +427,6 @@ class Struct(DataModel):
         return ""
 
     @staticmethod
-    def _has_opaque_layout_base(model: DataModel) -> bool:
-        """Identify effective configured bases whose inherited slots are unknown."""
-        return (
-            (custom_base_class := model.custom_base_class) is not None
-            and custom_base_class not in (Struct.BASE_CLASS, [Struct.BASE_CLASS])
-            and any(not base.reference for base in model.base_classes)
-        )
-
-    @staticmethod
     def _layout_parents(model: DataModel, view: BaseLayoutView) -> list[DataModel]:
         """Return the generated Struct bases of a model as the view of the layouts sees them."""
         return [
@@ -446,7 +438,7 @@ class Struct(DataModel):
     @staticmethod
     def _has_unknown_layout(model: DataModel, view: BaseLayoutView) -> bool:
         """Return whether a configured base or the view hides the slots a model has."""
-        return Struct._has_opaque_layout_base(model) or view.is_opaque(model)
+        return _has_opaque_custom_base(model, Struct.BASE_CLASS) or view.is_opaque(model)
 
     @staticmethod
     def _find_layout_conflict(
@@ -580,24 +572,21 @@ class Struct(DataModel):
 
     def add_base_class_kwarg(self, name: str, value: str) -> None:
         """Add keyword argument to base class constructor."""
-        if isinstance((base_class_kwargs := self.extra_template_data.get("base_class_kwargs")), dict):
-            base_class_kwargs[name] = value
+        _user_struct_options(self)[name] = value
         self._internal_template_data["base_class_kwargs"][name] = value
 
     @override
     def _builtin_template_data(self) -> dict[str, Any]:
         """Serialize user msgspec options while retaining generator-owned syntax."""
         template_data = super()._builtin_template_data()
-        raw_base_class_kwargs = self.extra_template_data.get("base_class_kwargs")
         base_class_kwargs: dict[str, str] = {}
-        if isinstance(raw_base_class_kwargs, dict):
-            for key, value in raw_base_class_kwargs.items():
-                if not isinstance(key, str):
-                    continue
-                normalized_key = _normalize_string(key)
-                if not normalized_key.isidentifier() or keyword.iskeyword(normalized_key):
-                    continue
-                base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
+        for key, value in _user_struct_options(self).items():
+            if not isinstance(key, str):
+                continue
+            normalized_key = _normalize_string(key)
+            if not normalized_key.isidentifier() or keyword.iskeyword(normalized_key):
+                continue
+            base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
         base_class_kwargs.update(self._internal_template_data["base_class_kwargs"])
         return {**template_data, "base_class_kwargs": base_class_kwargs}
 
@@ -633,9 +622,8 @@ class Struct(DataModel):
 
     def _own_tag_options(self, bases: list[tuple[Any, Any]]) -> tuple[Any, Any]:
         """Return the tag and tag_field options of the struct, given those of its generated bases."""
-        options = self.extra_template_data.get("base_class_kwargs")
         options = {
-            **(options if isinstance(options, dict) else {}),
+            **_user_struct_options(self),
             **{
                 key: literal_eval(value)
                 for key, value in self._internal_template_data["base_class_kwargs"].items()
@@ -672,8 +660,7 @@ class Struct(DataModel):
         """Return whether msgspec's class declaration already enables keyword-only fields."""
         if self._internal_template_data["base_class_kwargs"].get("kw_only") == "True":
             return True
-        base_class_kwargs = self.extra_template_data.get("base_class_kwargs")
-        return isinstance(base_class_kwargs, dict) and base_class_kwargs.get("kw_only") in {True, "True"}
+        return _user_struct_options(self).get("kw_only") in {True, "True"}
 
     @override
     def enable_model_keyword_only(self) -> None:
@@ -740,6 +727,7 @@ class DataModelField(DataModelFieldBase):
     """Field implementation for msgspec Struct models."""
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "msgspec"
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = True
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
@@ -823,18 +811,8 @@ class DataModelField(DataModelFieldBase):
         """
         return any(self._data_type_writes_hint(member) for member in union_members(data_type))
 
-    def _copy_data_type(self, data_type: DataType) -> DataType:
-        copied = data_type.model_copy()
-        copied.parent = None
-        copied.children = []
-        copied.data_types = [self._copy_data_type(child) for child in data_type.data_types]
-        copied.literals = list(data_type.literals)
-        copied.enum_member_literals = list(data_type.enum_member_literals)
-        if data_type.dict_key:
-            copied.dict_key = self._copy_data_type(data_type.dict_key)
-        if data_type.kwargs:
-            copied.kwargs = dict(data_type.kwargs)
-        return copied
+    _copy_data_type = staticmethod(partial(_copy_data_type, register_references=False, link_parents=False))
+    """Copy a data type tree whose copies keep no parents and register no references."""
 
     def _copy_data_type_without_top_level_none(self, data_type: DataType) -> DataType:
         """Copy a data type without its top-level None, for a hint that writes None itself.
@@ -851,21 +829,15 @@ class DataModelField(DataModelFieldBase):
         if self._data_type_renders_none(self.data_type):
             return self._ordered_union_data_type([], null=True, unset=True)
 
-        data_types = []
         has_none = self._field_has_top_level_none()
-        match (has_none, self._data_type_spreads_members(self.data_type)):
-            case (False, True):
-                data_types.extend(self._copy_data_type(child) for child in self.data_type.data_types)
-            case (True, _):
-                if self._data_type_has_renderable_structure(
-                    base_data_type := self._copy_data_type_without_top_level_none(self.data_type)
-                ) and not self._data_type_renders_none(base_data_type):
-                    data_types.append(base_data_type)
-            case _:
-                if self._data_type_has_renderable_structure(
-                    base_data_type := self._copy_data_type(self.data_type)
-                ) and not self._data_type_renders_none(base_data_type):
-                    data_types.append(base_data_type)
+        if not has_none and self._data_type_spreads_members(self.data_type):
+            data_types = [self._copy_data_type(child) for child in self.data_type.data_types]
+        elif self._data_type_has_renderable_structure(
+            base_data_type := self._annotated_base_data_type()
+        ) and not self._data_type_renders_none(base_data_type):
+            data_types = [base_data_type]
+        else:
+            data_types = []
         return self._ordered_union_data_type(data_types, null=has_none, unset=True)
 
     def _annotated_base_data_type(self) -> DataType:
@@ -953,12 +925,7 @@ class DataModelField(DataModelFieldBase):
         if (type_hint := self._get_simple_unset_base_type()) is None:
             return None
 
-        match self._use_union_operator:
-            case True:
-                return f"{type_hint} | UnsetType"
-            case _:
-                pass
-        return f"Union[{type_hint}, UnsetType]"
+        return f"{type_hint} | UnsetType" if self._use_union_operator else f"Union[{type_hint}, UnsetType]"
 
     def _imports_data_type(self, plan: FieldRenderPlan) -> DataType:
         """Return the type imports collect from: the one the annotation of ``plan`` writes, else the field's own.
@@ -968,10 +935,6 @@ class DataModelField(DataModelFieldBase):
         if plan.annotated_call is not None and not (self.required or self.nullable or self._not_required):
             return self.data_type
         return cast("DataType | None", plan.written_type) or self.data_type
-
-    def _has_numeric_data_type(self, type_name: str) -> bool:
-        """Return whether any field data type is the given numeric type."""
-        return any(data_type.type == type_name for data_type in self.data_type.all_data_types)
 
     @property
     @override
@@ -1034,10 +997,6 @@ class DataModelField(DataModelFieldBase):
         """Return the ``field()`` arguments the field's render plan writes and whether its call renders."""
         data = written_data(written_argument_names(self._render_plan()))
         return MsgspecWritten(data=data, text=written_text(self, writes=data.any))
-
-    @override
-    def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._render_plan()
 
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
@@ -1321,35 +1280,31 @@ class DataModelField(DataModelFieldBase):
             and (target := self._meta_type(self._annotated_base_data_type())) is not None
             and self._names_int(target)
         )
-        values: dict[str, Any] = {}
-        sources: dict[str, tuple[str, ...]] = {}
-        for k, v in declared.items():
-            item = f"constraint:{k}"
+
+        def drop(item: str, k: str, v: Any, normalized: tuple[str, Any] | None) -> Omitted | None:
             if k not in self._META_FIELD_KEYS:
-                omitted.append(Omitted(item, v, "backend-cannot-express", Why(_CONSTRAINT, k)))
-                continue
-            normalized = strict_number_constraint(
-                _applicability.MSGSPEC_OUTPUT, k, v, is_float_type=is_float_type, is_int_type=is_int_type
-            )
+                return Omitted(item, v, "backend-cannot-express", Why(_CONSTRAINT, k))
             if annotates_int and _applicability.int_constraint_beyond_values(
                 _applicability.MSGSPEC_OUTPUT, *(constraint := normalized or (k, v))
             ):
-                omitted.append(
-                    Omitted(item, constraint[1], "backend-cannot-express", Why(_INT64_LIMIT, constraint[0]), warns=True)
+                return Omitted(
+                    item, constraint[1], "backend-cannot-express", Why(_INT64_LIMIT, constraint[0]), warns=True
                 )
-                continue
-            if normalized is None:
-                if _applicability.is_non_finite(v):
-                    omitted.append(Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k)))
-                else:
-                    omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
-                continue
-            merge_normalized_constraint(values, normalized[0], normalized[1])
-            sources[normalized[0]] = (*sources.get(normalized[0], ()), item)
-        return {
-            key: Kwarg(key, value, Why(_CONSTRAINT, sources[key][0].removeprefix("constraint:")), sources[key])
-            for key, value in values.items()
-        }
+            if normalized is not None:
+                return None
+            if _applicability.is_non_finite(v):
+                return Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k))
+            return Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k))
+
+        return _normalized_constraint_kwargs(
+            declared,
+            omitted,
+            _applicability.MSGSPEC_OUTPUT,
+            _CONSTRAINT,
+            drop,
+            is_float_type=is_float_type,
+            is_int_type=is_int_type,
+        )
 
     def _names_int(self, data_type: DataType) -> bool:
         """Return whether a type is int, also where an annotation names the int that Annotated or Final qualifies."""

@@ -74,7 +74,9 @@ __all__ = [
     "KeywordIntersection",
     "all_of_member_row",
     "bounds_admit_no_value",
+    "common_types",
     "concatenating_row",
+    "declared_types",
     "enum_metadata",
     "inherited_override_row",
     "inherited_positional_tail",
@@ -83,6 +85,7 @@ __all__ = [
     "intersect_enum_values",
     "intersect_keywords",
     "intersect_multiple_of",
+    "intersect_types",
     "is_hash_safe_json_scalar",
     "json_values_equal",
     "merge_inherited_keyword",
@@ -323,12 +326,12 @@ def bounds_admit_no_value(schema: Mapping[str, Any]) -> bool:
     return any(_crosses(schema, lower, upper) for lower, upper in _BOUND_DIMENSIONS)
 
 
-def _types(value: object) -> tuple[str, ...]:
+def declared_types(value: object) -> tuple[str, ...]:
     """Return the JSON types a ``type`` keyword lists."""
     return (value,) if isinstance(value, str) else tuple(value) if isinstance(value, list) else ()
 
 
-def _intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
+def intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
     """Return the types both lists admit, in the order of ``first``; ``integer`` is the part of ``number`` both admit.
 
     ``null`` stays only when both lists hold it; whether a site admits null is the null rule's decision.
@@ -340,6 +343,12 @@ def _intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, 
             if schema_type in second or (schema_type in _NUMBER_TYPES and _NUMBER_TYPES.intersection(second))
         )
     )
+
+
+def common_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
+    """Return ``intersect_types`` without the ``integer`` beside ``number``, which admits it."""
+    types = intersect_types(first, second)
+    return tuple(schema_type for schema_type in types if schema_type != "integer" or "number" not in types)
 
 
 def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int) -> object:
@@ -454,7 +463,7 @@ class _Reconciler:
 
     def _type(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any], updates: dict[str, Any]) -> None:
         """Write the types every part admits, and null as the null rule of the parts says (``parts_admit_null``)."""
-        if not (typed := [_types(part["type"]) for part in parts if "type" in part]):
+        if not (typed := [declared_types(part["type"]) for part in parts if "type" in part]):
             return
         admits_null = self.parts_admit_null(parts)
         if not admits_null and row.get("nullable") is True:
@@ -463,11 +472,11 @@ class _Reconciler:
             return
         merged = typed[0]
         for types in typed[1:]:
-            merged = _intersect_types(merged, types)
+            merged = intersect_types(merged, types)
         if not merged:
             self.unsatisfiable.append("type")
             return
-        row_types = _types(row.get("type"))
+        row_types = declared_types(row.get("type"))
         written = [
             *(schema_type for schema_type in merged if schema_type != "null"),
             *(["null"] if admits_null and "null" in row_types else []),

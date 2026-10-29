@@ -139,7 +139,11 @@ audit = "D-PP-01"
 [homes.H20]
 decision = "recursion facts: strongly connected components, cycles and dependency order of the reference graph"
 core = ["_reference_graph.py", "_scc.py", "_graph.py"]
-adapters = ["dynamic.py", "parser/generation.py:GenerationIndex.reference_graph"]
+adapters = [
+    "dynamic.py",
+    "parser/generation.py:GenerationIndex.reference_graph",
+    "parser/jsonschema.py:JsonSchemaParser._dynamic_anchors_used",
+]
 
 [homes.H20.signatures.graph-algorithm]
 kind = "call"
@@ -328,7 +332,6 @@ default = "R-01"
 "_target_binding.py:_spelled" = "R-10"
 "_target_binding.py:_Reader.node" = "R-11"
 "_target_binding.py:_SchemaNode" = "R-11"
-"_target_binding.py:_descend" = "R-11"
 "_target_binding.py:_source_member" = "R-11"
 "_target_binding.py:_schema_branches" = "R-11"
 
@@ -1494,7 +1497,7 @@ fix = "G05"
 "H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."<module>"]
-"T-type.view-construction" = { home = "T-type", count = 12, audit = "M-08" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 "T-wire.raw-value" = { home = "T-wire", count = 5, audit = "R-01" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.__init__"]
@@ -1602,7 +1605,7 @@ fix = "G05"
 "T-type.view-construction" = { home = "T-type", count = 10, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._imports"]
-"T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._project"]
 "T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
@@ -1667,7 +1670,7 @@ fix = "G05"
 "H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_constrained_base"]
-"T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_constructor_keywords"]
 "H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
@@ -1675,9 +1678,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_default"]
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_descend"]
-"T-wire.raw-value" = { home = "T-wire", count = 3, audit = "R-11" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_emitted_default"]
 "H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
@@ -1702,9 +1702,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_literal_scalar"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_mapping"]
-"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_model_facts"]
 "H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
@@ -1739,9 +1736,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_target_binding.py"."_spelled"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-10" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_value_kind"]
-"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_valued_types"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }

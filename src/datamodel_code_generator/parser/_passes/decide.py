@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator.parser._passes._shared import GenerationStoreHost, _copy_data_type
+from datamodel_code_generator.parser._passes._shared import GenerationStoreHost
 from datamodel_code_generator.parser._phases import _DecisionWriter
+from datamodel_code_generator.types import _copy_data_type
 
 if TYPE_CHECKING:
     from datamodel_code_generator.parser._passes._state import FinishRun
