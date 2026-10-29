@@ -145,6 +145,67 @@ def close_anchor(anchor: PublicationAnchor | None) -> None:
         os.close(anchor.directory_fd)
 
 
+def release_all(
+    resources: Iterable[tempfile.TemporaryDirectory[str] | StagingDirectory | PublicationAnchor | None],
+) -> list[OSError]:
+    """Clean each staging directory and close each anchor in order, keeping every failure instead of stopping."""
+    errors: list[OSError] = []
+    for resource in resources:
+        try:
+            if resource is None or isinstance(resource, PublicationAnchor):
+                close_anchor(resource)
+            else:
+                resource.cleanup()
+        except OSError as exc:
+            errors.append(exc)
+    return errors
+
+
+def staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
+    """Create an on-disk staging directory on the target artifact's filesystem."""
+    staging_parent = Path(os.path.abspath(target.expanduser())).parent  # noqa: PTH100
+    while not staging_parent.exists():
+        staging_parent = staging_parent.parent
+    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=staging_parent)
+
+
+def stage_artifact(  # noqa: PLR0913
+    target: Path,
+    default_name: str,
+    anchor_path: Path,
+    contexts: list[tempfile.TemporaryDirectory[str]],
+    anchors: list[PublicationAnchor],
+    *,
+    make_directory: bool = False,
+) -> tuple[Path, PublicationAnchor]:
+    """Redirect an artifact to private staging on its filesystem and anchor the directory it is published into.
+
+    The staging directory and the anchor join ``contexts`` and ``anchors`` as soon as each exists, so the caller
+    releases them when a later step fails.
+    """
+    context = staging_directory_for(target)
+    contexts.append(context)
+    staged = Path(context.name) / (target.name or default_name)
+    if make_directory:
+        staged.mkdir()
+    anchor = publication_anchor(anchor_path)
+    anchors.append(anchor)
+    return staged, anchor
+
+
+def staged_artifact_files(
+    staged: Path, target: Path, root: Path, parent: Path, anchor: PublicationAnchor | None
+) -> Iterator[StagedFile]:
+    """Pair a staged file, or each file of a staged directory, with its target and its concrete destination."""
+    if staged.is_file():
+        yield StagedFile(staged, target, parent / target.name, anchor)
+        return
+    for staged_file in sorted(staged.rglob("*")):
+        if staged_file.is_file():
+            relative_path = staged_file.relative_to(staged)
+            yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
+
+
 class StagingDirectory:
     """A private staging directory held by descriptors rather than a re-resolved path."""
 
@@ -256,19 +317,16 @@ class StagingDirectory:
         """Discard one staged source through the held directory fd."""
         if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
             self._validate_path_fallback()
-            try:
-                _unlink(self.path / name)
-            except FileNotFoundError:
-                self._files.discard(name)
-            else:
-                self._files.discard(name)
-            return
-        try:
-            _unlink(name, dir_fd=self.directory_fd)
-        except FileNotFoundError:
-            self._files.discard(name)
+        with suppress(FileNotFoundError):
+            self._unlink_file(name)
+        self._files.discard(name)
+
+    def _unlink_file(self, name: str) -> None:
+        """Remove one staged source through the held directory fd, or by path on the Windows fallback."""
+        if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+            _unlink(self.path / name)
         else:
-            self._files.discard(name)
+            _unlink(name, dir_fd=self.directory_fd)
 
     def cleanup(self) -> None:
         """Best-effort clean staged sources and remove only our pinned directory entry."""
@@ -295,10 +353,7 @@ class StagingDirectory:
         cleanup_error: OSError | None = None
         for name in tuple(self._files):
             try:
-                if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
-                    _unlink(self.path / name)
-                else:
-                    _unlink(name, dir_fd=self.directory_fd)
+                self._unlink_file(name)
             except FileNotFoundError:
                 self._files.discard(name)
             except OSError as exc:
@@ -461,14 +516,10 @@ def _restore_backup(backup: Path, target: Path) -> None:
     if backup.is_symlink() and target.is_symlink() and backup.readlink() == target.readlink():
         _unlink(backup)
         return
-    try:
+    with suppress(OSError):
         if backup.samefile(target):
             _unlink(backup)
             return
-    except OSError:
-        # The target may have disappeared, but replacement still restores the backup safely.
-        _replace(backup, target)
-        return
     _replace(backup, target)
 
 

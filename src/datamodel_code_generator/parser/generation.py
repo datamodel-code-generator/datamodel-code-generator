@@ -31,9 +31,9 @@ Contributor guide:
 
 The pre-commit hook backed by ``scripts/check_generation_store_usage.py``
 guards the parser package against common direct mutations. When adding a new
-store mutation API, add it to ``GENERATION_STORE_MUTATION_METHODS`` so the
-checker and its tests stay aligned with the public parser-facing surface, and
-give ``GraphBuilder`` its delegating method.
+store mutation API, add it to ``SITE_EFFECTS`` or ``NO_SITE_EFFECT``, which make up
+``GENERATION_STORE_MUTATION_METHODS``, so the checker and its tests stay aligned
+with the public parser-facing surface, and give ``GraphBuilder`` its delegating method.
 """
 
 # ruff: noqa: D105, FURB189
@@ -61,11 +61,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._holders import (
-    ChildList,
-    HolderEdge,
-    InlinedReplacement,
-)
+from datamodel_code_generator.parser._holders import ChildList, HolderEdge
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -116,63 +112,6 @@ _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
 _REPLACEMENT_LAST = UnionPolicy("legacy-replacement-last")
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
-
-GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
-    "add_model_import",
-    "append_field",
-    "apply_const",
-    "apply_literal_default",
-    "bind_builtin_names",
-    "clear_target_null",
-    "collapse_root_data_type",
-    "defer_refresh",
-    "detach_data_type_ref",
-    "detach_model_data_type_refs",
-    "discard_derived_facts",
-    "drop_field_discriminator",
-    "drop_held_null",
-    "drop_union_member_constraints",
-    "drop_union_operator",
-    "force_field_assignment",
-    "inline_shared",
-    "insert_field",
-    "mark_forward_references",
-    "mark_target_null",
-    "move_model",
-    "note_changed_models",
-    "override_type_import",
-    "name_reference",
-    "record_dropped_multiple_of",
-    "record_values_as_written",
-    "redirect_model_reference_users",
-    "redirect_reference_users",
-    "register_model",
-    "remove_field",
-    "rename_field",
-    "rename_model",
-    "replace_data_type_ref",
-    "replace_field_type",
-    "replace_model",
-    "replace_nested_data_type",
-    "require_field",
-    "reset_base_classes",
-    "restore_required_inherited_field",
-    "retire_model",
-    "set_base_classes",
-    "set_field_constraints",
-    "set_field_default",
-    "set_field_extra",
-    "set_field_extras",
-    "set_fields",
-    "set_nested_data_types",
-    "set_type_discriminator",
-    "set_type_expressions",
-    "swap_data_type",
-    "update_model_reference",
-    "use_assignment_for_forward_references",
-    "use_typing_generics",
-    "write_rendered_null",
-})
 
 SITE_EFFECTS: Mapping[str, ProvenanceHow] = MappingProxyType({
     "append_field": "copied",
@@ -240,8 +179,10 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "write_rendered_null",
 })
 """The store mutations that make no reference site: they only remove sites, or change what sites do not record, such
-as names, defaults and imports. With `SITE_EFFECTS`, they list every mutation of
-``GENERATION_STORE_MUTATION_METHODS``."""
+as names, defaults and imports."""
+
+GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset(SITE_EFFECTS) | NO_SITE_EFFECT
+"""Every store mutation, which either `SITE_EFFECTS` or `NO_SITE_EFFECT` lists."""
 
 
 def set_model_base_classes(
@@ -263,15 +204,22 @@ def _bump_field_tree(field_: DataModelFieldBase) -> None:
         bump_node(data_type)
 
 
+def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the nodes of the trees of ``roots`` in preorder, each after its items and dict key are taken."""
+    stack = list(roots)
+    while stack:
+        node = stack.pop()
+        stack.extend(node.data_types)
+        if dict_key := node.dict_key:
+            stack.append(dict_key)
+        yield node
+
+
 def _detach_data_type_tree(root: DataType) -> None:
     """Sever one data-type tree iteratively so cleanup cannot hit recursion limits."""
-    stack = [root]
-    while stack:
-        data_type = stack.pop()
-        stack.extend(data_type.data_types)
+    for data_type in _tree_nodes((root,)):
         data_type.data_types.clear()
-        if dict_key := data_type.dict_key:
-            stack.append(dict_key)
+        if data_type.dict_key:
             data_type.dict_key = None
         data_type.parent = None
         data_type.reference = None
@@ -733,9 +681,7 @@ class GenerationIndexBuilder:
         ]
         for model_id, (parse_order, model, occurrences, sites) in enumerate(appended, next_model_id):
             model_ids_by_object[id(model)] = model_id
-            model_facts[model_id] = _model_fact(model_id, parse_order, model)
-            facts.model_by_path[model.path] = model_id
-            facts.model_by_ref_id[self._model_key(model.reference)] = model_id
+            self._record_model(model_id, parse_order, model)
             self._record_data_types_again(model_id, occurrences, sites)
         if renamed_facts:
             model_facts.update((model_fact.id, model_fact) for model_fact in renamed_facts)
@@ -759,10 +705,13 @@ class GenerationIndexBuilder:
                 model_id = self._next_model_id
                 self._next_model_id += 1
                 self._model_ids_by_object[id(model)] = model_id
+            self._record_model(model_id, parse_order, model)
 
-            self._facts.model_facts[model_id] = _model_fact(model_id, parse_order, model)
-            self._facts.model_by_path[model.path] = model_id
-            self._facts.model_by_ref_id[self._model_key(model.reference)] = model_id
+    def _record_model(self, model_id: ModelId, parse_order: int, model: DataModel) -> None:
+        facts = self._facts
+        facts.model_facts[model_id] = _model_fact(model_id, parse_order, model)
+        facts.model_by_path[model.path] = model_id
+        facts.model_by_ref_id[self._model_key(model.reference)] = model_id
 
     def _occurrences(self, model: DataModel) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
         """Return the data type occurrences of ``model`` and its reference sites, from one walk of its type trees.
@@ -1053,6 +1002,25 @@ def _unrecorded_references(model: DataModel, *, all_dict_keys: bool) -> Iterator
     return (data_type.reference for data_type in data_types if data_type.reference)
 
 
+def _recorded_references(
+    facts: GenerationFacts, model: DataModel, model_id: ModelId, *, all_dict_keys: bool
+) -> Iterator[Reference]:
+    """Return the references that the data types ``facts`` record for ``model`` hold, in the order they record them.
+
+    Dict keys count with ``all_dict_keys``, or when the model's ``_INCLUDE_DICT_KEY_REFERENCE_CLASSES`` hook says so.
+    """
+    include_dict_keys = all_dict_keys or (
+        (include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES) is not None  # noqa: SLF001
+        and include_dict_key_reference_classes(model)
+    )
+    return (
+        reference
+        for data_type_id in facts.data_types_by_model.get(model_id, ())
+        if (reference := (fact := facts.data_type_facts[data_type_id]).reference) is not None
+        if include_dict_keys or fact.role != "dict_key"
+    )
+
+
 @final
 class GenerationIndex:
     """Query layer over the current generation facts.
@@ -1115,28 +1083,18 @@ class GenerationIndex:
         data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
         if not data_type_ids:
             return False
-        excluded_data_type_id = id(excluded_data_type)
         return any(
-            facts.data_type_facts[data_type_id].data_type is not excluded_data_type
-            and id(facts.data_type_facts[data_type_id].data_type) != excluded_data_type_id
-            for data_type_id in data_type_ids
+            facts.data_type_facts[data_type_id].data_type is not excluded_data_type for data_type_id in data_type_ids
         )
 
     def reference_classes_for_model(self, model: DataModel) -> frozenset[str]:
         """Return reference paths matching ``DataModel.reference_classes`` semantics."""
         view = self._view()
-        facts = view.facts
         model_id = view.model_id(model)
         if model_id is None:
             return frozenset(model.reference_classes)
-        include_dict_key_references = (
-            include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
-        ) is not None and include_dict_key_reference_classes(model)
         reference_classes = frozenset(
-            reference.path
-            for data_type_id in facts.data_types_by_model.get(model_id, ())
-            if (reference := (fact := facts.data_type_facts[data_type_id]).reference) is not None
-            if include_dict_key_references or fact.role != "dict_key"
+            reference.path for reference in _recorded_references(view.facts, model, model_id, all_dict_keys=False)
         )
         if len(additional_properties_references := model.additional_properties_reference_classes):
             reference_classes = reference_classes.union(additional_properties_references)
@@ -1214,17 +1172,7 @@ class GenerationIndex:
         cache = self._recorded_references_cache
         cache_key = (model_id, all_dict_keys)
         if (cached := cache.get(cache_key)) is None:
-            facts = view.facts
-            include_dict_keys = all_dict_keys or (
-                (include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES) is not None  # noqa: SLF001
-                and include_dict_key_reference_classes(model)
-            )
-            references = tuple(
-                reference
-                for data_type_id in facts.data_types_by_model.get(model_id, ())
-                if (reference := (fact := facts.data_type_facts[data_type_id]).reference) is not None
-                if include_dict_keys or fact.role != "dict_key"
-            )
+            references = tuple(_recorded_references(view.facts, model, model_id, all_dict_keys=all_dict_keys))
             for reference in references:
                 self._store.model_key(reference)
             cached = cache[cache_key] = references
@@ -1339,6 +1287,17 @@ class _RootCollapseReferenceScope:
         self.enabled = False
         self.reference_counts.clear()
 
+    def initialize(self, facts: GenerationFacts) -> None:
+        """Start counting over ``facts``; the counts stay disabled when a node occurs in them more than once."""
+        self.initialized = True
+        self.enabled = len(facts.data_type_fact_by_object) == len(facts.data_type_facts)
+
+    def count(self, key: ModelKey, facts: GenerationFacts) -> int:
+        """Return the counted references to ``key``, or the sites of ``facts`` that name it when none are counted."""
+        if (count := self.reference_counts.get(key)) is None:
+            count = len(facts.sites_by_target.get(key, ()))
+        return count
+
 
 class GenerationStore:  # noqa: PLR0904
     """Parse-to-output generation facts for a Parser instance."""
@@ -1401,9 +1360,7 @@ class GenerationStore:  # noqa: PLR0904
         self._facts = GenerationFacts()
         self._model_ids_by_object.clear()
         self.models.clear()
-        self._appended_model_ids.clear()
-        self._changed_model_ids.clear()
-        self._renamed_model_ids.clear()
+        self._clear_pending()
         self._built_models.clear()
         self._retired_models.clear()
         self._site_effects.clear()
@@ -1464,8 +1421,7 @@ class GenerationStore:  # noqa: PLR0904
             if self._dirty:
                 scope.invalidate()
                 return None
-            scope.initialized = True
-            scope.enabled = len(self._facts.data_type_fact_by_object) == len(self._facts.data_type_facts)
+            scope.initialize(self._facts)
         return scope if scope.enabled else None
 
     def _root_collapse_has_data_type_references(
@@ -1480,16 +1436,21 @@ class GenerationStore:  # noqa: PLR0904
             return None
 
         key = self.model_key(reference)
-        if (count := scope.reference_counts.get(key)) is None:
-            count = len(self._facts.sites_by_target.get(key, ()))
-            scope.reference_counts[key] = count
+        count = scope.reference_counts[key] = scope.count(key, self._facts)
         if excluded_data_type is not None:
-            excluded_fact = self._facts.data_type_fact_by_object.get(id(excluded_data_type))
-            if excluded_fact is None or excluded_fact.data_type is not excluded_data_type:
-                scope.invalidate()
+            if (excluded_fact := self._root_collapse_recorded_fact(scope, excluded_data_type)) is None:
                 return None
             count -= excluded_fact.reference is reference
         return count > 0
+
+    def _root_collapse_recorded_fact(
+        self, scope: _RootCollapseReferenceScope, data_type: DataType
+    ) -> DataTypeFact | None:
+        """Return the fact the facts record for ``data_type``, or invalidate ``scope`` when they record none for it."""
+        if (fact := self._facts.data_type_fact_by_object.get(id(data_type))) is None or fact.data_type is not data_type:
+            scope.invalidate()
+            return None
+        return fact
 
     def _root_collapse_prepare_data_type_replacement(
         self,
@@ -1501,9 +1462,7 @@ class GenerationStore:  # noqa: PLR0904
         if scope is None:
             return None
 
-        data_type_fact = self._facts.data_type_fact_by_object.get(id(data_type))
-        if data_type_fact is None or data_type_fact.data_type is not data_type:
-            scope.invalidate()
+        if self._root_collapse_recorded_fact(scope, data_type) is None:
             return None
 
         deltas: dict[ModelKey, int] = {}
@@ -1535,9 +1494,7 @@ class GenerationStore:  # noqa: PLR0904
                 return False
 
         for key, delta in deltas.items():
-            if (count := scope.reference_counts.get(key)) is None:
-                count = len(self._facts.sites_by_target.get(key, ()))
-            count += delta
+            count = scope.count(key, self._facts) + delta
             if count < 0:
                 scope.invalidate()
                 return False
@@ -1562,8 +1519,7 @@ class GenerationStore:  # noqa: PLR0904
         if new_reference is not None:
             new_key = self.model_key(new_reference)
             deltas[new_key] = deltas.get(new_key, 0) + 1
-        if (fact := self._facts.data_type_fact_by_object.get(id(data_type))) is None or fact.data_type is not data_type:
-            scope.invalidate()
+        if self._root_collapse_recorded_fact(scope, data_type) is None:
             return False
         return self._root_collapse_apply_reference_deltas(deltas)
 
@@ -1833,6 +1789,12 @@ class GenerationStore:  # noqa: PLR0904
             elif (fact := facts.data_type_fact_by_object.get(object_id)) is not None and fact.data_type is data_type:
                 self._changed_model_ids.add(fact.owner_model)
 
+    def _clear_pending(self) -> None:
+        """Forget the models appended, changed and renamed since the last refresh."""
+        self._appended_model_ids.clear()
+        self._changed_model_ids.clear()
+        self._renamed_model_ids.clear()
+
     def refresh(self) -> None:
         """Bring facts up to date with the live model list."""
         if self._defer_refresh_depth:
@@ -1878,9 +1840,7 @@ class GenerationStore:  # noqa: PLR0904
         self._next_model_id = result.next_model_id
         self._next_data_type_id = result.next_data_type_id
         self._rebuild_required = False
-        self._appended_model_ids.clear()
-        self._changed_model_ids.clear()
-        self._renamed_model_ids.clear()
+        self._clear_pending()
         self._site_effects.clear()
         self._carried_sites = ()
         self._facts_version += 1
@@ -1889,8 +1849,7 @@ class GenerationStore:  # noqa: PLR0904
             if scope.initialized:
                 scope.invalidate()
             elif scope.enabled:
-                scope.initialized = True
-                scope.enabled = len(self._facts.data_type_fact_by_object) == len(self._facts.data_type_facts)
+                scope.initialize(self._facts)
 
     @deprecated("Use GenerationStore.builder().discard_derived_facts() instead.", category=None)
     def discard_derived_facts(self) -> None:
@@ -1900,9 +1859,7 @@ class GenerationStore:  # noqa: PLR0904
             raise RuntimeError(msg)
         self._carried_sites = self._carried_sites or self._facts.sites.values()
         self._facts = GenerationFacts()
-        self._appended_model_ids.clear()
-        self._changed_model_ids.clear()
-        self._renamed_model_ids.clear()
+        self._clear_pending()
         self._rebuild_required = True
         self._dirty = True
         if scope := self._active_root_collapse_reference_scope:
@@ -1922,9 +1879,7 @@ class GenerationStore:  # noqa: PLR0904
         elif scope is not None:
             scope.invalidate()
         self._replace_data_type_reference(data_type, new_reference)
-        self._note_changed_data_types((data_type,))
-        self._invalidate_owner_caches(*cache_owners)
-        self._invalidate_after_mutation()
+        self._data_types_changed((data_type,), (cache_owners,))
 
     @deprecated("Use GenerationStore.builder().detach_data_type_ref() instead.", category=None)
     def detach_data_type_ref(self, data_type: DataType) -> None:
@@ -1962,8 +1917,8 @@ class GenerationStore:  # noqa: PLR0904
         if not self._rebuild_required and (model_id := self._tracked_model_id(model)) is not None:
             self._renamed_model_ids.add(model_id)
         bump_model(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        model.invalidate_render_caches()
+        self._invalidate()
 
     @deprecated("Use GenerationStore.builder().rename_model() instead.", category=None)
     def rename_model(  # noqa: PLR0913
@@ -2230,9 +2185,7 @@ class GenerationStore:  # noqa: PLR0904
             old_data_type.parent = None
             parent_data_type.dict_key = new_data_type
             new_data_type.parent = parent_data_type
-            self._note_changed_data_types((parent_data_type,))
-            self._invalidate_owner_caches(*cache_owners)
-            self._invalidate_after_mutation()
+            self._data_types_changed((parent_data_type,), (cache_owners,))
             return
         if parent_data_type.is_tuple:
             self._builder.set_nested_data_types(
@@ -2276,7 +2229,7 @@ class GenerationStore:  # noqa: PLR0904
         )
 
     @contextmanager
-    def _replace_data_type_and_detach_data_type_ref(  # noqa: PLR0912
+    def _replace_data_type_and_detach_data_type_ref(
         self,
         data_type: DataType,
         new_data_type: DataType,
@@ -2307,18 +2260,12 @@ class GenerationStore:  # noqa: PLR0904
         else:
             facts = self._facts if not self._dirty else self.current_facts()
             has_base_owner_alias = id(data_type) in facts.base_owner_model_ids_by_object
-        self._root_collapse_internal_mutation_depth += 1
-        try:
+        with self._root_collapse_internal_mutation():
             match replacement_kind:
                 case "field":
                     self._builder.replace_field_type(owner, new_data_type)
                 case "nested":  # pragma: no branch
-                    if self._inlined_replacement(data_type, owner) == "replace-in-owner":
-                        self._replace_in_owner(owner, data_type, new_data_type)
-                    else:
-                        self._builder.replace_nested_data_type(owner, data_type, new_data_type)
-        finally:
-            self._root_collapse_internal_mutation_depth -= 1
+                    self._builder.replace_nested_data_type(owner, data_type, new_data_type)
         try:
             yield
         except BaseException:
@@ -2328,19 +2275,22 @@ class GenerationStore:  # noqa: PLR0904
         if data_type.parent is not None or has_base_owner_alias:
             if scope is not None:
                 scope.invalidate()
-            self._root_collapse_internal_mutation_depth += 1
-            try:
+            with self._root_collapse_internal_mutation():
                 self._builder.detach_data_type_ref(data_type)
-            finally:
-                self._root_collapse_internal_mutation_depth -= 1
             return
         if replacement_deltas is not None:
             self._root_collapse_apply_reference_deltas(replacement_deltas)
-        self._root_collapse_internal_mutation_depth += 1
-        try:
+        with self._root_collapse_internal_mutation():
             self._replace_data_type_reference(data_type, None)
             self._note_changed_data_types((data_type,))
-            self._invalidate_after_mutation()
+            self._invalidate()
+
+    @contextmanager
+    def _root_collapse_internal_mutation(self) -> Generator[None, None, None]:
+        """Run a mutation of root collapse itself, which keeps the scope's reference counts (`_invalidate`)."""
+        self._root_collapse_internal_mutation_depth += 1
+        try:
+            yield
         finally:
             self._root_collapse_internal_mutation_depth -= 1
 
@@ -2349,8 +2299,8 @@ class GenerationStore:  # noqa: PLR0904
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``.
 
         The copy holds the same ``data_types`` list (a `ChildList`) and dict key as ``root_type`` and every other copy
-        of it, so each child has a holder edge from each of them (`_inlined_holders`). The sites of the copy are
-        collapsed from the root model ``site`` names.
+        of it, so each child has a holder edge from each of them (`GenerationIndex.inlined_holders_of`). The sites of
+        the copy are collapsed from the root model ``site`` names.
         """
         copied = root_type.model_copy()
         if (owners := self._inlined_owners.get(NodeKey(id(root_type)))) is None:
@@ -2359,42 +2309,6 @@ class GenerationStore:  # noqa: PLR0904
         self._inlined_owners[NodeKey(id(copied))] = owners
         self._state_tree_sites("inline_shared", (copied,), via=site.reference)
         return copied
-
-    def _inlined_holders(self, node: DataType) -> tuple[HolderEdge, ...]:
-        """Return the holder edges of ``node`` from its ``parent`` and the types sharing its children with it."""
-        if (owners := self._inlined_owners.get(NodeKey(id(node.parent)))) is None:
-            return ()
-        return (
-            *(
-                HolderEdge(NodeKey(id(owner)), "nested", index)
-                for owner in owners
-                for index, member in enumerate(owner.data_types)
-                if member is node
-            ),
-            *(HolderEdge(NodeKey(id(owner)), "dict_key", None) for owner in owners if owner.dict_key is node),
-        )
-
-    def _inlined_replacement(self, data_type: DataType, owner: DataType) -> InlinedReplacement:
-        """Return the policy that replaces ``data_type`` under ``owner``, read from the holders `inline_shared` gave."""
-        from datamodel_code_generator.types import DataType as RuntimeDataType  # noqa: PLC0415
-
-        if len(self._inlined_holders(data_type)) > 1:
-            return "replace-in-owner"
-        node: object = owner
-        seen: set[int] = set()
-        while isinstance(node, RuntimeDataType) and id(node) not in seen:
-            if len(self._inlined_holders(node)) > 1:
-                return "legacy-shared-node-in-place"
-            seen.add(id(node))
-            node = node.parent
-        return "sole-holder"
-
-    def _replace_in_owner(self, owner: DataType, data_type: DataType, new_data_type: DataType) -> None:
-        """Replace a direct member of a shared `ChildList` in ``owner`` alone (row ``replace-in-owner``).
-
-        ``owner`` gets a new list; the other holders keep the old list and ``data_type``, whose reference is detached.
-        """
-        self._builder.replace_nested_data_type(owner, data_type, new_data_type)
 
     @deprecated("Use GenerationStore.builder().set_nested_data_types() instead.", category=None)
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
@@ -2407,31 +2321,28 @@ class GenerationStore:  # noqa: PLR0904
         data_type.data_types = nested_data_types
         for nested_data_type in data_type.data_types:
             nested_data_type.parent = data_type
-        self._note_changed_data_types((data_type,))
-        self._invalidate_owner_caches(*cache_owners)
-        self._invalidate_after_mutation()
+        self._data_types_changed((data_type,), (cache_owners,))
 
     @deprecated("Use GenerationStore.builder().append_field() instead.", category=None)
     def append_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
         """Append a field to ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
-        self._state_model_sites("append_field", model)
-        field_.parent = model
-        field_.invalidate_semantic_caches(invalidate_parent=False)
-        model.fields.append(field_)
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        self._add_field("append_field", model, field_, None)
 
     @deprecated("Use GenerationStore.builder().insert_field() instead.", category=None)
     def insert_field(self, model: DataModel, index: int, field_: DataModelFieldBase) -> None:
         """Insert a field into ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
-        self._state_model_sites("insert_field", model)
+        self._add_field("insert_field", model, field_, index)
+
+    def _add_field(self, operation: str, model: DataModel, field_: DataModelFieldBase, index: int | None) -> None:
+        """Put ``field_`` into ``model`` at ``index``, or last without one, for the store mutation ``operation``."""
+        self._state_model_sites(operation, model)
         field_.parent = model
         field_.invalidate_semantic_caches(invalidate_parent=False)
-        model.fields.insert(index, field_)
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        if index is None:
+            model.fields.append(field_)
+        else:
+            model.fields.insert(index, field_)
+        self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().remove_field() instead.", category=None)
     def remove_field(self, model: DataModel, field_: DataModelFieldBase) -> None:
@@ -2440,9 +2351,7 @@ class GenerationStore:  # noqa: PLR0904
         if field_.parent is model:
             field_.parent = None
             field_.invalidate_semantic_caches(invalidate_parent=False)
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().set_fields() instead.", category=None)
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
@@ -2458,27 +2367,21 @@ class GenerationStore:  # noqa: PLR0904
         for field_ in model.fields:
             field_.parent = model
             field_.invalidate_semantic_caches(invalidate_parent=False)
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().set_base_classes() instead.", category=None)
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None:
         """Replace ``model`` base classes and invalidate derived facts; the new sites of ``model`` are overridden."""
         self._state_model_sites("set_base_classes", model)
         model.base_classes = list(base_classes)
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().reset_base_classes() instead.", category=None)
     def reset_base_classes(self, model: DataModel) -> None:
         """Reset ``model`` to its default base classes and invalidate derived facts; its new sites are overridden."""
         self._state_model_sites("reset_base_classes", model)
         model.set_base_class()
-        self._builder.note_changed_models(model)
-        self._invalidate_render_caches_for_model(model)
-        self._invalidate_after_mutation()
+        self._model_changed(model)
 
     @deprecated("Use GenerationStore.builder().redirect_reference_users() instead.", category=None)
     def redirect_reference_users(
@@ -2494,10 +2397,8 @@ class GenerationStore:  # noqa: PLR0904
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         if merged:
             self._record_named_null(children)
-        self._replace_reference_children(old_reference, new_reference)
-        self._note_changed_data_types(children)
-        self._invalidate_owner_caches_many(cache_owners)
-        self._invalidate_after_mutation()
+        old_reference.replace_children_references(new_reference)
+        self._data_types_changed(children, cache_owners)
         return children
 
     def has_users_in_other_modules(self, model: DataModel) -> bool:
@@ -2539,21 +2440,17 @@ class GenerationStore:  # noqa: PLR0904
             self._record_named_null((child,))  # ty: ignore[invalid-argument-type]
             child.replace_reference(new_reference)  # ty: ignore[call-non-callable]
             self._note_changed_data_types((child,))
-        self._invalidate_owner_caches_many(cache_owners)
-        self._invalidate_after_mutation()
+        self._invalidate_owner_caches(cache_owners)
+        self._invalidate()
 
     @deprecated("Use GenerationStore.builder().collapse_root_data_type() instead.", category=None)
     def collapse_root_data_type(self, data_type: DataType, inner_reference: Reference) -> None:
         """Replace a root-model data type with its inner reference; its site is collapsed from the root model."""
         self._state_sites_at("collapse_root_data_type", (data_type,), via=data_type.reference)
-        self._root_collapse_internal_mutation_depth += 1
-        try:
-            with self._builder.defer_refresh():
-                if data_type.reference:
-                    self._prune_reference_children(data_type.reference, excluded_child=data_type, require_parent=True)
-                self._builder.replace_data_type_ref(data_type, inner_reference)
-        finally:
-            self._root_collapse_internal_mutation_depth -= 1
+        with self._root_collapse_internal_mutation(), self._builder.defer_refresh():
+            if data_type.reference:
+                self._prune_reference_children(data_type.reference, excluded_child=data_type, require_parent=True)
+            self._builder.replace_data_type_ref(data_type, inner_reference)
 
     @deprecated("Use GenerationStore.builder().detach_model_data_type_refs() instead.", category=None)
     def detach_model_data_type_refs(self, model: DataModel) -> None:
@@ -2604,10 +2501,6 @@ class GenerationStore:  # noqa: PLR0904
             data_type._update_type_null(named=data_type.names_nullable_model)  # noqa: SLF001
 
     @staticmethod
-    def _replace_reference_children(old_reference: Reference, new_reference: Reference) -> None:
-        old_reference.replace_children_references(new_reference)
-
-    @staticmethod
     def _prune_reference_children(
         reference: Reference,
         *,
@@ -2619,9 +2512,6 @@ class GenerationStore:  # noqa: PLR0904
             for child in reference.children
             if child is not excluded_child and (not require_parent or getattr(child, "parent", None))
         ]
-
-    def _invalidate_after_mutation(self) -> None:
-        self._invalidate()
 
     def _state_model_sites(self, operation: str, *models: object) -> None:
         """State that the new sites of ``models`` take the provenance of ``operation`` (`SITE_EFFECTS`)."""
@@ -2642,19 +2532,27 @@ class GenerationStore:  # noqa: PLR0904
 
     def _state_tree_sites(self, operation: str, roots: Iterable[DataType], *, via: Reference | None = None) -> None:
         """State that the new sites in the trees of ``roots`` take the effect of ``operation`` (`_state_sites_at`)."""
-        nodes: list[DataType] = []
-        stack = list(roots)
-        while stack:
-            nodes.append(node := stack.pop())
-            stack.extend(node.data_types)
-            if dict_key := node.dict_key:
-                stack.append(dict_key)
-        self._state_sites_at(operation, nodes, via=via)
+        self._state_sites_at(operation, _tree_nodes(roots), via=via)
 
     def _refresh_after_write(self, refresh: Refresh) -> None:
         """Mark the facts stale after a write, unless the write's ``refresh`` is ``deferred``."""
         if refresh == "now":
-            self._invalidate_after_mutation()
+            self._invalidate()
+
+    def _model_changed(self, model: DataModel) -> None:
+        """Record ``model`` again at the next refresh, invalidate its render caches and mark the facts stale."""
+        self._builder.note_changed_models(model)
+        model.invalidate_render_caches()
+        self._invalidate()
+
+    def _data_types_changed(self, data_types: Iterable[object], cache_owners: Iterable[CacheOwners]) -> None:
+        """Record again the models whose facts hold ``data_types``, invalidate ``cache_owners``, mark the facts stale.
+
+        ``cache_owners`` are read before the write, which may detach the types from their owners.
+        """
+        self._note_changed_data_types(data_types)
+        self._invalidate_owner_caches(cache_owners)
+        self._invalidate()
 
     def _cache_owners_for_data_type(self, data_type: object) -> CacheOwners:
         current: Any = data_type
@@ -2682,23 +2580,9 @@ class GenerationStore:  # noqa: PLR0904
                 owner_models = tuple(facts.model_facts[model_id].model for model_id in model_ids)
         return owner_field, owner_models
 
-    def _invalidate_owner_caches(
-        self,
-        field_: DataModelFieldBase | None,
-        owner_models: OwnerModels,
-    ) -> None:
-        if field_ is not None:
-            field_.invalidate_semantic_caches(invalidate_parent=False)
-        if isinstance(owner_models, tuple):
-            for model in owner_models:
-                self._invalidate_render_caches_for_model(model)
-            return
-        self._invalidate_render_caches_for_model(owner_models)
-
-    def _invalidate_owner_caches_many(
-        self,
-        cache_owners: Iterable[CacheOwners],
-    ) -> None:
+    @staticmethod
+    def _invalidate_owner_caches(cache_owners: Iterable[CacheOwners]) -> None:
+        """Invalidate the caches of the fields of ``cache_owners``, then of their models, each once."""
         fields: dict[int, DataModelFieldBase] = {}
         models: dict[int, DataModel] = {}
         for field_, owner_models in cache_owners:
@@ -2712,13 +2596,7 @@ class GenerationStore:  # noqa: PLR0904
         for field_ in fields.values():
             field_.invalidate_semantic_caches(invalidate_parent=False)
         for model in models.values():
-            self._invalidate_render_caches_for_model(model)
-
-    @staticmethod
-    def _invalidate_render_caches_for_model(model: DataModel | None) -> None:
-        if model is None:
-            return
-        model.invalidate_render_caches()
+            model.invalidate_render_caches()
 
     def __iter__(self) -> Iterator[DataModel]:
         return iter(self.models)

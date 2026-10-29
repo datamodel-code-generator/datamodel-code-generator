@@ -372,6 +372,7 @@ class DataModelField(DataModelFieldBase):
     """Field implementation for dataclass models."""
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "dataclass"
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = True
 
     _FIELD_KEYS: ClassVar[set[str]] = {
         "default_factory",
@@ -491,10 +492,6 @@ class DataModelField(DataModelFieldBase):
         A plan frozen at B2 writes the same arguments while the facts it read hold, as ``RenderReady`` rebuilds it.
         """
         return self._written(written_data(self._field_items(self._nested_model_factory_argument()).names()))
-
-    @override
-    def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._render_plan()
 
     @override
     def _build_render_plan(self) -> FieldRenderPlan:

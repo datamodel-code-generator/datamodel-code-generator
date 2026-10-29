@@ -25,7 +25,10 @@ from datamodel_code_generator.imports import Import
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
+    from typing_extensions import Self
+
     from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, HintText, SymbolId, TypeView
+    from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.types import DataType
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
@@ -177,6 +180,11 @@ class TypeNames:
         self.fixed = tuple(
             dict.fromkeys(self.identity(item) for item in (*batch.hint_imports, *_written(batch.hint_type)))
         )
+
+    @classmethod
+    def of(cls, batch: GeneratedTypeContractBatch, model_config: GenerateConfig) -> Self:
+        """Return where a batch's models are imported from by `--use-exact-imports` and `--import-overrides`."""
+        return cls(batch, exact=bool(model_config.use_exact_imports), overrides=model_config.import_overrides)
 
     def identity(self, import_: Import) -> _Identity:
         """Return the module and name an import binds, after the import overrides."""

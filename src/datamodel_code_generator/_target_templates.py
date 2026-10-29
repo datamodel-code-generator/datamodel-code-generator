@@ -47,12 +47,12 @@ class TemplateOverlay:
     The directory loads before the builtin templates through the Jinja environment of the model templates, so an
     override may include or import any other builtin template. A missing directory or role falls back to the builtin
     role, as model templates do, and overrides receive the template data, as custom model templates do. A target names
-    its builtin directory, its roles, its subdirectory, and the code of a template that does not render.
+    its builtin directory, whose templates are its roles, its subdirectory, and the code of a template that does not
+    render.
     A `Role` returns the renderer of a builtin role from its name and its compiled renderer.
     """
 
     BUILTIN: ClassVar[Path]
-    ROLES: ClassVar[frozenset[str]]
     SUBDIR: ClassVar[str]
     INVALID: ClassVar[str]
     OPTION: ClassVar[str] = "model_config.custom_template_dir"
@@ -65,7 +65,9 @@ class TemplateOverlay:
         """Find the roles the directory overrides."""
         self.directory = custom_template_dir / self.SUBDIR
         self.data = data
-        self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
+        self.roles = frozenset(
+            role.name for role in self.BUILTIN.glob("*.jinja2") if (self.directory / role.name).is_file()
+        )
 
     @classmethod
     def custom(cls, model_config: GenerateConfig, cwd: Path) -> Self | None:

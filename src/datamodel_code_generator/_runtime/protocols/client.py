@@ -16,11 +16,9 @@ from ..client.client import (
     Core,
     HandleT,
     R,
-    ReceivedBody,
     T,
     build_request,
     decode_response,
-    delivery_state,
     request_body,
     strip_credentials,
 )
@@ -29,7 +27,7 @@ from ..client.client import ClientCore as NativeClientCore
 from ..client.logical import LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
-from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
+from ..client.raw import AsyncRawResponse, RawResponse, ReceivedBody, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
@@ -211,14 +209,6 @@ class _SessionCall(Call):
         self.url = str(request.url)
         return request
 
-    @staticmethod
-    def followed_query(schemes: tuple[CredentialPosition, ...]) -> frozenset[str]:
-        """Return the query fields a followed URL is sent and saved without, whatever its origin.
-
-        They are the positions of the package's declared security schemes, where the call's credentials go again.
-        """
-        return secret_names(schemes)[1]
-
 
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
@@ -313,6 +303,25 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             return ("options", "idempotency_key")
         names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
         return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
+
+    def patched(
+        self,
+        options: RequestOptions | None,
+        operations: Iterable[OperationPlan[object] | None],
+        headers: frozenset[str],
+        queried: Callable[[str], bool],
+    ) -> tuple[str, ...] | None:
+        """Return where a call fixes an idempotency key of the operations or patches a parameter a helper writes.
+
+        A patch is a header named in `headers`, by its lowercase name, or a query name `queried` accepts, among the
+        call's own extra ones and the client's and its views' default ones, each of which every request sends. It is
+        None when the call does neither.
+        """
+        return (
+            self.fixed_key(options, operations)
+            or self.named(options, lambda name, _: name.lower() in headers)
+            or self.named(options, lambda name, _: queried(name), query=True)
+        )
 
     def named(
         self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
@@ -478,7 +487,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
-        url = strip_query(url, call.followed_query(self._shared.security_schemes))
+        url = strip_query(url, self.follow_query())
         headers = HeadersView(request_fields(prepared))
         if request_origin(url) != server:
             items, url = strip_credentials(headers.items(), url, self._shared.security_schemes)
@@ -516,7 +525,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
             data, wire, content = _page(decoder, info, received)
             url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
+            result = build(data, wire, content, info, url, self.follow_query())
 
             return Response(data=data, info=info), result
 
@@ -524,9 +533,9 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, body, prepare, receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if failed is not None:
-                failed(failure, delivery_state(call))
+                failed(failure, call.furthest())
             raise failure from failure.__cause__
         else:
             return result
@@ -568,7 +577,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             raise failure from failure.__cause__
         else:
             return result
@@ -624,7 +633,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             accept(result.info)
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if result is not None:
                 await released(result, failure)
             raise failure from failure.__cause__

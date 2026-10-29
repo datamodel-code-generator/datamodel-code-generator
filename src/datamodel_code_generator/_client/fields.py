@@ -6,33 +6,23 @@ from collections import Counter
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_naming import NameScope, explicit_name
+from datamodel_code_generator._target_operations import CLIENT
 from datamodel_code_generator._target_operations import label as _label
 
 if TYPE_CHECKING:
     from collections.abc import Container
 
+    from datamodel_code_generator._api_types import Diagnostic
     from datamodel_code_generator._client.model_facts import ModelFacts, ModelField
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
     from datamodel_code_generator._target_contract import OperationId, TypeUseId
     from datamodel_code_generator._target_naming import TargetNames
 
 _KINDS: Final = frozenset({"json", "form"})
-
-
-def _problem(code: str, message: str, operation: OperationSpec, option_path: str | None = None) -> Diagnostic:
-    return Diagnostic(
-        code=code,
-        severity="error",
-        stage="config" if code == "E_CONFIG_VALUE" else "target",
-        message=message,
-        source_pointer=operation.contract.id.use_site.pointer,
-        option_path=option_path,
-    )
 
 
 class _Fields:
@@ -92,11 +82,11 @@ class _Fields:
             if (given := names.pop((media_type, item.wire_name), None) or self._aliased(item)) is not None
         }
         self.problems.extend(
-            _problem(
+            CLIENT.problem(
                 "E_CONFIG_VALUE",
                 f"The body field name of the {media_type} property {name!r} of {_label(spec.contract)} names no "
                 "field argument",
-                spec,
+                spec.contract.id.use_site,
                 "operations",
             )
             for media_type, name in names
@@ -108,11 +98,11 @@ class _Fields:
             counts = Counter(given)
             if taken := sorted({name for name in given if name in scope or counts[name] > 1}):
                 self.problems.append(
-                    _problem(
+                    CLIENT.problem(
                         "E_NAME_COLLISION",
                         f"The {media_type} body fields of {_label(spec.contract)} cannot take the argument names "
                         f"{', '.join(map(repr, taken))}, which other arguments take",
-                        spec,
+                        spec.contract.id.use_site,
                     )
                 )
         for name in explicit.values():

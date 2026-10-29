@@ -13,6 +13,7 @@ import threading
 import weakref
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Final, Literal, cast
 from urllib.parse import quote_plus, urlencode
 
@@ -275,7 +276,7 @@ class _Provider(TokenSource):
         """
         client = self._http_client
         if isinstance(client, httpx2.Client):
-            send = _token_send(client)
+            send = partial(client.send, auth=None, follow_redirects=False)
         elif client is not None or send is None:
             raise self._missing()
         with self._lock:
@@ -301,7 +302,7 @@ class _Provider(TokenSource):
 
         client = self._http_client
         if isinstance(client, httpx2.AsyncClient):
-            send = _atoken_send(client)
+            send = partial(client.send, auth=None, follow_redirects=False)
         elif client is not None or send is None:
             raise self._missing()
         loop = asyncio.get_running_loop()
@@ -338,24 +339,6 @@ class _Provider(TokenSource):
 def _byte_stream(request: httpx2.Request) -> bool:
     """Return whether HTTPX2 can send a request of any client again: one whose body is bytes."""
     return isinstance(request.stream, httpx2.ByteStream)
-
-
-def _token_send(client: httpx2.Client) -> Send:
-    """Return a sender of token requests through a client, without its Auth and without following redirects."""
-
-    def send(request: httpx2.Request) -> httpx2.Response:
-        return client.send(request, auth=None, follow_redirects=False)
-
-    return send
-
-
-def _atoken_send(client: httpx2.AsyncClient) -> AsyncSend:
-    """Return an asyncio sender of token requests through a client, as the synchronous sender sends them."""
-
-    async def send(request: httpx2.Request) -> httpx2.Response:
-        return await client.send(request, auth=None, follow_redirects=False)
-
-    return send
 
 
 def _sent(send: Send, request: httpx2.Request) -> httpx2.Response:

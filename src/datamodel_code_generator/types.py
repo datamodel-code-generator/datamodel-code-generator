@@ -1744,6 +1744,35 @@ def _import_paths(module: ModuleType) -> frozenset[str]:
     )
 
 
+def _copy_data_type(data_type: DataType, *, register_references: bool = True, link_parents: bool = True) -> DataType:
+    """Copy a DataType tree without detaching its model references.
+
+    The copy has no parent; ``link_parents`` makes each nested copy the parent of the copies it holds, and
+    ``register_references`` registers every copy with the reference it names.
+    """
+    copied = data_type.model_copy()
+    copied.parent = None
+    copied.children = []
+    copied.literals = list(data_type.literals)
+    copied.enum_member_literals = list(data_type.enum_member_literals)
+    if (kwargs := data_type.kwargs) is not None:
+        copied.kwargs = deepcopy(kwargs)
+    copied.data_types = [
+        _copy_data_type(child, register_references=register_references, link_parents=link_parents)
+        for child in data_type.data_types
+    ]
+    if (dict_key := data_type.dict_key) is not None:
+        copied.dict_key = _copy_data_type(dict_key, register_references=register_references, link_parents=link_parents)
+    if link_parents:
+        for child in copied.data_types:
+            child.parent = copied
+        if copied.dict_key is not None:
+            copied.dict_key.parent = copied
+    if register_references:
+        copied.register_reference()
+    return copied
+
+
 def _is_value_literal(data_type: DataType) -> bool:
     """Return whether a type is the ``Literal`` of the values of a const or an enum."""
     return bool(data_type.literals) and not data_type.type and data_type.import_ is None

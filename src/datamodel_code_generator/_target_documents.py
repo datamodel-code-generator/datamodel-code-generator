@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -46,13 +46,6 @@ def canonical_bytes(value: JSONValue) -> bytes:
 def sha256(data: bytes) -> str:
     """Return the lowercase hexadecimal SHA-256 of bytes."""
     return hashlib.sha256(data).hexdigest()
-
-
-def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
-    """Raise one configuration diagnostic as an API generation error."""
-    return APIGenerationError((
-        Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path),
-    ))
 
 
 def document_identity(document: str, base: Path) -> str:

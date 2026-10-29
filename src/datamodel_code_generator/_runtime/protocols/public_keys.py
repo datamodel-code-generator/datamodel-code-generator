@@ -7,6 +7,7 @@ derived from a private key.
 
 from __future__ import annotations
 
+from operator import attrgetter
 from typing import TYPE_CHECKING, Final, final
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
@@ -15,9 +16,8 @@ from cryptography.hazmat.primitives.asymmetric.padding import MGF1, PSS
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.hashes import SHA256
 
-from .records import Sealed
 from .signatures import SignatureAlgorithm, UnsupportedKeyError
-from .webhook_keys import checked_key_id
+from .webhook_keys import SealedKey, checked_key_id
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -28,8 +28,8 @@ _PSS: Final = PSS(mgf=MGF1(SHA256()), salt_length=32)
 _SHA256: Final = SHA256()
 
 
-def _checked(id: object, public_key: object, kind: type) -> tuple[tuple[str, object], ...]:  # noqa: A002
-    """Return the attributes of a valid id and the public key itself, refusing another class of key by its name only.
+def _checked(id: object, public_key: object, kind: type) -> str:  # noqa: A002
+    """Return a valid id of a public key, refusing another class of key by its name only.
 
     The key's real class must derive from the cryptography class, so an object claiming that class is refused; a class
     registered with the cryptography class is accepted, since the application supplies its own keys.
@@ -38,72 +38,48 @@ def _checked(id: object, public_key: object, kind: type) -> tuple[tuple[str, obj
     if not issubclass(type(public_key), kind):
         msg = f"public_key must be an {kind.__name__}"
         raise TypeError(msg)
-    return ("_id", checked), ("_public_key", public_key)
+    return checked
 
 
 @final
-class Ed25519Key(Sealed):
+class Ed25519Key(SealedKey):
     """An Ed25519 public key for raw 64-byte signatures, and its id; the key never appears in a representation."""
 
-    __slots__ = ("_id", "_public_key")
+    __slots__ = ("_public_key",)
 
-    _id: str
     _public_key: Ed25519PublicKey
 
     def __init__(self, *, id: str, public_key: Ed25519PublicKey) -> None:  # noqa: A002
         """Keep the id and the public key itself, refusing a private key, bytes, text, or any other type."""
-        for name, item in _checked(id, public_key, Ed25519PublicKey):
-            object.__setattr__(self, name, item)
-
-    @property
-    def id(self) -> str:
-        """Return the id that key-id headers and matched_key_id name."""
-        return self._id
+        object.__setattr__(self, "_id", _checked(id, public_key, Ed25519PublicKey))
+        object.__setattr__(self, "_public_key", public_key)
 
     @property
     def public_key(self) -> Ed25519PublicKey:
         """Return the public key."""
         return self._public_key
 
-    def __repr__(self) -> str:
-        """Name the id only, never the key."""
-        return f"Ed25519Key(id={self._id!r})"
-
 
 @final
-class RSAPSSKey(Sealed):
+class RSAPSSKey(SealedKey):
     """An RSA public key and its id for RSA-PSS with SHA-256, MGF1-SHA-256, and a 32-byte salt.
 
     The key never appears in a representation.
     """
 
-    __slots__ = ("_id", "_public_key")
+    __slots__ = ("_public_key",)
 
-    _id: str
     _public_key: RSAPublicKey
 
     def __init__(self, *, id: str, public_key: RSAPublicKey) -> None:  # noqa: A002
         """Keep the id and the public key itself, refusing a private key, bytes, text, or any other type."""
-        for name, item in _checked(id, public_key, RSAPublicKey):
-            object.__setattr__(self, name, item)
-
-    @property
-    def id(self) -> str:
-        """Return the id that key-id headers and matched_key_id name."""
-        return self._id
+        object.__setattr__(self, "_id", _checked(id, public_key, RSAPublicKey))
+        object.__setattr__(self, "_public_key", public_key)
 
     @property
     def public_key(self) -> RSAPublicKey:
         """Return the public key."""
         return self._public_key
-
-    def __repr__(self) -> str:
-        """Name the id only, never the key."""
-        return f"RSAPSSKey(id={self._id!r})"
-
-
-def _key_id(key: Ed25519Key | RSAPSSKey) -> str:
-    return key.id
 
 
 def _verified(verify: Callable[[bytes], None], signatures: tuple[bytes, ...]) -> bool:
@@ -135,5 +111,5 @@ def _rsa_pss(key: RSAPSSKey, parts: tuple[bytes, ...], signatures: tuple[bytes, 
     return _verified(lambda signature: public_key.verify(signature, signed, _PSS, _SHA256), signatures)
 
 
-ED25519: Final = SignatureAlgorithm(key_type=Ed25519Key, size=64, key_id=_key_id, matches=_ed25519)
-RSA_PSS_SHA256: Final = SignatureAlgorithm(key_type=RSAPSSKey, size=None, key_id=_key_id, matches=_rsa_pss)
+ED25519: Final = SignatureAlgorithm(key_type=Ed25519Key, size=64, key_id=attrgetter("id"), matches=_ed25519)
+RSA_PSS_SHA256: Final = SignatureAlgorithm(key_type=RSAPSSKey, size=None, key_id=attrgetter("id"), matches=_rsa_pss)

@@ -98,13 +98,6 @@ required = 1
 ["src/datamodel_code_generator/model/dataclass.py"."DataClass.unbind_fields"]
 '__dict__[_UNBOUND_FIELD_KEY]' = 1
 
-["src/datamodel_code_generator/model/msgspec.py"."DataModelField._copy_data_type"]
-data_types = 1
-dict_key = 1
-enum_member_literals = 1
-kwargs = 1
-literals = 1
-
 ["src/datamodel_code_generator/model/msgspec.py"."DataModelField._copy_data_type_without_top_level_none"]
 data_types = 1
 
@@ -188,13 +181,6 @@ use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inli
 import_ = 1
 type = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_copy_data_type"]
-data_types = 2
-dict_key = 1
-enum_member_literals = 1
-kwargs = 1
-literals = 1
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
 alias = 1
 
@@ -272,19 +258,19 @@ extras = 1
 validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
-'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 2
+'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
 alias = 3
 constraints = 1
 'data_types[...]' = 1
-default = 2
+default = 1
 'extras.update()' = 1
-has_default = 2
+has_default = 1
 name = 3
 original_name = 2
 read_only = 1
 required = 2
 serialization_alias = 2
-use_default_with_required = 2
+use_default_with_required = 1
 use_serialization_alias = 2
 validation_aliases = 2
 write_only = 1
@@ -391,3 +377,10 @@ reference = "--input tests/data/openapi/not_real_string.json --input-file-type o
 data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
 enum_member_literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
 literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+
+["src/datamodel_code_generator/types.py"."_copy_data_type"]
+data_types = 1
+dict_key = 1
+enum_member_literals = 1
+kwargs = 1
+literals = 1

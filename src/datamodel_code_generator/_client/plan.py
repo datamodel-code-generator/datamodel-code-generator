@@ -46,7 +46,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TypeUseBinding,
 )
-from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, WINDOWS_DEVICES, NameScope, path_placeholders
+from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
 from datamodel_code_generator._target_operations import (
     BODYLESS_STATUSES,
     CLIENT,
@@ -518,10 +518,7 @@ class Planner:
             [(base, local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
         )
         for tag, namespace in zip(first, names, strict=True):
-            if (
-                casefold(namespace, self.names.python_version) in WINDOWS_DEVICES
-                and (operation := staying.get(tag)) is not None
-            ):
+            if windows_device(namespace, self.names.python_version) and (operation := staying.get(tag)) is not None:
                 message = f"The tag {tag!r} of {label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))

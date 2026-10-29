@@ -30,8 +30,7 @@ def _header_failure(
     info: ResponseInfo, operation_id: str | None, name: str, cause: BaseException | None = None
 ) -> DecodeError:
     """Return the failure of a declared response header that is missing, repeated, or invalid, located at its name."""
-    error = response_failure(info, "invalid_header", cause=cause)
-    error.operation_id = operation_id
+    error = response_failure(info, "invalid_header", cause=cause, operation_id=operation_id)
     error.location = ("header", name)
     return error
 

@@ -229,6 +229,18 @@ def _refusals(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
         lambda: helper.resume(state, options=harness.request(extra_headers={"X-Trace": "mine"})),
     )
     step(lines, "resumed with poll options of another type", lambda: helper.resume(state, poll_options=1))
+    step(
+        lines,
+        "resumed through a view whose default header patches a written header",
+        lambda: api.with_options(default_headers={"X-Trace": "mine"}).protocols.jobs.run.resume(state),
+    )
+    query = harness.client_options(default_query={"verbose": "false"})
+    with exchange.client() as native, harness.package.Client(http_client=native, **query) as patched:
+        step(
+            lines,
+            "resumed on a client whose default query patches a written query",
+            lambda: patched.protocols.jobs.inline.resume(state),
+        )
 
 
 def _malformed(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:

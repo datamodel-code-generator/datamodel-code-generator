@@ -10,6 +10,7 @@ import hmac
 import re
 from base64 import b64decode, urlsafe_b64decode
 from dataclasses import dataclass
+from operator import attrgetter
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, final
 
 from typing_extensions import TypeVar
@@ -62,10 +63,6 @@ class SignatureAlgorithm(Generic[K]):
     matches: Callable[[K, tuple[bytes, ...], tuple[bytes, ...]], bool]
 
 
-def _hmac_id(key: HmacKey) -> str:
-    return key.id
-
-
 def _hmac(digest: Literal["sha256", "sha512"]) -> Callable[[HmacKey, tuple[bytes, ...], tuple[bytes, ...]], bool]:
     def matches(key: HmacKey, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
         """Stream the parts through one HMAC of the key and compare its digest with each signature in constant time."""
@@ -78,8 +75,8 @@ def _hmac(digest: Literal["sha256", "sha512"]) -> Callable[[HmacKey, tuple[bytes
     return matches
 
 
-HMAC_SHA256: Final = SignatureAlgorithm(key_type=HmacKey, size=32, key_id=_hmac_id, matches=_hmac("sha256"))
-HMAC_SHA512: Final = SignatureAlgorithm(key_type=HmacKey, size=64, key_id=_hmac_id, matches=_hmac("sha512"))
+HMAC_SHA256: Final = SignatureAlgorithm(key_type=HmacKey, size=32, key_id=attrgetter("id"), matches=_hmac("sha256"))
+HMAC_SHA512: Final = SignatureAlgorithm(key_type=HmacKey, size=64, key_id=attrgetter("id"), matches=_hmac("sha512"))
 
 
 def signature_bytes(encoding: Encoding, prefix: str, size: int | None, element: str) -> bytes | None:

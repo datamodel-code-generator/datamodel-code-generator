@@ -282,18 +282,30 @@ class DecodeError(SDKError):
         return (("status_code", info.status_code), *super()._details(), located, ("request_id", info.request_id))
 
 
-def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
-    """Return the failure of a binary input that cannot be opened or rewound for sending."""
-    return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
+def request_failure(
+    location: tuple[str | int, ...],
+    operation_id: str | None = None,
+    cause: BaseException | None = None,
+    *,
+    reason: str = "unencodable",
+) -> DecodeError:
+    """Return the failure of an argument its declared wire form cannot carry; the location never holds the value.
+
+    A binary body that cannot be opened or rewound for sending fails at `("body",)` with its own reason.
+    """
+    return DecodeError(reason=reason, direction="request", location=location, operation_id=operation_id, cause=cause)
 
 
-def response_failure(
+def response_failure(  # noqa: PLR0913
     info: ResponseInfo,
     reason: str,
     body: bytes = b"",
     cause: BaseException | None = None,
     *,
     media_type: str | None = None,
+    operation_id: str | None = None,
 ) -> DecodeError:
     """Return the decode failure of a received response, keeping its metadata and bounded body."""
-    return DecodeError(reason=reason, info=info, body_bytes=body, cause=cause, media_type=media_type)
+    return DecodeError(
+        reason=reason, info=info, body_bytes=body, cause=cause, media_type=media_type, operation_id=operation_id
+    )

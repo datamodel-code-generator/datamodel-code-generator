@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
 from collections.abc import Set as AbstractSet  # noqa: TC003 - Public annotations support get_type_hints().
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
@@ -89,11 +89,13 @@ DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=6
 _UNLIMITED: Final = ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
 
 
+def retryable_status(status: int) -> bool:
+    """Return whether a retry may select a status: an error status other than an authentication challenge."""
+    return _RETRY_STATUS_MIN <= status <= _RETRY_STATUS_MAX and status not in _RETRY_STATUS_EXCLUDED
+
+
 def _statuses(value: AbstractSet[int]) -> frozenset[int]:
-    if any(
-        type(item) is not int or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX or item in _RETRY_STATUS_EXCLUDED
-        for item in value
-    ):
+    if any(type(item) is not int or not retryable_status(item) for item in value):
         raise ConfigurationError(field_path=("retry", "statuses"), reason="out_of_range")
     return frozenset(value)
 
@@ -149,6 +151,7 @@ class ResolvedRetryOptions:
 
 
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
+_RETRY_FIELDS: Final = tuple(item.name for item in fields(RetryOptions))
 
 
 def _inherited(current: _OptionT, layer: _OptionT | UNSET) -> _OptionT:
@@ -163,21 +166,10 @@ def layered_retry(
         current = replace(current, max_retries=max_retries)
     if layer is None:
         return current
-    initial_delay = _inherited(current.initial_delay, layer.initial_delay)
-    max_delay = _inherited(current.max_delay, layer.max_delay)
-    _ordered_delays(initial_delay, max_delay, operation_id)
-    return ResolvedRetryOptions(
-        max_retries=current.max_retries,
-        initial_delay=initial_delay,
-        max_delay=max_delay,
-        jitter=_inherited(current.jitter, layer.jitter),
-        statuses=frozenset(_inherited(current.statuses, layer.statuses)),
-        max_retry_after=_inherited(current.max_retry_after, layer.max_retry_after),
-        respect_retry_after=_inherited(current.respect_retry_after, layer.respect_retry_after),
-        retry_after_ms_header=_inherited(current.retry_after_ms_header, layer.retry_after_ms_header),
-        should_retry_header=_inherited(current.should_retry_header, layer.should_retry_header),
-        retry_on_pool_timeout=_inherited(current.retry_on_pool_timeout, layer.retry_on_pool_timeout),
-    )
+    given = {name: value for name in _RETRY_FIELDS if (value := getattr(layer, name)) is not UNSET}
+    resolved = replace(current, **given)
+    _ordered_delays(resolved.initial_delay, resolved.max_delay, operation_id)
+    return resolved
 
 
 def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeoutOptions) -> ResolvedTimeoutOptions:
@@ -309,11 +301,11 @@ def layered(settings: Settings, layer: RequestOptions, *, view: bool, operation_
         merged(settings.headers, layer.extra_headers, fold=True) if view else settings.headers,
         merged(settings.query, layer.extra_query, fold=False) if view else settings.query,
         timeout=phases(layer.timeout, settings.timeout),
-        total_timeout=settings.total_timeout if layer.total_timeout is UNSET else layer.total_timeout,
+        total_timeout=_inherited(settings.total_timeout, layer.total_timeout),
         retry=layered_retry(settings.retry, layer.retry, layer.max_retries, operation_id),
         follow_redirects=settings.follow_redirects if layer.follow_redirects is None else layer.follow_redirects,
         idempotency_key=layer.idempotency_key,
-        auth=settings.auth if layer.auth is UNSET else layer.auth,
+        auth=_inherited(settings.auth, layer.auth),
         clock=settings.clock,
         compression=settings.compression,
     )

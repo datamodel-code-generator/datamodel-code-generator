@@ -64,10 +64,7 @@ from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
 )
-from datamodel_code_generator._requirements import (
-    REQUIREMENTS,
-    python_target_meets,
-)
+from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -154,7 +151,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     DiscriminatorValue,
     _assign_module_name,
-    _copy_data_type,
     _data_types_beside_fields,
     _forward_enum_member_literals,
     _has_root_field_constraints,
@@ -225,6 +221,7 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     DataTypeManager,
+    _copy_data_type,
     build_union,
     union_members,
 )
@@ -304,28 +301,6 @@ def _get_model_field_constructor(
     if constructor := field_type.__dict__.get("PARSER_CONSTRUCTOR"):
         return cast("Callable[..., DataModelFieldBase]", constructor)
     return field_type
-
-
-def _source_context_from_config(config: ParserConfig) -> ParserSourceContext:
-    """Adapt a public parser config to the neutral source policy."""
-    remote_lock = getattr(config, "remote_lock", None)
-    response_observer = remote_lock.record_response if remote_lock is not None else None
-    return ParserSourceContext(
-        base_path=config.base_path,
-        encoding=config.encoding,
-        remote_text_cache=config.remote_text_cache,
-        allow_remote_refs=config.allow_remote_refs,
-        strict_refs=config.strict_refs,
-        allow_private_network=config.allow_private_network,
-        http_backend=config.http_backend,
-        http_headers=config.http_headers,
-        http_local_ref_path=config.http_local_ref_path,
-        http_ignore_tls=config.http_ignore_tls,
-        http_query_parameters=config.http_query_parameters,
-        http_timeout=config.http_timeout,
-        external_ref_mapping=config.external_ref_mapping,
-        remote_response_observer=response_observer,
-    )
 
 
 def _get_builtin_pydantic_v2_field_constructor(
@@ -528,6 +503,11 @@ def _copy_data_model_field(
     return copied_field
 
 
+def _wraps_one_list(data_type: DataType) -> bool:
+    """Return whether ``data_type`` is not a list and holds one member, which is a list."""
+    return not data_type.is_list and len(data_type.data_types) == 1 and data_type.data_types[0].is_list
+
+
 def _get_inherited_type_modifiers(
     data_type: DataType,
     *,
@@ -535,11 +515,7 @@ def _get_inherited_type_modifiers(
     drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = (
-        _copy_data_type(data_type, register_references=False)
-        if not data_type.is_list and len(data_type.data_types) == 1 and data_type.data_types[0].is_list
-        else None
-    )
+    list_wrapper = _copy_data_type(data_type, register_references=False) if _wraps_one_list(data_type) else None
     return _InheritedTypeModifiers(
         null_rule=null_rule,
         is_optional=data_type.is_optional,
@@ -647,13 +623,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
             wrapper_template = (
                 current_type.list_wrapper
                 if isinstance(current_type, _InheritedTypeModifiers)
-                else (
-                    current_type
-                    if not current_type.is_list
-                    and len(current_type.data_types) == 1
-                    and current_type.data_types[0].is_list
-                    else None
-                )
+                else (current_type if _wraps_one_list(current_type) else None)
             )
             if wrapper_template is not None and copied_data_type.is_list:
                 wrapper = _copy_data_type(wrapper_template, register_references=register_references)
@@ -688,16 +658,10 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
                 copied_field.extras.update(deepcopy(field.extras))
                 copied_field.read_only = inherited_field.read_only or field.read_only
                 copied_field.write_only = inherited_field.write_only or field.write_only
-            if field.has_default:
-                copied_field.default = deepcopy(field.default)
-                copied_field.has_default = True
-                copied_field.use_default_with_required = field.use_default_with_required
-                if _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
-                    copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
-            elif partial_merge_mode != AllOfMergeMode.All:
-                copied_field.default = field.default
-                copied_field.has_default = False
-                copied_field.use_default_with_required = False
+            if (has_default := bool(field.has_default)) or partial_merge_mode != AllOfMergeMode.All:
+                copied_field.default = deepcopy(field.default) if has_default else field.default
+                copied_field.has_default = has_default
+                copied_field.use_default_with_required = has_default and field.use_default_with_required
                 if _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                     copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, str():
@@ -785,11 +749,6 @@ class Source(BaseModel):
         return cls(path=Path(), raw_data=data)
 
 
-def _model_references(model: DataModel) -> list[Reference]:
-    """Return the references of a model's data types in render order."""
-    return [reference for data_type in model.all_data_types if (reference := data_type.reference)]
-
-
 @final
 @record
 class _ModelShapeSource:
@@ -826,7 +785,7 @@ class _ModelShapeSource:
 
     def references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
         """Return the references of the model's data types in render order."""
-        return _model_references(model)
+        return [reference for data_type in model.all_data_types if (reference := data_type.reference)]
 
     def rule_references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
         """Return the references of the types that the model's schema validator rules name, in order."""
@@ -842,23 +801,23 @@ class _ModelShapeSource:
 
 
 def _resolve_module_file(module_: ModulePath, results: dict[ModulePath, Result]) -> tuple[ModulePath, bool]:
-    is_init = False
+    """Return the file of a module and whether it is a package ``__init__.py``, adding its missing parent packages.
 
-    if module_:
-        if len(module_) == 1:
-            parent: ModulePath = ("__init__.py",)
-            if parent not in results:
-                results[parent] = Result(body="")
-        else:
-            for i in range(1, len(module_)):
-                parent = (*module_[:i], "__init__.py")
-                if parent not in results:
-                    results[parent] = Result(body="")
-        if (*module_, "__init__.py") in results:
-            return (*module_, "__init__.py"), True
-        return tuple(part.replace("-", "_") for part in (*module_[:-1], f"{module_[-1]}.py")), is_init
+    A top-level module adds the root ``__init__.py``; a nested one, the ``__init__.py`` of each package above it.
+    """
+    if not module_:
+        return ("__init__.py",), False
+    for i in range(len(module_) > 1, len(module_)):
+        if (parent := (*module_[:i], "__init__.py")) not in results:
+            results[parent] = Result(body="")
+    if (*module_, "__init__.py") in results:
+        return (*module_, "__init__.py"), True
+    return tuple(part.replace("-", "_") for part in (*module_[:-1], f"{module_[-1]}.py")), False
 
-    return ("__init__.py",), is_init
+
+def _exported_names(models: Iterable[DataModel]) -> Iterator[str]:
+    """Return the names of ``models`` that ``--all-exports-scope`` exports: those not starting with ``_``."""
+    return (ref.short_name for model in models if (ref := model.reference) and not ref.short_name.startswith("_"))
 
 
 def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_code: bool = False) -> str:
@@ -1092,7 +1051,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             config = self._create_default_config(options)
 
         self.config = config
-        self._source_context = getattr(config, "_source_context", None) or _source_context_from_config(config)
+        self._source_context = getattr(config, "_source_context", None) or ParserSourceContext.of(
+            config, getattr(config, "remote_lock", None)
+        )
         self._has_bound_python_types = False
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
@@ -1710,12 +1671,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if value is None:  # pragma: no cover
                 return None
             if isinstance(value, list):
-                seen: set[str] = set()
-                result: list[str] = []
-                for v in value:
-                    if isinstance(v, str) and v and v not in seen:
-                        seen.add(v)
-                        result.append(v)
+                result = list(dict.fromkeys(v for v in value if isinstance(v, str) and v))
                 if not result:
                     return None
                 return result[0] if len(result) == 1 else result
@@ -2201,11 +2157,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if scope == AllExportsScope.Children and depth != 1:
                 continue
             rel = prefix[base_len:]
-            exports.extend(
-                (ref.short_name, rel, ".".join(rel))
-                for m in proc_models
-                if (ref := m.reference) and not ref.short_name.startswith("_")
-            )
+            exports.extend((name, rel, ".".join(rel)) for name in _exported_names(proc_models))
         return exports
 
     @classmethod
@@ -2455,8 +2407,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ) and self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS:
             return False
         return bool(
-            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
-            or (with_import and not disable_future_imports)
+            self.target_python_version.has_native_deferred_annotations or (with_import and not disable_future_imports)
         )
 
     def _has_forward_references(self, models: list[DataModel]) -> bool:  # noqa: PLR6301
@@ -2509,7 +2460,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> str:
         """Return future imports required by a single generated module."""
         if not (
-            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
+            self.target_python_version.has_native_deferred_annotations
             and self._requires_explicit_deferred_annotations(ctx.models, config)
         ):
             return future_imports_str
@@ -2540,7 +2491,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if (
             with_import
             and not disable_future_imports
-            and not python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
+            and not self.target_python_version.has_native_deferred_annotations
         ):
             self._import_ledger.append(self.imports, IMPORT_ANNOTATIONS, _DEFERRED_ANNOTATIONS)
 
@@ -2748,6 +2699,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             with_import=config.with_import,
             treat_dot_as_module=self.treat_dot_as_module,
         )
+        live_models = [model for ctx in contexts for model in ctx.models]
         if (
             getattr(self, "openapi_include_info_version", False)
             and getattr(self, "openapi_info_version", None) is not None
@@ -2758,10 +2710,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for module, result in results.items()
             )
         ):
-            defect_models.update(model for ctx in contexts for model in ctx.models)
+            defect_models.update(live_models)
         self.stdout_result_usable = not defect_models
         if self.forced_invalid_dotted_stdout_repair_modules:
-            self.generated_model_inventory = self._model_inventory([model for ctx in contexts for model in ctx.models])
+            self.generated_model_inventory = self._model_inventory(live_models)
             self.source_data_fingerprint = self._get_source_data_fingerprint()
             return
         if not defect_models or config.module_split_mode is not None:
@@ -2777,7 +2729,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if matching_module:
                 repair_modules.add(matching_module)
 
-        live_models = [model for ctx in contexts for model in ctx.models]
         if not repair_modules or any(model.file_path is not None for model in live_models):
             return
         if (source_fingerprint := self._get_source_data_fingerprint()) is None:
@@ -3029,7 +2980,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
         backend = self.data_model_type.__module__
         ordinary_backends = {
-            "datamodel_code_generator.model.pydantic_v2.base_model",
+            _PYDANTIC_V2_BASE_MODEL_MODULE,
             "datamodel_code_generator.model.pydantic_v2.dataclass",
             "datamodel_code_generator.model.dataclass",
         }
@@ -3085,7 +3036,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if reference is None:
                     terminal = base.import_
                     closed[index] = closed[index] and (
-                        backend == "datamodel_code_generator.model.pydantic_v2.base_model"
+                        backend == _PYDANTIC_V2_BASE_MODEL_MODULE
                         and terminal is not None
                         and terminal.from_ == "pydantic"
                         and terminal.import_ == "BaseModel"
@@ -3241,7 +3192,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for ctx in contexts:
             _set_nested_model_default_factory_order(ctx.models, cast("NestedFactoryMetadata", metadata))
 
-    def _generate_module_output(  # noqa: PLR0912, PLR0913, PLR0917
+    def _generate_module_output(  # noqa: PLR0913, PLR0917
         self,
         ctx: ModuleContext,
         config: ParseConfig,
@@ -3255,21 +3206,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
 
-        if config.all_exports_scope is not None and ctx.module[-1] == "__init__.py":
-            child_exports = self._collect_exports_for_init(ctx.module, contexts, config.all_exports_scope)
-            if child_exports:
-                local_model_names = {
-                    m.reference.short_name
-                    for m in ctx.models
-                    if m.reference and not m.reference.short_name.startswith("_")  # pragma: no branch
-                }
-                resolved_exports = self._resolve_export_collisions(
-                    child_exports,
-                    config.all_exports_collision_strategy,
-                    local_model_names,
-                    self.target_python_version,
-                )
-                export_imports = self._build_all_exports_code(resolved_exports)
+        if (scope := config.all_exports_scope) is not None and ctx.module[-1] == "__init__.py":
+            export_imports = self._init_export_imports(
+                ctx.module, contexts, scope, config, set(_exported_names(ctx.models))
+            )
 
         if ctx.models:
             if config.with_import:
@@ -3279,9 +3219,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             if export_imports:
                 result += [str(export_imports), ""]
-                for m in ctx.models:
-                    if m.reference and not m.reference.short_name.startswith("_"):  # pragma: no branch
-                        export_imports.add_export(m.reference.short_name)
+                for name in _exported_names(ctx.models):
+                    export_imports.add_export(name)
                 result += [export_imports.dump_all(multiline=True) + "\n"]
 
             module_code = self.data_model_type.render_module_code(ctx.models)
@@ -3319,16 +3258,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not result and not ctx.is_init:
             return None
 
-        body = "\n".join(result)
-        if config.code_formatter:
-            body = _format_body_safe(
-                body,
-                config.code_formatter,
-                generated_code=self._uses_standard_generation_templates,
-            )
-
         return Result(
-            body=body,
+            body=self._formatted_body("\n".join(result), config),
             future_imports=module_future_imports_str,
             source=ctx.models[0].file_path if ctx.models else None,
         )
@@ -3341,42 +3272,51 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         future_imports_str: str,
     ) -> None:
         """Generate exports for empty __init__.py files."""
-        if config.all_exports_scope is None:  # pragma: no cover
+        if (scope := config.all_exports_scope) is None:  # pragma: no cover
             return
         processed_init_modules = {ctx.module for ctx in contexts if ctx.module[-1] == "__init__.py"}
         for init_module, init_result in list(results.items()):
             if init_module[-1] != "__init__.py" or init_module in processed_init_modules or init_result.body:
                 continue
-            child_exports = self._collect_exports_for_init(init_module, contexts, config.all_exports_scope)
-            if child_exports:
-                resolved = self._resolve_export_collisions(
-                    child_exports, config.all_exports_collision_strategy, set(), self.target_python_version
-                )
-                export_imports = self._build_all_exports_code(resolved)
-                import_parts = [s for s in [future_imports_str, str(self.imports)] if s] if config.with_import else []
-                parts = import_parts + (["\n"] if import_parts else [])
-                parts += [str(export_imports), "", export_imports.dump_all(multiline=True)]
-                body = "\n".join(parts)
-                if config.code_formatter:
-                    body = _format_body_safe(
-                        body,
-                        config.code_formatter,
-                        generated_code=self._uses_standard_generation_templates,
-                    )
-                results[init_module] = Result(
-                    body=body,
-                    future_imports=future_imports_str,
-                )
+            if (export_imports := self._init_export_imports(init_module, contexts, scope, config, set())) is None:
+                continue
+            import_parts = [s for s in [future_imports_str, str(self.imports)] if s] if config.with_import else []
+            parts = import_parts + (["\n"] if import_parts else [])
+            parts += [str(export_imports), "", export_imports.dump_all(multiline=True)]
+            results[init_module] = Result(
+                body=self._formatted_body("\n".join(parts), config),
+                future_imports=future_imports_str,
+            )
+
+    def _init_export_imports(
+        self,
+        module: ModulePath,
+        contexts: list[ModuleContext],
+        scope: AllExportsScope,
+        config: ParseConfig,
+        reserved: set[str],
+    ) -> Imports | None:
+        """Return the imports by which the ``__init__.py`` of ``module`` exports its subpackages' models, or None.
+
+        Names that collide with each other or with ``reserved`` are resolved by ``--all-exports-collision-strategy``.
+        """
+        if not (exports := self._collect_exports_for_init(module, contexts, scope)):
+            return None
+        return self._build_all_exports_code(
+            self._resolve_export_collisions(
+                exports, config.all_exports_collision_strategy, reserved, self.target_python_version
+            )
+        )
+
+    def _formatted_body(self, body: str, config: ParseConfig) -> str:
+        """Return a module body formatted by the run's code formatter, or as it is without one."""
+        if not config.code_formatter:
+            return body
+        return _format_body_safe(body, config.code_formatter, generated_code=self._uses_standard_generation_templates)
 
     @staticmethod
     def _field_metadata(field: DataModelFieldBase, *, is_root_model: bool = False) -> ModelFieldMetadata:
-        source_name = field.original_name
-        if source_name is None:
-            source_name = field.alias
-        if source_name is None:
-            source_name = field.name
-        if source_name is None:
-            source_name = ""
+        source_name = next((name for name in (field.original_name, field.alias, field.name) if name is not None), "")
         if is_root_model:
             # RootModel renderers use root rather than the IR's synthetic field name.
             name = alias = "root"
