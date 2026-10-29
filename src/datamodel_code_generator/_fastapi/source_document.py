@@ -17,6 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
+from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
 from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
 from datamodel_code_generator._url_redaction import redact_reference
 
@@ -112,7 +113,7 @@ class SourceDocument:
         self.anchors: dict[tuple[str, str], tuple[int, tuple[str, ...]]] = {}
         for index, document in enumerate(self.documents):
             self.index(index, document, (self.uris[index], self.bases[index]))
-        self.schemas = _mapping(_mapping(root.get("components")).get("schemas"))
+        self.schemas = as_mapping(as_mapping(root.get("components")).get("schemas"))
         self.problems: dict[str, None] = {}
         self.wanted: dict[tuple[str, str], None] = {}
         self.bundled: dict[Key, str] = {}
@@ -168,15 +169,7 @@ class SourceDocument:
 
     def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
         """Return whether a pointer names a node of a loaded document."""
-        value: YamlValue = self.documents[document]
-        for token in tokens:
-            if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
-                value = value[int(token)]
-            elif isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
-                value = _member(value, token)
-            else:
-                return False
-        return True
+        return descend(self.documents[document], tokens, _step, MISSING) is not MISSING
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
@@ -196,14 +189,14 @@ class SourceDocument:
             if name == "paths":
                 document[name] = {
                     str(path): self.copy(item, 0, base, ("paths", str(path)), "pathItem")
-                    for path, item in _mapping(value).items()
+                    for path, item in as_mapping(value).items()
                     if str(path) in self.selected
                 }
             elif name == "webhooks":
                 document[name] = self.members(value, 0, base, (name,), ("map", "pathItem"))
             elif name != "components" and self.json(value, (name,)):
                 document[name] = self.copy(value, 0, base, (name,), "any")
-        if components := self.components(_mapping(root.get("components"))):
+        if components := self.components(as_mapping(root.get("components"))):
             document["components"] = components
         return document
 
@@ -215,7 +208,7 @@ class SourceDocument:
             (str(kind), str(name), value)
             for wanted in (self.subtyped(),)
             for kind, items in source.items()
-            for name, value in _mapping(items).items()
+            for name, value in as_mapping(items).items()
             if (str(kind), str(name)) in wanted and (str(kind), str(name)) not in copied
         ]:
             for kind, name, value in todo:
@@ -226,7 +219,7 @@ class SourceDocument:
             if kind == _KEPT:
                 components[kind] = self.members(value, 0, base, ("components", kind), ("map", "securityScheme"))
             elif found := {
-                str(name): copied[kind, str(name)] for name in _mapping(value) if (kind, str(name)) in copied
+                str(name): copied[kind, str(name)] for name in as_mapping(value) if (kind, str(name)) in copied
             }:
                 components[kind] = found
         for kind, items in self.extra.items():
@@ -240,11 +233,11 @@ class SourceDocument:
         bases = {
             f"#/components/schemas/{escape_pointer_token(name)}"
             for kind, name in self.wanted
-            if kind == "schemas" and isinstance(_mapping(self.schemas.get(name)).get("discriminator"), dict)
+            if kind == "schemas" and isinstance(as_mapping(self.schemas.get(name)).get("discriminator"), dict)
         }
         for name, schema in self.schemas.items():
-            parts = _mapping(schema).get("allOf")
-            if isinstance(parts, list) and any(_mapping(part).get("$ref") in bases for part in parts):
+            parts = as_mapping(schema).get("allOf")
+            if isinstance(parts, list) and any(as_mapping(part).get("$ref") in bases for part in parts):
                 self.wanted.setdefault(("schemas", str(name)), None)
         return self.wanted
 
@@ -324,7 +317,7 @@ class SourceDocument:
 
     def served(self, link: YamlValue, at: tuple[str, ...]) -> bool:
         """Return whether a link's operationRef names an operation the document keeps, reporting one it leaves out."""
-        ref = _mapping(link).get("operationRef")
+        ref = as_mapping(link).get("operationRef")
         if not isinstance(ref, str) or not ref.startswith("#/paths/"):
             return True
         if pointer_tokens(unquote(ref[1:]))[1] in self.selected:
@@ -402,13 +395,13 @@ class SourceDocument:
         node = self.node(target, tokens)
         if len(tokens) == 3 and tokens[0] == "components":  # ruff: ignore[magic-value-comparison] - components, kind, name.
             name = tokens[2]
-        elif isinstance(own := _mapping(node).get("name"), str) and own:
+        elif isinstance(own := as_mapping(node).get("name"), str) and own:
             name = own
         else:
             name = tokens[-1] if tokens else PurePosixPath(urlsplit(self.uris[target]).path).stem or kind
         name = _NAME.sub("_", name)
         items = self.extra.setdefault(kind, {})
-        root = _mapping(_mapping(self.documents[0].get("components")).get(kind))
+        root = as_mapping(as_mapping(self.documents[0].get("components")).get(kind))
         unique, count = name, 1
         while unique in items or unique in root:
             count += 1
@@ -422,7 +415,7 @@ class SourceDocument:
         """Return the node a pointer names in a loaded document."""
         value: YamlValue = self.documents[document]
         for token in tokens:
-            value = value[int(token)] if isinstance(value, list) else _member(_mapping(value), token)
+            value = value[int(token)] if isinstance(value, list) else _member(as_mapping(value), token)
         return value
 
 
@@ -440,6 +433,15 @@ def _pointer(at: tuple[str, ...]) -> str:
     return "/" + "/".join(escape_pointer_token(token) for token in at)
 
 
+def _step(value: YamlValue, token: str) -> YamlValue:
+    """Return a list's item by a decimal index or a mapping's member (``_member``); raise when the value has none."""
+    if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
+        return value[int(token)]
+    if isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
+        return _member(value, token)
+    raise LookupError(token)
+
+
 def _member(mapping: dict[str, YamlValue], token: str) -> YamlValue:
     """Return a mapping's member by key, by its integer YAML key when no string key matches."""
     return (
@@ -449,7 +451,3 @@ def _member(mapping: dict[str, YamlValue], token: str) -> YamlValue:
         if token.isdecimal()
         else None
     )
-
-
-def _mapping(value: YamlValue) -> dict[str, YamlValue]:
-    return value if isinstance(value, dict) else {}

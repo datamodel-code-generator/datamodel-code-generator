@@ -171,13 +171,16 @@ class GeneratedSymbolType:
     symbol: SymbolId
 
 
+BuiltinName: TypeAlias = Literal[
+    "bool", "bytes", "complex", "float", "int", "str", "object", "list", "set", "frozenset", "dict", "tuple"
+]
+
+
 @dataclass(frozen=True, slots=True)
 class BuiltinType:
     """Name one recognized Python builtin independently of its rendered spelling."""
 
-    name: Literal[
-        "bool", "bytes", "complex", "float", "int", "str", "object", "list", "set", "frozenset", "dict", "tuple"
-    ]
+    name: BuiltinName
 
 
 @dataclass(frozen=True, slots=True)
