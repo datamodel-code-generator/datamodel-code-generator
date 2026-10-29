@@ -83,16 +83,9 @@ def test_builtin_formatter_moved_names_are_reexported() -> None:
     assert format_module._BUILTIN_FORMATTER_REEXPORTS
     assert "__all__" not in vars(format_module)
     for name in format_module._BUILTIN_FORMATTER_REEXPORTS:
-        if name in BUILTIN_FORMATTER_LOCAL_CONSTANTS:
-            local_value = getattr(format_module, name)
-            builtin_value = getattr(builtin_formatter, name)
-            if name == "STRING_PREFIX_PATTERN":
-                assert local_value.pattern == builtin_value.pattern
-                assert local_value.flags == builtin_value.flags
-            else:
-                assert local_value == builtin_value
-            continue
         assert getattr(format_module, name) is getattr(builtin_formatter, name)
+    for name in BUILTIN_FORMATTER_LOCAL_CONSTANTS:
+        assert getattr(format_module, name) is getattr(format_types, name)
 
 
 @pytest.mark.parametrize("module_name", ["datamodel_code_generator.format", "datamodel_code_generator"])
@@ -359,8 +352,17 @@ def test_format_code_builtin_formatter_uses_format_module_reexported_callables(
     """Test built-in formatting call sites resolve through format.py globals."""
     known_first_party = frozenset({"example"})
     monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text("[tool.ruff]\nline-length = 60\n", encoding="utf-8")
 
     with (
+        mock.patch("datamodel_code_generator.format._is_valid_builtin_line_length", return_value=False) as validator,
+        pytest.raises(ValueError, match="builtin_format_line_length must be a positive integer"),
+    ):
+        CodeFormatter(PythonVersionMin, formatters=[Formatter.BUILTIN], builtin_format_line_length=99)
+    validator.assert_called_once_with(99)
+
+    with (
+        mock.patch("datamodel_code_generator.format._find_pyproject_toml", return_value=None) as pyproject_finder,
         mock.patch("datamodel_code_generator.format._get_builtin_line_length", return_value=99) as line_length_reader,
         mock.patch(
             "datamodel_code_generator.format._get_builtin_known_first_party",
@@ -388,6 +390,8 @@ def test_format_code_builtin_formatter_uses_format_module_reexported_callables(
     shared_tool_config = line_length_reader.call_args.kwargs["tool_config"]
     assert shared_tool_config is known_first_party_reader.call_args.kwargs["tool_config"]
     assert shared_tool_config is string_normalization_reader.call_args.kwargs["tool_config"]
+    pyproject_finder.assert_called_once()
+    assert shared_tool_config == {}
     formatter.assert_called_once()
 
 

@@ -37,6 +37,15 @@ def load_toml(path: Path) -> dict[str, Any]:
         return _get_toml_loader()(f)
 
 
+def _find_pyproject_toml(settings_path: Path) -> Path | None:
+    """Return the nearest pyproject.toml in ``settings_path`` or one of its parents."""
+    for path in (settings_path, *settings_path.parents):
+        pyproject_toml = path / "pyproject.toml"
+        if pyproject_toml.is_file():
+            return pyproject_toml
+    return None
+
+
 def record_watch_dependency(path: Path) -> None:
     """Record an active watch dependency without importing watch support on normal paths."""
     if (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
