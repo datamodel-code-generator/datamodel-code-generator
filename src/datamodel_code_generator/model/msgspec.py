@@ -53,6 +53,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _find_base_classes,
     _has_opaque_custom_base,
     _keeps_stripped_place,
     _model_key_of_model,
@@ -254,7 +255,7 @@ class _UnionLeaf(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Collection, Iterator, Mapping
+    from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator._model_keys import ModelKey
@@ -429,11 +430,7 @@ class Struct(DataModel):
     @staticmethod
     def _layout_parents(model: DataModel, view: BaseLayoutView) -> list[DataModel]:
         """Return the generated Struct bases of a model as the view of the layouts sees them."""
-        return [
-            view.layout_model(parent.reference.source)
-            for parent in model.base_classes
-            if parent.reference and isinstance(parent.reference.source, Struct)
-        ]
+        return [view.layout_model(parent) for parent in _struct_bases(model)]
 
     @staticmethod
     def _has_unknown_layout(model: DataModel, view: BaseLayoutView) -> bool:
@@ -442,7 +439,7 @@ class Struct(DataModel):
 
     @staticmethod
     def _find_layout_conflict(
-        bases: list[DataModel], view: BaseLayoutView = _FINAL_LAYOUT_VIEW
+        bases: Sequence[DataModel], view: BaseLayoutView = _FINAL_LAYOUT_VIEW
     ) -> tuple[DataModel, DataModel] | None:
         """Find independent slot owners with linear storage for compatible graphs.
 
@@ -528,13 +525,9 @@ class Struct(DataModel):
                 conflict = other, base
         return conflict
 
-    def _generated_layout_bases(self) -> list[DataModel]:
+    def _generated_layout_bases(self) -> list[Struct]:
         """Return the generated Struct bases in the order the layout of the bases is diagnosed in."""
-        return [
-            base.reference.source
-            for base in reversed(self.base_classes)
-            if base.reference and isinstance(base.reference.source, Struct)
-        ]
+        return _struct_bases(self)[::-1]
 
     @override
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
@@ -709,13 +702,9 @@ class Struct(DataModel):
         return base_model
 
 
-def _struct_bases(struct: Struct) -> list[Struct]:
-    """Return the generated structs that ``struct`` inherits from, in the order its base classes list them."""
-    return [
-        base
-        for base_class in struct.base_classes
-        if base_class.reference and isinstance(base := base_class.reference.source, Struct)
-    ]
+def _struct_bases(model: DataModel) -> list[Struct]:
+    """Return the generated structs that ``model`` inherits from, in the order its base classes list them."""
+    return [base for base in _find_base_classes(model) if isinstance(base, Struct)]
 
 
 class Constraints(_Constraints):

@@ -8,9 +8,7 @@ from typing import ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator.imports import IMPORT_TYPE_ALIAS, IMPORT_TYPE_ALIAS_TYPE, Import
-from datamodel_code_generator.model.base import _remember_custom_template_dependency
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport
 
 
@@ -27,11 +25,7 @@ class TypeAlias(TypeAliasTypeBackport):
         template_path = super().template_file_path
         if self.custom_template_dir is None or template_path != Path(self.TEMPLATE_FILE_PATH):
             return template_path
-        custom_path = self.custom_template_dir / TypeAliasTypeBackport.TEMPLATE_FILE_PATH
-        _remember_custom_template_dependency(self.custom_template_dir, custom_path)
-        if cached_path_exists(custom_path):
-            return custom_path
-        return template_path
+        return self._custom_template_path(TypeAliasTypeBackport.TEMPLATE_FILE_PATH) or template_path
 
     @property
     @override

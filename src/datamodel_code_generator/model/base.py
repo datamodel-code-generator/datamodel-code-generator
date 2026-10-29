@@ -3229,12 +3229,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def template_file_path(self) -> Path:
         """Get the path to the template file, checking custom directory first."""
         template_file_path = Path(self.TEMPLATE_FILE_PATH)
-        if self._custom_template_dir is not None:
-            custom_template_file_path = self._custom_template_dir / template_file_path
-            _remember_custom_template_dependency(self._custom_template_dir, custom_template_file_path)
-            if cached_path_exists(custom_template_file_path):
-                return custom_template_file_path
-        return template_file_path
+        return self._custom_template_path(template_file_path) or template_file_path
+
+    def _custom_template_path(self, template_path: Path | str) -> Path | None:
+        """Return the template at ``template_path`` in the custom template directory, if it is there.
+
+        The path counts as a dependency of the generation whether it is there or not.
+        """
+        if (custom_template_dir := self._custom_template_dir) is None:
+            return None
+        custom_template_file_path = custom_template_dir / template_path
+        _remember_custom_template_dependency(custom_template_dir, custom_template_file_path)
+        return custom_template_file_path if cached_path_exists(custom_template_file_path) else None
 
     @cached_property
     def _uses_custom_root_template(self) -> bool:

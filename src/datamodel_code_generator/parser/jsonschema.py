@@ -48,7 +48,7 @@ from datamodel_code_generator import (
     VersionMode,
     snooper_to_methods,
 )
-from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import (
     LITERAL_DECIDABLE_KEYWORDS,
     NO_KEYWORDS,
@@ -9915,16 +9915,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _field_alias_generator_input_name(self, field: DataModelFieldBase) -> str | None:
         """Return the generated Pydantic validation alias for one field."""
-        if field.name is None:
+        if field.name is None or not isinstance(generator := self.config.alias_generator, AliasGenerator):
             return None
-        match self.config.alias_generator:
-            case AliasGenerator.ToCamel:
-                return to_camel(field.name, self.target_python_version)
-            case AliasGenerator.ToPascal:
-                return to_pascal(field.name, self.target_python_version)
-            case AliasGenerator.ToSnake:
-                return to_snake(field.name, self.target_python_version)
-        return None
+        return generate_alias(generator.value, field.name, self.target_python_version)
 
     def _get_input_names_by_property(
         self,

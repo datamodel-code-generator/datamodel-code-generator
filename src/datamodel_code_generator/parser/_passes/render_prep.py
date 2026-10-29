@@ -749,16 +749,7 @@ def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
 def has_required_assignment_after_default(model: DataModel) -> bool:
     """Return whether a positional field without a signature default follows one with a default."""
     fields: dict[str, tuple[DataModelFieldBase, DataModel]] = {}
-    for declaring_model in (
-        *reversed(
-            linearize_data_models([
-                base.reference.source
-                for base in model.base_classes
-                if base.reference and isinstance(base.reference.source, DataModel)
-            ])
-        ),
-        model,
-    ):
+    for declaring_model in (*reversed(linearize_data_models(_find_base_classes(model))), model):
         fields.update((field.name, (field, declaring_model)) for field in declaring_model.fields if field.name)
     seen_default = False
     for field, declaring_model in fields.values():

@@ -117,7 +117,7 @@ base_classes = "--input tests/data/jsonschema/use_generic_base_class_simple.json
 '_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._get_schema_runtime_validation_module_plan"]
-'__dict__[_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY]' = 3
+'__dict__[_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY]' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._neutralize_generic_extra_config_for_runtime_root_models"]
 '_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
@@ -163,7 +163,7 @@ _literal_values = 1
 _requires_literal_validation = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.add_sequence_interface"]
-'_additional_imports.append()' = 5
+'_additional_imports.append()' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.finalize_sequence_interface"]
 '_additional_imports.remove()' = 1

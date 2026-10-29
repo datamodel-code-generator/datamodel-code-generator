@@ -636,7 +636,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/test_remote_lock.py::datamodel_code_generator.remote_lock._display_url",
         "private-import:tests/test_remote_lock.py::datamodel_code_generator.remote_lock._nearest_existing_directory",
         "private-import:tests/test_remote_lock.py::datamodel_code_generator.remote_lock._request_sha256",
-        "private-import:tests/test_types.py::datamodel_code_generator.model.pydantic_v2.types._PydanticDataTypeManager",
         "private-import:tests/test_types.py::datamodel_code_generator.python_literal._normalize_string",
         "private-import:tests/test_types.py::datamodel_code_generator.types._contains_decimal",
         "private-import:tests/test_types.py::datamodel_code_generator.types._remove_none_from_union",
