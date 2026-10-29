@@ -8,9 +8,10 @@ None.
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BoundType,
     BuiltinType,
     GeneratedSymbolType,
@@ -26,8 +27,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import FieldUseBinding, FinalModelSymbol, SymbolId, TypeView
 
 __all__ = ["admits_none", "is_none", "present", "takes_null", "without_none"]
-
-_WRAPPERS: Final = frozenset({"root", "alias"})
 
 
 def is_none(value: TypeView) -> bool:
@@ -88,7 +87,7 @@ def takes_null(
             null = "null" in declared.value_types
         case GeneratedSymbolType() if (
             value.symbol not in seen
-            and symbols[value.symbol].kind in _WRAPPERS
+            and symbols[value.symbol].kind in WRAPPER_KINDS
             and (
                 facts := next(
                     (found for member in members.get(value.symbol, ()) if (found := member.model_facts) is not None),

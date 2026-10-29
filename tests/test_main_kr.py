@@ -3094,7 +3094,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
     calls = 0
 
     def fail_metadata_staging(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -3105,7 +3105,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
             raise OSError(msg)
         return staging_directory_for(target)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", fail_metadata_staging)
+    monkeypatch.setattr(publication_module, "staging_directory_for", fail_metadata_staging)
 
     with chdir(tmp_path):
         run_main_with_args(
@@ -3146,7 +3146,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
     staging_calls = 0
 
     def fail_metadata_staging(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -3175,7 +3175,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
             raise OSError(msg)
         close(descriptor)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", fail_metadata_staging)
+    monkeypatch.setattr(publication_module, "staging_directory_for", fail_metadata_staging)
     monkeypatch.setattr(publication_module, "publication_anchor", record_anchor)
     monkeypatch.setattr(main_module.os, "close", fail_anchor_cleanup)
 
@@ -3208,7 +3208,7 @@ output = "{output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
 
     def staging_with_failed_cleanup(target: Path) -> tempfile.TemporaryDirectory[str]:
         context = staging_directory_for(target)
@@ -3222,7 +3222,7 @@ output = "{output.as_posix()}"
         monkeypatch.setattr(context, "cleanup", fail_cleanup)
         return context
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", staging_with_failed_cleanup)
+    monkeypatch.setattr(publication_module, "staging_directory_for", staging_with_failed_cleanup)
 
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"], expected_exit=Exit.ERROR)
@@ -3249,7 +3249,7 @@ output = "{output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
 
     def staging_with_failed_cleanup(target: Path) -> tempfile.TemporaryDirectory[str]:
         context = staging_directory_for(target)
@@ -3267,7 +3267,7 @@ output = "{output.as_posix()}"
         msg = "simulated runner failure"
         raise RuntimeError(msg)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", staging_with_failed_cleanup)
+    monkeypatch.setattr(publication_module, "staging_directory_for", staging_with_failed_cleanup)
     monkeypatch.setattr(main_module, "_run_jobs_text", fail_runner)
 
     with chdir(tmp_path), pytest.raises(RuntimeError, match="simulated runner failure"):

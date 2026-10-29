@@ -23,8 +23,8 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
-from datamodel_code_generator._user_keys import type_override_classes
-from datamodel_code_generator.imports import Import
+from datamodel_code_generator._user_keys import class_field_key, type_override_classes
+from datamodel_code_generator.imports import Import, _import_bindings
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -129,6 +129,13 @@ def iter_models_field_data_types(
 _PythonTypeImportKey: TypeAlias = tuple[str | None, str]
 
 
+def _aliased_import(import_: Import | None, aliased_imports: Mapping[_PythonTypeImportKey, Import]) -> Import | None:
+    """Return the import that aliases ``import_``, or None when it has none other than itself."""
+    if import_ is None or (aliased := aliased_imports.get((import_.from_, import_.import_))) is import_:
+        return None
+    return aliased
+
+
 def _ordinary_field_shadow_aliases(
     models: list[DataModel],
     all_model_field_names: set[str],
@@ -196,11 +203,7 @@ def _alias_data_type_structured_imports(
     aliased_imports: dict[_PythonTypeImportKey, Import],
 ) -> None:
     """Apply aliases to type, annotation, and producer-registered kwargs expressions."""
-    if (
-        data_type.import_
-        and (aliased_import := aliased_imports.get((data_type.import_.from_, data_type.import_.import_))) is not None
-        and aliased_import is not data_type.import_
-    ):
+    if (aliased_import := _aliased_import(data_type.import_, aliased_imports)) is not None:
         builder.set_type_expressions(data_type, type_=aliased_import.alias, import_=aliased_import)
     if data_type.python_type:
         alias_bound_python_type, render_python_type_expr = _python_type_import_alias_helpers()
@@ -245,8 +248,7 @@ def _unwrap_type_alias(data_type: DataType) -> DataType:
 
 def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
     """Unwrap aliases and nullable scalar wrappers without traversing unions or containers."""
-    if data_type.reference and isinstance(data_type.reference.source, TypeAliasBase):
-        data_type = _unwrap_type_alias(data_type)
+    data_type = _unwrap_type_alias(data_type)
     while (
         data_type.type is None
         and data_type.reference is None
@@ -255,9 +257,7 @@ def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
         and not data_type.literals
         and not data_type.enum_member_literals
     ):
-        data_type = data_type.data_types[0]
-        if data_type.reference and isinstance(data_type.reference.source, TypeAliasBase):
-            data_type = _unwrap_type_alias(data_type)
+        data_type = _unwrap_type_alias(data_type.data_types[0])
     return data_type
 
 
@@ -284,13 +284,7 @@ def _alias_base_class_imports(
 ) -> None:
     """Apply aliased imports to a model's base classes."""
     for base_class in model.base_classes:
-        if not base_class.import_:
-            continue
-        key = (base_class.import_.from_, base_class.import_.import_)
-        if key not in aliased_imports:
-            continue
-        aliased_import = aliased_imports[key]
-        if aliased_import is base_class.import_:
+        if (aliased_import := _aliased_import(base_class.import_, aliased_imports)) is None:
             continue
         base_class.type = aliased_import.alias
         base_class.import_ = aliased_import
@@ -302,11 +296,8 @@ def _alias_additional_imports(
 ) -> None:
     """Replace every additional import with the module's canonical identity binding."""
     for index, import_ in enumerate(model._additional_imports):  # noqa: SLF001
-        if (
-            aliased_import := aliased_imports.get((import_.from_, import_.import_))
-        ) is None or aliased_import is import_:
-            continue
-        model._additional_imports[index] = aliased_import  # noqa: SLF001
+        if (aliased_import := _aliased_import(import_, aliased_imports)) is not None:
+            model._additional_imports[index] = aliased_import  # noqa: SLF001
 
 
 def relative(
@@ -316,16 +307,10 @@ def relative(
     reference_is_module: bool = False,
     current_is_init: bool = False,
 ) -> tuple[str, str]:
-    """Find relative module path.
+    """Return the module and name that ``current_module`` imports ``reference`` by, relative to it.
 
-    Args:
-        current_module: Current module path (e.g., "foo.bar")
-        reference: Reference path (e.g., "foo.baz.ClassName" or "foo.baz" if reference_is_module)
-        reference_is_module: If True, treat reference as a module path (not module.class)
-        current_is_init: If True, treat current_module as a package __init__.py (adds depth)
-
-    Returns:
-        Tuple of (from_path, import_name) for constructing import statements
+    ``reference`` is a ``module.Class`` path, or a module path with ``reference_is_module``; ``current_is_init`` makes
+    ``current_module`` a package ``__init__``.
     """
     if current_is_init:
         current_module_path = [*current_module.split("."), "__init__"] if current_module else ["__init__"]
@@ -408,17 +393,22 @@ def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
     return f"{from_}.{import_}", short_name
 
 
-def _resolve_exact_import(
-    current_module: str,
-    target_full_name: str,
-    from_: str,
-    import_: str,
-    short_name: str,
+def _relative_import(
+    current_module: str, target_full_name: str, short_name: str, *, use_exact: bool
 ) -> tuple[str, str]:
-    """Keep package imports intact while resolving exact module imports."""
-    if is_ancestor_package_reference(current_module, target_full_name):
-        return from_, import_
-    return exact_import(from_, import_, short_name)
+    """Return the module and name ``current_module`` imports a model by; ``use_exact`` imports it from its module.
+
+    A model of an ancestor package keeps the package import.
+    """
+    full_path = relative(current_module, target_full_name)
+    if not use_exact or is_ancestor_package_reference(current_module, target_full_name):
+        return full_path
+    return exact_import(*full_path, short_name)
+
+
+def _join_module(from_: str, name: str) -> str:
+    """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
+    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
 
 
 def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
@@ -526,6 +516,11 @@ class RootModelHost(Protocol):
 
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether a model uses the configured root model representation."""
+
+
+def site_display_name(host: RootModelHost, model: DataModel, field: DataModelFieldBase) -> str:
+    """Return the name warnings and tag plans give a field's site: the class of a root model, else ``Class.field``."""
+    return model.class_name if host._is_root_model(model) else class_field_key(model.class_name, field.name)  # noqa: SLF001
 
 
 class CollapseRootModelsHost(Protocol):
@@ -693,22 +688,12 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     if base_class:
         left, right = relative(current_module_name, target_full_name)
         from_ = (
-            left
-            if is_ancestor_package_reference(current_module_name, target_full_name)
-            else (f"{left}{right}" if left.endswith(".") else f"{left}.{right}")
+            left if is_ancestor_package_reference(current_module_name, target_full_name) else _join_module(left, right)
         )
         import_ = name
         full_path = from_, import_
     else:
-        from_, import_ = full_path = relative(current_module_name, target_full_name)
-        if use_exact:
-            from_, import_ = full_path = _resolve_exact_import(
-                current_module_name,
-                target_full_name,
-                from_,
-                import_,
-                name,
-            )
+        from_, import_ = full_path = _relative_import(current_module_name, target_full_name, name, use_exact=use_exact)
         import_ = import_.replace("-", "_")
         current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
         if (  # pragma: no cover
@@ -722,7 +707,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
 
         if from_ and not use_exact and (ref_module in internal_modules or is_module_class_collision):
-            from_ = f"{from_}{import_}" if from_.endswith(".") else f"{from_}.{import_}"
+            from_ = _join_module(from_, import_)
             import_ = name
             full_path = from_, import_
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
@@ -877,6 +862,21 @@ def apply_inherited_field_default(
     field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
 
 
+def _inherited_placeholder_name(field: DataModelFieldBase) -> str | None:
+    """Return the name of the inherited property that a placeholder field without a type of its own names, or None."""
+    data_type = field.data_type
+    if (
+        data_type.data_types  # noqa: PLR0916
+        or data_type.reference
+        or data_type.type
+        or data_type.literals
+        or data_type.enum_member_literals
+        or data_type.dict_key
+    ):
+        return None
+    return field.original_name
+
+
 def override_required_field(
     host: InheritedFieldHost,
     models: list[DataModel],
@@ -886,16 +886,7 @@ def override_required_field(
         model
         for model in models
         if not (isinstance(model, Enum) or host._is_root_model(model))  # noqa: SLF001
-        and any(
-            field.original_name is not None
-            and not field.data_type.data_types
-            and not field.data_type.reference
-            and not field.data_type.type
-            and not field.data_type.literals
-            and not field.data_type.enum_member_literals
-            and not field.data_type.dict_key
-            for field in model.fields
-        )
+        and any(_inherited_placeholder_name(field) is not None for field in model.fields)
     )
     if (first_model := next(pending_models, None)) is None:
         return
@@ -912,21 +903,12 @@ def override_required_field(
         while pending_fields:
             model_field = pending_fields.pop()
             model_field.parent = None
-            data_type = model_field.data_type
-            if (
-                model_field.original_name is None  # noqa: PLR0916
-                or data_type.data_types
-                or data_type.reference
-                or data_type.type
-                or data_type.literals
-                or data_type.enum_member_literals
-                or data_type.dict_key
-            ):
+            if (original_name := _inherited_placeholder_name(model_field)) is None:
                 resolved_fields.append(model_field)
                 continue
 
             _detach_deferred_inherited_field_parents(model_field)
-            original_field = inherited_fields.get(model_field.original_name)
+            original_field = inherited_fields.get(original_name)
             if not original_field:
                 continue
             if (
@@ -948,21 +930,18 @@ def override_required_field(
                 copied_original_field.serialization_alias = model_field.serialization_alias
                 copied_original_field.use_serialization_alias = model_field.use_serialization_alias
                 copied_original_field.required = True
-            if class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
-                apply_inherited_field_default(
-                    copied_original_field,
-                    original_field,
-                    class_name=class_name,
-                    model_resolver=host.model_resolver,
-                    apply_default_values_for_required_fields=host.apply_default_values_for_required_fields,
+            default_source = original_field
+            if (
+                not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY))
+                and (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY))
+                and (
+                    host.allof_merge_mode != AllOfMergeMode.All
+                    or model_field.__dict__.get(_RAW_SCHEMA_DEFAULT_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED)
+                    is not _RAW_SCHEMA_DEFAULT_UNDEFINED
                 )
-            elif class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
+            ):
                 default_source = model_field
-                if host.allof_merge_mode == AllOfMergeMode.All and not (
-                    _RAW_SCHEMA_DEFAULT_KEY in model_field.__dict__
-                    and model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-                ):
-                    default_source = original_field
+            if class_name:
                 apply_inherited_field_default(
                     copied_original_field,
                     default_source,
@@ -1102,9 +1081,6 @@ class _ReuseOptimizationContext:
     @classmethod
     def from_type_overrides(cls, type_overrides: Mapping[str, str]) -> _ReuseOptimizationContext:
         """Build reuse constraints without importing output-backend policy."""
-        if not type_overrides:
-            return cls()
-
         return cls(type_override_classes(type_overrides))
 
     @property
@@ -1177,10 +1153,13 @@ def _runtime_validation_reference_keys(
     return references_by_key
 
 
-def _rule_data_types(model: DataModel) -> Iterator[DataType]:
-    """Yield the data types of a model's schema validator rules, nested ones included."""
-    if runtime_validation := model.schema_runtime_validation:
-        for rule_data_type in runtime_validation.data_types:
+def _rule_data_types(model: DataModel, *, unwritable: bool = False) -> Iterator[DataType]:
+    """Yield the data types of a model's schema validator rules, nested ones included.
+
+    With ``unwritable``, a type alias yields them too until the parser writes it as a class that writes them.
+    """
+    if rules := model.schema_runtime_validation or (unwritable and model._unwritable_runtime_rules):  # noqa: SLF001
+        for rule_data_type in rules.data_types:
             yield from rule_data_type.all_data_types
 
 
@@ -1208,13 +1187,7 @@ def add_model_path_to_list(
     model: DataModel,
     /,
 ) -> list[str]:
-    """
-    Auxiliary method which adds model path to list, provided the following hold.
-
-    - model is not a type alias
-    - path is not already in the list.
-
-    """
+    """Add the model's path to the paths, a new list for None, unless the model is a type alias or listed."""
     if paths is None:
         paths = []
     if model.is_alias:
@@ -1374,8 +1347,7 @@ def _iter_discriminator_data_types(
 def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
     """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
     from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
-    name = base_module[-1].replace(".py", "")
-    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
+    return _join_module(from_, base_module[-1].replace(".py", ""))
 
 
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
@@ -1487,27 +1459,19 @@ def _copy_data_type(data_type: DataType, *, register_references: bool = True) ->
     if (kwargs := data_type.kwargs) is not None:
         copied_data_type.kwargs = deepcopy(kwargs)
 
-    data_types = data_type.data_types
-    dict_key = data_type.dict_key
-    match data_types, dict_key:
-        case [], None:
-            copied_data_type.data_types = []
-        case _:
-            copied_data_type.data_types = _copy_data_types(data_types, register_references=register_references)
-            for nested_data_type in copied_data_type.data_types:
-                nested_data_type.parent = copied_data_type
-            if dict_key is not None:
-                copied_data_type.dict_key = _copy_data_type(dict_key, register_references=register_references)
-                copied_data_type.dict_key.parent = copied_data_type
+    copied_data_type.data_types = [
+        _copy_data_type(nested_data_type, register_references=register_references)
+        for nested_data_type in data_type.data_types
+    ]
+    for nested_data_type in copied_data_type.data_types:
+        nested_data_type.parent = copied_data_type
+    if (dict_key := data_type.dict_key) is not None:
+        copied_data_type.dict_key = _copy_data_type(dict_key, register_references=register_references)
+        copied_data_type.dict_key.parent = copied_data_type
 
     if register_references:
         copied_data_type.register_reference()
     return copied_data_type
-
-
-def _copy_data_types(data_types: list[DataType], *, register_references: bool = True) -> list[DataType]:
-    """Copy DataType trees while preserving shared model references."""
-    return [_copy_data_type(data_type, register_references=register_references) for data_type in data_types]
 
 
 def _declares_unique_items(field: DataModelFieldBase) -> bool:
@@ -1530,6 +1494,14 @@ def _unique_items_tuple(data_type: DataType) -> DataType | None:
 def _annotated_reference(data_type: DataType) -> Reference | None:
     """Return the type that the annotation of ``data_type`` names: its reference, or the enum of its enum members."""
     return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
+
+
+def _annotated_references(model: DataModel) -> Iterator[tuple[DataType, Reference]]:
+    """Yield each type that an annotation of the model's fields names, with the data type that names it."""
+    for field in model.fields:
+        for data_type in field.data_type.all_data_types:
+            if (reference := _annotated_reference(data_type)) is not None:
+                yield data_type, reference
 
 
 def _annotated_enum(data_type: DataType) -> Enum | None:
@@ -1581,31 +1553,19 @@ def _register_data_type_import(  # ruff: ignore[too-many-arguments]
     model: DataModel,
     imports: Imports,
     scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str] | None,
+    model_path_to_module_name: dict[str, str],
     *,
     ledger: ModuleImportLedger,
     producer: ImportProducer,
 ) -> None:
-    match data_type.reference:
-        case None:
-            return
-        case reference:
-            pass
-
-    model_path_to_module_name = model_path_to_module_name or {}
-    current_module_name = _get_model_module_name(model, model_path_to_module_name)
-    from_, import_ = full_path = relative(
-        current_module_name,
-        target_full_name := _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+    if (reference := data_type.reference) is None:
+        return
+    from_, import_ = full_path = _relative_import(
+        _get_model_module_name(model, model_path_to_module_name),
+        _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+        reference.short_name,
+        use_exact=imports.use_exact,
     )
-    if imports.use_exact:
-        from_, import_ = full_path = _resolve_exact_import(
-            current_module_name,
-            target_full_name,
-            from_,
-            import_,
-            reference.short_name,
-        )
     if not (from_ and import_):
         return
 
@@ -1807,22 +1767,12 @@ def _assign_module_name(
 
 def _iter_import_bindings(imports: Imports) -> Iterator[str]:
     """Yield names bound by one generated import block."""
-    for from_, imported_names in imports.items():
-        for imported_name in imported_names:
-            effective_name = imports.get_effective_name(from_, imported_name)
-            yield (
-                imported_name.partition(".")[0] if from_ is None and effective_name == imported_name else effective_name
-            )
+    return (binding for _, binding in _import_bindings(imports))
 
 
 def _parsed_rule_data_types(model: DataModel) -> Iterator[DataType]:
-    """Yield the data types of the parser's schema validator rules of a model, nested ones included.
-
-    A type alias holds them too until the parser writes it as a class that writes them.
-    """
-    if rules := model.schema_runtime_validation or model._unwritable_runtime_rules:  # noqa: SLF001
-        for rule_data_type in rules.data_types:
-            yield from rule_data_type.all_data_types
+    """Yield the data types of the parser's schema validator rules of a model, held by a type alias too."""
+    return _rule_data_types(model, unwritable=True)
 
 
 def _tag_field_matches(
@@ -1944,12 +1894,9 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
     """
     if not type(model).RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
         return ()
-    return {
-        reference.short_name
-        for field in model.fields
-        for data_type in field.data_type.all_data_types
-        if (reference := _annotated_reference(data_type)) is not None and not data_type.alias
-    } & {field.name for field in model.fields if model.field_name_hides_types(field)}
+    return {reference.short_name for data_type, reference in _annotated_references(model) if not data_type.alias} & {
+        field.name for field in model.fields if model.field_name_hides_types(field)
+    }
 
 
 def unused_model_lists(

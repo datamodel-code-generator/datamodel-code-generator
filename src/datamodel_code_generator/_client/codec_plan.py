@@ -10,6 +10,7 @@ from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_s
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BoundType,
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -250,7 +251,7 @@ class _Planner:
             return self.union(value, schema, declared or value.discriminator)
         if isinstance(value, GeneratedSymbolType):
             symbol = self.symbols[value.symbol]
-            if symbol.kind in {"alias", "root"}:
+            if symbol.kind in WRAPPER_KINDS:
                 if value.symbol in self.aliases:
                     return None
                 root = self.root(symbol.id)

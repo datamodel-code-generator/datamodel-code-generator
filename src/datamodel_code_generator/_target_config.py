@@ -16,8 +16,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
 
 
-def _diagnostic(code: str, option_path: str, message: str) -> Diagnostic:
+def _diagnostic(code: str, option_path: str | None, message: str) -> Diagnostic:
     return Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path)
+
+
+def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
+    """Raise one configuration diagnostic as an API generation error."""
+    return APIGenerationError((_diagnostic(code, option_path, message),))
 
 
 def _dotted(value: object, target_python_version: PythonVersion) -> bool:
