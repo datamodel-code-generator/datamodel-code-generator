@@ -76,6 +76,7 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_config",
     "datamodel_code_generator._target_documents",
     "datamodel_code_generator._target_format",
+    "datamodel_code_generator._target_operations",
     "datamodel_code_generator._target_render",
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",

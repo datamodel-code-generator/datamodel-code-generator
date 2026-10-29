@@ -31,6 +31,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
+from datamodel_code_generator._target_operations import label
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator
@@ -100,7 +101,7 @@ class _Reached:
 
 
 def _label(spec: OperationSpec) -> str:
-    return f"{spec.contract.method.upper()} {spec.contract.path}"
+    return label(spec.contract)
 
 
 def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> frozenset[int]:
