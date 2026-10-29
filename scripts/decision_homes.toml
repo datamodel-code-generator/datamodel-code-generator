@@ -528,14 +528,20 @@ audit = "M-09"
 
 [homes.H14]
 decision = "the method resolution order of generated models and the fields a model has with its bases"
-core = ["model/base.py:linearize_data_models", "model/base.py:c3_merge"]
-adapters = ["model/base.py:DataModel.iter_all_fields", "parser/_passes/settle.py:sort_base_classes_for_mro"]
+core = ["_mro.py", "model/base.py:linearize_data_models"]
+adapters = [
+    "model/base.py:DataModel.iter_all_fields",
+    "model/base.py:sort_data_models_for_mro",
+    "parser/_passes/settle.py:sort_base_classes_for_mro",
+    "parser/jsonschema.py:JsonSchemaParser._linearize_inherited_schema_refs",
+    "parser/jsonschema.py:JsonSchemaParser._sort_inherited_base_classes_for_mro",
+]
 
 [homes.H14.signatures.mro-function]
 kind = "function"
-pattern = "^_?(c3|linearize|parent_first|mro)"
-paths = ["_target_binding.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
-what = "computes a method resolution order itself; call model/base.py:linearize_data_models"
+pattern = "^_?(c3|linearize|parent_first|mro)|.*_for_mro$"
+exclude = ["_runtime/"]
+what = "computes a method resolution order itself; call _mro.py:linearize or c3_merge with its rule"
 audit = "M-04"
 
 [homes.H14.signatures.member-enumeration]
@@ -1774,9 +1780,6 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/_target_binding.py"."_annotation_null"]
 "H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
 
-[allow."src/datamodel_code_generator/_target_binding.py"."_c3"]
-"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."_constrained_base"]
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
@@ -1804,9 +1807,6 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_keywords"]
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_linearize"]
-"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_literal_scalar"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }

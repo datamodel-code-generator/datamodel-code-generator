@@ -25,7 +25,7 @@ from warnings import warn
 from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
-from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
@@ -3898,36 +3898,12 @@ def sort_data_models_for_mro(
     models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
 ) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
-    return _sort_for_mro(models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins))
+    return _mro.sort_descendants_first(
+        models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins)
+    )
 
 
-def _sort_for_mro(
-    items: list[MroT], key: Callable[[MroT], Hashable | None], ancestors_of: Callable[[MroT], Collection[Hashable]]
-) -> list[MroT]:
-    """Order ``items`` descendants first, stably: by how many ancestor sets of their distinct keys hold an item's key.
-
-    ``ancestors_of`` gives the keys of an item's ancestors; an item whose key is None counts in no ancestor set.
-    """
-    if len(items) <= 1:
-        return items.copy()
-    ancestor_keys = {item_key: ancestors_of(item) for item in items if (item_key := key(item)) is not None}
-    return sorted(items, key=lambda item: sum(key(item) in ancestors for ancestors in ancestor_keys.values()))
-
-
-def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> list[MroT]:
-    """Merge inheritance sequences using C3 with a deterministic cycle fallback."""
-    result: list[MroT] = []
-    while sequences := [sequence for sequence in sequences if sequence]:
-        tail_keys = {key(item) for sequence in sequences for item in sequence[1:]}
-        candidate = next(
-            (sequence[0] for sequence in sequences if key(sequence[0]) not in tail_keys),
-            sequences[0][0],
-        )
-        candidate_key = key(candidate)
-        result.append(candidate)
-        for sequence in sequences:
-            sequence[:] = [item for item in sequence if key(item) != candidate_key]
-    return result
+c3_merge = _mro.c3_merge
 
 
 def linearize_data_models(
@@ -3936,62 +3912,35 @@ def linearize_data_models(
     """Return the effective C3 order for direct generated models; ``stand_ins`` give the bases overrides replaced.
 
     Each model is linearized after its bases, from the snapshot of the models reached through base classes, a base a
-    type override replaced counted at every level. An inheritance cycle, which the generated code cannot define, keeps
-    the depth-first walk that cuts the cycle where it meets a model again (`_linearize_depth_first`).
+    type override replaced counted at every level, each level descendants first. An inheritance cycle, which the
+    generated code cannot define, keeps the walk that cuts the cycle where it meets a model again, each level sorted
+    by the ancestors of its own models (`_mro.linearize`, row ``first-head``).
     """
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
     walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models, stand_ins)
     graph = walk.graph
-    if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
-        return _linearize_depth_first(
+    if graph.acyclic_order((EdgeKind.BASE,)) is None:
+        return _mro.linearize(
             sort_data_models_for_mro(models, stand_ins),
             _model_key_of_model,
             lambda model: sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins),
         )
     node_of = walk.node_of
 
-    def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
-        return graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
-
-    def merged(heads: list[DataModel]) -> list[DataModel]:
-        heads = _sort_for_mro(heads, _model_key_of_model, ancestors_of)
-        return c3_merge(
-            [*[lineages[model_key_of(head.reference)].copy() for head in heads], heads.copy()], key=_model_key_of_model
+    def descendants_first(heads: list[DataModel]) -> list[DataModel]:
+        return _mro.sort_descendants_first(
+            heads, _model_key_of_model, lambda model: graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
         )
 
-    lineages: dict[ModelKey, list[DataModel]] = {}
-    for key in order:
-        lineages[key] = [node_of[key], *merged([node_of[base] for base in graph.ordered_targets(key, EdgeKind.BASE)])]
-    return [node_of[key] for key in map(_model_key_of_model, merged(list(models)))]
-
-
-def _linearize_depth_first(
-    heads: list[MroT],
-    key: Callable[[MroT], Hashable],
-    parents_of: Callable[[MroT], list[MroT]],
-    node_of: Callable[[MroT], Hashable] | None = None,
-) -> list[MroT]:
-    """Return the effective C3 order of ``heads`` by a depth-first walk of the parents ``parents_of`` gives in order.
-
-    Each item is linearized once by ``key``; the walk cuts a cycle where it meets an item again, told apart by
-    ``node_of`` (``key`` by default).
-    """
-    lineages: dict[Hashable, list[MroT]] = {}
-
-    def linearize(item: MroT, active: frozenset[Hashable] = frozenset()) -> list[MroT]:
-        if cached := lineages.get(key(item)):
-            return cached
-        if (node := (node_of or key)(item)) in active:
-            return [item]
-        parents = parents_of(item)
-        lineages[key(item)] = lineage = [
-            item,
-            *c3_merge([*[linearize(parent, active | {node}).copy() for parent in parents], parents.copy()], key=key),
-        ]
-        return lineage
-
-    return c3_merge([*[linearize(head).copy() for head in heads], heads.copy()], key=key)
+    order = _mro.linearize(
+        descendants_first(list(models)),
+        _model_key_of_model,
+        lambda model: descendants_first([
+            node_of[base] for base in graph.ordered_targets(model_key_of(model.reference), EdgeKind.BASE)
+        ]),
+    )
+    return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
 def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
