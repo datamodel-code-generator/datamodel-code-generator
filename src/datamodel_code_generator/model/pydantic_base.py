@@ -42,6 +42,7 @@ from datamodel_code_generator.model._render_plan import (
 from datamodel_code_generator.model.base import (
     _nested_model_factory,
     _NestedModelFactory,
+    _normalized_constraint_kwargs,
     _remember_custom_template_dependency,
 )
 from datamodel_code_generator.python_literal import represent_python_value
@@ -49,8 +50,6 @@ from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
     _non_finite_as_written,
     chain_as_tuple,
-    merge_normalized_constraint,
-    strict_number_constraint,
 )
 
 if TYPE_CHECKING:
@@ -137,6 +136,7 @@ class DataModelField(DataModelFieldBase):
     """Field implementation for Pydantic models."""
 
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = True
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = True
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",
@@ -267,20 +267,7 @@ class DataModelField(DataModelFieldBase):
             or self.use_serialization_alias
         )
         needs_required_nullable_field = self.nullable and self.required and not self.use_default_with_required
-        needs_optional_nested_factory = (
-            self.use_default_factory_for_optional_nested_models
-            and not self.required
-            and (self.default is None or self.default is UNDEFINED)
-        )
-        return bool(has_field_metadata or needs_required_nullable_field or needs_optional_nested_factory)
-
-    def _has_numeric_data_type(self, type_name: str, strict_import_part: str) -> bool:
-        """Return whether any field data type is the given builtin or strict numeric type."""
-        return any(
-            data_type.type == type_name
-            or (data_type.strict and data_type.import_ and strict_import_part in data_type.import_.import_)
-            for data_type in self.data_type.all_data_types
-        )
+        return bool(has_field_metadata or needs_required_nullable_field or self._takes_nested_model_factory())
 
     def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
         """Return the constraint arguments with integer-safe values, merging colliding bounds into one argument.
@@ -303,29 +290,21 @@ class DataModelField(DataModelFieldBase):
         has_integer_constraints = bool(self._INTEGER_CONSTRAINTS & dumped.keys())
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float", "Float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int", "Int")
-        values: dict[str, Any] = {}
-        sources: dict[str, tuple[str, ...]] = {}
-        for k, v in dumped.items():
-            item = f"constraint:{k}"
+
+        def drop(item: str, k: str, v: Any, normalized: tuple[str, Any] | None) -> Omitted | None:
             if k == "multiple_of" and (written := _non_finite_as_written(v, as_float=is_float_type)) is not None:
-                omitted.append(
-                    Omitted(item, written, "backend-cannot-express", Why(_NON_FINITE_MULTIPLE_OF, k), warns=True)
-                )
-                continue
-            if (
-                normalized := strict_number_constraint(
-                    _applicability.PYDANTIC_OUTPUT, k, v, is_float_type=is_float_type, is_int_type=is_int_type
-                )
-            ) is None:
-                omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
-                continue
-            key, value = normalized
-            merge_normalized_constraint(values, key, value)
-            sources[key] = (*sources.get(key, ()), item)
-        arguments = {
-            key: Kwarg(key, value, Why(_CONSTRAINT, sources[key][0].removeprefix("constraint:")), sources[key])
-            for key, value in values.items()
-        }
+                return Omitted(item, written, "backend-cannot-express", Why(_NON_FINITE_MULTIPLE_OF, k), warns=True)
+            return None if normalized is not None else Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k))
+
+        arguments = _normalized_constraint_kwargs(
+            dumped,
+            omitted,
+            _applicability.PYDANTIC_OUTPUT,
+            _CONSTRAINT,
+            drop,
+            is_float_type=is_float_type,
+            is_int_type=is_int_type,
+        )
         if self._has_strict_decimal():
             arguments["strict"] = Kwarg("strict", True, _STRICT_DECIMAL)  # noqa: FBT003
         return arguments
@@ -391,9 +370,7 @@ class DataModelField(DataModelFieldBase):
         if configured is not None and args is not None:
             args.omit_entry(configured, "none-value", _NONE_VALUE)
         if (
-            self.use_default_factory_for_optional_nested_models
-            and not self.required
-            and (self.default is None or self.default is UNDEFINED)
+            self._takes_nested_model_factory()
             and (nested := self._get_default_factory_for_optional_nested_model()) is not None
         ):
             return Kwarg("default_factory", nested, _NESTED_MODEL_FACTORY)
@@ -447,10 +424,6 @@ class DataModelField(DataModelFieldBase):
                 Omitted("override", count, "override-type-does-not-take", _OVERRIDE, warns=True, detail=replaced)
             )
         return omitted, anyurl
-
-    @override
-    def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._render_plan()
 
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""

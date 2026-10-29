@@ -1449,31 +1449,6 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     )
 
 
-def _copy_data_type(data_type: DataType, *, register_references: bool = True) -> DataType:
-    """Copy a DataType tree without detaching its model references."""
-    copied_data_type = data_type.model_copy()
-    copied_data_type.parent = None
-    copied_data_type.children = []
-    copied_data_type.literals = list(data_type.literals)
-    copied_data_type.enum_member_literals = list(data_type.enum_member_literals)
-    if (kwargs := data_type.kwargs) is not None:
-        copied_data_type.kwargs = deepcopy(kwargs)
-
-    copied_data_type.data_types = [
-        _copy_data_type(nested_data_type, register_references=register_references)
-        for nested_data_type in data_type.data_types
-    ]
-    for nested_data_type in copied_data_type.data_types:
-        nested_data_type.parent = copied_data_type
-    if (dict_key := data_type.dict_key) is not None:
-        copied_data_type.dict_key = _copy_data_type(dict_key, register_references=register_references)
-        copied_data_type.dict_key.parent = copied_data_type
-
-    if register_references:
-        copied_data_type.register_reference()
-    return copied_data_type
-
-
 def _declares_unique_items(field: DataModelFieldBase) -> bool:
     """Return whether a field declares ``uniqueItems: true``."""
     match field.constraints:
