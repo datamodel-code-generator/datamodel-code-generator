@@ -5,17 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._client.model_facts import _FALSE, _name
 from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
     BoundType,
-    BuiltinType,
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
-    ImportedType,
-    KnownBackendValue,
     LiteralScalar,
     LiteralType,
     UnionType,
@@ -190,7 +188,6 @@ class ClientCodecs:
     uses: tuple[CodecUse, ...]
     models: tuple[Model, ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    imports: tuple[tuple[int, str], ...]
     backend: CodecBackend
 
     def __contains__(self, use: TypeUseId) -> bool:
@@ -206,15 +203,6 @@ class ClientCodecs:
     def extras(self) -> bool:
         """Return whether a codec writes the extra members of Pydantic dataclasses."""
         return any(item.extras for item in self.uses)
-
-
-def _name(value: TypeView) -> str | None:
-    name = None
-    if isinstance(value, BuiltinType):
-        name = value.name
-    elif isinstance(value, ImportedType):
-        name = f"{value.import_.from_}.{value.import_.import_}"
-    return name
 
 
 def _literal_kind(value: LiteralType) -> str | None:
@@ -285,8 +273,7 @@ class _Planner:
                     )
                     for field in self.facts.fields(symbol.id)
                     if field.member.model_facts is not None
-                    and field.member.model_facts.backend.constructor_init
-                    != KnownBackendValue(LiteralScalar(kind="bool", value=False))
+                    and field.member.model_facts.backend.constructor_init != _FALSE
                 )
                 self.models[symbol.id] = Model(symbol.id, fields)
                 self.building.remove(symbol.id)
@@ -455,6 +442,5 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
         tuple(planned),
         tuple(planner.models[key] for key in sorted(planner.models)),
         (*wire.diagnostics, *planner.diagnostics),
-        tuple(facts.imports.items()),
         backend,
     )

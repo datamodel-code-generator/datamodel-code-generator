@@ -8,8 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._client.pagination import _Pages
+from datamodel_code_generator._client.pagination import _Pages, _problem
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES
 from datamodel_code_generator._target_operations import label as _label
 
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Container
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import DiagnosticStage
+    from datamodel_code_generator._api_types import Diagnostic
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
@@ -32,19 +31,6 @@ class CacheSpec:
     helper: Helper
     operation: OperationSpec
     response: TypeUseBinding
-
-
-def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
-    pointer = spec.contract.id.use_site.pointer
-    return Diagnostic(
-        code=code,
-        severity="error",
-        stage=stage,
-        message=message,
-        source_pointer=pointer,
-        operation=OperationRef(pointer=pointer),
-        option_path=at,
-    )
 
 
 class _Caches:
@@ -115,15 +101,4 @@ def plan_caches(
     if protocols is None:
         return (), {}
     caches = _Caches(_Pages(protocols, plan, facts, codecs, request))
-    operations = {spec.contract.id: spec for spec in plan.operations}
-    specs: list[CacheSpec] = []
-    problems: dict[str, list[Diagnostic]] = {}
-    for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "cache":
-            continue
-        entry = helper.links[0]
-        spec = operations[protocols.operations[entry.ref].id]
-        planned, problems[helper.name] = caches.helper(helper, spec)
-        if planned is not None:
-            specs.append(planned)
-    return tuple(specs), problems
+    return caches.pages.each(("cache",), caches.helper)
