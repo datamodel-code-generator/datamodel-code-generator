@@ -24,6 +24,7 @@ from collections.abc import (
 from collections.abc import (
     Set as AbstractSet,
 )
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
@@ -47,15 +48,19 @@ from datamodel_code_generator._python_type_annotation import (
     render_python_type_expr,
     rewrite_python_type_expr,
 )
-from datamodel_code_generator.enums import InputModelRefStrategy, _get_output_model_family
+from datamodel_code_generator.enums import (
+    InputFileType,
+    InputModelRefStrategy,
+    _get_output_model_family,
+    _OutputModelFamily,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Sequence
 
     from pydantic.json_schema import GenerateJsonSchema
 
-    from datamodel_code_generator import DataModelType, InputFileType
-    from datamodel_code_generator.enums import _OutputModelFamily
+    from datamodel_code_generator import DataModelType
     from datamodel_code_generator.input_model_result import LoadedInputModelSchema
 
 
@@ -111,8 +116,35 @@ def _remove_input_model_path(cwd_entry: str) -> None:
         sys.path.pop(index)
 
 
-def _module_depth(module_name: str) -> int:
-    return module_name.count(".")
+@contextmanager
+def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
+    """Import from the working directory, then drop the modules imported from there."""
+    directory = Path(cwd_entry).resolve()
+    environment_directory = Path(sys.prefix).resolve()
+    importer_cache_entry = sys.path_importer_cache.get(cwd_entry, _MISSING_MODULE)
+    baseline_modules = sys.modules.copy()
+    sys.path.insert(0, cwd_entry)
+    try:
+        yield
+    finally:
+        current_modules = sys.modules.copy()
+        local_module_names = sorted(
+            (
+                module_name
+                for module_name, module in current_modules.items()
+                if module_name not in baseline_modules
+                and _module_is_from_directory(module, directory, environment_directory)
+            ),
+            key=lambda module_name: module_name.count("."),
+            reverse=True,
+        )
+        for module_name in local_module_names:
+            _remove_local_module(module_name, current_modules[module_name])
+        _remove_input_model_path(cwd_entry)
+        if importer_cache_entry is _MISSING_MODULE:
+            sys.path_importer_cache.pop(cwd_entry, None)
+        else:
+            sys.path_importer_cache[cwd_entry] = cast("Any", importer_cache_entry)
 
 
 def _load_model_schema_isolated(
@@ -125,48 +157,10 @@ def _load_model_schema_isolated(
     """Load a schema while restoring cwd-local import state afterwards."""
     with PROCESS_STATE_LOCK:
         cwd_entry = str(Path.cwd())
-        added_path = cwd_entry not in sys.path
-        if not added_path:
+        with nullcontext() if cwd_entry in sys.path else _cwd_import_scope(cwd_entry):
             return _load_model_schema(
-                input_models,
-                input_file_type,
-                ref_strategy,
-                output_model_type,
-                expression_collector,
+                input_models, input_file_type, ref_strategy, output_model_type, expression_collector
             )
-
-        directory = Path(cwd_entry).resolve()
-        environment_directory = Path(sys.prefix).resolve()
-        importer_cache_entry = sys.path_importer_cache.get(cwd_entry, _MISSING_MODULE)
-        baseline_modules = sys.modules.copy()
-        sys.path.insert(0, cwd_entry)
-        try:
-            return _load_model_schema(
-                input_models,
-                input_file_type,
-                ref_strategy,
-                output_model_type,
-                expression_collector,
-            )
-        finally:
-            current_modules = sys.modules.copy()
-            local_module_names = sorted(
-                (
-                    module_name
-                    for module_name, module in current_modules.items()
-                    if module_name not in baseline_modules
-                    and _module_is_from_directory(module, directory, environment_directory)
-                ),
-                key=_module_depth,
-                reverse=True,
-            )
-            for module_name in local_module_names:
-                _remove_local_module(module_name, current_modules[module_name])
-            _remove_input_model_path(cwd_entry)
-            if importer_cache_entry is _MISSING_MODULE:
-                sys.path_importer_cache.pop(cwd_entry, None)
-            else:
-                sys.path_importer_cache[cwd_entry] = cast("Any", importer_cache_entry)
 
 
 def _restore_path_module(state: _ModuleRestoreState) -> None:
@@ -246,14 +240,58 @@ def _load_input_model_module(modname: str) -> tuple[types.ModuleType, _ModuleRes
         raise Error(msg) from e
 
 
+def _load_input_model_object(
+    input_model: str,
+    loaded_modules: dict[str, types.ModuleType],
+    path_module_states: list[_ModuleRestoreState],
+) -> tuple[str, object]:
+    """Return the qualname and object of one import path, importing each module once."""
+    modname, qualname = _split_input_model(input_model)
+    if (module := loaded_modules.get(modname)) is None:
+        module, module_state = _load_input_model_module(modname)
+        if module_state is not None:
+            path_module_states.append(module_state)
+        loaded_modules[modname] = module
+    try:
+        return qualname, getattr(module, qualname)
+    except AttributeError as e:
+        msg = f"Module {modname!r} has no attribute {qualname!r}"
+        raise Error(msg) from e
+
+
+def _require_json_schema_input(input_file_type: InputFileType, source: str) -> None:
+    """Refuse an --input-file-type other than jsonschema for a model source."""
+    if input_file_type not in {InputFileType.Auto, InputFileType.JsonSchema}:
+        msg = (
+            f"--input-file-type must be 'jsonschema' (or omitted) "
+            f"when --input-model points to {source}, "
+            f"got '{input_file_type.value}'"
+        )
+        raise Error(msg)
+
+
 def _is_input_model_base_schema(value: object) -> bool:
     if not isinstance(value, dict):
         return False
     return bool(cast("dict[str, object]", value).get("x-is-base-class"))
 
 
-# Types that are lost during JSON Schema conversion and need to be preserved
-_PRESERVED_TYPE_ORIGINS: dict[type, str] = {}
+_PRESERVED_TYPE_ORIGINS: dict[type, str] = {
+    set: "set",
+    frozenset: "frozenset",
+    defaultdict: "defaultdict",
+    OrderedDict: "OrderedDict",
+    Counter: "Counter",
+    deque: "deque",
+    ChainMap: "ChainMap",
+    AbstractSet: "AbstractSet",
+    ABCMutableSet: "MutableSet",
+    ABCMapping: "Mapping",
+    ABCMutableMapping: "MutableMapping",
+    ABCSequence: "Sequence",
+    ABCMutableSequence: "MutableSequence",
+}
+"""Origins whose type JSON Schema loses, keyed to the name x-python-type spells them with."""
 
 # Marker for types that Pydantic cannot serialize to JSON Schema
 _UNSERIALIZABLE_MARKER = "x-python-unserializable"
@@ -283,13 +321,9 @@ class _FieldSchemaOwner(int):
         return type(self)(self.field_name, previous)
 
 
-# Type family constants
 _TYPE_FAMILY_ENUM = "enum"
-_TYPE_FAMILY_PYDANTIC = "pydantic"
-_TYPE_FAMILY_DATACLASS = "dataclass"
-_TYPE_FAMILY_TYPEDDICT = "typeddict"
-_TYPE_FAMILY_MSGSPEC = "msgspec"
 _TYPE_FAMILY_OTHER = "other"
+"""Source families beside the output families of ``_OutputModelFamily``."""
 
 
 def _runtime_python_type_expr(tp: object, *, full_name: bool = False) -> PythonTypeExpr:
@@ -364,7 +398,8 @@ def _get_input_model_json_schema_class(
             targets = {
                 item[_UNSERIALIZABLE_MARKER]: branch
                 for branch in result.get("anyOf", [result])
-                for item in _iter_unserializable_schemas(branch)
+                for item in _iter_schema_nodes(branch)
+                if item.get(_UNSERIALIZABLE_MARKER)
             }
             for index, choice in enumerate(schema["choices"]):
                 _bind_union_choice(choice, targets, index)
@@ -534,13 +569,14 @@ def _collect_core_type_identities(models: Iterable[type], core_types: dict[str, 
             core_types[f"{annotation.__module__}.{annotation.__qualname__}:{id(annotation)}"] = annotation
             if fields := getattr(annotation, "model_fields", None):
                 pending.extend(field.annotation for field in fields.values())
-            elif (
-                is_dataclass(annotation)
-                or hasattr(annotation, "__required_keys__")
-                or hasattr(annotation, "__struct_fields__")
-            ):
+            elif _is_model_like(annotation):
                 pending.extend(_get_type_hints_safe(annotation).values())
         pending.extend(get_args(annotation))
+
+
+def _is_model_like(tp: object) -> bool:
+    """Recognize dataclasses, TypedDicts and msgspec structs: the other classes with typed fields."""
+    return is_dataclass(tp) or hasattr(tp, "__required_keys__") or hasattr(tp, "__struct_fields__")
 
 
 def _colliding_type_names(definition_types: Iterable[type | str]) -> set[str]:
@@ -567,22 +603,16 @@ def _colliding_definition_types(definition_types: ABCMapping[str, type | str]) -
     }
 
 
-def _is_type_origin(annotation: type) -> bool:
-    """Check if annotation is Type[X]."""
-    origin = get_origin(annotation)
-    return origin is type
-
-
-def _iter_unserializable_schemas(value: Any) -> Iterator[dict[str, Any]]:
+def _iter_schema_nodes(value: Any) -> Iterator[dict[str, Any]]:
+    """Yield each schema of a type expression before its branches and items are visited."""
     if isinstance(value, dict):
-        if value.get(_UNSERIALIZABLE_MARKER):
-            yield value
+        yield value
         for key, item in value.items():
             if key in _UNSERIALIZABLE_SCHEMA_KEYS:
-                yield from _iter_unserializable_schemas(item)
+                yield from _iter_schema_nodes(item)
     elif isinstance(value, list):
         for item in value:
-            yield from _iter_unserializable_schemas(item)
+            yield from _iter_schema_nodes(item)
 
 
 class _UnionBranchIndex(int):
@@ -621,23 +651,13 @@ def _bind_union_choice(value: Any, targets: dict[int, dict[str, Any]], index: in
 
 
 def _has_unserializable_schema(value: Any) -> bool:
-    if isinstance(value, dict):
-        return bool(value.get(_UNSERIALIZABLE_MARKER)) or any(
-            _has_unserializable_schema(item) for key, item in value.items() if key in _UNSERIALIZABLE_SCHEMA_KEYS
-        )
-    return isinstance(value, list) and any(_has_unserializable_schema(item) for item in value)
+    return any(node.get(_UNSERIALIZABLE_MARKER) for node in _iter_schema_nodes(value))
 
 
 def _remove_unserializable_markers(value: Any) -> None:
-    if isinstance(value, dict):
-        value.pop(_UNSERIALIZABLE_MARKER, None)
-        _consume_union_branch(value)
-        for key, item in value.items():
-            if key in _UNSERIALIZABLE_SCHEMA_KEYS:
-                _remove_unserializable_markers(item)
-    elif isinstance(value, list):
-        for item in value:
-            _remove_unserializable_markers(item)
+    for node in _iter_schema_nodes(value):
+        node.pop(_UNSERIALIZABLE_MARKER, None)
+        _consume_union_branch(node)
 
 
 def _process_unserializable_property(
@@ -663,24 +683,15 @@ def _process_unserializable_property(
             branch_annotation = args[index] if args and index is not None else args[0] if len(args) == 1 else annotation
             _process_unserializable_property(item, branch_annotation, expression_collector, in_union=True)
     elif prop.get(_UNSERIALIZABLE_MARKER):
-        _set_python_type_for_unserializable(prop, annotation, expression_collector)
+        prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
+        prop.pop(_UNSERIALIZABLE_MARKER, None)
     elif ("items" in prop or "prefixItems" in prop or "additionalProperties" in prop or "allOf" in prop) and (
         _has_unserializable_schema(prop)
     ):
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
         _remove_unserializable_markers(prop)
-    elif not in_union and _is_type_origin(annotation):
+    elif not in_union and get_origin(annotation) is type:
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
-
-
-def _set_python_type_for_unserializable(
-    item: dict[str, Any],
-    annotation: type,
-    expression_collector: PythonTypeExpressionCollector | None = None,
-) -> None:
-    """Set x-python-type and clean up markers."""
-    item["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
-    item.pop(_UNSERIALIZABLE_MARKER, None)
 
 
 def _input_model_field_wire_name(field_name: str, field_info: Any) -> str:
@@ -695,6 +706,18 @@ def _input_model_field_wire_name(field_name: str, field_info: Any) -> str:
     return field_name
 
 
+def _iter_owned_properties(
+    properties: dict[str, Any], model_fields: dict[str, Any]
+) -> Iterator[tuple[Any, dict[str, Any]]]:
+    """Pair each field with its property, skipping a property that another field of the same wire name owns."""
+    for field_name, field_info in model_fields.items():
+        if (prop := properties.get(_input_model_field_wire_name(field_name, field_info))) is None:
+            continue
+        owner = prop.get(_FIELD_SCHEMA_NAME)
+        if not isinstance(owner, _FieldSchemaOwner) or owner.field_name == field_name:
+            yield field_info, prop
+
+
 def _add_python_type_for_unserializable(
     schema: dict[str, Any],
     model: type,
@@ -706,14 +729,8 @@ def _add_python_type_for_unserializable(
         visited_defs = set()
 
     if "properties" in schema:
-        model_fields = getattr(model, "model_fields", {})
-        for field_name, field_info in model_fields.items():
-            schema_name = _input_model_field_wire_name(field_name, field_info)
-            if (prop := schema["properties"].get(schema_name)) is not None:
-                owner = prop.get(_FIELD_SCHEMA_NAME)
-                if isinstance(owner, _FieldSchemaOwner) and owner.field_name != field_name:
-                    continue
-                _process_unserializable_property(prop, field_info.annotation, expression_collector)
+        for field_info, prop in _iter_owned_properties(schema["properties"], getattr(model, "model_fields", {})):
+            _process_unserializable_property(prop, field_info.annotation, expression_collector)
 
     if "$defs" in schema:
         nested_models = _collect_nested_models(model)
@@ -735,33 +752,6 @@ def _add_python_type_for_unserializable(
     return schema
 
 
-def _init_preserved_type_origins() -> dict[type, str]:
-    """Initialize preserved type origins mapping (lazy initialization)."""
-    return {
-        set: "set",
-        frozenset: "frozenset",
-        defaultdict: "defaultdict",
-        OrderedDict: "OrderedDict",
-        Counter: "Counter",
-        deque: "deque",
-        ChainMap: "ChainMap",
-        AbstractSet: "AbstractSet",
-        ABCMutableSet: "MutableSet",
-        ABCMapping: "Mapping",
-        ABCMutableMapping: "MutableMapping",
-        ABCSequence: "Sequence",
-        ABCMutableSequence: "MutableSequence",
-    }
-
-
-def _get_preserved_type_origins() -> dict[type, str]:
-    """Get the preserved type origins mapping, initializing if needed."""
-    global _PRESERVED_TYPE_ORIGINS  # noqa: PLW0603
-    if not _PRESERVED_TYPE_ORIGINS:
-        _PRESERVED_TYPE_ORIGINS = _init_preserved_type_origins()
-    return _PRESERVED_TYPE_ORIGINS
-
-
 def _serialize_python_type(
     tp: type,
     expression_collector: PythonTypeExpressionCollector | None = None,
@@ -780,20 +770,9 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
         return PythonTypeName(name)
     origin: type | None = get_origin(tp)
     args = get_args(tp)
-    preserved_origins = _get_preserved_type_origins()
 
-    is_union = origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType)
-    if is_union:
-        if args:
-            nested = tuple(_preserved_python_type_expr(argument, generic_names) for argument in args)
-            if any(expression is not None for expression in nested):
-                return PythonTypeUnion(
-                    tuple(
-                        expression or _runtime_python_type_expr(argument, full_name=True)
-                        for expression, argument in zip(nested, args, strict=True)
-                    )
-                )
-        return None  # pragma: no cover
+    if origin is Union or origin is types.UnionType:
+        return PythonTypeUnion(arguments) if (arguments := _with_full_fallback(args, generic_names)) else None
 
     if origin is Annotated:
         if args:
@@ -804,33 +783,37 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
 
     type_name: str | None = None
     if origin is not None:
-        type_name = preserved_origins.get(origin)
+        type_name = _PRESERVED_TYPE_ORIGINS.get(origin)
         if type_name is None and getattr(origin, "__module__", None) == "collections":  # pragma: no cover
             type_name = _simple_type_name(origin)
     if type_name is not None:
-        if args:
-            return PythonTypeSubscript(
-                PythonTypeName(type_name),
-                tuple(
-                    _preserved_python_type_expr(argument, generic_names)
-                    or _runtime_python_type_expr(argument, full_name=True)
-                    for argument in args
-                ),
-            )
+        if arguments := _with_full_fallback(args, generic_names, optional=False):
+            return PythonTypeSubscript(PythonTypeName(type_name), arguments)
         return PythonTypeName(type_name)  # pragma: no cover
 
-    if args:
-        nested = tuple(_preserved_python_type_expr(argument, generic_names) for argument in args)
-        if any(expression is not None for expression in nested):
-            return PythonTypeSubscript(
-                PythonTypeName(_simple_type_name(origin or tp)),
-                tuple(
-                    expression or _runtime_python_type_expr(argument, full_name=True)
-                    for expression, argument in zip(nested, args, strict=True)
-                ),
-            )
-
+    if arguments := _with_full_fallback(args, generic_names):
+        return PythonTypeSubscript(PythonTypeName(_simple_type_name(origin or tp)), arguments)
     return None
+
+
+def _with_full_fallback(
+    args: tuple[Any, ...], generic_names: dict[type, str] | None, *, optional: bool = True
+) -> tuple[PythonTypeExpr, ...] | None:
+    """Keep each preserved argument and spell the others with their full runtime name.
+
+    With ``optional``, return None when no argument is preserved; otherwise resolve each argument before the next.
+    """
+    nested: Iterable[PythonTypeExpr | None] = (
+        _preserved_python_type_expr(argument, generic_names) for argument in args
+    )
+    if optional:
+        nested = tuple(nested)
+        if all(expression is None for expression in nested):
+            return None
+    return tuple(
+        expression or _runtime_python_type_expr(argument, full_name=True)
+        for expression, argument in zip(nested, args, strict=True)
+    )
 
 
 def _simple_type_name(tp: type) -> str:
@@ -863,17 +846,13 @@ def _collect_nested_models(model: type, visited: set[type] | None = None) -> dic
     visited.add(model)
 
     result: dict[str, type] = {}
-
     model_fields = getattr(model, "model_fields", None)
-    if model_fields is not None:
-        for field_info in model_fields.values():
-            tp = field_info.annotation
-            _find_models_in_type(tp, result, visited)
-    else:
-        type_hints = _get_type_hints_safe(model)
-        for tp in type_hints.values():
-            _find_models_in_type(tp, result, visited)
-
+    for tp in (
+        (field_info.annotation for field_info in model_fields.values())
+        if model_fields is not None
+        else _get_type_hints_safe(model).values()
+    ):
+        _find_models_in_type(tp, result, visited)
     return result
 
 
@@ -883,12 +862,7 @@ def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type]) 
         if issubclass(tp, BaseModel):
             result[tp.__name__] = tp
             result.update(_collect_nested_models(tp, visited))
-        elif (
-            issubclass(tp, PyEnum)
-            or is_dataclass(tp)
-            or hasattr(tp, "__required_keys__")
-            or hasattr(tp, "__struct_fields__")
-        ):
+        elif issubclass(tp, PyEnum) or _is_model_like(tp):
             result[tp.__name__] = tp
 
     for arg in get_args(tp):
@@ -910,13 +884,7 @@ def _add_python_type_to_properties(
     generic_names: dict[type, str] | None = None,
 ) -> None:
     """Add x-python-type to properties dict for given model fields."""
-    for field_name, field_info in model_fields.items():
-        schema_name = _input_model_field_wire_name(field_name, field_info)
-        if (prop := properties.get(schema_name)) is None:
-            continue
-        owner = prop.get(_FIELD_SCHEMA_NAME)
-        if isinstance(owner, _FieldSchemaOwner) and owner.field_name != field_name:
-            continue
+    for field_info, prop in _iter_owned_properties(properties, model_fields):
         if serialized := _serialize_python_type(field_info.annotation, expression_collector, generic_names):
             prop["x-python-type"] = serialized
 
@@ -992,28 +960,21 @@ def _get_type_family(tp: type) -> str:  # noqa: PLR0911
         return _TYPE_FAMILY_ENUM
 
     if isinstance(tp, type) and issubclass(tp, BaseModel):
-        return _TYPE_FAMILY_PYDANTIC
+        return _OutputModelFamily.PYDANTIC
 
     if hasattr(tp, "__pydantic_fields__") and is_dataclass(tp):  # pragma: no cover
-        return _TYPE_FAMILY_PYDANTIC
+        return _OutputModelFamily.PYDANTIC
 
     if is_dataclass(tp):
-        return _TYPE_FAMILY_DATACLASS
+        return _OutputModelFamily.DATACLASS
 
     if isinstance(tp, type) and hasattr(tp, "__required_keys__"):
-        return _TYPE_FAMILY_TYPEDDICT
+        return _OutputModelFamily.TYPEDDICT
 
     if isinstance(tp, type) and hasattr(tp, "__struct_fields__"):  # pragma: no cover
-        return _TYPE_FAMILY_MSGSPEC
+        return _OutputModelFamily.MSGSPEC
 
     return _TYPE_FAMILY_OTHER  # pragma: no cover
-
-
-def _should_reuse_type(source_family: str, output_family: _OutputModelFamily) -> bool:
-    """Determine if a source type can be reused without conversion."""
-    if source_family == _TYPE_FAMILY_ENUM:
-        return True
-    return source_family == output_family
 
 
 def _has_qualified_type_export(nested_type: type, qualname: str) -> bool:
@@ -1050,7 +1011,7 @@ def _pydantic_generic_metadata(tp: object) -> dict[str, Any] | None:
 def _reuses_pydantic_generics(strategy: InputModelRefStrategy | None, family: _OutputModelFamily | None) -> bool:
     """Apply specialization references only when Pydantic types are reused."""
     return strategy == InputModelRefStrategy.ReuseAll or (
-        strategy == InputModelRefStrategy.ReuseForeign and family == _TYPE_FAMILY_PYDANTIC
+        strategy == InputModelRefStrategy.ReuseForeign and family == _OutputModelFamily.PYDANTIC
     )
 
 
@@ -1076,6 +1037,25 @@ def _prepare_reused_model_types(
         else None
     )
     return nested, identities
+
+
+def _add_reused_definitions(
+    nested_models: dict[str, type] | None,
+    definition_types: dict[str, type | str] | None,
+    *,
+    identify: bool = False,
+) -> None:
+    """Let reuse find the specialized types (and, when identifying, the same-named ones) of the definitions.
+
+    Call it before another schema is generated: that refills ``definition_types``.
+    """
+    if nested_models is None or definition_types is None:
+        return
+    nested_models.update(
+        (name, cast("type", model)) for name, model in definition_types.items() if _pydantic_generic_metadata(model)
+    )
+    if identify and (identified_types := _colliding_definition_types(definition_types)):
+        nested_models.update(identified_types)
 
 
 def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
@@ -1242,7 +1222,7 @@ def _generic_python_import(
     }
 
 
-def _filter_defs_by_strategy(  # ruff: ignore[too-many-branches, too-many-arguments, too-many-positional-arguments]
+def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     schema: dict[str, Any],
     nested_models: dict[str, type],
     output_family: _OutputModelFamily | None,
@@ -1250,10 +1230,10 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-branches, too-many-argume
     expression_collector: PythonTypeExpressionCollector | None = None,
     model_classes: Sequence[type] | None = None,
 ) -> dict[str, Any]:
-    """Filter $defs based on ref strategy, marking reused types with x-python-import."""
-    if strategy == InputModelRefStrategy.RegenerateAll:  # pragma: no cover
-        return schema
+    """Filter $defs of a reuse strategy, marking reused types with x-python-import.
 
+    Only ReuseForeign has an output family; it reuses enums and the types of that family.
+    """
     if "$defs" not in schema:  # pragma: no cover
         return schema
 
@@ -1268,15 +1248,7 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-branches, too-many-argume
         nested_type = nested_models[def_name]
         type_family = _get_type_family(nested_type)
 
-        match strategy:
-            case InputModelRefStrategy.ReuseAll:
-                should_reuse = True
-            case InputModelRefStrategy.ReuseForeign if output_family is not None:
-                should_reuse = _should_reuse_type(type_family, output_family)
-            case _:  # pragma: no cover
-                should_reuse = False  # pragma: no cover
-
-        if should_reuse:
+        if strategy is InputModelRefStrategy.ReuseAll or type_family in {_TYPE_FAMILY_ENUM, output_family}:
             if metadata := _pydantic_generic_metadata(nested_type):
                 if (expression := _exported_generic_expression(nested_type, None)) is None:
                     if native_paths is None:
@@ -1317,38 +1289,44 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-branches, too-many-argume
     return {**schema, "$defs": new_defs}
 
 
+_CONFIG_MODULE_CLASSES = frozenset({"GenerateConfig", "ParserConfig", "ParseConfig"})
+_CONFIG_MODEL_NAMES: dict[str, frozenset[str]] = {
+    "datamodel_code_generator.config": _CONFIG_MODULE_CLASSES,
+    "config": _CONFIG_MODULE_CLASSES,
+    "datamodel_code_generator.__main__": frozenset({"Config"}),
+}
+"""The deferred config models of each module, rebuilt with the config types namespace."""
+
+
 def _try_rebuild_model(obj: type) -> None:
     """Try to rebuild a Pydantic model, handling config models specially."""
-    module = getattr(obj, "__module__", "")
-    class_name = getattr(obj, "__name__", "")
-    config_classes = {"GenerateConfig", "ParserConfig", "ParseConfig"}
-    main_config_classes = {"Config"}
-    if module in {"datamodel_code_generator.config", "config"} and class_name in config_classes:
-        from datamodel_code_generator.config import _rebuild_config_model  # noqa: PLC0415
-        from datamodel_code_generator.enums import UnionMode  # noqa: PLC0415
-        from datamodel_code_generator.model.base import DataModel, DataModelFieldBase  # noqa: PLC0415
-        from datamodel_code_generator.types import DataTypeManager, StrictTypes  # noqa: PLC0415
+    if getattr(obj, "__name__", "") in _CONFIG_MODEL_NAMES.get(getattr(obj, "__module__", ""), ()):
+        from datamodel_code_generator.config import _CONFIG_TYPES_NAMESPACE, _rebuild_config_model  # noqa: PLC0415
 
-        types_namespace = {
-            "DataModel": DataModel,
-            "DataModelFieldBase": DataModelFieldBase,
-            "DataTypeManager": DataTypeManager,
-            "StrictTypes": StrictTypes,
-            "UnionMode": UnionMode,
-        }
-        _rebuild_config_model(obj, types_namespace)  # ty: ignore[invalid-argument-type]
-    elif module == "datamodel_code_generator.__main__" and class_name in main_config_classes:  # pragma: no cover
-        from datamodel_code_generator.config import _rebuild_config_model  # noqa: PLC0415
-        from datamodel_code_generator.enums import UnionMode  # noqa: PLC0415
-        from datamodel_code_generator.types import StrictTypes  # noqa: PLC0415
-
-        types_namespace = {
-            "UnionMode": UnionMode,
-            "StrictTypes": StrictTypes,
-        }
-        _rebuild_config_model(obj, types_namespace)  # ty: ignore[invalid-argument-type]
+        _rebuild_config_model(obj, _CONFIG_TYPES_NAMESPACE)  # ty: ignore[invalid-argument-type]
     else:
         obj.model_rebuild()  # ty: ignore[unresolved-attribute]
+
+
+def _model_schema_with_python_types(
+    model: type[BaseModel],
+    schema_generator: type[GenerateJsonSchema],
+    expression_collector: PythonTypeExpressionCollector | None,
+    generic_definitions: dict[str, type | str] | None,
+    schema_types: dict[str, type | str] | None,
+) -> dict[str, Any]:
+    """Generate a model's JSON Schema and add the Python types it cannot express."""
+    schema = _add_python_type_for_unserializable(
+        model.model_json_schema(schema_generator=schema_generator), model, expression_collector=expression_collector
+    )
+    return _add_python_type_info(
+        schema,
+        model,
+        expression_collector,
+        generic_definitions,
+        schema_types,
+        clear_field_names=getattr(schema_generator, "has_field_schema_owners", False),
+    )
 
 
 def _get_base_model_parents(model_class: type) -> list[type[BaseModel]]:
@@ -1416,19 +1394,8 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0913, PLR0917
 
     if parent not in processed_parents:
         _try_rebuild_model(parent)
-        parent_schema = parent.model_json_schema(schema_generator=schema_generator)
-        parent_schema = _add_python_type_for_unserializable(
-            parent_schema,
-            parent,
-            expression_collector=expression_collector,
-        )
-        parent_schema = _add_python_type_info(
-            parent_schema,
-            parent,
-            expression_collector,
-            generic_definitions,
-            schema_types,
-            clear_field_names=getattr(schema_generator, "has_field_schema_owners", False),
+        parent_schema = _model_schema_with_python_types(
+            parent, schema_generator, expression_collector, generic_definitions, schema_types
         )
         if definitions is not None:
             parent_schema = definitions.normalize(parent_schema, parent)
@@ -1548,16 +1515,9 @@ def load_model_schema(
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
 ) -> dict[str, object]:
-    """Load and merge schemas from Python import paths with inheritance support.
+    """Load and merge schemas from 'module.path:ObjectName' import paths with inheritance support.
 
-    Args:
-        input_models: List of import paths in 'module.path:ObjectName' format
-        input_file_type: Current input file type setting for validation
-        ref_strategy: Strategy for handling referenced types
-        output_model_type: Target output model type for reuse-foreign strategy
-
-    Returns:
-        Merged schema dict with anyOf referencing all root models
+    Several import paths merge into one schema whose anyOf references every root model.
     """
     return _load_model_schema_isolated(input_models, input_file_type, ref_strategy, output_model_type)
 
@@ -1580,15 +1540,13 @@ def _load_model_schema_with_python_type_expressions(
     return expression_collector.loaded_schema(schema)
 
 
-def _load_model_schema(  # noqa: PLR0912, PLR0914, PLR0915
+def _load_model_schema(  # noqa: PLR0914
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None,
     output_model_type: DataModelType | None,
     expression_collector: PythonTypeExpressionCollector | None = None,
 ) -> dict[str, object]:
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
-
     output_family: _OutputModelFamily | None = None
     if ref_strategy is InputModelRefStrategy.ReuseForeign:
         output_family = _get_output_model_family(output_model_type)
@@ -1608,36 +1566,13 @@ def _load_model_schema(  # noqa: PLR0912, PLR0914, PLR0915
 
     try:
         for input_model in input_models:
-            modname, qualname = _split_input_model(input_model)
-
-            if modname not in loaded_modules:
-                module, module_state = _load_input_model_module(modname)
-                if module_state is not None:
-                    path_module_states.append(module_state)
-                loaded_modules[modname] = module
-            else:
-                module = loaded_modules[modname]
-
-            try:
-                obj = getattr(module, qualname)
-            except AttributeError as e:
-                msg = f"Module {modname!r} has no attribute {qualname!r}"
-                raise Error(msg) from e
-
+            _, obj = _load_input_model_object(input_model, loaded_modules, path_module_states)
             if not (isinstance(obj, type) and issubclass(obj, BaseModel)):
                 msg = f"Multiple --input-model only supports Pydantic v2 BaseModel classes, got {type(obj).__name__}"
                 raise Error(msg)
-
             model_classes.append(obj)
 
-        if input_file_type not in {InputFileType.Auto, InputFileType.JsonSchema}:
-            msg = (
-                f"--input-file-type must be 'jsonschema' (or omitted) "
-                f"when --input-model points to Pydantic models, "
-                f"got '{input_file_type.value}'"
-            )
-            raise Error(msg)
-
+        _require_json_schema_input(input_file_type, "Pydantic models")
         for model_class in model_classes:
             _try_rebuild_model(model_class)
         definitions = _InputModelDefinitions(model_classes)
@@ -1655,19 +1590,8 @@ def _load_model_schema(  # noqa: PLR0912, PLR0914, PLR0915
         processed_parents: dict[type[BaseModel], _ParentSchema] = {}
 
         for model_class in model_classes:
-            schema = model_class.model_json_schema(schema_generator=schema_generator)
-            schema = _add_python_type_for_unserializable(
-                schema,
-                model_class,
-                expression_collector=expression_collector,
-            )
-            schema = _add_python_type_info(
-                schema,
-                model_class,
-                expression_collector,
-                generic_definitions,
-                definitions.current_types,
-                clear_field_names=getattr(schema_generator, "has_field_schema_owners", False),
+            schema = _model_schema_with_python_types(
+                model_class, schema_generator, expression_collector, generic_definitions, definitions.current_types
             )
             schema = definitions.normalize(schema, model_class)
             model_name = definitions.name(model_class.__name__, model_class)
@@ -1686,10 +1610,9 @@ def _load_model_schema(  # noqa: PLR0912, PLR0914, PLR0915
             if "$defs" in schema:
                 schema_defs = cast("dict[str, object]", schema["$defs"])
                 for k, v in schema_defs.items():
-                    new_is_base = _is_input_model_base_schema(v)
-                    existing = merged_defs.get(k)
-                    existing_is_base = _is_input_model_base_schema(existing) if existing is not None else False
-                    if k not in merged_defs or (new_is_base and not existing_is_base):
+                    if k not in merged_defs or (
+                        _is_input_model_base_schema(v) and not _is_input_model_base_schema(merged_defs[k])
+                    ):
                         merged_defs[k] = v
 
             model_def = {k: v for k, v in schema.items() if k != "$defs"}
@@ -1710,39 +1633,17 @@ def _load_model_schema(  # noqa: PLR0912, PLR0914, PLR0915
             _restore_path_module(state)
 
 
-def _load_single_model_schema(  # ruff: ignore[too-many-branches, too-many-locals, too-many-statements]
+def _load_single_model_schema(
     input_model: str,
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None,
     output_family: _OutputModelFamily | None,
     expression_collector: PythonTypeExpressionCollector | None = None,
 ) -> dict[str, object]:
-    """Load schema from a Python import path.
-
-    Args:
-        input_model: Import path in 'module.path:ObjectName' format
-        input_file_type: Current input file type setting for validation
-        ref_strategy: Strategy for handling referenced types
-        output_family: Target output compatibility family for reuse-foreign strategy
-
-    Returns:
-        Schema dict
-
-    Raises:
-        Error: If format invalid, object cannot be loaded, or input_file_type invalid
-    """
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
-
-    modname, qualname = _split_input_model(input_model)
-
-    module, path_module_state = _load_input_model_module(modname)
-
+    """Load the schema of one dict, Pydantic model, dataclass or TypedDict import path."""
+    path_module_states: list[_ModuleRestoreState] = []
     try:
-        try:
-            obj = getattr(module, qualname)
-        except AttributeError as e:
-            msg = f"Module {modname!r} has no attribute {qualname!r}"
-            raise Error(msg) from e
+        qualname, obj = _load_input_model_object(input_model, {}, path_module_states)
 
         if isinstance(obj, dict):
             if input_file_type == InputFileType.Auto:
@@ -1757,14 +1658,9 @@ def _load_single_model_schema(  # ruff: ignore[too-many-branches, too-many-local
 
             return cast("dict[str, object]", json.loads(json.dumps(obj)))
 
+        model = cast("type", obj)
         if isinstance(obj, type) and issubclass(obj, BaseModel):
-            if input_file_type not in {InputFileType.Auto, InputFileType.JsonSchema}:
-                msg = (
-                    f"--input-file-type must be 'jsonschema' (or omitted) "
-                    f"when --input-model points to a Pydantic model, "
-                    f"got '{input_file_type.value}'"
-                )
-                raise Error(msg)
+            _require_json_schema_input(input_file_type, "a Pydantic model")
             _try_rebuild_model(obj)
             nested_models, definition_types = _prepare_reused_model_types(obj, ref_strategy, output_family)
             schema_types = definition_types if definition_types is not None else {}
@@ -1774,28 +1670,10 @@ def _load_single_model_schema(  # ruff: ignore[too-many-branches, too-many-local
                 preserve_type_identity=ref_strategy is InputModelRefStrategy.ReuseAll,
                 preserve_generic_identity=_reuses_pydantic_generics(ref_strategy, output_family),
             )
-            schema = obj.model_json_schema(schema_generator=schema_generator)
-            identified_types = _colliding_definition_types(definition_types) if definition_types else None
-            if definition_types is not None:
-                cast("dict[str, type]", nested_models).update(
-                    (name, cast("type", model))
-                    for name, model in definition_types.items()
-                    if _pydantic_generic_metadata(model)
-                )
-            schema = _add_python_type_for_unserializable(
-                schema,
-                obj,
-                expression_collector=expression_collector,
+            schema = _model_schema_with_python_types(
+                obj, schema_generator, expression_collector, definition_types, schema_types
             )
-            schema = _add_python_type_info(
-                schema,
-                obj,
-                expression_collector,
-                definition_types,
-                schema_types,
-                clear_field_names=getattr(schema_generator, "has_field_schema_owners", False),
-            )
-
+            _add_reused_definitions(nested_models, definition_types, identify=True)
             schema = _transform_single_model_to_inheritance(
                 schema,
                 obj,
@@ -1804,62 +1682,34 @@ def _load_single_model_schema(  # ruff: ignore[too-many-branches, too-many-local
                 generic_definitions=definition_types,
                 schema_types=schema_types,
             )
-
-            if ref_strategy and nested_models is not None:
-                if identified_types:
-                    nested_models.update(identified_types)
-                model_name = getattr(obj, "__name__", None)
-                if model_name and model_name in cast("dict[str, object]", schema.get("$defs", {})):  # pragma: no cover
-                    nested_models[model_name] = obj
-                schema = _filter_defs_by_strategy(
-                    schema, nested_models, output_family, ref_strategy, expression_collector, [obj]
-                )
-
-            return schema
-
-        is_typed_dict = isinstance(obj, type) and hasattr(obj, "__required_keys__")
-        if is_dataclass(obj) or is_typed_dict:
-            if input_file_type not in {InputFileType.Auto, InputFileType.JsonSchema}:
-                msg = (
-                    f"--input-file-type must be 'jsonschema' (or omitted) "
-                    f"when --input-model points to a dataclass or TypedDict, "
-                    f"got '{input_file_type.value}'"
-                )
-                raise Error(msg)
+        elif (isinstance(obj, type) and hasattr(obj, "__required_keys__")) or is_dataclass(obj):
+            _require_json_schema_input(input_file_type, "a dataclass or TypedDict")
             from pydantic import TypeAdapter  # noqa: PLC0415
 
-            obj_type = cast("type", obj)
-            nested_models, definition_types = _prepare_reused_model_types(obj_type, ref_strategy, output_family)
+            nested_models, definition_types = _prepare_reused_model_types(model, ref_strategy, output_family)
             schema_types = definition_types if definition_types is not None else {}
-            schema = TypeAdapter(obj).json_schema(
+            schema = TypeAdapter(model).json_schema(
                 schema_generator=_get_input_model_json_schema_class(
                     schema_types,
-                    [obj_type],
+                    [model],
                     use_standard_schema=definition_types is None,
                     preserve_generic_identity=definition_types is not None,
                 )
             )
-            schema = _add_python_type_info(schema, obj, expression_collector, definition_types, schema_types)
+            schema = _add_python_type_info(schema, model, expression_collector, definition_types, schema_types)
+            _add_reused_definitions(nested_models, definition_types)
+        else:
+            msg = f"{qualname!r} is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+            raise Error(msg)
 
-            if ref_strategy and ref_strategy != InputModelRefStrategy.RegenerateAll:
-                nested_models = cast("dict[str, type]", nested_models)
-                if definition_types is not None:
-                    nested_models.update(
-                        (name, cast("type", model))
-                        for name, model in definition_types.items()
-                        if _pydantic_generic_metadata(model)
-                    )
-                obj_name = getattr(obj, "__name__", None)
-                if obj_name and "$defs" in schema and obj_name in schema["$defs"]:  # pragma: no cover
-                    nested_models[obj_name] = obj
-                schema = _filter_defs_by_strategy(
-                    schema, nested_models, output_family, ref_strategy, expression_collector, [obj_type]
-                )
-
-            return schema
-
-        msg = f"{qualname!r} is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
-        raise Error(msg)
+        if ref_strategy and nested_models is not None:
+            model_name = getattr(obj, "__name__", None)
+            if model_name and model_name in cast("dict[str, object]", schema.get("$defs", {})):  # pragma: no cover
+                nested_models[model_name] = model
+            schema = _filter_defs_by_strategy(
+                schema, nested_models, output_family, ref_strategy, expression_collector, [model]
+            )
+        return schema
     finally:
-        if path_module_state is not None:
-            _restore_path_module(path_module_state)
+        for state in path_module_states:
+            _restore_path_module(state)
