@@ -266,6 +266,16 @@
     ],
     "package_snapshots": []
   },
+  "native-merged-null": {
+    "input": "native.yaml",
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
   "required-alias-order": {
     "input": "required-alias-order.yaml",
     "backends": [

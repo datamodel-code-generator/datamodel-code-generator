@@ -34,3 +34,12 @@ codec_6: Final[PydanticCodec[models.WorkGetQueryCaseParameter]] = PydanticCodec(
 
 codec_7: Final[PydanticCodec[models.Home | None]] = PydanticCodec(models.Home | None)
 """Codec of /paths/~1home/get response_body (response 200 application/json)."""
+
+codec_8: Final[PydanticCodec[models.WorkGetQueryCaseParameter]] = PydanticCodec(models.WorkGetQueryCaseParameter)
+"""Codec of /paths/~1person/put parameter (request query case)."""
+
+codec_9: Final[PydanticCodec[models.Person]] = PydanticCodec(models.Person)
+"""Codec of /paths/~1person/put request_body (request application/json)."""
+
+codec_10: Final[PydanticCodec[models.Person]] = PydanticCodec(models.Person)
+"""Codec of /paths/~1person/put response_body (response 200 application/json)."""

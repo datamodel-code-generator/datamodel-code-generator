@@ -112,6 +112,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-spellings-legacy",
         "type-spellings-reuse",
         "merged-nullable-reference",
+        "merged-nullable-forms",
         "type-spellings-cycle",
         "type-spellings-bound",
         "helpers",

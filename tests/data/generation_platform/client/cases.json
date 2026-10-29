@@ -1719,7 +1719,11 @@
   "merged-nullable-reference": {
     "input": "merged-nullable-reference.yaml",
     "backends": [
-      "pydantic_v2.BaseModel"
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
     ],
     "model": {
       "strict_nullable": true,
@@ -1732,6 +1736,48 @@
         "types",
         "default",
         "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "merged-nullable-forms": {
+    "input": "merged-nullable-forms.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
       ],
       [
         "client",

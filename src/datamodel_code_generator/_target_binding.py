@@ -2888,7 +2888,6 @@ class _Models:
                         bases,
                         slots,
                         model.IS_ALIAS,
-                        model._nullable,  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                         _model_facts(model, policy),
                         tuple(_literal_scalar(get_raw_enum_member_value(field.default)) for field in model.fields)
                         if policy.kind == "enum"
@@ -3028,9 +3027,8 @@ class _Models:
         pending: list[TypeView] = [] if value is None else [value]
         while pending:
             item = pending.pop()
+            direct = direct or is_none(item)
             match item:
-                case NoneType():
-                    direct = True
                 case UnionType():
                     pending.extend(item.members)
                 case GeneratedSymbolType() if self.binder.models[item.symbol].IS_ALIAS:

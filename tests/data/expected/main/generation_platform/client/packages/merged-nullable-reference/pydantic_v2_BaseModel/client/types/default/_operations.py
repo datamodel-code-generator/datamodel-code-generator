@@ -19,3 +19,6 @@ GetOfficeResponse: TypeAlias = models.Home
 
 
 GetHomeResponse: TypeAlias = models.Home | None
+
+
+PutPersonResponse: TypeAlias = models.Person
