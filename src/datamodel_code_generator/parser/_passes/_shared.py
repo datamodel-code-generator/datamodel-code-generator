@@ -243,19 +243,6 @@ def _unwrap_type_alias(data_type: DataType) -> DataType:
     return current
 
 
-def _is_default_value_container(data_type: DataType) -> bool:
-    """Return whether a data type wraps a collection default rather than one scalar."""
-    return any((
-        data_type.is_dict,
-        data_type.is_list,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-    ))
-
-
 def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
     """Unwrap aliases and nullable scalar wrappers without traversing unions or containers."""
     if data_type.reference and isinstance(data_type.reference.source, TypeAliasBase):
@@ -264,7 +251,7 @@ def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
         data_type.type is None
         and data_type.reference is None
         and len(data_type.data_types) == 1
-        and not _is_default_value_container(data_type)
+        and not data_type._is_container  # noqa: SLF001
         and not data_type.literals
         and not data_type.enum_member_literals
     ):
@@ -276,14 +263,14 @@ def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
 
 def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
     """Resolve one backend-neutral scalar leaf without traversing unions or containers."""
-    if _is_default_value_container(data_type):
+    if data_type._is_container:  # noqa: SLF001
         return None
     if data_type.reference or data_type.data_types:
         data_type = _unwrap_default_scalar_data_type(data_type)
     if (
         data_type.reference
         or data_type.data_types
-        or _is_default_value_container(data_type)
+        or data_type._is_container  # noqa: SLF001
         or data_type.literals
         or data_type.enum_member_literals
     ):
@@ -1334,18 +1321,6 @@ class _FieldTagFacts:
 
     def referenced_tag(self) -> None:
         """Return no tag: a field has no ``$ref`` of its own."""
-
-
-def _is_discriminator_container(data_type: DataType) -> bool:
-    return (
-        data_type.is_dict
-        or data_type.is_list
-        or data_type.is_set
-        or data_type.is_frozen_set
-        or data_type.is_mapping
-        or data_type.is_sequence
-        or data_type.is_tuple
-    )
 
 
 def _is_discriminator_wrapper(model: DataModel) -> bool:

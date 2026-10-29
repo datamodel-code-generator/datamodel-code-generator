@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
@@ -131,20 +132,7 @@ _PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
     "client_output",
 })
 
-_PYPROJECT_MODEL_JSON_CONFIG_FIELDS = frozenset({
-    "aliases",
-    "base_class_map",
-    "custom_formatters_kwargs",
-    "default_values",
-    "duplicate_name_suffix",
-    "enum_field_as_literal_map",
-    "extra_template_data",
-    "import_overrides",
-    "model_name_map",
-    "serialization_aliases",
-    "type_overrides",
-    "validators",
-})
+_PYPROJECT_JSON_CONFIG_FIELDS = frozenset(JSON_CONFIG_FIELDS)
 
 _PYPROJECT_TARGET_JSON_CONFIG_FIELDS = frozenset({
     "client_operations",
@@ -158,7 +146,7 @@ _PYPROJECT_TARGET_JSON_CONFIG_FIELDS = frozenset({
     "server_router_names",
 })
 
-_PYPROJECT_JSON_CONFIG_FIELDS = _PYPROJECT_MODEL_JSON_CONFIG_FIELDS | _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
+_PYPROJECT_MODEL_JSON_CONFIG_FIELDS = _PYPROJECT_JSON_CONFIG_FIELDS - _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
 
 _PYPROJECT_PATH_FIELDS = _PYPROJECT_RELATIVE_PATH_FIELDS | _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
 

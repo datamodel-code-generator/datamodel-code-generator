@@ -73,7 +73,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _get_enum_from_base,
     _get_mapping_discriminator_values,
     _get_schema_path,
-    _is_discriminator_container,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _keeps_instance_field,
@@ -534,7 +533,7 @@ def site_validity(  # noqa: PLR0913
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
             continue
-        if _is_discriminator_container(data_type) or not data_type.reference:
+        if data_type._is_container or not data_type.reference:  # noqa: SLF001
             return "dropped-invalid"
         variant = data_type.reference.source
         if (

@@ -813,18 +813,6 @@ class DataModelField(DataModelFieldBase):
         ))
 
     @staticmethod
-    def _data_type_has_container(data_type: DataType) -> bool:
-        return any((
-            data_type.is_dict,
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_mapping,
-            data_type.is_sequence,
-            data_type.is_tuple,
-        ))
-
-    @staticmethod
     def _data_type_is_plain_union(data_type: DataType) -> bool:
         return bool(union_members(data_type))
 
@@ -931,9 +919,7 @@ class DataModelField(DataModelFieldBase):
             return None
         if data_type.literals or data_type.enum_member_literals or data_type.kwargs or data_type.alias:
             return None
-        if data_type.is_dict or data_type.is_list or data_type.is_set or data_type.is_frozen_set:
-            return None
-        if data_type.is_mapping or data_type.is_sequence or data_type.is_tuple:
+        if data_type._is_container:  # noqa: SLF001
             return None
         data_type_class = type(data_type)
         if data_type_class is not DataType and data_type_class is not _create_context_data_type(
@@ -1254,7 +1240,7 @@ class DataModelField(DataModelFieldBase):
                 return None
             return self._meta_type(alias_field.data_type, seen | {id(source)})
         if len(data_type.data_types) == 1 and not (
-            data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
+            data_type.type or data_type.reference or data_type.python_type or data_type._is_container  # noqa: SLF001
         ):
             return self._meta_type(data_type.data_types[0], seen)
         return data_type
@@ -1451,10 +1437,7 @@ class DataModelField(DataModelFieldBase):
                 return
             data_type = alias_field.data_type
         if (
-            data_type.data_types
-            or data_type.is_optional
-            or data_type.enum_member_literals
-            or self._data_type_has_container(data_type)
+            data_type.data_types or data_type.is_optional or data_type.enum_member_literals or data_type._is_container  # noqa: SLF001
         ):
             return
         kinds = {type(literal).__name__ for literal in data_type.literals} or {data_type.type}
@@ -1469,7 +1452,7 @@ class DataModelField(DataModelFieldBase):
             and data_type.reference is None
             and data_type.alias is None
             and data_type.data_types
-            and not self._data_type_has_container(data_type)
+            and not data_type._is_container  # noqa: SLF001
         ):
             return [member for child in data_type.data_types for member in self._non_none_members(child)]
         return [] if self._data_type_renders_none(data_type) else [data_type]

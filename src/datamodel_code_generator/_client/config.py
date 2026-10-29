@@ -160,6 +160,10 @@ def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
 
 
+def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
+    return isinstance(value, (tuple, list))
+
+
 def _tuple_of(value: object, kind: type[RecordT]) -> TypeIs[tuple[RecordT, ...]]:
     return _is_tuple(value) and all(isinstance(item, kind) for item in value)
 
