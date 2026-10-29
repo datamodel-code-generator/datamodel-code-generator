@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
@@ -30,15 +30,6 @@ PYDANTIC_BACKENDS: Final = frozenset({"pydantic_v2.BaseModel", "pydantic_v2.data
 PYDANTIC_IMPORT_MINIMUMS: Final = tuple(
     (form, row.minimum) for row in REQUIREMENTS.values() if row.library == "pydantic" and (form := row.form) is not None
 )
-_PLAN_DEFAULTS: Final[dict[str, object]] = {
-    "style": None,
-    "explode": False,
-    "required": False,
-    "allow_reserved": False,
-    "content_media_type": None,
-    "shape": "scalar",
-    "kind": "string",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,17 +88,21 @@ def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
 
 
 def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str:
-    """Return the plan constructor of one parameter or header, naming it through `local`."""
-    entries = [f"location={plan.location!r}", f"name={plan.name!r}"]
-    entries.extend(
-        f"{name}={value!r}" for name, default in _PLAN_DEFAULTS.items() if (value := getattr(plan, name)) != default
-    )
-    if plan.fields:
-        entries.append(f"fields={display(field_plan(local, item) for item in plan.fields)}")
-    if plan.additional is not None:
-        entries.append(f"additional={field_plan(local, plan.additional)}")
-    if plan.reserved_names:
-        entries.append(f"reserved_names={plan.reserved_names!r}")
+    """Return the plan constructor of one parameter or header, naming it through `local`; defaults are left out."""
+
+    def spelled(name: str, value: Any) -> str:
+        match name:
+            case "fields":
+                return display(field_plan(local, item) for item in value)
+            case "additional":
+                return field_plan(local, value)
+        return repr(value)
+
+    entries = [
+        f"{item.name}={spelled(item.name, value)}"
+        for item in fields(plan)
+        if (value := getattr(plan, item.name)) != item.default
+    ]
     return call(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
 
 

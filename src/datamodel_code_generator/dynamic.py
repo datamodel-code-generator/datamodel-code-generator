@@ -102,7 +102,7 @@ def _run_module_code(code: str, namespace: dict[str, Any], *, include_private_mo
     models = _extract_models(namespace, code=code, include_private=include_private_models)
 
     for obj in models.values():
-        if issubclass(obj, BaseModel) and hasattr(obj, "__pydantic_generic_metadata__"):
+        if issubclass(obj, BaseModel):
             obj.model_rebuild(_types_namespace=namespace)
 
     return models
@@ -219,7 +219,7 @@ def _execute_multi_module(
             models.update(_extract_models(ns, code=modules[path_tuple], include_private=include_private_models))
 
         for obj in models.values():
-            if issubclass(obj, BaseModel) and hasattr(obj, "__pydantic_generic_metadata__"):
+            if issubclass(obj, BaseModel):
                 obj.model_rebuild(_types_namespace=combined_namespace)
 
         return models
@@ -230,12 +230,6 @@ def _execute_multi_module(
                 sys.modules.pop(created_module_name, None)
             else:
                 sys.modules[created_module_name] = cast("types.ModuleType", previous_module)
-
-
-def _should_extract_model_name(name: str, *, include_private: bool = False) -> bool:
-    if include_private:
-        return True
-    return not name.startswith("_")
 
 
 def _extract_models(namespace: dict[str, Any], *, code: str = "", include_private: bool = False) -> dict[str, type]:
@@ -269,9 +263,9 @@ def _extract_models(namespace: dict[str, Any], *, code: str = "", include_privat
                 }
             if name not in assigned_names:
                 continue
-        if _should_extract_model_name(name, include_private=include_private) and (
-            (issubclass(obj, BaseModel) and obj is not BaseModel) or (issubclass(obj, Enum) and obj is not Enum)
-        ):
+        if not include_private and name.startswith("_"):
+            continue
+        if (issubclass(obj, BaseModel) and obj is not BaseModel) or (issubclass(obj, Enum) and obj is not Enum):
             models[name] = obj
     return models
 

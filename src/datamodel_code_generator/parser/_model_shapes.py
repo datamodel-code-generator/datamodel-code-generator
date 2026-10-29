@@ -299,8 +299,9 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
     union_tags: Mapping[ModelT, tuple[Hashable, ...]]
     memo: dict[ModelT, tuple[Key, Sequence[ReferenceT]]] = field(default_factory=dict)
 
-    def _tags(self, model: ModelT) -> tuple[Hashable, ...]:
-        return self.union_tags.get(model, ()) if self.row.union_tags else ()
+    def _tagged(self, model: ModelT, key: Key) -> Key:
+        """Return ``key`` with the tags of the model's discriminated unions when the row compares them."""
+        return (*key, *tags) if self.row.union_tags and (tags := self.union_tags.get(model, ())) else key
 
     def key(self, model: ModelT) -> Key:
         """Return the rendered model with the tags of its discriminated unions when the row compares them.
@@ -311,8 +312,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)
         if self.row.key_cache == "rendered":
             self.source.forget_dedup_keys(model)
-        key = self.source.dedup_key(model, slot)
-        return (*key, *tags) if (tags := self._tags(model)) else key
+        return self._tagged(model, self.source.dedup_key(model, slot))
 
     def shape(self, model: ModelT) -> tuple[Key, Sequence[ReferenceT]]:
         """Return a model's dedup key with referenced model names masked, and its references in order.
@@ -334,7 +334,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         )
         key = (type(model), masked, imports, len(references), *written)
         compared = (*references, *self.source.rule_references(model))
-        self.memo[model] = shape = ((*key, *tags) if (tags := self._tags(model)) else key), compared
+        self.memo[model] = shape = self._tagged(model, key), compared
         return shape
 
     def _compared_references(self, model: ModelT) -> tuple[ReferenceT, ...]:

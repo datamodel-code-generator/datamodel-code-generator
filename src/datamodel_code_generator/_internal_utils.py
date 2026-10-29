@@ -28,27 +28,13 @@ class HashableComparable(Hashable, Protocol):
 
 def to_hashable(item: Any) -> HashableComparable:
     """Convert an item to a hashable and comparable representation."""
-    if isinstance(
-        item,
-        (
-            list,
-            tuple,
-        ),
-    ):
+    if isinstance(item, (list, tuple)):
         try:
             return tuple(sorted((to_hashable(i) for i in item), key=lambda v: (str(type(v)), v)))
         except TypeError:
             return tuple(to_hashable(i) for i in item)
     if isinstance(item, dict):
-        return tuple(
-            sorted(
-                (
-                    k,
-                    to_hashable(v),
-                )
-                for k, v in item.items()
-            )
-        )
+        return tuple(sorted((k, to_hashable(v)) for k, v in item.items()))
     if isinstance(item, set):
         return frozenset(to_hashable(i) for i in item)
     if isinstance(item, BaseModel):

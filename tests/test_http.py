@@ -1325,7 +1325,7 @@ def test_remote_lock_transaction_attempts_all_cleanup_after_one_staged_source_un
     for plan in plans:
         collector = transaction.collector_for(plan)
         assert collector is not None
-        collector.record_response("https://schemas.example/schema.json", None, None, plan.path.name.encode())
+        collector.record_response("https://schemas.example/schema.json", None, None, plan.canonical_path.name.encode())
     transaction.staged_files()
     contexts = tuple(transaction._staging_contexts.values())
     original_unlink = publication_module._unlink

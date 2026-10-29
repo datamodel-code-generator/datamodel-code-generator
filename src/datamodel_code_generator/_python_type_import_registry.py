@@ -331,23 +331,11 @@ _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN: dict[tuple[str, str], tuple[int, int]]
 }
 
 _PYTHON_TYPE_BACKPORTS: dict[str, tuple[tuple[int, int], str]] = {
-    "Buffer": ((3, 12), "typing_extensions"),
-    "LiteralString": ((3, 11), "typing_extensions"),
-    "Never": ((3, 11), "typing_extensions"),
-    "NoDefault": ((3, 13), "typing_extensions"),
-    "NoExtraItems": ((3, 15), "typing_extensions"),
-    "NotRequired": ((3, 11), "typing_extensions"),
-    "ReadOnly": ((3, 13), "typing_extensions"),
-    "Required": ((3, 11), "typing_extensions"),
-    "Self": ((3, 11), "typing_extensions"),
-    "TypeAliasType": ((3, 12), "typing_extensions"),
-    "TypeIs": ((3, 13), "typing_extensions"),
-    "TypeForm": ((3, 15), "typing_extensions"),
-    "TypeVarTuple": ((3, 11), "typing_extensions"),
-    "Unpack": ((3, 11), "typing_extensions"),
-    "disjoint_base": ((3, 15), "typing_extensions"),
-    "override": ((3, 12), "typing_extensions"),
+    type_name: (version, "typing_extensions")
+    for (module, type_name), version in _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN.items()
+    if module == "typing" or (module, type_name) == ("collections.abc", "Buffer")
 }
+"""``typing_extensions`` backports every listed ``typing`` name and ``collections.abc.Buffer`` before its version."""
 
 
 def _is_target_type(module: str, type_name: str, target_version: tuple[int, int]) -> bool:

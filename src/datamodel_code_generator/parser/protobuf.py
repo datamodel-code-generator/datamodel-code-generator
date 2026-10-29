@@ -60,23 +60,31 @@ TYPE_SFIXED64 = 16
 TYPE_SINT32 = 17
 TYPE_SINT64 = 18
 
-PROTO2_DEFAULTS: dict[int, Any] = {
-    TYPE_DOUBLE: 0.0,
-    TYPE_FLOAT: 0.0,
-    TYPE_INT64: 0,
-    TYPE_UINT64: 0,
-    TYPE_INT32: 0,
-    TYPE_FIXED64: 0,
-    TYPE_FIXED32: 0,
-    TYPE_BOOL: False,
-    TYPE_STRING: "",
-    TYPE_BYTES: b"",
-    TYPE_UINT32: 0,
-    TYPE_SFIXED32: 0,
-    TYPE_SFIXED64: 0,
-    TYPE_SINT32: 0,
-    TYPE_SINT64: 0,
-}
+_INTEGER_TYPES = (
+    TYPE_INT32,
+    TYPE_INT64,
+    TYPE_UINT32,
+    TYPE_UINT64,
+    TYPE_SINT32,
+    TYPE_SINT64,
+    TYPE_FIXED32,
+    TYPE_FIXED64,
+    TYPE_SFIXED32,
+    TYPE_SFIXED64,
+)
+
+PROTO2_DEFAULTS: dict[int, Any] = dict(
+    sorted(
+        {
+            **dict.fromkeys(_INTEGER_TYPES, 0),
+            TYPE_DOUBLE: 0.0,
+            TYPE_FLOAT: 0.0,
+            TYPE_BOOL: False,
+            TYPE_STRING: "",
+            TYPE_BYTES: b"",
+        }.items()
+    )
+)
 
 SCALAR_SCHEMAS: dict[int, dict[str, Any]] = {
     TYPE_DOUBLE: {"type": "number", "format": "double"},
@@ -105,20 +113,7 @@ def _watch_dependency_collection_is_active() -> bool:
     )
 
 
-MAP_KEY_PYTHON_TYPES: dict[int, str] = {
-    TYPE_INT32: "int",
-    TYPE_INT64: "int",
-    TYPE_UINT32: "int",
-    TYPE_UINT64: "int",
-    TYPE_SINT32: "int",
-    TYPE_SINT64: "int",
-    TYPE_FIXED32: "int",
-    TYPE_FIXED64: "int",
-    TYPE_SFIXED32: "int",
-    TYPE_SFIXED64: "int",
-    TYPE_BOOL: "bool",
-    TYPE_STRING: "str",
-}
+MAP_KEY_PYTHON_TYPES: dict[int, str] = {**dict.fromkeys(_INTEGER_TYPES, "int"), TYPE_BOOL: "bool", TYPE_STRING: "str"}
 WELL_KNOWN_PROTO_PATHS = frozenset({
     "google/protobuf/any.proto",
     "google/protobuf/api.proto",
@@ -308,6 +303,45 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
     return parser._convert_to_json_schema_data(source_safe_non_finite=source_safe_non_finite)  # noqa: SLF001
 
 
+def _declarations(
+    file_descriptor: Any, *, post_order: bool = False
+) -> Iterator[tuple[bool, Any, str, tuple[int, ...]]]:
+    """Yield ``(is_enum, descriptor, full name, source path)`` for every message and enum declared in a file.
+
+    In pre-order each message comes before its enums and nested messages and the file's enums come last, as symbols
+    are registered; in post-order the file's enums come first and each message after its enums and nested messages,
+    as definitions are written.
+    """
+    package = file_descriptor.package
+    enums = [
+        (True, enum, _full_name(package, (), enum.name), (5, index))
+        for index, enum in enumerate(file_descriptor.enum_type)
+    ]
+    if post_order:
+        yield from enums
+    yield from _message_declarations(file_descriptor.message_type, package, (), (4,), post_order=post_order)
+    if not post_order:
+        yield from enums
+
+
+def _message_declarations(
+    messages: Iterable[Any], package: str, parents: tuple[str, ...], path: tuple[int, ...], *, post_order: bool
+) -> Iterator[tuple[bool, Any, str, tuple[int, ...]]]:
+    for index, message in enumerate(messages):
+        message_path = (*path, index)
+        declaration = (False, message, _full_name(package, parents, message.name), message_path)
+        if not post_order:
+            yield declaration
+        nested_parents = (*parents, message.name)
+        for enum_index, enum in enumerate(message.enum_type):
+            yield True, enum, _full_name(package, nested_parents, enum.name), (*message_path, 4, enum_index)
+        yield from _message_declarations(
+            message.nested_type, package, nested_parents, (*message_path, 3), post_order=post_order
+        )
+        if post_order:
+            yield declaration
+
+
 def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
     comments: dict[tuple[int, ...], str] = {}
     for location in file_descriptor.source_code_info.location:
@@ -426,35 +460,21 @@ class _ProtobufDescriptorConverter:
 
     def convert(self, file_descriptor_set: Any) -> dict[str, Any]:
         for file_descriptor in file_descriptor_set.file:
-            package = file_descriptor.package
-            self._collect_symbols(file_descriptor.message_type, package, ())
-            for enum_descriptor in file_descriptor.enum_type:
-                enum_full_name = _full_name(package, (), enum_descriptor.name)
-                self._register_definition_key(enum_full_name)
-                self.enums[enum_full_name] = enum_descriptor
+            for is_enum, descriptor, full_name, _ in _declarations(file_descriptor):
+                self._register_definition_key(full_name)
+                symbols = self.enums if is_enum else self.map_entries if descriptor.options.map_entry else self.messages
+                symbols[full_name] = descriptor
 
         for file_descriptor in file_descriptor_set.file:
             if file_descriptor.name in WELL_KNOWN_PROTO_PATHS and file_descriptor.name not in self.input_file_names:
                 continue
             comments = _comment_map(file_descriptor)
             effective_version = self._effective_version(file_descriptor)
-            for index, enum_descriptor in enumerate(file_descriptor.enum_type):
-                path = (5, index)
-                self._convert_enum(
-                    enum_descriptor,
-                    _full_name(file_descriptor.package, (), enum_descriptor.name),
-                    comments,
-                    path,
-                )
-            for index, message_descriptor in enumerate(file_descriptor.message_type):
-                self._convert_message(
-                    message_descriptor,
-                    file_descriptor.package,
-                    (),
-                    comments,
-                    (4, index),
-                    effective_version,
-                )
+            for is_enum, descriptor, full_name, path in _declarations(file_descriptor, post_order=True):
+                if is_enum:
+                    self._convert_enum(descriptor, full_name, comments, path)
+                else:
+                    self._convert_message(descriptor, full_name, comments, path, effective_version)
 
         if referenced := self._referenced_standard_types:
             omitted_files = [
@@ -471,20 +491,11 @@ class _ProtobufDescriptorConverter:
         }
 
     def _convert_referenced_standard_types(self, omitted_files: list[Any], referenced: dict[str, None]) -> None:
-        locations: dict[str, tuple[Any, tuple[str, ...], tuple[int, ...]]] = {}
-        for file_descriptor in omitted_files:
-            pending: list[tuple[Any, tuple[str, ...], tuple[int, ...]]] = [(file_descriptor, (), ())]
-            while pending:
-                container, parents, path = pending.pop()
-                for index, enum_descriptor in enumerate(container.enum_type):
-                    full_name = _full_name(file_descriptor.package, parents, enum_descriptor.name)
-                    locations[full_name] = (file_descriptor, parents, (*path, 4 if parents else 5, index))
-                messages = container.nested_type if parents else container.message_type
-                for index, message in enumerate(messages):
-                    full_name = _full_name(file_descriptor.package, parents, message.name)
-                    message_path = (*path, 3 if parents else 4, index)
-                    locations[full_name] = (file_descriptor, parents, message_path)
-                    pending.append((message, (*parents, message.name), message_path))
+        locations = {
+            full_name: (file_descriptor, path)
+            for file_descriptor in omitted_files
+            for _, _, full_name, path in _declarations(file_descriptor)
+        }
         comments_by_file: dict[str, dict[tuple[int, ...], str]] = {}
         while referenced:
             pending_names = tuple(referenced)
@@ -492,7 +503,7 @@ class _ProtobufDescriptorConverter:
             for full_name in pending_names:
                 if self._definition_key(full_name) in self.definitions:
                     continue
-                file_descriptor, parents, path = locations[full_name]
+                file_descriptor, path = locations[full_name]
                 if file_descriptor.name not in comments_by_file:
                     comments_by_file[file_descriptor.name] = _comment_map(file_descriptor)
                 comments = comments_by_file[file_descriptor.name]
@@ -500,13 +511,7 @@ class _ProtobufDescriptorConverter:
                     self._convert_enum(self.enums[full_name], full_name, comments, path)
                 else:
                     self._convert_message(
-                        self.messages[full_name],
-                        file_descriptor.package,
-                        parents,
-                        comments,
-                        path,
-                        self._effective_version(file_descriptor),
-                        include_nested=False,
+                        self.messages[full_name], full_name, comments, path, self._effective_version(file_descriptor)
                     )
 
     def _reference_schema(self, full_name: str) -> dict[str, Any]:
@@ -515,20 +520,6 @@ class _ProtobufDescriptorConverter:
                 self._referenced_standard_types = {}
             self._referenced_standard_types.setdefault(full_name, None)
         return {"$ref": f"#/definitions/{self._definition_key(full_name)}"}
-
-    def _collect_symbols(self, messages: Iterable[Any], package: str, parents: tuple[str, ...]) -> None:
-        for message_descriptor in messages:
-            full_name = _full_name(package, parents, message_descriptor.name)
-            self._register_definition_key(full_name)
-            if message_descriptor.options.map_entry:
-                self.map_entries[full_name] = message_descriptor
-            else:
-                self.messages[full_name] = message_descriptor
-            for enum_descriptor in message_descriptor.enum_type:
-                enum_full_name = _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name)
-                self._register_definition_key(enum_full_name)
-                self.enums[enum_full_name] = enum_descriptor
-            self._collect_symbols(message_descriptor.nested_type, package, (*parents, message_descriptor.name))
 
     @staticmethod
     def _make_definition_key(full_name: str) -> str:
@@ -582,39 +573,16 @@ class _ProtobufDescriptorConverter:
             schema["x-enum-descriptions"] = value_comments
         self.definitions[self._definition_key(full_name)] = schema
 
-    def _convert_message(  # noqa: PLR0913, PLR0917
+    def _convert_message(
         self,
         message_descriptor: Any,
-        package: str,
-        parents: tuple[str, ...],
+        full_name: str,
         comments: dict[tuple[int, ...], str],
         path: tuple[int, ...],
         syntax: ProtobufVersion,
-        *,
-        include_nested: bool = True,
     ) -> None:
-        full_name = _full_name(package, parents, message_descriptor.name)
         if message_descriptor.options.map_entry:
             return
-
-        if include_nested:
-            for index, enum_descriptor in enumerate(message_descriptor.enum_type):
-                enum_path = (*path, 4, index)
-                self._convert_enum(
-                    enum_descriptor,
-                    _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name),
-                    comments,
-                    enum_path,
-                )
-            for index, nested_descriptor in enumerate(message_descriptor.nested_type):
-                self._convert_message(
-                    nested_descriptor,
-                    package,
-                    (*parents, message_descriptor.name),
-                    comments,
-                    (*path, 3, index),
-                    syntax,
-                )
 
         properties: dict[str, Any] = {}
         required: list[str] = []
@@ -730,18 +698,7 @@ class _ProtobufDescriptorConverter:
         if field.type in {TYPE_DOUBLE, TYPE_FLOAT}:
             number = float(value)
             return _safe_non_finite_float(number) if self.source_safe_non_finite else number
-        if field.type in {
-            TYPE_INT32,
-            TYPE_INT64,
-            TYPE_UINT32,
-            TYPE_UINT64,
-            TYPE_SINT32,
-            TYPE_SINT64,
-            TYPE_FIXED32,
-            TYPE_FIXED64,
-            TYPE_SFIXED32,
-            TYPE_SFIXED64,
-        }:
+        if field.type in _INTEGER_TYPES:
             return int(value)
         return value
 
