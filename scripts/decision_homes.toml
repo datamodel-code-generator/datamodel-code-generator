@@ -928,6 +928,24 @@ adapters = [
     "model/pydantic_v2/base_model.py:_validated_value_hashes",
 ]
 
+[homes.Hx-option-arguments]
+decision = "which command-line arguments set a config field to a value: its option, the --no- option the parser defines for False, the items of a list"
+core = ["_option_names.py:option_arguments"]
+adapters = ["cli_options.py:_negative_option", "_recommend/_rules.py:option_arguments"]
+
+[homes.Hx-option-arguments.signatures.negative-option]
+kind = "call"
+names = ["option_flag"]
+keywords = ["negative"]
+what = "spells the --no- option of a config field by hand"
+audit = "C14-B8"
+
+[homes.Hx-option-arguments.signatures.negative-lookup]
+kind = "call"
+names = ["_negative_option", "_option_actions"]
+what = "looks up the --no- option of a config field outside the core"
+audit = "C14-B9"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
@@ -1233,6 +1251,9 @@ home = "H11"
 fix = "G05"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
+
+[allow."src/datamodel_code_generator/__main__.py"."_target_usage_errors"]
+"Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }
 
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."<module>"]
 "T-kind.kind-table" = { home = "T-kind", count = 2, audit = "M-02" }
@@ -1904,6 +1925,12 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser._get_data_type"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-08" }
+
+[allow."src/datamodel_code_generator/preset.py"."_config_item_to_cli_option"]
+"Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }
+
+[allow."src/datamodel_code_generator/prompt.py"."_format_current_option"]
+"Hx-option-arguments.negative-lookup" = { home = "Hx-option-arguments", count = 1, audit = "C14-B9" }
 
 [allow."src/datamodel_code_generator/reference.py"."ModelResolver._evict_yielding_reference"]
 "H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }
