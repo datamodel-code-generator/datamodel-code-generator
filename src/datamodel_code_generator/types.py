@@ -644,6 +644,15 @@ class Nullable(Protocol):
         raise NotImplementedError
 
 
+def reference_names_nullable(reference: Reference | None) -> bool:
+    """Return whether a reference names a model that now admits null and is not a type alias (``reference_null``)."""
+    return (
+        reference is not None
+        and not getattr(source := reference.source, "is_alias", False)
+        and bool(getattr(source, "nullable", False))
+    )
+
+
 class DataType(_BaseModel):  # noqa: PLR0904
     """Represents a type in generated code with imports and references."""
 
@@ -1081,11 +1090,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _names_nullable_target(self) -> bool:
         """Return whether the model the type names now admits null and is not a type alias."""
-        return (
-            (reference := self.reference) is not None
-            and not getattr(source := reference.source, "is_alias", False)
-            and bool(getattr(source, "nullable", False))
-        )
+        return reference_names_nullable(self.reference)
 
     @property
     def names_nullable_model(self) -> bool:
@@ -1153,11 +1158,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def has_target_null(self) -> bool:
         """Whether the type's own None is the one its referenced schema admits (``--omit-redundant-reference-null``)."""
         return self._type_null.target
-
-    @property
-    def held_null_dropped(self) -> bool:
-        """Whether ``--omit-redundant-reference-null`` dropped the None of the model the type names."""
-        return self._type_null.held_dropped
 
     @property
     def admits_none(self) -> bool:
