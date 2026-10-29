@@ -42,11 +42,12 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     SourceExpression,
     UnionType,
+    fact,
 )
+from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import described, fact, tags
-from datamodel_code_generator._target_operations import label as _label
+from datamodel_code_generator._target_operations import described, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -1410,7 +1411,6 @@ def _body_media(module: Module, body: BodySpec) -> str:
 
 def _registration(module: Module, spec: OperationSpec) -> Registration:
     contract = spec.contract
-    facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     primary = spec.primary
     model = response_class = ""
     if (
@@ -1424,14 +1424,16 @@ def _registration(module: Module, spec: OperationSpec) -> Registration:
     else:
         response_class = module.name("fastapi.responses", "Response")
     keywords: list[Keyword] = []
-    if contract.explicit_operation_id and isinstance(operation_id := facts.get("operationId"), str):
+    if contract.explicit_operation_id and isinstance(operation_id := fact(contract, "operationId"), str):
         keywords.append(Keyword("operation_id", repr(operation_id)))
     if found := tags(contract):
         keywords.append(Keyword("tags", f"[{', '.join(repr(tag) for tag in found)}]"))
     keywords.extend(
-        Keyword(name, repr(value)) for name in ("summary", "description") if isinstance(value := facts.get(name), str)
+        Keyword(name, repr(value))
+        for name in ("summary", "description")
+        if isinstance(value := fact(contract, name), str)
     )
-    if facts.get("deprecated") is True:
+    if fact(contract, "deprecated") is True:
         keywords.append(Keyword("deprecated", "True"))
     if isinstance(description := _response_description(spec), str):
         keywords.append(Keyword("response_description", repr(description)))

@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, get_args
+
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
@@ -118,6 +121,16 @@ class LiteralMapping:
 
 
 FrozenLiteral: TypeAlias = LiteralScalar | LiteralSequence | LiteralMapping
+
+
+def literal_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> FrozenLiteral | None:
+    """Return the first fact recorded under a name, as recorded."""
+    return next((value for key, value in facts if key == name), None)
+
+
+def scalar_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> object:
+    """Return the value of the first scalar fact recorded under a name."""
+    return next((value.value for key, value in facts if key == name and isinstance(value, LiteralScalar)), None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -584,10 +597,8 @@ class OperationContract:
         """Return the operationId the operation declares as a nonempty string, or None."""
         if not self.explicit_operation_id:
             return None
-        value = next((item for key, item in self.facts if key == "operationId"), None)
-        return (
-            value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) and value.value else None
-        )
+        value = scalar_fact(self.facts, "operationId")
+        return value if isinstance(value, str) and value else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -617,8 +628,31 @@ class GeneratedTypeContractBatch:
     @property
     def openapi(self) -> str:
         """Return the OpenAPI version the root document declares, empty when it declares none."""
-        version = next((value for key, value in self.document_facts if key == "openapi"), None)
+        version = literal_fact(self.document_facts, "openapi")
         return str(version.value) if isinstance(version, LiteralScalar) else ""
+
+
+LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
+
+
+def fact(declaration: WireDeclaration | OperationContract, name: str) -> object:
+    """Return one scalar wire fact of a declaration or an operation."""
+    return scalar_fact(declaration.facts, name)
+
+
+def operation_literal(operation: OperationContract, name: str) -> FrozenLiteral | None:
+    """Return one effective wire fact of an operation as recorded, such as its security or servers."""
+    return literal_fact(operation.facts, name)
+
+
+def label(operation: OperationContract) -> str:
+    """Return the method and path that name an operation in messages."""
+    return f"{operation.method.upper()} {operation.path}"
+
+
+def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
+    """Return the type uses of a declaration: its own, then those of its children."""
+    return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]

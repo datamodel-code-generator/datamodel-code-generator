@@ -25,8 +25,7 @@ from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncod
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
-from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType
-from datamodel_code_generator._target_operations import label
+from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
 from datamodel_code_generator._target_types import admits_none, present
 
 if TYPE_CHECKING:

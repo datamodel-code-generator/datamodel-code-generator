@@ -14,8 +14,8 @@ from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
+from datamodel_code_generator._target_contract import LOCATIONS
 from datamodel_code_generator._target_naming import explicit_name
-from datamodel_code_generator._target_operations import LOCATIONS
 from datamodel_code_generator.enums import ServerBodyMode, ServerHandlerMode
 
 if TYPE_CHECKING:
