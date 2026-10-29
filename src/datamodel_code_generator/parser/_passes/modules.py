@@ -118,7 +118,9 @@ from datamodel_code_generator.parser._passes._shared import (
     replace_model_in_list,
     require_update_action,
     set_reference_expression,
+    set_reference_expressions,
     site_display_name,
+    without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
     ConfigT,
@@ -2607,10 +2609,11 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     A stand-in is no member of its module: it takes no name there, and neither it nor a base that names it imports.
     A root that names itself, which deduplication dropped from every module, has no module to import from.
     """
-    models = module_members(parser, state.model_list)
-    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
-        models = [model for model in models if model_key_of(model.reference) not in stand_ins]
-    unimported = {*stand_ins, *(model_key_of(model.reference) for model in parser._self_named_root_models)}  # noqa: SLF001
+    models = without_stand_ins(parser, module_members(parser, state.model_list))
+    unimported = {
+        *parser._base_stand_in_imports,  # noqa: SLF001
+        *(model_key_of(model.reference) for model in parser._self_named_root_models),  # noqa: SLF001
+    }
     members = keyed_models(models, "module members")
     imports, scoped_model_resolver = state.imports, state.scoped_model_resolver
     model_path_to_module_name = state.model_path_to_module_name
@@ -2755,18 +2758,17 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
         for model in ctx.models:
             if id(model) not in classes:
                 continue
-            for data_type in _rule_data_types(model):
-                if (reference := data_type.reference) is None or members.key_of(reference) in members.models:
-                    continue
-                set_reference_expression(
-                    parser,
-                    data_type,
-                    _get_model_module_name(model, run.model_path_to_module_name),
-                    _get_data_type_target_full_name(data_type, reference, run.model_path_to_module_name),
-                    ctx.imports,
-                    ctx.scoped_model_resolver,
-                    same_module=False,
-                    init=ctx.is_init,
-                    internal_modules=run.internal_modules,
-                    producer=ImportProducer("change-from-import", model),
-                )
+            set_reference_expressions(
+                parser,
+                ctx,
+                run,
+                model,
+                (
+                    data_type
+                    for data_type in _rule_data_types(model)
+                    if (reference := data_type.reference) is not None
+                    and members.key_of(reference) not in members.models
+                ),
+                members=None,
+                producer=ImportProducer("change-from-import", model),
+            )

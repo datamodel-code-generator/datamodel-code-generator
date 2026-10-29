@@ -586,44 +586,16 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 "warn_enums_admitting_other_values",
                 lambda self, _: cross_module.warn_enums_admitting_other_values(self),
             ),
-            PassSpec(
-                "import_removed_reuse_canonicals",
-                lambda self, run: cross_module.import_removed_reuse_canonicals(
-                    self,
-                    run.contexts,
-                    internal_modules=run.internal_modules,
-                    model_path_to_module_name=run.model_path_to_module_name,
-                ),
-            ),
-            PassSpec(
-                "import_renamed_types",
-                lambda self, run: cross_module.import_renamed_types(
-                    self,
-                    run.contexts,
-                    internal_modules=run.internal_modules,
-                    model_path_to_module_name=run.model_path_to_module_name,
-                ),
-            ),
-            PassSpec(
-                "import_enum_member_literal_classes",
-                lambda self, run: cross_module.import_enum_member_literal_classes(
-                    self,
-                    run.contexts,
-                    internal_modules=run.internal_modules,
-                    model_path_to_module_name=run.model_path_to_module_name,
-                ),
-            ),
+            PassSpec("import_removed_reuse_canonicals", late(cross_module.import_removed_reuse_canonicals)),
+            PassSpec("import_renamed_types", late(cross_module.import_renamed_types)),
+            PassSpec("import_enum_member_literal_classes", late(cross_module.import_enum_member_literal_classes)),
         ),
     ),
     Segment(
         "generic_base_class",
         Phase.CROSS_MODULE,
         _as_finish_run,
-        (
-            PassSpec(
-                "apply_generic_base_class", lambda self, run: cross_module.apply_generic_base_class(self, run.contexts)
-            ),
-        ),
+        (PassSpec("apply_generic_base_class", late(cross_module.apply_generic_base_class)),),
         enters_phase=False,
     ),
     Segment(

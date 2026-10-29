@@ -30,10 +30,7 @@ from datamodel_code_generator.parser._passes._state import RecursionFacts
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, field_namer, iter_union_sites, possible_tag_names
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from datamodel_code_generator import CollapseRootModelsNameStrategy
-    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
@@ -279,21 +276,17 @@ def set_circular_root_model_paths(
         else {},
     )
 
-    def circular_keys(
-        components: list[set[ModelKey]],
-        on_self_loop: Callable[[ModelKey], bool],
-        mapping_keys: Callable[[ModelKey], frozenset[ModelKey]],
-    ) -> frozenset[ModelKey]:
-        if not require_dict_key_edge:
-            return frozenset(key for component in components for key in component)
-        return frozenset(key for key in keyed.models if on_self_loop(key)).union(
-            *(component for component in components if any(mapping_keys(key) & component for key in component))
+    components = graph.circular_components((EdgeKind.ANY_REFERENCE,))
+    circular_roots = (
+        frozenset(key for key in keyed.models if key in graph.targets(key, (EdgeKind.ANY_REFERENCE,))).union(
+            *(
+                component
+                for component in components
+                if any(graph.targets(key, (EdgeKind.MAPPING_KEY,)) & component for key in component)
+            )
         )
-
-    circular_roots = circular_keys(
-        graph.circular_components((EdgeKind.ANY_REFERENCE,)),
-        lambda key: key in graph.targets(key, (EdgeKind.ANY_REFERENCE,)),
-        lambda key: graph.targets(key, (EdgeKind.MAPPING_KEY,)),
+        if require_dict_key_edge
+        else frozenset(key for component in components for key in component)
     )
     recursion_facts = parser._recursion_facts  # noqa: SLF001
     parser._recursion_facts = RecursionFacts(  # noqa: SLF001
@@ -303,20 +296,12 @@ def set_circular_root_model_paths(
 
 def root_dict_key_references(model: DataModel) -> list[Reference]:
     """Return the model references that mapping-key annotations of ``model`` reach."""
-    references: list[Reference] = []
-    data_types = [field.data_type for field in model.fields]
-    seen_data_types: set[int] = set()
-    while data_types:
-        data_type = data_types.pop()
-        if id(data_type) in seen_data_types:  # pragma: no cover - parser-owned DataType graphs are trees
-            continue
-        seen_data_types.add(id(data_type))
-        if (dict_key := data_type.dict_key) is not None:
-            if dict_key.reference:
-                references.append(dict_key.reference)
-            data_types.append(dict_key)
-        data_types.extend(data_type.data_types)
-    return references
+    return [
+        reference
+        for field in model.fields
+        for data_type in field.data_type.all_data_types
+        if (dict_key := data_type.dict_key) is not None and (reference := dict_key.reference)
+    ]
 
 
 def record_emitting_modules(parser: PlansHost, run: StructuredRun[Any]) -> None:

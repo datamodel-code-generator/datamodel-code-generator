@@ -47,8 +47,6 @@ from datamodel_code_generator.parser._passes._shared import (
     RuntimeExpressionFlags,
     _context_models,
     _forward_enum_member_literals,
-    _get_data_type_target_full_name,
-    _get_model_module_name,
     _hidden_type_names,
     _is_pydantic_v2_root_model,
     _ModelPositions,
@@ -61,12 +59,12 @@ from datamodel_code_generator.parser._passes._shared import (
     module_members,
     normalize_default_value_constraints,
     resolve_default_value_descriptor,
-    set_reference_expression,
+    set_reference_expressions,
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.types import DataType, DefaultValueRecipe, _copy_data_type
+from datamodel_code_generator.types import DataType, _copy_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -231,8 +229,7 @@ def _contains_model_reference(data_type: DataType) -> bool:
 
 def _needs_validate_default(data_type: DataType) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances."""
-    resolved = _unwrap_type_alias(data_type)
-    return _contains_model_reference(resolved)
+    return _contains_model_reference(data_type)
 
 
 def _applies_default(field: DataModelFieldBase) -> bool:
@@ -251,11 +248,6 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     It reads the facts that are final at the end of the module loop: the required state, the default and the type.
     """
     return _applies_default(field) and _needs_validate_default(field.data_type)
-
-
-def _no_hidden_type_names(model: DataModel) -> Collection[str | None]:  # noqa: ARG001
-    """Report no hidden types, for annotations that a future import defers."""
-    return ()
 
 
 def _is_generic_class_container(data_type: DataType) -> bool:
@@ -460,15 +452,7 @@ def deserialize_default_value(
     annotation_import, descriptor = resolved
     if has_import_override(parser._import_overrides, annotation_import, descriptor.constructor_import):  # noqa: SLF001
         return False
-    match descriptor.recipe:
-        case DefaultValueRecipe.Decimal:
-            return deserialize_decimal_default(
-                parser,
-                model,
-                field,
-                descriptor,
-            )
-    return False  # pragma: no cover - future backend recipe
+    return deserialize_decimal_default(parser, model, field, descriptor)
 
 
 def deserialize_decimal_default(
@@ -504,10 +488,9 @@ def deserialize_decimal_default(
 def record_decimal_default_warning(parser: RenderPrepHost, model: DataModel, field: DataModelFieldBase) -> None:
     """Record a bounded example set without retaining every affected field."""
     parser._decimal_default_warning_count += 1  # noqa: SLF001
-    examples = parser._decimal_default_warning_examples  # noqa: SLF001
-    if examples is None:
-        parser._decimal_default_warning_examples = [f"{model.class_name}.{field.name or '<root>'}"]  # noqa: SLF001
-    elif len(examples) < _DECIMAL_WARNING_EXAMPLE_LIMIT:
+    if (examples := parser._decimal_default_warning_examples) is None:  # noqa: SLF001
+        examples = parser._decimal_default_warning_examples = []  # noqa: SLF001
+    if len(examples) < _DECIMAL_WARNING_EXAMPLE_LIMIT:
         examples.append(f"{model.class_name}.{field.name or '<root>'}")
 
 
@@ -624,18 +607,10 @@ def fix_constructor_field_ordering_of(
             field_adjustments,
             None,
         )
-        if first_adjustment is None:
-            if restored_inherited_state:
-                parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))  # noqa: SLF001
-            continue
-
-        _apply_constructor_field_adjustments(
-            parser._graph_builder,  # noqa: SLF001
-            model,
-            first_adjustment,
-            field_adjustments,
-        )
-        parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))  # noqa: SLF001
+        if first_adjustment is not None:
+            _apply_constructor_field_adjustments(parser._graph_builder, model, first_adjustment, field_adjustments)  # noqa: SLF001
+        if first_adjustment is not None or restored_inherited_state:
+            parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))  # noqa: SLF001
 
 
 def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
@@ -656,27 +631,20 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     if not inherited.inherited_conflicts:
         return []
     members = keyed_models(module_members(parser, ctx.models), "module members")
-    module_name = _get_model_module_name(model, copies.model_path_to_module_name)
     copied_fields: list[DataModelFieldBase] = []
     for field, declaring_model in inherited.inherited_conflicts:
         if id(declaring_model) not in written:
             continue
         copied = parser._copy_model_field(field)  # noqa: SLF001
-        for data_type in copied.data_type.all_data_types:
-            if (reference := data_type.reference) is None:
-                continue
-            set_reference_expression(
-                parser,
-                data_type,
-                module_name,
-                _get_data_type_target_full_name(data_type, reference, copies.model_path_to_module_name),
-                ctx.imports,
-                ctx.scoped_model_resolver,
-                same_module=members.key_of(reference) in members.models,
-                init=ctx.is_init,
-                internal_modules=copies.internal_modules,
-                producer=ImportProducer("inherited-keyword-only-copies", model),
-            )
+        set_reference_expressions(
+            parser,
+            ctx,
+            copies,
+            model,
+            copied.data_type.all_data_types,
+            members=members,
+            producer=ImportProducer("inherited-keyword-only-copies", model),
+        )
         copied_fields.append(copied)
     return copied_fields
 
@@ -1116,7 +1084,7 @@ def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[An
         ),
         graph_builder=parser._graph_builder,  # noqa: SLF001
         inlined_holders=parser.generation_store.index.inlined_holders_of,
-        hidden_type_names=_hidden_type_names if parser._quotes_hidden_types else _no_hidden_type_names,  # noqa: SLF001
+        hidden_type_names=_hidden_type_names if parser._quotes_hidden_types else lambda _: (),  # noqa: SLF001
         quotes_forward_enum_member_literals=parser._quotes_hidden_types,  # noqa: SLF001
         use_typing_generics=not python_target_meets(
             "python.builtin_generic_strings", parser.target_python_version.version_key
@@ -1180,7 +1148,7 @@ def finalize_rendered_nullability(parser: RenderPrepHost, state: _FinalizeState[
 
 def collect_all_models(state: _FinalizeState[Any]) -> None:
     """Take the models of every module, before unused models leave them."""
-    state.all_models = [model for ctx in state.contexts for model in ctx.models]
+    state.all_models = _context_models(state.contexts)
 
 
 def finalize_sequence_interface(state: _FinalizeState[Any]) -> None:
