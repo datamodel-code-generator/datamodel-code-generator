@@ -328,18 +328,6 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
         "reference-backend-import",
         "datamodel_code_generator.model.field_name.MsgspecFieldNameResolver",
     ): AllowlistEntry("Keep the lazy legacy default msgspec field-name resolver lookup"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "__getattr__",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.PydanticFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy reference.PydanticFieldNameResolver compatibility export"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "__getattr__",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.MsgspecFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy reference.MsgspecFieldNameResolver compatibility export"),
 }
 
 

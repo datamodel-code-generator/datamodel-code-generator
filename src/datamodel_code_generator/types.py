@@ -717,13 +717,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         cls = self.__class__
         model_fields = cls.model_fields
 
-        shallow_kwargs: dict[str, Any] = {}
-        for field_name in model_fields:
-            value = getattr(self, field_name)
-            if field_name in self._exclude_fields:
-                shallow_kwargs[field_name] = None
-            else:
-                shallow_kwargs[field_name] = value
+        shallow_kwargs: dict[str, Any] = {
+            field_name: None if field_name in self._exclude_fields else getattr(self, field_name)
+            for field_name in model_fields
+        }
 
         new_obj: DataType = cls.model_construct(**shallow_kwargs)
         memo[obj_id] = new_obj
@@ -883,7 +880,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             yield from data_type.all_imports
         yield from self.imports
 
-    def _conditional_imports(self) -> list[Import]:  # noqa: PLR0912
+    def _conditional_imports(self) -> list[Import]:
         """Return the imports the form of this data type writes, in the order they are emitted."""
         imports: list[Import] = []
         use_union_operator = self.use_union_operator
@@ -896,37 +893,15 @@ class DataType(_BaseModel):  # noqa: PLR0904
             imports.append(self._literal_import)
         if self.discriminator:
             imports.append(IMPORT_ANNOTATED)
-        if self.is_frozen_set and not use_standard_collections:
-            imports.append(IMPORT_FROZEN_SET)
-        if self.is_mapping:
-            imports.append(IMPORT_ABC_MAPPING if use_standard_collections else IMPORT_MAPPING)
-        if self.is_sequence:
-            imports.append(IMPORT_ABC_SEQUENCE if use_standard_collections else IMPORT_SEQUENCE)
-        if self.use_generic_container:
-            if use_standard_collections:
-                # frozenset is builtin, no import needed for is_set
-                if self.is_list:
-                    imports.append(IMPORT_ABC_SEQUENCE)
-                if self.is_dict:
-                    imports.append(IMPORT_ABC_MAPPING)
-            else:  # pragma: no cover
-                if self.is_list:
-                    imports.append(IMPORT_SEQUENCE)
-                if self.is_set:
-                    imports.append(IMPORT_FROZEN_SET)
-                if self.is_dict:
-                    imports.append(IMPORT_MAPPING)
-                if self.is_tuple:
-                    imports.append(IMPORT_TUPLE)
-        elif not use_standard_collections:
-            if self.is_list:
-                imports.append(IMPORT_LIST)
-            if self.is_set:
-                imports.append(IMPORT_SET)
-            if self.is_dict:
-                imports.append(IMPORT_DICT)
-            if self.is_tuple:
-                imports.append(IMPORT_TUPLE)
+        container_imports = _STANDARD_CONTAINER_IMPORTS if use_standard_collections else _TYPING_CONTAINER_IMPORTS
+        imports.extend(
+            import_
+            for container in _CONTAINER_IMPORT_ORDER
+            if (name := _container_name(self, container)) is not None
+            and (import_ := container_imports.get(name)) is not None
+        )
+        if self.is_tuple and not use_standard_collections:
+            imports.append(IMPORT_TUPLE)
         return imports
 
     @property
@@ -1179,12 +1154,16 @@ class DataType(_BaseModel):  # noqa: PLR0904
             own=self.is_optional,
             reference=self.adds_reference_null,
             member_nulls=(member._gives_member_null(core) for member in members)  # noqa: SLF001
-            if core.takes_member_null(
-                is_tuple=self.is_tuple,
-                keeps_member_order=self.preserve_union_member_order,
-                member_count=len(members),
-            )
+            if self._takes_member_null(core)
             else (),
+        )
+
+    def _takes_member_null(self, core: ModuleType) -> bool:
+        """Return whether the type, as a union, takes over the None of its members."""
+        return core.takes_member_null(
+            is_tuple=self.is_tuple,
+            keeps_member_order=self.preserve_union_member_order,
+            member_count=len(self.data_types),
         )
 
     def _hint_null_source(self) -> NullSource | None:
@@ -1199,11 +1178,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _iter_hint_member_nulls(self) -> Iterator[bool]:
         """Yield whether the union, as ``type_hint`` renders it, takes the None of its members."""
-        if not (self.alias or self.type) and _nullability_core().takes_member_null(
-            is_tuple=self.is_tuple,
-            keeps_member_order=self.preserve_union_member_order,
-            member_count=len(self.data_types),
-        ):
+        if not (self.alias or self.type) and self._takes_member_null(_nullability_core()):
             yield _merge_union_members(
                 self, tuple(type_expr_of(member, base=False) for member in self.data_types)
             ).takes_null
@@ -1375,6 +1350,18 @@ def _container_name(data_type: DataType, container: str) -> str | None:
     return name
 
 
+_CONTAINER_IMPORT_ORDER: Final = ("frozen_set", "mapping", "sequence", "list", "set", "dict")
+_TYPING_CONTAINER_IMPORTS: Final = {
+    FROZEN_SET: IMPORT_FROZEN_SET,
+    MAPPING: IMPORT_MAPPING,
+    SEQUENCE: IMPORT_SEQUENCE,
+    LIST: IMPORT_LIST,
+    SET: IMPORT_SET,
+    DICT: IMPORT_DICT,
+}
+_STANDARD_CONTAINER_IMPORTS: Final = {MAPPING: IMPORT_ABC_MAPPING, SEQUENCE: IMPORT_ABC_SEQUENCE}
+
+
 def type_expr_of(data_type: DataType, *, base: bool = False) -> TypeExpr:
     """Return the expression of the data type's type hint, or with ``base`` that of its ``base_type_hint``.
 
@@ -1471,10 +1458,10 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
         case "tuple":
             tuple_type = STANDARD_TUPLE if node.use_standard_collections else TUPLE
             if (count := node.tuple_item_count) is not None:
-                item = (render_type_expr(expr.args[0]) or ANY) if expr.args else ANY
-                text = f"{tuple_type}[{', '.join(repeat(item, count)) or '()'}]"
+                items: Iterable[str] = repeat((render_type_expr(expr.args[0]) or ANY) if expr.args else ANY, count)
             else:
-                text = f"{tuple_type}[{', '.join(render_type_expr(item) or ANY for item in expr.args) or '()'}]"
+                items = (render_type_expr(item) or ANY for item in expr.args)
+            text = f"{tuple_type}[{', '.join(items) or '()'}]"
         case "union":
             text, member_null = _render_union(node, expr.args, discriminated=not expr.base)
         case "single":
@@ -1658,7 +1645,6 @@ STRING_KEYWORDS: frozenset[str] = _applicability.STRING_KEYWORDS
 ARRAY_KEYWORDS: frozenset[str] = _applicability.ARRAY_KEYWORDS
 SEQUENCE_KEYWORDS: frozenset[str] = _applicability.SEQUENCE_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = _applicability.TYPE_DEPENDENT_KEYWORDS
-_NO_KEYWORDS: frozenset[str] = _applicability.NO_KEYWORDS
 _UNION_PATHS: frozenset[str] = frozenset({"typing.Union", "typing.Optional", UNION, OPTIONAL})
 _QUALIFIER_PATHS: frozenset[str] = frozenset({"typing.Annotated", "typing.Final", IMPORT_ANNOTATED.import_, "Final"})
 _LITERAL_VALUE_TYPE_PATHS: Mapping[type, str] = MappingProxyType({
@@ -2007,7 +1993,7 @@ class DataTypeManager(ABC):
         members = None
         if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
             if not cls.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
-                return _NO_KEYWORDS
+                return _applicability.NO_KEYWORDS
             members = tuple(
                 member
                 for member in python_type_expr_arguments(expression)
@@ -2038,7 +2024,7 @@ class DataTypeManager(ABC):
             and not cls.FIXED_TUPLES_TAKE_LENGTH
             and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
         ):
-            return _NO_KEYWORDS
+            return _applicability.NO_KEYWORDS
         return cls.type_constraint_keywords(
             path, target_version, number_values=number_values, target_model_version=target_model_version
         )
@@ -2054,7 +2040,7 @@ class DataTypeManager(ABC):
         a ``Literal`` takes none.
         """
         if not cls.LITERALS_TAKE_CONSTRAINTS:
-            return _NO_KEYWORDS
+            return _applicability.NO_KEYWORDS
         return _applicability.member_keywords(
             (
                 cls.type_constraint_keywords(value, target_version, number_values=number_values)
