@@ -15,10 +15,10 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator.deprecations import warn_deprecated
+from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
 DEFAULT_ENCODING = "utf-8"
-JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None

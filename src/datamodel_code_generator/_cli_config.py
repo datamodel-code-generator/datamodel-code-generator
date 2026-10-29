@@ -7,7 +7,7 @@ from enum import Enum
 from functools import lru_cache
 from keyword import iskeyword
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
@@ -38,7 +38,6 @@ else:
     ValidatorsConfigValue: TypeAlias = Mapping[str, Any]
 
 Config = cast("Any", object)
-ORIGINAL_FIELD_NAME_DELIMITER_ERROR = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
 
 _HttpKeyValuePair: TypeAlias = tuple[str, str]
 _HttpKeyValueInput: TypeAlias = str | _HttpKeyValuePair
@@ -306,24 +305,11 @@ def _get_config_class() -> type[Config]:
                 values["external_ref_mapping"] = mapping
             return values
 
-        __validate_custom_file_header_err: ClassVar[str] = (
-            "`--custom_file_header_path` can not be used with `--custom_file_header`."
-        )
-        __validate_keyword_only_err: ClassVar[str] = (
-            f"`--keyword-only` requires `--target-python-version` {PythonVersion.PY_310.value} or higher."
-        )
-
-        __validate_all_exports_collision_strategy_err: ClassVar[str] = (
-            "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
-        )
-
         @model_validator(mode="after")
         def validate_output_datetime_class(self: Self) -> Self:
             """Validate output datetime class compatibility."""
             _validate_output_datetime_class(self.output_model_type, self.output_datetime_class)
             return self
-
-        __validate_original_field_name_delimiter_err: ClassVar[str] = ORIGINAL_FIELD_NAME_DELIMITER_ERROR
 
         @model_validator(mode="after")
         def validate_alias_generator(self: Self) -> Self:
@@ -334,13 +320,15 @@ def _get_config_class() -> type[Config]:
         def validate_original_field_name_delimiter(self) -> None:
             """Validate original field name delimiter requires snake case after preset merging."""
             if self.original_field_name_delimiter is not None and not self.snake_case_field:
-                raise Error(self.__validate_original_field_name_delimiter_err)
+                msg = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
+                raise Error(msg)
 
         @model_validator(mode="after")
         def validate_custom_file_header(self: Self) -> Self:
             """Validate custom file header options are mutually exclusive."""
             if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                raise Error(self.__validate_custom_file_header_err)
+                msg = "`--custom_file_header_path` can not be used with `--custom_file_header`."
+                raise Error(msg)
             return self
 
         @model_validator(mode="after")
@@ -355,7 +343,10 @@ def _get_config_class() -> type[Config]:
                 and output_model_type == DataModelType.DataclassesDataclass
                 and not python_target_meets("python.kw_only_dataclass", python_target.version_key)
             ):
-                raise Error(self.__validate_keyword_only_err)  # pragma: no cover
+                msg = (  # pragma: no cover
+                    f"`--keyword-only` requires `--target-python-version` {PythonVersion.PY_310.value} or higher."
+                )
+                raise Error(msg)  # pragma: no cover
             return self
 
         @model_validator(mode="after")
@@ -369,7 +360,8 @@ def _get_config_class() -> type[Config]:
         def validate_all_exports_collision_strategy(self: Self) -> Self:
             """Validate all_exports_collision_strategy requires recursive scope."""
             if self.all_exports_collision_strategy is not None and self.all_exports_scope != AllExportsScope.Recursive:
-                raise Error(self.__validate_all_exports_collision_strategy_err)
+                msg = "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
+                raise Error(msg)
             return self
 
         @field_validator("input_model", mode="before")

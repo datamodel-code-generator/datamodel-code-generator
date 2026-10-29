@@ -55,10 +55,11 @@ def run_target(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator._api_generation import model_requirement, python_problem  # noqa: PLC0415
 
     implied = implied or {}
-    if config.preset is not None and (problem := python_problem(config, _kind(config))) is not None:
+    kind, selector = _target_side(config)
+    if config.preset is not None and (problem := python_problem(config, kind)) is not None:
         print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
         return _ERROR
-    if requirement := model_requirement(config.openapi_scopes, _selector(config)):
+    if requirement := model_requirement(config.openapi_scopes, selector):
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
         return _ERROR
     try:
@@ -101,7 +102,7 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     import shlex  # noqa: PLC0415
 
     options = dict(starmap(_implied_option, implied.items()))
-    lead = f"{_selector(config)} set the options it needs that you left unset; to set them yourself"
+    lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
         named = ("jobs", job) if job else ("profiles", profile) if (profile := namespace.profile) else ()
@@ -126,14 +127,9 @@ def _toml_key(key: str) -> str:
     return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else json.dumps(key)
 
 
-def _kind(config: Any) -> str:
-    """Return the kind of the run's target, as its messages name it."""
-    return "fastapi" if config.generate_client is None else "client"
-
-
-def _selector(config: Any) -> str:
-    """Return the option that selects the run's target."""
-    return "--generate-server" if config.generate_client is None else "--generate-client"
+def _target_side(config: Any) -> tuple[str, str]:
+    """Return the kind of the run's target, as its messages name it, and the option that selects it."""
+    return ("fastapi", "--generate-server") if config.generate_client is None else ("client", "--generate-client")
 
 
 def _run(  # noqa: PLR0913, PLR0917
@@ -173,34 +169,30 @@ def _run(  # noqa: PLR0913, PLR0917
         source = sys.stdin.read()
     implied_conflict(config, implied, generator)
     notice = _implied_notice(announced, args, config, namespace, pyproject_path, job)
-    if config.check:
-        planned = plan_target(source, model_config=effective, config=target, generator=generator, job=job)
-        if batch is not None:
-            _join(batch, job, planned, None)
-        project = planned.project
-        comparison = _compare_target(project, config.output, target.output, config.encoding)
+    if config.check or config.diff_against is not None:
+        if config.check:
+            kind = "check"
+            planned = plan_target(source, model_config=effective, config=target, generator=generator, job=job)
+            if batch is not None:
+                _join(batch, job, planned, None)
+            project = planned.project
+            comparison = _compare_target(project, config.output, target.output, config.encoding)
+        else:
+            kind = "input-diff"
+            effective = effective.model_copy(update={"input_filename": "<input>"})
+            with unmatched_model_name_keys_unreported():
+                baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
+            project = plan_target(
+                source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
+            ).project
+            comparison = _compare_target(
+                project, config.output, target.output, config.encoding, baseline=baseline.project
+            )
         _write_comparison_output(
             comparison,
             namespace.output_format,
+            kind=kind,
             target=_target_payload(namespace.output_format, target, project, implied),
-        )
-        _print_notice(notice)
-        return _DIFF if comparison.differences else _OK
-    if config.diff_against is not None:
-        effective = effective.model_copy(update={"input_filename": "<input>"})
-        with unmatched_model_name_keys_unreported():
-            baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
-        current = plan_target(
-            source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
-        )
-        comparison = _compare_target(
-            current.project, config.output, target.output, config.encoding, baseline=baseline.project
-        )
-        _write_comparison_output(
-            comparison,
-            namespace.output_format,
-            kind="input-diff",
-            target=_target_payload(namespace.output_format, target, current.project, implied),
         )
         _print_notice(notice)
         return _DIFF if comparison.differences else _OK

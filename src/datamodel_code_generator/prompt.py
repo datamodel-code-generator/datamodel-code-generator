@@ -15,11 +15,13 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from datamodel_code_generator.cli_options import CLI_OPTION_META, MANUAL_DOCS, OptionCategory
+from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory
+from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
     from argparse import Namespace
+    from collections.abc import Iterator
 
 # Options to exclude from prompt output
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
@@ -38,7 +40,6 @@ PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
 })
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 
 PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -143,10 +144,21 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-class CurrentOptionPayload(BaseModel):
-    """Machine-readable metadata for a CLI option currently set by the caller."""
+class _Payload(BaseModel):
+    """A structured JSON payload of the CLI, which allows no key its model lacks."""
 
     model_config = ConfigDict(extra="forbid")
+
+
+class _Envelope(_Payload):
+    """A structured JSON output, whose first keys are its version and format."""
+
+    version: Literal[1]
+    format: Literal["json"]
+
+
+class CurrentOptionPayload(_Payload):
+    """Machine-readable metadata for a CLI option currently set by the caller."""
 
     name: str
     dest: str
@@ -154,10 +166,8 @@ class CurrentOptionPayload(BaseModel):
     flags: list[str]
 
 
-class OptionMetadataPayload(BaseModel):
+class OptionMetadataPayload(_Payload):
     """Machine-readable metadata for one argparse option."""
-
-    model_config = ConfigDict(extra="forbid")
 
     name: str
     flags: list[str]
@@ -175,13 +185,9 @@ class OptionMetadataPayload(BaseModel):
     deprecated_message: str | None
 
 
-class PromptPayload(BaseModel):
+class PromptPayload(_Envelope):
     """Structured JSON payload emitted by --generate-prompt --output-format json."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["prompt"]
     question: str
     current_options: list[CurrentOptionPayload]
@@ -198,18 +204,6 @@ class PromptPayload(BaseModel):
     )
 
 
-def _prompt_payload_json_schema() -> dict[str, Any]:
-    """Return the JSON Schema for structured prompt output.
-
-    The payload has no serializers, so it validates as it serializes; validation mode keeps a key the payload may leave
-    out optional on every Pydantic 2 release, which serialization mode marks required before Pydantic 2.4.
-    """
-    return {
-        "$schema": JSON_SCHEMA_DRAFT_2020_12,
-        **PromptPayload.model_json_schema(mode="validation"),
-    }
-
-
 def _dump_json(value: Any) -> str:
     """Serialize a JSON-compatible value with stable formatting."""
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
@@ -222,8 +216,12 @@ def _dump_payload(payload: PromptPayload) -> str:
 
 
 def generate_prompt_json_schema() -> str:
-    """Generate the JSON Schema for --generate-prompt --output-format json."""
-    return _dump_json(_prompt_payload_json_schema())
+    """Generate the JSON Schema for --generate-prompt --output-format json.
+
+    The payload has no serializers, so it validates as it serializes; validation mode keeps a key the payload may leave
+    out optional on every Pydantic 2 release, which serialization mode marks required before Pydantic 2.4.
+    """
+    return _dump_json({"$schema": JSON_SCHEMA_DRAFT_2020_12, **PromptPayload.model_json_schema(mode="validation")})
 
 
 def _serialize_value(value: Any) -> Any:
@@ -290,36 +288,27 @@ def _format_current_option(key: str, value: Any, action: Action | None) -> str |
     return f"{option} {value}"
 
 
+def _current_options(args: Namespace, parser: ArgumentParser | None) -> Iterator[tuple[str, Any, Action | None, str]]:
+    """Yield the key, value, argparse action and shell-like line of each CLI option currently set."""
+    actions = _actions_by_dest(parser)
+    for key, value in sorted(vars(args).items()):
+        if value is None or key in PROMPT_EXCLUDED_OPTIONS:
+            continue
+        action = actions.get(key)
+        if line := _format_current_option(key, value, action):
+            yield key, value, action, line
+
+
 def _format_current_options(args: Namespace, parser: ArgumentParser | None = None) -> str:
     """Format currently set CLI options."""
-    lines: list[str] = []
-    args_dict = vars(args)
-    actions = _actions_by_dest(parser)
-
-    for key, value in sorted(args_dict.items()):
-        if value is None:
-            continue
-        if key in PROMPT_EXCLUDED_OPTIONS:
-            continue
-
-        if line := _format_current_option(key, value, actions.get(key)):
-            lines.append(line)
-
-    return "\n".join(lines) if lines else "(No options specified)"
+    return "\n".join(line for *_, line in _current_options(args, parser)) or "(No options specified)"
 
 
 def _current_options_metadata(args: Namespace, parser: ArgumentParser) -> list[CurrentOptionPayload]:
     """Return machine-readable metadata for currently set CLI options."""
     current_options: list[CurrentOptionPayload] = []
-    actions = _actions_by_dest(parser)
-
-    for key, value in sorted(vars(args).items()):
-        if value is None or key in PROMPT_EXCLUDED_OPTIONS:
-            continue
-        action = actions.get(key)
-        if not (name := _format_current_option(key, value, action)):
-            continue
-        option_name = _canonical_option(action) if action else name.split(maxsplit=1)[0]
+    for key, value, action, line in _current_options(args, parser):
+        option_name = _canonical_option(action) if action else line.split(maxsplit=1)[0]
         current_options.append(
             CurrentOptionPayload(
                 name=option_name,
@@ -330,16 +319,6 @@ def _current_options_metadata(args: Namespace, parser: ArgumentParser) -> list[C
         )
 
     return current_options
-
-
-def _option_category(action: Action) -> OptionCategory:
-    """Resolve an argparse action to a documentation category."""
-    for option in action.option_strings:
-        if meta := CLI_OPTION_META.get(option):
-            return meta.category
-        if option in MANUAL_DOCS:
-            return OptionCategory.GENERAL
-    return OptionCategory.GENERAL
 
 
 def _option_description(action: Action, name: str) -> str:
@@ -378,7 +357,7 @@ def _option_metadata(action: Action) -> OptionMetadataPayload:
         name=name,
         flags=list(action.option_strings),
         dest=action.dest,
-        category=_option_category(action).value,
+        category=(meta.category if meta else OptionCategory.GENERAL).value,
         description=_option_description(action, name),
         choices=choices,
         nargs=_serialize_value(action.nargs),
@@ -446,14 +425,14 @@ def _format_guidance_sections() -> str:
 
 
 def _generate_prompt_json(
-    args: Namespace, help_text: str, parser: ArgumentParser, recommendation: dict[str, Any] | None
+    args: Namespace, question: str, help_text: str, parser: ArgumentParser, recommendation: dict[str, Any] | None
 ) -> str:
     """Generate a machine-readable LLM consultation payload."""
     payload = PromptPayload(
         version=1,
         format="json",
         kind="prompt",
-        question=getattr(args, "generate_prompt", "") or "",
+        question=question,
         current_options=_current_options_metadata(args, parser),
         current_options_text=_format_current_options(args, parser),
         options_by_category=_options_by_category_metadata(parser),
@@ -509,8 +488,9 @@ def generate_prompt(
 
         parser = arg_parser
 
+    question = getattr(args, "generate_prompt", "") or ""
     if getattr(args, "output_format", None) == "json":
-        return _generate_prompt_json(args, help_text, parser, recommendation)
+        return _generate_prompt_json(args, question, help_text, parser, recommendation)
 
     lines: list[str] = []
 
@@ -518,7 +498,6 @@ def generate_prompt(
     lines.extend(("# datamodel-code-generator CLI Options Consultation", ""))
 
     # User's question (if provided)
-    question = getattr(args, "generate_prompt", "") or ""
     if question:
         lines.extend(("## Your Question", "", question, ""))
 
