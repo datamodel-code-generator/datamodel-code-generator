@@ -1,10 +1,6 @@
 name: Release Benchmarks
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - docs/data/release-benchmarks.json
   pull_request:
     types: [labeled]
   workflow_run:

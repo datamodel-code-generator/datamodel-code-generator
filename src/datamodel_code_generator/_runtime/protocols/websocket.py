@@ -15,7 +15,6 @@ import threading
 import time
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
-from enum import Enum
 from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
@@ -50,6 +49,7 @@ from .errors import (
     configuration_error,
 )
 from .options import HelperLimits, WSOptions, checked_options, layered, new_session
+from .records import SessionState
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Mapping
@@ -249,13 +249,6 @@ def _reason(value: str) -> str:
     return value.encode("utf-8")[:MAX_CLOSE_REASON].decode("utf-8", "ignore")
 
 
-class _State(Enum):
-    OPEN = "open"
-    ENDED = "ended"
-    FAILED = "failed"
-    CLOSED = "closed"
-
-
 class _Sockets(Generic[SendT, RecvT]):
     """What the synchronous and asyncio sessions share: the plan, the limits, the state, and the message codecs."""
 
@@ -291,7 +284,7 @@ class _Sockets(Generic[SendT, RecvT]):
         self._prefix = MAX_RAW_PREFIX if (size := limits.max_message_bytes) is None else min(size, MAX_RAW_PREFIX)
         self._lock = threading.Lock()
         self._receiving = threading.Lock()
-        self._state = _State.OPEN
+        self._state = SessionState.OPEN
         self._closed: tuple[int | None, str, bool] = (None, "", False)
         self._sent = 0
         self._received = 0
@@ -331,13 +324,6 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
         return self._stamped(APIConnectionError(cause=error))
 
-    def _halted(self) -> Exception | None:
-        """Return the session deadline's failure once it passed, or None."""
-        return self._call.expired()
-
-    def _checked(self) -> None:
-        self._call.check()
-
     def _state_error(self, action: str) -> ConfigurationError:
         return self._stamped(configuration_error(self._plan.helper_id, (action, self._state.value), "invalid_state"))
 
@@ -351,9 +337,9 @@ class _Sockets(Generic[SendT, RecvT]):
 
     def _usable(self, action: str) -> None:
         """Refuse an action once the session ended: the server's closure again, else the state it ended in."""
-        if (state := self._state) is _State.OPEN:
+        if (state := self._state) is SessionState.OPEN:
             return
-        if state is _State.ENDED:
+        if state is SessionState.ENDED:
             raise self._close_error()
         raise self._state_error(action)
 
@@ -369,12 +355,12 @@ class _Sockets(Generic[SendT, RecvT]):
 
     def _closed_here(self) -> bool:
         """Return whether this session's own close ended it, which a wait in progress learns only afterwards."""
-        return self._state is _State.CLOSED
+        return self._state is SessionState.CLOSED
 
-    def _ending(self, state: _State) -> bool:
+    def _ending(self, state: SessionState) -> bool:
         """Leave the open state for an end once; return whether this call ended it."""
         with self._lock:
-            if self._state is not _State.OPEN:
+            if self._state is not SessionState.OPEN:
                 return False
             self._state = state
             return True
@@ -458,20 +444,20 @@ class _Sockets(Generic[SendT, RecvT]):
         A wait without a timeout of its own ended at the deadline: by the client's clock, or by the real time it
         measured when it began when that clock lags behind.
         """
-        if (halt := self._halted()) is not None:
+        if (halt := self._call.expired()) is not None:
             return halt
         if timeout is None and self._call.deadline is not None:
             return self._stamped(APITimeoutError(reason="deadline_exceeded"))
         return self._stamped(APITimeoutError(reason="phase_timeout"))
 
-    def _ended_as(self, error: Exception) -> tuple[_State, int, str, BaseException | None]:
+    def _ended_as(self, error: Exception) -> tuple[SessionState, int, str, BaseException | None]:
         """Return how a failure or a received closure ends the session: its state, close code and reason, and error.
 
         The server's closure is answered with its code and reason, and only one that was not normal is a failure.
         """
         if isinstance(error, WebSocketClosedError):
-            return _State.ENDED, error.code or _NORMAL, error.reason, None if error.clean else error
-        return _State.FAILED, self._close_code(error), "", error
+            return SessionState.ENDED, error.code or _NORMAL, error.reason, None if error.clean else error
+        return SessionState.FAILED, self._close_code(error), "", error
 
     def _undelivered(self, error: Exception) -> APIConnectionError:
         """Return how a send in progress ended: a message that may have gone is undelivered and never sent again."""
@@ -600,7 +586,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         """Send one whole message; a message that may have gone is final."""
         data = self._payload(value)
         self._usable("send")
-        self._checked()
+        self._call.check()
         try:
             if isinstance(data, str):
                 self._native.send_text(data)
@@ -620,7 +606,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             self._receiving.release()
 
     def _receive(self) -> Message[RecvT]:
-        self._checked()
+        self._call.check()
         native = self._native
         try:
             event = native.receive(self._wait(self._limits.idle_timeout))
@@ -643,7 +629,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         """
         self._checked_ping(payload)
         self._usable("ping")
-        self._checked()
+        self._call.check()
         started = time.monotonic()
         try:
             pong = self._native.ping(payload)
@@ -657,7 +643,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
     def close(self, code: int = 1000, reason: str = "") -> None:
         """Close with a code and a reason; closing again does nothing."""
         self._checked_close(code, reason)
-        if self._ending(_State.CLOSED):
+        if self._ending(SessionState.CLOSED):
             try:
                 self._shut(code, reason)
             finally:
@@ -772,7 +758,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         """Send one whole message; a message that may have gone is final."""
         data = self._payload(value)
         self._usable("send")
-        self._checked()
+        self._call.check()
         try:
             await (self._native.send_text(data) if isinstance(data, str) else self._native.send_bytes(data))
         except Exception as error:  # noqa: BLE001
@@ -792,7 +778,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             self._receiving.release()
 
     async def _receive(self) -> Message[RecvT]:
-        self._checked()
+        self._call.check()
         native = self._native
         try:
             event = await native.receive(self._wait(self._limits.idle_timeout))
@@ -812,7 +798,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         """Send a ping, beside any send, and wait at most the pong timeout for its pong."""
         self._checked_ping(payload)
         self._usable("ping")
-        self._checked()
+        self._call.check()
         started = time.monotonic()
         try:
             pong = await self._native.ping(payload)
@@ -831,7 +817,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     async def aclose(self, code: int = 1000, reason: str = "") -> None:
         """Close with a code and a reason; closing again does nothing."""
         self._checked_close(code, reason)
-        if self._ending(_State.CLOSED):
+        if self._ending(SessionState.CLOSED):
             try:
                 await self._shut(code, reason)
             finally:

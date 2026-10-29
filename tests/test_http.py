@@ -1913,7 +1913,7 @@ def test_generate_atomic_remote_update_omits_absent_generated_artifacts(
     output_path = tmp_path / "output.py"
     metadata_path = tmp_path / "metadata.json"
     lockfile = tmp_path / "remote.lock"
-    mocker.patch("datamodel_code_generator._generate", return_value=None)
+    mocker.patch("datamodel_code_generator._run_generation", return_value=None)
 
     generate(
         JSON_SCHEMA_DATA_PATH / "person.json",

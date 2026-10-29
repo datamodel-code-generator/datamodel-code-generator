@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
     GeneratedEnumMember,
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
         TypeView,
     )
 
-__all__ = ("ALIASES", "WRAPPERS", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ALIASES", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 JSONTypes: TypeAlias = frozenset[str] | None
@@ -87,7 +88,6 @@ _EXTRAS: Final = "__pydantic_extra__"
 _WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
-WRAPPERS: Final = frozenset({"alias", "root"})
 ALIASES: Final = frozenset({"alias"})
 
 
@@ -204,7 +204,7 @@ class ModelFacts:
         )
 
     def argument(
-        self, value: TypeView, kinds: frozenset[str] = WRAPPERS, seen: frozenset[SymbolId] = frozenset()
+        self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()
     ) -> TypeView:
         """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
         match value:
@@ -296,7 +296,7 @@ class ModelFacts:
             case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
                 types = frozenset(symbol.value_types)
             case GeneratedSymbolType() if (
-                self.symbols[value.symbol].kind in WRAPPERS
+                self.symbols[value.symbol].kind in WRAPPER_KINDS
                 and value.symbol not in seen
                 and (root := self.root(value.symbol)) is not None
             ):

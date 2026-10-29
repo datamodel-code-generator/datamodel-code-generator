@@ -33,6 +33,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BackendFieldFacts,
     BackendModelFacts,
     BackendSetting,
@@ -242,7 +243,6 @@ _CONTAINERS: Final = {
     "dict": "is_dict",
 }
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
-_WRAPPED: Final = frozenset({"alias", "root"})
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
     **dict.fromkeys(_CONTAINERS.values(), False),
@@ -1570,7 +1570,7 @@ class _Projector:
         if (
             self.inline
             and symbol not in self.inlined
-            and binder.policies[id(model := binder.models[symbol])].kind in _WRAPPED
+            and binder.policies[id(model := binder.models[symbol])].kind in WRAPPER_KINDS
             and (root := binder.root(model)) is not None
         ):
             self.inlined.add(symbol)

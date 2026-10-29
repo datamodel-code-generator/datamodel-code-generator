@@ -18,7 +18,7 @@ from ..client.errors import is_sequence
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
-from .values import MISSING, resolve
+from .values import resolve, unfit
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
@@ -116,13 +116,7 @@ class MappedEventDecoder(Generic[T_co]):
         name = resolve(_parsed(raw_body, helper_id), self._location.pointer)
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
             return decoder.decode(raw_body, helper_id)
-        condition: Literal["missing", "null", "type", "value"] = "type"
-        if isinstance(name, str):
-            condition = "value"
-        elif name is MISSING:
-            condition = "missing"
-        elif name is None:
-            condition = "null"
+        condition = "value" if isinstance(name, str) else unfit(name)
         raise ProtocolDataError(reason=condition, location=self._location, helper_id=helper_id)
 
 

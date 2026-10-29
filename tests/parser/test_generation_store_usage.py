@@ -1276,16 +1276,16 @@ def test_checked_scopes_follow_the_source_layout(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "assignment",
     [
-        pytest.param('GENERATION_STORE_MUTATION_METHODS = {"set_fields"}', id="set"),
-        pytest.param("GENERATION_STORE_MUTATION_METHODS = frozenset(NAMES)", id="not-literal"),
-        pytest.param("GENERATION_STORE_MUTATION_METHODS = frozenset({1})", id="not-strings"),
-        pytest.param("OTHER = frozenset()", id="missing"),
+        pytest.param('SITE_EFFECTS = {"set_fields": "copied"}\nNO_SITE_EFFECT = {"rename_field"}', id="literals"),
+        pytest.param("SITE_EFFECTS = MappingProxyType(EFFECTS)\nNO_SITE_EFFECT = frozenset()", id="not-literal"),
+        pytest.param("SITE_EFFECTS = {}\nNO_SITE_EFFECT = frozenset({1})", id="not-strings"),
+        pytest.param("SITE_EFFECTS = {}", id="missing"),
     ],
 )
 def test_store_api_list_must_be_literal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, assignment: str, request: pytest.FixtureRequest
 ) -> None:
-    """The checker reads the store mutation API as a literal set of names."""
+    """The checker reads the store mutation API as the names of two literal tables."""
     checker = _load_checker()
     store_module = tmp_path / checker.GENERATION_STORE_MODULE
     store_module.parent.mkdir(parents=True)
@@ -1300,9 +1300,9 @@ def test_store_api_list_must_be_literal(
     assert (
         outcome
         == snapshot({
-            "set": "['set_fields']",
-            "not-literal": "TypeError: GENERATION_STORE_MUTATION_METHODS must be a literal frozenset of strings",
-            "not-strings": "TypeError: GENERATION_STORE_MUTATION_METHODS must contain only literal strings",
-            "missing": "RuntimeError: GENERATION_STORE_MUTATION_METHODS was not found",
+            "literals": "['rename_field', 'set_fields']",
+            "not-literal": "TypeError: SITE_EFFECTS must be a literal set or dict of strings",
+            "not-strings": "TypeError: NO_SITE_EFFECT must contain only literal strings",
+            "missing": "RuntimeError: NO_SITE_EFFECT was not found",
         })[request.node.callspec.id]
     )
