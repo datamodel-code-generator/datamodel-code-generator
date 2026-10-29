@@ -55,7 +55,7 @@ from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
     import inflect
@@ -74,6 +74,17 @@ ModelKey = _model_keys.ModelKey
 """The identity of the model a `Reference` names (defined in a leaf module that every layer can import)."""
 model_key_of = _model_keys.model_key_of
 _MODEL_KEYS: Final = count()
+
+
+def _wire_name(field: model_base.DataModelFieldBase) -> str | None:
+    return field.alias if field.alias is not None else field.original_name
+
+
+def _count_reference_names(references: Iterable[Reference]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for reference in references:
+        counts[reference.name] = counts.get(reference.name, 0) + 1
+    return counts
 
 
 def split_module_name(
@@ -417,7 +428,7 @@ class FieldNameResolver:
         """Retain selected explicit aliases until all emitted field names are finalized."""
         aliases = self.aliases
         for field in fields:
-            if (original_name := field.alias if field.alias is not None else field.original_name) is None:
+            if (original_name := _wire_name(field)) is None:
                 continue
             class_name = field.__dict__.get(_ALIAS_RESOLUTION_CLASS_NAME_KEY, reference.original_name)
             if isinstance(alias := first_given(aliases, field_keys(class_name, original_name)), str):
@@ -447,11 +458,11 @@ class FieldNameResolver:
             name = cast("str", field.name)
             if final:
                 name = nfkc(name, target_python_version)
-            original_name = field.alias if field.alias is not None else field.original_name
+            original_name = _wire_name(field)
             explicit = _EXPLICIT_FIELD_ALIAS_KEY in field.__dict__
             if (
                 (previous := names.get(name)) is not None
-                and (previous.alias if previous.alias is not None else previous.original_name) != original_name
+                and _wire_name(previous) != original_name
                 and (explicit or _EXPLICIT_FIELD_ALIAS_KEY in previous.__dict__)
             ):
                 conflict = field if explicit else previous
@@ -684,31 +695,23 @@ def _default_field_name_resolver_class(model_type: ModelType) -> type[FieldNameR
     return resolver_class
 
 
+_LAZY_EXPORTS: Final = ("PydanticFieldNameResolver", "MsgspecFieldNameResolver", "DEFAULT_FIELD_NAME_RESOLVERS")
+
+
 def __getattr__(name: str) -> Any:
     """Lazily preserve legacy resolver imports without owning output policy."""
     match name:
         case "PydanticFieldNameResolver":
-            from datamodel_code_generator.model.field_name import (  # noqa: PLC0415
-                PydanticFieldNameResolver,
-            )
-
-            value = PydanticFieldNameResolver
+            value = _default_field_name_resolver_class(ModelType.PYDANTIC)
         case "MsgspecFieldNameResolver":
-            from datamodel_code_generator.model.field_name import MsgspecFieldNameResolver  # noqa: PLC0415
-
-            value = MsgspecFieldNameResolver
+            value = _default_field_name_resolver_class(ModelType.MSGSPEC)
         case "DEFAULT_FIELD_NAME_RESOLVERS":
             value = {
                 model_type: _default_field_name_resolver_class(model_type)
                 for model_type in _FIELD_NAME_RESOLVER_MODEL_TYPES
             }
         case "__all__":
-            value = (
-                *(public_name for public_name in globals() if not public_name.startswith("_")),
-                "PydanticFieldNameResolver",
-                "MsgspecFieldNameResolver",
-                "DEFAULT_FIELD_NAME_RESOLVERS",
-            )
+            value = (*(public_name for public_name in globals() if not public_name.startswith("_")), *_LAZY_EXPORTS)
         case _:
             msg = f"module {__name__!r} has no attribute {name!r}"
             raise AttributeError(msg)
@@ -718,7 +721,7 @@ def __getattr__(name: str) -> Any:
 
 def __dir__() -> list[str]:
     """Include lazily preserved exports in module discovery."""
-    return sorted((*globals(), "PydanticFieldNameResolver", "MsgspecFieldNameResolver", "DEFAULT_FIELD_NAME_RESOLVERS"))
+    return sorted((*globals(), *_LAZY_EXPORTS))
 
 
 class _FieldNameResolverOptions(NamedTuple):
@@ -775,16 +778,10 @@ class _FieldNameResolvers:
         is_enum = model_type is ModelType.ENUM
         options = self._options
         resolver = resolver_class(
-            aliases=options.aliases,
-            snake_case_field=options.snake_case_field,
-            empty_field_name=options.empty_field_name,
-            original_delimiter=options.original_delimiter,
-            special_field_name_prefix=options.special_field_name_prefix,
-            remove_special_field_name_prefix=options.remove_special_field_name_prefix,
-            capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
-            no_alias=options.no_alias,
-            use_subclass_enum=options.use_subclass_enum if is_enum else False,
-            target_python_version=options.target_python_version,
+            **options._replace(
+                capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
+                use_subclass_enum=options.use_subclass_enum if is_enum else False,
+            )._asdict()
         )
         self._resolved[model_type] = resolver
         return resolver
@@ -1032,10 +1029,9 @@ class ModelResolver:  # noqa: PLR0904
         if "field_name_resolvers" in instance_state:
             instance_state["_field_name_resolvers"] = instance_state.pop("field_name_resolvers")
         if type(instance_state.get("_reference_names_cache")) is not dict:
-            reference_names: dict[str, int] = {}
-            for reference in instance_state.get("references", {}).values():
-                reference_names[reference.name] = reference_names.get(reference.name, 0) + 1
-            instance_state["_reference_names_cache"] = reference_names
+            instance_state["_reference_names_cache"] = _count_reference_names(
+                instance_state.get("references", {}).values()
+            )
         self.__dict__.update(instance_state)
         self.__dict__.setdefault("_resolved_base_path_cache", None)
         self.__dict__.setdefault("_yielding_names", {})
@@ -1108,7 +1104,7 @@ class ModelResolver:  # noqa: PLR0904
         """Return why ``--model-name-map`` cannot give ``mapped_name`` to a model generated as ``generated_name``."""
         if (
             mapped_name != reserved_name
-            and mapped_name in self._get_reference_names()
+            and mapped_name in self._reference_names_cache
             and mapped_name not in self._yielding_names
         ):
             return "already used"
@@ -1250,10 +1246,6 @@ class ModelResolver:  # noqa: PLR0904
         self._reference_names_cache[new_name] = 1
         self._yielding_names[new_name] = entry
 
-    def _get_reference_names(self) -> dict[str, int]:
-        """Get the counts of all reference names for uniqueness checking."""
-        return self._reference_names_cache
-
     def _update_reference_name(self, old_name: str | None, new_name: str, *, unique: bool = True) -> None:
         """Update the reference names cache when a reference name changes."""
         if old_name == new_name:
@@ -1275,10 +1267,7 @@ class ModelResolver:  # noqa: PLR0904
 
     def refresh_reference_names(self) -> None:
         """Refresh cached names after a batch reference rename."""
-        reference_names: dict[str, int] = {}
-        for reference in self.references.values():
-            reference_names[reference.name] = reference_names.get(reference.name, 0) + 1
-        self._reference_names_cache = reference_names
+        self._reference_names_cache = _count_reference_names(self.references.values())
         self._unique_name_start_hints.clear()
         self._yielding_name_start_hints.clear()
 
@@ -1328,6 +1317,10 @@ class ModelResolver:  # noqa: PLR0904
     def current_root(self) -> Sequence[str]:
         """Return the current root path components."""
         return self._current_root
+
+    @property
+    def _current_root_id(self) -> str:
+        return "/".join(self.current_root)
 
     def set_current_root(self, current_root: Sequence[str]) -> None:
         """Set the current root path components."""
@@ -1387,16 +1380,16 @@ class ModelResolver:  # noqa: PLR0904
 
     def add_id(self, id_: str, path: Sequence[str]) -> None:
         """Register an identifier mapping to a resolved reference path."""
-        self.ids["/".join(self.current_root)][id_] = self.resolve_ref(path)
+        self.ids[self._current_root_id][id_] = self.resolve_ref(path)
 
     def _get_path_absolute_local_file(self, ref: str) -> tuple[Path, str] | None:
         """Return the local file path for a path-absolute URI ref."""
         if not (self.root_id and self.current_base_path and self.current_root and ref.startswith("/")):
             return None
 
-        file_path, fragment = ref.split("#", 1) if "#" in ref else (ref, "")
+        file_path, fragment = ref.partition("#")[::2]
         root_path = urlparse(self.root_id).path
-        current_root = "/".join(self.current_root)
+        current_root = self._current_root_id
         if not (root_path and current_root and root_path.endswith(f"/{current_root}")):
             return None
 
@@ -1438,7 +1431,7 @@ class ModelResolver:  # noqa: PLR0904
         """Resolve a reference path to its canonical form."""
         joined_path = path if isinstance(path, str) else self.join_path(tuple(path))
         if not joined_path or joined_path == "#":
-            return f"{'/'.join(self.current_root)}#"
+            return f"{self._current_root_id}#"
         if path_absolute_ref := self._resolve_path_absolute_local_ref(joined_path):
             joined_path = path_absolute_ref
         if (
@@ -1448,7 +1441,7 @@ class ModelResolver:  # noqa: PLR0904
             and not is_url(joined_path)
         ):
             # resolve local file path
-            file_path, fragment = joined_path.split("#", 1) if "#" in joined_path else (joined_path, "")
+            file_path, fragment = joined_path.partition("#")[::2]
             cache_key = current_base_path, file_path
             if (resolved_file_part := self._resolved_local_file_parts.get(cache_key)) is None:
                 local_file_path = Path(current_base_path, file_path)
@@ -1471,7 +1464,7 @@ class ModelResolver:  # noqa: PLR0904
             ):
                 return anchor_ref
         if ID_PATTERN.match(joined_path) and SPECIAL_PATH_MARKER not in joined_path:
-            id_scope = "/".join(self.current_root)
+            id_scope = self._current_root_id
             scoped_ids = self.ids[id_scope]
             ref: str | None = scoped_ids.get(joined_path)
             if ref is None:
@@ -1485,7 +1478,7 @@ class ModelResolver:  # noqa: PLR0904
             if "#" not in joined_path:
                 joined_path += "#"
             elif joined_path[0] == "#" and self.current_root:
-                joined_path = f"{'/'.join(self.current_root)}{joined_path}"
+                joined_path = f"{self._current_root_id}{joined_path}"
 
             file_path, fragment = joined_path.split("#", 1)
             ref = f"{file_path}#{fragment}"
@@ -1499,12 +1492,12 @@ class ModelResolver:  # noqa: PLR0904
 
         if is_url(ref):
             file_part, path_part = ref.split("#", 1)
-            id_scope = "/".join(self.current_root)
+            id_scope = self._current_root_id
             scoped_ids = self.ids[id_scope]
             if file_part in scoped_ids:
                 mapped_ref = scoped_ids[file_part]
                 if path_part:
-                    mapped_base, mapped_fragment = mapped_ref.split("#", 1) if "#" in mapped_ref else (mapped_ref, "")
+                    mapped_base, mapped_fragment = mapped_ref.partition("#")[::2]
                     combined_fragment = f"{mapped_fragment.rstrip('/')}/{path_part.lstrip('/')}"
                     return f"{mapped_base}#{combined_fragment}"
                 return mapped_ref
@@ -1526,7 +1519,7 @@ class ModelResolver:  # noqa: PLR0904
         if is_url(ref):
             file_part, path_part = ref.split("#", 1)
             if file_part == self.root_id:  # pragma: no cover
-                return f"{'/'.join(self.current_root)}#{path_part}"
+                return f"{self._current_root_id}#{path_part}"
             target_url: ParseResult = urlparse(file_part)
             if not (self.root_id and self.current_base_path):
                 return ref
@@ -1601,10 +1594,7 @@ class ModelResolver:  # noqa: PLR0904
         # For PrimaryFirst strategy, use unique=True for external references
         # so that definitions in the main input file get priority for clean names
         use_unique = self.naming_strategy == NamingStrategy.PrimaryFirst and self._is_external_path(path)
-        has_affix_config = bool(self.class_name_prefix or self.class_name_suffix)
-        needs_scope = self.class_name_affix_scope != ClassNameAffixScope.All
-        skip_affix = has_affix_config and needs_scope
-        generate = partial(self.get_class_name, original_name, unique=use_unique, skip_affix=skip_affix)
+        generate = partial(self.get_class_name, original_name, unique=use_unique, skip_affix=self._affix_needs_scope)
         name = self._apply_model_name_map(path, original_name, generate(), regenerate=generate).name
         if self._yielding_names:
             self._evict_yielding_reference(name)
@@ -1647,6 +1637,12 @@ class ModelResolver:  # noqa: PLR0904
                 return parent_reference
             parent_path = parent_path[:-1]
         return None
+
+    @property
+    def _affix_needs_scope(self) -> bool:
+        return bool(self.class_name_prefix or self.class_name_suffix) and (
+            self.class_name_affix_scope != ClassNameAffixScope.All
+        )
 
     def _check_parent_scope_option(self, name: str, path: Sequence[str]) -> str:
         # Check for parent-prefixed naming via either the legacy flag or the new naming strategy
@@ -1713,7 +1709,7 @@ class ModelResolver:  # noqa: PLR0904
                     self._update_reference_name(old_name, new_name)
                     break
 
-    def add(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
+    def add(  # noqa: PLR0912, PLR0913, PLR0915
         self,
         path: Sequence[str],
         original_name: str,
@@ -1741,9 +1737,7 @@ class ModelResolver:  # noqa: PLR0904
             was_already_loaded = reference.loaded
             if loaded and not reference.loaded:
                 reference.loaded = True
-            has_affix_config = bool(self.class_name_prefix or self.class_name_suffix)
-            needs_scope = self.class_name_affix_scope != ClassNameAffixScope.All
-            needs_reprocess = has_affix_config and needs_scope and not was_already_loaded
+            needs_reprocess = self._affix_needs_scope and not was_already_loaded
             if not needs_reprocess and (
                 not original_name or original_name in {reference.original_name, reference.name}
             ):
