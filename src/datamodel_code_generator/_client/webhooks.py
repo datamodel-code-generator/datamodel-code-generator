@@ -12,14 +12,15 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
-from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module, statement
 from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.plan import schema_use, schema_uses
+from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
+from datamodel_code_generator._client.streams import _events
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._target_contract import OperationId, SourceLocation
+from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan, call
 from datamodel_code_generator._target_templates import templated
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
+    from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.codec_render import UseAccessors
     from datamodel_code_generator._client.protocol_plan import Protocols
@@ -66,10 +67,10 @@ _HMAC: Final = "_runtime.protocols.signatures"
 _PUBLIC_KEYS: Final = "_runtime.protocols.public_keys"
 _RSA_PSS: Final = "RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt"
 _ALGORITHMS: Final = {
-    "standard_webhooks": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
-    "stripe_style": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
-    "body_hmac": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
-    "hmac-sha256": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
+    **dict.fromkeys(
+        ("standard_webhooks", "stripe_style", "body_hmac", "hmac-sha256"),
+        _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
+    ),
     "hmac-sha512": _Algorithm(_HMAC, "HMAC_SHA512", "HMAC-SHA512", "_runtime.protocols.webhook_keys", "HmacKey"),
     "ed25519": _Algorithm(_PUBLIC_KEYS, "ED25519", "Ed25519", _PUBLIC_KEYS, "Ed25519Key"),
     "rsa-pss-sha256": _Algorithm(_PUBLIC_KEYS, "RSA_PSS_SHA256", _RSA_PSS, _PUBLIC_KEYS, "RSAPSSKey"),
@@ -123,10 +124,6 @@ class WebhookSpec:
     events: tuple[WebhookEvent, ...]
 
 
-def _problem(code: str, stage: DiagnosticStage, at: str, message: str) -> Diagnostic:
-    return Diagnostic(code=code, severity="error", stage=stage, message=message, option_path=at)
-
-
 def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) -> Iterator[tuple[Helper, Diagnostic]]:
     """Refuse a webhook name whose module path is the keys module, or whose packages differ from another's by case."""
     spellings: dict[str, str] = {}
@@ -165,7 +162,6 @@ def webhook_uses(
     problems: dict[str, list[Diagnostic]] = {helper.name: [] for helper in helpers}
     for helper, problem in _names(helpers, protocols.python_version):
         problems[helper.name].append(problem)
-    documents = {pointer: document for document, pointer in request.documents.pointers.items()}
     candidates = [
         use
         for use in request.batch.type_uses
@@ -179,8 +175,7 @@ def webhook_uses(
 
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
-        location = SourceLocation(documents[protocols.documents[reference]], reference.pointer, "schema")
-        if not request.lease.exists(location):
+        if not request.lease.exists(location := protocols.locations[reference]):
             message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None
@@ -192,18 +187,11 @@ def webhook_uses(
             )
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None
-        schema = {"document": protocols.documents[reference], "pointer": reference.pointer}
-        return WebhookEvent(name=name, use=use, schema=schema)
+        return WebhookEvent(name=name, use=use, schema=protocols.source(reference))
 
     specs: list[WebhookSpec] = []
     for helper in helpers:
-        at, reference = f"{helper.at}.event_schema", helper.tree["event_schema"]
-        references = (
-            [(name, item, f"{at}.mapping[{name!r}]") for name, item in reference["mapping"].items()]
-            if isinstance(reference, dict)
-            else [(None, reference, at)]
-        )
-        events = [event(helper, name, item, where) for name, item, where in references]
+        events = [event(helper, name, reference, where) for where, name, reference in _events(helper)]
         if all(item is not None for item in events):
             specs.append(WebhookSpec(helper=helper, events=tuple(item for item in events if item is not None)))
     return tuple(specs), problems
