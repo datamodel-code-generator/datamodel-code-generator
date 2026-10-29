@@ -1,11 +1,12 @@
-"""Helper limits and the helper settings of a client; UNSET takes the merged default."""
+"""Helper limits, the step lock of a helper's handle, and the helper settings of a client; UNSET takes the default."""
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from inspect import iscoroutinefunction
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, ClassVar, Final, TypeAlias, cast
 
 from typing_extensions import TypeVar
 
@@ -98,6 +99,49 @@ def new_session(limits: HelperLimits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
     return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
+
+
+class StepLock:
+    """The one step a helper's handle runs at a time, and the refusals of a step its state forbids.
+
+    A step while another one runs is refused with the state `_busy` names, and a step of a closed handle with `closed`.
+    """
+
+    __slots__ = ("_closed", "_helper_id", "_lock")
+
+    _busy: ClassVar[str]
+
+    def __init__(self, helper_id: str) -> None:
+        """Start an open handle that runs no step."""
+        self._helper_id = helper_id
+        self._lock = threading.Lock()
+        self._closed = False
+
+    def _state_error(self, action: str, state: str) -> ConfigurationError:
+        from .errors import configuration_error  # noqa: PLC0415 - Only a refused step loads the helper errors.
+
+        return configuration_error(self._helper_id, (action, state), "invalid_state")
+
+    def _refused(self) -> str | None:
+        """Return the state that refuses every step of the handle, or None."""
+        return "closed" if self._closed else None
+
+    def _enter(self, action: str) -> None:
+        """Take the handle for one step, refusing a concurrent step and a handle whose state refuses steps."""
+        if not self._lock.acquire(blocking=False):
+            raise self._state_error(action, self._busy)
+        if (state := self._refused()) is not None:
+            self._lock.release()
+            raise self._state_error(action, state)
+
+    def _close(self, action: str, *, quiet: bool = False) -> None:
+        """Close the handle, refusing while a step runs, or leaving it open then when `quiet`."""
+        if not self._lock.acquire(blocking=False):
+            if quiet:
+                return
+            raise self._state_error(action, self._busy)
+        self._closed = True
+        self._lock.release()
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
