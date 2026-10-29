@@ -189,7 +189,7 @@ import_ = 1
 type = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_copy_data_type"]
-data_types = 2
+data_types = 1
 dict_key = 1
 enum_member_literals = 1
 kwargs = 1

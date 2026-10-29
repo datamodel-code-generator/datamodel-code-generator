@@ -226,7 +226,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     PassSpec("alias_shadowed_imports", lambda self, s: alias_shadowed_imports(self, s.model_list, s.all_module_fields)),
     PassSpec("override_required_field", lambda self, s: override_required_field(self, s.model_list)),
     PassSpec("replace_unique_list_to_set", lambda self, s: modules.replace_unique_list_to_set(self, s.model_list)),
-    PassSpec("change_from_import", late(modules.change_module_from_import)),
+    PassSpec("change_from_import", late(modules.change_from_import)),
     PassSpec("extract_inherited_enum", late(modules.extract_module_inherited_enums)),
     PassSpec("mark_unused_models_start", lambda _, s: modules.mark_unused_models_start(s)),
     PassSpec(
@@ -263,9 +263,9 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
             use_deferred_annotations=s.config.use_deferred_annotations,
         ),
     ),
-    PassSpec("remove_overridden_models", late(modules.remove_module_overridden_models)),
+    PassSpec("remove_overridden_models", late(modules.remove_overridden_models)),
     PassSpec("apply_field_type_overrides", lambda self, s: modules.apply_field_type_overrides(self, s.model_list)),
-    PassSpec("type_dict_keys_by_root_types", late(modules.type_module_dict_keys_by_root_types)),
+    PassSpec("type_dict_keys_by_root_types", late(modules.type_dict_keys_by_root_types)),
     PassSpec(
         "fix_constructor_field_ordering_early",
         lambda self, s: render_prep.fix_constructor_field_ordering(
@@ -391,7 +391,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 when=lambda _, state: state.with_import,
             ),
             PassSpec("bind_module_field_names", late(imports.bind_module_field_names)),
-            PassSpec("change_imported_model_name", late(imports.change_module_imported_model_names)),
+            PassSpec("change_imported_model_name", late(imports.change_imported_model_name)),
             PassSpec(
                 "name_final_classes_of_additional_properties",
                 lambda _, s: imports.name_final_classes_of_additional_properties(s),

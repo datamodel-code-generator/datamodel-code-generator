@@ -24,7 +24,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import
+from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -50,6 +50,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _format_tags,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
+    _iter_import_bindings,
     _module_name_from_module_path,
     _named_data_types,
     _normalize_result_module_path,
@@ -57,6 +58,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _unique_items_tuple,
     get_special_path,
     reference_import_target,
+    site_display_name,
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
@@ -98,7 +100,7 @@ __all__ = [
     "append_model_imports",
     "bind_module_field_names",
     "builtin_name_bindings",
-    "change_module_imported_model_names",
+    "change_imported_model_name",
     "decide_config_items",
     "name_final_classes_of_additional_properties",
     "record_generated_class_names",
@@ -268,26 +270,12 @@ class RenderHost(
 
 
 _FUTURE_IMPORTS: Final = ImportProducer("future-imports")
-
-
 _REMOVE_UNUSED: Final = ImportProducer("remove-unused")
-
-
 _IMPORT_CONFLICTS: Final = ImportProducer("import-conflicts")
-
-
 _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
-
-
 _BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
-
-
 _BUILTIN_SUBMODULE_BINDINGS: Final = ImportProducer("builtin-submodule-bindings")
-
-
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
-
-
 _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
 
@@ -308,12 +296,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: 
     Type aliases sit at module scope, so an import they name keeps its name beside the alias.
     """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
-    shadowable_imports = {
-        effective_name: (from_, name)
-        for from_, names in imports.items()
-        for name in names
-        if (effective_name := imports.get_effective_name(from_, name)) in field_names
-    }
+    shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
     if "list" in field_names and "list" not in shadowable_imports:
         shadowable_imports["list"] = ("builtins", "list")
     if not shadowable_imports:
@@ -324,7 +307,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: 
         collisions.update(_model_field_name_collisions(model, shadowable_imports))
     if not collisions:
         return
-    reserved_names.update(imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names)
+    reserved_names.update(_iter_import_bindings(imports))
     type_alias_imports = {
         (import_.from_, import_.import_)
         for model in models
@@ -915,7 +898,7 @@ def reject_alias_cycles_without_schema(
     """
     self_named_models = parser._self_named_root_models  # noqa: SLF001
     self_named = {id(model): (model,) for model in self_named_models}
-    models = [model for context in contexts for model in context.models]
+    models = _context_models(contexts)
     if (failure := alias_loop_failure(parser.data_model_type)) is not None and (
         cycles := _alias_loops(models, self_named_models)
     ):
@@ -981,7 +964,7 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
         return
     from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
 
-    models = [model for context in contexts for model in context.models]
+    models = _context_models(contexts)
     named = {model.class_name: model for model in models}
     literal_enum_ids = parser._literal_under_all_enum_reference_ids  # noqa: SLF001
     for model in models:
@@ -1018,7 +1001,7 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
             wide = _msgspec_wide_int(chain.from_iterable(data_type.literals for data_type in nested))
             if member is None and not refused and not clashes and wide is None:
                 continue
-            name = model.class_name if parser._is_root_model(model) else f"{model.class_name}.{field.name}"  # noqa: SLF001
+            name = site_display_name(parser, model, field)
             if member is not None:
                 warn_as_parser_base(_msgspec_literal_member_message(name, member), UserWarning, stacklevel=2)
             if refused:
@@ -1035,38 +1018,33 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 )
 
 
-def change_imported_model_name(
-    parser: ImportsHost[Any],
-    models: list[DataModel],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-) -> bool:
-    """Rename local models shadowing imports and report whether a rename occurred."""
-    imported_names = {
-        imports.alias[from_][i] if i in imports.alias[from_] and i != imports.alias[from_][i] else i
-        for from_, import_ in imports.items()
-        for i in import_
-    }
-    renamed = False
-    for model in models:
-        if model.class_name not in imported_names:  # pragma: no cover
-            continue
-        if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
-            continue
+def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Rename the local models that an import of their module shadows; remember whether any was renamed."""
+    for ctx in state.contexts:
+        models, imports = ctx.models, ctx.imports
+        imported_names = {
+            imports.alias[from_][i] if i in imports.alias[from_] and i != imports.alias[from_][i] else i
+            for from_, import_ in imports.items()
+            for i in import_
+        }
+        for model in models:
+            if model.class_name not in imported_names:  # pragma: no cover
+                continue
+            if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
+                continue
 
-        parser._graph_builder.rename_model(  # pragma: no cover  # noqa: SLF001
-            model,
-            reference_name=parser._import_ledger.add_name(  # noqa: SLF001
-                imports,
-                scoped_model_resolver,
-                get_special_path("imported_name", model.path.split("/")),
-                model.reference.name,
-                class_name=True,
-                unique=True,
-            ).name,
-        )
-        renamed = True
-    return renamed
+            parser._graph_builder.rename_model(  # pragma: no cover  # noqa: SLF001
+                model,
+                reference_name=parser._import_ledger.add_name(  # noqa: SLF001
+                    imports,
+                    ctx.scoped_model_resolver,
+                    get_special_path("imported_name", model.path.split("/")),
+                    model.reference.name,
+                    class_name=True,
+                    unique=True,
+                ).name,
+            )
+            state.renamed_models = True
 
 
 def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataModel], imports: Imports) -> bool:
@@ -1078,9 +1056,7 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
     tag_fields = parser._tag_plan.reused_tag_fields  # noqa: SLF001
     fields = [field for model in models for field in model.fields]
     annotated = [field for field in fields if tag_fields.get(id(field)) is field]
-    bindings = {
-        (from_, name): imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names
-    }
+    bindings = dict(_import_bindings(imports))
     if (
         not annotated
         or [key for key, binding in bindings.items() if binding == IMPORT_LITERAL.import_]
@@ -1092,7 +1068,7 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
         *(model.class_name for model in models),
         *(field.name for field in fields if field.name is not None),
         *bindings.values(),
-        *(parser.imports.get_effective_name(from_, name) for from_, names in parser.imports.items() for name in names),
+        *_iter_import_bindings(parser.imports),
         *(
             name
             for model in models
@@ -1206,11 +1182,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         for data_type in model.all_data_types
         for enum_class, _ in data_type.enum_member_literals
     )
-    imported = {
-        ctx.imports.get_effective_name(from_, name): (from_, name)
-        for from_, names in ctx.imports.items()
-        for name in names
-    }
+    imported = {binding: key for key, binding in _import_bindings(ctx.imports)}
     resolver = ctx.scoped_model_resolver
     held = {reference.name: reference for reference in resolver.references.values()}
     if not (
@@ -1294,12 +1266,8 @@ def _alias_builtins_hidden_by_submodules(
         *submodule_names,
         *(model.class_name for model in ctx.models),
         *(field.name for model in ctx.models for field in model.fields if field.name is not None),
-        *(
-            module_imports.get_effective_name(from_, import_)
-            for module_imports in (ctx.imports, parser.imports)
-            for from_, imported in module_imports.items()
-            for import_ in imported
-        ),
+        *_iter_import_bindings(ctx.imports),
+        *_iter_import_bindings(parser.imports),
     }
     bindings = {name: _reserve_import_alias(name, reserved) for name in sorted(written)}
     parser._import_ledger.append(  # noqa: SLF001
@@ -1339,15 +1307,6 @@ def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]
     """Bind the field names of each module that its imports shadow."""
     for ctx in state.contexts:
         _bind_module_field_names(ctx.models, ctx.imports, parser._import_ledger)  # noqa: SLF001
-
-
-def change_module_imported_model_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
-    """Rename the models whose names an import of their module takes; remember whether any was renamed."""
-    for ctx in state.contexts:
-        state.renamed_models = (
-            change_imported_model_name(parser, ctx.models, ctx.imports, ctx.scoped_model_resolver)
-            or state.renamed_models
-        )
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:
