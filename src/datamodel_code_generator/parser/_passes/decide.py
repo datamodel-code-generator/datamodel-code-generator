@@ -10,32 +10,23 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator.parser._passes._shared import _copy_data_type
+from datamodel_code_generator.parser._passes._shared import GenerationStoreHost, _copy_data_type
 from datamodel_code_generator.parser._phases import _DecisionWriter
 
 if TYPE_CHECKING:
     from datamodel_code_generator.parser._passes._state import FinishRun
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._pipeline import Runner
-    from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
 
 __all__ = ["DecideHost", "decide"]
 
 
-class DecideHost(Protocol):
+class DecideHost(GenerationStoreHost, Protocol):
     """The decision registry and the generation store of the parser that the decision phase reads and writes."""
 
     @property
     def _DECISION_PASSES(self) -> tuple[DecisionPass[Any], ...]:  # noqa: N802
         """The decision passes of the parser class, in registry order."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
 
 
 def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) -> None:

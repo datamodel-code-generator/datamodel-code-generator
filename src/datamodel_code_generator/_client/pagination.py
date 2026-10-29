@@ -27,11 +27,11 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     GeneratedSymbolType,
     GenericType,
-    NoneType,
     SourceLocation,
     UnionType,
 )
 from datamodel_code_generator._target_operations import label
+from datamodel_code_generator._target_types import admits_none, present
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator
@@ -257,7 +257,8 @@ class _Pages:
                 ItemStep(
                     kind,
                     field.name,
-                    none=facts.nullable(field.type) or (not field.required and not struct and not field.missing),
+                    none=admits_none(facts.plain(field.type))
+                    or (not field.required and not struct and not field.missing),
                     unset=struct and not field.required,
                     missing=field.missing,
                 )
@@ -311,10 +312,7 @@ class _Pages:
     def present(self, value: TypeView) -> TypeView:
         """Return a type without None, through its aliases."""
         value = self.facts.plain(value)
-        if (
-            isinstance(value, UnionType)
-            and len(members := [item for item in value.members if not isinstance(item, NoneType)]) == 1
-        ):
+        if isinstance(value, UnionType) and len(members := present(value)) == 1:
             return self.facts.plain(members[0])
         return value
 

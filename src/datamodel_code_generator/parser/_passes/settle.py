@@ -21,6 +21,9 @@ from datamodel_code_generator.model.base import DataModel, sort_data_models_for_
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import ReuseGroups
 from datamodel_code_generator.parser._passes._shared import (
+    GenerationStoreHost,
+    RecursionFactsHost,
+    RootModelTypeHost,
     _is_pydantic_v2_root_model,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
@@ -42,7 +45,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._user_keys import ConstructionKeys
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._passes._state import ConfigT, SettleRun, SortedDataModels, _ConstNarrowing
-    from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, GraphBuilder
+    from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
@@ -66,16 +69,11 @@ __all__ = [
 _ConfigT_co = TypeVar("_ConfigT_co", bound=ParseConfigView, covariant=True)
 
 
-class SettleHost(Protocol[_ConfigT_co]):
+class SettleHost(RecursionFactsHost, GenerationStoreHost, RootModelTypeHost, Protocol[_ConfigT_co]):
     """The options, run state and hooks of the parser that the settle passes read and write."""
 
-    _recursion_facts: RecursionFacts
     _reuse_groups: ReuseGroups
     yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...]
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
     @property
     def _site_model_reference_ids(self) -> set[int]:
@@ -86,20 +84,12 @@ class SettleHost(Protocol[_ConfigT_co]):
         """Whether the read and write variants are decided from the schema graph."""
 
     @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
-
-    @property
     def keep_model_order(self) -> bool:
         """Whether models keep the order of the schema."""
 
     @property
     def model_resolver(self) -> ModelResolver:
         """The resolver of references and class names."""
-
-    @property
-    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
-        """The root model type whose class body evaluates its root type, if the output has one."""
 
     @property
     def read_only_write_only_model_type(self) -> ReadOnlyWriteOnlyModelType | None:

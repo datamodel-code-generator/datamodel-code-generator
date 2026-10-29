@@ -23,7 +23,10 @@ from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
+    GraphBuilderHost,
+    ModuleScopeView,
     ReferenceExpressionHost,
+    RenamedTypesHost,
     ReplacedRootsHost,
     _context_models,
     _generic_base_class_module,
@@ -37,14 +40,13 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
-from datamodel_code_generator.parser._tag_plan import iter_struct_tag_decisions
+from datamodel_code_generator.parser._tag_plan import TagPlanHost, iter_struct_tag_decisions
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from pathlib import Path
 
-    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import (
@@ -54,8 +56,6 @@ if TYPE_CHECKING:
         _ConstNarrowing,
         _RenamedType,
     )
-    from datamodel_code_generator.parser._tag_plan import TagPlan
-    from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -71,7 +71,7 @@ __all__ = [
 ]
 
 
-class CrossModuleHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
+class CrossModuleHost(ReferenceExpressionHost, RenamedTypesHost, ReplacedRootsHost, GraphBuilderHost, Protocol):
     """The options, run state and hooks of the parser that the cross-module passes read and write."""
 
     _generic_base_model: DataModel | None
@@ -81,20 +81,8 @@ class CrossModuleHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
         """The values typed by an enum whose const admits only one of its values, with that const."""
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
     def _removed_reuse_users(self) -> dict[int, tuple[DataType, list[str]]]:
         """The data types whose duplicate reuse removed, by id, with the paths they named."""
-
-    @property
-    def _renamed_type_paths(self) -> dict[str, list[_RenamedType]]:
-        """The class names renamed types had, by the path imports of them were added under."""
-
-    @property
-    def _renamed_types(self) -> dict[ModelKey, list[_RenamedType]]:
-        """The class names renamed types had, by model key."""
 
     @property
     def custom_template_dir(self) -> Path | None:
@@ -120,28 +108,16 @@ class CrossModuleHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
         """Return whether a model uses the configured root model representation."""
 
 
-class TaggedBasesHost(CrossModuleHost, FlattenHost, Protocol):
+class TaggedBasesHost(CrossModuleHost, FlattenHost, TagPlanHost, Protocol):
     """What tagging the structs below tagged bases reads and writes of the parser."""
 
-    @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
 
-
-class CrossModuleRun(Protocol):
+class CrossModuleRun(ModuleScopeView, Protocol):
     """What the cross-module passes read and write of the run."""
 
     @property
     def contexts(self) -> Sequence[ModuleContextView]:
         """The processed modules, in module order."""
-
-    @property
-    def internal_modules(self) -> set[ModulePath]:
-        """The modules the output writes."""
-
-    @property
-    def model_path_to_module_name(self) -> dict[str, str]:
-        """The module name of each model, by model path."""
 
 
 _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")

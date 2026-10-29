@@ -288,8 +288,12 @@ class PresetOptionGroup:
             return False
         if self.output_model_types and context.output_model_type not in self.output_model_types:
             return False
+        return self.applies_to_python(context.target_python_version)
+
+    def applies_to_python(self, target_python_version: PythonVersion) -> bool:
+        """Return whether this group is available for a target Python version."""
         return not self.requires_python_strenum or python_target_meets(
-            "python.strenum", context.target_python_version.version_key
+            "python.strenum", target_python_version.version_key
         )
 
 
@@ -346,27 +350,8 @@ def _ensure_preset_enum_config_value(
     field_name: str,
     value: PresetRawConfigValue,
 ) -> PresetEnumConfigValue:
-    match value:
-        case (
-            LiteralType()
-            | NamingStrategy()
-            | TargetPydanticVersion()
-            | ReuseScope()
-            | AllOfMergeMode()
-            | AllOfClassHierarchy()
-            | CollapseRootModelsNameStrategy()
-            | UnionMode()
-            | ReadOnlyWriteOnlyModelType()
-            | FieldTypeCollisionStrategy()
-            | VersionMode()
-            | DateClassType()
-            | DatetimeClassType()
-            | DefaultValueType()
-            | ConstructorFieldOrder()
-            | OpenAPIAsDefinitions()
-            | Formatter()
-        ):
-            return value
+    if isinstance(value, PresetEnumConfigValue) and not isinstance(value, ExtraFields):
+        return value
     msg = f"Preset field {field_name!r} cannot be rendered as a preset CLI option"  # pragma: no cover
     raise PresetError(msg)  # pragma: no cover
 
@@ -526,36 +511,6 @@ _PRACTICAL_20260619_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
-_STANDARD_20260619_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020260619,
-    PythonVersion.PY_311: PresetName.StandardPy31120260619,
-    PythonVersion.PY_312: PresetName.StandardPy31220260619,
-    PythonVersion.PY_313: PresetName.StandardPy31320260619,
-    PythonVersion.PY_314: PresetName.StandardPy31420260619,
-}
-_PRACTICAL_20260619_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020260619,
-    PythonVersion.PY_311: PresetName.PracticalPy31120260619,
-    PythonVersion.PY_312: PresetName.PracticalPy31220260619,
-    PythonVersion.PY_313: PresetName.PracticalPy31320260619,
-    PythonVersion.PY_314: PresetName.PracticalPy31420260619,
-}
-
-_STANDARD_20260826_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020260826,
-    PythonVersion.PY_311: PresetName.StandardPy31120260826,
-    PythonVersion.PY_312: PresetName.StandardPy31220260826,
-    PythonVersion.PY_313: PresetName.StandardPy31320260826,
-    PythonVersion.PY_314: PresetName.StandardPy31420260826,
-}
-_PRACTICAL_20260826_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020260826,
-    PythonVersion.PY_311: PresetName.PracticalPy31120260826,
-    PythonVersion.PY_312: PresetName.PracticalPy31220260826,
-    PythonVersion.PY_313: PresetName.PracticalPy31320260826,
-    PythonVersion.PY_314: PresetName.PracticalPy31420260826,
-}
-
 _STANDARD_20260909_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_STANDARD_20260826_OPTION_GROUPS,
     PresetOptionGroup(
@@ -568,38 +523,6 @@ _STANDARD_20260909_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
 )
-
-_STANDARD_20260909_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020260909,
-    PythonVersion.PY_311: PresetName.StandardPy31120260909,
-    PythonVersion.PY_312: PresetName.StandardPy31220260909,
-    PythonVersion.PY_313: PresetName.StandardPy31320260909,
-    PythonVersion.PY_314: PresetName.StandardPy31420260909,
-}
-_PRACTICAL_20260909_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020260909,
-    PythonVersion.PY_311: PresetName.PracticalPy31120260909,
-    PythonVersion.PY_312: PresetName.PracticalPy31220260909,
-    PythonVersion.PY_313: PresetName.PracticalPy31320260909,
-    PythonVersion.PY_314: PresetName.PracticalPy31420260909,
-}
-
-_STANDARD_20261015_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020261015,
-    PythonVersion.PY_311: PresetName.StandardPy31120261015,
-    PythonVersion.PY_312: PresetName.StandardPy31220261015,
-    PythonVersion.PY_313: PresetName.StandardPy31320261015,
-    PythonVersion.PY_314: PresetName.StandardPy31420261015,
-    PythonVersion.PY_315: PresetName.StandardPy31520261015,
-}
-_PRACTICAL_20261015_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020261015,
-    PythonVersion.PY_311: PresetName.PracticalPy31120261015,
-    PythonVersion.PY_312: PresetName.PracticalPy31220261015,
-    PythonVersion.PY_313: PresetName.PracticalPy31320261015,
-    PythonVersion.PY_314: PresetName.PracticalPy31420261015,
-    PythonVersion.PY_315: PresetName.PracticalPy31520261015,
-}
 
 _RAW_VALUE_20261017_OPTION_GROUPS: dict[str, PresetOptionGroup] = {
     group.title: group
@@ -633,23 +556,6 @@ _RAW_VALUE_20261017_OPTION_GROUPS: dict[str, PresetOptionGroup] = {
 _STANDARD_20261017_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = tuple(
     _RAW_VALUE_20261017_OPTION_GROUPS.get(group.title, group) for group in _STANDARD_20260909_OPTION_GROUPS
 )
-
-_STANDARD_20261017_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020261017,
-    PythonVersion.PY_311: PresetName.StandardPy31120261017,
-    PythonVersion.PY_312: PresetName.StandardPy31220261017,
-    PythonVersion.PY_313: PresetName.StandardPy31320261017,
-    PythonVersion.PY_314: PresetName.StandardPy31420261017,
-    PythonVersion.PY_315: PresetName.StandardPy31520261017,
-}
-_PRACTICAL_20261017_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020261017,
-    PythonVersion.PY_311: PresetName.PracticalPy31120261017,
-    PythonVersion.PY_312: PresetName.PracticalPy31220261017,
-    PythonVersion.PY_313: PresetName.PracticalPy31320261017,
-    PythonVersion.PY_314: PresetName.PracticalPy31420261017,
-    PythonVersion.PY_315: PresetName.PracticalPy31520261017,
-}
 
 _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_STANDARD_20261017_OPTION_GROUPS,
@@ -835,92 +741,59 @@ _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
-_STANDARD_20261027_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.StandardPy31020261027,
-    PythonVersion.PY_311: PresetName.StandardPy31120261027,
-    PythonVersion.PY_312: PresetName.StandardPy31220261027,
-    PythonVersion.PY_313: PresetName.StandardPy31320261027,
-    PythonVersion.PY_314: PresetName.StandardPy31420261027,
-    PythonVersion.PY_315: PresetName.StandardPy31520261027,
-}
-_PRACTICAL_20261027_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
-    PythonVersion.PY_310: PresetName.PracticalPy31020261027,
-    PythonVersion.PY_311: PresetName.PracticalPy31120261027,
-    PythonVersion.PY_312: PresetName.PracticalPy31220261027,
-    PythonVersion.PY_313: PresetName.PracticalPy31320261027,
-    PythonVersion.PY_314: PresetName.PracticalPy31420261027,
-    PythonVersion.PY_315: PresetName.PracticalPy31520261027,
+_STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
+    "20260619": _STANDARD_20260619_OPTION_GROUPS,
+    "20260826": _STANDARD_20260826_OPTION_GROUPS,
+    "20260909": _STANDARD_20260909_OPTION_GROUPS,
+    "20261015": _STANDARD_20260909_OPTION_GROUPS,
+    "20261017": _STANDARD_20261017_OPTION_GROUPS,
+    "20261027": _STANDARD_20261027_OPTION_GROUPS,
 }
 
-_STANDARD_PRESET_NAMES_BY_TARGET = _STANDARD_20261027_PRESET_NAMES_BY_TARGET
-_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRACTICAL_20261027_PRESET_NAMES_BY_TARGET
+
+def _group_preset_names() -> dict[tuple[str, str], dict[PythonVersion, PresetName]]:
+    """Group the preset names by family and date, each in the order of its Python targets."""
+    names_by_target: dict[tuple[str, str], dict[PythonVersion, PresetName]] = {}
+    for name in PresetName:
+        family, python, date = name.value.split("-")
+        names_by_target.setdefault((family, date), {})[PythonVersion(f"{python[2]}.{python[3:]}")] = name
+    return names_by_target
+
+
+_PRESET_NAMES_BY_TARGET = _group_preset_names()
+_LATEST_PRESET_DATE = max(_STANDARD_OPTION_GROUPS_BY_DATE)
+_STANDARD_PRESET_NAMES_BY_TARGET = _PRESET_NAMES_BY_TARGET["standard", _LATEST_PRESET_DATE]
+_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRESET_NAMES_BY_TARGET["practical", _LATEST_PRESET_DATE]
 
 
 def _standard_option_groups_for_target(
     option_groups: tuple[PresetOptionGroup, ...],
     target_python_version: PythonVersion,
 ) -> tuple[PresetOptionGroup, ...]:
-    return tuple(
-        group
-        for group in option_groups
-        if not group.requires_python_strenum or python_target_meets("python.strenum", target_python_version.version_key)
-    )
+    return tuple(group for group in option_groups if group.applies_to_python(target_python_version))
 
 
-def _practical_option_groups_for_target(
-    standard_option_groups: tuple[PresetOptionGroup, ...],
-    practical_extra_option_groups: tuple[PresetOptionGroup, ...],
-    target_python_version: PythonVersion,
-) -> tuple[PresetOptionGroup, ...]:
-    return (
-        *_standard_option_groups_for_target(standard_option_groups, target_python_version),
-        *practical_extra_option_groups,
-    )
-
-
-def _build_preset_info(
-    *,
-    name: PresetName,
-    target_python_version: PythonVersion,
-    summary: str,
-    description: str,
-    option_groups: tuple[PresetOptionGroup, ...],
-) -> PresetInfo:
-    return PresetInfo(
-        name=name,
-        summary=summary,
-        description=description,
-        requires_target_python_version=False,
-        target_python_version=target_python_version,
-        option_groups=option_groups,
-    )
-
-
-def _build_preset_family_infos(
-    *,
-    standard_names_by_target: dict[PythonVersion, PresetName],
-    practical_names_by_target: dict[PythonVersion, PresetName],
-    standard_option_groups: tuple[PresetOptionGroup, ...],
-    practical_extra_option_groups: tuple[PresetOptionGroup, ...],
-) -> tuple[PresetInfo, ...]:
+def _build_preset_family_infos(date: str) -> tuple[PresetInfo, ...]:
+    standard_option_groups = _STANDARD_OPTION_GROUPS_BY_DATE[date]
+    standard_names_by_target = _PRESET_NAMES_BY_TARGET["standard", date]
     standard_infos = tuple(
-        _build_preset_info(
+        PresetInfo(
             name=name,
-            target_python_version=target_python_version,
             summary=f"Recommended modern Python {target_python_version.value} output for new projects.",
             description=(
                 "This immutable preset enables the project-recommended Python output style for new code targeting "
                 f"Python {target_python_version.value}. It is output-model aware and keeps stdlib dataclass and "
                 "TypedDict keys compatible with their input names."
             ),
+            requires_target_python_version=False,
+            target_python_version=target_python_version,
             option_groups=_standard_option_groups_for_target(standard_option_groups, target_python_version),
         )
         for target_python_version, name in standard_names_by_target.items()
     )
     practical_infos = tuple(
-        _build_preset_info(
+        PresetInfo(
             name=name,
-            target_python_version=target_python_version,
             summary=(
                 f"Standard Python {target_python_version.value} output plus practical naming, deduplication, "
                 "and schema documentation."
@@ -931,54 +804,23 @@ def _build_preset_family_infos(
                 "schema-authored names, model reuse, and embedded schema documentation over the most conservative "
                 "output-shape stability."
             ),
-            option_groups=_practical_option_groups_for_target(
-                standard_option_groups,
-                practical_extra_option_groups,
-                target_python_version,
+            requires_target_python_version=False,
+            target_python_version=target_python_version,
+            option_groups=(
+                *_standard_option_groups_for_target(standard_option_groups, target_python_version),
+                *_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
             ),
         )
-        for target_python_version, name in practical_names_by_target.items()
+        for target_python_version, name in _PRESET_NAMES_BY_TARGET["practical", date].items()
     )
     return (*standard_infos, *practical_infos)
 
 
-_PRESET_INFOS: tuple[PresetInfo, ...] = (
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20260619_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20260619_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20260619_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20260826_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20260826_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20260826_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20260909_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20260909_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20260909_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20261015_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20261015_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20260909_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20261017_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20261017_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20261017_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
-    *_build_preset_family_infos(
-        standard_names_by_target=_STANDARD_20261027_PRESET_NAMES_BY_TARGET,
-        practical_names_by_target=_PRACTICAL_20261027_PRESET_NAMES_BY_TARGET,
-        standard_option_groups=_STANDARD_20261027_OPTION_GROUPS,
-        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
-    ),
+_PRESET_INFOS: tuple[PresetInfo, ...] = tuple(
+    info
+    for family, date in _PRESET_NAMES_BY_TARGET
+    if family == "standard"
+    for info in _build_preset_family_infos(date)
 )
 
 _COPYABLE_INPUT_FILE_TYPE = InputFileType.JsonSchema
@@ -1363,16 +1205,14 @@ def _indent_markdown_code(text: str) -> list[str]:
 
 def render_presets(format_: PresetFormat) -> str:
     """Render presets in the requested format."""
-    rendered = ""
     match format_:
         case "json":
-            rendered = render_presets_json() + "\n"
+            return render_presets_json() + "\n"
         case "markdown":
-            rendered = render_presets_markdown().rstrip() + "\n"
+            return render_presets_markdown().rstrip() + "\n"
         case _:  # pragma: no cover
             msg = f"Unsupported preset docs format: {format_!r}"
             raise PresetError(msg)
-    return rendered
 
 
 def resolve_preset_config_updates(

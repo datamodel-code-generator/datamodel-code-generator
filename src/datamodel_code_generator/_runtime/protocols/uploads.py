@@ -21,19 +21,16 @@ from ..client.client import request_decode_error
 from ..client.errors import (
     APIConnectionError,
     APIStatusError,
-    ConfigurationError,
     SDKError,
     add_secondary,
     is_transport,
 )
 from ..client.operations import request_errors
-from ..client.options import RequestOptions
 from ..client.retry import Delivery
-from ..client.timing import SYSTEM_CLOCK, Clock
 from ..model_codecs.media import SUCCESS_STATUSES
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError
-from .options import UploadOptions, layered
+from .errors import ProtocolDataError, configuration_error, data_error
+from .options import HelperLimits, UploadOptions, checked_options, layered, new_session, patched_extra
 from .records import HeaderSelector, plain_copy
 from .resume import (
     MalformedStateError,
@@ -52,6 +49,7 @@ if TYPE_CHECKING:
     from datetime import datetime
     from types import TracebackType
 
+    from ..client.errors import ConfigurationError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
@@ -180,7 +178,7 @@ class UploadPlan(Generic[T, C]):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit.
 
     `chunk_path` names where the chunk size comes from: the client's helper default when it sets the size and the
@@ -189,20 +187,9 @@ class _Limits:
 
     chunk_bytes: int = 8 * 1024 * 1024
     chunk_path: tuple[str, ...] = ("upload_options", "chunk_bytes")
-    total_timeout: float | None = None
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
-
-
-def _invalid(
-    plan: UploadPlan[Any, Any],
-    path: tuple[str, ...],
-    condition: Literal["invalid_value", "wrong_capability", "source_changed", "expired"] = "invalid_value",
-) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _limits(
@@ -217,22 +204,10 @@ def _limits(
     since the create call and each append need keys of their own, and so are the call's extra headers or query names
     of a parameter the helper writes.
     """
-    for name, value, kind in (
-        ("upload_options", upload_options, UploadOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    request = options if isinstance(options, RequestOptions) else None
-    if (fixed := core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))) is not None:
-        raise _invalid(plan, fixed)
-    if request is not None:
-        for name in request.extra_headers or ():
-            if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "extra_headers", name))
-        for name in request.extra_query or ():
-            if name in plan.queries:
-                raise _invalid(plan, ("options", "extra_query", name))
+    request = checked_options(plan.helper_id, "upload_options", upload_options, UploadOptions, options)
+    fixed = core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))
+    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+        raise configuration_error(plan.helper_id, path)
     kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
     chunk_path = _DEFAULTS.chunk_path
     if (
@@ -295,7 +270,7 @@ class _Content:
         while got < length:
             data = cast("object", file.read(min(length - got, _READ)))
             if not isinstance(data, bytes) or len(data) > length - got:
-                raise _invalid(plan, ("source",), "wrong_capability")
+                raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
             if not data:
                 break
             parts.append(data)
@@ -313,7 +288,7 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
         data = cast("bytes", source)
         with memoryview(data) as view:
             if not view.c_contiguous:
-                raise _invalid(plan, ("source",), "wrong_capability")
+                raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
             return _Content(data, None, 0, view.nbytes)
     file = cast("BinaryIO", source)
     if all(hasattr(file, name) for name in ("read", "seek", "tell")) and (
@@ -321,11 +296,11 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
     ):
         empty, base, end = cast("tuple[object, object, object]", (file.read(0), file.tell(), file.seek(0, SEEK_END)))
         if _discarded(empty, base, end) or type(empty) is not bytes or type(base) is not int or type(end) is not int:
-            raise _invalid(plan, ("source",), "wrong_capability")
+            raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
         return _Content(source, file, base, max(end - base, 0))
     if _source_kind(source) is None:
-        raise _invalid(plan, ("source",))
-    raise _invalid(plan, ("source",), "wrong_capability")
+        raise configuration_error(plan.helper_id, ("source",))
+    raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
 
 
 class _Upload(Generic[T]):
@@ -395,7 +370,7 @@ class _Upload(Generic[T]):
         )
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
+        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
 
     def _enter(self, action: str) -> None:
         """Take the handle for one step, refusing a concurrent step, a closed handle, and a changed source."""
@@ -449,13 +424,7 @@ class _Upload(Generic[T]):
 
     def _offset_error(self, info: ResponseInfo | None) -> ProtocolDataError:
         plan = self._plan
-        return ProtocolDataError(
-            reason="inconsistent",
-            location=plan.remote_offset,
-            helper_id=plan.helper_id,
-            operation=plan.probe_operation,
-            info=info,
-        )
+        return data_error(plan.helper_id, plan.probe_operation, info, "inconsistent", plan.remote_offset)
 
     def _data_error(
         self,
@@ -463,10 +432,7 @@ class _Upload(Generic[T]):
         condition: Literal["missing", "null", "type", "value", "malformed"],
         at: Selector,
     ) -> ProtocolDataError:
-        plan = self._plan
-        return ProtocolDataError(
-            reason=condition, location=at, helper_id=plan.helper_id, operation=plan.operation, info=info
-        )
+        return data_error(self._plan.helper_id, self._plan.operation, info, condition, at)
 
     def _read(self, read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue:
         """Return what a selector reads from a response, refusing a missing value and a header repeated once."""
@@ -570,7 +536,7 @@ class _Upload(Generic[T]):
             return data, end
         with self._guard:
             self._changed = True
-        raise _invalid(self._plan, ("source",), "source_changed")
+        raise configuration_error(self._plan.helper_id, ("source",), "source_changed")
 
     def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan = self._plan
@@ -644,9 +610,7 @@ def _dotted(
     from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
 
     if (read := dotted_write(targeted, written)) is not None:
-        raise ProtocolDataError(
-            reason="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
-        )
+        raise data_error(plan.helper_id, plan.operation, info, "value", read)
 
 
 def _written(plan: UploadPlan[Any, Any], offset: int, data: memoryview | bytes) -> tuple[JSONValue, ...]:
@@ -688,15 +652,6 @@ def _refused(error: BaseException) -> bool:
 def _probed_again(error: Exception) -> bool:
     """Return whether a probe failed in a way another probe may settle: a transport error or an error status."""
     return is_transport(error) or isinstance(error, APIStatusError)
-
-
-def _session(limits: _Limits) -> OperationSession:
-    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
-
-    return OperationSession(
-        total_timeout=limits.total_timeout,
-        clock=limits.clock,
-    )
 
 
 @final
@@ -1055,7 +1010,7 @@ def start_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
+    handle = UploadHandle(core, plan, limits, new_session(limits), content, limits.chunk_bytes)
     handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1074,7 +1029,7 @@ async def astart_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
+    handle = AsyncUploadHandle(core, plan, limits, new_session(limits), content, limits.chunk_bytes)
     await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1151,11 +1106,11 @@ def _resume_start(
     try:
         saved = _decoded(plan, plain_copy(state))
     except (MalformedStateError, TypeError, ValueError):
-        raise _invalid(plan, ("state",)) from None
+        raise configuration_error(plan.helper_id, ("state",)) from None
     if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise _invalid(plan, ("state",), "expired")
+        raise configuration_error(plan.helper_id, ("state",), "expired")
     if saved.chunk > limits.chunk_bytes:
-        raise _invalid(plan, limits.chunk_path)
+        raise configuration_error(plan.helper_id, limits.chunk_path)
     probe, append, completion = saved.bound
     _dotted(plan, plan.probed, probe, None)
     _dotted(plan, plan.appended, (*append, *_written(plan, 0, b"")), None)
@@ -1163,7 +1118,7 @@ def _resume_start(
         _dotted(plan, completed, completion, None)
     content = _content(plan, source)
     if content.size != saved.size:
-        raise _invalid(plan, ("source",), "source_changed")
+        raise configuration_error(plan.helper_id, ("source",), "source_changed")
     return saved, content
 
 
@@ -1194,7 +1149,7 @@ def resume_upload(  # noqa: PLR0913
     """
     limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    handle = UploadHandle(core, plan, limits, new_session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
@@ -1215,7 +1170,7 @@ async def aresume_upload(  # noqa: PLR0913
     """
     limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    handle = AsyncUploadHandle(core, plan, limits, new_session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*await handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle

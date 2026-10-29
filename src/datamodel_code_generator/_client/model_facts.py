@@ -26,6 +26,7 @@ from datamodel_code_generator._target_contract import (
     NoneType,
     UnionType,
 )
+from datamodel_code_generator._target_types import present, without_none
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -250,8 +251,8 @@ class ModelFacts:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
         while True:
             value = self.plain(value)
-            if isinstance(value, UnionType) and len(present := _present(value)) == 1:
-                value = present[0]
+            if isinstance(value, UnionType) and len(members := present(value)) == 1:
+                value = members[0]
             elif (
                 (symbol := self.symbol(value)) is not None
                 and symbol.kind == "root"
@@ -274,8 +275,8 @@ class ModelFacts:
             and (root := self.root(symbol.id)) is not None
         ):
             value = self.plain(root)
-        if isinstance(value, UnionType) and len(present := _present(value)) == 1:
-            value = self.plain(present[0])
+        if isinstance(value, UnionType) and len(members := present(value)) == 1:
+            value = self.plain(members[0])
         return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
 
     def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
@@ -329,16 +330,11 @@ class ModelFacts:
         A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
         annotation that only makes an omitted field optional does not.
         """
-        present = self.json_types(_without_none(field.type))
+        kinds = self.json_types(without_none(field.type))
         accepts_null = field.nullable or field.type_has_null
         if field.nullable is None:
             accepts_null = accepts_null or field.schema_null
-        return present if present is None or not accepts_null else present | _NULL
-
-    def nullable(self, value: TypeView) -> bool:
-        """Return whether a type admits None, through its aliases."""
-        value = self.plain(value)
-        return isinstance(value, UnionType) and len(_present(value)) != len(value.members)
+        return kinds if kinds is None or not accepts_null else kinds | _NULL
 
 
 def _name(value: TypeView) -> str | None:
@@ -346,15 +342,3 @@ def _name(value: TypeView) -> str | None:
     if isinstance(value, BuiltinType):
         return value.name
     return f"{value.import_.from_}.{value.import_.import_}" if isinstance(value, ImportedType) else None
-
-
-def _without_none(value: TypeView) -> TypeView:
-    """Return a type without its None member, or the type itself when it is no union."""
-    if not isinstance(value, UnionType):
-        return value
-    present = _present(value)
-    return present[0] if len(present) == 1 else replace(value, members=tuple(present), hint=None)
-
-
-def _present(value: UnionType) -> list[TypeView]:
-    return [member for member in value.members if not isinstance(member, NoneType)]

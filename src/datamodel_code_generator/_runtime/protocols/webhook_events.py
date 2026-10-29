@@ -14,12 +14,9 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..client.errors import (
-    ConfigurationError,
-    is_sequence,
-)
+from ..client.errors import is_sequence
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError
+from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
 from .values import MISSING, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
@@ -35,7 +32,6 @@ __all__ = (
     "EventPlan",
     "Facts",
     "MappedEventDecoder",
-    "configuration_error",
     "decode_unsigned",
     "epoch_microseconds",
     "instant",
@@ -147,13 +143,6 @@ class Facts:
     matched_key_id: str
 
 
-def configuration_error(
-    field_path: tuple[str, ...], condition: Literal["invalid_value", "wrong_capability"], helper_id: str
-) -> ConfigurationError:
-    """Return the error of a wrong argument, by its field path."""
-    return ConfigurationError(field_path=field_path, reason=condition, helper_id=helper_id)
-
-
 def reject(
     condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
     helper_id: str,
@@ -193,7 +182,7 @@ def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
     if options is None:
         return _DEFAULTS
     if not isinstance(options, WebhookOptions):
-        raise configuration_error(("options",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("options",))
     given = {name: value for name in _OPTIONS if (value := getattr(options, name)) is not UNSET}
     return replace(_DEFAULTS, **given)
 
@@ -210,11 +199,11 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
     """Refuse the first wrong argument by its field path; return now in microseconds and the resolved limits."""
     for name, valid in (("raw_body", _instance(raw_body, bytes)), ("headers", _is_pairs(headers))):
         if not valid:
-            raise configuration_error((name,), "invalid_value", helper_id)
+            raise configuration_error(helper_id, (name,))
     if not _instance(keys, KeySet):
-        raise configuration_error(("keys",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("keys",))
     if not _aware(now):
-        raise configuration_error(("now",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("now",))
     limits = _limits(options, helper_id)
     return epoch_microseconds(now), limits
 
@@ -257,5 +246,5 @@ def decode_unsigned(plan: EventPlan[T], raw_body: bytes) -> T:
     """
     helper_id = plan.helper_id
     if not _instance(raw_body, bytes):
-        raise configuration_error(("raw_body",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("raw_body",))
     return plan.event.decode(raw_body, helper_id)

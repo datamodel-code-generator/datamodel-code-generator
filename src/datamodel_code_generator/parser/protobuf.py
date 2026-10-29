@@ -19,6 +19,7 @@ from warnings import warn
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
+from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import _safe_non_finite_float
 from datamodel_code_generator.util import record_watch_dependency
@@ -139,7 +140,7 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.ListValue": {"type": "array", "items": {}},
     "google.protobuf.Value": {
         "anyOf": [
-            {"type": "null"},
+            null_schema(),
             {"type": "boolean"},
             {"type": "number"},
             {"type": "string"},
@@ -150,15 +151,15 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.Any": {"type": "object", "additionalProperties": True},
     "google.protobuf.Empty": {"type": "object", "properties": {}, "additionalProperties": False},
     "google.protobuf.FieldMask": {"type": "string"},
-    "google.protobuf.DoubleValue": {"anyOf": [{"type": "number", "format": "double"}, {"type": "null"}]},
-    "google.protobuf.FloatValue": {"anyOf": [{"type": "number", "format": "float"}, {"type": "null"}]},
-    "google.protobuf.Int64Value": {"anyOf": [{"type": "integer", "format": "int64"}, {"type": "null"}]},
-    "google.protobuf.UInt64Value": {"anyOf": [{"type": "integer", "format": "int64", "minimum": 0}, {"type": "null"}]},
-    "google.protobuf.Int32Value": {"anyOf": [{"type": "integer", "format": "int32"}, {"type": "null"}]},
-    "google.protobuf.UInt32Value": {"anyOf": [{"type": "integer", "format": "int32", "minimum": 0}, {"type": "null"}]},
-    "google.protobuf.BoolValue": {"anyOf": [{"type": "boolean"}, {"type": "null"}]},
-    "google.protobuf.StringValue": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-    "google.protobuf.BytesValue": {"anyOf": [{"type": "string", "format": "binary"}, {"type": "null"}]},
+    "google.protobuf.DoubleValue": with_null({"type": "number", "format": "double"}, "member"),
+    "google.protobuf.FloatValue": with_null({"type": "number", "format": "float"}, "member"),
+    "google.protobuf.Int64Value": with_null({"type": "integer", "format": "int64"}, "member"),
+    "google.protobuf.UInt64Value": with_null({"type": "integer", "format": "int64", "minimum": 0}, "member"),
+    "google.protobuf.Int32Value": with_null({"type": "integer", "format": "int32"}, "member"),
+    "google.protobuf.UInt32Value": with_null({"type": "integer", "format": "int32", "minimum": 0}, "member"),
+    "google.protobuf.BoolValue": with_null({"type": "boolean"}, "member"),
+    "google.protobuf.StringValue": with_null({"type": "string"}, "member"),
+    "google.protobuf.BytesValue": with_null({"type": "string", "format": "binary"}, "member"),
 }
 
 

@@ -39,12 +39,17 @@ from ..client.errors import (
     is_phase_timeout,
 )
 from ..client.operations import request_errors
-from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
-from ..client.timing import SYSTEM_CLOCK, Budget, Clock
-from ..model_codecs.unset import UNSET
-from .errors import HELPER_ERRORS, MAX_CLOSE_REASON, MAX_RAW_PREFIX, ProtocolDataError, WebSocketClosedError
-from .options import WSOptions
+from ..client.timing import Budget
+from .errors import (
+    HELPER_ERRORS,
+    MAX_CLOSE_REASON,
+    MAX_RAW_PREFIX,
+    ProtocolDataError,
+    WebSocketClosedError,
+    configuration_error,
+)
+from .options import HelperLimits, WSOptions, checked_options, layered, new_session
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Mapping
@@ -75,7 +80,6 @@ __all__ = (
 SendT = TypeVar("SendT")
 RecvT = TypeVar("RecvT")
 T_co = TypeVar("T_co", covariant=True, default=object)
-V = TypeVar("V")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 
 _MANAGED: Final = frozenset({
@@ -144,7 +148,7 @@ class PingReceipt:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective WebSocket limits, session limits, and call options of one connect."""
 
     open_timeout: float | None
@@ -152,17 +156,6 @@ class _Limits:
     max_message_bytes: int | None
     ping_interval: float | None
     pong_timeout: float | None
-    total_timeout: float | None = None
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
-
-
-def _first(layers: tuple[object, ...], name: str, default: V) -> V:
-    """Return a limit from the first options layer that sets it, or its default."""
-    for layer in layers:
-        if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
-            return cast("V", value)
-    return default
 
 
 def _limits(
@@ -176,21 +169,15 @@ def _limits(
     An idle timeout neither layer sets is the call's merged native read timeout, and a message size neither sets is
     left to HTTPX2.
     """
-    for name, value, kind in (
-        ("ws_options", ws_options, WSOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise ConfigurationError(field_path=(name,), reason="invalid_value", helper_id=plan.helper_id)
-    request = options if isinstance(options, RequestOptions) else None
+    request = checked_options(plan.helper_id, "ws_options", ws_options, WSOptions, options)
     kinds = (ws_options, core.helper_defaults(plan.helper_id))
     return _Limits(
-        open_timeout=_first(kinds, "open_timeout", 5.0),
-        idle_timeout=_first(kinds, "idle_timeout", core.call_settings(request, plan.call).timeout.read),
-        max_message_bytes=_first(kinds, "max_message_bytes", None),
-        ping_interval=_first(kinds, "ping_interval", 20.0),
-        pong_timeout=_first(kinds, "pong_timeout", 20.0),
-        total_timeout=_first(kinds, "total_timeout", None),
+        open_timeout=layered(kinds, "open_timeout", 5.0),
+        idle_timeout=layered(kinds, "idle_timeout", core.call_settings(request, plan.call).timeout.read),
+        max_message_bytes=layered(kinds, "max_message_bytes", None),
+        ping_interval=layered(kinds, "ping_interval", 20.0),
+        pong_timeout=layered(kinds, "pong_timeout", 20.0),
+        total_timeout=layered(kinds, "total_timeout", None),
         options=request,
         clock=core.clock,
     )
@@ -199,13 +186,6 @@ def _limits(
 def _message_size(limits: _Limits) -> dict[str, int]:
     """Return the message size limit as HTTPX2's keyword, or nothing, so that HTTPX2's own default applies."""
     return {} if (size := limits.max_message_bytes) is None else {"max_message_size_bytes": size}
-
-
-def _session(limits: _Limits) -> OperationSession:
-    """Start the socket's session."""
-    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a connect loads the call runtime.
-
-    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
 
 
 def _checked_headers(headers: HeadersView) -> None:
@@ -359,11 +339,7 @@ class _Sockets(Generic[SendT, RecvT]):
         self._call.check()
 
     def _state_error(self, action: str) -> ConfigurationError:
-        return self._stamped(
-            ConfigurationError(
-                field_path=(action, self._state.value), reason="invalid_state", helper_id=self._plan.helper_id
-            )
-        )
+        return self._stamped(configuration_error(self._plan.helper_id, (action, self._state.value), "invalid_state"))
 
     def _close_error(self) -> WebSocketClosedError:
         code, reason, clean = self._closed
@@ -384,11 +360,7 @@ class _Sockets(Generic[SendT, RecvT]):
     def _enter_receive(self) -> None:
         """Take the session's one receive, refusing a concurrent one and an ended session."""
         if not self._receiving.acquire(blocking=False):
-            raise self._stamped(
-                ConfigurationError(
-                    field_path=("receive", "receiving"), reason="invalid_state", helper_id=self._plan.helper_id
-                )
-            )
+            raise self._stamped(configuration_error(self._plan.helper_id, ("receive", "receiving"), "invalid_state"))
         try:
             self._usable("receive")
         except BaseException:
@@ -895,7 +867,7 @@ def connect_socket(
 ) -> WebSocketSession[SendT, RecvT]:
     """Open a helper's WebSocket in a session of its own, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options)
-    session = _session(limits)
+    session = new_session(limits)
     response, call, upgraded = core.open_socket(
         plan.call,
         arguments,
@@ -923,7 +895,7 @@ async def aconnect_socket(
     The session runs in the task that enters the block and closes when it leaves.
     """
     limits = _limits(core, plan, ws_options, options)
-    session = _session(limits)
+    session = new_session(limits)
     response, call, upgraded = await core.open_socket(
         plan.call,
         arguments,

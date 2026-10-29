@@ -2,7 +2,9 @@
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters
 ``types.py:DataType.admits_none`` and ``model/base.py:DataModelFieldBase._field_null_source`` read the facts from the
-live objects; ``parser/generation.py:GenerationStore.write_rendered_null`` writes it once at render preparation.
+live objects; ``parser/generation.py:GenerationStore.write_rendered_null`` writes it once at render preparation. The
+client and server targets read the None of a model type from its frozen view (``_target_types.py``), and that of an
+annotation the document writes from ``written_annotation_null``.
 
 Where the None of a type comes from is one record, `TypeNull`, that the generation store keeps on the type: the node
 of the reference site (``parser/_sites.py:RefSite.node``), so copies of the node keep it. ``reference_null`` decides
@@ -18,17 +20,21 @@ from datamodel_code_generator._records import record
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+
 __all__ = [
     "NO_TYPE_NULL",
     "FieldNullSource",
     "NullSource",
     "TypeNull",
     "field_renders_none",
+    "imported_name_null",
     "member_null",
     "reference_adds_null",
     "reference_null",
     "rendered_nullability",
     "takes_member_null",
+    "written_annotation_null",
 ]
 
 NullSource: TypeAlias = Literal["own", "reference", "member"]
@@ -59,6 +65,7 @@ class TypeNull:
 
 
 NO_TYPE_NULL: Final = TypeNull()
+_TYPING: Final = frozenset({"typing", "typing_extensions"})
 
 
 def reference_null(*, named: bool | None, names_nullable: bool) -> bool:
@@ -140,3 +147,39 @@ def field_renders_none(  # noqa: PLR0913
     if required:
         return "type-has-null" if type_has_null else None
     return "fall-back" if fall_back_to_nullable else None
+
+
+def imported_name_null(*, module: str | None, name: str) -> bool:
+    """Return whether a name imported from ``module`` accepts None: ``Any`` under any alias does."""
+    return name == "Any" and module in _TYPING
+
+
+def written_annotation_null(expression: PythonTypeExpr) -> bool:
+    """Return whether an annotation the document writes (``x-python-type``) accepts None, by its names' imports.
+
+    None, object, Any under any alias, a union with such a member, and a `Literal` with a None value do. The model
+    path never asks, so it renders no None from this row.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeBoundName,
+        PythonTypeName,
+        PythonTypeSubscript,
+        PythonTypeUnion,
+    )
+
+    none = PythonTypeName("None")
+    null = expression in {none, PythonTypeName("object")}
+    match expression:
+        case PythonTypeUnion():
+            null = any(map(written_annotation_null, expression.items))
+        case PythonTypeBoundName():
+            null = imported_name_null(module=expression.import_from, name=expression.import_name)
+        case PythonTypeSubscript() if (
+            isinstance(base := expression.base, PythonTypeBoundName)
+            and base.import_name == "Literal"
+            and base.import_from in _TYPING
+        ):
+            null = none in expression.arguments
+        case _:
+            pass
+    return null
