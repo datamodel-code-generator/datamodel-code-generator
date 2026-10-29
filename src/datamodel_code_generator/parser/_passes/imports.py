@@ -41,7 +41,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _declares_unique_items,
     _format_tags,
-    _is_discriminator_container,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _module_name_from_module_path,
@@ -57,6 +56,7 @@ from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, Con
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.render_prep import _DECIMAL_WARNING_EXAMPLE_LIMIT
 from datamodel_code_generator.reference import ModelResolver
+from datamodel_code_generator.types import union_members, written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -540,10 +540,8 @@ def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecR
 
 def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
     """Yield the root types of the aliases a union names."""
-    for member in data_type.data_types:
-        if member.is_union and not _is_discriminator_container(member):
-            yield from _iter_union_alias_roots(member)
-        elif (
+    for member in written_union_members(data_type.data_types):
+        if (
             member.reference
             and isinstance(source := member.reference.source, DataModel)
             and _is_discriminator_wrapper(source)
@@ -555,9 +553,8 @@ def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
 def _msgspec_refused_union_structs(data_type: DataType) -> _MsgspecRefusal:
     """Return the Struct types of a union msgspec refuses, unless an alias it names is refused on its own."""
     if (
-        not data_type.is_union
-        or _is_discriminator_container(data_type)
-        or not (refusal := _msgspec_refused_member_structs(data_type.data_types))[0]
+        not (members := union_members(data_type))
+        or not (refusal := _msgspec_refused_member_structs(members))[0]
         or any(_msgspec_refused_member_structs((root,))[0] for root in _iter_union_alias_roots(data_type))
     ):
         return _NO_MSGSPEC_REFUSAL
@@ -599,15 +596,6 @@ _MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...], bool]
 writes every Enum among them as a Literal."""
 
 
-def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
-    """Yield the members of a union as written, spreading the member unions that render as part of it."""
-    for data_type in data_types:
-        if data_type.is_union and not _is_discriminator_container(data_type):
-            yield from _iter_written_union_members(data_type.data_types)
-        else:
-            yield data_type
-
-
 def _msgspec_enum_clashes(
     data_types: Iterable[DataType], literal_enum_ids: Collection[int]
 ) -> tuple[_MsgspecEnumClash, ...]:
@@ -624,7 +612,7 @@ def _msgspec_enum_clashes(
     names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
     others: set[str] = set()
     refused: set[str] = set()
-    for member in _iter_written_union_members(data_types):
+    for member in written_union_members(data_types):
         for leaf, _, _ in _iter_discriminator_data_types((member,)):
             if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
                 if (
@@ -653,11 +641,7 @@ def _msgspec_refused_union_enums(
     data_type: DataType, literal_enum_ids: Collection[int]
 ) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
-    if (
-        not data_type.is_union
-        or _is_discriminator_container(data_type)
-        or not (clashes := _msgspec_enum_clashes(data_type.data_types, literal_enum_ids))
-    ):
+    if not (members := union_members(data_type)) or not (clashes := _msgspec_enum_clashes(members, literal_enum_ids)):
         return ()
     covered = {
         clash[0]

@@ -610,6 +610,15 @@ def union_members(data_type: DataType) -> Sequence[DataType]:
     return data_type.data_types
 
 
+def written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading each member that is a union at its top level."""
+    for data_type in data_types:
+        if members := union_members(data_type):
+            yield from written_union_members(members)
+        else:
+            yield data_type
+
+
 def is_data_model_field(obj: object) -> TypeIs[DataModelFieldBase]:
     """Check if an object structurally owns a DataType."""
     return isinstance(getattr(obj, "data_type", None), DataType)
@@ -1007,10 +1016,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if len(self.data_types) > 1:
             union = _union_core()
             plan = union.assemble_union(
-                tuple(
-                    union.MemberFacts(is_any=(is_any := type_.type == ANY), optional_any=is_any and type_.is_optional)
-                    for type_ in self.data_types
-                ),
+                tuple(union.MemberFacts(is_any=type_.type == ANY, null=type_.is_optional) for type_ in self.data_types),
                 union.CONSTRUCTED,
             )
             if plan.rule == "optional-any-to-null":

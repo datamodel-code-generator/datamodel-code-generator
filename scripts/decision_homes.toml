@@ -1845,9 +1845,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_reference_value_schema"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._apply_root_model_sequence_interface"]
-"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-31" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_neutral_object_field"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
@@ -1955,7 +1952,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_map"]
 "H06.type-has-null" = { home = "H06", count = 1, audit = "D-L1-08" }
-"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_root_type_with_context"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
@@ -1984,9 +1980,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_object_fields"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_pattern_properties"]
-"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."_merges_ref_siblings"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }

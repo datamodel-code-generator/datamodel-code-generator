@@ -12129,7 +12129,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif len(root_type.data_types) == 1:
             item_type = root_type.data_types[0].type_hint or ANY
         else:
-            item_type = self.data_type(data_types=root_type.data_types).type_hint or ANY
+            item_type = build_union(self.data_type, root_type.data_types).type_hint or ANY
         slice_type = root_type.type_hint or f"list[{item_type}]"
         if "[" not in slice_type:
             slice_type = f"{slice_type}[{item_type}]"
@@ -12998,11 +12998,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 or self._output_model_context.decodes_value_unions
             )
         ):
-            return self.data_type(
-                data_types=[
+            return build_union(
+                self.data_type,
+                [
                     self._pattern_map_type(group_patterns, [value_type], property_names, joins_patterns=True)
                     for group_patterns, value_type in groups.values()
-                ]
+                ],
             )
         return self._pattern_map_type(patterns, value_types, property_names, joins_patterns=True)
 
@@ -13224,7 +13225,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
             return union
         if null_left_to_field:
-            return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
+            return build_union(self.data_type, [map_type], nullable=obj.type_has_null)
         return _with_null(map_type) if self._object_map_admits_null(obj) else map_type
 
     def _object_map_type_union(
