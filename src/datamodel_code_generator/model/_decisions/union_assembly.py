@@ -4,7 +4,8 @@ Every input is an immutable fact, so the functions read nothing else. ``assemble
 built or rewritten: each builder passes the row of ``UnionRow`` it follows and a ``MemberFacts`` per member. The
 adapters apply the plan: ``types.py:build_union`` (the jsonschema and OpenAPI builders, msgspec field hints),
 ``types.py:DataType.__init__`` (every type), ``parser/generation.py:GenerationStore.replace_nested_data_type`` (L5
-collapse) and ``parser/graphql.py:GraphQLParser.parse_union``. ``merge_members`` decides which written members a union
+collapse), ``parser/_passes/render_prep.py:_flatten_union_members`` (the union around a quoted container) and
+``parser/graphql.py:GraphQLParser.parse_union``. ``merge_members`` decides which written members a union
 keeps and whether it takes over their None, for ``types.py:DataType._render_union_type_hint`` (members by rendered
 text) and ``_target_binding.py`` (members by projected type). ``join_union`` writes the members, for type hints and
 for the ``MISSING`` sentinel of Pydantic fields, which it writes after the hint as rendered, so a union in the hint
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CONSTRUCTED",
     "DECLARED",
+    "FLATTENED",
     "MEMBER",
     "NULLABLE",
     "ORDERED",
@@ -49,6 +51,7 @@ UnionRow: TypeAlias = Literal[
     "declared",
     "constructed",
     "ordered",
+    "flattened",
     "legacy-non-array-first",
     "legacy-replacement-last",
     "legacy-graphql-template",
@@ -62,6 +65,9 @@ UnionRow: TypeAlias = Literal[
   where the ``Any`` admits null renders as ``str | None`` (``optional-any-to-null``).
 * ``ordered``: the members keep their order and render as written; None and the ``UNSET`` sentinel are members, the
   sentinel last, and a union of one member is that member (msgspec field hints).
+* ``flattened``: render preparation rewrites the union around a quoted container: a member that only groups its
+  members gives them its place, and the None of every member moves to the union, so ruff finds no nested or repeated
+  member to rewrite into a ``|`` chain, which fails at run time once a member is a string.
 * ``legacy-non-array-first``: the branches beside ``array`` of a type array, parsed after the array, go before it
   (``parser/jsonschema.py:JsonSchemaParser.parse_array_fields``), where the other type arrays keep the order of the
   schema.
@@ -71,17 +77,19 @@ UnionRow: TypeAlias = Literal[
   ``Union[...]`` whatever ``--use-union-operator`` says.
 """
 
-MemberRole: TypeAlias = Literal["member", "non-array", "replaced", "replacement", "null", "sentinel"]
+MemberRole: TypeAlias = Literal["member", "non-array", "replaced", "replacement", "null", "sentinel", "grouping"]
 """What a member is to the row that orders it.
 
 ``non-array`` marks a type-array branch beside ``array`` (``legacy-non-array-first``), ``replaced`` and
 ``replacement`` the member L5 replaces and the one replacing it (``legacy-replacement-last``), ``null`` and
-``sentinel`` the None and ``UNSET`` members of ``ordered`` unions.
+``sentinel`` the None and ``UNSET`` members of ``ordered`` unions, ``grouping`` a member that only groups its members
+and writes nothing of its own (``flattened``).
 """
 
 UnionRule: TypeAlias = Literal[
     "declared",
     "ordered",
+    "flattened",
     "optional-any-to-null",
     "legacy-non-array-first",
     "legacy-replacement-last",
@@ -94,11 +102,11 @@ members."""
 @final
 @record
 class MemberFacts:
-    """The facts ``assemble_union`` reads about one member: its role, and whether it admits any value (and null)."""
+    """The facts ``assemble_union`` reads about one member: its role, whether it admits any value, and its None."""
 
     role: MemberRole = "member"
     is_any: bool = False
-    optional_any: bool = False
+    null: bool = False
 
 
 @final
@@ -116,7 +124,8 @@ class UnionPlan:
     """The members a union holds, as indexes into the members passed in, and how it writes them.
 
     ``nullable`` is the union's own None. ``preserve_order`` renders the members in order, with None in place, and
-    ``one_member_is_type`` makes a union of one member that member itself.
+    ``one_member_is_type`` makes a union of one member that member itself. ``spread`` names the members whose own
+    members the union holds in their place, and ``null_moved`` the members whose None the union writes instead.
     """
 
     rule: UnionRule
@@ -124,6 +133,8 @@ class UnionPlan:
     nullable: bool = False
     preserve_order: bool = False
     one_member_is_type: bool = False
+    spread: tuple[int, ...] = ()
+    null_moved: tuple[int, ...] = ()
 
 
 MEMBER = MemberFacts()
@@ -141,19 +152,23 @@ CONSTRUCTED = UnionPolicy("constructed")
 ORDERED = UnionPolicy("ordered")
 """The row of msgspec field hints, which write None and ``UNSET`` as members."""
 
+FLATTENED = UnionPolicy("flattened")
+"""The row of render preparation's rewrite of the union around a quoted container."""
+
 
 def _indexes(members: Sequence[MemberFacts], *roles: MemberRole) -> tuple[int, ...]:
     return tuple(index for index, member in enumerate(members) if member.role in roles)
 
 
-def assemble_union(members: Sequence[MemberFacts], policy: UnionPolicy, /) -> UnionPlan:
+def assemble_union(members: Sequence[MemberFacts], policy: UnionPolicy, /) -> UnionPlan:  # noqa: PLR0911
     """Return the plan of a union of ``members`` built or rewritten under ``policy`` (``UnionRow`` names the rows)."""
     match policy.row:
         case "declared" | "legacy-graphql-template":
             return UnionPlan(policy.row, tuple(range(len(members))), nullable=policy.nullable)
         case "constructed":
-            if any(member.optional_any for member in members) and not all(member.is_any for member in members):
-                kept = tuple(index for index, member in enumerate(members) if not member.optional_any)
+            optional_any = tuple(member.is_any and member.null for member in members)
+            if any(optional_any) and not all(member.is_any for member in members):
+                kept = tuple(index for index, dropped in enumerate(optional_any) if not dropped)
                 return UnionPlan("optional-any-to-null", kept, nullable=True)
             return UnionPlan("declared", tuple(range(len(members))), nullable=policy.nullable)
         case "ordered":
@@ -163,6 +178,15 @@ def assemble_union(members: Sequence[MemberFacts], policy: UnionPolicy, /) -> Un
                 *_indexes(members, "sentinel"),
             )
             return UnionPlan("ordered", order, nullable=policy.nullable, preserve_order=True, one_member_is_type=True)
+        case "flattened":
+            null_moved = tuple(index for index, member in enumerate(members) if member.null)
+            return UnionPlan(
+                "flattened",
+                tuple(range(len(members))),
+                nullable=policy.nullable or bool(null_moved),
+                spread=_indexes(members, "grouping"),
+                null_moved=null_moved,
+            )
         case "legacy-non-array-first":
             order = (*_indexes(members, "non-array"), *_indexes(members, "member", "null", "sentinel"))
             return UnionPlan(policy.row, order, nullable=policy.nullable)

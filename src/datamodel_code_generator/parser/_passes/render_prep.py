@@ -20,6 +20,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 from datamodel_code_generator.model._decisions.hashability import set_items_may_keep_builtin_hash
+from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
     UNDEFINED,
@@ -351,27 +352,32 @@ def _only_groups_members(data_type: DataType) -> bool:
     )
 
 
-def _flatten_union_members(data_type: DataType, enclosing: tuple[DataType, ...] = ()) -> None:
-    """Hoist grouped members and their ``None`` into the union, so ruff finds no nested or repeated member to rewrite.
+def _flatten_union_members(data_type: DataType) -> None:
+    """Hoist grouped members and their ``None`` into the union (row ``flattened``), so ruff finds no nested member.
 
     Ruff rewrites a union with a nested union or a repeated member into a ``|`` chain, which fails at runtime
-    once a member is a string. A member's ``None`` moves to its union and to each union that one is flattened into.
+    once a member is a string. A grouping member is flattened first, so it holds the ``None`` of its members when its
+    own union takes it over.
     """
-    members: list[DataType] = []
-    unions = (data_type, *enclosing)
-    for member in data_type.data_types:
-        if member.is_optional:
-            member._materialize_render_state("null-moved-to-union")  # noqa: SLF001
-            for union in unions:
-                union._materialize_render_state("member-null")  # noqa: SLF001
-        if _only_groups_members(member):
-            _flatten_union_members(member, unions)
-            members.extend(member.data_types)
-        else:
-            members.append(member)
+    members = data_type.data_types
+    facts: list[MemberFacts] = []
     for member in members:
+        if grouping := _only_groups_members(member):
+            _flatten_union_members(member)
+        facts.append(MemberFacts("grouping" if grouping else "member", null=member.is_optional))
+    plan = assemble_union(facts, FLATTENED)
+    for index in plan.null_moved:
+        members[index]._materialize_render_state("null-moved-to-union")  # noqa: SLF001
+    if plan.nullable:
+        data_type._materialize_render_state("member-null")  # noqa: SLF001
+    flattened = [
+        nested
+        for index in plan.members
+        for nested in (members[index].data_types if index in plan.spread else (members[index],))
+    ]
+    for member in flattened:
         member.parent = data_type
-    data_type.data_types = members
+    data_type.data_types = flattened
 
 
 def _container_item_aliases(model: DataModel) -> Iterator[DataModel]:

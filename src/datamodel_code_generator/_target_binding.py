@@ -88,9 +88,11 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
+from datamodel_code_generator._target_types import admits_none, is_none, present
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
+from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
@@ -109,7 +111,7 @@ from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchema
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path, location_of
-from datamodel_code_generator.types import DataType, Types
+from datamodel_code_generator.types import DataType, Types, reference_names_nullable
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
@@ -284,20 +286,20 @@ class RecordingGenerationStore(GenerationStore):
     def __init__(self) -> None:
         """Start an attempt with no recorded redirects."""
         super().__init__()
-        self.redirects: list[tuple[Reference, Reference]] = []
+        self.redirects: list[tuple[Reference, Reference, bool]] = []
 
     def redirect_reference_users(
         self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
     ) -> list[DataType]:
-        """Record a global redirect, then redirect every user and return the redirected users."""
-        self.redirects.append((old_reference, new_reference))
+        """Record a global redirect, and whether it merges a model, then redirect every user and return them."""
+        self.redirects.append((old_reference, new_reference, merged))
         return super().redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference
     ) -> None:
-        """Record a redirect scoped to some models, then redirect their users."""
-        self.redirects.append((model.reference, new_reference))
+        """Record a redirect scoped to some models, which merges a model, then redirect their users."""
+        self.redirects.append((model.reference, new_reference, True))
         super().redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
 
 
@@ -1080,15 +1082,9 @@ def _members(value: TypeView) -> tuple[TypeView, ...]:
     return value.members if isinstance(value, UnionType) and value.tag is None else (value,)
 
 
-def _has_null(value: TypeView) -> bool:
-    members = value.members if isinstance(value, UnionType) else (value,)
-    return any(isinstance(member, NoneType) for member in members)
-
-
 @dataclass(frozen=True, slots=True)
 class _Reference:
     symbol: SymbolId
-    nullable: bool
     is_alias: bool
     serialize_as_any: bool
 
@@ -1132,9 +1128,9 @@ class _Binder:
     def __init__(self, parser: TargetApiOpenAPIParser, results: str | dict[tuple[str, ...], Result]) -> None:
         self.parser = parser
         self.results = results
-        self.redirects: dict[int, list[Reference]] = {}
-        for old, new in cast("RecordingGenerationStore", parser.generation_store).redirects:
-            self.redirects.setdefault(id(old), []).append(new)
+        self.redirects: dict[int, list[tuple[Reference, bool]]] = {}
+        for old, new, merged in cast("RecordingGenerationStore", parser.generation_store).redirects:
+            self.redirects.setdefault(id(old), []).append((new, merged))
         self.outputs = [output for output in parser.module_outputs if output[1]]
         self.models = [model for _, models, _ in self.outputs for model in models]
         self.symbols = {id(model): SymbolId(index) for index, model in enumerate(self.models)}
@@ -1147,7 +1143,7 @@ class _Binder:
         self.overrides = parser.config.import_overrides or {}
         self.hints = _Hints(manager.data_type)
         self.projectors: dict[tuple[Direction, bool], _Projector] = {}
-        self.finals: dict[tuple[int, Direction], Reference | None] = {}
+        self.finals: dict[tuple[int, Direction], tuple[Reference | None, bool | None]] = {}
         self.declaration_types = dict(parser._declaration_types)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
     def identity(self, node: object) -> GraphObjectId:
@@ -1178,38 +1174,52 @@ class _Binder:
         return isinstance(model, DataModel) and id(model) in self.symbols
 
     def final(self, reference: Reference, direction: Direction = "neutral") -> Reference | None:
-        key = id(reference), direction
-        if key in self.finals:
-            return self.finals[key]
-        found = (self._variant(reference, direction) if direction != "neutral" else None) or self._terminal(reference)
-        self.finals[key] = found
-        return found
+        return self._final(reference, direction)[0]
 
-    def _terminal(self, reference: Reference) -> Reference | None:
+    def schema_null(self, reference: Reference, direction: Direction) -> bool:
+        """Return whether a use of a schema's own model admits the null of that schema, as a reference to it does.
+
+        Each merge that pointed the schema's model at an equal one recorded the null the use admitted right before it
+        (``GenerationStore.redirect_reference_users``), so a schema that rejects null keeps rejecting it in a merged
+        nullable model (``nullability.reference_null``, #5410).
+        """
+        found, named = self._final(reference, direction)
+        return found is not None and reference_null(named=named, names_nullable=reference_names_nullable(found))
+
+    def _final(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
+        key = id(reference), direction
+        if (known := self.finals.get(key)) is None:
+            variant = self._variant(reference, direction) if direction != "neutral" else (None, None)
+            known = self.finals[key] = variant if variant[0] is not None else self._terminal(reference)
+        return known
+
+    def _terminal(self, reference: Reference) -> tuple[Reference | None, bool | None]:
+        """Return the emitted model a reference was redirected to, and the null the merges on the way recorded."""
         if self.emitted(reference.source):
-            return reference
-        terminals: dict[int, Reference] = {}
-        pending = [reference]
+            return reference, None
+        terminals: dict[int, tuple[Reference, bool | None]] = {}
+        pending: list[tuple[Reference, bool | None]] = [(reference, None)]
         seen: set[int] = set()
         while pending:
-            current = pending.pop()
+            current, named = pending.pop()
             if id(current) in seen:
                 continue
             seen.add(id(current))
             if current is not reference and self.emitted(current.source):
-                terminals[id(current)] = current
+                terminals[id(current)] = current, named
                 continue
-            pending.extend(self.redirects.get(id(current), ()))
-        return next(iter(terminals.values())) if len(terminals) == 1 else None
+            null = reference_null(named=named, names_nullable=reference_names_nullable(current))
+            pending.extend((new, null if merged else named) for new, merged in self.redirects.get(id(current), ()))
+        return next(iter(terminals.values())) if len(terminals) == 1 else (None, None)
 
-    def _variant(self, reference: Reference, direction: Direction) -> Reference | None:
+    def _variant(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
         resolver = self.parser.model_resolver
         special = f"read-write-{direction}"
         for base in dict.fromkeys((self.keys.get(id(reference), reference.path), reference.path)):
             key = resolver.join_path(tuple(get_special_path(special, base.split("/"))))
             if (variant := resolver.references.get(key)) is not None:
                 return self._terminal(variant)
-        return None
+        return None, None
 
     def reference(self, reference: Reference, direction: Direction) -> _Reference | None:
         if (final := self.final(reference, direction)) is None:
@@ -1217,7 +1227,6 @@ class _Binder:
         model = _source(final)
         return _Reference(
             self.symbols[id(model)],
-            model._nullable,  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
             model.IS_ALIAS,
             self.serialize_as_any
             and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
@@ -1497,15 +1506,16 @@ class _Projector:
     def declaration(self, reference: Reference, *, nullable: bool = False) -> TypeProjection:
         """Project a schema's own model, which as a nullable value also takes None when an object model stands for it.
 
-        An object model, unlike an alias or a root model, cannot hold the null its schema admits.
+        An object model, unlike an alias or a root model, cannot hold the null its schema admits; the null is the one
+        a reference to the schema admits (``_Binder.schema_null``).
         """
         try:
             value = self._reference_value(reference, serialize_as_any=False)
             if (
                 nullable
                 and isinstance(value, GeneratedSymbolType)
-                and (model := self.binder.models[value.symbol]).nullable
-                and self.binder.policies[id(model)].kind == "model"
+                and self.binder.policies[id(self.binder.models[value.symbol])].kind == "model"
+                and self.binder.schema_null(reference, self.direction)
             ):
                 value = UnionType((value, NoneType()), preserve_order=False, hint=self.hints.optional(value))
             return TypeProjection(self._imports(value))
@@ -1519,11 +1529,10 @@ class _Projector:
             return known[1]
         projected, inferred_optional = self._base(data_type)
         projected = self._container(data_type, projected)
-        binding = (
-            self.binder.reference(reference, self.direction) if (reference := data_type.reference) is not None else None
-        )
         nullable_reference = (
-            binding is not None and binding.nullable and not binding.is_alias and not data_type.held_null_dropped
+            (reference := data_type.reference) is not None
+            and data_type.adds_reference_null
+            and self.binder.reference(reference, self.direction) is not None
         )
         if (data_type.is_optional or inferred_optional or nullable_reference) and projected != ImportedType(IMPORT_ANY):
             base = projected
@@ -1633,7 +1642,7 @@ class _Projector:
         projected = tuple(self._project(child) for child in data_type.data_types)
         flattened = tuple(member for value in projected for member in _members(value))
         merged = merge_members(
-            WrittenMember(member, member, null=not preserve_order and isinstance(member, NoneType))
+            WrittenMember(member, member, null=not preserve_order and is_none(member))
             for member in (projected if preserve_order else flattened)
         )
         members, inferred_optional = merged.kept, merged.takes_null
@@ -2025,7 +2034,7 @@ def _field_facts(
 
 def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
-    if _has_null(type_value):
+    if admits_none(type_value):
         return True
     return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
@@ -2879,7 +2888,6 @@ class _Models:
                         bases,
                         slots,
                         model.IS_ALIAS,
-                        model._nullable,  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                         _model_facts(model, policy),
                         tuple(_literal_scalar(get_raw_enum_member_value(field.default)) for field in model.fields)
                         if policy.kind == "enum"
@@ -2953,9 +2961,13 @@ class _Models:
         return known
 
     def preexisting_null(self, data_type: DataType) -> bool | None:
-        """Return whether a field's own type accepts None before the field adds optionality."""
+        """Return whether a field's own type accepts None before the field adds optionality.
+
+        A reference accepts the null of the schema it names (``DataType.names_nullable_model``), an alias that of its
+        value.
+        """
         pending = [data_type]
-        references: dict[int, Reference] = {}
+        references: dict[int, tuple[Reference, bool]] = {}
         opaque = False
         python_imports = self.parser._python_imports  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         while pending:
@@ -2973,7 +2985,8 @@ class _Models:
             )):
                 continue
             if (reference := current.reference) is not None:
-                references[id(reference)] = reference
+                named = references.get(id(reference), (reference, False))[1]
+                references[id(reference)] = reference, named or current.names_nullable_model
             opaque |= (
                 current.python_type is not None
                 or current.is_custom_type
@@ -2986,14 +2999,10 @@ class _Models:
             )
             pending.extend(current.data_types)
         unknown = opaque
-        for reference in references.values():
+        for reference, named in references.values():
             binding = self.binder.reference(reference, "neutral")
             nullable = (
-                None
-                if binding is None
-                else self.alias_nullable(binding.symbol, set())
-                if binding.is_alias
-                else binding.nullable
+                None if binding is None else self.alias_nullable(binding.symbol, set()) if binding.is_alias else named
             )
             if nullable is True:
                 return True
@@ -3018,9 +3027,8 @@ class _Models:
         pending: list[TypeView] = [] if value is None else [value]
         while pending:
             item = pending.pop()
+            direct = direct or is_none(item)
             match item:
-                case NoneType():
-                    direct = True
                 case UnionType():
                     pending.extend(item.members)
                 case GeneratedSymbolType() if self.binder.models[item.symbol].IS_ALIAS:
@@ -3178,8 +3186,8 @@ class _SchemaUses(_Models):
     def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
         """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
         if isinstance(value, UnionType):
-            present = [item for item in value.members if not isinstance(item, NoneType)]
-            value = present[0] if len(present) == 1 else None
+            members = present(value)
+            value = members[0] if len(members) == 1 else None
         symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
         members = () if symbol is None else self.members.get(symbol, ())
         root = next(
@@ -3577,7 +3585,7 @@ class _Contracts(_SchemaUses):
         projector = self.binder.projector(direction, inline=True)
         projector.constrained = False
         value = self.projection(schema, "value", direction, inline=True).value
-        members = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
+        members = [member for member in (() if value is None else _members(value)) if not is_none(member)]
         return tuple(
             member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
             for member in members
