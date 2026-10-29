@@ -254,19 +254,6 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     return _applies_default(field) and _needs_validate_default(field.data_type)
 
 
-def _wraps_member_hints(data_type: DataType) -> bool:
-    """Return whether the type writes the hints of its members inside a container."""
-    return (
-        data_type.is_list
-        or data_type.is_dict
-        or data_type.is_set
-        or data_type.is_frozen_set
-        or data_type.is_mapping
-        or data_type.is_sequence
-        or data_type.is_tuple
-    )
-
-
 def _no_hidden_type_names(model: DataModel) -> Collection[str | None]:  # noqa: ARG001
     """Report no hidden types, for annotations that a future import defers."""
     return ()
@@ -825,7 +812,7 @@ def disable_union_operator_for_forward_ref(
                 continue
             seen.add(id(holder))
             joins_members = holder.is_union and not holder.is_tuple
-            wraps_members = _wraps_member_hints(holder)
+            wraps_members = holder._is_container  # noqa: SLF001
             if joins_members or (writes_name and not wraps_members):
                 graph_builder.drop_union_operator(holder)
             if use_typing_generics and node is data_type:

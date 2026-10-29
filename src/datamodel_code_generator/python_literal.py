@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from typing_extensions import Self, Sentinel
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator.imports import Import
 
@@ -84,20 +84,14 @@ class PythonRuntimeExpression:
         return self
 
 
+_RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
+
+
 def _runtime_expression_container_items(value: object) -> Iterable[object] | None:
     """Return only exact built-in literal containers eligible for recursive handling."""
-    match value:
-        case dict() if type(value) is dict:
-            return value.items()
-        case list() if type(value) is list:
-            return value
-        case tuple() if type(value) is tuple:
-            return value
-        case set() if type(value) is set:
-            return value
-        case frozenset() if type(value) is frozenset:
-            return value
-    return None
+    if type(value) is dict:
+        return value.items()
+    return cast("Iterable[object]", value) if type(value) in _RUNTIME_EXPRESSION_CONTAINERS else None
 
 
 def runtime_expression_imports(value: object) -> tuple[Import, ...]:
@@ -147,25 +141,20 @@ def rewrite_runtime_expressions(
     value: object,
     aliases: Mapping[tuple[str | None, str], Import],
 ) -> object:
-    """Alias nested parser-owned runtime expressions while preserving unchanged containers."""
-    return _rewrite_runtime_value(value, aliases)
+    """Alias nested parser-owned runtime expressions while preserving unchanged containers.
 
-
-def _rewrite_runtime_value(
-    value: object,
-    aliases: Mapping[tuple[str | None, str], Import],
-) -> object:
-    """Rewrite one source value and make structural copies only after an actual change."""
+    Structural copies are made only after an actual change.
+    """
     if isinstance(value, PythonRuntimeExpression):
         return value.with_import_aliases(aliases)
     if type(value) is dict:
         return _rewrite_runtime_mapping(cast("dict[object, object]", value), aliases)
     if (items := _runtime_expression_container_items(value)) is None:
         return value
-    rewritten = tuple(_rewrite_runtime_value(item, aliases) for item in items)
-    if all(item is original for item, original in zip(rewritten, cast("Iterable[object]", value), strict=True)):
+    rewritten = tuple(rewrite_runtime_expressions(item, aliases) for item in items)
+    if all(item is original for item, original in zip(rewritten, items, strict=True)):
         return value
-    return _rebuild_runtime_container(value, rewritten)
+    return rewritten if type(value) is tuple else type(value)(rewritten)
 
 
 def _rewrite_runtime_mapping(
@@ -174,7 +163,8 @@ def _rewrite_runtime_mapping(
 ) -> object:
     """Copy a mapping only when a key or value received an alias."""
     items = tuple(
-        (_rewrite_runtime_value(key, aliases), _rewrite_runtime_value(item, aliases)) for key, item in value.items()
+        (rewrite_runtime_expressions(key, aliases), rewrite_runtime_expressions(item, aliases))
+        for key, item in value.items()
     )
     if all(
         rewritten_key is original_key and rewritten_item is original_item
@@ -184,17 +174,6 @@ def _rewrite_runtime_mapping(
     return dict(items)
 
 
-def _rebuild_runtime_container(value: object, items: tuple[object, ...]) -> object:
-    """Create the exact built-in container type after a nested expression changed."""
-    if type(value) is list:
-        return list(items)
-    if type(value) is tuple:
-        return items
-    if type(value) is set:
-        return set(items)
-    return frozenset(items)
-
-
 class _NonFiniteFloat(float):
     """A parser-owned non-finite float with a source-safe representation."""
 
@@ -202,9 +181,7 @@ class _NonFiniteFloat(float):
 
     def __repr__(self) -> str:
         """Render a valid Python expression without changing numeric semantics."""
-        if isnan(self):
-            return "float('nan')"
-        return "float('inf')" if self > 0 else "float('-inf')"
+        return represent_python_value(float(self))
 
     def __str__(self) -> str:
         """Render a valid Python expression for templates that stringify values."""
@@ -285,11 +262,6 @@ def _normalize_string(value: str) -> str:
     return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
 
 
-def _stringify_untrusted_value(value: object) -> str:
-    """Stringify public data once, returning an exact built-in ``str``."""
-    return _normalize_string(str(value))
-
-
 def _normalized_safe_public_type_name(value: object) -> str | None:
     """Return a normalized bare or dotted public type name when safe.
 
@@ -322,46 +294,54 @@ def represent_untrusted_public_type_name(value: Any) -> str:
     return represent_untrusted_python_value(value)
 
 
-def represent_python_value(value: Any) -> str:  # noqa: PLR0911
+def _represent_container(value: object, render: Callable[[Any], str], *, sort_sets_by_repr: bool) -> str | None:
+    """Render a dict, list, tuple or set with ``render`` for its items; None for any other value.
+
+    Set items are ordered by type name, then by their ``repr`` or their rendered text.
+    """
+    match value:
+        case dict():
+            return "{" + ", ".join(f"{render(key)}: {render(item)}" for key, item in value.items()) + "}"
+        case list():
+            return "[" + ", ".join(map(render, value)) + "]"
+        case tuple():
+            return "(" + ", ".join(map(render, value)) + ("," if len(value) == 1 else "") + ")"
+        case set() if not value:
+            return "set()"
+        case set():
+            from operator import itemgetter  # noqa: PLC0415
+
+            rows = [
+                (type(item).__name__, repr(item) if sort_sets_by_repr else text, text)
+                for item in value
+                for text in (render(item),)
+            ]
+            rows.sort(key=itemgetter(0, 1))
+            return "{" + ", ".join(text for _, _, text in rows) + "}"
+    return None
+
+
+def represent_python_value(value: Any) -> str:
     """Render a value as a Python expression safe for generated source."""
     match value:
-        case PythonRuntimeExpression():
-            return value.code
-        case PythonCode():
+        case PythonRuntimeExpression() | PythonCode():
             return value.code
         case float() if isnan(value):
             return "float('nan')"
         case float() if not isfinite(value):
             return "float('inf')" if value > 0 else "float('-inf')"
-        case dict():
-            rendered_items = ", ".join(
-                f"{represent_python_value(key)}: {represent_python_value(item)}" for key, item in value.items()
-            )
-            return f"{{{rendered_items}}}"
-        case list():
-            return "[" + ", ".join(represent_python_value(item) for item in value) + "]"
-        case tuple():
-            rendered_items = ", ".join(represent_python_value(item) for item in value)
-            trailing_comma = "," if len(value) == 1 else ""
-            return f"({rendered_items}{trailing_comma})"
-        case set() if not value:
-            return "set()"
-        case set():
-            sorted_items = sorted(value, key=lambda item: (type(item).__name__, repr(item)))
-            return "{" + ", ".join(represent_python_value(item) for item in sorted_items) + "}"
-    return repr(value)
+    rendered = _represent_container(value, represent_python_value, sort_sets_by_repr=True)
+    return repr(value) if rendered is None else rendered
 
 
-def represent_untrusted_python_value(value: Any) -> str:  # noqa: PLR0911
+def represent_untrusted_python_value(value: Any) -> str:
     """Render data from a public template context as a non-executing Python literal.
 
     Unlike :func:`represent_python_value`, this deliberately does not preserve
     ``PythonCode``.  Built-in templates call this at extension-data boundaries;
     parser-owned source fragments remain separate from those boundaries.
     """
-    if value is None or type(value) is bool:
-        return represent_python_value(value)
-    if type(value) is int or type(value) is float:
+    if value is None or type(value) is bool or type(value) is int or type(value) is float:
         return represent_python_value(value)
     if isinstance(value, int):
         return represent_python_value(int.__int__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
@@ -369,22 +349,6 @@ def represent_untrusted_python_value(value: Any) -> str:  # noqa: PLR0911
         return represent_python_value(float.__float__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, str):
         return repr(_normalize_string(value))
-    if isinstance(value, dict):
-        rendered_items = ", ".join(
-            f"{represent_untrusted_python_value(key)}: {represent_untrusted_python_value(item)}"
-            for key, item in value.items()
-        )
-        return f"{{{rendered_items}}}"
-    if isinstance(value, list):
-        return "[" + ", ".join(represent_untrusted_python_value(item) for item in value) + "]"
-    if isinstance(value, tuple):
-        rendered_items = ", ".join(represent_untrusted_python_value(item) for item in value)
-        trailing_comma = "," if len(value) == 1 else ""
-        return f"({rendered_items}{trailing_comma})"
-    if isinstance(value, set):
-        if not value:
-            return "set()"
-        rendered_items = [(type(item).__name__, represent_untrusted_python_value(item)) for item in value]
-        rendered_items.sort()
-        return "{" + ", ".join(item for _, item in rendered_items) + "}"
-    return repr(_stringify_untrusted_value(value))
+    if (rendered := _represent_container(value, represent_untrusted_python_value, sort_sets_by_repr=False)) is not None:
+        return rendered
+    return repr(_normalize_string(str(value)))

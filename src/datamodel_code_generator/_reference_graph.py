@@ -245,11 +245,7 @@ class ReferenceGraph:
     ) -> list[ModelKey]:
         """Return ``nodes`` with the targets of each among them first (`stable_toposort`, ties broken by ``key``)."""
         among = frozenset(nodes)
-        dependents: dict[ModelKey, set[ModelKey]] = {node: set() for node in nodes}
-        for node in nodes:
-            for target in self.targets(node, kinds) & among:
-                dependents[target].add(node)
-        return stable_toposort(list(nodes), dependents, key=key)
+        return GroupGraph({node: self.targets(node, kinds) & among for node in nodes}).dependency_order(key)
 
 
 @final

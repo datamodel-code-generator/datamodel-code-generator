@@ -73,8 +73,6 @@ def named_symbols(value: TypeView) -> Iterator[SymbolId]:
         case GenericType():
             for item in value.arguments:
                 yield from named_symbols(item)
-        case _:
-            pass
 
 
 def keeps_extras(symbols: Mapping[SymbolId, FinalModelSymbol], symbol: SymbolId) -> bool:

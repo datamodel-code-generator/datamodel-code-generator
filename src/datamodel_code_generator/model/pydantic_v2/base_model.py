@@ -172,19 +172,7 @@ def _supports_pydantic_typed_extra_dict_key(data_type: DataType) -> bool:  # noq
         return False
     if data_type.is_optional:
         return False
-    if data_type.is_dict:
-        return False
-    if data_type.is_list:
-        return False
-    if data_type.is_set:
-        return False
-    if data_type.is_frozen_set:
-        return False
-    if data_type.is_mapping:
-        return False
-    if data_type.is_sequence:
-        return False
-    if data_type.is_tuple:
+    if data_type._is_container:  # noqa: SLF001
         return False
 
     match data_type.literals:
@@ -1172,7 +1160,6 @@ class DataModelField(_PydanticBaseDataModelField):
 
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
 _BYTES_PATTERN_TYPES: frozenset[str | None] = frozenset({"bytes", "StrictBytes"})
-_CONTAINER_DATA_TYPE_FLAGS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
 
 
 def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
@@ -1197,9 +1184,7 @@ def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType
     ):
         return data_type
     if (
-        data_type.type is not None
-        or not (members := data_type.data_types)
-        or any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
+        data_type.type is not None or not (members := data_type.data_types) or data_type._is_container  # noqa: SLF001
     ):
         return None
     string_type: DataType | None = None

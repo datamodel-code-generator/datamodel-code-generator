@@ -3,37 +3,49 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
+from datamodel_code_generator._client.plan import schema_uses
+from datamodel_code_generator._target_contract import SourceLocation
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._target_operations import fact
 from datamodel_code_generator._target_operations import label as _label
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Callable, Container, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
-    from datamodel_code_generator._client.plan import ClientPlan
+    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import OperationContract, OperationId
 
+_SpecT = TypeVar("_SpecT")
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Protocols:
-    """A client target's valid helpers, and the operation or document each of their references names."""
+    """A client target's valid helpers, and the operation or document each of their references names.
+
+    `locations` holds the location of each schema reference in the accepted input's documents.
+    """
 
     helpers: tuple[Helper, ...]
     operations: Mapping[OperationRef, OperationContract]
     documents: Mapping[SchemaRef, str]
+    locations: Mapping[SchemaRef, SourceLocation]
     python_version: PythonVersion
+
+    def source(self, reference: SchemaRef) -> dict[str, str]:
+        """Return the source reference of a schema reference: its document's pointer and its own."""
+        return {"document": self.documents[reference], "pointer": reference.pointer}
 
 
 def _problem(
@@ -82,6 +94,7 @@ def plan_protocols(request: TargetRequest, source: Mapping[str, object] | None, 
         helpers=helpers,
         operations=resolver.operations,
         documents=resolver.documents,
+        locations=resolver.locations,
         python_version=request.model_config.target_python_version,
     )
 
@@ -94,6 +107,8 @@ class _Resolver:
         self.base = base
         self.operations: dict[OperationRef, OperationContract] = {}
         self.documents: dict[SchemaRef, str] = {}
+        self.locations: dict[SchemaRef, SourceLocation] = {}
+        self.sources = {pointer: document for document, pointer in request.documents.pointers.items()}
 
     def identity(self, document: str | None) -> str | None:
         """Return a named document's identity relative to the base; a malformed name raises ValueError."""
@@ -135,6 +150,43 @@ class _Resolver:
             yield _problem("E_CONFIG_VALUE", "config", at, message)
             return
         self.documents[schema] = located
+        self.locations[schema] = SourceLocation(self.sources[located], schema.pointer, "schema")
+
+
+class HelperPlanner:
+    """Check a client target's helpers against the selected operations and the value uses of their schemas."""
+
+    def __init__(self, protocols: Protocols, plan: ClientPlan, request: TargetRequest) -> None:
+        """Index the selected operations by identity and the value use of each schema by its location and direction."""
+        self.protocols = protocols
+        self.request = request
+        self.operations = {spec.contract.id: spec for spec in plan.operations}
+        self.schemas = schema_uses(request.batch.type_uses)
+
+    def spec(self, reference: OperationRef) -> OperationSpec:
+        """Return the selected operation a helper reference names."""
+        return self.operations[self.protocols.operations[reference].id]
+
+    def location(self, reference: SchemaRef) -> SourceLocation | None:
+        """Return the location of a schema reference, or None when its document has no such pointer."""
+        location = self.protocols.locations[reference]
+        return location if self.request.lease.exists(location) else None
+
+    def each(
+        self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_SpecT | None, list[Diagnostic]]]
+    ) -> tuple[tuple[_SpecT, ...], dict[str, list[Diagnostic]]]:
+        """Check every enabled helper of some kinds against its entry operation, in declaration order.
+
+        Return the planned helpers and each checked helper's problems.
+        """
+        specs: list[_SpecT] = []
+        problems: dict[str, list[Diagnostic]] = {}
+        for helper in self.protocols.helpers:
+            if helper.enabled and helper.kind in kinds:
+                planned, problems[helper.name] = check(helper, self.spec(helper.links[0].ref))
+                if planned is not None:
+                    specs.append(planned)
+        return tuple(specs), problems
 
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:
