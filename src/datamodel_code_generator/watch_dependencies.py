@@ -12,32 +12,12 @@ from stat import S_ISDIR
 from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Mapping
 
-_JSON_CONFIG_FIELDS = frozenset({
-    "aliases",
-    "base_class_map",
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
-    "custom_formatters_kwargs",
-    "default_values",
-    "duplicate_name_suffix",
-    "enum_field_as_literal_map",
-    "extra_template_data",
-    "import_overrides",
-    "model_name_map",
-    "serialization_aliases",
-    "server_body_modes",
-    "server_handler_modes",
-    "server_operation_names",
-    "server_parameter_names",
-    "server_primary_responses",
-    "server_router_names",
-    "type_overrides",
-    "validators",
-})
+_JSON_CONFIG_FIELDS = frozenset(JSON_CONFIG_FIELDS)
 _TARGET_OUTPUT_FIELDS = ("server_output", "client_output")
 
 
