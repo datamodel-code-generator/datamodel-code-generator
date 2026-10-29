@@ -2,12 +2,9 @@
 
 Every input is an immutable fact, so the functions read nothing else. ``assemble_union`` decides a union when it is
 built or rewritten: each builder passes the row of ``UnionRow`` it follows and a ``MemberFacts`` per member. The
-adapters apply the plan: ``types.py:build_union`` (the jsonschema and OpenAPI builders, msgspec field hints),
-``types.py:DataType.__init__`` (every type), ``parser/generation.py:GenerationStore.replace_nested_data_type`` (L5
-collapse), ``parser/_passes/render_prep.py:_flatten_union_members`` (the union around a quoted container) and
-``parser/graphql.py:GraphQLParser.parse_union``. ``merge_members`` decides which written members a union
-keeps and whether it takes over their None, for ``types.py:DataType._render_union_type_hint`` (members by rendered
-text) and ``_target_binding.py`` (members by projected type). ``join_union`` writes the members, for type hints and
+adapters that apply the plan are listed under H10 in ``scripts/decision_homes.toml``. ``merge_members`` decides which
+written members a union keeps and whether it takes over their None, by rendered text or by projected type.
+``join_union`` writes the members, for type hints and
 for the ``MISSING`` sentinel of Pydantic fields, which it writes after the hint as rendered, so a union in the hint
 stays nested (``legacy-missing-appended``: ``Union[Optional[Union[str, int]], MISSING]``, where msgspec writes
 ``Union[str, int, None, UnsetType]``).

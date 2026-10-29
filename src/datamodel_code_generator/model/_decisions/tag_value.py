@@ -3,13 +3,7 @@
 The functions read only their arguments and change none of them (a mapping passed in is read, never copied).
 ``field_tag`` and ``variant_tags`` ask read-only views (``FieldTagFacts``, ``VariantTagFacts``) for the facts their
 rows need, in their order, as an Enum lookup or a variant's mapped tags cost more than the decision. The adapters
-read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_keeps_instance_field``,
-``_FieldTagFacts``, ``_get_mapping_discriminator_values``, ``enum_discriminator_literal``,
-``enum_discriminator_members``),
-``parser/_tag_plan.py`` (``_VariantTagFacts``), the passes that apply tags, ``parser/jsonschema.py``
-(``_SchemaTagFacts`` behind ``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
-``_get_tagged_union_field_values``, ``_set_tagged_union_discriminator``) and ``model/msgspec.py``
-(``Struct._tag_options``, ``Struct.discriminator_tag``).
+that read the facts from the live objects are listed under H11 in ``scripts/decision_homes.toml``.
 
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
 its row (G05): ``legacy-literal-only`` (``FieldTagSite``),

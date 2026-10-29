@@ -4,12 +4,7 @@ The rows are static: the keyword groups of each JSON kind, the keywords a declar
 each Python or library type takes in each output model, the classes that enforce a keyword themselves, the keywords
 the ``con*`` types and ``msgspec.Meta`` take, and the rows that keep today's answer where two sites disagree
 (``legacy-*``; a fix of that output deletes its row). Every function is pure: facts in, keywords out. The adapters
-read the live objects: ``types.py:DataTypeManager.constraint_keywords`` and ``type_constraint_keywords`` (emitted
-types), ``parser/jsonschema.py:JsonSchemaParser._split_constraint_values`` and ``_keywords_taken`` (the L1 split),
-``parser/base.py:Parser._decide_overridden_constraints`` (``--type-overrides``),
-``model/msgspec.py:DataModelField._meta_keywords`` (``msgspec.Meta``), ``model/base.py:DataModelFieldBase.
-_constraints_blocked_by`` (the constraints a field drops when it is written) and
-``types.py:DataTypeManager.constraint_options`` (the options of the table, ``ConstraintOptions``).
+read the live objects and are listed under H07 in ``scripts/decision_homes.toml``.
 
 Legacy rows, each named by the function that decides it:
 
@@ -19,6 +14,8 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-all-of-root-format-kinds`` (``all_of_root_keyword_kinds``): an ``allOf`` root merged with constraints keeps
   the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
   emitted type.
+* ``legacy-exact-ints-as-floats`` (``exact_float``): the schema models read an int constraint as a float where one
+  equals it, and keep the int only where a float would differ.
 * ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``): the ``Literal`` of a ``const`` or an
   ``enum`` takes no keyword of a kind its schema does not declare, though it takes those of its values' type for a
   declared one. The literal check (``literal_check``) decides such a keyword on the values where it can, so the row
