@@ -344,15 +344,7 @@ class DataModelField(DataModelFieldBase):
 
     def _has_anyurl_outside_container(self) -> bool:
         def has_anyurl(data_type: DataType, *, inside_container: bool) -> bool:
-            is_container = inside_container or (
-                data_type.is_dict
-                or data_type.is_list
-                or data_type.is_set
-                or data_type.is_frozen_set
-                or data_type.is_mapping
-                or data_type.is_sequence
-                or data_type.is_tuple
-            )
+            is_container = inside_container or data_type._is_container  # noqa: SLF001
             if data_type.import_ == IMPORT_ANYURL:
                 return not is_container
             return any(has_anyurl(child, inside_container=is_container) for child in data_type.data_types) or (
