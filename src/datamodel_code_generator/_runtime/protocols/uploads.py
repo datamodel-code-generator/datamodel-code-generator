@@ -18,13 +18,13 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
-from ..client.client import request_decode_error
 from ..client.errors import (
     APIConnectionError,
     APIStatusError,
     SDKError,
     add_secondary,
     is_transport,
+    request_failure,
 )
 from ..client.operations import request_errors
 from ..client.retry import Delivery
@@ -915,7 +915,7 @@ def _sized(plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int) -> 
     try:
         value = spec.restored(size)
     except request_errors(spec.codec) as error:
-        raise request_decode_error(plan.create, (spec.plan.location, spec.plan.name), error) from None
+        raise request_failure((spec.plan.location, spec.plan.name), plan.create.operation_id, error) from None
     return (*arguments[:position], value, *arguments[position:])
 
 

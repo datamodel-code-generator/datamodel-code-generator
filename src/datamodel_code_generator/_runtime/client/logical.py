@@ -115,7 +115,7 @@ class LogicalCallContext:
             None if settings.total_timeout is None else Budget(self.started + settings.total_timeout, settings.clock)
         )
         self.delivery_state = self.earlier = Delivery.NOT_SENT
-        self.streaming = self.retry_blocked = self.handing_off = False
+        self.retry_blocked = False
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
 
@@ -201,7 +201,6 @@ class LogicalCallContext:
 
     def handoff(self) -> None:
         """Leave stream I/O timeouts to the native client and retain any helper session's budget."""
-        self.streaming = True
         self.delivery_state = Delivery.RESPONSE_STARTED
         self.deadline = None if self.session is None else self.session.deadline
 

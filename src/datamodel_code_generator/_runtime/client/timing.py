@@ -31,9 +31,6 @@ def seconds(value: object, path: tuple[str, ...]) -> float:
     return number
 
 
-_seconds = seconds
-
-
 def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
     """Refuse an option count that is not an integer in its range, including booleans."""
     if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
