@@ -26,7 +26,14 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, w
 from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import AliasGenerator
-from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
+from datamodel_code_generator.imports import (
+    IMPORT_ANNOTATED,
+    IMPORT_ANY,
+    IMPORT_DICT,
+    IMPORT_UNION,
+    Import,
+    _import_bindings,
+)
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._decisions.hashability import (
     HashClassFacts,
@@ -2528,12 +2535,7 @@ class BaseModel(BaseModelBase):
             if import_ not in validator_imports
         )
         validator_import_keys = {(import_.from_, import_.import_) for import_ in validator_imports}
-        reserved_names.update(
-            imports.get_effective_name(from_, name)
-            for from_, import_names in imports.items()
-            for name in import_names
-            if (from_, name) not in validator_import_keys
-        )
+        reserved_names.update(binding for key, binding in _import_bindings(imports) if key not in validator_import_keys)
         from datamodel_code_generator.validators import _reserve_validator_name  # noqa: PLC0415
 
         names: dict[Import, str] = {}

@@ -331,6 +331,7 @@ class DataModelField(DataModelFieldBase):
     For Python 3.13+: uses typing.NotRequired and typing.ReadOnly.
     """
 
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = True
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_NOT_REQUIRED,)
     DEFAULT_REQUIRED_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_REQUIRED,)
     DEFAULT_READ_ONLY_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_READ_ONLY,)
@@ -354,10 +355,6 @@ class DataModelField(DataModelFieldBase):
         for prefix, _ in self._render_plan().qualifiers:
             type_hint = f"{prefix}{type_hint}]"
         return type_hint
-
-    @override
-    def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._render_plan()
 
     @override
     def _build_render_plan(self) -> FieldRenderPlan:

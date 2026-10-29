@@ -631,7 +631,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/test_main_kr.py::datamodel_code_generator.__main__._record_raw_batch_watch_dependencies",
         "private-import:tests/test_main_kr.py::datamodel_code_generator.__main__._selected_jobs",
         "private-import:tests/test_main_kr.py::datamodel_code_generator.__main__._stage_job_plan",
-        "private-import:tests/test_main_kr.py::datamodel_code_generator.__main__._staging_directory_for",
         "private-import:tests/test_main_kr.py::datamodel_code_generator.__main__._write_generated_result",
         "private-import:tests/test_main_kr.py::datamodel_code_generator._publication",
         "private-import:tests/test_prompt.py::datamodel_code_generator.prompt._actions_by_dest",

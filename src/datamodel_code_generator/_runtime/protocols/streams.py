@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import threading
-from collections.abc import Mapping
 from contextlib import aclosing
 from dataclasses import dataclass, field, replace
 from enum import Enum
@@ -46,14 +45,15 @@ from .errors import (
     StreamInterruptedError,
     configuration_error,
     data_error,
+    data_refusal,
 )
 from .options import HelperLimits, StreamOptions, checked_options, layered, new_session
-from .records import plain_copy
-from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Patch, RepeatedValueError, resolve, selected, server_expiry, written
+from .records import AsyncSteps, SessionState, Steps, plain_copy
+from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
+from .values import MISSING, Patch, absence, read_expiry, required, resolve, unfit, written
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
+    from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
     from datetime import datetime
     from types import TracebackType
 
@@ -331,19 +331,9 @@ def _unpatched(
     """
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    written = (
-        core.fixed_key(request, (plan.call, resume.call))
-        or core.named(request, lambda name, _: name.lower() in resume.headers)
-        or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
-    )
-    if written is not None:
+    queried = partial(query_written, resume.call, resume.writes)
+    if (written := core.patched(request, (plan.call, resume.call), resume.headers, queried)) is not None:
         raise configuration_error(plan.helper_id, written)
-
-
-def _progress(reconnects: int = 0) -> ProtocolProgress:
-    return MappingProxyType({
-        "reconnects": reconnects,
-    })
 
 
 @dataclass(frozen=True, slots=True)
@@ -380,27 +370,11 @@ def _dotted(resume: StreamResumePlan, bound: tuple[JSONValue, ...], given: _Give
     The caller's own path arguments in the segment, which only a reopen of the helper's own operation repeats, are
     encoded again by their parameters' codecs, without validation.
     """
-    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+    from .writes import caller_texts, dotted_path  # noqa: PLC0415 - A plan loaded the operation runtime.
 
-    parameters = resume.call.parameters
-
-    def callers() -> dict[str, str]:
-        arguments = () if given is None else given[0]
-        return {
-            name: parameters[position].path_text(parameters[position].dump(arguments[position]))
-            for _, parts in resume.dotted
-            for name, index, _, position in parts
-            if index is None
-        }
-
-    return next(
-        (
-            read
-            for segment, parts in resume.dotted
-            if (read := dotted_read(parameters, segment, parts, bound, callers)) is not None
-        ),
-        None,
-    )
+    parameters, dotted = resume.call.parameters, resume.dotted
+    arguments = () if given is None else given[0]
+    return dotted_path(parameters, dotted, bound, lambda: caller_texts(parameters, dotted, arguments))
 
 
 def _bound(  # noqa: PLR0913, PLR0917
@@ -416,23 +390,12 @@ def _bound(  # noqa: PLR0913, PLR0917
     A stream response's header or status gives a value; a missing one, a header repeated where one is read, and read
     values that make a path segment of the reopen a dot segment once encoded are refused.
     """
-    values: list[JSONValue] = []
-    for index, binding in enumerate(resume.bindings):
-        if (read := binding.selector) is None:
-            values.append(binding.literal)
-            continue
-        if kept and binding.source == "initial":
-            values.append(kept[index])
-            continue
-        try:
-            value = selected(read, None, info)
-        except RepeatedValueError:
-            raise data_error(plan.helper_id, operation, info, "malformed", read) from None
-        if value is MISSING:
-            raise data_error(plan.helper_id, operation, info, "missing", read)
-        values.append(value)
-    if (read := _dotted(resume, bound := tuple(values), given)) is not None:
-        raise data_error(plan.helper_id, operation, info, "value", read)
+    from .pagination import bound_values  # noqa: PLC0415 - Only resume metadata loads the bindings.
+
+    refuse = data_refusal(plan.helper_id, operation, info)
+    bound = bound_values(resume.bindings, kept, lambda read: required(read, None, info, refuse))
+    if (read := _dotted(resume, bound, given)) is not None:
+        raise refuse(read, "value")
     return bound
 
 
@@ -447,33 +410,19 @@ def _json(frame: _Frame) -> JSONValue | MISSING:
         return MISSING
 
 
-def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
-    return "missing" if value is MISSING else "null"
-
-
-def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo, clock: Clock) -> datetime:
-    """Return the server's expiry an open response's header gives, an RFC 3339 date-time with offset or an HTTP date.
-
-    A value that is no string, which only a selector of every occurrence would read, is refused like an unreadable one.
-    """
-    try:
-        value = selected(read, None, info)
-    except RepeatedValueError:
-        raise data_error(plan.helper_id, plan.operation, info, "malformed", read) from None
-    if value is MISSING:
-        raise data_error(plan.helper_id, plan.operation, info, "missing", read)
-    if (expires_at := server_expiry(value, clock.time()) if isinstance(value, str) else None) is None:
-        raise data_error(plan.helper_id, plan.operation, info, "value", read)
-    return expires_at
-
-
 def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, clock: Clock, info: ResponseInfo) -> _Position:
-    """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives."""
+    """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives.
+
+    The expiry is an open response header's RFC 3339 date-time with an offset or HTTP date.
+    """
     kept = given if resume.own else None
+    refuse = data_refusal(plan.helper_id, plan.operation, info)
     return _Position(
         given=kept,
         bound=_bound(plan, resume, plan.operation, info, kept),
-        expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info, clock),
+        expires_at=None
+        if (read := resume.expires_at) is None
+        else read_expiry(read, None, info, clock, refuse, typed=False),
     )
 
 
@@ -486,7 +435,8 @@ def _reopen_request(
     request takes nothing else. A cleared cursor's parameter is omitted.
     """
     sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, position.bound, position.cursor)[0]
-    if (unsaved := core.credential_argument(resume.call, _wires(sent))) is not None:
+    wires = tuple(value.applied(plain_copy) if isinstance(value, Patch) else value for value in sent)
+    if (unsaved := core.credential_argument(resume.call, cast("tuple[JSONValue | UNSET, ...]", wires))) is not None:
         raise ConfigurationError(
             field_path=("arguments", *unsaved),
             reason="wrong_capability",
@@ -517,23 +467,6 @@ def _written(
         return written(writes, arguments, body, (*bound, cursor))
     cleared = cast("int", writes[-1][0])
     return written(writes[:-1], (*arguments[:cleared], UNSET, *arguments[cleared + 1 :]), body, bound)
-
-
-def _wire(value: object) -> JSONValue:
-    """Return a value written by wire value with its writes applied, or the value itself."""
-    return value.applied(plain_copy) if isinstance(value, Patch) else cast("JSONValue", value)
-
-
-def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | UNSET, ...]:
-    """Return arguments written by wire value with their writes applied."""
-    return cast("tuple[JSONValue | UNSET, ...]", tuple(map(_wire, arguments)))
-
-
-class _State(Enum):
-    OPEN = "open"
-    ENDED = "ended"
-    FAILED = "failed"
-    CLOSED = "closed"
 
 
 class _End(Enum):
@@ -600,7 +533,7 @@ class _Events(Generic[T]):
         self._routes: Mapping[str, InboundModelCodec[T]] = dict(plan.routes)
         self._errors: Mapping[str, InboundModelCodec[object]] = dict(plan.errors)
         self._lock = threading.Lock()
-        self._state = _State.OPEN
+        self._state = SessionState.OPEN
         self._given = position.given
         self._cursor = position.cursor
         self._cursored = position.cursored
@@ -624,7 +557,7 @@ class _Events(Generic[T]):
     @property
     def progress(self) -> ProtocolProgress:
         """Return the reconnections so far, none without resume metadata, and the session's sends."""
-        return _progress(self._reconnects)
+        return MappingProxyType({"reconnects": self._reconnects})
 
     def checkpoint(self) -> JSONValue:
         """Return the cursor `resume` reopens the stream after, as plain JSON, sending nothing.
@@ -716,7 +649,7 @@ class _Events(Generic[T]):
         found = MISSING if data is MISSING else resolve(data, read.pointer)
         if found is MISSING or found is None:
             if (resume.missing if found is MISSING else resume.null) == "error":
-                raise self._stamped(self._decode_error(frame.body, _absence(found), location=read))
+                raise self._stamped(self._decode_error(frame.body, absence(found), location=read))
             if found is None:
                 self._cursor = None
             return
@@ -792,16 +725,16 @@ class _Events(Generic[T]):
         """Read on from a reopened response, its events starting at the event ID cursor, and the state open."""
         self._info = info
         self._carry()
-        self._state = _State.OPEN
+        self._state = SessionState.OPEN
 
     def _enter(self, action: str) -> bool:
         """Take the stream for one step, or return False once it ended; refuse a concurrent, failed, or closed one."""
         if not self._lock.acquire(blocking=False):
             raise self._state_error(action, "receiving")
-        if (state := self._state) is _State.OPEN:
+        if (state := self._state) is SessionState.OPEN:
             return True
         self._lock.release()
-        if state is _State.ENDED:
+        if state is SessionState.ENDED:
             return False
         raise self._state_error(action, state.value)
 
@@ -809,9 +742,9 @@ class _Events(Generic[T]):
         """Mark an open stream closed, returning whether it still held its response."""
         if not self._lock.acquire(blocking=False):
             raise self._state_error(action, "receiving")
-        held = self._state is _State.OPEN
+        held = self._state is SessionState.OPEN
         if held:
-            self._state = _State.CLOSED
+            self._state = SessionState.CLOSED
         self._lock.release()
         return held
 
@@ -877,10 +810,7 @@ class _Events(Generic[T]):
         if (selector := plan.discriminator) is not None:
             wire = self._wire(frame)
             if (found := resolve(wire, selector.pointer)) is MISSING or not isinstance(found, str):
-                condition: Literal["missing", "null", "type"] = (
-                    "missing" if found is MISSING else "null" if found is None else "type"
-                )
-                raise self._stamped(self._decode_error(frame.body, condition, location=selector))
+                raise self._stamped(self._decode_error(frame.body, unfit(found), location=selector))
             key = found
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame)
@@ -1005,7 +935,7 @@ class EventStream(_Events[T]):
 
     def data(self) -> Iterator[T]:
         """Return an iterator over the data of the same events, which advances this stream."""
-        return _Data(self)
+        return Steps(lambda: next(self).data)
 
     def _step(self) -> StreamEvent[T]:
         """Return the next event, releasing the response once the stream ends or fails.
@@ -1016,18 +946,18 @@ class EventStream(_Events[T]):
             try:
                 event = self._read()
             except Exception as error:  # noqa: BLE001
-                self._state = _State.FAILED
+                self._state = SessionState.FAILED
                 failure = self._broken(error)
                 self._release(failure)
                 if (reconnect := self._reconnection(failure)) is None:
                     raise failure from None
             except BaseException as error:
-                self._state = _State.FAILED
+                self._state = SessionState.FAILED
                 self._release(error)
                 raise
             else:
                 if isinstance(event, _End):
-                    self._state = _State.ENDED
+                    self._state = SessionState.ENDED
                     self._release()
                     raise StopIteration
                 return event
@@ -1152,7 +1082,11 @@ class AsyncEventStream(_Events[T]):
 
     def data(self) -> AsyncIterator[T]:
         """Return an asyncio iterator over the data of the same events, which advances this stream."""
-        return _AsyncData(self)
+        return AsyncSteps(self._datum)
+
+    async def _datum(self) -> T:
+        """Return the data of the next event."""
+        return (await anext(self)).data
 
     async def _step(self) -> StreamEvent[T]:
         """Return the next event, releasing the response once the stream ends or fails.
@@ -1163,18 +1097,18 @@ class AsyncEventStream(_Events[T]):
             try:
                 event = await self._read()
             except Exception as error:  # noqa: BLE001
-                self._state = _State.FAILED
+                self._state = SessionState.FAILED
                 failure = self._broken(error)
                 await self._release(failure)
                 if (reconnect := self._reconnection(failure)) is None:
                     raise failure from None
             except BaseException as error:
-                self._state = _State.FAILED
+                self._state = SessionState.FAILED
                 await self._release(error)
                 raise
             else:
                 if isinstance(event, _End):
-                    self._state = _State.ENDED
+                    self._state = SessionState.ENDED
                     await self._release()
                     raise StopAsyncIteration
                 return event
@@ -1225,42 +1159,6 @@ class AsyncEventStream(_Events[T]):
     ) -> None:
         """Close the stream."""
         await self.aclose()
-
-
-@final
-class _Data(Generic[T]):
-    """Iterate over the data of a stream's events through the stream itself."""
-
-    __slots__ = ("_stream",)
-
-    def __init__(self, stream: EventStream[T]) -> None:
-        self._stream = stream
-
-    def __iter__(self) -> Self:
-        """Return this iterator."""
-        return self
-
-    def __next__(self) -> T:
-        """Return the data of the stream's next event."""
-        return next(self._stream).data
-
-
-@final
-class _AsyncData(Generic[T]):
-    """Iterate over the data of an asyncio stream's events through the stream itself."""
-
-    __slots__ = ("_stream",)
-
-    def __init__(self, stream: AsyncEventStream[T]) -> None:
-        self._stream = stream
-
-    def __aiter__(self) -> Self:
-        """Return this iterator."""
-        return self
-
-    async def __anext__(self) -> T:
-        """Return the data of the stream's next event."""
-        return (await anext(self._stream)).data
 
 
 def _sent(  # noqa: PLR0913, PLR0917
@@ -1345,12 +1243,10 @@ def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits)
     the caller gives again.
     """
     resume = cast("StreamResumePlan", plan.resume)
-    try:
-        position = _restore(plan, resume, plain_copy(state), given if resume.own else None)
-    except (MalformedStateError, TypeError, ValueError):
-        raise configuration_error(plan.helper_id, ("state",)) from None
-    if (expires_at := position.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise configuration_error(plan.helper_id, ("state",), "expired")
+    position = decoded_state(
+        plan.helper_id, state, partial(_restore, plan, resume, given=given if resume.own else None)
+    )
+    unexpired(plan.helper_id, position.expires_at, limits.clock)
     return resume, position
 
 
@@ -1361,8 +1257,9 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
     bindings take the plan's value whatever was saved. A saved dot segment a binding writes to a path parameter is
     refused as if a server had just given it.
     """
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
-    fields = cast("Mapping[str, JSONValue]", state)
+    from .pagination import saved_values  # noqa: PLC0415 - Only resume metadata loads the bindings.
+
+    fields = state_fields(state, _STATE)
     cursor = fields["cursor"]
     if resume.cursor is None:
         require_state(cursor is None or (isinstance(cursor, str) and bool(cursor)))
@@ -1371,10 +1268,7 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
     expires_at = state_expiry(fields["expires_at"])
     saved = state_array(fields["bound"])
     require_state(len(saved) == len(resume.bindings))
-    bound = tuple(
-        value if binding.selector is not None else binding.literal
-        for binding, value in zip(resume.bindings, saved, strict=True)
-    )
+    bound = saved_values(resume.bindings, saved)
     if (selector := _dotted(resume, bound, given)) is not None:
         raise data_error(plan.helper_id, resume.operation, None, "value", selector)
     return _Position(given=given, cursor=cursor, cursored=True, bound=bound, expires_at=expires_at)

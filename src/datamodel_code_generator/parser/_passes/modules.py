@@ -16,7 +16,7 @@ import re
 from collections import defaultdict
 from dataclasses import replace
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -27,7 +27,6 @@ from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, m
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
-    ReferenceGraph,
     reference_graph,
     walk_graph,
 )
@@ -89,9 +88,9 @@ from datamodel_code_generator.parser._passes._shared import (
     TargetPythonVersionHost,
     TypeOverrideHost,
     _annotated_reference,
+    _annotated_references,
     _assign_module_name,
     _context_models,
-    _copy_data_type,
     _declares_unique_items,
     _derived_models,
     _get_data_type_target_full_name,
@@ -103,7 +102,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
-    _parsed_rule_data_types,
     _register_data_type_import,
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
@@ -120,6 +118,7 @@ from datamodel_code_generator.parser._passes._shared import (
     replace_model_in_list,
     require_update_action,
     set_reference_expression,
+    site_display_name,
 )
 from datamodel_code_generator.parser._passes._state import (
     ConfigT,
@@ -157,7 +156,7 @@ from datamodel_code_generator.parser._tag_plan import (
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
-from datamodel_code_generator.types import DataType, Types
+from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -198,7 +197,7 @@ __all__ = [
     "apply_discriminator_type",
     "apply_field_type_overrides",
     "change_field_name",
-    "change_module_from_import",
+    "change_from_import",
     "collapse_module_root_models",
     "collapse_root_models",
     "extract_module_inherited_enums",
@@ -206,7 +205,7 @@ __all__ = [
     "name_inner_models_in_rules",
     "process_each_module",
     "record_decimal_alias_models",
-    "remove_module_overridden_models",
+    "remove_overridden_models",
     "rename_fields_hiding_types",
     "replace_unique_list_to_set",
     "restore_inherited_field_names_for_unique_aliases",
@@ -219,7 +218,7 @@ __all__ = [
     "snapshot_module_unused_models",
     "sort_models",
     "type_const_narrowed_values",
-    "type_module_dict_keys_by_root_types",
+    "type_dict_keys_by_root_types",
     "write_rule_aliases_as_classes",
 ]
 
@@ -590,7 +589,6 @@ def _named_enum(source: DataModel) -> Enum | None:
 ModelName: TypeAlias = str
 ModelNames: TypeAlias = set[ModelName]
 ModelDeps: TypeAlias = dict[ModelName, set[ModelName]]
-OrderIndex: TypeAlias = dict[ModelName, int]
 _BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
     "list": "is_list",
     "dict": "is_dict",
@@ -610,171 +608,58 @@ def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
     return False
 
 
-ComponentId: TypeAlias = int
-Components: TypeAlias = list[list[ModelName]]
-ComponentOf: TypeAlias = dict[ModelName, ComponentId]
-
 _KEEP_MODEL_ORDER_EDGES: Final = (EdgeKind.DEFINITION, EdgeKind.FIELD)
 """The edges keep model order keeps the models of one cycle together over."""
 
 
-class _KeepModelOrderDeps(NamedTuple):
-    strong: ModelDeps
-    all: ModelDeps
-
-
-class _KeepModelOrderComponents(NamedTuple):
-    components: Components
-    comp_of: ComponentOf
-
-
-class _KeepModelOrderGraph(NamedTuple):
-    graph: ReferenceGraph
-    key_of_name: Mapping[ModelName, ModelKey]
-    name_of_key: Mapping[ModelKey, ModelName]
-
-
-def _collect_keep_model_order_deps(
-    model: DataModel,
-    *,
-    model_names: ModelNames,
+def _keep_model_order_deps(
+    models: list[DataModel],
     imported: ModelNames,
+    *,
     pydantic_v2_root_model_type: type[DataModel] | None,
     use_deferred_annotations: bool,
-) -> tuple[set[ModelName], set[ModelName]]:
-    """Collect (strong_deps, all_deps) used by keep_model_order sorting, by the class names of the models referenced.
+) -> tuple[ModelDeps, ModelDeps]:
+    """Return the models each model depends on through its bases, and through its bases and fields, by class name.
 
-    - strong_deps: base class references (within-module, non-imported)
-    - all_deps: base class refs + (optionally) field refs (within-module, non-imported)
-
+    Only models of the module that it does not import count. Deferred annotations leave the fields out, except of a
+    type alias and of a root model whose class body evaluates its root type; schema validator rules count as bases.
     Row ``legacy-keep-order-short-name``: a reference names a model of the module by its short name, so it also adds a
     false dependency on a same-named model of another module imported as a module.
     """
-    class_name = model.class_name
-    base_class_references = [b.reference for b in model.base_classes if b.reference]
-    field_references = [t.reference for f in model.fields for t in f.data_type.all_data_types if t.reference]
+    model_names: ModelNames = {model.class_name for model in models}
+    runtime_validation_references = _runtime_validation_reference_keys(models, same_module=False)
+    class_names = (
+        {model_key_of(model.reference): model.class_name for model in models} if runtime_validation_references else {}
+    )
+    strong_deps: ModelDeps = {}
+    all_deps: ModelDeps = {}
 
-    if (
-        use_deferred_annotations
-        and not isinstance(model, TypeAliasBase)
-        and not _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
-    ):
-        field_references = []
-
-    def names_by_short_name(references: Iterable[Reference]) -> set[ModelName]:
+    def names_by_short_name(references: Iterable[Reference], class_name: str) -> set[ModelName]:
         return {
             r
             for r in {reference.short_name for reference in references}
             if r in model_names and r not in imported and r != class_name
         }
 
-    return (
-        names_by_short_name(base_class_references),
-        names_by_short_name([*base_class_references, *field_references]),
-    )
-
-
-def _build_keep_model_order_dependency_maps(
-    models: list[DataModel],
-    *,
-    model_names: ModelNames,
-    imported: ModelNames,
-    pydantic_v2_root_model_type: type[DataModel] | None,
-    use_deferred_annotations: bool,
-) -> _KeepModelOrderDeps:
-    strong_deps: ModelDeps = {}
-    all_deps: ModelDeps = {}
-    runtime_validation_references = _runtime_validation_reference_keys(models, same_module=False)
-    class_names = (
-        {model_key_of(model.reference): model.class_name for model in models} if runtime_validation_references else {}
-    )
     for model in models:
-        strong, deps = _collect_keep_model_order_deps(
-            model,
-            model_names=model_names,
-            imported=imported,
-            pydantic_v2_root_model_type=pydantic_v2_root_model_type,
-            use_deferred_annotations=use_deferred_annotations,
+        class_name = model.class_name
+        base_class_references = [b.reference for b in model.base_classes if b.reference]
+        field_references = (
+            []
+            if use_deferred_annotations
+            and not isinstance(model, TypeAliasBase)
+            and not _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
+            else [t.reference for f in model.fields for t in f.data_type.all_data_types if t.reference]
         )
+        strong = names_by_short_name(base_class_references, class_name)
+        deps = names_by_short_name([*base_class_references, *field_references], class_name)
         if reference_keys := runtime_validation_references.get(model_key_of(model.reference)):
             runtime_validation_deps = {class_names[reference_key] for reference_key in reference_keys} - imported
             strong |= runtime_validation_deps
             deps |= runtime_validation_deps
-        strong_deps[model.class_name] = strong
-        all_deps[model.class_name] = deps
-    return _KeepModelOrderDeps(strong=strong_deps, all=all_deps)
-
-
-def _keep_model_order_graph(
-    deps: _KeepModelOrderDeps, model_by_name: Mapping[ModelName, DataModel]
-) -> _KeepModelOrderGraph:
-    """Take the snapshot of the dependencies that keep model order moves the models of one module for."""
-    key_of_name = {name: model_key_of(model.reference) for name, model in model_by_name.items()}
-    graph = reference_graph(
-        GraphSnapshot.KEEP_MODEL_ORDER,
-        key_of_name.values(),
-        {
-            EdgeKind.DEFINITION: {
-                key_of_name[name]: map(key_of_name.__getitem__, deps.strong[name]) for name in deps.strong
-            },
-            EdgeKind.FIELD: {
-                key_of_name[name]: map(key_of_name.__getitem__, all_deps - deps.strong[name])
-                for name, all_deps in deps.all.items()
-            },
-        },
-    )
-    return _KeepModelOrderGraph(graph, key_of_name, {key: name for name, key in key_of_name.items()})
-
-
-def _build_keep_model_order_components(
-    order_index: OrderIndex, keyed: _KeepModelOrderGraph
-) -> _KeepModelOrderComponents:
-    def ordered(sccs: Iterable[Iterable[ModelName]]) -> Components:
-        components = [sorted(scc, key=order_index.__getitem__) for scc in sccs]
-        components.sort(key=lambda members: min(order_index[n] for n in members))
-        return components
-
-    components = ordered(
-        map(keyed.name_of_key.__getitem__, scc) for scc in keyed.graph.components(_KEEP_MODEL_ORDER_EDGES)
-    )
-    comp_of: ComponentOf = {name: i for i, members in enumerate(components) for name in members}
-    return _KeepModelOrderComponents(components=components, comp_of=comp_of)
-
-
-def _build_keep_model_order_component_order(
-    comps: _KeepModelOrderComponents,
-    order_index: OrderIndex,
-    keyed: _KeepModelOrderGraph,
-) -> list[ComponentId]:
-    """Order the components with the components each depends on first, over the quotient of the snapshot."""
-    comp_key = [min(order_index[n] for n in members) for members in comps.components]
-    component_graph = keyed.graph.quotient(
-        {key: comps.comp_of[name] for key, name in keyed.name_of_key.items()}, _KEEP_MODEL_ORDER_EDGES
-    )
-    return component_graph.dependency_order(comp_key.__getitem__)
-
-
-def _build_keep_model_ordered_names(
-    ordered_comp_ids: list[ComponentId],
-    components: Components,
-    order_index: OrderIndex,
-    keyed: _KeepModelOrderGraph,
-) -> list[ModelName]:
-    name_of_key = keyed.name_of_key
-    ordered_names: list[ModelName] = []
-    for component_id in ordered_comp_ids:
-        members = components[component_id]
-        if len(members) > 1:
-            members = [
-                name_of_key[key]
-                for key in keyed.graph.dependency_order(
-                    (EdgeKind.DEFINITION,),
-                    [keyed.key_of_name[name] for name in members],
-                    lambda key: order_index[name_of_key[key]],
-                )
-            ]
-        ordered_names.extend(members)
-    return ordered_names
+        strong_deps[class_name] = strong
+        all_deps[class_name] = deps
+    return strong_deps, all_deps
 
 
 def _reorder_models_keep_model_order(
@@ -787,25 +672,56 @@ def _reorder_models_keep_model_order(
     """Reorder models deterministically based on their dependencies.
 
     Starts from class_name order and only moves models when required to satisfy dependencies.
-    Cycles are kept as SCC groups; within each SCC, base-class dependencies are prioritized.
+    Cycles are kept as SCC groups, in the order of their dependencies over the quotient of the snapshot; within each
+    SCC, base-class dependencies are prioritized.
     """
     models.sort(key=lambda x: x.class_name)
     imported: ModelNames = {i for v in imports.values() for i in v}
     model_by_name = {m.class_name: m for m in models}
-    model_names: ModelNames = set(model_by_name)
-    order_index: OrderIndex = {m.class_name: i for i, m in enumerate(models)}
-
-    deps = _build_keep_model_order_dependency_maps(
+    order_index = {m.class_name: i for i, m in enumerate(models)}
+    strong_deps, all_deps = _keep_model_order_deps(
         models,
-        model_names=model_names,
-        imported=imported,
+        imported,
         pydantic_v2_root_model_type=pydantic_v2_root_model_type,
         use_deferred_annotations=use_deferred_annotations,
     )
-    keyed = _keep_model_order_graph(deps, model_by_name)
-    comps = _build_keep_model_order_components(order_index, keyed)
-    ordered_comp_ids = _build_keep_model_order_component_order(comps, order_index, keyed)
-    ordered_names = _build_keep_model_ordered_names(ordered_comp_ids, comps.components, order_index, keyed)
+    key_of_name = {name: model_key_of(model.reference) for name, model in model_by_name.items()}
+    name_of_key = {key: name for name, key in key_of_name.items()}
+    graph = reference_graph(
+        GraphSnapshot.KEEP_MODEL_ORDER,
+        key_of_name.values(),
+        {
+            EdgeKind.DEFINITION: {
+                key_of_name[name]: map(key_of_name.__getitem__, strong_deps[name]) for name in strong_deps
+            },
+            EdgeKind.FIELD: {
+                key_of_name[name]: map(key_of_name.__getitem__, deps - strong_deps[name])
+                for name, deps in all_deps.items()
+            },
+        },
+    )
+    components = [
+        sorted(map(name_of_key.__getitem__, scc), key=order_index.__getitem__)
+        for scc in graph.components(_KEEP_MODEL_ORDER_EDGES)
+    ]
+    components.sort(key=lambda members: order_index[members[0]])
+    component_of = {name: i for i, members in enumerate(components) for name in members}
+    component_graph = graph.quotient(
+        {key: component_of[name] for key, name in name_of_key.items()}, _KEEP_MODEL_ORDER_EDGES
+    )
+    ordered_names: list[ModelName] = []
+    for component_id in component_graph.dependency_order(lambda component_id: order_index[components[component_id][0]]):
+        members = components[component_id]
+        if len(members) > 1:
+            members = [
+                name_of_key[key]
+                for key in graph.dependency_order(
+                    (EdgeKind.DEFINITION,),
+                    [key_of_name[name] for name in members],
+                    lambda key: order_index[name_of_key[key]],
+                )
+            ]
+        ordered_names.extend(members)
     models[:] = [model_by_name[name] for name in ordered_names]
 
 
@@ -852,21 +768,18 @@ def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference |
     return None
 
 
+def _keeps_field_names(model: DataModel, model_type: type[DataModel]) -> bool:
+    """Return whether the passes leave the field names of a model be: an enum, or a model of no output class."""
+    return "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, model_type))
+
+
 def _same_named_references(model: DataModel, name: str | None, *, skips_aliases: bool) -> Iterator[Reference]:
     """Yield the types named ``name`` that the model's annotations refer to, by that name with ``skips_aliases``."""
     return (
         reference
-        for field in model.fields
-        for data_type in field.data_type.all_data_types
-        if (reference := _annotated_reference(data_type)) is not None
-        and reference.short_name == name
-        and not (skips_aliases and data_type.alias and data_type.alias != name)
+        for data_type, reference in _annotated_references(model)
+        if reference.short_name == name and not (skips_aliases and data_type.alias and data_type.alias != name)
     )
-
-
-def _same_named_reference(model: DataModel, name: str | None, *, skips_aliases: bool) -> Reference | None:
-    """Return the type named ``name`` that an annotation of the model refers to, by that name with ``skips_aliases``."""
-    return next(_same_named_references(model, name, skips_aliases=skips_aliases), None)
 
 
 def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
@@ -894,12 +807,23 @@ def _family_field_names(family: Mapping[ModelKey, DataModel]) -> set[str]:
     }
 
 
-def _rename_field_preserving_alias(builder: GraphBuilder, field: DataModelFieldBase, new_name: str) -> None:
-    """Rename a Python field without losing an existing source-name alias."""
-    builder.rename_field(field, new_name, alias=field.name)
+def _field_type_resolver(parser: ModulesHost, exclude_names: set[str] | None = None) -> ModelResolver:
+    """Return a resolver of the ``field-type`` scheme around ``exclude_names``."""
+    return scheme_resolver(
+        "field-type",
+        exclude_names=exclude_names,
+        snake_case_field=parser.snake_case_field,
+        target_python_version=parser.target_python_version,
+    )
 
 
 _COLLAPSE_ROOT_MODELS: Final = ImportProducer("collapse-root-models")
+_DIRECTLY_REFERENCED: Final = "it is directly referenced by non-wrapper models"
+
+
+def _parent_strategy_skipped(inner_class_name: str, reason: str) -> str:
+    """Return the warning that the ``parent`` strategy leaves the root models of an inner model, for ``reason``."""
+    return f"Cannot apply 'parent' strategy for '{inner_class_name}' - {reason}. Skipping collapse."
 
 
 def _reaches_data_type(data_type: DataType, target: DataType) -> bool:
@@ -1023,12 +947,12 @@ def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> 
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
+    if not parser.use_unique_items_as_set:
+        return
     for model in models:
         for model_field in model.fields:
-            if (
-                not parser.use_unique_items_as_set
-                or not _declares_unique_items(model_field)
-                or (parser.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None)
+            if not _declares_unique_items(model_field) or (
+                parser.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None
             ):
                 continue
             set_data_type = parser._create_set_from_list(model_field.data_type)  # noqa: SLF001
@@ -1094,14 +1018,13 @@ def set_reference_default_value_to_field(
 ) -> None:
     for model in models:
         for model_field in model.fields:
-            if not model_field.data_type.reference or model_field.has_default:
-                continue
             if (
-                isinstance(model_field.data_type.reference.source, DataModel)
-                and model_field.data_type.reference.source.default != UNDEFINED
+                (reference := model_field.data_type.reference)
+                and not model_field.has_default
+                and isinstance(source := reference.source, DataModel)
+                and source.default != UNDEFINED
             ):
-                # pragma: no cover
-                parser._graph_builder.set_field_default(model_field, model_field.data_type.reference.source.default)  # noqa: SLF001
+                parser._graph_builder.set_field_default(model_field, source.default)  # noqa: SLF001
 
 
 def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_action_models: list[str]) -> None:
@@ -1223,14 +1146,16 @@ def _root_type_models(model: DataModel) -> list[DataModel]:
     ]
 
 
+def _root_constraint_keywords(root_field: DataModelFieldBase) -> dict[str, Any]:
+    """Return the constraints other than ``unique_items`` that a root field sets, by their keywords."""
+    if not isinstance(constraints := root_field.constraints, ConstraintsBase):
+        return {}
+    return constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
+
+
 def _constrains_root_field(model: DataModel) -> bool:
     """Return whether the root field of ``model`` carries a constraint other than ``unique_items``."""
-    if not model.fields:
-        return False
-    constraints = model.fields[0].constraints
-    return isinstance(constraints, ConstraintsBase) and any(
-        value is not None for name, value in constraints.model_dump().items() if name != "unique_items"
-    )
+    return bool(model.fields) and bool(_root_constraint_keywords(model.fields[0]))
 
 
 def _has_preservable_root_constraints(model: DataModel) -> bool:
@@ -1331,7 +1256,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     rule_named_roots = frozenset(
         model_key_of(reference)
         for holder in (parser.results if parser.generate_schema_validators else ())
-        for rule_data_type in _parsed_rule_data_types(holder)
+        for rule_data_type in _rule_data_types(holder, unwritable=True)
         if (reference := rule_data_type.reference) is not None
     )
     is_root_model = parser._is_root_model  # noqa: SLF001
@@ -1379,9 +1304,11 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
 
                         if len(root_model_wrappers) > 1:
                             warn_as_parser_base(
-                                f"Cannot apply 'parent' strategy for '{inner_model.class_name}' - "
-                                f"it is referenced by multiple root models: "
-                                f"{[m.class_name for m in root_model_wrappers]}. Skipping collapse.",
+                                _parent_strategy_skipped(
+                                    inner_model.class_name,
+                                    "it is referenced by multiple root models: "
+                                    f"{[m.class_name for m in root_model_wrappers]}",
+                                ),
                                 UserWarning,
                                 stacklevel=2,
                             )
@@ -1389,8 +1316,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
 
                         if direct_refs:
                             warn_as_parser_base(
-                                f"Cannot apply 'parent' strategy for '{inner_model.class_name}' - "
-                                f"it is directly referenced by non-wrapper models. Skipping collapse.",
+                                _parent_strategy_skipped(inner_model.class_name, _DIRECTLY_REFERENCED),
                                 UserWarning,
                                 stacklevel=2,
                             )
@@ -1471,44 +1397,36 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         replacement_kind="field",
                     )
 
-                elif isinstance(parent_data_type := data_type.parent, DataType) and parent_data_type.is_list:
-                    if parser.field_constraints:
-                        graph_builder.set_field_constraints(
-                            model_field,
-                            ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
-                        )
-                    discriminator = root_type_field.extras.get("discriminator")
-                    if (
-                        discriminator
-                        and tag_capabilities(type(root_type_model), type(root_type_field)).writes_argument
-                        and not has_any_variant(copied_data_type.data_types)
-                    ):
-                        names = site_names(
-                            discriminator.get("propertyName") if isinstance(discriminator, dict) else discriminator,
-                            field_namer(parser.model_resolver, parser.field_name_model_type),
-                        )
-                        if (
-                            site_validity(
-                                copied_data_type.data_types,
-                                names,
-                                discriminator.get("mapping", {}) if isinstance(discriminator, dict) else {},
-                                field_type=type(root_type_field),
-                                mode="python-or-original-name",
-                                inline_variants=inline_variant_models(parser),
-                                enum_member_tags=parser.use_enum_values_in_discriminator,
-                            )
-                            == "tagged"
-                        ):
-                            graph_builder.set_type_discriminator(copied_data_type, names.field_name)
-                    replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
-                        data_type,
-                        copied_data_type,
-                        owner=parent_data_type,
-                        replacement_kind="nested",
-                    )
-
                 elif isinstance(parent_data_type := data_type.parent, DataType):
-                    # for data_type
+                    if parent_data_type.is_list:
+                        if parser.field_constraints:
+                            graph_builder.set_field_constraints(
+                                model_field,
+                                ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
+                            )
+                        discriminator = root_type_field.extras.get("discriminator")
+                        if (
+                            discriminator
+                            and tag_capabilities(type(root_type_model), type(root_type_field)).writes_argument
+                            and not has_any_variant(copied_data_type.data_types)
+                        ):
+                            names = site_names(
+                                discriminator.get("propertyName") if isinstance(discriminator, dict) else discriminator,
+                                field_namer(parser.model_resolver, parser.field_name_model_type),
+                            )
+                            if (
+                                site_validity(
+                                    copied_data_type.data_types,
+                                    names,
+                                    discriminator.get("mapping", {}) if isinstance(discriminator, dict) else {},
+                                    field_type=type(root_type_field),
+                                    mode="python-or-original-name",
+                                    inline_variants=inline_variant_models(parser),
+                                    enum_member_tags=parser.use_enum_values_in_discriminator,
+                                )
+                                == "tagged"
+                            ):
+                                graph_builder.set_type_discriminator(copied_data_type, names.field_name)
                     replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                         data_type,
                         copied_data_type,
@@ -1707,10 +1625,7 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
         ):
             for holder in kept_root.holders:
                 warn_as_parser_base(
-                    f"Cannot apply 'parent' strategy for '{holder.inner_class_name}' - "
-                    f"it is directly referenced by non-wrapper models. Skipping collapse.",
-                    UserWarning,
-                    stacklevel=2,
+                    _parent_strategy_skipped(holder.inner_class_name, _DIRECTLY_REFERENCED), UserWarning, stacklevel=2
                 )
             continue
         retire_root(parser, root_model, inner_model, model_path_to_module_name)
@@ -1726,16 +1641,7 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
                     holder.root_import,
                 ))
         for ctx, redirected_holders in holders_by_module.values():
-            import_collapsed_inner_models(
-                parser,
-                ctx.models,
-                redirected_holders,
-                ctx.imports,
-                ctx.scoped_model_resolver,
-                model_path_to_module_name,
-                is_init=ctx.is_init,
-                internal_modules=run.internal_modules,
-            )
+            _import_inner_models_into(parser, run, ctx, redirected_holders)
         run.unused_models.append(root_model)
 
 
@@ -1787,6 +1693,25 @@ def import_collapsed_inner_models(  # noqa: PLR0913, PLR0917
             internal_modules=internal_modules,
             producer=ImportProducer("collapse-root-models", holder),
         )
+
+
+def _import_inner_models_into(
+    parser: CollapseHost,
+    run: ModulesRun,
+    ctx: ModuleContextView,
+    redirected_holders: list[tuple[DataModel, DataType, Import | None]],
+) -> None:
+    """Import into a processed module the inner models that its redirected holders name, as collapse imports them."""
+    import_collapsed_inner_models(
+        parser,
+        ctx.models,
+        redirected_holders,
+        ctx.imports,
+        ctx.scoped_model_resolver,
+        run.model_path_to_module_name,
+        is_init=ctx.is_init,
+        internal_modules=run.internal_modules,
+    )
 
 
 def set_default_enum_member(
@@ -1846,7 +1771,7 @@ def sort_models(
     )
 
 
-def change_field_name(  # noqa: PLR0912
+def change_field_name(
     parser: ModulesHost,
     models: list[DataModel],
 ) -> None:
@@ -1858,7 +1783,7 @@ def change_field_name(  # noqa: PLR0912
     resolver: ModelResolver | None = None
 
     for model in models:
-        if "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, parser.data_model_type)):
+        if _keeps_field_names(model, parser.data_model_type):
             continue
 
         for field in (field for field in model.fields if field.name != parser.data_model_type.TYPED_EXTRA_FIELD_NAME):
@@ -1876,33 +1801,17 @@ def change_field_name(  # noqa: PLR0912
                 if rename_type and colliding_reference is None and reference_name == field_name:
                     colliding_reference = reference
 
-            if colliding_reference is not None or (
-                not rename_type
-                and (parser.data_model_type.NORMALIZES_FIELD_NAMES or field_name in reference_type_names)
-            ):
-                resolver = resolver or scheme_resolver(
-                    "field-type",
-                    snake_case_field=parser.snake_case_field,
-                    target_python_version=parser.target_python_version,
-                )
-                if colliding_reference is not None:
-                    resolver._reset_for_reuse(all_class_names.copy())  # noqa: SLF001
-                    source = cast("DataModel", colliding_reference.source)
-                    resolver.exclude_names.add(cast("str", field_name))
-                    new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
-                    record_renamed_type(parser, source, _RenamedType(source.class_name, colliding_reference.path))
-                    parser._graph_builder.rename_model(source, class_name=new_class_name)  # noqa: SLF001
-                    all_class_names.add(new_class_name)
-                else:
-                    resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
-                    new_field_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
-                    if field_name != new_field_name:
-                        _rename_field_preserving_alias(parser._graph_builder, field, new_field_name)  # noqa: SLF001
+            if colliding_reference is not None:
+                rename_named_type(parser, field, colliding_reference, all_class_names, (), {})
+            elif not rename_type:
+                resolver = resolver or _field_type_resolver(parser)
+                resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
+                new_field_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
+                if field_name != new_field_name:
+                    parser._graph_builder.rename_field(field, new_field_name, alias=field.name)  # noqa: SLF001
 
-            if (
-                parser.data_model_type.NORMALIZES_FIELD_NAMES
-                and (current_name := field.name) in parser.builtin_names
-                and any(_is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types)
+            if (current_name := field.name) in parser.builtin_names and any(
+                _is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types
             ):
                 parser._graph_builder.rename_field(field, f"{current_name}_", alias=field_name)  # noqa: SLF001
 
@@ -1973,7 +1882,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
         field_name = names.field_name
 
         tags: list[DiscriminatorTag] = []
-        union_name = model.class_name if parser._is_root_model(model) else f"{model.class_name}.{field.name}"  # noqa: SLF001
+        union_name = site_display_name(parser, model, field)
         collapsed_unions = get_collapsed_unions(parser, model, field)
         reused_variant = has_reused_variant(field.data_type.data_types)
         for index, data_type in (
@@ -2186,12 +2095,11 @@ def get_collapsed_unions(
             data_types := duplicate_field.data_type.data_types
         ) != len(field.data_type.data_types):  # pragma: no cover
             continue
-        name = (
-            duplicate.class_name
-            if parser._is_root_model(duplicate)  # noqa: SLF001
-            else f"{duplicate.class_name}.{duplicate_field.name}"
-        )
-        unions.append((name, data_types, discriminator.get("mapping", {})))
+        unions.append((
+            site_display_name(parser, duplicate, duplicate_field),
+            data_types,
+            discriminator.get("mapping", {}),
+        ))
     return unions
 
 
@@ -2209,6 +2117,18 @@ def const_narrowed_data_type(
     )
     new_data_type._set_enum_member_literal_reference(enum.reference)  # noqa: SLF001
     return new_data_type
+
+
+def _replace_in_place(builder: GraphBuilder, parent: DataType, old: DataType, new: DataType) -> None:
+    """Replace a type nested in ``parent``, its dict key or one of its members, in its place.
+
+    ``GraphBuilder.replace_nested_data_type`` puts a member last (row ``legacy-replacement-last``), so it replaces only
+    the key.
+    """
+    if parent.dict_key is old:
+        builder.replace_nested_data_type(parent, old, new)
+    else:
+        builder.set_nested_data_types(parent, [new if nested is old else nested for nested in parent.data_types])
 
 
 def type_const_narrowed_values(
@@ -2241,12 +2161,8 @@ def type_const_narrowed_values(
                 narrowed[id(data_type)] = data_type
                 if owner is field:
                     parser._graph_builder.replace_field_type(field, new_data_type)  # noqa: SLF001
-                elif (parent := cast("DataType", owner)).dict_key is data_type:
-                    parser._graph_builder.replace_nested_data_type(parent, data_type, new_data_type)  # noqa: SLF001
                 else:
-                    parser._graph_builder.set_nested_data_types(  # noqa: SLF001
-                        parent, [new_data_type if nested is data_type else nested for nested in parent.data_types]
-                    )
+                    _replace_in_place(parser._graph_builder, cast("DataType", owner), data_type, new_data_type)  # noqa: SLF001
                 parser._import_ledger.append(  # noqa: SLF001
                     imports, new_data_type.imports, ImportProducer("const-narrowed-values", model, field)
                 )
@@ -2275,14 +2191,9 @@ def set_one_literal_on_default(parser: ModulesHost, models: list[DataModel]) -> 
 def same_named_fields(parser: ModulesHost, model: DataModel) -> list[DataModelFieldBase]:
     """Return the fields of the model named like a type that an annotation of the model refers to."""
     model_type = parser.data_model_type
-    if "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, model_type)):
+    if _keeps_field_names(model, model_type):
         return []
-    type_names = {
-        reference.short_name
-        for field in model.fields
-        for data_type in field.data_type.all_data_types
-        if (reference := _annotated_reference(data_type)) is not None
-    }
+    type_names = {reference.short_name for _, reference in _annotated_references(model)}
     return [
         field for field in model.fields if field.name != model_type.TYPED_EXTRA_FIELD_NAME and field.name in type_names
     ]
@@ -2353,15 +2264,12 @@ def rename_named_type(  # noqa: PLR0913, PLR0917
     all_models: Collection[DataModel],
     derived_models: Mapping[ModelKey, list[DataModel]],
 ) -> None:
-    """Rename the type that the field hides to a name that no field of a family using the type has."""
+    """Rename the type that the field hides to a name that no class and no field of a family using the type has.
+
+    The families are those of ``all_models`` that use the type, by ``derived_models``.
+    """
     source = cast("DataModel", reference.source)
-    resolver = scheme_resolver(
-        "field-type",
-        snake_case_field=parser.snake_case_field,
-        target_python_version=parser.target_python_version,
-    )
-    resolver._reset_for_reuse(class_names.copy())  # noqa: SLF001
-    resolver.exclude_names.add(cast("str", field.name))
+    resolver = _field_type_resolver(parser, {*class_names, cast("str", field.name)})
     resolver.exclude_names.update(
         name
         for user in all_models
@@ -2434,7 +2342,7 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                     positions,
                     use_deferred_annotations=use_deferred_annotations,
                 )
-                or _same_named_reference(model, field_name, skips_aliases=rename_type) is None
+                or next(_same_named_references(model, field_name, skips_aliases=rename_type), None) is None
             ):
                 continue
             if rename_type:
@@ -2445,26 +2353,23 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                 continue
             if (new_name := parser._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:  # noqa: SLF001
                 family = _model_family(model, derived_models)
-                resolver = scheme_resolver(
-                    "field-type",
-                    exclude_names=_family_field_names(family),
-                    snake_case_field=parser.snake_case_field,
-                    target_python_version=parser.target_python_version,
+                new_name = _field_type_resolver(parser, _family_field_names(family))._get_unique_field_name(  # noqa: SLF001
+                    cast("str", field_name)
                 )
-                new_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
                 parser._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))  # noqa: SLF001
-            _rename_field_preserving_alias(parser._graph_builder, field, new_name)  # noqa: SLF001
+            parser._graph_builder.rename_field(field, new_name, alias=field.name)  # noqa: SLF001
 
 
-def remove_overridden_models(parser: ModulesHost, models: list[DataModel]) -> list[DataModel]:
-    """Remove models that are being overridden by custom types (model-level only), and the stand-ins.
+def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> None:
+    """Keep the models that custom types override (model-level only), and the stand-ins, out of the module.
 
     Only model-level overrides (keys without dots) cause model removal.
-    Scoped overrides (ClassName.field) only affect specific fields.
+    Scoped overrides (ClassName.field) only affect specific fields. The module keeps its list before the removal.
     """
+    state.model_list_before_override_removal = models = state.model_list
     overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports  # noqa: SLF001
     if not (overrides or stand_ins):
-        return models
+        return
     kept: list[DataModel] = []
     for model in models:
         if (
@@ -2475,13 +2380,7 @@ def remove_overridden_models(parser: ModulesHost, models: list[DataModel]) -> li
             parser._graph_builder.retire_model(model)  # noqa: SLF001
         else:
             kept.append(model)
-    return kept
-
-
-def remove_module_overridden_models(parser: ModulesHost, state: ModuleStateView) -> None:
-    """Keep the models a model-level type override replaces out of the module, and the list before it."""
-    state.model_list_before_override_removal = state.model_list
-    state.model_list = remove_overridden_models(parser, state.model_list)
+    state.model_list = kept
 
 
 def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | None:
@@ -2513,14 +2412,12 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
     for model in models:
         derived_import = derived_override_import(parser, model)
         for field in model.fields:
-            match parser._type_override_imports.get(class_field_key(model.class_name, field.name)) or derived_import:  # noqa: SLF001
-                case Import() as override_import:
-                    parser._apply_override_to_field(field, override_import)  # noqa: SLF001
-                case None if parser._model_type_override_imports:  # noqa: SLF001
-                    # Apply model-level overrides to nested types
-                    parser._apply_override_to_data_type(field.data_type)  # noqa: SLF001
-                case None:
-                    pass
+            if override_import := (
+                parser._type_override_imports.get(class_field_key(model.class_name, field.name)) or derived_import  # noqa: SLF001
+            ):
+                parser._apply_override_to_field(field, override_import)  # noqa: SLF001
+            elif parser._model_type_override_imports:  # noqa: SLF001
+                parser._apply_override_to_data_type(field.data_type)  # noqa: SLF001
 
 
 def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType | None:
@@ -2532,11 +2429,7 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
     """
     root_field = root_model.fields[0]
     root_type = root_field.data_type
-    keywords = (
-        root_field.constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
-        if isinstance(root_field.constraints, ConstraintsBase)
-        else {}
-    )
+    keywords = _root_constraint_keywords(root_field)
     string_type = parser.data_type_manager.get_data_type(Types.string)
     if any((
         root_type.is_dict,
@@ -2559,14 +2452,8 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
     return key_type
 
 
-def type_dict_keys_by_root_types(
-    parser: ModulesHost,
-    models: list[DataModel],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
-) -> None:
-    """Type each dict key that names a root model whose instances cannot be dict keys by that model's root type.
+def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) -> None:
+    """Type each dict key of the module that names a root model whose instances cannot be dict keys by its root type.
 
     Runs once the root types are final: after collapse, const narrowing and type overrides. Such a root model
     named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
@@ -2574,7 +2461,8 @@ def type_dict_keys_by_root_types(
     reference: another member may take every key. Each changed model refreshes its backend config, as a pattern
     that a key takes may need another regex engine.
     """
-    for model in models:
+    imports = state.imports
+    for model in state.model_list:
         changed = False
         for field in model.fields:
             pending = [
@@ -2595,41 +2483,24 @@ def type_dict_keys_by_root_types(
                 ):
                     continue
                 parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
-                if parent.dict_key is data_type:
-                    parser._graph_builder.replace_nested_data_type(parent, data_type, root_type)  # noqa: SLF001
-                else:
-                    parser._graph_builder.set_nested_data_types(  # noqa: SLF001
-                        parent, [root_type if nested is data_type else nested for nested in parent.data_types]
-                    )
+                _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 for nested in root_type.all_data_types:
-                    if nested.reference is not None:
-                        _register_data_type_import(
-                            nested,
-                            model,
-                            imports,
-                            scoped_model_resolver,
-                            model_path_to_module_name,
-                            ledger=parser._import_ledger,  # noqa: SLF001
-                            producer=producer,
-                        )
+                    _register_data_type_import(
+                        nested,
+                        model,
+                        imports,
+                        state.scoped_model_resolver,
+                        state.model_path_to_module_name,
+                        ledger=parser._import_ledger,  # noqa: SLF001
+                        producer=producer,
+                    )
                 parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                 changed = True
         if changed:
             parser._graph_builder.note_changed_models(model)  # noqa: SLF001
             model.refresh_field_config()
-
-
-def type_module_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) -> None:
-    """Type the dict keys of the module that name root models by their root types."""
-    type_dict_keys_by_root_types(
-        parser,
-        state.model_list,
-        state.imports,
-        state.scoped_model_resolver,
-        state.model_path_to_module_name,
-    )
 
 
 def snapshot_module_unused_models(state: ModuleStateView) -> None:
@@ -2725,40 +2596,24 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
         ]
         for _, data_type, inner_reference, _ in rule_users:
             parser._graph_builder.collapse_root_data_type(data_type, inner_reference)  # noqa: SLF001
-        import_collapsed_inner_models(
-            parser,
-            ctx.models,
-            [(model, data_type, root_import) for model, data_type, _, root_import in rule_users],
-            ctx.imports,
-            ctx.scoped_model_resolver,
-            run.model_path_to_module_name,
-            is_init=ctx.is_init,
-            internal_modules=run.internal_modules,
+        _import_inner_models_into(
+            parser, run, ctx, [(model, data_type, root_import) for model, data_type, _, root_import in rule_users]
         )
 
 
-def change_from_import(  # noqa: PLR0913
-    parser: ImportFromHost,
-    models: list[DataModel],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    *,
-    init: bool,
-    internal_modules: set[tuple[str, ...]] | None = None,
-    model_path_to_module_name: dict[str, str] | None = None,
-) -> None:
+def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     """Import into a module the models of other modules that its models reference, and name them by their imports.
 
     A stand-in is no member of its module: it takes no name there, and neither it nor a base that names it imports.
     A root that names itself, which deduplication dropped from every module, has no module to import from.
     """
-    models = module_members(parser, models)
+    models = module_members(parser, state.model_list)
     if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
         models = [model for model in models if model_key_of(model.reference) not in stand_ins]
     unimported = {*stand_ins, *(model_key_of(model.reference) for model in parser._self_named_root_models)}  # noqa: SLF001
     members = keyed_models(models, "module members")
-    internal_modules = internal_modules or set()
-    model_path_to_module_name = model_path_to_module_name or {}
+    imports, scoped_model_resolver = state.imports, state.scoped_model_resolver
+    model_path_to_module_name = state.model_path_to_module_name
 
     ledger = parser._import_ledger  # noqa: SLF001
     for model in models:
@@ -2771,22 +2626,20 @@ def change_from_import(  # noqa: PLR0913
         # Some imports are derived from type hints, so aliases can affect them.
         import_sensitive_alias_changed = False
         for data_type in _named_data_types(model):
-            match data_type.reference:
-                case None:
-                    continue
-                case reference if members.key_of(reference) in members.models or model_key_of(reference) in unimported:
-                    continue
-                case reference:
-                    pass
-
+            if (
+                (reference := data_type.reference) is None
+                or members.key_of(reference) in members.models
+                or model_key_of(reference) in unimported
+            ):
+                continue
             if alias := register_reference_import(
                 reference,
                 current_module_name,
                 _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
                 imports,
                 scoped_model_resolver,
-                init=init,
-                internal_modules=internal_modules,
+                init=state.is_init,
+                internal_modules=state.internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
                 producer=producer,
                 treat_dot_as_module=parser.treat_dot_as_module,
@@ -2799,19 +2652,6 @@ def change_from_import(  # noqa: PLR0913
             if before_import != after_import:
                 ledger.remove(imports, before_import, producer)
                 ledger.append(imports, after_import, producer)
-
-
-def change_module_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
-    """Import the referenced models of other modules into the module."""
-    change_from_import(
-        parser,
-        state.model_list,
-        state.imports,
-        state.scoped_model_resolver,
-        init=state.is_init,
-        internal_modules=state.internal_modules,
-        model_path_to_module_name=state.model_path_to_module_name,
-    )
 
 
 def process_each_module(

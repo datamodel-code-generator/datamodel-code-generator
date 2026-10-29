@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Generic
+from typing import TYPE_CHECKING, Final, Generic, cast
 
 from typing_extensions import TypeVar
 
@@ -162,7 +162,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
             reject("timestamp_window", helper_id)
     if not candidates:
         reject("missing_key", helper_id)
-    verified = tuple(signature for signature in signatures if signature is not None)
+    verified = cast("tuple[bytes, ...]", signatures)
     found = (
         identity
         for index, (key, identity) in enumerate(candidates)

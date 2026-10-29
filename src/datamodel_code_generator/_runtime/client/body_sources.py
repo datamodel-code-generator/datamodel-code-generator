@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, cast
 
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
-from .errors import DecodeError
+from .errors import request_failure
 from .logical import in_thread
 
 if TYPE_CHECKING:
@@ -27,11 +27,8 @@ class BodyBindings:
         if (entry := self._entries.get(id(body))) is not None:
             return entry[1]
         if not is_binary_input(body) and not (asynchronous and is_async_binary_input(body)):
-            raise DecodeError(
-                reason="unencodable",
-                direction="request",
-                location=("body",),
-                cause=TypeError("A binary body must be bytes, a path, a binary file or an iterable of bytes"),
+            raise request_failure(
+                ("body",), cause=TypeError("A binary body must be bytes, a path, a binary file or an iterable of bytes")
             )
         source = BinarySource(body)
         self._entries[id(body)] = body, source

@@ -25,20 +25,7 @@ if TYPE_CHECKING:
             """Return the header, query, or cookie name."""
             ...
 
-    class PlacedScheme(CredentialPosition, Protocol):
-        """A usable scheme a call's credential is placed at, named and of its material kind."""
-
-        @property
-        def name(self) -> str:
-            """Return the scheme's name."""
-            ...
-
-        @property
-        def kind(self) -> str:
-            """Return `api_key`, `basic`, or `bearer`."""
-            ...
-
-    Placement: TypeAlias = tuple[PlacedScheme, object]
+    Placement: TypeAlias = tuple[CredentialPosition, object]
 
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
@@ -55,10 +42,8 @@ def secret_names(schemes: tuple[CredentialPosition, ...]) -> tuple[frozenset[str
     They are the credential and cookie headers and the positions of the package's declared security schemes, however
     a request came to fill them.
     """
-    return (
-        CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in schemes if scheme.location == "header"),
-        frozenset(scheme.wire_name for scheme in schemes if scheme.location == "query"),
-    )
+    headers, query, _ = protected_positions(schemes)
+    return CREDENTIAL_HEADERS | headers, query
 
 
 @lru_cache(maxsize=32)

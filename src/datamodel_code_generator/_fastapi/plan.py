@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._fastapi.naming import file_stem_conflict
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
     EXPORTED_NAMES,
@@ -45,6 +44,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     status_key,
 )
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
@@ -57,7 +57,7 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     UnionType,
 )
-from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_naming import NameScope, windows_device
 from datamodel_code_generator._target_operations import (
     BODYLESS_STATUSES,
     LOCATIONS,
@@ -78,6 +78,7 @@ from datamodel_code_generator._target_operations import (
     type_uses,
 )
 from datamodel_code_generator._target_types import present, takes_null
+from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -88,6 +89,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_wire_plan import FormMember, LexicalKinds, WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -165,7 +167,6 @@ _CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]
 }
 _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
 _CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
-_WRAPPERS: Final = frozenset({"root", "alias"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
 _FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
@@ -425,6 +426,11 @@ class ServerPlan:
     groups: tuple[GroupSpec, ...]
     schemes: tuple[SchemeSpec, ...]
     info: tuple[tuple[str, JSONValue], ...]
+
+
+def _file_stem_conflict(stem: str, target_python_version: PythonVersion) -> bool:
+    """Return whether a file stem is reserved by the package layout or by Windows device names, folded as the target."""
+    return casefold(stem, target_python_version) == "__init__" or windows_device(stem, target_python_version)
 
 
 def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnostic | None:
@@ -719,7 +725,7 @@ class Planner:  # noqa: PLR0904
             name
             for key in members
             if (name := self.config.router_names.get(key)) is not None
-            and (file_stem_conflict(name, self.target_names.python_version) or not scope.take(name))
+            and (_file_stem_conflict(name, self.target_names.python_version) or not scope.take(name))
         }
         derived = [key for key in members if key not in self.config.router_names]
         bases = [self.target_names.function(group_basis(key)) for key in derived]
@@ -729,7 +735,7 @@ class Planner:  # noqa: PLR0904
         stems = {
             key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
         }
-        conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem, self.target_names.python_version))
+        conflicts.update(stem for stem in stems.values() if _file_stem_conflict(stem, self.target_names.python_version))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(conflicts)
@@ -977,7 +983,7 @@ class Planner:  # noqa: PLR0904
         while (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
-            and self.symbols[value.symbol].kind in {"root", "alias"}
+            and self.symbols[value.symbol].kind in WRAPPER_KINDS
             and (facts := self.facts.get(value.symbol)) is not None
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
@@ -1093,7 +1099,9 @@ class Planner:  # noqa: PLR0904
             case ImportedType():
                 return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
             case GeneratedSymbolType() if (
-                value.symbol not in seen and self.symbols[value.symbol].kind in _WRAPPERS and value.symbol in self.facts
+                value.symbol not in seen
+                and self.symbols[value.symbol].kind in WRAPPER_KINDS
+                and value.symbol in self.facts
             ):
                 return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
             case _:

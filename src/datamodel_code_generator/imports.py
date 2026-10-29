@@ -15,7 +15,12 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator._requirements import backport_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
+
+
+def _bound_name(from_: str | None, name: str, alias: str | None) -> str:
+    """Return the name an import binds: its alias, else the first part of a module import or the imported name."""
+    return alias or (name.partition(".")[0] if from_ is None else name)
 
 
 @dataclass(frozen=True)
@@ -37,9 +42,7 @@ class Import:
     @property
     def binding_name(self) -> str:
         """Return the identifier introduced by this import statement."""
-        if self.alias:
-            return self.alias
-        return self.import_.partition(".")[0] if self.from_ is None else self.import_
+        return _bound_name(self.from_, self.import_, self.alias)
 
     @classmethod
     @lru_cache(maxsize=4096)
@@ -211,8 +214,7 @@ class Imports(defaultdict[str | None, set[str]]):
             Formatted __all__ = [...] string
         """
         name_set: set[str] = (self._exports or set()).copy()
-        for from_, imports in self.items():
-            name_set.update(self.get_effective_name(from_, import_) for import_ in imports)
+        name_set.update(binding for _, binding in _import_bindings(self))
         name_list = sorted(name_set)
         if multiline:
             items = ",\n    ".join(f'"{name}"' for name in name_list)
@@ -222,9 +224,7 @@ class Imports(defaultdict[str | None, set[str]]):
 
     def get_effective_name(self, from_: str | None, import_: str) -> str:
         """Get the name actually bound by an import after alias resolution."""
-        if alias := self.alias.get(from_, {}).get(import_):
-            return alias
-        return import_.partition(".")[0] if from_ is None else import_
+        return _bound_name(from_, import_, self.alias.get(from_, {}).get(import_))
 
     def apply_alias(self, import_: Import) -> None:
         """Apply an alias to an exact import identity already in this aggregate."""
@@ -238,12 +238,7 @@ class Imports(defaultdict[str | None, set[str]]):
 
         An aliased import binds only its alias, so a use of its original name does not keep it.
         """
-        unused = [
-            (from_, import_)
-            for from_, imports_ in self.items()
-            for import_ in imports_
-            if self.get_effective_name(from_, import_) not in used_names
-        ]
+        unused = [key for key, binding in _import_bindings(self) if binding not in used_names]
         # Build reverse lookup dict for O(1) access instead of O(n) linear scan per import
         reverse_lookup: dict[tuple[str | None, str], str | None] = {
             self._storage_key(imp): path for path, imp in self.reference_paths.items()
@@ -254,6 +249,13 @@ class Imports(defaultdict[str | None, set[str]]):
             import_obj = Import(from_=from_, import_=import_, alias=alias, reference_path=reference_path)
             while self.counter.get((from_, import_), 0) > 0:
                 self.remove(import_obj)
+
+
+def _import_bindings(imports: Imports) -> Iterator[tuple[tuple[str | None, str], str]]:
+    """Yield the module and name of each import with the name it binds (``Imports.get_effective_name``)."""
+    for from_, names in imports.items():
+        for name in names:
+            yield (from_, name), imports.get_effective_name(from_, name)
 
 
 IMPORT_ANNOTATED = Import.from_full_path("typing.Annotated")

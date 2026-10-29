@@ -30,7 +30,7 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     _locate,
 )
-from datamodel_code_generator.parser.openapi import OPERATION_NAMES, OpenAPIParser, ReferenceObject
+from datamodel_code_generator.parser.openapi import OPERATION_NAMES, OpenAPIParser, ParameterLocation, ReferenceObject
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
     encoding_applies,
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModel
 
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
+_PARAMETER_LOCATIONS = frozenset(location.value for location in ParameterLocation)
 
 
 def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
@@ -599,13 +600,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             raw, path = target.value, target.path
             if not header:
                 location = raw.get("in")
-                if not isinstance(location, str) or location not in {
-                    "path",
-                    "query",
-                    "header",
-                    "cookie",
-                    "querystring",
-                }:
+                if not isinstance(location, str) or location not in _PARAMETER_LOCATIONS:
                     msg = "API_INVALID_OBJECT: invalid parameter location"
                     raise SchemaParseError(msg, path=path)
                 if location == "querystring" and (

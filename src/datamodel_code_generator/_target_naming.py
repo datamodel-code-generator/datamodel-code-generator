@@ -37,6 +37,7 @@ __all__ = (
     "explicit_name",
     "operation_basis",
     "path_placeholders",
+    "windows_device",
 )
 
 PATH_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
@@ -63,6 +64,11 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
         and not value.startswith("__")
         and is_nfkc(value, target_python_version)
     )
+
+
+def windows_device(name: str, target_python_version: PythonVersion) -> bool:
+    """Return whether a name is a Windows device name, case-folded as the target folds it."""
+    return casefold(name, target_python_version) in WINDOWS_DEVICES
 
 
 def path_placeholders(path: str) -> list[str]:

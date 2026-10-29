@@ -1142,10 +1142,6 @@ fix = "G09"
 home = "H20"
 fix = "GR9a"
 
-[legacy_rows."legacy-shared-node-in-place"]
-home = "H21"
-fix = "FIX-3"
-
 [legacy_rows."legacy-keyless-reference-by-path"]
 home = "H21"
 fix = "GR11"

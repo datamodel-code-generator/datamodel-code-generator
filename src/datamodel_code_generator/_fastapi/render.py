@@ -44,8 +44,17 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_operations import fact, tags
-from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
+from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_operations import described, fact, tags
+from datamodel_code_generator._target_operations import label as _label
+from datamodel_code_generator._target_render import (
+    Keyword,
+    Parameter,
+    display,
+    field_plan,
+    parameter_plan,
+    runtime_sources,
+)
 from datamodel_code_generator._target_templates import builtin_role, templated
 from datamodel_code_generator._target_types import admits_none
 from datamodel_code_generator._target_unicode import casefold
@@ -180,19 +189,11 @@ def _plan_classes(plan: ServerPlan, written: set[str]) -> dict[str, str]:
 
     A name the model types write takes a `Model` suffix, then a number, as the model generator renames such a class.
     """
-    taken = {spec.pascal for spec in plan.operations if spec.pascal not in written}
-    classes: dict[str, str] = {}
-    for spec in plan.operations:
-        name = spec.pascal
-        if name in written:
-            base, count = f"{name}Model", 0
-            name = base
-            while name in taken:
-                count += 1
-                name = f"{base}{count}"
-            taken.add(name)
-        classes[spec.key] = name
-    return classes
+    scope = NameScope(spec.pascal for spec in plan.operations if spec.pascal not in written)
+    return {
+        spec.key: scope.claim(f"{spec.pascal}Model", camel=True) if spec.pascal in written else spec.pascal
+        for spec in plan.operations
+    }
 
 
 def _chain(module: Module, members: Iterable[str]) -> str:
@@ -225,32 +226,21 @@ def _python(value: object) -> str:
     return repr(value)
 
 
-def _unique(base: str, taken: Iterable[str]) -> str:
-    names = set(taken)
-    name = base
-    count = 0
-    while name in names or keyword.iskeyword(name):
-        count += 1
-        name = f"{base}_{count}"
-    return name
-
-
 def _route_names(spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
     """Name what one route adder defines so that none equals the method, an argument, or another of its names."""
-    taken = {spec.python_name, *(argument.name for argument in spec.arguments)}
-    names: dict[str, str] = {}
-    for key, base in (
-        ("router", "router"),
-        ("wiring", "wiring"),
-        ("service", group.stem),
-        ("handler", f"{spec.python_name}_handler"),
-        ("principal", f"{spec.python_name}_principal"),
-        ("authorize", f"{spec.python_name}_authorize"),
-        ("record", "parameters"),
-    ):
-        taken.add(name := _unique(base, taken))
-        names[key] = name
-    return names
+    scope = NameScope((spec.python_name, *(argument.name for argument in spec.arguments), *keyword.kwlist))
+    return {
+        key: scope.claim(base)
+        for key, base in (
+            ("router", "router"),
+            ("wiring", "wiring"),
+            ("service", group.stem),
+            ("handler", f"{spec.python_name}_handler"),
+            ("principal", f"{spec.python_name}_principal"),
+            ("authorize", f"{spec.python_name}_authorize"),
+            ("record", "parameters"),
+        )
+    }
 
 
 class Module(TargetModule):
@@ -630,11 +620,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         A router group's class takes the name of its Protocol without the `Service` suffix and lives in the module of
         the group's stem; the operations of a secured document also need the authorize function.
         """
-        services, taken = self.services_package, set[str]()
+        services, scope = self.services_package, NameScope(keyword.kwlist)
         owned: list[Owned] = []
         for group in self.plan.groups:
             name = _implementation(group)
-            taken.add(alias := _unique(name, taken))
+            alias = scope.claim(name)
             base = f"{group.service}[object]" if group.secured else group.service
             source = self.stub(group, name).render(self.role)
             owned.append(Owned(f"{services}.{group.stem}", name, alias, group.stem, base, source))
@@ -945,12 +935,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         handler, record = names["handler"], names["record"]
         principal = "" if spec.security is None else names["principal"]
         asynchronous = spec.mode == "async"
-        label = f"The {group.stem}.{spec.python_name} method of {spec.contract.method.upper()} {spec.contract.path}"
+        label = f"The {group.stem}.{spec.python_name} method of {_label(spec.contract)}"
         lookup = Lookup(
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
             repr(label),
-            _tuple([repr(argument.name) for argument in spec.arguments]),
+            display(repr(argument.name) for argument in spec.arguments),
             asynchronous,
         )
         parameters = [
@@ -999,11 +989,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
         authenticate = module.local("_runtime.server.security", "authenticate")
         authorize = locals_["authorize"]
-        taken = {authorize, authenticate}
+        scope = NameScope((authorize, authenticate, *keyword.kwlist))
         names: dict[str, str] = {}
         parameters: list[Parameter] = []
         for scheme, needed in scopes.items():
-            taken.add(local := names.setdefault(scheme, _unique(self.scheme_names[scheme], taken)))
+            local = names[scheme] = scope.claim(self.scheme_names[scheme])
             arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
             kind = _credential_type(module, schemes[scheme])
             parameters.append(Parameter(local, f"{annotated}[{kind}, {depends}({arguments})]"))
@@ -1015,7 +1005,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authorize=authorize,
             authenticate=authenticate,
             parameters=tuple(parameters),
-            requirements=_tuple([_requirement(item) for item in requirements]),
+            requirements=display(_requirement(item) for item in requirements),
             credentials="{" + ", ".join(f"{scheme!r}: {names[scheme]}" for scheme in scopes) + "}",
             challenge=repr(challenge),
         )
@@ -1120,12 +1110,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def docstring(self, spec: OperationSpec) -> str:
         """Return an operation's docstring text: its summary and description, as the models document, or its route."""
-        if self.use_schema_description:
-            facts = {name: getattr(value, "value", None) for name, value in spec.contract.facts}
-            texts = [text for name in ("summary", "description") if isinstance(text := facts.get(name), str)]
-            if text := "\n\n".join(text.strip() for text in texts if text.strip()):
-                return text
-        return f"Handle {spec.contract.method.upper()} {spec.contract.path}."
+        if self.use_schema_description and (text := described(spec.contract)):
+            return text
+        return f"Handle {_label(spec.contract)}."
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Parameter]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
@@ -1286,11 +1273,6 @@ def _credential(scheme: SchemeSpec) -> str:
     return f"an API key in the `{scheme.parameter}` {place}"
 
 
-def _tuple(items: list[str]) -> str:
-    """Return a tuple display of expressions, with the comma a lone item needs."""
-    return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-
-
 def _native(module: Module, name: str, field: NativeField) -> Parameter:
     keywords = [f"alias={field.alias!r}"]
     if field.api == "Header":
@@ -1391,7 +1373,7 @@ def _parameter_arguments(module: Module, adapters: list[Argument]) -> str:
         if (value := _default_value(module, parameter.default)) is not None:
             entries.append(f"default={value}")
         arguments.append(f"{module.local('_runtime.server.requests', 'ParameterArgument')}({', '.join(entries)})")
-    return _tuple(arguments)
+    return display(arguments)
 
 
 def _json_part(module: Module, part: JsonPartSpec) -> str:
@@ -1414,9 +1396,9 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
-            entries.append(f"fields={_tuple([field_plan(module.local, plan) for plan in fields])}")
+            entries.append(f"fields={display(field_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
-            entries.append(f"json_parts={_tuple([_json_part(module, part) for part in parts])}")
+            entries.append(f"json_parts={display(_json_part(module, part) for part in parts)}")
         if (additional := item.additional) is not None:
             plan = (
                 _json_part(module, additional)
@@ -1427,9 +1409,9 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (checked := item.checked) is not None:
             entries.append(f"checked={module.name('pydantic', 'TypeAdapter')}(dict[str, {module.annotation(checked)}])")
         if encoded := item.encoded:
-            entries.append(f"encoded={_tuple([parameter_plan(module.local, plan) for plan in encoded])}")
+            entries.append(f"encoded={display(parameter_plan(module.local, plan) for plan in encoded)}")
         media.append(f"{module.local('_runtime.server.requests', 'BodyMedia')}({', '.join(entries)})")
-    return _tuple(media)
+    return display(media)
 
 
 def _registration(module: Module, spec: OperationSpec) -> Registration:
@@ -1588,7 +1570,7 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
 
 
 def _requirement(requirement: Requirement) -> str:
-    return _tuple([f"({name!r}, {scopes!r})" for name, scopes in requirement])
+    return display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
 
 
 def _request_kind(media: MediaSpec) -> str:
