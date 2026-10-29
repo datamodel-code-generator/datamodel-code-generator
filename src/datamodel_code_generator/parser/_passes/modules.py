@@ -70,12 +70,23 @@ from datamodel_code_generator.parser._passes._name_allocation import scheme_reso
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     BaseStandInHost,
+    CollapsedReuseHost,
+    CollapseRootModelsHost,
     ConstructorInfoHost,
+    DataModelTypeHost,
+    DeduplicationHost,
     DiscriminatorValue,
+    GenerationStoreHost,
+    GraphBuilderHost,
+    ModuleScopeView,
+    OutputOptionsHost,
     RecursionFactsHost,
     ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
+    RootModelHost,
+    RootModelTypeHost,
+    TargetPythonVersionHost,
     TypeOverrideHost,
     _annotated_reference,
     _assign_module_name,
@@ -123,6 +134,7 @@ from datamodel_code_generator.parser._passes._warnings import warn_as_parser_bas
 from datamodel_code_generator.parser._tag_plan import (
     KeptTagField,
     MsgspecUnion,
+    TagPlanHost,
     UnionTagDecision,
     UnionView,
     appended_takes_struct_tag,
@@ -151,13 +163,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.config import ParserConfig
-    from datamodel_code_generator.enums import DataclassArguments, TargetPydanticVersion
+    from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
-    from datamodel_code_generator.parser._passes._shared import _ReuseOptimizationContext
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
         ModulePath,
@@ -170,7 +179,7 @@ if TYPE_CHECKING:
         InlineVariantTags,
         TagPlan,
     )
-    from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
+    from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelType, Reference
     from datamodel_code_generator.types import DataTypeManager
 
@@ -235,7 +244,19 @@ def renames_colliding_types(parser: CollisionRenameHost) -> bool:
     )
 
 
-class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, TypeOverrideHost, Protocol):
+class ModulesHost(
+    CollisionRenameHost,
+    ConstructorInfoHost,
+    RenamedTypesHost,
+    TypeOverrideHost,
+    GraphBuilderHost,
+    CollapseRootModelsHost,
+    OutputOptionsHost,
+    RootModelTypeHost,
+    TargetPythonVersionHost,
+    TagPlanHost,
+    Protocol,
+):
     """The options, run state and hooks of the parser that the module passes read and write."""
 
     @property
@@ -251,10 +272,6 @@ class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, Ty
         """The values typed by an enum whose const admits only one of its values, with that const."""
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
     def _hidden_named_types(self) -> dict[tuple[ModelKey, str | None], bool]:
         """Whether a field hides the named type of its model, by model key and field name."""
 
@@ -267,20 +284,12 @@ class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, Ty
         """The ledger of the imports each module adds."""
 
     @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
-
-    @property
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the types that override models and fields, by model name or scoped field name."""
 
     @property
     def builtin_names(self) -> frozenset[str]:
         """The builtin names of the target Python version."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
 
     @property
     def data_type(self) -> type[DataType]:
@@ -291,16 +300,8 @@ class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, Ty
         """The data type manager of the output."""
 
     @property
-    def deserialize_default_value_types(self) -> frozenset[DefaultValueType]:
-        """The kinds of default values deserialized into their types."""
-
-    @property
     def keep_model_order(self) -> bool:
         """Whether models keep the order of the schema."""
-
-    @property
-    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
-        """The root model type whose class body evaluates its root type, if the output has one."""
 
     @property
     def results(self) -> list[DataModel]:
@@ -313,14 +314,6 @@ class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, Ty
     @property
     def snake_case_field(self) -> bool:
         """Whether field names are written in snake case."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
 
     @property
     def use_annotated(self) -> bool:
@@ -348,58 +341,12 @@ class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, Ty
         """Return a set copy of a list type, or the type after its nested lists became sets in place."""
 
 
-class ReuseHost(RecursionFactsHost, Protocol):
+class ReuseHost(RecursionFactsHost, DeduplicationHost, Protocol):
     """The options, run state and hooks of the parser that module-scope reuse reads and writes."""
-
-    @property
-    def _collapsed_reuse_models(self) -> dict[int, list[DataModel]]:
-        """The models collapsed reuse removed, by the id of their canonical model."""
-
-    @property
-    def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
-        """The data types collapsed reuse redirected, with the reference each named before."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
     @property
     def _removed_reuse_users(self) -> dict[int, tuple[DataType, list[str]]]:
         """The data types whose duplicate reuse removed, by id, with the paths they named."""
-
-    @property
-    def _reuse_optimization_context(self) -> _ReuseOptimizationContext:
-        """The constraints that type overrides put on reuse."""
-
-    @property
-    def _reuse_groups(self) -> ReuseGroups:
-        """The plan of which model of a group of duplicates stays canonical."""
-
-    @property
-    def collapse_reuse_models(self) -> bool:
-        """Whether reuse removes duplicates instead of subclassing them."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
-
-    @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
-
-    @property
-    def reuse_model(self) -> bool:
-        """Whether models that render the same are reused."""
-
-    @property
-    def reuse_scope(self) -> ReuseScope | None:
-        """The scope of reuse."""
-
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
-
-    def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
-        """Return the keys of one comparison pass of the dedup or reuse user of a row."""
 
 
 class InlineVariantHost(Protocol):
@@ -433,6 +380,9 @@ class CollapseHost(
     ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
+    GenerationStoreHost,
+    CollapseRootModelsHost,
+    RootModelHost,
     Protocol,
 ):
     """The options, run state and hooks of the parser that collapsing root models reads and writes."""
@@ -462,14 +412,6 @@ class CollapseHost(
         """The module that emits each model found in the live lists, by model id."""
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
-
-    @property
     def collapse_root_models_name_strategy(self) -> CollapseRootModelsNameStrategy | None:
         """How collapsed root models name the models that replace them, if configured."""
 
@@ -489,28 +431,9 @@ class CollapseHost(
     def generate_schema_validators(self) -> bool:
         """Whether models get the schema validator rules the types cannot express."""
 
-    @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
 
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
-
-
-class DiscriminatorHost(InlineVariantHost, Protocol):
+class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Protocol):
     """The options, run state and hooks of the parser that writing discriminator tags reads and writes."""
-
-    @property
-    def _collapsed_reuse_models(self) -> dict[int, list[DataModel]]:
-        """The models collapsed reuse removed, by the id of their canonical model."""
-
-    @property
-    def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
-        """The data types collapsed reuse redirected, with the reference each named before."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
     @property
     def _import_ledger(self) -> ModuleImportLedger:
@@ -552,9 +475,6 @@ class DiscriminatorHost(InlineVariantHost, Protocol):
     def _data_model_field_common_kwargs(self) -> dict[str, Any]:
         """Return the keyword arguments every field the parser builds takes."""
 
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
-
     def _split_field_alias(self, alias: str | list[str] | None) -> tuple[str | None, list[str] | None]:
         """Split one output alias from multiple validation aliases."""
 
@@ -564,24 +484,16 @@ class DiscriminatorHost(InlineVariantHost, Protocol):
         """Return the serialization alias configured for a field, if any."""
 
 
-class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, Protocol):
+class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, GraphBuilderHost, Protocol):
     """The option, the import ledger, the replaced roots, the stand-ins and the dropped roots that importing reads."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
 
-class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
+class ModuleLoopHost(RecursionFactsHost, TagPlanHost, Protocol[ConfigT, ContextT, ResultT]):
     """The hook and run state of the parser that processing the output modules one by one calls and writes."""
-
-    @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
 
     def _process_single_module(  # noqa: PLR0913, PLR0917
         self,
@@ -597,7 +509,7 @@ class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
         """Process a single module and return its context."""
 
 
-class RuleAliasHost(ImportFromHost, Protocol):
+class RuleAliasHost(ImportFromHost, DataModelTypeHost, Protocol):
     """The options, run state and hook of the parser that writing rule aliases as classes reads and calls."""
 
     @property
@@ -607,10 +519,6 @@ class RuleAliasHost(ImportFromHost, Protocol):
     @property
     def custom_template_dir(self) -> Path | None:
         """The directory of custom templates, if configured."""
-
-    @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
 
     @property
     def dataclass_arguments(self) -> DataclassArguments | None:
@@ -624,7 +532,7 @@ class RuleAliasHost(ImportFromHost, Protocol):
         """Create a model of ``model_type``, the model type of the output by default."""
 
 
-class ModuleStateView(Protocol):
+class ModuleStateView(ModuleScopeView, Protocol):
     """What the module passes read and write of the state of one ``_process_single_module`` call."""
 
     model_list: list[DataModel]
@@ -637,16 +545,8 @@ class ModuleStateView(Protocol):
         """The imports of the module."""
 
     @property
-    def internal_modules(self) -> set[ModulePath]:
-        """The internal modules that import cycles merged models into."""
-
-    @property
     def is_init(self) -> bool:
         """Whether the module is a package ``__init__``."""
-
-    @property
-    def model_path_to_module_name(self) -> dict[str, str]:
-        """The module name of each model, by model path."""
 
     @property
     def scoped_model_resolver(self) -> ModelResolver:
@@ -657,20 +557,12 @@ class ModuleStateView(Protocol):
         """The models no module writes, collected over the modules processed so far."""
 
 
-class ModulesRun(Protocol):
+class ModulesRun(ModuleScopeView, Protocol):
     """What the module passes that run once every module is processed read of the run."""
 
     @property
     def contexts(self) -> Sequence[ModuleContextView]:
         """The processed modules, in module order."""
-
-    @property
-    def internal_modules(self) -> set[ModulePath]:
-        """The internal modules that import cycles merged models into."""
-
-    @property
-    def model_path_to_module_name(self) -> dict[str, str]:
-        """The module name of each model, by model path."""
 
     @property
     def unused_models(self) -> list[DataModel]:
@@ -1269,13 +1161,7 @@ def redirect_removed_reuse_users(parser: ReuseHost, duplicate: DataModel, canoni
     Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
     """
     users = parser._removed_reuse_users  # noqa: SLF001
-    for user in redirect_collapsed_reuse_users(
-        parser._graph_builder,  # noqa: SLF001
-        parser._collapsed_reuse_models,  # noqa: SLF001
-        parser._collapsed_reuse_users,  # noqa: SLF001
-        duplicate,
-        canonical,
-    ):
+    for user in redirect_collapsed_reuse_users(parser, duplicate, canonical):
         users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
 
 
