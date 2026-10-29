@@ -17,17 +17,14 @@ from datamodel_code_generator._format_types import DateClassType, DatetimeClassT
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
-    IMPORT_ANY,
     IMPORT_DATE,
     IMPORT_DATETIME,
     IMPORT_DECIMAL,
-    IMPORT_PATH,
     IMPORT_PENDULUM_DATE,
     IMPORT_PENDULUM_DATETIME,
     IMPORT_PENDULUM_DURATION,
     IMPORT_PENDULUM_TIME,
     IMPORT_TIME,
-    IMPORT_TIMEDELTA,
     IMPORT_ULID,
     IMPORT_UUID,
 )
@@ -51,10 +48,6 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_FIELD,
     IMPORT_FUTURE_DATE,
     IMPORT_FUTURE_DATETIME,
-    IMPORT_IPV4ADDRESS,
-    IMPORT_IPV4NETWORKS,
-    IMPORT_IPV6ADDRESS,
-    IMPORT_IPV6NETWORKS,
     IMPORT_NAIVE_DATETIME,
     IMPORT_NEGATIVE_FLOAT,
     IMPORT_NEGATIVE_INT,
@@ -79,7 +72,9 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
-from datamodel_code_generator.python_literal import PythonCode, represent_python_value
+from datamodel_code_generator.model.types import standard_primitive_type_map_factory
+from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
+from datamodel_code_generator.python_literal import _QUOTE_AND_CONTROL_ESCAPES, PythonCode, represent_python_value
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -113,31 +108,24 @@ def type_map_factory(
     use_object_type: bool = False,  # noqa: FBT001, FBT002
 ) -> dict[Types, DataType]:
     """Create a mapping of schema types to Pydantic data types."""
-    data_type_int = data_type(type="int")
-    data_type_float = data_type(type="float")
-    data_type_str = data_type(type="str")
-    object_data_type = data_type(type="object") if use_object_type else data_type.from_import(IMPORT_ANY)
-    result = {
-        Types.integer: data_type_int,
-        Types.int32: data_type_int,
-        Types.int64: data_type_int,
-        Types.number: data_type_float,
-        Types.float: data_type_float,
-        Types.double: data_type_float,
-        Types.decimal: data_type.from_import(IMPORT_DECIMAL),
+    shared = {
+        **_type_map_factory(data_type, use_object_type=use_object_type),
+        **standard_primitive_type_map_factory(data_type),
+    }
+    path = shared.pop(Types.path)
+    result: dict[Types, DataType] = {}
+    for types, mapped in shared.items():
+        result[types] = mapped
+        if types is Types.timedelta:
+            result[Types.path] = path
+    result.update({
         Types.time: data_type.from_import(IMPORT_TIME),
-        Types.string: data_type_str,
-        Types.byte: data_type_str,  # base64 encoded string
-        Types.binary: data_type(type="bytes"),
         Types.date: data_type.from_import(IMPORT_DATE),
         Types.date_time: data_type.from_import(IMPORT_DATETIME),
         Types.date_time_local: data_type.from_import(IMPORT_DATETIME),
         Types.time_local: data_type.from_import(IMPORT_TIME),
-        Types.timedelta: data_type.from_import(IMPORT_TIMEDELTA),
-        Types.path: data_type.from_import(IMPORT_PATH),
         Types.password: data_type.from_import(IMPORT_SECRET_STR),
         Types.email: data_type.from_import(IMPORT_EMAIL_STR),
-        Types.uuid: data_type.from_import(IMPORT_UUID),
         Types.uuid1: data_type.from_import(IMPORT_UUID1),
         Types.uuid2: data_type.from_import(IMPORT_UUID),
         Types.uuid3: data_type.from_import(IMPORT_UUID3),
@@ -153,16 +141,7 @@ def type_map_factory(
                 **({"strict": True} if StrictTypes.str in strict_types else {}),
             },
         ),
-        Types.ipv4: data_type.from_import(IMPORT_IPV4ADDRESS),
-        Types.ipv6: data_type.from_import(IMPORT_IPV6ADDRESS),
-        Types.ipv4_network: data_type.from_import(IMPORT_IPV4NETWORKS),
-        Types.ipv6_network: data_type.from_import(IMPORT_IPV6NETWORKS),
-        Types.boolean: data_type(type="bool"),
-        Types.object: data_type(data_types=[object_data_type], is_dict=True),
-        Types.null: data_type(type="None"),
-        Types.array: data_type(data_types=[object_data_type], is_list=True),
-        Types.any: data_type.from_import(IMPORT_ANY),
-    }
+    })
     if use_pendulum:
         result[Types.date] = data_type.from_import(IMPORT_PENDULUM_DATE)
         result[Types.date_time] = data_type.from_import(IMPORT_PENDULUM_DATETIME)
@@ -193,14 +172,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = str.maketrans({
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-})
+escape_characters = str.maketrans(_QUOTE_AND_CONTROL_ESCAPES)
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 

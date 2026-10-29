@@ -15,7 +15,7 @@ from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._render_plan import FieldRenderPlan, RuleId, Why
-from datamodel_code_generator.model.base import UNDEFINED
+from datamodel_code_generator.model.base import UNDEFINED, _field_source_name
 from datamodel_code_generator.model.imports import (
     IMPORT_NOT_REQUIRED,
     IMPORT_NOT_REQUIRED_BACKPORT,
@@ -27,6 +27,7 @@ from datamodel_code_generator.model.imports import (
     IMPORT_TYPED_DICT_BACKPORT,
 )
 from datamodel_code_generator.python_literal import (
+    _QUOTE_AND_CONTROL_ESCAPES,
     _InternalTypeExpression,
     represent_untrusted_public_type_name,
     represent_untrusted_python_value,
@@ -48,19 +49,7 @@ _KEY_REQUIREDNESS = Why(RuleId("D3.typed-dict.key-requiredness"), keyword="requi
 _READ_ONLY = Why(RuleId("D11.typed-dict.read-only"), keyword="readOnly", option="--use-frozen-field")
 
 
-escape_characters = str.maketrans({
-    "\\": r"\\",
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-})
-
-
-def _field_source_name(field: DataModelFieldBase) -> str | None:
-    return field.original_name if field.original_name is not None else field.name
+escape_characters = str.maketrans({"\\": r"\\", **_QUOTE_AND_CONTROL_ESCAPES})
 
 
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:

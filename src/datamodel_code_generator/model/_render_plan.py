@@ -37,6 +37,8 @@ from contextvars import ContextVar
 from operator import eq, is_
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Protocol, TypeAlias, cast, final
 
+from typing_extensions import override
+
 from datamodel_code_generator._records import record
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -288,13 +290,7 @@ class CallArguments:
         """Give the argument ``name`` a new value in its place, keeping its items and adding ``items``."""
         entry = self._entries[name]
         self._entries[name] = Kwarg(
-            name,
-            value,
-            Why(why.rule, why.keyword, why.option, (entry.why.rule,)),
-            (
-                *entry.items,
-                *items,
-            ),
+            name, value, Why(why.rule, why.keyword, why.option, (entry.why.rule,)), (*entry.items, *items)
         )
 
     def take(self, name: str) -> Kwarg | None:
@@ -684,6 +680,44 @@ def _field_argument_text(argument: Kwarg) -> str:
 def field_call_text(call: CallPlan) -> str:
     """Write a ``field(...)`` call of a stdlib dataclass or msgspec: its arguments in order, the factory as code."""
     return f"field({', '.join(_field_argument_text(argument) for argument in call.kwargs)})"
+
+
+class _PlanSource(Protocol):
+    """A field that reads its render plan, as ``_FieldCallWriter`` reads it."""
+
+    def _render_plan(self) -> FieldRenderPlan:
+        """Return the field's render plan."""
+
+
+class _FieldCallWriter:
+    """What a stdlib dataclass or msgspec field writes after its annotation, from its render plan.
+
+    It is ``field(...)``, the default alone, or nothing; the field classes list it before ``DataModelFieldBase``.
+    """
+
+    @staticmethod
+    def _plan_text(plan: FieldRenderPlan) -> str:
+        """Write what follows the annotation from ``plan``: ``field(...)``, the default alone, or nothing."""
+        if (call := plan.call) is not None:
+            return field_call_text(call)
+        return represent_python_value(plan.default.value) if plan.bare_default else ""
+
+    def _get_field_data(self) -> dict[str, Any]:
+        """Return the ``field()`` arguments the field writes, its default factory as text."""
+        plan = cast("_PlanSource", self)._render_plan()  # noqa: SLF001
+        if plan.bare_default:
+            return {"default": plan.default.value}
+        if (call := plan.call) is None:
+            return {}
+        return {
+            argument.name: str(argument.value) if argument.name == "default_factory" else argument.value
+            for argument in call.kwargs
+        }
+
+    @override
+    def __str__(self) -> str:
+        """Generate field() call or default value representation."""
+        return self._plan_text(cast("_PlanSource", self)._render_plan())  # noqa: SLF001
 
 
 def written_argument_names(plan: FieldRenderPlan) -> tuple[str, ...]:

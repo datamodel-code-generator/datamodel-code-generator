@@ -9,7 +9,7 @@ from functools import lru_cache
 from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-from typing_extensions import Sentinel, assert_never, override
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
@@ -17,14 +17,15 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
-from datamodel_code_generator.python_literal import _semantic_value_text
+from datamodel_code_generator.python_literal import _QUOTE_AND_CONTROL_ESCAPES, _semantic_value_text
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Iterator
     from pathlib import Path
 
-    from datamodel_code_generator.model._decisions.enum_kind import EnumKind
+    from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
     from datamodel_code_generator.reference import Reference
 
 
@@ -35,16 +36,7 @@ _STR: str = "str"
 _JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
 _JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
 
-escape_characters = str.maketrans({
-    "\u0000": r"\x00",  # Null byte
-    "\\": r"\\",
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-})
+escape_characters = str.maketrans({"\u0000": r"\x00", "\\": r"\\", **_QUOTE_AND_CONTROL_ESCAPES})
 
 
 class _StructuredEnumMemberValue:
@@ -209,12 +201,15 @@ class Enum(DataModel):
         """Build the exact-value index only when member lookup is used; the parse's memo keeps it."""
         return memoized(MemoTable.ENUM_MEMBER_INDEX, model_key_of(self.reference), self, None, self._index_members)
 
+    def _valued_members(self) -> Iterator[tuple[DataModelFieldBase, Any]]:
+        """Yield each member that has a value, with its raw value."""
+        for field in self.fields:
+            if field.default is not None:
+                yield field, get_raw_enum_member_value(field.default)
+
     def _index_members(self) -> dict[tuple[object, Any], DataModelFieldBase]:
         exact: dict[tuple[object, Any], DataModelFieldBase] = {}
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             if (key := _json_value_key(member_value)) is not None:
                 exact.setdefault(key, field)
         return exact
@@ -228,10 +223,7 @@ class Enum(DataModel):
 
     def _index_coerced_members(self) -> dict[str, DataModelFieldBase]:
         coerced: dict[str, DataModelFieldBase] = {}
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             coerced.setdefault(
                 member_value if isinstance(member_value, str) else _semantic_value_text(member_value), field
             )
@@ -248,10 +240,7 @@ class Enum(DataModel):
         if (key := _json_value_key(value)) is not None:
             return self.get_member(field) if (field := self._member_index.get(key)) is not None else None
 
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             if type(member_value) is type(value) and member_value == value:
                 return self.get_member(field)
         return None
@@ -307,19 +296,12 @@ Kept for import compatibility; nothing reads it; ``model/_decisions/enum_kind.py
 """
 
 
+_ENUM_CLASSES: dict[EnumBase, type[Enum]] = {"Enum": Enum, "IntEnum": IntEnum, "StrEnum": StrEnum}
+
+
 def _enum_class(kind: EnumKind, first_merged: type[Enum] = Enum) -> type[Enum]:
     """Return the class an enum of the kind is written as; the merged rows keep the class of the first merged enum."""
-    match kind.base:
-        case "Enum":
-            return Enum
-        case "IntEnum":
-            return IntEnum
-        case "StrEnum":
-            return StrEnum
-        case None:
-            return first_merged
-        case _:  # pragma: no cover
-            assert_never(kind.base)
+    return first_merged if kind.base is None else _ENUM_CLASSES[kind.base]
 
 
 class Member:

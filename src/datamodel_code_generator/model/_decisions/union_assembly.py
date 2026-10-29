@@ -27,11 +27,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CONSTRUCTED",
-    "DECLARED",
     "FLATTENED",
     "MEMBER",
-    "NULLABLE",
-    "ORDERED",
     "MemberFacts",
     "MemberRole",
     "MergedMembers",
@@ -140,17 +137,8 @@ class UnionPlan:
 MEMBER = MemberFacts()
 """A plain member."""
 
-DECLARED = UnionPolicy()
-"""The ``declared`` row of a union that does not admit null."""
-
-NULLABLE = UnionPolicy(nullable=True)
-"""The ``declared`` row of a union that admits null."""
-
 CONSTRUCTED = UnionPolicy("constructed")
 """The row every ``DataType`` applies to the members it is built with."""
-
-ORDERED = UnionPolicy("ordered")
-"""The row of msgspec field hints, which write None and ``UNSET`` as members."""
 
 FLATTENED = UnionPolicy("flattened")
 """The row of render preparation's rewrite of the union around a quoted container."""

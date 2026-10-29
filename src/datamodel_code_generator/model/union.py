@@ -70,7 +70,6 @@ class DataTypeUnion(_DataTypeUnionBase):
     """GraphQL union using TypeAlias annotation for Python 3.10+ (Name: TypeAlias = Union[...])."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "UnionTypeAliasAnnotation.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (
         IMPORT_TYPE_ALIAS,
         IMPORT_UNION,
@@ -81,7 +80,6 @@ class DataTypeUnionTypeBackport(_DataTypeUnionBase):
     """GraphQL union using TypeAliasType for Python 3.10-3.11 (Name = TypeAliasType("Name", Union[...]))."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "UnionTypeAliasType.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (
         IMPORT_TYPE_ALIAS_TYPE,
         IMPORT_UNION,
@@ -92,6 +90,5 @@ class DataTypeUnionTypeStatement(_DataTypeUnionBase):
     """GraphQL union using type statement for Python 3.12+ (type Name = Union[...])."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "UnionTypeStatement.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_UNION,)
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = "pydantic.type_statement"

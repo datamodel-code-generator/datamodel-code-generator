@@ -52,7 +52,6 @@ class TypeAlias(TypeAliasBase):
     """TypeAlias annotation for Python 3.10+ (Name: TypeAlias = type)."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypeAliasAnnotation.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPE_ALIAS,)
     IS_EVALUATED_ALIAS: ClassVar[bool] = True
     """Whether the name is the value itself at runtime, so a name of the value None is None."""
@@ -62,7 +61,6 @@ class TypeAliasTypeBackport(TypeAliasBase):
     """TypeAliasType for Python 3.10-3.11 (Name = TypeAliasType("Name", type))."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypeAliasType.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPE_ALIAS_TYPE,)
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = True
     _WRITES_REFERENCE_ALIAS_TYPE: ClassVar[bool] = True
@@ -88,6 +86,4 @@ class TypeStatement(TypeAliasBase):
     """
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypeStatement.jinja2"
-    BASE_CLASS: ClassVar[str] = ""
-    DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = "pydantic.type_statement"
