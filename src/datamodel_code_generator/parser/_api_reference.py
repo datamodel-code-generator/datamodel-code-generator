@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence  # noqa: TC003 - Public annotations support get_type_hints().
 from functools import cached_property, lru_cache
 from urllib.parse import quote, unquote
@@ -10,6 +9,12 @@ from urllib.parse import quote, unquote
 from typing_extensions import override
 
 from datamodel_code_generator import SchemaParseError
+from datamodel_code_generator._json_pointer import (
+    NONCANONICAL_ESCAPE,
+    NONCANONICAL_PERCENT,
+    escape_token,
+    fragment_tokens,
+)
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser.jsonschema import split_json_pointer
@@ -19,27 +24,20 @@ from datamodel_code_generator.reference import (
     Reference,
 )
 
-_BAD_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
-_BAD_ESCAPE = re.compile(r"~(?![01])")
-
 
 def pointer_tokens(ref: str) -> tuple[str, ...] | None:
     """Decode a URI fragment once, distinguishing named anchors from pointers."""
     fragment = ref.partition("#")[2]
     msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(ref)!r}"
-    if _BAD_PERCENT.search(fragment):
+    if NONCANONICAL_PERCENT.search(fragment):
         raise SchemaParseError(msg, path=[ref])
     try:
         decoded = unquote(fragment, errors="strict")
     except UnicodeError as exc:
         raise SchemaParseError(msg, path=[ref], original_error=exc) from exc
-    if not decoded:
-        return ()
-    if not decoded.startswith("/"):
-        return None
-    if _BAD_ESCAPE.search(decoded):
+    if (tokens := fragment_tokens(decoded)) and NONCANONICAL_ESCAPE.search(decoded):
         raise SchemaParseError(msg, path=[ref])
-    return tuple(token.replace("~1", "/").replace("~0", "~") for token in decoded[1:].split("/"))
+    return tokens
 
 
 def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resolved: str) -> None:
@@ -56,11 +54,7 @@ def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resol
 
 def pointer_fragment(tokens: Sequence[str]) -> str:
     """Encode raw declaration tokens without conflating slashes or literal percent signs."""
-    return (
-        "/" + "/".join(quote(token.replace("~", "~0").replace("/", "~1"), safe="~") for token in tokens)
-        if tokens
-        else ""
-    )
+    return "/" + "/".join(quote(escape_token(token), safe="~") for token in tokens) if tokens else ""
 
 
 def canonical_ref(ref: str) -> str:

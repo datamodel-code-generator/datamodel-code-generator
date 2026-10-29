@@ -29,6 +29,7 @@ from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
+from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._records import record
 from datamodel_code_generator.reference import SchemaLocation
 
@@ -233,11 +234,6 @@ class DocumentResources:
     """Whether a schema below the root, or an implicit resource, declares an identifier other than a fragment."""
 
 
-def _pointer(path: SchemaPath) -> str:
-    """Return the RFC 6901 pointer of a path below a schema."""
-    return "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
-
-
 def walk_schema_resources(  # noqa: PLR0913
     raw: dict[str, Any],
     implicit: Sequence[tuple[SchemaPath, dict[str, Any]]],
@@ -287,12 +283,12 @@ def walk_schema_resources(  # noqa: PLR0913
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
         for path, child in children(schema):
-            embeds |= visit(child, pointer + _pointer(path), base, id_field, resource)
+            embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
 
     embeds_resources = visit(raw, "", base, id_field, "")
     for path, schema in implicit:
-        resources.add(pointer := _pointer(path))
+        resources.add(pointer := join_pointer(path))
         embeds_resources |= visit(schema, pointer, base, id_field, pointer)
     return DocumentResources(
         document=document,

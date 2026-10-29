@@ -12,6 +12,8 @@ from copy import deepcopy
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias
 
+from datamodel_code_generator._json_pointer import unescape_token
+
 DefinitionKey: TypeAlias = Literal["$defs", "definitions"]
 DEFINITION_KEYS: tuple[DefinitionKey, ...] = ("$defs", "definitions")
 SchemaShape: TypeAlias = Literal["map", "sequence", "single", "single-or-sequence"]
@@ -153,7 +155,7 @@ def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
         if not ref.startswith(prefix):
             continue
         escaped_name, separator, suffix = ref[len(prefix) :].partition("/")
-        return escaped_name.replace("~1", "/").replace("~0", "~"), escaped_name, f"{separator}{suffix}"
+        return unescape_token(escaped_name), escaped_name, f"{separator}{suffix}"
     return None
 
 

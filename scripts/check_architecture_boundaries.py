@@ -21,6 +21,7 @@ Layer: TypeAlias = Literal[
     "parser-core",
     "facts",
     "schema-graph",
+    "json-pointer",
     "config",
     "input-model",
     "reference",
@@ -93,13 +94,21 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._json_pointer",
             "datamodel_code_generator._records",
             "datamodel_code_generator.reference",
         }),
         (
             "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._records and datamodel_code_generator.reference, and take parser rules as "
-            "arguments"
+            "datamodel_code_generator._json_pointer, datamodel_code_generator._records and "
+            "datamodel_code_generator.reference, and take parser rules as arguments"
+        ),
+    ),
+    "json-pointer": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the RFC 6901 pointer codec is a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
         ),
     ),
     "requirements": (
@@ -138,10 +147,10 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         ),
     ),
     "json-schema": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._json_pointer"}),
         (
-            "the subschema position table is a leaf that every schema walker reads: import only the standard library "
-            "and typing_extensions"
+            "the subschema position table is a leaf that every schema walker reads: import only the standard library, "
+            "typing_extensions and datamodel_code_generator._json_pointer"
         ),
     ),
     "parser-core": (
@@ -1241,6 +1250,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "regex"
         case ("_json_schema.py",):
             layer = "json-schema"
+        case ("_json_pointer.py",):
+            layer = "json-pointer"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

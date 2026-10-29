@@ -39,6 +39,7 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._records import record
 from datamodel_code_generator._target_unicode import (
@@ -318,7 +319,7 @@ class SchemaLocation:
     @property
     def pointer(self) -> str:
         """Return the RFC 6901 string form of the tokens, without percent-encoding."""
-        return "".join(f"/{token.replace('~', '~0').replace('/', '~1')}" for token in self.tokens)
+        return join_pointer(self.tokens)
 
     @override
     def __str__(self) -> str:

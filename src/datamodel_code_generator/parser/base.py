@@ -55,6 +55,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
+from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
@@ -379,19 +380,9 @@ class StdoutBindingContext(NamedTuple):
     treat_dot_as_module: bool | None
 
 
-def _decode_json_pointer_part(value: str) -> str:
-    return value.replace("~1", "/").replace("~0", "~")
-
-
 def _source_path_from_reference_path(reference_path: str) -> list[str] | None:
     _, separator, fragment = reference_path.partition("#")
-    return (
-        None
-        if not separator or (fragment and not fragment.startswith("/"))
-        else []
-        if not fragment
-        else [_decode_json_pointer_part(part) for part in fragment[1:].split("/")]
-    )
+    return list(tokens) if separator and (tokens := fragment_tokens(fragment)) is not None else None
 
 
 @record
