@@ -28,6 +28,7 @@ from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
+from operator import methodcaller
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
@@ -135,7 +136,7 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
                 if module_name not in baseline_modules
                 and _module_is_from_directory(module, directory, environment_directory)
             ),
-            key=lambda module_name: module_name.count("."),
+            key=methodcaller("count", "."),
             reverse=True,
         )
         for module_name in local_module_names:
