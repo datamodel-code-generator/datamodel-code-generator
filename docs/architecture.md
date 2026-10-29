@@ -993,7 +993,8 @@ library and `typing_extensions` (`scripts/check_architecture_boundaries.py` regi
 the checkers can read it without importing the package.
 
 `scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads that table and
-`GENERATION_STORE_MUTATION_METHODS` with `ast` and reports every write that does not go through a store operation:
+the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) with `ast` and reports every write that does not go through a
+store operation:
 
 - in `parser/`: writes of fact and presentation attributes of model-graph classes (assignment, `del`, augmented
   assignment, `setattr` and `object.__setattr__` with a literal name, item writes and list, dict and set mutators,
@@ -1241,7 +1242,6 @@ exception to a home is a new named row, never an anonymous `if`.
 | `legacy-stale-dedup-keys` | H12 | users compare a dedup key memoized by an earlier pass | FIX-9 |
 | `legacy-graphql-affix-only` | H16 | GraphQL names get affixes only: no uniqueness, map, strategy or singularization | G09 |
 | `legacy-recursion-follows-path` | H20 | recursion facts follow paths through `_internal` relocation | GR9a |
-| `legacy-shared-node-in-place` | H21 | collapse writes a shared node in place under a shared child list | FIX-3 |
 | `legacy-keyless-reference-by-path` | H21 | a reference that no model was built with names the model at its path | GR11 |
 | `legacy-module-follows-path` | H21 | module entries follow paths | GR11 |
 | `legacy-keep-order-short-name` | H21 | a false dependency on a same-named model of another module | GR11 |
