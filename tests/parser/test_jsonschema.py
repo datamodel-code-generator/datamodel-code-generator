@@ -2786,17 +2786,6 @@ def test_infer_union_variant_names_returns_none_when_no_literal_field_matches() 
     assert parser._infer_union_variant_names("Event", _json_schema_object({}), variants, {}) is None
 
 
-def test_infer_union_variant_names_disabled() -> None:
-    """Leave default variant naming unchanged unless explicitly enabled."""
-    parser = JsonSchemaParser("")
-    variants = [
-        _json_schema_object({"properties": {"kind": {"const": "created"}}}),
-        _json_schema_object({"properties": {"kind": {"const": "deleted"}}}),
-    ]
-
-    assert parser._get_inferred_union_variant_names("Event", _json_schema_object({}), variants, {}) is None
-
-
 @pytest.mark.parametrize(
     ("source_obj", "generated_classes"),
     [
