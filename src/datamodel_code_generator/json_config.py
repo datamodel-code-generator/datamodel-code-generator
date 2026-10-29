@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
+from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
@@ -21,29 +22,7 @@ JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
-JsonConfigFieldName: TypeAlias = Literal[
-    "aliases",
-    "base_class_map",
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
-    "custom_formatters_kwargs",
-    "default_values",
-    "duplicate_name_suffix",
-    "enum_field_as_literal_map",
-    "extra_template_data",
-    "import_overrides",
-    "model_name_map",
-    "serialization_aliases",
-    "server_body_modes",
-    "server_handler_modes",
-    "server_operation_names",
-    "server_parameter_names",
-    "server_primary_responses",
-    "server_router_names",
-    "type_overrides",
-    "validators",
-]
+JsonConfigFieldName: TypeAlias = _JsonConfigFieldName
 JsonConfigOptionName: TypeAlias = Literal[
     "--aliases",
     "--base-class-map",
