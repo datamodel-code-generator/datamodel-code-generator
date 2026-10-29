@@ -250,7 +250,7 @@ The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks `parser/`, the
 parser-facing hooks in `model/` and `types.py`, and caches kept in the
 `__dict__` of data types, fields and models, against the attribute-to-fact
-table in `src/datamodel_code_generator/parser/_facts.py`. The hook runs when a
+table in `scripts/fact_tables.py`. The hook runs when a
 parser file changes; after editing `model/`, `types.py` or the table, run the
 script yourself (the test suite runs it too).
 
@@ -298,22 +298,30 @@ for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENE
 | `1` | raise at the first violation, with a message that starts with the variable |
 | `report:<path>` | append every violation to `<path>` as one JSON line (`area`, `message` and the area's details) and go on |
 
-Any other value fails the run. `Parser.parse` reads every variable once, at its start (`read_check_flags` in
-`src/datamodel_code_generator/_checks.py`); the code it runs asks `check_mode(area)`, which costs one lookup, and
-reports a violation through the mode it returns.
+Any other value fails the run. A parse reads every variable once, at its start, and its code reports a violation
+through the mode of the area.
+
+The areas of `tests/checks` (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the
+package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
+starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in the test process and, through the
+`sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
+same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
+`MODEL_GRAPH` and `SCHEMA_GRAPH` still run partly inside the package, which keeps the comparisons of an answer with the
+computation it replaced: `Parser.parse` reads them with `read_check_flags` (`src/datamodel_code_generator/_checks.py`),
+and the code it runs asks `check_mode(area)`; the invariants of the model graph and the shared-schema check at the end
+of L1 run in `tests/checks`.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
-`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `src/datamodel_code_generator/parser/_finality.py`
-does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
+`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
-list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
-`Parser`, whose runner runs it inside `fact_pass(DECL)`; the same script checks the declarations,
-`scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
+tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
+script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
@@ -323,17 +331,20 @@ and fails the test for a write of the package that the allowlist does not list.
 
 | Area | Checks |
 | --- | --- |
-| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
-| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan ([Model Processing Passes](architecture.md#model-processing-passes)) |
-| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
+| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan (`tests/checks/module_imports.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
+| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
-| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
-| `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 
-A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
-a row to this table, and keeps tests that run it on and off. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
+A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
+to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
+`test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
+not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
 sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in

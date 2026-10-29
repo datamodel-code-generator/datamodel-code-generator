@@ -14,11 +14,10 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 from datamodel_code_generator import ReuseScope
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
-from datamodel_code_generator._scc import find_circular_sccs
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator.model._decisions.tag_value import mapping_path_keys, schema_path_keys
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
-from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
+from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
@@ -369,26 +368,10 @@ def set_circular_root_model_paths(
             *(component for component in components if any(mapping_keys(key) & component for key in component))
         )
 
-    def old() -> frozenset[ModelKey]:
-        silent = unchecked(keyed)
-        old_graph = {
-            key: index.referenced_keys_for_model(model, silent, all_dict_keys=True) & keyed.models.keys()
-            for key, model in keyed.models.items()
-        }
-        return circular_keys(
-            find_circular_sccs(old_graph),
-            lambda key: key in old_graph[key],
-            lambda key: silent.keys_of(root_dict_key_references(keyed.models[key])),
-        )
-
-    circular_roots = graph_answer(
-        snapshot,
-        circular_keys(
-            graph.circular_components((EdgeKind.ANY_REFERENCE,)),
-            lambda key: key in graph.targets(key, (EdgeKind.ANY_REFERENCE,)),
-            lambda key: graph.targets(key, (EdgeKind.MAPPING_KEY,)),
-        ),
-        old,
+    circular_roots = circular_keys(
+        graph.circular_components((EdgeKind.ANY_REFERENCE,)),
+        lambda key: key in graph.targets(key, (EdgeKind.ANY_REFERENCE,)),
+        lambda key: graph.targets(key, (EdgeKind.MAPPING_KEY,)),
     )
     recursion_facts = parser._recursion_facts  # noqa: SLF001
     parser._recursion_facts = RecursionFacts(  # noqa: SLF001

@@ -20,10 +20,9 @@ from typing_extensions import Protocol, final
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import (
@@ -39,7 +38,6 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     _find_base_classes,
-    _keyed_answer,
     _ModelKeys,
     _path_identity_keys,
     direct_base_models,
@@ -48,7 +46,6 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._check_scopes import record_ordering_inputs
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._keys import (
@@ -1039,20 +1036,7 @@ def _sort_models_by_class_body_references(
             )
         model_targets.discard(model_key)
     graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
-
-    def old() -> list[ModelKey]:
-        edges: dict[ModelKey, set[ModelKey]] = {key: set() for key in keyed.models}
-        for model_key, model_targets in targets.items():
-            for reference_key in model_targets:
-                if reference_key in edges:
-                    edges[reference_key].add(model_key)
-        return stable_toposort(list(order_index), edges, key=order_index.__getitem__)
-
-    sorted_keys = graph_answer(
-        GraphSnapshot.CLASS_BODY_ORDER,
-        graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__),
-        old,
-    )
+    sorted_keys = graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__)
     return [keyed.models[key] for key in sorted_keys]
 
 
@@ -1351,11 +1335,7 @@ def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel
         model.class_name
         for model in models
         if (replacement := replaced_root_models.get(id(model))) is not None
-        and not _keyed_answer(
-            "names left by replaced roots",
-            model_key_of(replacement[1].reference) in members.models,
-            lambda model=model: model.path in members.keys_by_path,
-        )
+        and model_key_of(replacement[1].reference) not in members.models
     }
 
 
@@ -1487,7 +1467,7 @@ class _ModelPositions:
 
 def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataModel]]:
     """Map the model key of each base model to the models of ``models`` derived from it directly."""
-    keys = _ModelKeys("derived models")
+    keys = _ModelKeys()
     derived_models: defaultdict[ModelKey, list[DataModel]] = defaultdict(list)
     for derived_model in models:
         for base_model in _find_base_classes(derived_model):
@@ -1643,8 +1623,6 @@ def get_inherited_constructor_info(
         return None
     if not (inherited_models := constructor_base_models(host, model, early=early)):
         return None
-    if not early:
-        record_ordering_inputs(model, inherited_models, host._base_stand_ins)  # noqa: SLF001
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()

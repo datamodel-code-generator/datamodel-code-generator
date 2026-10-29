@@ -10,7 +10,6 @@ from pydantic import ConfigDict
 
 from datamodel_code_generator import (
     DataModelType,
-    Error,
     InputFileType,
     OpenAPIScope,
     PythonVersion,
@@ -19,7 +18,8 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.pydantic_v2 import UnionMode
-from tests.conftest import CHECK_GENERATED_CODE_REQUIREMENTS_ENV, assert_output
+from tests.checks.requirements import config_keys_without_requirement
+from tests.conftest import assert_output
 from tests.main.conftest import OPEN_API_DATA_PATH, XML_SCHEMA_DATA_PATH, run_main_with_args
 
 if TYPE_CHECKING:
@@ -273,24 +273,17 @@ def test_pydantic_floor_command_line(
     )
 
 
-@pytest.mark.abnormal_path("every ConfigDict key has a row, so only a key Pydantic adds later reaches the check")
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_pydantic_floor_config_key_without_row(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str) -> None:
-    """The debug check of generated-code requirements reports a Pydantic ``ConfigDict`` key without a row."""
-    report_path = tmp_path / "checks.jsonl"
+def _config_keys_without_row() -> str:
+    return f"config keys without a row in _requirements.py: {', '.join(config_keys_without_requirement()) or '-'}\n"
+
+
+def test_pydantic_floor_config_keys_have_rows() -> None:
+    """Every ``ConfigDict`` key of the installed Pydantic has a row, so a parse states the floor any config needs."""
+    assert_output(_config_keys_without_row())
+
+
+@pytest.mark.abnormal_path("every ConfigDict key has a row, so only a key Pydantic adds later is missing one")
+def test_pydantic_floor_config_key_without_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A ``ConfigDict`` key of a newer Pydantic release that has no row is named."""
     monkeypatch.setattr(ConfigDict, "__optional_keys__", ConfigDict.__optional_keys__ | {"key_of_a_newer_release"})
-    monkeypatch.setenv(
-        CHECK_GENERATED_CODE_REQUIREMENTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag]
-    )
-    options: dict[str, Any] = {
-        "input_file_type": JSON_SCHEMA,
-        "output_model_type": DataModelType.PydanticV2BaseModel,
-        "formatters": [Formatter.BUILTIN],
-    }
-    if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_GENERATED_CODE_REQUIREMENTS_ENV}: config keys without a row"):
-            generate(LOOKAROUND_MODEL, **options)
-        return
-    generate(LOOKAROUND_MODEL, **options)
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+    assert_output(_config_keys_without_row())

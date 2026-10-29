@@ -17,7 +17,7 @@ from datamodel_code_generator._format_types import (
     PythonVersionMin,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import Constraints  # noqa: TC001 # needed for pydantic
 from datamodel_code_generator.model._decisions.assignment import (
@@ -133,17 +133,6 @@ def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass
         yield from _nested_dataclass_sources(field.data_type)
 
 
-def _walks_to_repeated_mapping_default_path(model: DataClass, active_paths: frozenset[str]) -> bool:
-    """Walk every mapping-default edge path from model; exact when distinct models share a path."""
-    if model.path in active_paths:
-        return True
-    active_paths |= {model.path}
-    return any(
-        _walks_to_repeated_mapping_default_path(source, active_paths)
-        for source in _iter_nested_mapping_default_sources(model)
-    )
-
-
 def _has_recursive_nested_mapping_default(model: DataClass) -> bool:
     """Return whether materializing model defaults would recurse through mapping factories.
 
@@ -157,37 +146,7 @@ def _has_recursive_nested_mapping_default(model: DataClass) -> bool:
         _model_key_of_model,
         _iter_nested_mapping_default_sources,
     )
-    return graph_answer(
-        GraphSnapshot.MAPPING_DEFAULTS,
-        walk.graph.meets_a_group_twice(walk.node_of, lambda key: walk.node_of[key].path, (EdgeKind.MAPPING_DEFAULT,)),
-        lambda: _walks_to_recursive_nested_mapping_default(model),
-    )
-
-
-def _walks_to_recursive_nested_mapping_default(model: DataClass) -> bool:
-    """Return whether a mapping-default edge path from model reaches a model path already on it, by walking the paths.
-
-    One depth-first search expands each model path once. A path shared by two models falls back to walking every edge
-    path.
-    """
-    owners = {model.path: model}
-    active_paths = {model.path}
-    finished_paths: set[str] = set()
-    stack = [(model.path, _iter_nested_mapping_default_sources(model))]
-    while stack:
-        path, sources = stack[-1]
-        if (source := next(sources, None)) is None:
-            stack.pop()
-            active_paths.remove(path)
-            finished_paths.add(path)
-        elif (source_path := source.path) in active_paths:
-            return True
-        elif owners.setdefault(source_path, source) is not source:
-            return _walks_to_repeated_mapping_default_path(model, frozenset())
-        elif source_path not in finished_paths:
-            active_paths.add(source_path)
-            stack.append((source_path, _iter_nested_mapping_default_sources(source)))
-    return False
+    return walk.graph.meets_a_group_twice(walk.node_of, lambda key: walk.node_of[key].path, (EdgeKind.MAPPING_DEFAULT,))
 
 
 @final

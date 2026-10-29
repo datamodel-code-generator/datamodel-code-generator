@@ -67872,7 +67872,7 @@ the models by model key and the edges between them by kind, which answers their 
 predicates that models answer on demand by walking base classes, root types or mapping defaults (inherited fields,
 ancestors, cyclic ancestry, the C3 order of bases, msgspec struct tags, pydantic protected namespaces, preservable root
 constraints, recursive dataclass mapping defaults) take a snapshot of the models they reach when asked and answer
-from it, each model once. Under the `MODEL_GRAPH` check, each answer is compared with the computation it replaced.
+from it, each model once.
 
 ## Generated Inventory
 
@@ -68276,7 +68276,7 @@ for class names and reuse keys as in 0.86.0, while the import block leaves them 
 `Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
 compares each module's imports with the replay of their entries when the import text is written, so a write that
 bypasses the ledger fails the check, which the test suite turns on. The names the module's `ModelResolver` gives its
-imports are asked for through the ledger too (`NameLog`). After the last rename, `parser/_passes/imports.py:plan_module_imports` plans
+imports are asked for through the ledger too (`NameLog`). After the last rename, `tests/checks/module_imports.py` plans
 the models each module names from the final names (`NameTable`): `ModuleImportPlan` holds the imports of other modules'
 models, named by `allocate_bindings` in the order the module asked for them (row `legacy.alias-order`), and what the
 module writes for each model. Nothing is written from the plan yet; under the same check, the module must write what
@@ -68335,10 +68335,11 @@ rendered outside a parse decides them, and its `ConfigDict` import, when it rend
 
 ### Pass Declarations
 
-Every pass is declared in `parser/_pass_decls.py` as a `PassDecl`: its name, phase, scope (once over every model, or
+Every pass is declared in `scripts/pass_decls.py` as a `PassDecl`: its name, phase, scope (once over every model, or
 once per output module over that module's models), kind (`transform`, `plan`, `repair`, `check`, `setup`,
-`bookkeeping`), the `Fact` and `RenderFact` members of `parser/_facts.py` it reads and writes, explicit order edges
-(`after`), the change that removes a repair (`removed_by`) and the phase it moves to (`target`).
+`bookkeeping`), the `Fact` and `RenderFact` members of `scripts/fact_tables.py` it reads and writes, explicit order
+edges (`after`), the change that removes a repair (`removed_by`) and the phase it moves to (`target`). The package
+holds no declaration: only the checks read them, and they join a declaration to its pass by name.
 `scripts/check_fact_finality.py` (run by the test suite) checks that names are unique, phases never go back in
 execution order, a repair names what removes it, and setup, check and bookkeeping passes write no fact (a check pass
 may write the pseudo-fact `STDERR`, the warnings it emits, so that two passes that warn are ordered).
@@ -68346,31 +68347,35 @@ may write the pseudo-fact `STDERR`, the warnings it emits, so that two passes th
 `Parser.parse()` runs the passes from the tables of `parser/_passes/_tables.py` (`PIPELINE`, with the bodies
 `STRUCTURE_BODY`, `MODULE_BODY` and `FINALIZE_SEGMENTS` of the overridable hooks `_build_module_structure`,
 `_process_single_module` and `_finalize_modules`), built from the steps
-of `parser/_pipeline.py`: a `PassSpec` runs one declared pass, when its condition holds; a `ForEachModule` runs passes
-module by module; a `HookCall` calls an overridable method whose default runs a sub-table; a `Segment` enters a phase
-on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`) and the boundary before it (`PARSED`, B1,
-`DECIDED`, B2), then runs its steps. The `Runner` is the only caller of a pass, inside `fact_pass(DECL)`
-(`parser/_check_scopes.py`) with the models the finality check compares; steps call passes through the parser instance, so
-overrides and `--debug` tracing apply as to any method. The two diagnostics warnings that name the code calling
+of `parser/_pipeline.py`: a `PassSpec` runs one pass, named as its declaration, when its condition holds; a
+`ForEachModule` runs passes module by module; a `HookCall` calls an overridable method whose default runs a sub-table; a
+`Segment` enters a phase on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`), then runs its
+steps. The labels that only the checks read live in `scripts/pass_decls.py`: the boundary each segment enters
+(`BOUNDARY_BEFORE`: `PARSED`, B1, `DECIDED`, B2), the pass scope of a segment's guarded writes (`SCOPE_NAMES`) and the
+sub-table of each hook (`HOOK_BODIES`). The `Runner` is the only caller of a pass; the finality check of the test suite
+(`tests/checks/parse.py`) runs each one inside the scope of its declaration with the models it compares
+(`CHECKED_MODELS`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
+method. The two diagnostics warnings that name the code calling
 `parse()` find that frame however deep the pipeline is (`stacklevel_at_parse_caller`).
 
-The order rule (`parser/_pipeline.py:check_order`): two passes of one segment conflict when one writes what the other
-reads or both write the same fact. Where only the earlier writes what the later reads, a derived edge orders them; every
-other conflicting pair needs explicit `after` edges, with their reasons, that connect it directly or through other
-edges. An explicit edge replaces the derived edge of its pair; one that runs a reader before a writer of what it reads
-is a provisional read, listed below the table. `scripts/check_pass_pipeline.py` (run by the test suite) checks that the
-tables run every declaration once in `PASS_DECLS` order, in the phase of its segment and with its scope, that the
-segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that every
+The order rule (`scripts/check_pass_pipeline.py:check_order`): two passes of one segment conflict when one writes what
+the other reads or both write the same fact. Where only the earlier writes what the later reads, a derived edge orders
+them; every other conflicting pair needs explicit `after` edges, with their reasons, that connect it directly or through
+other edges. An explicit edge replaces the derived edge of its pair; one that runs a reader before a writer of what it
+reads is a provisional read, listed below the table. `scripts/check_pass_pipeline.py` (run by the test suite) checks
+that the tables run every declaration once in `PASS_DECLS` order, in the phase of its segment and with its scope, that
+the segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that every
 decision registry follows the rules of the [Decision Phase](#decision-phase), that only `GenerationStore.seal_facts`
 builds `FinalFacts`, that no code outside `Parser` reaches its name-mangled members, and lists the warnings whose
-`stacklevel` reaches past their caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that runs; the test suite keeps the
-traces of a few inputs and checks that some input runs every declared pass. The finality check
-([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator runs;
-reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table entry.
+`stacklevel` reaches past their caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
+runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. The finality
+check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator
+runs; reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table
+entry.
 
 <!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->
 !!! note "Generated pass table"
-    Generated by `scripts/build_architecture_docs.py` from `parser/_pass_decls.py`, in execution order.
+    Generated by `scripts/build_architecture_docs.py` from `scripts/pass_decls.py`, in execution order.
 
 | Phase | Pass | Scope | Kind | Writes | Reads | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -68538,8 +68543,9 @@ The `decide` segment (`DECIDE`, entered at B1 right after `apply_generic_base_cl
 parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds one decision, `omit_held_null`
 (`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
 root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
-model; the None it writes itself stays. A decision is a `DecisionPass`: a `DecisionSpec` (its `PassDecl`, a global
-transform of `DECIDE` that reads and writes `Fact` members only, and the issue it fixes), the writer protocol of its
+model; the None it writes itself stays. A decision is a `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
+`DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
+and the issue it fixes), the writer protocol of its
 writes (a `DecisionWriter`), `run(facts, writer)` and, for a decision behind an option, `when(parser)`. When a decision
 runs, `GenerationStore.seal_facts` builds the one `FinalFacts` of the parse: per output module, the models that render
 (unused models, which leave their modules later, are left out), as the read-only views of `model/_views.py`
@@ -68550,14 +68556,15 @@ one implementation of the writer protocols over the store, which records the mod
 writer never changes a data type node that other fields share: it replaces the node in the one field with a copy
 first.
 
-The decisions run in the order the order rule computes from their declarations (`decision_order`): a decision that
-reads what another writes runs after it, every other conflicting pair needs an `After` edge in `decl.after` (the only
-explicit edges a decision has), and the registration order breaks ties. Each runs inside `fact_pass` with its
-declaration, so the finality check holds its writes to the facts it declares. With the finality check on, `FinalFacts`
+The decisions run in registry order, which must be the order the order rule computes from their declarations
+(`decision_order`): a decision that reads what another writes runs after it, every other conflicting pair needs an
+`After` edge in the `after` of its declaration (the only explicit edges a decision has), and the registration order
+breaks ties. The finality check runs each inside the
+scope of its declaration, so it holds its writes to the facts it declares. With the finality check on, `FinalFacts`
 holds guarded views that report each read of a render fact as `render-read` ([Fact Finality](#fact-finality)).
 `scripts/check_pass_pipeline.py` checks every registry: unique names that no table pass has, global transforms of
 `DECIDE` that read and write facts only, an issue each, writer protocols that `_DecisionWriter` implements, and the
-order rule.
+order rule, whose order the registry lists.
 
 ### Hidden Couplings
 
@@ -68596,7 +68603,7 @@ collapse replacing a member of a shared list.
 ### Fact Finality
 
 "Final after" names the last pass that can still change the fact. A decision that reads the fact belongs after it.
-`parser/_facts.py` holds the same information per attribute (`final_after`, `frozen_at`) for the checkers.
+`scripts/fact_tables.py` holds the same information per attribute (`final_after`, `frozen_at`) for the checkers.
 
 | Fact | Final after |
 | --- | --- |
@@ -68632,13 +68639,13 @@ reach a merged `_internal` module, except for a root model that the `parent` str
 which is removed from the module that holds it: unused roots of other collapses stay in merged modules. Later passes
 change presentation or derive from those facts.
 
-The finality check (`parser/_finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, on in every test) checks
+The finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, on in every test) checks
 this table and the pass declarations while the generator runs. It keeps a fingerprint per model: the values of the
-`fact` rows of `parser/_facts.py` on the model, its fields and the data types of their types and of its bases, holding
-the objects it keys. When a pass ends, it compares the models the pass touched (the models of its module and the models
-they reference, for a module pass; the models that guarded writes and store operations reached; the models the pass
-reported changed with `GenerationStore.note_changed_models` or a field's `invalidate_semantic_caches`) and reports a
-changed row as
+`fact` rows of `scripts/fact_tables.py` on the model, its fields and the data types of their types and of its bases,
+holding the objects it keys. When a pass ends, it compares the models the pass touched (the models of its module and the
+models they reference, for a module pass; the models that guarded writes and store operations reached; the models the
+pass reported changed with `GenerationStore.note_changed_models` or a field's `invalidate_semantic_caches`) and reports
+a changed row as
 
 - `undeclared` when the pass declares none of the row's facts,
 - `other-module` when a module pass changed a model of another module (whether that module is done is in the report),
@@ -68657,7 +68664,7 @@ check compares the fields of bases that constructor ordering read after the deci
 (`get_inherited_constructor_info` of `parser/_passes/_shared.py`), with the facts `fix_constructor_field_ordering` declares as reads, with those
 fields at B2 (`ordering-input`): render preparation of a later module must not change what an earlier module's
 ordering read. `KNOWN_WRITES` in
-`parser/_finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
+`tests/checks/finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
 witness, the `datamodel-codegen` arguments of one run that makes it; they are reported with `report:<path>` and never
 raise. `python scripts/check_fact_finality.py --witnesses` (and the test suite) run the witnesses and report the entries
 whose witness no longer makes them, so the list only shrinks. Presentation rows, parser state, module imports and
@@ -68698,8 +68705,7 @@ wrap the operations on the store keep seeing every call. The operations on `Gene
 every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
-counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it
-(`identity_of` returns the `ModelIdentity` record: the key, the schema location and the owner). The owner
+counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it. The owner
 (`owner_of`) is the model whose builder built this one: each model builder of `JsonSchemaParser` runs in a frame whose
 cell takes the model it built when it returns, and a model records the frames open when it is recorded. A read or
 write variant stands for its base model in those frames, so it takes the base's owner; a document parse (`_parse_file`,
@@ -68732,9 +68738,9 @@ field's type walked at the current clock are not walked again. `DataModel.import
 fields' kept imports with the model's own (`_additional_imports`) at each read; the snapshot of the IMPORTS phase is
 where they become final. Fields and models of classes outside the package, and every field of a parse by a parser
 class outside it, compute both at each read (`DataModel.clear_imports_cache` is a deprecated no-op).
-`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` computes every returned value anew and fails on a difference, except for
-the dedup keys and self references whose stale values today's output keeps (`legacy-stale-dedup-keys`,
-`legacy-stale-self-reference`), which it records with a report file.
+`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` (`tests/checks/memos.py`) computes every returned value anew and fails on
+a difference, except for the dedup keys and self references whose stale values today's output keeps
+(`legacy-stale-dedup-keys`, `legacy-stale-self-reference`), which it records with a report file.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and
@@ -68742,12 +68748,12 @@ The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_
 flattened module, field type, imported name, internal module and collapsed root), each with its own universe for
 uniqueness.
 
-`parser/_facts.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and attribute,
-`__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`, `cache` or
-`bookkeeping`), the `Fact` and `RenderFact` members a write changes, the store operations allowed to write it, the
-`Phase` whose passes write it last today and its freeze point: the latest freeze point among its facts (every `Fact`
-at B1, every `RenderFact` at its `RENDER_FACT_FREEZE_POINTS` entry), after which nothing may write it once the pass
-pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
+`scripts/fact_tables.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and
+attribute, `__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`,
+`cache` or `bookkeeping`), the `Fact` and `RenderFact` members a write changes, the store operations allowed to write
+it, the `Phase` whose passes write it last today and its freeze point: the latest freeze point among its facts (every
+`Fact` at B1, every `RenderFact` at its `RENDER_FACT_FREEZE_POINTS` entry), after which nothing may write it once the
+pass pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
 Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
 kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
 library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
@@ -68782,12 +68788,12 @@ The checker does not follow these forms, so they must not be used for model writ
 `obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
 field)`, and `functools.partial(setattr, obj)`.
 
-The runtime write guard (`parser/_finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same rule
-while the generator runs, for writes the scan cannot follow. `Parser.parse` arms it at the end of L1: `DataType`,
-`DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
+The runtime write guard (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same
+rule while the generator runs in the test suite, for writes the scan cannot follow. It arms at the end of L1:
+`DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
 `ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared where the originals were shared; they
 are not `list` exactly and outlive the parse, acting as plain lists afterwards), each store operation named in a row's
-`store_ops` runs in a write scope, and the pipeline of `parser/_passes/_tables.py` opens pass scopes (`pass_scope(name, phase)`:
+`store_ops` runs in a write scope, and the pipeline of `parser/_passes/_tables.py` runs in pass scopes (`ParseChecks.scope`:
 `_build_module_structure` in STRUCTURE, the `plan` segment in PLAN, each `_process_single_module` in MODULES, the
 `cross_module` and `generic_base_class` segments in CROSS_MODULE, the `decide` segment in DECIDE, the
 `render_preparation` segment, `_finalize_modules` included, in RENDER_PREPARATION, the `finish` segment in IMPORTS and the
@@ -68798,9 +68804,9 @@ accepts any guarded write, and the phase is not checked: which operation and pha
 to the finality checks. With the area off nothing is installed. The guard does
 not see writes through `object.__setattr__`, through `__dict__`, into dict attributes, or into a list an object got
 outside a store operation after L1. The guards, the guarded lists and the store-operation scopes belong to the checks
-of one parse (`parse_checks`, armed by `arm_parse_checks`), which the finality check shares: `Parser.parse` imports
-`parser/_finality.py` and installs them only when either area is on, and the guard reports writes only when `STORE_WRITES` is on, while the finality check uses them to
-learn which models a pass touched.
+of one parse (`parse_checks`, armed by `ParseChecks.arm`), which the finality check shares: a parse loads
+`tests/checks/finality.py` and installs them only when either area is on, and the guard reports writes only when
+`STORE_WRITES` is on, while the finality check uses them to learn which models a pass touched.
 
 The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
 process, and after each test the checker names each write of the package by the function that contains the reported
@@ -68814,15 +68820,13 @@ the counted ones. When the scan learns to find a write a witness covers, the wit
 
 Current behaviour that a decision reading the index must allow for:
 
-- Index queries answer over the parsed universe by default: the models parsers registered (`Parser.results`) plus
+- Index queries answer over the parsed universe: the models parsers registered (`Parser.results`) plus
   redirected edges, removed ones included, not the module lists that L3–L6 edit. A model a later pass builds (a reuse
   subclass, the merged inherited Enum, the generic base class) is registered in the emitted universe only, and
   `retire_model` (`replace_model` for a model built in another's place) records each model that leaves the output
-  (duplicates, reused and overridden models, unused models leaving their written module list). `universe="emitted"`
-  answers over the models the output writes. Under `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, the written models
-  must equal the emitted universe after render preparation, and with a report file each root-collapse decision on
-  remaining references records when its answer over the emitted models differs (`kind: universe-differs`), the
-  evidence for switching the default.
+  (duplicates, reused and overridden models, unused models leaving their written module list). Under
+  `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, the written models must equal the emitted universe after render
+  preparation.
 - A store operation called with `refresh="deferred"` notes the models it changes for the next refresh but does not
   mark the facts dirty, so they stay as they were until another mutation. `drop_union_member_constraints` (msgspec
   `unconstrain_union_members`, slice assignment on `data_types`), `swap_data_type` for the nested lists of
@@ -69101,11 +69105,10 @@ backends, while shared-model modules must remain neutral: they cannot import a c
 which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema
 graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,
-`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the check hooks of `_check_scopes` (the
-finality checks of `_finality` load only when a check area is on), the
-pipeline steps of `_pipeline` with the declarations of `_pass_decls`, `_facts` and `_phases`, and each other, not even
-for typing: a pass of one layer is a function in that layer's module (`settle.py`, `structure.py`, `plans.py`,
-`modules.py`, `cross_module.py`, `decide.py`, `render_prep.py`, `imports.py`) that takes the parser through the layer's
+`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the pipeline steps of `_pipeline` with the
+phases of `_facts`, the decisions of `_phases`, and each other, not even for typing: a pass of one layer is a
+function in that layer's module (`settle.py`, `structure.py`, `plans.py`, `modules.py`, `cross_module.py`, `decide.py`,
+`render_prep.py`, `imports.py`) that takes the parser through the layer's
 `Protocol` (`SettleHost`, `StructureHost`, `PlansHost`, `ModulesHost`, `CrossModuleHost`, `DecideHost`,
 `RenderPrepHost`, `ImportsHost`; the parse segment takes `ParseHost`, in `modules.py` importing other modules' models,
 reuse, collapse, discriminator tags, the module loop and the rule aliases take the narrower `ImportFromHost`,
@@ -69499,7 +69502,7 @@ The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks `parser/`, the
 parser-facing hooks in `model/` and `types.py`, and caches kept in the
 `__dict__` of data types, fields and models, against the attribute-to-fact
-table in `src/datamodel_code_generator/parser/_facts.py`. The hook runs when a
+table in `scripts/fact_tables.py`. The hook runs when a
 parser file changes; after editing `model/`, `types.py` or the table, run the
 script yourself (the test suite runs it too).
 
@@ -69547,22 +69550,30 @@ for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENE
 | `1` | raise at the first violation, with a message that starts with the variable |
 | `report:<path>` | append every violation to `<path>` as one JSON line (`area`, `message` and the area's details) and go on |
 
-Any other value fails the run. `Parser.parse` reads every variable once, at its start (`read_check_flags` in
-`src/datamodel_code_generator/_checks.py`); the code it runs asks `check_mode(area)`, which costs one lookup, and
-reports a violation through the mode it returns.
+Any other value fails the run. A parse reads every variable once, at its start, and its code reports a violation
+through the mode of the area.
+
+The areas of `tests/checks` (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the
+package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
+starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in the test process and, through the
+`sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
+same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
+`MODEL_GRAPH` and `SCHEMA_GRAPH` still run partly inside the package, which keeps the comparisons of an answer with the
+computation it replaced: `Parser.parse` reads them with `read_check_flags` (`src/datamodel_code_generator/_checks.py`),
+and the code it runs asks `check_mode(area)`; the invariants of the model graph and the shared-schema check at the end
+of L1 run in `tests/checks`.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
-`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `src/datamodel_code_generator/parser/_finality.py`
-does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
+`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
-list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
-`Parser`, whose runner runs it inside `fact_pass(DECL)`; the same script checks the declarations,
-`scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
+tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
+script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
@@ -69572,17 +69583,20 @@ and fails the test for a write of the package that the allowlist does not list.
 
 | Area | Checks |
 | --- | --- |
-| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
-| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan ([Model Processing Passes](architecture.md#model-processing-passes)) |
-| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
+| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan (`tests/checks/module_imports.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
+| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
-| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
-| `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 
-A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
-a row to this table, and keeps tests that run it on and off. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
+A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
+to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
+`test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
+not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
 sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in

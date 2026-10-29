@@ -36,6 +36,8 @@ if TYPE_CHECKING:
 
 SCHEMA = Path(__file__).parents[1] / "data" / "jsonschema" / "person.json"
 REPORTED = ("pass_name", "rule", "row", "facts", "model", "phase", "known")
+DECISIONS: dict[str, check_pass_pipeline.PassDecl] = {}
+"""The declaration of each decision the parsers below run, by name: ``_finality_only`` adds them to the registry."""
 
 
 class DiagnosingParser(JsonSchemaParser):
@@ -145,6 +147,8 @@ def _finality_only(monkeypatch: pytest.MonkeyPatch, value: str, *, sweep: bool =
     monkeypatch.setenv(CHECK_FACT_FINALITY_SWEEP_ENV, "1" if sweep else "0")
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, "0")
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, "0")
+    for name, decl in DECISIONS.items():
+        monkeypatch.setitem(check_pass_pipeline.DECISION_DECLS, name, decl)
 
 
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
@@ -313,16 +317,22 @@ def test_witness_problems_report_stale_entries_and_broken_witnesses() -> None:
     assert_output("".join(f"{problem}\n" for problem in [*problems, str(error.value)]))
 
 
-def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
-    decl = check_pass_pipeline.PassDecl(
+def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_pass_pipeline.Fact) -> tuple[Any, ...]:
+    """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
+    DECISIONS[name] = check_pass_pipeline.PassDecl(
         name,
         check_pass_pipeline.Phase.DECIDE,
         check_pass_pipeline.Scope.GLOBAL,
         check_pass_pipeline.PassKind.TRANSFORM,
         reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
+        writes=frozenset(written),
     )
-    return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+
+
+def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
+    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
+    return _decide_writing(name, run)
 
 
 READ: list[str] = []
@@ -428,11 +438,12 @@ def _iterate_names(form: str) -> Callable[[Any, Any], None]:
 @pytest.mark.parametrize("form", ["iter", "len", "keys", "items", "contains"])
 def test_fact_finality_reports_render_facts_that_decisions_iterate(monkeypatch: pytest.MonkeyPatch, form: str) -> None:
     """Iterating, counting, listing or testing the keys of a dict attribute reports its render-fact keys."""
-    _finality_only(monkeypatch, "1")
     READ.clear()
 
     class IteratingParser(CapturingParser):
         _DECISION_PASSES = _decide("iterate_keys", _iterate_names(form))
+
+    _finality_only(monkeypatch, "1")
 
     with pytest.raises(Error, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
         IteratingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
@@ -446,19 +457,6 @@ def _write_default(_facts: Any, _writer: Any) -> None:
 def _write_description(_facts: Any, _writer: Any) -> None:
     """Write the description of a model, a fact the decision does not declare."""
     MODELS[0].description = "written"
-
-
-def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_pass_pipeline.Fact) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
-    decl = check_pass_pipeline.PassDecl(
-        name,
-        check_pass_pipeline.Phase.DECIDE,
-        check_pass_pipeline.Scope.GLOBAL,
-        check_pass_pipeline.PassKind.TRANSFORM,
-        reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
-        writes=frozenset(written),
-    )
-    return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
 
 
 class DeclaredWritingParser(CapturingParser):

@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from datamodel_code_generator.parser._facts import Fact, Phase
-from datamodel_code_generator.parser._pass_decls import PassDecl, PassKind, Scope
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
@@ -65,16 +63,7 @@ def _omit_held_null(facts: FinalFacts, writer: HeldNullWriter) -> None:
 
 OMIT_HELD_NULL = DecisionPass(
     {
-        "decl": PassDecl(
-            "omit_held_null",
-            Phase.DECIDE,
-            Scope.GLOBAL,
-            PassKind.TRANSFORM,
-            reads=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE, Fact.MODEL_KIND}),
-            writes=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE}),
-            summary="Drops the None a type restates of the model it names when that model holds null itself.",
-            condition="--omit-redundant-reference-null",
-        ),
+        "name": "omit_held_null",
         "issue": "#5081",
     },
     HeldNullWriter,

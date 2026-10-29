@@ -50,8 +50,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, SupportsIndex, TypeAlias,
 
 from typing_extensions import deprecated, override
 
-from datamodel_code_generator import Error
-from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import (
     DROPPED_MULTIPLE_OF_KEY,
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
@@ -67,22 +65,15 @@ from datamodel_code_generator._null_markers import (
 )
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
 from datamodel_code_generator._records import record
-from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._graph_ids import identity_of
 from datamodel_code_generator.parser._holders import (
-    KNOWN_PARENT_MISMATCHES,
     ChildList,
     HolderEdge,
     InlinedReplacement,
-    ParentMismatch,
-    node_in_cycle,
-    parent_is_holder,
 )
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
-    COPIED,
     PARSED,
     Provenance,
     RefSite,
@@ -99,10 +90,8 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
-    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
@@ -127,10 +116,6 @@ DataTypeOccurrence: TypeAlias = tuple[DataType, int | None, DataTypeRole]
 Refresh: TypeAlias = Literal["now", "deferred"]
 """When a store operation marks the facts stale: ``now``, or ``deferred`` until another mutation marks them; the
 models it noted are recorded again at the next refresh either way."""
-Universe: TypeAlias = Literal["parsed", "emitted"]
-"""The models an index query answers over: ``parsed``, every model the parsers registered (``Parser.results``), the
-removed ones included; ``emitted``, the models the output writes: the parsed ones and those later passes build, less
-the ones passes retired."""
 _OrderedSetItem = TypeVar("_OrderedSetItem")
 _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
@@ -453,9 +438,8 @@ class GenerationBuildResult:
 @final
 @record
 class _UniverseFacts:
-    """The facts of one universe and the ids they record each model under."""
+    """The facts of the parsed models and the ids they record each model under."""
 
-    universe: Universe
     facts: GenerationFacts
     model_ids_by_object: Mapping[int, ModelId]
 
@@ -1057,52 +1041,6 @@ def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelF
     )
 
 
-def _fact_record(facts: GenerationFacts) -> dict[str, object]:
-    """Return what ``facts`` record, with each id replaced by the parse order or occurrence position it stands for.
-
-    An update keeps the ids a full rebuild would renumber, so two snapshots of the same models compare equal here.
-    """
-    parse_orders = {model_id: model_fact.parse_order for model_id, model_fact in facts.model_facts.items()}
-    positions = {
-        data_type_id: (parse_orders[model_id], index)
-        for model_id, data_type_ids in facts.data_types_by_model.items()
-        for index, data_type_id in enumerate(data_type_ids)
-    }
-    return {
-        "models": sorted(
-            (
-                model_fact.parse_order,
-                id(model_fact.model),
-                id(model_fact.reference),
-                model_fact.path,
-                model_fact.file_path,
-                tuple(
-                    (id(fact.data_type), fact.owner_field_index, fact.role, id(fact.reference))
-                    for fact in map(facts.data_type_facts.__getitem__, facts.data_types_by_model[model_fact.id])
-                ),
-            )
-            for model_fact in facts.model_facts.values()
-        ),
-        "data types": {object_id: positions[fact.id] for object_id, fact in facts.data_type_fact_by_object.items()},
-        "shared data types": {
-            object_id: sorted(map(positions.__getitem__, data_type_ids))
-            for object_id, data_type_ids in facts.shared_data_type_fact_ids.items()
-        },
-        "base owners": {
-            object_id: [parse_orders[model_id] for model_id in ([owners] if isinstance(owners, int) else owners)]
-            for object_id, owners in facts.base_owner_model_ids_by_object.items()
-        },
-        "paths": {path: parse_orders[model_id] for path, model_id in facts.model_by_path.items()},
-        "model keys": {key: parse_orders[model_id] for key, model_id in facts.model_by_ref_id.items()},
-        "sites by target": {
-            key: [positions[site_key] for site_key in site_keys]
-            for key, site_keys in facts.sites_by_target.items()
-            if site_keys
-        },
-        "reference sites": {positions[key]: site.occurrence for key, site in facts.sites.items()},
-    }
-
-
 def _unrecorded_references(model: DataModel, *, all_dict_keys: bool) -> Iterator[Reference]:
     """Return the references whose paths ``DataModel.reference_classes`` lists, for a model the facts do not record.
 
@@ -1124,7 +1062,8 @@ def _unrecorded_references(model: DataModel, *, all_dict_keys: bool) -> Iterator
 class GenerationIndex:
     """Query layer over the current generation facts.
 
-    Each query answers over the parsed universe unless it is given ``universe="emitted"``.
+    Each query answers over the parsed models: every model the parsers registered (``Parser.results``), the removed
+    ones included.
     """
 
     def __init__(self, store: GenerationStore) -> None:
@@ -1133,8 +1072,8 @@ class GenerationIndex:
         self._recorded_references_cache: dict[tuple[ModelId, bool], tuple[Reference, ...]] = {}
         self._recorded_references_cache_version = -1
 
-    def _view(self, universe: Universe) -> _UniverseFacts:
-        return self._store._universe_facts(universe)  # noqa: SLF001
+    def _view(self) -> _UniverseFacts:
+        return self._store._universe_facts()  # noqa: SLF001
 
     def _reset_recorded_references_cache_if_needed(self) -> None:
         if self._recorded_references_cache_version == self._store.facts_version:
@@ -1142,46 +1081,42 @@ class GenerationIndex:
         self._recorded_references_cache.clear()
         self._recorded_references_cache_version = self._store.facts_version
 
-    def model_fact(self, model: DataModel, *, universe: Universe = "parsed") -> ModelFact | None:
+    def model_fact(self, model: DataModel) -> ModelFact | None:
         """Return the current fact for ``model`` if it is tracked."""
-        view = self._view(universe)
+        view = self._view()
         facts = view.facts
         model_id = view.model_id(model)
         if model_id is None:
             return None
         return facts.model_facts.get(model_id)
 
-    def model_id_for_reference(self, reference: Reference, *, universe: Universe = "parsed") -> ModelId | None:
+    def model_id_for_reference(self, reference: Reference) -> ModelId | None:
         """Return the tracked model id for ``reference`` if it points to a model."""
-        return self._view(universe).facts.model_by_ref_id.get(self._store.model_key(reference))
+        return self._view().facts.model_by_ref_id.get(self._store.model_key(reference))
 
-    def model_for_reference(self, reference: Reference, *, universe: Universe = "parsed") -> DataModel | None:
+    def model_for_reference(self, reference: Reference) -> DataModel | None:
         """Return the tracked model for ``reference`` if it points to a model."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         model_id = facts.model_by_ref_id.get(self._store.model_key(reference))
         if model_id is None:
             return None
         return facts.model_facts[model_id].model
 
-    def data_type_facts_for_reference(
-        self, reference: Reference, *, universe: Universe = "parsed"
-    ) -> tuple[DataTypeFact, ...]:
+    def data_type_facts_for_reference(self, reference: Reference) -> tuple[DataTypeFact, ...]:
         """Return data type occurrences that currently point at ``reference``."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
         if not data_type_ids:
             return ()
         return tuple(facts.data_type_facts[data_type_id] for data_type_id in data_type_ids)
 
-    def has_data_type_references(self, reference: Reference, *, universe: Universe = "parsed") -> bool:
+    def has_data_type_references(self, reference: Reference) -> bool:
         """Return whether any tracked data type currently points at ``reference``."""
-        return bool(self._view(universe).facts.sites_by_target.get(self._store.model_key(reference)))
+        return bool(self._view().facts.sites_by_target.get(self._store.model_key(reference)))
 
-    def has_data_type_references_other_than(
-        self, reference: Reference, excluded_data_type: DataType, *, universe: Universe = "parsed"
-    ) -> bool:
+    def has_data_type_references_other_than(self, reference: Reference, excluded_data_type: DataType) -> bool:
         """Return whether tracked data types other than ``excluded_data_type`` point at ``reference``."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
         if not data_type_ids:
             return False
@@ -1192,9 +1127,9 @@ class GenerationIndex:
             for data_type_id in data_type_ids
         )
 
-    def reference_classes_for_model(self, model: DataModel, *, universe: Universe = "parsed") -> frozenset[str]:
+    def reference_classes_for_model(self, model: DataModel) -> frozenset[str]:
         """Return reference paths matching ``DataModel.reference_classes`` semantics."""
-        view = self._view(universe)
+        view = self._view()
         facts = view.facts
         model_id = view.model_id(model)
         if model_id is None:
@@ -1212,11 +1147,9 @@ class GenerationIndex:
             reference_classes = reference_classes.union(additional_properties_references)
         return reference_classes
 
-    def reference_classes_for_model_including_dict_keys(
-        self, model: DataModel, *, universe: Universe = "parsed"
-    ) -> frozenset[str]:
+    def reference_classes_for_model_including_dict_keys(self, model: DataModel) -> frozenset[str]:
         """Return every referenced path for fallback-only dependency analysis."""
-        view = self._view(universe)
+        view = self._view()
         facts = view.facts
         model_id = view.model_id(model)
         if model_id is None:
@@ -1237,7 +1170,7 @@ class GenerationIndex:
         return reference_classes
 
     def referenced_keys_for_model(
-        self, model: DataModel, keyed: KeyedModels, *, all_dict_keys: bool = False, universe: Universe = "parsed"
+        self, model: DataModel, keyed: KeyedModels, *, all_dict_keys: bool = False
     ) -> frozenset[ModelKey]:
         """Return the keys of the models that ``model`` references, whose paths `reference_classes_for_model` returns.
 
@@ -1246,7 +1179,7 @@ class GenerationIndex:
         and the data types of its fields) resolve against ``keyed``, and so do the paths of its additional-properties
         snapshot, which for an unrecorded model only `reference_classes_for_model_including_dict_keys` reads.
         """
-        view = self._view(universe)
+        view = self._view()
         if (model_id := view.model_id(model)) is None:
             keys = keyed.keys_of(_unrecorded_references(model, all_dict_keys=all_dict_keys))
             additional_properties_references = model.additional_properties_reference_classes if all_dict_keys else ()
@@ -1260,10 +1193,10 @@ class GenerationIndex:
     ) -> frozenset[ModelKey]:
         """Return the keys of the models of ``keyed`` named by the references the data types of ``model`` hold.
 
-        The references are cached per model for the parsed universe.
+        The references are cached per model.
         """
         self._reset_recorded_references_cache_if_needed()
-        cache = self._recorded_references_cache if view.universe == "parsed" else {}
+        cache = self._recorded_references_cache
         cache_key = (model_id, all_dict_keys)
         if (cached := cache.get(cache_key)) is None:
             facts = view.facts
@@ -1282,9 +1215,9 @@ class GenerationIndex:
             cached = cache[cache_key] = references
         return keyed.keys_of(cached)
 
-    def owner_model_for_data_type(self, data_type: DataType, *, universe: Universe = "parsed") -> DataModel | None:
+    def owner_model_for_data_type(self, data_type: DataType) -> DataModel | None:
         """Return the tracked model that owns ``data_type`` if known."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         fact = facts.data_type_fact_by_object.get(id(data_type))
         if fact is None:
             return None
@@ -1309,11 +1242,9 @@ class GenerationIndex:
         self,
         reference: Reference,
         root_model_type: type[DataModel],
-        *,
-        universe: Universe = "parsed",
     ) -> list[DataModel]:
         """Return root-model wrappers whose field graph points at ``reference``."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         wrappers: list[DataModel] = []
         seen: set[int] = set()
         data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
@@ -1333,10 +1264,9 @@ class GenerationIndex:
         *,
         excluded_model: DataModel,
         is_root_model: Callable[[DataModel], bool],
-        universe: Universe = "parsed",
     ) -> tuple[list[DataModel], list[DataTypeFact]]:
         """Return wrapper models and direct non-wrapper refs for root collapse checks."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         wrappers: list[DataModel] = []
         direct_refs: list[DataTypeFact] = []
         wrapper_ids: set[int] = set()
@@ -1362,10 +1292,9 @@ class GenerationIndex:
         *,
         excluded_model: DataModel,
         root_model_type: type[DataModel],
-        universe: Universe = "parsed",
     ) -> list[DataTypeFact]:
         """Return non-wrapper field references to ``reference`` outside ``excluded_model``."""
-        facts = self._view(universe).facts
+        facts = self._view().facts
         direct_refs: list[DataTypeFact] = []
         data_type_ids = facts.sites_by_target.get(self._store.model_key(reference))
         if not data_type_ids:
@@ -1396,34 +1325,6 @@ class _RootCollapseReferenceScope:
         self.reference_counts.clear()
 
 
-@final
-class _ReferenceCopies:
-    """The Reference object that the store met first under each model key, kept under the ``MODEL_GRAPH`` check."""
-
-    def __init__(self, mode: CheckMode) -> None:
-        """Start with no References met."""
-        self._mode = mode
-        self._originals: dict[ModelKey, Reference] = {}
-        self._reported: set[ModelKey] = set()
-
-    def model_key(self, reference: Reference) -> ModelKey:
-        """Return the model key of ``reference``; report the first copy met of each key, once."""
-        key = model_key_of(reference)
-        if self._originals.setdefault(key, reference) is not reference and key not in self._reported:
-            self._reported.add(key)
-            location = identity_of(reference).location
-            path = redact_reference(reference.path)
-            self._mode.violation(
-                Error,
-                f"a copy of the Reference of {reference.name} ({path}) reached the generation store beside the "
-                "original, whose model key it shares",
-                name=reference.name,
-                path=path,
-                location=None if location is None else redact_reference(str(location)),
-            )
-        return key
-
-
 class GenerationStore:  # noqa: PLR0904
     """Parse-to-output generation facts for a Parser instance."""
 
@@ -1446,7 +1347,6 @@ class GenerationStore:  # noqa: PLR0904
         self._defer_refresh_depth = 0
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
-        self._reference_copies: _ReferenceCopies | None = None
         self._built_models: list[DataModel] = []
         self._retired_models: dict[int, DataModel] = {}
         self._site_effects = _SiteEffects()
@@ -1489,7 +1389,6 @@ class GenerationStore:  # noqa: PLR0904
         self._appended_model_ids.clear()
         self._changed_model_ids.clear()
         self._renamed_model_ids.clear()
-        self._reference_copies = None
         self._built_models.clear()
         self._retired_models.clear()
         self._site_effects.clear()
@@ -1703,19 +1602,13 @@ class GenerationStore:  # noqa: PLR0904
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
-    def seal_facts(  # noqa: PLR6301
-        self,
-        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
-        view: Callable[[DataModel], ModelView] | None = None,
-    ) -> FinalFacts:
+    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]]) -> FinalFacts:  # noqa: PLR6301
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        ``view`` gives the view a decision reads of each model (the guarded view of the finality check); without it,
-        the view is the model. This is the only construction of ``FinalFacts``.
+        A decision reads each model as its view (``model/_views.py``). This is the only construction of
+        ``FinalFacts``.
         """
-        module_facts = tuple(
-            ModuleFacts(module, tuple(models if view is None else map(view, models))) for module, models in modules
-        )
+        module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)
@@ -1748,54 +1641,17 @@ class GenerationStore:  # noqa: PLR0904
         retired = self._retired_models
         return [model for model in chain(self.models, self._built_models) if id(model) not in retired]
 
-    def _universe_facts(self, universe: Universe) -> _UniverseFacts:
-        """Return the current facts of ``universe`` with the ids they record each model under.
-
-        The facts of the emitted universe are built in full at each read; a model it shares with the parsed universe
-        keeps its id.
-        """
-        facts = self.current_facts()
-        if universe == "parsed":
-            return _UniverseFacts("parsed", facts, self._model_ids_by_object)
-        result = GenerationIndexBuilder(
-            self.model_key, _SiteHistory(facts.sites.values(), _SiteEffects(), COPIED)
-        ).build(
-            self.emitted_models(),
-            previous_model_ids_by_object=self._model_ids_by_object,
-            next_model_id=self._next_model_id,
-        )
-        return _UniverseFacts("emitted", result.facts, result.model_ids_by_object)
-
-    def check_emitted_models(self, mode: CheckMode, written: Iterable[DataModel]) -> None:
-        """Report each model the output writes that is not in the emitted universe, and each one there it does not."""
-        written_models = {id(model): model for model in written}
-        emitted = {id(model): model for model in self.emitted_models()}
-        for models, others, problem in (
-            (written_models, emitted, "is written but is not an emitted model: it was never registered or was retired"),
-            (
-                emitted,
-                written_models,
-                "is an emitted model but is not written: it left the output without being retired",
-            ),
-        ):
-            for model_id, model in models.items():
-                if model_id not in others:
-                    path = redact_reference(model.reference.path)
-                    mode.violation(Error, f"the model {model.class_name} ({path}) {problem}", path=path)
+    def _universe_facts(self) -> _UniverseFacts:
+        """Return the current facts of the parsed models with the ids they record each model under."""
+        return _UniverseFacts(self.current_facts(), self._model_ids_by_object)
 
     def model_id(self, model: DataModel) -> ModelId | None:
         """Return the stable store id for ``model`` if it is tracked."""
         return self._model_ids_by_object.get(id(model))
 
-    def model_key(self, reference: Reference) -> ModelKey:
-        """Return the model key that the facts record ``reference`` and its users under.
-
-        Under the ``MODEL_GRAPH`` check, a Reference object that shares its key with another one the store met first
-        (a copy of it) is a violation: the store would take both for one model.
-        """
-        if (copies := self._reference_copies) is None:
-            return model_key_of(reference)
-        return copies.model_key(reference)
+    def model_key(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
+        """Return the model key that the facts record ``reference`` and its users under."""
+        return model_key_of(reference)
 
     def _invalidate(self) -> None:
         """Invalidate derived facts after a store-managed mutation."""
@@ -1977,11 +1833,6 @@ class GenerationStore:  # noqa: PLR0904
         if not self._dirty:
             return
 
-        recorded_model_ids: Iterable[ModelId] | None = None
-        if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
-            if self._reference_copies is None:
-                self._reference_copies = _ReferenceCopies(mode)
-            recorded_model_ids = self._check_no_data_type_cycles(mode)
         history = _SiteHistory(self._carried_sites or self._facts.sites.values(), self._site_effects, PARSED)
         if self._rebuild_required:
             result = GenerationIndexBuilder(self.model_key, history).build(
@@ -2006,8 +1857,6 @@ class GenerationStore:  # noqa: PLR0904
                 self._rebuild_required = True
                 self._next_model_id = max(self._next_model_id, max(self._model_ids_by_object.values(), default=-1) + 1)
                 raise
-            if mode is not None:
-                self._check_update_matches_rebuild(mode, result)
         self._facts = result.facts
         self._model_ids_by_object = result.model_ids_by_object
         self._next_model_id = result.next_model_id
@@ -2020,102 +1869,12 @@ class GenerationStore:  # noqa: PLR0904
         self._carried_sites = ()
         self._facts_version += 1
         self._dirty = False
-        if mode is not None:
-            self._check_parents_are_holders(
-                mode, self._facts.model_facts if recorded_model_ids is None else recorded_model_ids
-            )
         if scope := self._active_root_collapse_reference_scope:
             if scope.initialized:
                 scope.invalidate()
             elif scope.enabled:
                 scope.initialized = True
                 scope.enabled = len(self._facts.data_type_fact_by_object) == len(self._facts.data_type_facts)
-
-    def _check_update_matches_rebuild(self, mode: CheckMode, result: GenerationBuildResult) -> None:
-        """Report facts that an update recorded differently from a full rebuild of the same models.
-
-        An update records the models that operations noted since the last refresh; a model that changed without a
-        note keeps its old facts, which a rebuild would not.
-        """
-        rebuilt = GenerationIndexBuilder(self.model_key).build(
-            self.models,
-            previous_model_ids_by_object=result.model_ids_by_object,
-            next_model_id=result.next_model_id,
-        )
-        updated = _fact_record(result.facts)
-        for part, recorded in _fact_record(rebuilt.facts).items():
-            if updated[part] != recorded:
-                mode.violation(
-                    Error,
-                    f"the {part} that a refresh recorded for the noted models differ from a full rebuild",
-                    part=part,
-                )
-
-    def _check_no_data_type_cycles(self, mode: CheckMode) -> Iterable[ModelId] | None:
-        """Report a data type that contains itself in any model, noted or not.
-
-        The check runs before the refresh walks the trees, and before the comparison with a rebuild walks every tree;
-        neither ends on a cycle. Return the ids the recorded models have after the refresh, or None when it records
-        every model.
-        """
-        recorded_model_ids: Iterable[ModelId] | None = None
-        if not self._rebuild_required:
-            recorded_model_ids = (
-                *range(self._next_model_id, self._next_model_id + len(self._appended_model_ids)),
-                *self._changed_model_ids,
-            )
-        finished: set[int] = set()
-        for model in self.models:
-            roots = chain((field_.data_type for field_ in model.fields), model.base_classes)
-            if (node := node_in_cycle(roots, finished)) is not None:
-                mode.violation(
-                    Error,
-                    f"a data type of {model.class_name} contains itself",
-                    model=model.class_name,
-                    type=type(node).__name__,
-                )
-        return recorded_model_ids
-
-    def _check_parents_are_holders(self, mode: CheckMode, model_ids: Iterable[ModelId]) -> None:
-        """Report a node of the models with ``model_ids`` whose ``parent`` is not one of its recorded holders.
-
-        A mismatch that `KNOWN_PARENT_MISMATCHES` lists is left alone.
-        """
-        facts = self._facts
-        holders = _HolderIndex(facts)
-        checked: set[int] = set()
-        for model_id in model_ids:
-            model_fact = facts.model_facts[model_id]
-            for data_type_id in facts.data_types_by_model[model_id]:
-                fact = facts.data_type_facts[data_type_id]
-                if (node_key := id(fact.data_type)) in checked:
-                    continue
-                checked.add(node_key)
-                parent = fact.data_type.parent
-                if parent_is_holder(parent, holders.holders_of(NodeKey(node_key))):
-                    continue
-                if (mismatch := self._parent_mismatch(parent)) in KNOWN_PARENT_MISMATCHES:
-                    continue
-                mode.violation(
-                    Error,
-                    f"a {fact.role} data type of {model_fact.class_name} has a {mismatch} as its parent, which "
-                    "does not hold it",
-                    model=model_fact.class_name,
-                    role=fact.role,
-                    parent=mismatch,
-                )
-
-    def _parent_mismatch(self, parent: object) -> ParentMismatch:
-        """Return what kind of object ``parent`` is, for a data type that ``parent`` does not hold."""
-        from datamodel_code_generator.model.base import (  # noqa: PLC0415
-            DataModelFieldBase as RuntimeDataModelFieldBase,
-        )
-
-        if not isinstance(parent, RuntimeDataModelFieldBase):
-            return "data type"
-        if (model := parent.parent) is not None and self._tracked_model_id(model) is not None:
-            return "recorded field"
-        return "dropped field"
 
     @deprecated("Use GenerationStore.builder().discard_derived_facts() instead.", category=None)
     def discard_derived_facts(self) -> None:

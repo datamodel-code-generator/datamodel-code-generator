@@ -108,7 +108,6 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-    from datamodel_code_generator.reference import Reference
 
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
@@ -771,9 +770,7 @@ def test_model_graph_check_reports_a_written_model_that_the_store_retired(
     """A custom parser that retires a model it still writes leaves the written models and the emitted ones apart.
 
     The check (`1`, as the test suite sets it) raises once the modules are final; `report:<path>` appends it to the
-    file as one JSON line, after the collapse decisions whose answer over the emitted models differs, because the
-    retired root model is the only other user of the root models it references; with the check off (`0`) the model is
-    generated as usual.
+    file as one JSON line; with the check off (`0`) the model is generated as usual.
     """
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
@@ -816,125 +813,6 @@ def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> Non
         parser.parse()
 
 
-@pytest.mark.abnormal_path(
-    "a reference graph snapshot answers as the computation it replaced for every input: only a broken computation "
-    "makes the two differ"
-)
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_model_graph_check_reports_a_differing_reference_graph_answer(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
-) -> None:
-    """Quoting the containers of an alias cycle reads the cycles of aliases from the reference graph snapshot.
-
-    The computation the snapshot replaces finds the cycles of its own graph; here it finds none. The model graph check
-    (`1`, as the test suite sets it) raises where the two answers differ; `report:<path>` appends the difference to the
-    file as one JSON line; with the check off (`0`) the snapshot's answer quotes the containers of the cycle.
-    """
-    from datamodel_code_generator.parser.base import render_prep
-
-    monkeypatch.setattr(render_prep, "find_circular_sccs", lambda _graph: [])
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
-    source = JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json"
-    options: dict[str, Any] = {"use_type_alias": True, "formatters": [Formatter.BUILTIN]}
-    if flag == "check":
-        with pytest.raises(
-            Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: alias cycles: the reference graph and the computation"
-        ):
-            generate(source, input_file_type=InputFileType.JsonSchema, **options)
-        return
-    assert_output(cast("str", generate(source, input_file_type=InputFileType.JsonSchema, **options)))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
-
-
-def test_model_graph_check_reports_a_path_lookup_that_names_two_models(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A custom parser that moves a model to the path of another one leaves two live models under one path.
-
-    The sort tells the two models apart by model key, but a reference the parser builds outside the resolver names no
-    model by its key and both by its path. The model graph check (`1`, as the test suite sets it) raises where the sort
-    looks that path up.
-    """
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-    from datamodel_code_generator.reference import Reference
-    from datamodel_code_generator.types import DataType
-
-    class MovingParser(JsonSchemaParser):
-        def parse_raw(self) -> None:
-            super().parse_raw()
-            top, child = self.results
-            self.generation_store.move_model(child, new_path=top.path)
-            keyless = Reference(path=top.path, name=top.reference.name)
-            self.generation_store.replace_field_type(child.fields[0], DataType(reference=keyless))
-
-    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
-    parser = MovingParser(
-        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
-    )
-    with pytest.raises(
-        Error,
-        match=rf"^{CHECK_MODEL_GRAPH_ENV}: sort_data_models: a lookup by the path "
-        r"annotated_forward_reference_required_order\.json# names 2 models$",
-    ):
-        parser.parse()
-
-
-def test_model_graph_check_reports_models_whose_references_share_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A custom parser that adds a deep copy of a model leaves two live models whose Reference objects share a key.
-
-    By model key the sort would take the two models for one. The model graph check (`1`, as the test suite sets it)
-    raises where the sort keys them.
-    """
-    from copy import deepcopy
-
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-
-    class DuplicatingParser(JsonSchemaParser):
-        def parse_raw(self) -> None:
-            super().parse_raw()
-            self.results.append(deepcopy(self.results[1]))
-
-    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
-    parser = DuplicatingParser(
-        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
-    )
-    with pytest.raises(
-        Error,
-        match=rf"^{CHECK_MODEL_GRAPH_ENV}: sort_data_models: two Reference objects of live models share the model key "
-        r"of annotated_forward_reference_required_order\.json#/definitions/Child$",
-    ):
-        parser.parse()
-
-
-def test_model_graph_check_reports_a_reference_whose_path_names_another_model(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """A custom parser that types a field with a copy of its Reference moved to the path of another model.
-
-    The copy keeps the model key of the model the field references, while its path names another model. With
-    `report:<path>`, the check appends the copy and each site that reads the copy's key and path to the file.
-    """
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-    from datamodel_code_generator.types import DataType
-
-    class RepointingParser(JsonSchemaParser):
-        def parse_raw(self) -> None:
-            super().parse_raw()
-            top = self.results[0]
-            field = next(field for model in self.results for field in model.fields if field.data_type.reference)
-
-            moved = cast("Reference", field.data_type.reference).model_copy(update={"path": top.path})
-            self.generation_store.replace_field_type(field, DataType(reference=moved))
-
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, f"report:{report_path}")
-    parser = RepointingParser(
-        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
-    )
-    assert_output(cast("str", parser.parse()))
-    assert_output(report_path.read_text(encoding="utf-8"), name="report")
-
-
 def test_process_single_module_override_lists_a_model_for_the_reference_update_action() -> None:
     """A custom parser whose ``_process_single_module`` lists one more model path gives that model the update action.
 
@@ -965,13 +843,12 @@ def test_process_single_module_override_lists_a_model_for_the_reference_update_a
     assert_output(cast("str", parser.parse(disable_future_imports=True)))
 
 
-def test_model_graph_check_reports_a_module_name_written_by_path_after_its_module(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_process_single_module_override_gives_module_names_by_path() -> None:
     """A custom parser whose ``_process_single_module`` gives the module's models another module name by path.
 
-    Module names are looked up by model key, which still names the module the models are in. The model graph check
-    (`1`, as the test suite sets it) raises where a later module imports one of the models.
+    A module name written by path after the parser gave it wins over the one by model key, so a later module imports
+    the models from the module it names, which its import plan, made from the modules that write the models, does
+    not hold; the import check reports it.
     """
     from typing_extensions import override
 
@@ -986,12 +863,32 @@ def test_model_graph_check_reports_a_module_name_written_by_path_after_its_modul
                 model_path_to_module_name[model.path] = "elsewhere"
             return context
 
-    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
     parser = RelabelingParser(OPEN_API_DATA_PATH / "modular.yaml", formatters=[Formatter.BUILTIN])
-    with pytest.raises(
-        Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: module names: the lookups by model key and by path disagree$"
-    ):
+    with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
         parser.parse()
+    assert_output(str(exc_info.value))
+
+
+def test_reference_built_outside_the_resolver_names_the_model_at_its_path() -> None:
+    """A custom parser that types a field with a Reference it builds itself, which carries no model key.
+
+    The reference names the model at its path, as references did when models were told apart by path.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    class KeylessParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            top, child = self.results
+            keyless = Reference(path=top.path, name=top.reference.name)
+            self.generation_store.replace_field_type(child.fields[0], DataType(reference=keyless))
+
+    parser = KeylessParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    assert_output(cast("str", parser.parse()))
 
 
 def test_process_single_module_override_passes_a_module_name_map_of_its_own() -> None:

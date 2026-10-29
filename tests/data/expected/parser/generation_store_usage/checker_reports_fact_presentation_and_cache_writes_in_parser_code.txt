@@ -17,7 +17,7 @@
 21 write class_name: use GenerationStore.rename_model() instead of writing class_name
 22 write use_generic_container: use_generic_container changes an option copied at construction outside GenerationStore operations
 23 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
-25 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that _facts.py ATTRIBUTE_FACTS does not classify
+25 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that fact_tables.py ATTRIBUTE_FACTS does not classify
 26 write __dict__[...]: __dict__[...] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 27 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 29 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations

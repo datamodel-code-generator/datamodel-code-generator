@@ -17,7 +17,7 @@ from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, fina
 
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
-from datamodel_code_generator.model.base import DataModel, _keyed_answer
+from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._phases import DecisionOutcome
 
 if TYPE_CHECKING:
@@ -132,8 +132,7 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     ``legacy-keyless-reference-by-path``: a model with no entry by key, as for an entry a subclass wrote by path, and
     a reference that no model was built with are looked up by path. Row ``legacy-module-follows-path``: the entries
     were paths, so a model that moves to another path leaves its entry behind (`forget`), and a root model whose
-    inner model takes its path takes the inner model's entry. Under the ``MODEL_GRAPH`` check, an entry by key that
-    differs from the entry at the model's path is a violation.
+    inner model takes its path takes the inner model's entry.
     """
 
     __slots__ = ("assigned", "by_key")
@@ -166,18 +165,13 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     def of(self, reference: Reference) -> str | None:
         """Return the module name of the model ``reference`` names, or None when it has none.
 
-        An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key;
-        under the ``MODEL_GRAPH`` check, the two differing is a violation.
+        An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key.
         """
         path = reference.path
         by_path = self.get(path)
-        written = by_path != self.assigned.get(path)
-        by_key = None if reference.source is None else self.by_key.get(model_key_of(reference))
-        if written:
-            return by_path if by_key is None else _keyed_answer("module names", by_path, lambda: by_key)
-        if by_key is None:
+        if by_path != self.assigned.get(path) or reference.source is None:
             return by_path
-        return _keyed_answer("module names", by_key, lambda: by_path)
+        return by_path if (by_key := self.by_key.get(model_key_of(reference))) is None else by_key
 
 
 SortedDataModels = dict[ModelKey, DataModel]

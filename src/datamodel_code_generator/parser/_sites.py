@@ -45,7 +45,6 @@ class Provenance:
 
 
 PARSED: Final = Provenance("parsed")
-COPIED: Final = Provenance("copied")
 
 
 class SiteOccurrence(NamedTuple):

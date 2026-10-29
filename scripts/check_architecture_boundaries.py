@@ -161,14 +161,11 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
 _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
 """Layers of parser code: the parser modules and the pass modules under ``parser/_passes/``."""
 _PARSER_PASS_IMPORTS: Final = frozenset({
-    "datamodel_code_generator.parser._check_scopes",
     "datamodel_code_generator.parser._facts",
-    "datamodel_code_generator.parser._finality",
     "datamodel_code_generator.parser._graph_ids",
     "datamodel_code_generator.parser._imports_plan",
     "datamodel_code_generator.parser._model_shapes",
     "datamodel_code_generator.parser._null_facts",
-    "datamodel_code_generator.parser._pass_decls",
     "datamodel_code_generator.parser._passes",
     "datamodel_code_generator.parser._phases",
     "datamodel_code_generator.parser._pipeline",

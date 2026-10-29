@@ -1,37 +1,49 @@
-"""What each pass of ``Parser.parse()`` reads and writes, in today's execution order.
+"""What each pass of ``Parser.parse()`` reads and writes, in today's execution order, and the labels of its tables.
 
 One ``PassDecl`` per pass: the methods and named steps of ``parser/base.py`` that the pipeline tables of ``Parser``
-run. ``reads`` and ``writes`` use the facts of ``parser/_facts.py``. The pipeline runs every pass inside
-``fact_pass(DECL)`` (``parser/_finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the
-writes against the declaration and a pass trace records the pass. The writes of ``fact`` rows are checked at run time;
-reads and the writes of presentation rows are declared from the code; ``after`` edges order the passes whose facts
-conflict (``parser/_pipeline.py:check_order``). ``PASS_DECLS`` lists every declaration in execution order and is the
-source of the generated pass table in ``docs/architecture.md``.
+(``parser/_passes/_tables.py``) run, joined to their ``PassSpec`` by name. ``reads`` and ``writes`` use the facts of
+``scripts/fact_tables.py``. The test suite runs every pass inside the scope of its declaration
+(``tests/checks/finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the writes against it and
+a pass trace records the pass. The writes of ``fact`` rows are checked at run time; reads and the writes of
+presentation rows are declared from the code; ``after`` edges order the passes whose facts conflict
+(``scripts/check_pass_pipeline.py:check_order``). ``PASS_DECLS`` lists every declaration in execution order and is the
+source of the generated pass table in ``docs/architecture.md``; ``DECISION_DECLS`` declares the decisions of the
+decision registries (``parser/_phases.py``) by name.
+
+The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary,
+``SCOPE_NAMES`` the pass scope of a segment's guarded writes and ``HOOK_BODIES`` the table that the default
+implementation of each hook runs.
 """
 
 from __future__ import annotations
 
 from enum import Enum, unique
-from typing import NamedTuple
+from typing import Final, NamedTuple
 
 from typing_extensions import final
 
-from datamodel_code_generator._records import record
-from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact
+from datamodel_code_generator._records import record  # noqa: PLC2701
+from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
+from scripts.fact_tables import Fact, RenderFact
 
 __all__ = [
     "ASSIGN_FORWARD_REFERENCE_FIELDS",
+    "BOUNDARY_BEFORE",
     "COLLECT_LIVE_MODELS",
+    "DECISION_DECLS",
     "FINALIZE_RENDERED_NULLABILITY",
     "FIX_CONSTRUCTOR_FIELD_ORDERING",
     "FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY",
     "FIX_TAG_OPT_OUT_FIELD_ORDERING",
+    "HOOK_BODIES",
     "PASS_DECLS",
+    "SCOPE_NAMES",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
     "UNBIND_HIDDEN_TYPE_FIELDS",
     "UPDATE_TYPE_ALIASES",
     "WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS",
     "After",
+    "Boundary",
     "PassDecl",
     "PassKind",
     "Scope",
@@ -1423,3 +1435,58 @@ RENDER_MODULES = PassDecl(
 
 PASS_DECLS: tuple[PassDecl, ...] = tuple(value for value in tuple(globals().values()) if isinstance(value, PassDecl))
 """Every declaration, in execution order."""
+
+
+@unique
+class Boundary(Enum):
+    """A point between segments where what passes may read or write changes."""
+
+    PARSED = "parsed"
+    """L1 is over: the write guards are armed."""
+    MODULE_DONE = "module-done"
+    """The passes of one output module are over."""
+    FACTS_FINAL = "B1"
+    """Every fact is final; decisions start."""
+    DECIDED = "decided"
+    """Every decision is written; render preparation starts."""
+    RENDER_READY = "B2"
+    """Render preparation is over; import collection starts."""
+
+
+BOUNDARY_BEFORE: Final = {
+    "settle": Boundary.PARSED,
+    "decide": Boundary.FACTS_FINAL,
+    "render_preparation": Boundary.DECIDED,
+    "imports": Boundary.RENDER_READY,
+}
+"""The boundary each segment enters before its steps, by segment name; ``MODULE_DONE`` ends each module body."""
+SCOPE_NAMES: Final = {
+    "structure": "Parser._build_module_structure",
+    "plan": "Parser.parse",
+    "cross_module": "Parser.parse",
+    "generic_base_class": "Parser.parse",
+    "decide": "Parser.parse",
+    "render_preparation": "Parser.parse",
+    "finish": "Parser.parse",
+    "render": "Parser.__render_modules",
+}
+"""The pass scope in which the finality check reports the guarded writes of a segment, by segment name."""
+HOOK_BODIES: Final = {
+    "build_module_structure": "STRUCTURE_BODY",
+    "process_single_module": "MODULE_BODY",
+    "finalize_modules": "FINALIZE_SEGMENTS",
+}
+"""The table of ``parser/_passes/_tables.py`` that the default implementation of each hook runs, by hook name."""
+DECISION_DECLS: Final[dict[str, PassDecl]] = {
+    "omit_held_null": PassDecl(
+        "omit_held_null",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE, Fact.MODEL_KIND}),
+        writes=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE}),
+        summary="Drops the None a type restates of the model it names when that model holds null itself.",
+        condition="--omit-redundant-reference-null",
+    ),
+}
+"""The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

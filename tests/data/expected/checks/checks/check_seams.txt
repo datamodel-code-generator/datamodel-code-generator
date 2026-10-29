@@ -1,0 +1,21 @@
+datamodel_code_generator.parser._pipeline:Runner.run_steps <- tests.checks.parse.run_steps
+datamodel_code_generator.parser._pipeline:Runner.run_pass <- tests.checks.parse.run_pass
+datamodel_code_generator.parser._pipeline:Runner.run_decision <- tests.checks.parse.run_decision
+datamodel_code_generator.parser.base:Parser._process_single_module <- tests.checks.parse.process_single_module (and on each parser class that overrides it)
+datamodel_code_generator.parser.generation:GenerationStore.seal_facts <- tests.checks.parse.seal_facts
+datamodel_code_generator.parser.generation:GenerationStore.refresh_now <- tests.checks.model_graph.refresh_now
+datamodel_code_generator.parser.generation:GenerationStore.model_key <- tests.checks.model_graph.model_key
+datamodel_code_generator.parser._passes.modules:collapse_module_root_models <- tests.checks.model_graph.collapse_module_root_models
+datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
+datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
+datamodel_code_generator.parser.base:Parser._get_module_future_imports <- tests.checks.module_imports.get_module_future_imports
+datamodel_code_generator.parser._imports_plan:ModuleImportLedger.add_name <- tests.checks.module_imports.add_name
+datamodel_code_generator.parser._imports_plan:ModuleImportLedger.release_names <- tests.checks.module_imports.release_names
+datamodel_code_generator.parser._passes.imports:render <- tests.checks.module_imports.render
+datamodel_code_generator.parser._passes.render_prep:freeze_field_render_plans <- tests.checks.render_plans.freeze_field_render_plans
+datamodel_code_generator.model.base:DataModel._refresh_field_render_plans <- tests.checks.render_plans.refresh_field_render_plans
+datamodel_code_generator._parse_memo:ParseMemo.value <- tests.checks.memos.value
+datamodel_code_generator._parse_memo:ParseMemo.derived <- tests.checks.memos.derived
+datamodel_code_generator._parse_memo:ParseMemo.keep_union_members <- tests.checks.memos.keep_union_members
+datamodel_code_generator._parse_memo:ParseMemo.union_members <- tests.checks.memos.union_members
+datamodel_code_generator.types:_spread_union_member_hints <- tests.checks.memos.spread_union_member_hints

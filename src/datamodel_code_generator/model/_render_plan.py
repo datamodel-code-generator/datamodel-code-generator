@@ -426,11 +426,6 @@ class FieldRenderPlan:
             items.update(self.default.items)
         return frozenset(items)
 
-    def unaccounted(self, declared: frozenset[str]) -> tuple[frozenset[str], frozenset[str]]:
-        """Return the declared items neither written nor omitted, and the written or omitted items not declared."""
-        accounted = self.written_items() | {omitted.item for omitted in self.omitted}
-        return declared - accounted, accounted - declared
-
 
 RenderInputs: TypeAlias = tuple[Any, tuple[object, ...] | None, tuple[object, ...], tuple["RenderInputs", ...]]
 """What a render plan read from a field when it was built: the mapping or the collection it read (the field's
@@ -501,15 +496,13 @@ class _FrozenPlan(NamedTuple):
     """A field's frozen plan, the plan the import snapshot reads if different, and what the plan read from the field.
 
     ``inputs`` are the field's revisions (`ParseMemo.revision`) when the plan was frozen, or, for a class outside this
-    package or under custom templates, its ``_render_inputs``. ``type_expr`` is the expression of the field's type
-    hint then (``types.py:type_expr_of``), kept under ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
+    package or under custom templates, its ``_render_inputs``.
     """
 
     field: object
     plan: FieldRenderPlan
     import_plan: FieldRenderPlan | None
     inputs: _FieldRevision | RenderInputs
-    type_expr: object = None
 
 
 @final
@@ -537,15 +530,9 @@ class RenderReady:
         self.memo = memo if _package_class(parser_class) else None
         self.nested_factories: NestedFactoryMetadata | None = None
 
-    def freeze(
-        self,
-        field: PlannedField,
-        plan: FieldRenderPlan,
-        import_plan: FieldRenderPlan | None = None,
-        type_expr: object = None,
-    ) -> None:
-        """Keep the field's plan, the plan the import snapshot reads if different, and the expression of its hint."""
-        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field), type_expr)
+    def freeze(self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
+        """Keep the field's plan and the plan the import snapshot reads if different."""
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field))
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
         """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
@@ -557,11 +544,6 @@ class RenderReady:
         if self._import_view and entry.import_plan is not None:
             return entry.import_plan
         return entry.plan
-
-    def frozen(self) -> Iterator[tuple[object, FieldRenderPlan, object]]:
-        """Yield every field with the plan frozen for it and the expression of its type hint, if kept."""
-        for entry in self._plans.values():
-            yield entry.field, entry.plan, entry.type_expr
 
     def refreshed(self, field: PlannedField) -> FieldRenderPlan | None:
         """Rebuild the plan frozen for ``field`` if what it read from the field changed since; return the rebuilt plan.

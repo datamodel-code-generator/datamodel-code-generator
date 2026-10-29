@@ -1,6 +1,6 @@
 """The passes of ``Parser.parse()``: which run, in which order, for a few inputs that reach most of them.
 
-A trace lists every pass that runs, named as in ``parser/_pass_decls.py``, with a ``-- module`` line where the pipeline
+A trace lists every pass that runs, named as in ``scripts/pass_decls.py``, with a ``-- module`` line where the pipeline
 starts processing each output module; ``scripts/check_pass_pipeline.py`` records it.
 """
 
@@ -229,17 +229,23 @@ def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: check_pass_pip
     """Decide nothing."""
 
 
+Declared = tuple[check_pass_pipeline.PassDecl | None, check_pass_pipeline.DecisionPass[Any]]
+"""A decision with its declaration, which ``DECISION_DECLS`` would hold, or None for a decision without one."""
+
+
 def _decision(
     decl: check_pass_pipeline.PassDecl,
     *,
     run: Callable[[check_pass_pipeline.FinalFacts, Any], None] = _no_decision,
     writer: type[Any] = check_pass_pipeline.DecisionWriter,
     issue: str = "#0",
-) -> check_pass_pipeline.DecisionPass[Any]:
-    return check_pass_pipeline.DecisionPass({"decl": decl, "issue": issue}, writer, run)
+) -> Declared:
+    return decl, check_pass_pipeline.DecisionPass({"name": decl.name, "issue": issue}, writer, run)
 
 
-WAVE_B_REGISTRATION = ("G03b", "G08", "G06", "G12b")
+WAVE_B_REGISTRATION = ("G12b", "G06", "G03b", "G08")
+"""The wave-B decisions in the order they run."""
+WAVE_B_SHUFFLED = ("G03b", "G08", "G06", "G12b")
 """The wave-B decisions in another order than they run."""
 
 
@@ -248,16 +254,27 @@ def _wave_b_decisions(
     *,
     edges: bool = True,
     run: Callable[[check_pass_pipeline.FinalFacts, Any], None] = _no_decision,
-) -> list[check_pass_pipeline.DecisionPass[Any]]:
-    """Return the wave-B decisions by name only, in ``WAVE_B_REGISTRATION`` order."""
+    order: tuple[str, ...] = WAVE_B_REGISTRATION,
+) -> list[Declared]:
+    """Return the wave-B decisions by name only, in ``order``."""
     decls = {decl.name: decl for decl in _wave_b(writes, edges=edges)}
-    return [_decision(decls[name], run=run) for name in WAVE_B_REGISTRATION]
+    return [_decision(decls[name], run=run) for name in order]
 
 
 DECISION_REGISTRIES = {
     "wave-b-declared": _wave_b_decisions("declared"),
     "wave-b-measured": _wave_b_decisions("measured"),
-    "wave-b-declared-without-edges": _wave_b_decisions("declared", edges=False),
+    "wave-b-declared-without-edges": _wave_b_decisions("declared", edges=False, order=WAVE_B_SHUFFLED),
+    "wave-b-declared-out-of-order": _wave_b_decisions("declared", order=WAVE_B_SHUFFLED),
+    "undeclared": [
+        _wave_b_decisions("declared")[0],
+        (
+            None,
+            check_pass_pipeline.DecisionPass(
+                {"name": "G99", "issue": "#0"}, check_pass_pipeline.DecisionWriter, _no_decision
+            ),
+        ),
+    ],
     "broken": [
         _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, []), issue=""),
         _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, [])),
@@ -276,13 +293,19 @@ DECISION_REGISTRIES = {
 }
 
 
-@pytest.mark.parametrize("decisions", DECISION_REGISTRIES.values(), ids=DECISION_REGISTRIES)
-def test_decision_registry(decisions: list[check_pass_pipeline.DecisionPass[Any]]) -> None:
-    """A registry runs its decisions in the order the order rule computes; its rules report what breaks them."""
+@pytest.mark.parametrize("registry", DECISION_REGISTRIES.values(), ids=DECISION_REGISTRIES)
+def test_decision_registry(registry: list[Declared]) -> None:
+    """A registry lists its decisions in the order the order rule computes; its rules report what breaks them.
+
+    A decision that has no declaration has no place in the order.
+    """
+    decisions = [decision for _, decision in registry]
+    decls = {decl.name: decl for decl, _ in registry if decl is not None}
+    ordered = [decision for decl, decision in registry if decl is not None]
     assert_output(
         "".join([
-            f"order: {' -> '.join(item.spec['decl'].name for item in check_pass_pipeline.decision_order(decisions))}\n",
-            *(f"problem: {problem}\n" for problem in check_pass_pipeline.decision_problems(decisions)),
+            f"order: {' -> '.join(item.spec['name'] for item in check_pass_pipeline.decision_order(ordered, decls))}\n",
+            *(f"problem: {problem}\n" for problem in check_pass_pipeline.decision_problems(decisions, decls)),
         ])
     )
 
@@ -291,16 +314,20 @@ def test_decision_registry(decisions: list[check_pass_pipeline.DecisionPass[Any]
 def test_decision_phase_runs_the_registry_after_the_generic_base_class(
     monkeypatch: pytest.MonkeyPatch, finality: str
 ) -> None:
-    """The decisions run once each, in their computed order, between the generic base class and render preparation.
+    """The decisions run once each, in registry order, between the generic base class and render preparation.
 
     Each reads the field names of the models that render in every module; collapsed root models, which leave their
     modules later, are not among them.
     """
     monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, finality)
     seen: list[check_pass_pipeline.FinalFacts] = []
+    for decl in _wave_b("declared", edges=True):
+        monkeypatch.setitem(check_pass_pipeline.DECISION_DECLS, decl.name, decl)
 
     class DecidingParser(OpenAPIParser):
-        _DECISION_PASSES = tuple(_wave_b_decisions("declared", run=lambda facts, _writer: seen.append(facts)))
+        _DECISION_PASSES = tuple(
+            decision for _, decision in _wave_b_decisions("declared", run=lambda facts, _writer: seen.append(facts))
+        )
 
     parser = DecidingParser(
         DATA / "openapi" / "modular.yaml", collapse_root_models=True, formatters=[Formatter.BUILTIN]

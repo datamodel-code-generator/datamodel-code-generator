@@ -63,6 +63,18 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/api_generation/support/fastapi_generation.py::datamodel_code_generator._runtime",
         "private-import:tests/api_generation/support/generated_packages.py::datamodel_code_generator._runtime",
     ),
+    "invariant-checks": (
+        "normal-path-mock:tests/checks/finality.py",
+        "private-import:tests/checks/finality.py",
+        "private-import:tests/checks/memos.py",
+        "private-import:tests/checks/model_graph.py",
+        "private-import:tests/checks/module_imports.py",
+        "private-import:tests/checks/parse.py",
+        "private-import:tests/checks/render_plans.py",
+        "private-import:tests/checks/requirements.py",
+        "private-import:tests/checks/schema_graph.py",
+        "private-import:tests/checks/schema_locations.py",
+    ),
     "model-test-drivers": (
         "data-logic:tests/data/python/core_special_field_prefix_generate.py",
         "data-logic:tests/data/python/generation_session_inputs.py",
@@ -1140,6 +1152,10 @@ ALLOWLIST_GROUP_REASONS = {
     "generated-runtime": (
         "Generated packages run this checkout's runtime sources, which import_generated and the runtime copy "
         "comparison locate through datamodel_code_generator._runtime."
+    ),
+    "invariant-checks": (
+        "The debug checks of tests/checks keep the generator's internal invariants without living in src: they wrap "
+        "its internals for every test (tests/checks/seams.py lists each attribute) and read the state they check."
     ),
     "model-test-drivers": (
         "Drivers that model tests in tests/main run in a subprocess or import as inputs, kept with the model test "

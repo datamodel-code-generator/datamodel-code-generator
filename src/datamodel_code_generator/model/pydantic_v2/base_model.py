@@ -21,7 +21,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import AliasGenerator
@@ -504,19 +504,6 @@ def _config_constructs(config_items: Iterable[tuple[str, str]]) -> Iterator[tupl
     for key, _ in config_items:
         if (row := CONFIG_KEY_REQUIREMENTS.get(key)) is not None:
             yield cast("PydanticConstruct", row.construct), None
-
-
-def _config_keys_without_requirement() -> tuple[str, ...]:
-    """Return the keys of the installed Pydantic's ``ConfigDict`` that have no row: user config writes any of them."""
-    from pydantic import ConfigDict as PydanticConfigDict  # noqa: PLC0415
-
-    return tuple(
-        sorted(
-            key
-            for key in PydanticConfigDict.__required_keys__ | PydanticConfigDict.__optional_keys__
-            if key not in CONFIG_KEY_REQUIREMENTS
-        )
-    )
 
 
 def _import_rendered_alias_generator(model: DataModel, config_items: Iterable[tuple[str, str]]) -> None:
@@ -1470,26 +1457,13 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
                 return False
         return name.startswith(namespaces)
 
-    def walked() -> Iterator[tuple[DataModel, bool]]:
-        pending = [model]
-        while pending:
-            current = pending.pop()
-            base_classes = _find_base_classes(current)
-            yield current, bool(base_classes)
-            pending.extend(base_classes)
-
     walk = walk_graph(
         GraphSnapshot.PROTECTED_NAMESPACES, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes
     )
     graph = walk.graph
-    answer = conflicts(
+    return conflicts(
         (walk.node_of[key], bool(graph.ordered_targets(key, EdgeKind.BASE)))
         for key in graph.preorder(walk.starts[0], EdgeKind.BASE)
-    )
-    return graph_answer(
-        GraphSnapshot.PROTECTED_NAMESPACES,
-        answer,
-        lambda: answer if graph.acyclic_order((EdgeKind.BASE,)) is None else conflicts(walked()),
     )
 
 
@@ -1575,9 +1549,9 @@ def _has_frozen_hash_config(
     """
     from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
 
-    keys = keys or _ModelKeys("frozen hash config")
+    keys = keys or _ModelKeys()
     pending = [model]
-    visited = _ModelKeys("frozen hash config bases")
+    visited = _ModelKeys()
     value = None
     while pending:
         current = pending.pop()
@@ -1610,7 +1584,6 @@ class BaseModel(BaseModelBase):
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
     _CHECKS_CONSTRAINTS: ClassVar[bool] = True
-    _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     BASE_CLASS_ALIAS: ClassVar[str] = "_BaseModel"
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.PYDANTIC
@@ -1664,7 +1637,7 @@ class BaseModel(BaseModelBase):
         The walks tell models apart by model key; the result names the models by path.
         """
         native_paths: set[str] = set()
-        keys = _ModelKeys("native hash models")
+        keys = _ModelKeys()
         frozen_configs: dict[ModelKey, bool | None] = {}
         checked_models: dict[ModelKey, bool] = {}
         checked_fields: dict[int, bool] = {}
@@ -1673,7 +1646,7 @@ class BaseModel(BaseModelBase):
             if not _has_frozen_hash_config(model, frozen_configs, keys):
                 continue
             pending = [model]
-            visited = _ModelKeys("native hash model bases")
+            visited = _ModelKeys()
             while pending:
                 current = pending.pop()
                 if not visited.first(current):
@@ -2634,7 +2607,7 @@ class BaseModel(BaseModelBase):
 
         ``scopes`` holds the names reserved for each model by the model key that ``keys`` gives it.
         """
-        keys = keys or _ModelKeys("validator method scopes")
+        keys = keys or _ModelKeys()
         if (reserved_names := scopes.get(key := keys.of(model))) is not None:
             return reserved_names
         reserved_names = scopes[key] = {field.name for field in model.fields if field.name is not None}
@@ -2667,7 +2640,7 @@ class BaseModel(BaseModelBase):
             (model, validators) for model in models if (validators := getattr(model, "_validator_bindings", None))
         ]
         method_scopes: dict[ModelKey, set[str]] = {}
-        method_keys = _ModelKeys("validator method scopes")
+        method_keys = _ModelKeys()
         for model, _ in validator_models:
             cls._prepare_validator_method_names(model, method_scopes, method_keys)
         validator_imports = {import_ for _, validators in validator_models for _, import_ in validators}

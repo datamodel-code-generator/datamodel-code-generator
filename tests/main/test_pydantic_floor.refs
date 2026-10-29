@@ -34,4 +34,6 @@ user-config-target-2.11	main/pydantic_floor/pydantic_floor[user-config-target-2.
 check	main/pydantic_floor/command_line[check].warnings.txt
 invalid-dotted-stdout-repair	main/pydantic_floor/command_line[invalid-dotted-stdout-repair].warnings.txt
 [test_pydantic_floor_config_key_without_row]
-report	main/pydantic_floor/config_key_without_row[report].report.txt
+	main/pydantic_floor/config_key_without_row.txt
+[test_pydantic_floor_config_keys_have_rows]
+	main/pydantic_floor/config_keys_have_rows.txt
