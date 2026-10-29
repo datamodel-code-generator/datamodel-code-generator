@@ -287,6 +287,8 @@ servers-single-value-enum	main/generation_platform/client/servers-single-value-e
 setting-errors	main/generation_platform/client/setting-errors.txt
 sockets	main/generation_platform/client/packages/sockets/pydantic_v2_BaseModel//*.py
 sockets	main/generation_platform/client/sockets.txt
+status-keys	main/generation_platform/client/packages/status-keys/pydantic_v2_BaseModel//*.py
+status-keys	main/generation_platform/client/status-keys.txt
 stream-resume	main/generation_platform/client/packages/stream-resume/pydantic_v2_BaseModel//*.py
 stream-resume	main/generation_platform/client/stream-resume.txt
 streams	main/generation_platform/client/packages/streams/pydantic_v2_BaseModel//*.py

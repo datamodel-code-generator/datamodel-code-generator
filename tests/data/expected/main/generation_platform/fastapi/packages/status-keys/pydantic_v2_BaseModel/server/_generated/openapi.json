@@ -1,0 +1,48 @@
+{
+ "openapi": "3.1.0",
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "info": {
+  "title": "status keys",
+  "version": "1"
+ },
+ "paths": {
+  "/sup": {
+   "get": {
+    "operationId": "sup",
+    "responses": {
+     "\u00b200": {
+      "description": "superscript",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/r": {
+   "get": {
+    "operationId": "rangeOnly",
+    "responses": {
+     "AXX": {
+      "description": "letters",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}
