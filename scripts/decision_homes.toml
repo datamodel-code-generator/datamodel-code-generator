@@ -425,6 +425,11 @@ exclude = ["_runtime/"]
 what = "escapes or unescapes a JSON Pointer token itself; call _json_pointer.py (the generated runtime keeps its own copy)"
 audit = "C01"
 
+[homes.Hx-pointer-members]
+decision = "which member of a loaded document one JSON Pointer token names (list index grammar, integer YAML keys)"
+core = ["_document_reader.py:member", "_document_reader.py:descend"]
+adapters = []
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]
@@ -1299,6 +1304,18 @@ fix = "G05"
 home = "H11"
 fix = "G05"
 
+[legacy_rows."legacy-int-tokens"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
+[legacy_rows."legacy-decimal-tokens"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
+[legacy_rows."legacy-objects-only"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 
 [allow."src/datamodel_code_generator/__main__.py"."_target_usage_errors"]
@@ -1804,9 +1821,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_settings"]
 "H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_source_member"]
-"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-11" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_spelled"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-10" }

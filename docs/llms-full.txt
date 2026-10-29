@@ -69042,6 +69042,9 @@ exception to a home is a new named row, never an anonymous `if`.
 | `legacy-api-lockfile-as-written` | Hx-remote-lock-plan | `generate()` runs other than an update published with output or metadata open, check, name and (stdout updates) replace an absolute lockfile as written, a symlink included | #5583 |
 | `legacy-predicted-tag-names` | H11 | L4 layout flattening reads a superset of the msgspec tag fields (`possible_tag_names`) | G05 |
 | `legacy-collapse-python-name-mode` | H11 | the union that `--collapse-root-models` inlines as list items is checked by the Python names of its variants' tag fields, where L5 checks one that writes `discriminator=` by the schema's names | G05 |
+| `legacy-int-tokens` | Hx-pointer-members | the target binding reads an item of any value that is no mapping by whatever `int()` accepts (`-1`, `01`, `1_0`, a character of a string) | #5579 |
+| `legacy-decimal-tokens` | Hx-pointer-members | the served document reads a list item by any decimal token below its length (`01`, non-ASCII digits), and a mapping member by the token before a decimal integer key | #5579 |
+| `legacy-objects-only` | Hx-pointer-members | the recommender reads only mapping members, by the token, when it follows a local `$ref` | #5579 |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
