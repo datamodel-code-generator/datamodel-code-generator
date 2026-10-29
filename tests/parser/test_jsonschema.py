@@ -68,9 +68,7 @@ from datamodel_code_generator.parser.jsonschema import (
     Types,
     _get_json_value_type,
     _get_union_variant_name,
-    _json_literal_may_accept_container,
     _json_literal_values_equal,
-    _json_schema_type_may_accept_container,
     _validate_schema_python_import_path,
     get_model_by_path,
     split_json_pointer,
@@ -1144,8 +1142,6 @@ def test_schema_validator_unique_items_branch_coverage() -> None:
 
     assert_output(
         "\n".join((
-            f"literal-object={_json_literal_may_accept_container({}, 'object')}",
-            f"type-list={_json_schema_type_may_accept_container(['array', 'null'], 'array')}",
             f"schema-object={parser._schema_item_may_accept_container(reference, 'array', visited_refs)}",
             f"branch-rule-counts={tuple(len(rules) for _, rules in branch_rules)!r}",
             f"candidate-paths={tuple(rule.path for rule in candidates)!r}",

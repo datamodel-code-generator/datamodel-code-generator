@@ -139,7 +139,11 @@ audit = "D-PP-01"
 [homes.H20]
 decision = "recursion facts: strongly connected components, cycles and dependency order of the reference graph"
 core = ["_reference_graph.py", "_scc.py", "_graph.py"]
-adapters = ["dynamic.py", "parser/generation.py:GenerationIndex.reference_graph"]
+adapters = [
+    "dynamic.py",
+    "parser/generation.py:GenerationIndex.reference_graph",
+    "parser/jsonschema.py:JsonSchemaParser._dynamic_anchors_used",
+]
 
 [homes.H20.signatures.graph-algorithm]
 kind = "call"
