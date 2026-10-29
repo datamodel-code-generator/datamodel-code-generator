@@ -11,20 +11,13 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.model._decisions.tag_value import (
-    enum_tag_as_values,
-    field_tag,
-    redeclared_tag_field,
-)
+from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
     BaseClassDataType,
     DataModel,
-    _find_base_classes,
-    _model_key_of_model,
 )
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -32,13 +25,10 @@ from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     ReferenceExpressionHost,
     ReplacedRootsHost,
-    _bases_keep_instance_field,
     _context_models,
-    _FieldTagFacts,
     _generic_base_class_module,
     _get_data_type_target_full_name,
     _get_model_module_name,
-    _iter_discriminator_data_types,
     _named_data_types,
     module_members,
     names_left_by_replaced_roots,
@@ -47,11 +37,11 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
+from datamodel_code_generator.parser._tag_plan import iter_struct_tag_decisions
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
-    from collections.abc import Set as AbstractSet
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator._model_keys import ModelKey
@@ -64,6 +54,7 @@ if TYPE_CHECKING:
         _ConstNarrowing,
         _RenamedType,
     )
+    from datamodel_code_generator.parser._tag_plan import TagPlan
     from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.types import DataType
 
@@ -132,11 +123,13 @@ class CrossModuleHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
 class TaggedBasesHost(CrossModuleHost, FlattenHost, Protocol):
     """What tagging the structs below tagged bases reads and writes of the parser."""
 
+    @property
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
+
 
 class CrossModuleRun(Protocol):
     """What the cross-module passes read and write of the run."""
-
-    opted_out: list[DataModel]
 
     @property
     def contexts(self) -> Sequence[ModuleContextView]:
@@ -154,117 +147,8 @@ class CrossModuleRun(Protocol):
 _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
 
 
-def _has_cyclic_ancestry(model: DataModel) -> bool:
-    """Return whether the base classes of a model, however distant, inherit from one another in a cycle."""
-    walk = walk_graph(GraphSnapshot.CYCLIC_ANCESTRY, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes)
-    return walk.graph.acyclic_order((EdgeKind.BASE,)) is None
-
-
-def _redeclared_tag_field(tag_fields: AbstractSet[str], field: DataModelFieldBase) -> str | None:
-    """Return the tag field of a tagged base that a field redeclares, by its Python or its source name, or None."""
-    return redeclared_tag_field(tag_fields, name=field.name, original_name=field.original_name, alias=field.alias)
-
-
-def _structs_of_union(data_type: DataType) -> set[int]:
-    """Return the ids of the structs that a union lists, through the aliases it names."""
-    return {
-        id(source)
-        for member, _, _ in _iter_discriminator_data_types(data_type.data_types)
-        if member.reference
-        and isinstance(source := member.reference.source, DataModel)
-        and source.REQUIRES_TAGGED_UNION_DISCRIMINATOR
-    }
-
-
-def _structs_sharing_a_union(models: Iterable[DataModel]) -> set[int]:
-    """Return the ids of the structs that a union lists beside another struct, which msgspec decodes only if tagged."""
-    shared: set[int] = set()
-    for model in models:
-        for field in model.fields:
-            for data_type in field.data_type.all_data_types:
-                if data_type.is_union and len(structs := _structs_of_union(data_type)) > 1:
-                    shared |= structs
-    return shared
-
-
-def _tag_fields_of_tagged_bases(
-    models: Iterable[DataModel], builder: GraphBuilder, flatten: Callable[[DataModel], None]
-) -> list[DataModel]:
-    """Tag the structs that declare the tag field of a tagged base as a field, which msgspec rejects.
-
-    A struct inherits the tag of its base, so its single literal becomes its own tag, as for a tagged variant, and a
-    struct with any other such field opts out of the tag to keep the field. A struct whose tag field a base keeps as an
-    instance field opts out too, and its tag field is a field of its own again, as msgspec refuses a tag field that a
-    base declares; a struct that reuse made an empty subclass of that base declares the fields of its base itself
-    (``flatten``) instead and keeps its tag, as it would without reuse, where a union lists it beside another struct:
-    msgspec decodes such a union only if all its structs are tagged. Bases of other modules are tagged by then, as
-    every module is processed first, and a base is handled before the structs inheriting from it, as its own tag
-    decides theirs. Inheritance cycles are reported later.
-    Return the structs that opted out.
-    """
-    models = list(models)
-    pending = {id(model): model for model in models}
-    opted_out: list[DataModel] = []
-    sharing: set[int] | None = None
-
-    def tag_redeclared_fields(model: DataModel, bases: Sequence[DataModel]) -> None:
-        if not (tag_fields := {tag[0] for base in bases if (tag := base.discriminator_tag) is not None}):
-            return
-        tagged_fields = [
-            (field, tag_field, field_tag("legacy-literal-only", _FieldTagFacts(field)))
-            for field in model.fields
-            if not field.extras.get("is_classvar")
-            and (tag_field := _redeclared_tag_field(tag_fields, field)) is not None
-        ]
-        if len(tags := [(field, name, tag) for field, name, tag in tagged_fields if tag is not None]) != len(
-            tagged_fields
-        ):
-            model.opt_out_of_inherited_tag()
-            opted_out.append(model)
-            return
-        for field in [
-            field for field, tag_field, tag in tags if model.apply_discriminator_tag(field, tag_field, tag.value)
-        ]:
-            builder.set_field_extra(field, "is_classvar", value=True)
-
-    def untag_below_instance_field(model: DataModel) -> None:
-        nonlocal sharing
-        if (tag := model.discriminator_tag) is None or not _bases_keep_instance_field(model, tag[0]):
-            return
-        if model.reused_reference is not None:
-            if sharing is None:
-                sharing = _structs_sharing_a_union(models)
-            if id(model) in sharing:
-                flatten(model)
-                return
-        for field in model.fields:
-            if field.extras.get("is_classvar") and _redeclared_tag_field({tag[0]}, field) is not None:
-                builder.set_field_extras(
-                    field, {key: value for key, value in field.extras.items() if key != "is_classvar"}
-                )
-                if not (field.data_type.literals or field.data_type.enum_member_literals):
-                    builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
-        model.opt_out_of_inherited_tag()
-        opted_out.append(model)
-
-    def tag_fields_of(model: DataModel) -> None:
-        if pending.pop(id(model), None) is None:
-            return
-        if not model.base_classes or _has_cyclic_ancestry(model):
-            return
-        bases = _find_base_classes(model)
-        for base in bases:
-            tag_fields_of(base)
-        tag_redeclared_fields(model, bases)
-        untag_below_instance_field(model)
-
-    while pending:
-        tag_fields_of(next(iter(pending.values())))
-    return opted_out
-
-
 def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> None:
-    """Make the fields of tagged msgspec bases tags, and remember the models that opt out.
+    """Write what becomes of the msgspec structs below tagged bases (``iter_struct_tag_decisions``), and record it.
 
     The modules have bound the names of the models their fields name by then, so a struct that declares the fields
     of its bases instead names the models of each copied field from its own module, importing those of others.
@@ -298,11 +182,29 @@ def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> 
                 producer=ImportProducer("tag-fields-of-tagged-bases", model),
             )
 
-    run.opted_out = _tag_fields_of_tagged_bases(
-        _context_models(run.contexts),
-        parser._graph_builder,  # noqa: SLF001
-        flatten,
-    )
+    builder = parser._graph_builder  # noqa: SLF001
+    decisions = parser._tag_plan.struct_tags  # noqa: SLF001
+    for decision in iter_struct_tag_decisions(_context_models(run.contexts)):
+        model = decision.model
+        match decision.kind:
+            case "tagged-base":
+                for field in [
+                    field
+                    for field, tag_field, tag in decision.tags
+                    if model.apply_discriminator_tag(field, tag_field, tag.value)
+                ]:
+                    builder.set_field_extra(field, "is_classvar", value=True)
+            case "flattened":
+                flatten(model)
+            case _:
+                for field in decision.untagged:
+                    builder.set_field_extras(
+                        field, {key: value for key, value in field.extras.items() if key != "is_classvar"}
+                    )
+                    if not (field.data_type.literals or field.data_type.enum_member_literals):
+                        builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
+                model.opt_out_of_inherited_tag()
+        decisions.append(decision)
 
 
 def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:

@@ -58,6 +58,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
 from datamodel_code_generator._records import record
+from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._holders import (
@@ -83,6 +84,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
+    from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
@@ -1180,6 +1182,26 @@ class GenerationIndex:
             keys = self._recorded_reference_keys(model, model_id, view, keyed, all_dict_keys=all_dict_keys)
             additional_properties_references = model.additional_properties_reference_classes
         return keys | keyed.resolve(additional_properties_references) if additional_properties_references else keys
+
+    def reference_graph(
+        self,
+        snapshot: GraphSnapshot,
+        keyed: KeyedModels,
+        *,
+        all_dict_keys: bool = False,
+        edges: Mapping[EdgeKind, Mapping[ModelKey, Iterable[ModelKey]]] = MappingProxyType({}),
+    ) -> ReferenceGraph:
+        """Take the snapshot of the models of ``keyed`` and the references between them, with the other ``edges``.
+
+        The references of each model are those `referenced_keys_for_model` returns: edges of kind ``ANY_REFERENCE``
+        with ``all_dict_keys``, of kind ``REFERENCE`` without.
+        """
+        kind = EdgeKind.ANY_REFERENCE if all_dict_keys else EdgeKind.REFERENCE
+        references = {
+            key: self.referenced_keys_for_model(model, keyed, all_dict_keys=all_dict_keys)
+            for key, model in keyed.models.items()
+        }
+        return reference_graph(snapshot, keyed.models, {kind: references, **edges})
 
     def _recorded_reference_keys(
         self, model: DataModel, model_id: ModelId, view: _UniverseFacts, keyed: KeyedModels, *, all_dict_keys: bool

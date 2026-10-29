@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
-from datamodel_code_generator._client.plan import fact
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
+from datamodel_code_generator._target_operations import fact
+from datamodel_code_generator._target_operations import label as _label
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -33,10 +34,6 @@ class Protocols:
     operations: Mapping[OperationRef, OperationContract]
     documents: Mapping[SchemaRef, str]
     python_version: PythonVersion
-
-
-def _label(operation: OperationContract) -> str:
-    return f"{operation.method.upper()} {operation.path}"
 
 
 def _problem(

@@ -30,8 +30,10 @@ class Area(Enum):
     """Every model parsed from a JSON document has a schema location at the end of L1 (``schema_locations.py``)."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """The model graph that the generation store records keeps its invariants (``model_graph.py``). The package
-    itself still runs the checks of the area that compare an answer with the computation it replaced."""
+    """The model graph that the generation store records keeps its invariants (``model_graph.py``)."""
+
+    SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
+    """No reader writes a schema object the schema graph validated once and shares (``schema_graph.py``)."""
 
     MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
     """The imports of every module, and those all modules share, equal the replay of their import ledger when the

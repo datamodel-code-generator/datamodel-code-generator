@@ -9,13 +9,14 @@ from datamodel_code_generator._api_generation import TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, DocumentationAnnotationWarning
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
-from datamodel_code_generator._fastapi.plan import PlanError, Planner, invalid_links
+from datamodel_code_generator._fastapi.plan import Planner, invalid_links
 from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.source_document import SourceDocument
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator._target_module import TypeNames
+from datamodel_code_generator._target_operations import PlanError
 from datamodel_code_generator._target_render import model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 

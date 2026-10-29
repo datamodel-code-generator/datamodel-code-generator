@@ -26,7 +26,7 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, cached_path_exists
-from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
+from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
@@ -57,6 +57,11 @@ from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     classify_assignment,
     participates_in_constructor,
+)
+from datamodel_code_generator.model._decisions.hashability import (
+    HashClassFacts,
+    dict_key_takes_root_type,
+    keeps_builtin_hash,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
@@ -91,6 +96,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._constraint_applicability import RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -828,33 +834,30 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             ),
         )
 
-    @property
-    def _can_apply_constraints(self) -> bool:
-        """Apply constraints to containers without suppressing recursive item types."""
-        return self._constraints_blocked_by() is None
+    def _constraints_blocked_by(self, *, anyurl_outside_container: bool = False) -> RenderDrop | None:
+        """Return why the field's call cannot write its constraints, or None when it can (``render_drop``)."""
+        return render_drop(
+            self_reference_outside_container=self.self_reference() and self._self_reference_outside_container(),
+            strict_arguments=bool(self.data_type.strict and self.data_type.kwargs),
+            anyurl_outside_container=anyurl_outside_container,
+        )
 
-    def _constraints_blocked_by(self) -> Literal["self-reference-container", "strict-kwargs"] | None:
-        """Return why the field's call cannot write its constraints, or None when it can.
-
-        A field naming its own model outside a container takes none; a strict type with arguments writes them itself.
-        """
-        if self.self_reference():
-            data_type = self.data_type
-            while True:
-                if (
-                    data_type.is_list  # noqa: PLR0916
-                    or data_type.is_sequence
-                    or data_type.is_dict
-                    or data_type.is_mapping
-                    or data_type.is_set
-                    or data_type.is_frozen_set
-                    or data_type.is_tuple
-                ):
-                    break
-                if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
-                    return "self-reference-container"
-                data_type = data_type.data_types[0]
-        return "strict-kwargs" if self.data_type.strict and self.data_type.kwargs else None
+    def _self_reference_outside_container(self) -> bool:
+        """Return whether the field's type names its model outside a container, through single-member wrappers."""
+        data_type = self.data_type
+        while not (
+            data_type.is_list
+            or data_type.is_sequence
+            or data_type.is_dict
+            or data_type.is_mapping
+            or data_type.is_set
+            or data_type.is_frozen_set
+            or data_type.is_tuple
+        ):
+            if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
+                return True
+            data_type = data_type.data_types[0]
+        return False
 
     @property
     def _use_union_operator(self) -> bool:
@@ -2585,6 +2588,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the output checks a constraint written on an alias whose type sets the same one (msgspec raises)."""
     _CHECKS_CONSTRAINTS: ClassVar[bool] = False
     """Whether the output checks the constraints of a value (bounds, lengths, patterns) when it reads data."""
+    _FIELD_VALUE_HASHES: ClassVar[Callable[[DataModelFieldBase], bool] | None] = None
+    """Whether the values the output validates for a field hash as builtin values (``field_value_hashes``), where a
+    set item model of a parse whose models the class writes may keep its builtin hash; None where none may."""
+    _DICT_KEYS_TAKE_ROOT_TYPE: ClassVar[bool] = False
+    """Whether a dict key that names a model of the class may take its root type (hashability): the class wraps one
+    root value, and its instances can be dict keys only when frozen."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -3526,19 +3535,36 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _decide_config_items(self) -> None:
         """Decide the config items the class writes, once every fact they read is final; the neutral model has none."""
 
-    @classmethod
-    def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: ARG003
-        """Return models whose backend hash can replace the legacy set-item hash."""
-        return set()
-
     def enable_identity_hash(self) -> None:
         """Retain the legacy identity hash for a set item without a usable native hash."""
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
 
+    def _hash_class_facts(self) -> HashClassFacts:
+        """Read the facts of the class that hashability reads; only a backend's own class keeps a builtin hash."""
+        return HashClassFacts(
+            custom_base_class=bool(self.custom_base_class),
+            user_class_code=bool(
+                self.methods
+                or self.decorators
+                or self.extra_template_data.get("validators")
+                or self.extra_template_data.get("class_body_lines")
+            ),
+            custom_template_dir=(directory := self._custom_template_dir) is not None
+            and directory.resolve() != TEMPLATE_DIR.resolve(),
+        )
+
     @property
     def _keys_take_root_type(self) -> bool:
-        """Whether a dict key that names the model takes its root type instead."""
-        return False
+        """Whether a dict key that names the model takes its root type instead (``dict_key_takes_root_type``)."""
+        if not self._DICT_KEYS_TAKE_ROOT_TYPE:
+            return False
+        chain = _hash_chain(GraphSnapshot.DICT_KEY_ROOT_TYPES, (self,))[0]
+        return dict_key_takes_root_type(
+            chain=chain,
+            generated_checks=bool(self._internal_template_data.get("class_body_lines"))
+            or self.has_runtime_object_validation,
+            custom_root_template=chain[0].custom_template_dir and self._uses_custom_root_template,
+        )
 
     @property
     def schema_runtime_validation(self) -> _runtime_validation.SchemaRuntimeValidation | None:
@@ -3778,6 +3804,34 @@ def _model_ancestor_keys(model: DataModel, stand_ins: Mapping[int, Reference | N
     """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
     walk = _base_walk(GraphSnapshot.ANCESTORS, (model,), stand_ins)
     return walk.graph.reached(walk.starts[0], (EdgeKind.BASE,))
+
+
+def _hash_chain(snapshot: GraphSnapshot, models: Sequence[DataModel]) -> list[list[HashClassFacts]]:
+    """Return the hash facts of the chain of each of ``models``: the model and the generated models it inherits from.
+
+    The chain is in the order a walk of the reference graph over bases meets them, each model once.
+    """
+    walk = _base_walk(snapshot, models)
+    facts = {key: model._hash_class_facts() for key, model in walk.node_of.items()}  # noqa: SLF001
+    return [[facts[key] for key in walk.graph.preorder(start, EdgeKind.BASE)] for start in walk.starts]
+
+
+def set_item_models_keeping_builtin_hash(
+    models: Sequence[DataModel], field_value_hashes: Callable[[DataModelFieldBase], bool]
+) -> set[ModelKey]:
+    """Return the model keys of the set item ``models`` that keep the builtin hash of their class.
+
+    The others hash by identity (``keeps_builtin_hash``). ``field_value_hashes`` is the backend's
+    ``DataModel._FIELD_VALUE_HASHES``.
+    """
+    return {
+        model_key_of(model.reference)
+        for model, chain in zip(models, _hash_chain(GraphSnapshot.SET_ITEM_HASH, models), strict=True)
+        if keeps_builtin_hash(
+            chain=chain,
+            field_values=(field_value_hashes(field) for field in get_effective_fields(model) if not field.is_class_var),
+        )
+    }
 
 
 def _model_key_of_model(model: DataModel) -> ModelKey:

@@ -97,8 +97,7 @@ CHECK_AREA_ENVS = (
     CHECK_RENDER_MEMOS_ENV,
     CHECK_FACT_FINALITY_ENV,
 )
-"""The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`, `Area` in
-`tests/checks/areas.py`) set to `1`."""
+"""The variable of every debug check area (`Area` in `tests/checks/areas.py`) set to `1`."""
 CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
 SWEEP_PYTHON = (3, 15)
 """The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""

@@ -25,5 +25,4 @@ _target_config.py: target
 _requirements.py: requirements
 _constraint_applicability.py: constraints
 _regex_syntax.py: regex
-_checks.py: checks
 types.py: shared

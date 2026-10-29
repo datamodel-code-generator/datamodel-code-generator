@@ -11,7 +11,6 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import dataclass
 from functools import cache
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
@@ -24,6 +23,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
+from datamodel_code_generator._user_keys import type_override_classes
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
@@ -992,7 +992,7 @@ class _ReuseOptimizationContext:
         if not type_overrides:
             return cls()
 
-        return cls(frozenset(override_key.partition(".")[0] for override_key in type_overrides))
+        return cls(type_override_classes(type_overrides))
 
     @property
     def constrains(self) -> bool:
@@ -1742,36 +1742,6 @@ def _keeps_instance_field(field: DataModelFieldBase, source_name: str) -> bool:
         original_name=field.original_name,
         alias=field.alias,
     )
-
-
-def _bases_keep_instance_field(model: DataModel, source_name: str) -> bool:
-    """Return whether a base of a model, or a base of that, keeps an instance field that the document names so."""
-    return any(
-        _keeps_instance_field(field, source_name)
-        for base_model in _find_base_classes(model)
-        for field in base_model.iter_all_fields()
-    )
-
-
-@dataclass(slots=True)
-class _VariantDiscriminatorTags:
-    """The tags a variant keeps from the first union that tagged it, and the other tags unions map it to."""
-
-    variant: DataModel
-    property_name: str
-    kept: list[DiscriminatorValue]
-    owner: str
-    others: dict[str, list[DiscriminatorValue]]
-
-    def warning_messages(self) -> Iterator[str]:
-        """Describe the tags that the generated variant cannot carry."""
-        if self.others:
-            name = self.variant.class_name
-            unions = ", ".join(f"{union} ({_format_tags(tags)})" for union, tags in self.others.items())
-            yield (
-                f"{name} is a variant of discriminated unions that map {self.property_name!r} to different tags: "
-                f"it keeps {_format_tags(self.kept)} from {self.owner}, so these unions cannot decode it: {unions}."
-            )
 
 
 def _format_tags(tags: list[DiscriminatorValue]) -> str:

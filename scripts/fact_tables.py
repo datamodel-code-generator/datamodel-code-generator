@@ -1033,9 +1033,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "Reference", "SCHEMA_LOCATION_CONFLICT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
-        "Reference", "SCHEMA_OWNER_FRAMES_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
         "Reference", "_DERIVED_FROM_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
@@ -1051,8 +1048,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         store_ops=("register_model",),
         access=Access.CONTAINER,
     ),
-    AttributeFact("Parser", "_reuse_union_tags", FactKind.FACT, (RenderFact.PLANS,), Phase.STRUCTURE, FreezePoint.B1),
+    AttributeFact("Parser", "_tag_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.CROSS_MODULE, FreezePoint.B1),
     AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact("Parser", "_reuse_groups", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
     AttributeFact(
         "ModuleContext",
         "models",

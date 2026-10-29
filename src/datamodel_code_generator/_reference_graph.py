@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from enum import Enum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Generic, TypeVar, final
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar, final
 
-from typing_extensions import NamedTuple
+from typing_extensions import NamedTuple, Self
 
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
@@ -21,10 +21,18 @@ from datamodel_code_generator._scc import find_circular_sccs, strongly_connected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._model_keys import ModelKey
 
-_GroupT = TypeVar("_GroupT", bound="Hashable")
+    class _Group(Hashable, Protocol):
+        """A group of models that sorts, so that the components and orders of a `GroupGraph` are deterministic."""
+
+        def __lt__(self, other: Self, /) -> bool:
+            """Return whether the group sorts before ``other``."""
+
+
+_GroupT = TypeVar("_GroupT", bound="_Group")
 _NodeT = TypeVar("_NodeT")
 
 
@@ -41,6 +49,9 @@ class EdgeKind(Enum):
     """The references that the mapping-key annotations of a root model reach."""
     CONTAINER_ITEM = "container-item"
     """The aliases that an alias references as a container item."""
+    ALIAS = "alias"
+    """The type alias that a type alias writes as its whole value, by nothing but its name; a root model whose root
+    names the model itself names itself."""
     RULE_TYPE = "rule-type"
     """The other models that the schema validator rules of a model name, which its class body evaluates."""
     CLASS_BODY = "class-body"
@@ -72,6 +83,10 @@ class GraphSnapshot(Enum):
     """L5, per module: the aliases on a cycle of container items."""
     NESTED_MODEL_DEFAULT_FACTORIES = "nested model default factories"
     """L6: the models on a reference cycle, whose default factories recurse."""
+    TAGGED_BASES = "tagged bases"
+    """L6: the msgspec structs below tagged bases, each after the bases among the processed models it inherits from."""
+    ALIAS_LOOPS = "alias loops"
+    """IMPORTS: the type aliases of a ``$ref`` chain that loops back without reaching a schema."""
     INHERITED_FIELDS = "inherited fields"
     """On demand: the models whose fields a model inherits, each once, bases first."""
     ANCESTORS = "ancestors"
@@ -88,6 +103,12 @@ class GraphSnapshot(Enum):
     """On demand: whether a root model or a root model its root type names constrains its root field."""
     MAPPING_DEFAULTS = "mapping defaults"
     """On demand: whether the mapping defaults of a dataclass materialize a model of one path twice."""
+    SET_ITEM_HASH = "set item hash"
+    """L6: the set item models and the generated models they inherit from, whose classes decide which set item models
+    keep their builtin hash."""
+    DICT_KEY_ROOT_TYPES = "dict key root types"
+    """On demand: a root model that a dict key names and the generated models it inherits from, whose configuration
+    decides whether its instances can be dict keys."""
 
 
 _NO_KEYS: frozenset[ModelKey] = frozenset()
@@ -186,27 +207,38 @@ class ReferenceGraph:
             later_groups.update(dict.fromkeys(component, frozen_groups))
         return any(group_of(key) in later_groups[key] for key in keys)
 
-    def _adjacency(self, kinds: Collection[EdgeKind]) -> dict[ModelKey, frozenset[ModelKey]]:
-        return {key: self.targets(key, kinds) for key in self.nodes}
+    def _adjacency(self, kinds: Collection[EdgeKind]) -> GroupGraph[ModelKey]:
+        return GroupGraph({key: self.targets(key, kinds) for key in self.nodes})
 
     def components(self, kinds: Collection[EdgeKind]) -> list[set[ModelKey]]:
         """Return every strongly connected component over edges of ``kinds``, leaves first."""
-        return strongly_connected_components(self._adjacency(kinds))
+        return self._adjacency(kinds).components()
 
     def circular_components(self, kinds: Collection[EdgeKind]) -> list[set[ModelKey]]:
         """Return the components on a cycle over edges of ``kinds``, sorted by their smallest key."""
-        return find_circular_sccs(self._adjacency(kinds))
+        return self._adjacency(kinds).circular_components()
 
-    def quotient(
-        self, group_of: Mapping[ModelKey, _GroupT], kinds: Collection[EdgeKind]
-    ) -> dict[_GroupT, set[_GroupT]]:
+    def loops(self, kind: EdgeKind) -> dict[ModelKey, tuple[ModelKey, ...]]:
+        """Map each model on a cycle of edges of ``kind`` to the cycle, starting at the model.
+
+        Each model points at one model at most through edges of ``kind``, so each cycle is one component.
+        """
+        loops: dict[ModelKey, tuple[ModelKey, ...]] = {}
+        for component in self.circular_components((kind,)):
+            cycle = [key := min(component)]
+            while (key := self.ordered_targets(key, kind)[0]) != cycle[0]:
+                cycle.append(key)
+            loops.update((member, (*cycle[index:], *cycle[:index])) for index, member in enumerate(cycle))
+        return loops
+
+    def quotient(self, group_of: Mapping[ModelKey, _GroupT], kinds: Collection[EdgeKind]) -> GroupGraph[_GroupT]:
         """Return the edges of ``kinds`` between the groups of ``group_of``, one entry per group, no self-edges."""
         graph: dict[_GroupT, set[_GroupT]] = {group: set() for group in group_of.values()}
         for key, group in group_of.items():
             graph[group].update(
                 target for target in map(group_of.__getitem__, self.targets(key, kinds)) if target != group
             )
-        return graph
+        return GroupGraph(graph)
 
     def dependency_order(
         self, kinds: Collection[EdgeKind], nodes: Sequence[ModelKey], key: Callable[[ModelKey], int]
@@ -218,6 +250,34 @@ class ReferenceGraph:
             for target in self.targets(node, kinds) & among:
                 dependents[target].add(node)
         return stable_toposort(list(nodes), dependents, key=key)
+
+
+@final
+@record(eq=False)
+class GroupGraph(Generic[_GroupT]):
+    """The edges between groups of models, such as the modules of a quotient (`ReferenceGraph.quotient`).
+
+    A graph derived from a quotient, such as the imports of the modules and packages that a merge writes, is one too.
+    """
+
+    edges: Mapping[_GroupT, AbstractSet[_GroupT]]
+    """The targets of each group, one entry per group."""
+
+    def components(self) -> list[set[_GroupT]]:
+        """Return every strongly connected component, leaves first."""
+        return strongly_connected_components(self.edges)
+
+    def circular_components(self) -> list[set[_GroupT]]:
+        """Return the components on a cycle, sorted by their smallest group."""
+        return find_circular_sccs(self.edges)
+
+    def dependency_order(self, key: Callable[[_GroupT], int]) -> list[_GroupT]:
+        """Return the groups with the targets of each first (`stable_toposort`, ties broken by ``key``)."""
+        dependents: dict[_GroupT, set[_GroupT]] = {group: set() for group in self.edges}
+        for group, targets in self.edges.items():
+            for target in targets:
+                dependents[target].add(group)
+        return stable_toposort(list(self.edges), dependents, key=key)
 
 
 def reference_graph(

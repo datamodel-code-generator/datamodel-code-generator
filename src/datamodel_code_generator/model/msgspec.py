@@ -144,16 +144,6 @@ def _admits_integers_of(constraints: tuple[tuple[str, Any], ...], other: tuple[t
     )
 
 
-def _is_exact_float_divisor(value: Any) -> bool:
-    """Return whether a float represents a divisor exactly as a dyadic rational, so msgspec checks multiples exactly.
-
-    msgspec checks `multiple_of` on a float by its floating-point remainder, which rejects multiples of a divisor
-    such as 0.01 that a float only approximates.
-    """
-    divisor = Fraction(str(value))
-    return not divisor.denominator & (divisor.denominator - 1) and Fraction(float(value)) == divisor
-
-
 _PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
 _ANNOTATED = Why(RuleId("D11.annotation.annotated"), option="--use-annotated")
 _CLASS_VAR = Why(RuleId("D7.tag.class-var"), keyword="discriminator")
@@ -1384,8 +1374,7 @@ class DataModelField(DataModelFieldBase):
     def _dropped_meta_keywords(self, data: dict[str, Any]) -> tuple[frozenset[str], bool]:
         """Return the constraints msgspec.Meta does not take on the type, and whether a float multiple_of is inexact.
 
-        msgspec checks `multiple_of` on a float by its floating-point remainder, so a divisor a float only
-        approximates, such as 0.01, rejects its own multiples.
+        msgspec checks `multiple_of` on a float inexactly (``_applicability.inexact_float_divisor``).
         """
         if not (
             constrained := {k for k, v in data.items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS}
@@ -1395,7 +1384,7 @@ class DataModelField(DataModelFieldBase):
         inexact = (
             "multiple_of" in constrained - untaken
             and self._has_numeric_data_type("float")
-            and not _is_exact_float_divisor(data["multiple_of"])
+            and _applicability.inexact_float_divisor(data["multiple_of"])
         )
         return untaken, inexact
 
@@ -1408,12 +1397,17 @@ class DataModelField(DataModelFieldBase):
         """
         if not _is_value_literal(base := self._annotated_base_data_type()):
             return frozenset()
-        checks = {
-            meta: _applicability.literal_check(base.literals, {schema: data[meta]})
-            for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items()
-            if schema in _applicability.LITERAL_DECIDABLE_KEYWORDS and data.get(meta) is not None
-        }
-        return frozenset(meta for meta, (decided, met) in checks.items() if decided and (all(met) or not any(met)))
+        return _applicability.meta_keywords(
+            _applicability.literal_met_keywords(
+                base.literals,
+                {
+                    schema: data[meta]
+                    for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items()
+                    if schema in _applicability.LITERAL_DECIDABLE_KEYWORDS and data.get(meta) is not None
+                },
+                unmet_too=True,
+            )
+        )
 
     def _union_leaves(
         self,

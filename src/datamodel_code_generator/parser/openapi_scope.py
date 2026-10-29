@@ -25,7 +25,6 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
-from datamodel_code_generator.parser._schema_graph import RefOrigin
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -357,7 +356,6 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
-        self._check_ref_target("_reference_target", ref, self._raw_location(raw))
         return _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
@@ -519,9 +517,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             for parent in refs:
                 resolved = self._ref_path(parent)
                 if resolved in self._discriminator_schemas or resolved.partition("#")[0] != document[:-1]:
-                    self._discriminator_subtypes[resolved].append(
-                        self._schema_key(schema, child, "allOf", RefOrigin.DISCRIMINATOR_SUBTYPE)
-                    )
+                    self._discriminator_subtypes[resolved].append(self._schema_key(schema, child, "allOf"))
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
@@ -582,9 +578,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         # The existing media helper owns this fresh projection, not the source mapping.
         array_schema = _mapping(projected, path)
         item_ref = "#" + pointer_fragment(declaration.tokens)
-        array_schema["items"] = {
-            "$ref": self._derived_ref(item_ref, declaration, "itemSchema", item_ref, RefOrigin.ITEM_SCHEMA)
-        }
+        array_schema["items"] = {"$ref": self._derived_ref(item_ref, declaration, "itemSchema", item_ref)}
         projected_path = self._media_schema_path(path, from_item_schema=True)
         with self._schema_frame(
             name,

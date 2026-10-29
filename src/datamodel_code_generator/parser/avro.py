@@ -19,8 +19,10 @@ from datamodel_code_generator._avro_detection import (
     is_avro_schema_data as _is_avro_schema_data,
 )
 from datamodel_code_generator._source import YamlValue, load_yaml
+from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
 if TYPE_CHECKING:
@@ -43,7 +45,7 @@ _PHYSICAL_DEFAULT_OVERRIDES = frozenset({
 })
 
 STRING_SCHEMA: JsonSchema = {"type": "string"}
-NULL_SCHEMA: JsonSchema = {"type": "null"}
+NULL_SCHEMA: JsonSchema = null_schema()
 BOOLEAN_SCHEMA: JsonSchema = {"type": "boolean"}
 BYTES_SCHEMA: JsonSchema = {"type": "string", "format": "binary"}
 
@@ -851,7 +853,7 @@ class AvroParser(JsonSchemaParser):
                         candidate = defaults.get(field.original_name or "")
                         if (
                             candidate is None
-                            or f"{model.class_name}.{field.name}" in self._type_override_imports
+                            or class_field_key(model.class_name, field.name) in self._type_override_imports
                             or field.data_type.import_ in self._model_type_override_imports.values()
                         ):
                             continue
@@ -913,7 +915,7 @@ class AvroParser(JsonSchemaParser):
                 field["name"], excludes=excludes, model_type=self.field_name_model_type, class_name=class_name
             )
             excludes.add(field_name)
-            if override := self._type_override_imports.get(f"{class_name}.{field_name}"):
+            if override := self._type_override_imports.get(class_field_key(class_name, field_name)):
                 overrides[field["name"]] = override
         return overrides
 

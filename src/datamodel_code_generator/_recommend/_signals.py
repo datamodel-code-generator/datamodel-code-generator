@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
 
+from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._json_schema import SCHEMA_VALUE_SHAPES, schema_positions
 
 if TYPE_CHECKING:
@@ -86,8 +87,7 @@ SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
 
 _HTTP_METHODS = frozenset({"get", "put", "post", "delete", "patch", "head", "options", "trace"})
 _SCHEMA_MAP_KEYWORDS = schema_positions("applicator", shapes=("map",), without=("dependencies",))
-_ZERO_BOUND_KEYWORDS = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
-_LITERAL_CHECKED_KEYWORDS = frozenset({*_ZERO_BOUND_KEYWORDS, "multipleOf", "minLength", "maxLength"})
+_LITERAL_CHECKED_KEYWORDS = NUMBER_KEYWORDS | LENGTH_KEYWORDS
 _SUBSCHEMA_KEYWORDS = schema_positions("applicator", shapes=SCHEMA_VALUE_SHAPES, without=("extends",))
 _SHAPE_IGNORED_KEYWORDS = frozenset({"description", "title", "example", "examples", "$comment"})
 _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "description", "title", "$comment"})
@@ -138,7 +138,7 @@ def _redundant_constraint(node: Mapping[str, Any], *, at_property: bool) -> bool
         return True
     zero_bounds = [
         key
-        for key in _ZERO_BOUND_KEYWORDS
+        for key in NUMBER_BOUND_KEYWORDS
         if isinstance(value := node.get(key), int | float) and not isinstance(value, bool) and value == 0
     ]
     return len(zero_bounds) == 1 and (not at_property or "null" in _types(node) or node.get("nullable") is True)

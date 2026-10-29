@@ -322,15 +322,10 @@ for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENE
 Any other value fails the run. A parse reads every variable once, at its start, and its code reports a violation
 through the mode of the area.
 
-The areas of `tests/checks` (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the
-package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
+The areas (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
 starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in the test process and, through the
 `sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
 same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
-`MODEL_GRAPH` and `SCHEMA_GRAPH` still run partly inside the package, which keeps the comparisons of an answer with the
-computation it replaced: `Parser.parse` reads them with `read_check_flags` (`src/datamodel_code_generator/_checks.py`),
-and the code it runs asks `check_mode(area)`; the invariants of the model graph and the shared-schema check at the end
-of L1 run in `tests/checks`.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
@@ -354,8 +349,8 @@ and fails the test for a write of the package that the allowlist does not list.
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
 | `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan (`tests/checks/module_imports.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
-| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
-| `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
+| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, every model parsed from a JSON document has an owner or is a root at the end of L1, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
+| `SCHEMA_GRAPH` | no reader writes a schema object the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |

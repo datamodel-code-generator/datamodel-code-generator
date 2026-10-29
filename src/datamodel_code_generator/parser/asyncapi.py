@@ -20,7 +20,6 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AsyncAPIVersion
-from datamodel_code_generator.parser._schema_graph import RefOrigin
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
@@ -485,9 +484,7 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> AsyncAPIResolvedRef | None:
         if not isinstance(value, dict) or not isinstance(ref := value.get("$ref"), str):
             return None
-        resolved = self._resolve_asyncapi_ref(
-            self._derived_ref(ref, self._raw_location(value), "$ref", ref, RefOrigin.KEYWORD)
-        )
+        resolved = self._resolve_asyncapi_ref(self._derived_ref(ref, self._raw_location(value), "$ref", ref))
         return None if tuple(resolved.path) in seen_paths else resolved
 
     def _recurse_into_ref(
@@ -538,7 +535,6 @@ class AsyncAPIParser(OpenAPIParser):
         if not path_pointer:
             return AsyncAPIResolvedRef(raw_doc, [*root_parts, "#/"], context)
         target = get_model_by_path(raw_doc, pointer)
-        self._check_ref_target("_resolve_asyncapi_ref", ref, self._raw_location(target))
         return AsyncAPIResolvedRef(target, [*root_parts, f"#/{path_pointer[0]}", *path_pointer[1:]], context)
 
     def _iter_message_payload_schemas(

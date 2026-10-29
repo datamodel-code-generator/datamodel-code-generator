@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import Diagnostic, OperationRef
+from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._fastapi.naming import file_stem_conflict
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
@@ -55,10 +55,28 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralSequence,
     LiteralType,
-    SourceLocation,
     UnionType,
 )
-from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
+from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_operations import (
+    BODYLESS_STATUSES,
+    LOCATIONS,
+    SERVER,
+    PlanError,
+    alias,
+    argument_names,
+    declared_by,
+    derived_name,
+    fact,
+    first_use,
+    label,
+    local,
+    operation_literal,
+    placeholder_problems,
+    resolve_settings,
+    type_names,
+    type_uses,
+)
 from datamodel_code_generator._target_types import present, takes_null
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
@@ -87,6 +105,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_module import TypeNames
 
+_problem: Final = SERVER.problem
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
 ]
@@ -99,17 +118,9 @@ ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
 
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
-BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _JSON: Final = "application/json"
 _PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
 _TEXT: Final = FieldPlan("")
-_LOCATIONS: Final[dict[object, ParameterLocation]] = {
-    "path": "path",
-    "query": "query",
-    "querystring": "querystring",
-    "header": "header",
-    "cookie": "cookie",
-}
 _STYLES: Final[dict[str, frozenset[str]]] = {
     "path": frozenset({"simple"}),
     "query": frozenset({"form"}),
@@ -416,35 +427,6 @@ class ServerPlan:
     info: tuple[tuple[str, JSONValue], ...]
 
 
-class PlanError(Exception):
-    """Report every failure of one planning phase."""
-
-    def __init__(self, diagnostics: list[Diagnostic]) -> None:
-        """Keep the ordered diagnostics."""
-        super().__init__(diagnostics[0].message)
-        self.diagnostics = tuple(diagnostics)
-
-
-def fact(declaration: WireDeclaration, name: str) -> object:
-    """Return one scalar wire fact of a declaration."""
-    return next(
-        (value.value for key, value in declaration.facts if key == name and isinstance(value, LiteralScalar)), None
-    )
-
-
-def _problem(
-    code: str, message: str, source: SourceLocation | None = None, option_path: str | None = None
-) -> Diagnostic:
-    return Diagnostic(
-        code=code,
-        severity="error",
-        stage="config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
-        message=message,
-        source_pointer=None if source is None else source.pointer,
-        option_path=option_path,
-    )
-
-
 def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnostic | None:
     """Return the problem of a declaration whose reference reaches no object, or whose document does not load."""
     if (item := next((item for item in declaration.references if item.state != "resolved"), None)) is None:
@@ -479,14 +461,6 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
             elif (message := _link_operation_problem(link)) is not None:
                 problems.append(_problem("F_LINK_INVALID", message, link.use_site))
     return tuple(problems)
-
-
-def _label(operation: OperationContract) -> str:
-    return f"{operation.method.upper()} {operation.path}"
-
-
-def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
-    return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
 def _json_type(encoding: WireDeclaration) -> bool:
@@ -668,34 +642,20 @@ class Planner:  # noqa: PLR0904
 
     def selected(self, option: str, values: Mapping[OperationSelector, SettingT]) -> dict[str, SettingT]:
         """Resolve the operation selectors of one per-operation setting to operation keys."""
-        resolved: dict[str, SettingT] = {}
-        for selector, value in values.items():
-            reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
-            if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
-
-                named = named_document(reference.document, reference.document)
-                message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
-                self.problems.append(_problem("E_OPERATION_REF", message, option_path=option))
-            elif (key := operation.id.use_site.pointer) in resolved:
-                message = f"The {option} setting names {key!r} twice"
-                self.problems.append(_problem("E_CONFIG_VALUE", message, option_path=option))
-            else:
-                resolved[key] = value
-        return resolved
+        entries = ((f"{option} entry", option, selector, value) for selector, value in values.items())
+        return resolve_settings(SERVER, self.request, entries, self.problems)
 
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
         names = self.operation_names(operations)
         self.raise_problems()
-        pascals = self.target_names.claim(
-            NameScope(),
-            [
-                (self.target_names.pascal(name), _local(operation), (self.target_names.pascal(group),))
+        pascals = type_names(
+            self.target_names,
+            (
+                (name, operation, (self.target_names.pascal(group),))
                 for operation, name, group in zip(operations, names, map(self.group_name, operations), strict=True)
-            ],
-            camel=True,
+            ),
         )
         specs = tuple(starmap(self.operation, zip(operations, names, pascals, strict=True)))
         self.check_routes(specs)
@@ -726,21 +686,14 @@ class Planner:  # noqa: PLR0904
             if count > 1
         )
         derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
-        bases = [
-            self.target_names.function(
-                operation_basis(
-                    operation.method, operation.path, operation.operation_id, self.target_names.python_version
-                )
-            )
-            for operation in derived
-        ]
+        bases = [derived_name(self.target_names, operation) for operation in derived]
         claimed = dict(
             zip(
                 (operation.id for operation in derived),
                 self.target_names.claim(
                     NameScope(explicit),
                     [
-                        (base, _local(operation), (self.group_name(operation),))
+                        (base, local(operation), (self.group_name(operation),))
                         for operation, base in zip(derived, bases, strict=True)
                     ],
                 ),
@@ -771,7 +724,7 @@ class Planner:  # noqa: PLR0904
         derived = [key for key in members if key not in self.config.router_names]
         bases = [self.target_names.function(group_basis(key)) for key in derived]
         claimed = self.target_names.claim(
-            scope, [(base, _local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
+            scope, [(base, local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
         )
         stems = {
             key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
@@ -787,7 +740,7 @@ class Planner:  # noqa: PLR0904
                 named,
                 self.target_names.claim(
                     NameScope(),
-                    [(self.target_names.pascal(stems[key]), _local(members[key][0].contract), ()) for key in named],
+                    [(self.target_names.pascal(stems[key]), local(members[key][0].contract), ()) for key in named],
                     camel=True,
                 ),
                 strict=True,
@@ -817,7 +770,7 @@ class Planner:  # noqa: PLR0904
                 if other.written() == spec.route.written()
                 else "how its path text is percent-encoded"
             )
-            message = f"{_label(spec.contract)} differs from another route only by {reason}"
+            message = f"{label(spec.contract)} differs from another route only by {reason}"
             self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
 
     def operation(self, operation: OperationContract, name: str, pascal: str) -> OperationSpec:
@@ -831,23 +784,7 @@ class Planner:  # noqa: PLR0904
         repeated = {placeholder for placeholder, count in Counter(names).items() if count > 1}
         parameters = tuple(self.parameter(operation, declaration, repeated) for declaration in operation.parameters)
         declared = {parameter.wire_name for parameter in parameters if parameter.location == "path"}
-        self.problems.extend(
-            _problem(
-                "F_ROUTE_INVALID", f"The path placeholder {placeholder!r} has no path parameter", operation.id.use_site
-            )
-            for placeholder in dict.fromkeys(names)
-            if placeholder not in declared
-        )
-        template = path_placeholders(operation.path)
-        self.problems.extend(
-            _problem(
-                "F_ROUTE_INVALID",
-                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
-                declaration.use_site,
-            )
-            for declaration in operation.parameters
-            if fact(declaration, "in") == "path" and declaration.name not in template
-        )
+        self.problems.extend(placeholder_problems(SERVER, operation, names, declared))
         body = None if operation.request_body is None else self.body(operation, operation.request_body)
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
@@ -875,9 +812,9 @@ class Planner:  # noqa: PLR0904
 
     def security(self, operation: OperationContract) -> SecuritySpec | None:
         """Return the operation's effective security alternatives, or None when none of them names a scheme."""
-        value = next((value for key, value in operation.facts if key == "security"), None)
+        value = operation_literal(operation, "security")
         if (requirements := _requirements(value)) is None:
-            message = f"The security of {_label(operation)} is not a list of security requirement objects"
+            message = f"The security of {label(operation)} is not a list of security requirement objects"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
             return None
         if not any(requirements):
@@ -891,7 +828,7 @@ class Planner:  # noqa: PLR0904
         if name in self.schemes:
             return
         if (declaration := self.scheme_declarations.get((operation.id.use_site.document, name))) is None:
-            message = f"{_label(operation)} requires the undeclared security scheme {name!r}"
+            message = f"{label(operation)} requires the undeclared security scheme {name!r}"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
         elif (unresolved := _unresolved("F_SECURITY_INVALID", "security scheme", declaration)) is not None:
             self.problems.append(unresolved)
@@ -943,7 +880,7 @@ class Planner:  # noqa: PLR0904
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
         """Return the first type use of a declaration, reporting a type no generated module can import."""
-        use = next((self.uses[use] for use in uses if use in self.uses), None)
+        use = first_use(self.uses, uses)
         if (
             use is not None
             and use.type is not None
@@ -982,14 +919,14 @@ class Planner:  # noqa: PLR0904
         self, operation: OperationContract, declaration: WireDeclaration, repeated: set[str]
     ) -> ParameterSpec:
         """Decide how the server receives one effective parameter: natively when FastAPI reads its style and type."""
-        location = _LOCATIONS[fact(declaration, "in")]
+        location = LOCATIONS[fact(declaration, "in")]
         name = declaration.name or ""
-        use = self.bound(self.use(_uses(declaration)))
+        use = self.bound(self.use(type_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)
         if plan is not None and plan.content_media_type is None and use is not None and self.strict_bytes(use.type):
             message = (
-                f"The {location} parameter {name!r} of {_label(operation)} is strict bytes, which rejects the text "
+                f"The {location} parameter {name!r} of {label(operation)} is strict bytes, which rejects the text "
                 "a parameter carries"
             )
             self.problems.append(_problem("F_PARAMETER_UNSUPPORTED", message, declaration.use_site))
@@ -1008,7 +945,7 @@ class Planner:  # noqa: PLR0904
             decision=Decision(transport="adapter"),
             type=value,
             default=Default.ABSENT if required else default,
-            local=declaration.declaration.location.document == operation.id.use_site.document,
+            local=declared_by(declaration, operation),
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
             return spec
@@ -1238,7 +1175,7 @@ class Planner:  # noqa: PLR0904
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
-                f"{_label(operation)} needs body_mode='request' for {encoding}{item.media_type}",
+                f"{label(operation)} needs body_mode='request' for {encoding}{item.media_type}",
                 item.declaration.use_site,
             )
             for item in media
@@ -1251,7 +1188,7 @@ class Planner:  # noqa: PLR0904
         """
         media_type, problem = declared_media(declaration.name or "")
         if problem is not None:
-            message = f"The media type {declaration.name!r} of {_label(operation)} {problem}"
+            message = f"The media type {declaration.name!r} of {label(operation)} {problem}"
             self.problems.append(_problem("F_MEDIA_UNSUPPORTED", message, declaration.use_site))
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
@@ -1429,7 +1366,7 @@ class Planner:  # noqa: PLR0904
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
-                f"No builtin encoder sends the {item.media_type} response of {_label(operation)}",
+                f"No builtin encoder sends the {item.media_type} response of {label(operation)}",
                 item.declaration.use_site,
             )
             for item in media
@@ -1485,7 +1422,7 @@ class Planner:  # noqa: PLR0904
             self.problems.append(
                 _problem(
                     "E_CONFIG_VALUE",
-                    f"The primary response chosen for {_label(operation)} is not declared",
+                    f"The primary response chosen for {label(operation)} is not declared",
                     operation.id.use_site,
                     "primary_responses",
                 )
@@ -1520,7 +1457,16 @@ class Planner:  # noqa: PLR0904
         )
         ordered = (*path, *(parameter for parameter in parameters if parameter.location != "path"))
         given = [
-            names.get(f"{parameter.location}:{parameter.wire_name}") or self.alias(operation, parameter)
+            names.get(f"{parameter.location}:{parameter.wire_name}")
+            or alias(
+                SERVER,
+                self.target_names,
+                operation,
+                parameter.location,
+                parameter.wire_name,
+                source=operation.id.use_site,
+                problems=self.problems,
+            )
             for parameter in ordered
         ]
         raw = body is not None and body.decision.transport == "raw_request"
@@ -1528,7 +1474,7 @@ class Planner:  # noqa: PLR0904
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The parameter_names entry {key!r} of {_label(operation)} names no argument",
+                f"The parameter_names entry {key!r} of {label(operation)} names no argument",
                 operation.id.use_site,
                 "parameter_names",
             )
@@ -1548,29 +1494,20 @@ class Planner:  # noqa: PLR0904
                 )
         self.problems.extend(
             _problem(
-                "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
+                "F_NAME_CONFLICT", f"The arguments of {label(operation)} take {name!r} twice", operation.id.use_site
             )
             for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
             if count > 1
         )
-        bases = {
-            index: self.target_names.argument(parameter.wire_name)
-            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
-            if name is None
-        }
-        claimed = dict(
-            zip(
-                bases,
-                self.target_names.claim(
-                    NameScope((*RESERVED, *filter(None, given))),
-                    [(base, ordered[index].local, scopes) for index, base in bases.items()],
-                ),
-                strict=True,
-            )
+        python_names = argument_names(
+            self.target_names,
+            NameScope((*RESERVED, *filter(None, given))),
+            [(parameter.wire_name, name, parameter.local) for parameter, name in zip(ordered, given, strict=True)],
+            scopes,
         )
         arguments = [
             Argument(
-                name=name or claimed[index],
+                name=name,
                 kind="native" if parameter.native is not None else "adapter",
                 location=parameter.location,
                 wire_name=parameter.wire_name,
@@ -1578,27 +1515,10 @@ class Planner:  # noqa: PLR0904
                 native=parameter.native,
                 parameter=parameter,
             )
-            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+            for parameter, name in zip(ordered, python_names, strict=True)
         ]
         bodies = [item for item in support if item.kind in {"body", "media_type"}]
         return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
-
-    def alias(self, operation: OperationContract, parameter: ParameterSpec) -> str | None:
-        """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
-        if (alias := self.target_names.alias(parameter.wire_name)) is not None and not explicit_name(
-            alias, self.target_names.python_version
-        ):
-            message = (
-                f"The --aliases entry {alias!r} of the {parameter.location} parameter {parameter.wire_name!r} of "
-                f"{_label(operation)} is not an identifier"
-            )
-            self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site))
-        return alias
-
-
-def _local(operation: OperationContract) -> bool:
-    """Return whether the document that names the operation's path item declares the operation itself."""
-    return operation.declaration.location.document == operation.id.use_site.document
 
 
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:

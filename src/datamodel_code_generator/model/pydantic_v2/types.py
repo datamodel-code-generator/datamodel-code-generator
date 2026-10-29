@@ -192,8 +192,6 @@ _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, 
 bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
-_ZERO_BOUND_KEYWORDS: tuple[str, ...] = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
-"""The bounds of which exactly one equal to 0 gives a zero-bound class in the field forms, in schema order."""
 
 escape_characters = str.maketrans({
     "'": r"\'",
@@ -368,7 +366,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
                 decimal_kwargs: dict[str, Any] = {
                     k: Decimal(str(v.value if isinstance(v, UnionIntFloat) else v)) for k, v in data_type_kwargs.items()
                 }
-                if strict and self.use_decimal_in_field_forms:
+                if _applicability.strict_decimal_multiple(self.constraint_options, strict=strict):
                     decimal_kwargs["strict"] = True
                 return self.data_type.from_import(IMPORT_CONDECIMAL, kwargs=decimal_kwargs)
             if not strict:
@@ -472,19 +470,6 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
         return self.copy_data_type(self.type_map[types])
 
-    def _is_decimal_multiple(self, types: Types, kwargs: Mapping[str, Any]) -> bool:
-        """Return whether a number schema with ``multipleOf`` of a field form is a ``Decimal``.
-
-        It is under ``use_decimal_for_multiple_of`` with ``use_decimal_in_field_forms``; without the latter the field
-        forms write a float, as in 0.86.0.
-        """
-        return (
-            self.use_decimal_for_multiple_of
-            and self.use_decimal_in_field_forms
-            and kwargs.get("multipleOf") is not None
-            and self._is_float_number(types, kwargs)
-        )
-
     @override
     def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:
         """Return the infinity or NaN that a number type would write its ``multipleOf`` as, which Pydantic refuses.
@@ -514,18 +499,20 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
     def _field_form_kwargs(self, types: Types, kwargs: dict[str, Any]) -> dict[str, Any]:
         """Return the arguments a type of a field form is built from: the constraints it takes, and the others.
 
-        Under ``omit_redundant_constraints`` a strict number takes no zero bound: its field writes the bound beside
-        ``StrictInt`` or ``StrictFloat`` instead of a strict ``con*`` type that repeats it.
+        The constraints it takes are the zero bound of its class (``_applicability.field_form_zero_bound``).
         """
         if kwargs.get("base64_encoded"):
             return kwargs
         taken = {key: value for key, value in kwargs.items() if key not in self.kwargs_schema_to_model}
         if (
-            self.use_non_positive_negative_number_constrained_types
-            and not (self.omit_redundant_constraints and self._is_strict_number(types))
-            and len(zero_bounds := [key for key in _ZERO_BOUND_KEYWORDS if kwargs.get(key) == 0]) == 1
-        ):
-            taken[zero_bounds[0]] = kwargs[zero_bounds[0]]
+            zero_bound := _applicability.field_form_zero_bound(
+                self.constraint_options,
+                kwargs,
+                zero_bound_types=self.use_non_positive_negative_number_constrained_types,
+                strict=self._is_strict_number(types),
+            )
+        ) is not None:
+            taken[zero_bound] = kwargs[zero_bound]
         return taken
 
     @override
@@ -550,8 +537,17 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
         if field_constraints:
-            if self._is_decimal_multiple(types, kwargs):
-                return self.data_type.from_import(IMPORT_DECIMAL, strict=StrictTypes.float in self.strict_types)
+            if _applicability.decimal_field_form(
+                options := self.constraint_options,
+                decimal_for_multiple_of=self.use_decimal_for_multiple_of,
+                float_multiple_of=kwargs.get("multipleOf") is not None and self._is_float_number(types, kwargs),
+            ):
+                return self.data_type.from_import(
+                    IMPORT_DECIMAL,
+                    strict=_applicability.strict_decimal_multiple(
+                        options, strict=StrictTypes.float in self.strict_types
+                    ),
+                )
             kwargs = self._field_form_kwargs(types, kwargs)
         if types == Types.string:
             return self.get_data_str_type(types, **kwargs)

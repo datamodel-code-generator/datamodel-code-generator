@@ -12,6 +12,10 @@ bases of a merged model's children. The rows named ``legacy-*`` (:data:`SAME_NAM
 :data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace
 them. Every user but collapse-reuse compares the keys the parse's memo kept for a model in an earlier pass
 (:data:`STALE_DEDUP_KEYS`).
+
+Which model of a group of duplicates stays canonical, keeping its name and its place, is the reuse groups plan
+(:class:`ReuseGroups`), which every user asks: a model created to yield its name to the others yields that place to
+them too, so the models that were there before keep their names.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ __all__ = [
     "KeyCache",
     "KeySlot",
     "ModelShapes",
+    "ReuseGroups",
     "RootModels",
     "ShapeRow",
     "ShapeSource",
@@ -124,6 +129,60 @@ REUSE_MODEL: ShapeRow = ShapeRow(
     base_dedup=None,
 )
 """L5 ``--reuse-model``: models of a module, root models left out only under ``--collapse-root-models``."""
+
+
+class _Referenced(Protocol):
+    """A model as the reuse groups plan reads it: by the identity of its reference."""
+
+    @property
+    def reference(self) -> object:
+        """The reference of the model."""
+        raise NotImplementedError
+
+
+ReferencedT = TypeVar("ReferencedT", bound=_Referenced)
+
+
+@final
+@record
+class ReuseGroups:
+    """Which model of a group of duplicates stays canonical, for every deduplication and reuse user.
+
+    A model yields the canonical place to the models it duplicates when it was created to yield its name: a site model
+    a reference with more assertions gets (:attr:`site_models`) in same-name deduplication, and a model whose name the
+    parse settled as yielding, as a model of a typed map value is (:attr:`typed_map_values`), for every other user.
+    ``parser/_passes/settle.py:settle_yielding_names`` records the plan once those names are settled, before the first
+    user.
+    """
+
+    site_models: frozenset[int] = frozenset()
+    """The ids of the references of the site models, which same-name deduplication orders after the others."""
+    typed_map_values: frozenset[int] = frozenset()
+    """The ids of the references whose names yield, which every other user orders after the others."""
+
+    def is_typed_map_value(self, model: _Referenced) -> bool:
+        """Return whether a model yields the canonical place to the models that do not."""
+        return id(model.reference) in self.typed_map_values
+
+    def site_models_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
+        """Order the site models after the others, which then stay canonical in same-name deduplication."""
+        if site_models := self.site_models:
+            return sorted(models, key=lambda model: id(model.reference) in site_models)
+        return models
+
+    def typed_map_values_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
+        """Order the models whose names yield after the others, which then stay canonical and keep their names."""
+        if self.typed_map_values:
+            return sorted(models, key=self.is_typed_map_value)
+        return models
+
+    def yields_to(self, model: _Referenced, other: _Referenced) -> bool:
+        """Return whether ``model`` yields the canonical place to ``other``, which does not yield."""
+        return self.is_typed_map_value(model) and not self.is_typed_map_value(other)
+
+    def canonical_pair(self, first: ReferencedT, duplicate: ReferencedT) -> tuple[ReferencedT, ReferencedT]:
+        """Return the canonical and the duplicate of a pair that a user found in model order."""
+        return (duplicate, first) if self.yields_to(first, duplicate) else (first, duplicate)
 
 
 def skips_root_model(row: ShapeRow, *, collapse_root_models: bool) -> bool:
