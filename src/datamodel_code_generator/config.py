@@ -126,8 +126,18 @@ _CONFIG_TYPES_NAMESPACE: dict[str, Any] = {
 """The names the deferred config models resolve when they are rebuilt."""
 
 
+def _config_types_namespace(*names: str) -> dict[str, Any]:
+    """Return the part of ``_CONFIG_TYPES_NAMESPACE`` a deferred model resolves when it is rebuilt."""
+    return {name: _CONFIG_TYPES_NAMESPACE[name] for name in names}
+
+
 def _rebuild_generate_config() -> None:
-    _rebuild_config_model(GenerateConfig, _CONFIG_TYPES_NAMESPACE)
+    _rebuild_config_model(
+        GenerateConfig,
+        _config_types_namespace(
+            "ConstructorFieldOrder", "DefaultValueType", "OpenAPIAsDefinitions", "StrictTypes", "UnionMode"
+        ),
+    )
 
 
 class ParserConfig(BaseModel):

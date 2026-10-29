@@ -1289,21 +1289,25 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
     return {**schema, "$defs": new_defs}
 
 
-_CONFIG_MODULE_CLASSES = frozenset({"GenerateConfig", "ParserConfig", "ParseConfig"})
-_CONFIG_MODEL_NAMES: dict[str, frozenset[str]] = {
-    "datamodel_code_generator.config": _CONFIG_MODULE_CLASSES,
-    "config": _CONFIG_MODULE_CLASSES,
-    "datamodel_code_generator.__main__": frozenset({"Config"}),
+_CONFIG_MODULE_MODELS = (
+    frozenset({"GenerateConfig", "ParserConfig", "ParseConfig"}),
+    ("DataModel", "DataModelFieldBase", "DataTypeManager", "StrictTypes", "UnionMode"),
+)
+_CONFIG_MODEL_NAMES: dict[str, tuple[frozenset[str], tuple[str, ...]]] = {
+    "datamodel_code_generator.config": _CONFIG_MODULE_MODELS,
+    "config": _CONFIG_MODULE_MODELS,
+    "datamodel_code_generator.__main__": (frozenset({"Config"}), ("UnionMode", "StrictTypes")),
 }
-"""The deferred config models of each module, rebuilt with the config types namespace."""
+"""The deferred config models of each module and the config type names they are rebuilt with."""
 
 
 def _try_rebuild_model(obj: type) -> None:
     """Try to rebuild a Pydantic model, handling config models specially."""
-    if getattr(obj, "__name__", "") in _CONFIG_MODEL_NAMES.get(getattr(obj, "__module__", ""), ()):
-        from datamodel_code_generator.config import _CONFIG_TYPES_NAMESPACE, _rebuild_config_model  # noqa: PLC0415
+    classes, names = _CONFIG_MODEL_NAMES.get(getattr(obj, "__module__", ""), (frozenset(), ()))
+    if getattr(obj, "__name__", "") in classes:
+        from datamodel_code_generator.config import _config_types_namespace, _rebuild_config_model  # noqa: PLC0415
 
-        _rebuild_config_model(obj, _CONFIG_TYPES_NAMESPACE)  # ty: ignore[invalid-argument-type]
+        _rebuild_config_model(obj, _config_types_namespace(*names))  # ty: ignore[invalid-argument-type]
     else:
         obj.model_rebuild()  # ty: ignore[unresolved-attribute]
 
