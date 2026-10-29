@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 import httpx2
 from typing_extensions import TypeVar
 
-from ..client.errors import ConfigurationError, SDKError, add_secondary
+from ..client.errors import SDKError, add_secondary
 from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
@@ -26,8 +26,8 @@ from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
-from .errors import ProtocolDataError
-from .options import CacheOptions, layered
+from .errors import ProtocolDataError, configuration_error, data_error
+from .options import CacheOptions, checked_options, layered
 from .records import canonical_json
 
 if TYPE_CHECKING:
@@ -247,7 +247,7 @@ class _Fetch(Generic[T]):
         self.credential_headers = prepared.credential_headers
         headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
-            raise _invalid(plan, ("headers", refused))
+            raise configuration_error(plan.helper_id, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
         extra = () if self.options is None or self.options.extra_headers is None else self.options.extra_headers
         patched = {name.lower() for name, _ in self.settings.headers} | {name.lower() for name in extra}
@@ -267,7 +267,7 @@ class _Fetch(Generic[T]):
         """
         authenticated = self.plan.authenticated
         if identity.authenticated > authenticated or authenticated > (identity.authenticated or identity.authorized):
-            raise _configuration(self.plan, ("auth",), "binding_mismatch")
+            raise configuration_error(self.plan.helper_id, ("auth",), "binding_mismatch")
         self.identity = identity
         self.base_key = sha256(
             canonical_json({
@@ -295,7 +295,7 @@ class _Fetch(Generic[T]):
             return None
         for header, stored in _VALIDATORS:
             if (given := headers.get_all(header)) and given != (entry.headers.get(stored),):
-                raise _configuration(plan, (header,), "binding_mismatch")
+                raise configuration_error(plan.helper_id, (header,), "binding_mismatch")
         self.usable = entry
         return entry
 
@@ -376,9 +376,7 @@ class _Fetch(Generic[T]):
         """
         entry, plan = self.usable, self.plan
         if entry is None or redirected or not _validates(entry.headers, info.headers):
-            raise ProtocolDataError(
-                reason="inconsistent", helper_id=plan.helper_id, operation=plan.operation, info=info
-            )
+            raise data_error(plan.helper_id, plan.operation, info, "inconsistent", None)
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body), info=merged)
@@ -480,18 +478,6 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
     return None
 
 
-def _configuration(
-    plan: CachePlan[T],
-    path: tuple[str, ...],
-    condition: Literal["invalid_value", "binding_mismatch"],
-) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
-
-
-def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ConfigurationError:
-    return _configuration(plan, path, "invalid_value")
-
-
 def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
     """Return the directives a fetch's own Cache-Control gives, refusing any a stored response cannot honor."""
     directives = _directives(values)
@@ -499,7 +485,7 @@ def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
         name in _REQUEST_DIRECTIVES and (_delta(value) is not None if name == "max-age" else value is None)
         for name, value in directives.items()
     ):
-        raise _invalid(plan, ("headers", "Cache-Control"))
+        raise configuration_error(plan.helper_id, ("headers", "Cache-Control"))
     return _Directives("no-store" in directives, "no-cache" in directives, _delta(directives.get("max-age")))
 
 
@@ -509,12 +495,8 @@ def _store_error(cause: Exception | None = None) -> SDKError:
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's."""
-    for name, value, kind in (("cache_options", cache_options, CacheOptions), ("options", options, RequestOptions)):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    layers = (cache_options, core.helper_defaults(plan.helper_id))
-    request = options if isinstance(options, RequestOptions) else None
-    return layered(layers, "max_ttl", _MAX_TTL), request
+    request = checked_options(plan.helper_id, "cache_options", cache_options, CacheOptions, options)
+    return layered((cache_options, core.helper_defaults(plan.helper_id)), "max_ttl", _MAX_TTL), request
 
 
 def _checked(valid: bool) -> None:  # noqa: FBT001

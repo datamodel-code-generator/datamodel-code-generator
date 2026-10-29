@@ -35,12 +35,19 @@ from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUs
 from ..client.operations import NO_CONTENT
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
-from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
-from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLimitError, StreamInterruptedError
-from .options import StreamOptions, layered
+from .errors import (
+    HELPER_ERRORS,
+    MAX_RAW_PREFIX,
+    ProtocolDataError,
+    SessionLimitError,
+    StreamInterruptedError,
+    configuration_error,
+    data_error,
+)
+from .options import HelperLimits, StreamOptions, checked_options, layered, new_session
 from .records import plain_copy
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
 from .values import MISSING, Patch, RepeatedValueError, resolve, selected, server_expiry, written
@@ -83,7 +90,6 @@ U = TypeVar("U")
 V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 ErrorT = TypeVar("ErrorT", bound=SDKError)
-_DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 
 _EVENT_STREAM: Final = "text/event-stream"
 _NO_TYPE: Final = ""
@@ -267,25 +273,16 @@ class _Lines:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective limits of one stream, each from the first layer that sets it; None removes a limit."""
 
     idle_timeout: float | UNSET | None = UNSET
     reconnect: bool = False
     max_reconnects: int | None = 5
     max_reconnect_wait: float | None = 60.0
-    total_timeout: float | None = None
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
-
-
-def _invalid(
-    plan: EventPlan[T], path: tuple[str, ...], condition: Literal["invalid_value", "missing_metadata"]
-) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _limits(
@@ -301,18 +298,12 @@ def _limits(
     idempotency key, since each reopen is a child call of its own, and extra headers or query names of a parameter a
     reopen writes.
     """
-    for name, value, kind in (
-        ("stream_options", stream_options, StreamOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,), "invalid_value")
+    request = checked_options(plan.helper_id, "stream_options", stream_options, StreamOptions, options)
     kinds = (stream_options, core.helper_defaults(plan.helper_id))
     reconnect = layered(kinds, "reconnect", _DEFAULTS.reconnect)
-    request = options if isinstance(options, RequestOptions) else None
     if (resume := plan.resume) is None:
         if reconnect:
-            raise _invalid(plan, ("stream_options", "reconnect"), "missing_metadata")
+            raise configuration_error(plan.helper_id, ("stream_options", "reconnect"), "missing_metadata")
     else:
         _unpatched(core, plan, resume, request)
     idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
@@ -346,20 +337,13 @@ def _unpatched(
         or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
     )
     if written is not None:
-        raise _invalid(plan, written, "invalid_value")
+        raise configuration_error(plan.helper_id, written)
 
 
 def _progress(reconnects: int = 0) -> ProtocolProgress:
     return MappingProxyType({
         "reconnects": reconnects,
     })
-
-
-def _session(limits: _Limits) -> OperationSession:
-    """Start the stream's session."""
-    from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
-
-    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,14 +372,6 @@ class _Reconnect:
 
     failure: StreamInterruptedError
     delay: float
-
-
-def _data_error(
-    plan: EventPlan[T], operation: OperationRef, info: ResponseInfo, condition: _DataCondition, location: Selector
-) -> ProtocolDataError:
-    return ProtocolDataError(
-        reason=condition, location=location, helper_id=plan.helper_id, operation=operation, info=info
-    )
 
 
 def _dotted(resume: StreamResumePlan, bound: tuple[JSONValue, ...], given: _Given | None) -> Selector | None:
@@ -451,12 +427,12 @@ def _bound(  # noqa: PLR0913, PLR0917
         try:
             value = selected(read, None, info)
         except RepeatedValueError:
-            raise _data_error(plan, operation, info, "malformed", read) from None
+            raise data_error(plan.helper_id, operation, info, "malformed", read) from None
         if value is MISSING:
-            raise _data_error(plan, operation, info, "missing", read)
+            raise data_error(plan.helper_id, operation, info, "missing", read)
         values.append(value)
     if (read := _dotted(resume, bound := tuple(values), given)) is not None:
-        raise _data_error(plan, operation, info, "value", read)
+        raise data_error(plan.helper_id, operation, info, "value", read)
     return bound
 
 
@@ -483,11 +459,11 @@ def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo, clock:
     try:
         value = selected(read, None, info)
     except RepeatedValueError:
-        raise _data_error(plan, plan.operation, info, "malformed", read) from None
+        raise data_error(plan.helper_id, plan.operation, info, "malformed", read) from None
     if value is MISSING:
-        raise _data_error(plan, plan.operation, info, "missing", read)
+        raise data_error(plan.helper_id, plan.operation, info, "missing", read)
     if (expires_at := server_expiry(value, clock.time()) if isinstance(value, str) else None) is None:
-        raise _data_error(plan, plan.operation, info, "value", read)
+        raise data_error(plan.helper_id, plan.operation, info, "value", read)
     return expires_at
 
 
@@ -663,7 +639,7 @@ class _Events(Generic[T]):
             raise self._state_error(action, "receiving")
         try:
             if self._resume is None:
-                raise _invalid(self._plan, ("resume",), "missing_metadata")
+                raise configuration_error(self._plan.helper_id, ("resume",), "missing_metadata")
             if not self._cursored:
                 raise self._state_error(action, "uncursored")
             return plain_copy({
@@ -840,7 +816,7 @@ class _Events(Generic[T]):
         return held
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
+        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
 
     def _stamped(self, error: ErrorT) -> ErrorT:
         """Give a failure of the stream the helper's context, the stream call's operation, and its measurements."""
@@ -1372,9 +1348,9 @@ def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits)
     try:
         position = _restore(plan, resume, plain_copy(state), given if resume.own else None)
     except (MalformedStateError, TypeError, ValueError):
-        raise _invalid(plan, ("state",), "invalid_value") from None
+        raise configuration_error(plan.helper_id, ("state",)) from None
     if (expires_at := position.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise ConfigurationError(field_path=("state",), reason="expired", helper_id=plan.helper_id)
+        raise configuration_error(plan.helper_id, ("state",), "expired")
     return resume, position
 
 
@@ -1400,7 +1376,7 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
         for binding, value in zip(resume.bindings, saved, strict=True)
     )
     if (selector := _dotted(resume, bound, given)) is not None:
-        raise ProtocolDataError(reason="value", location=selector, helper_id=plan.helper_id, operation=resume.operation)
+        raise data_error(plan.helper_id, resume.operation, None, "value", selector)
     return _Position(given=given, cursor=cursor, cursored=True, bound=bound, expires_at=expires_at)
 
 
@@ -1419,7 +1395,7 @@ def open_events(  # noqa: PLR0913
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
     limits = _limits(core, plan, stream_options, options)
-    session = _session(limits)
+    session = new_session(limits)
     given = (arguments, body, media_type)
     response = _sent(core, plan.call, given, limits, session, plan.media)
     position = (
@@ -1442,7 +1418,7 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options)
-    session = _session(limits)
+    session = new_session(limits)
     given = (arguments, body, media_type)
     response = await _asent(core, plan.call, given, limits, session, plan.media)
     position = (
@@ -1473,7 +1449,7 @@ def resume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
-    session = _session(limits)
+    session = new_session(limits)
     response = _sent(core, resume.reopened, request, limits, session, resume.media)
     position = _accepted(response, partial(_resumed, plan, resume, position), position)
     return EventStream(core, plan, limits, session, response, position=position, reopened=True)
@@ -1494,7 +1470,7 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options)
     resume, position = _restored(plan, state, (arguments, body, media_type), limits)
     request = _reopen_request(core, plan, resume, position)
-    session = _session(limits)
+    session = new_session(limits)
     response = await _asent(core, resume.reopened, request, limits, session, resume.media)
     position = await _aaccepted(response, partial(_resumed, plan, resume, position), position)
     return AsyncEventStream(core, plan, limits, session, response, position=position, reopened=True)

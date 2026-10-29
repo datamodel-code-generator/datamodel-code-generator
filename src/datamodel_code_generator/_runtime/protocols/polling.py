@@ -17,13 +17,10 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, ove
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import ConfigurationError
-from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError, SessionLimitError
-from .options import PollOptions, layered
+from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error
+from .options import HelperLimits, PollOptions, checked_options, layered, new_session, patched_extra
 from .records import (
     BodySelector,
     CancelReceipt,
@@ -40,11 +37,12 @@ if TYPE_CHECKING:
     from datetime import datetime
     from types import TracebackType
 
+    from ..client.errors import ConfigurationError
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
+    from .errors import DataRule
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector
     from .references import OperationRef
@@ -192,22 +190,16 @@ class PollingPlan(Generic[T, P, C]):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
 
     interval: float
     max_polls: int | None = 1000
     max_wait: float | None = 60.0
     total_timeout: float | None = 600.0
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits(interval=1.0)
-
-
-def _invalid(plan: PollingPlan[T, P, C], path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason="invalid_value", helper_id=plan.helper_id)
 
 
 def _limits(
@@ -223,22 +215,10 @@ def _limits(
     of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
     their own, and so are the call's extra headers or query names of a parameter the helper writes.
     """
-    for name, value, kind in (
-        ("poll_options", poll_options, PollOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    request = options if isinstance(options, RequestOptions) else None
-    if (fixed := core.fixed_key(request, (plan.create, plan.poll, plan.fetch))) is not None:
-        raise _invalid(plan, fixed)
-    if request is not None:
-        for name in request.extra_headers or ():
-            if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "extra_headers", name))
-        for name in request.extra_query or ():
-            if name in plan.queries:
-                raise _invalid(plan, ("options", "extra_query", name))
+    request = checked_options(plan.helper_id, "poll_options", poll_options, PollOptions, options)
+    fixed = core.fixed_key(request, (plan.create, plan.poll, plan.fetch))
+    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+        raise configuration_error(plan.helper_id, path)
     kinds = (poll_options, core.helper_defaults(plan.helper_id))
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
@@ -250,7 +230,7 @@ def _limits(
     )
     interval, total = limits.interval, limits.total_timeout
     if ((allowed := limits.max_wait) is not None and interval > allowed) or (total is not None and interval >= total):
-        raise _invalid(plan, ("poll_options", "interval"))
+        raise configuration_error(plan.helper_id, ("poll_options", "interval"))
     return limits
 
 
@@ -384,7 +364,7 @@ class _Operation(Generic[T, P]):
         raise self._state_error(action, self._phase.value)
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
+        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
 
     def _limit(self, limit: int, kind: Literal["polls"]) -> SessionLimitError:
         """Return the error of a session limit reached while the operation is unsettled; `checkpoint` continues it."""
@@ -454,15 +434,9 @@ class _Operation(Generic[T, P]):
         )
 
     def _error(
-        self,
-        info: ResponseInfo | None,
-        condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"],
-        location: Selector,
-        operation: OperationRef | None,
+        self, info: ResponseInfo | None, condition: DataRule, location: Selector, operation: OperationRef | None
     ) -> ProtocolDataError:
-        return ProtocolDataError(
-            reason=condition, location=location, helper_id=self._plan.helper_id, operation=operation, info=info
-        )
+        return data_error(self._plan.helper_id, operation, info, condition, location)
 
     def _selected(
         self, read: Selector, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
@@ -597,13 +571,7 @@ class _Operation(Generic[T, P]):
         if (value := self._selected(read, wire, info, operation)) is MISSING:
             raise self._error(info, "missing", read, operation)
         if (phase := plan.phases.get(canonical_json(value))) is None:
-            raise ProtocolDataError(
-                reason="value" if _kind(value) in plan.kinds else "type",
-                location=read,
-                helper_id=plan.helper_id,
-                operation=operation,
-                info=info,
-            )
+            raise self._error(info, "value" if _kind(value) in plan.kinds else "type", read, operation)
         snapshot = PollSnapshot(state=value, terminal=phase is not _Phase.PENDING, data=data, response=info)
         if phase is _Phase.PENDING:
             polled = self._values(plan.polled, plan.bindings, wire, info, operation, self._bound)
@@ -1020,15 +988,6 @@ class AsyncLroHandle(_Operation[T, P]):
         self._close("aclose", quiet=exc is not None)
 
 
-def _session(limits: _Limits) -> OperationSession:
-    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
-
-    return OperationSession(
-        total_timeout=limits.total_timeout,
-        clock=limits.clock,
-    )
-
-
 def _restored(
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1040,13 +999,13 @@ def _restored(
     A checkpoint that is not JSON or does not fit the helper raises ConfigurationError, with the reason expired once
     past the server's expiry by the client's wall clock.
     """
-    handle = make(_session(limits))
+    handle = make(new_session(limits))
     try:
         handle._restore(plain_copy(state))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     except (MalformedStateError, TypeError, ValueError):
-        raise _invalid(plan, ("state",)) from None
+        raise configuration_error(plan.helper_id, ("state",)) from None
     if (expires_at := handle._expires_at) is not None and expires_at.timestamp() <= limits.clock.time():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        raise ConfigurationError(field_path=("state",), reason="expired", helper_id=plan.helper_id)
+        raise configuration_error(plan.helper_id, ("state",), "expired")
     return handle
 
 
@@ -1095,7 +1054,7 @@ def start_operation(  # noqa: PLR0913
     A helper that declares a remote cancellation passes its own handle class.
     """
     limits = _limits(core, plan, poll_options, options)
-    created = handle(core, plan, limits, _session(limits))
+    created = handle(core, plan, limits, new_session(limits))
     created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
 
@@ -1145,7 +1104,7 @@ async def astart_operation(  # noqa: PLR0913
     A helper that declares a remote cancellation passes its own handle class.
     """
     limits = _limits(core, plan, poll_options, options)
-    created = handle(core, plan, limits, _session(limits))
+    created = handle(core, plan, limits, new_session(limits))
     await created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
 

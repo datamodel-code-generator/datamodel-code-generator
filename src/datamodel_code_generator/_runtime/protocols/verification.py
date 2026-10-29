@@ -12,11 +12,11 @@ from typing import TYPE_CHECKING, Final, Generic
 
 from typing_extensions import TypeVar
 
+from .errors import configuration_error
 from .signatures import UnsupportedKeyError, signature_bytes
 from .webhook_events import (
     EventPlan,
     Facts,
-    configuration_error,
     instant,
     local_arguments,
     received,
@@ -57,9 +57,9 @@ def _checked_keys(keys: KeySet[K], algorithm: SignatureAlgorithm[K], helper_id: 
     candidates, seen = list[tuple[K, str]](), set[str]()
     for index, key in enumerate(keys.keys):
         if type(key) is not algorithm.key_type:
-            raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
+            raise configuration_error(helper_id, ("keys", str(index)), "wrong_capability")
         if (identity := algorithm.key_id(key)) in seen:
-            raise configuration_error(("keys", str(index), "id"), "invalid_value", helper_id)
+            raise configuration_error(helper_id, ("keys", str(index), "id"))
         seen.add(identity)
         candidates.append((key, identity))
     return candidates
@@ -90,7 +90,7 @@ def _matches(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         return algorithm.matches(key, parts, signatures)
     except UnsupportedKeyError:
         pass
-    raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
+    raise configuration_error(helper_id, ("keys", str(index)), "wrong_capability")
 
 
 def _signed(

@@ -10,12 +10,15 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from typing_extensions import TypeVar
 
 from ..client.errors import ConfigurationError
-from ..client.timing import check_limits
+from ..client.options import RequestOptions
+from ..client.timing import SYSTEM_CLOCK, check_limits
 from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from ..client.logical import OperationSession
+    from ..client.timing import Clock
     from .origins import Origin
 
 V = TypeVar("V")
@@ -51,12 +54,50 @@ _CACHE: Final = (("max_ttl", True, False, False),)
 _CACHE_METHODS: Final = ("get", "set", "delete")
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HelperLimits:
+    """The limits every helper call has: its session's total timeout, the call's options, and the client's clock."""
+
+    total_timeout: float | None = None
+    options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
+
+
 def layered(layers: tuple[object, ...], name: str, default: V) -> V:
     """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
     for layer in layers:
         if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
+
+
+def checked_options(helper_id: str, name: str, value: object, kind: type, options: object) -> RequestOptions | None:
+    """Refuse a call's helper options, then its request options, of another type; return the request options."""
+    for field, given, expected in ((name, value, kind), ("options", options, RequestOptions)):
+        if given is not None and not isinstance(given, expected):
+            raise ConfigurationError(field_path=(field,), reason="invalid_value", helper_id=helper_id)
+    return options if isinstance(options, RequestOptions) else None
+
+
+def patched_extra(
+    request: RequestOptions | None, headers: frozenset[str], queries: frozenset[str]
+) -> tuple[str, ...] | None:
+    """Return the field path of the call's first extra header, then query name, of a parameter a helper writes."""
+    if request is not None:
+        for name in request.extra_headers or ():
+            if name.lower() in headers:
+                return ("options", "extra_headers", name)
+        for name in request.extra_query or ():
+            if name in queries:
+                return ("options", "extra_query", name)
+    return None
+
+
+def new_session(limits: HelperLimits) -> OperationSession:
+    """Start the session of one helper call."""
+    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
+
+    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:

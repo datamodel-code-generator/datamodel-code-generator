@@ -579,13 +579,15 @@ By default, new options appear in "General Options". To place in a specific cate
 
 ```python
 CLI_OPTION_META: dict[str, CLIOptionMeta] = {
-    ...
-    "--my-new-option": CLIOptionMeta(
-        name="--my-new-option",
-        category=OptionCategory.MODEL,  # or FIELD, TYPING, TEMPLATE, etc.
-    ),
+    # existing rows
+    **_opts(_C.MODEL, "--my-new-option"),  # or _C.FIELD, _C.TYPING, _C.TEMPLATE, etc.
 }
 ```
+
+`_opts(category, *names, group=..., topic=..., **fields)` builds the rows of every option in `names` (space-separated
+names share the category, group and fields), so a new option can also be appended to the row of its category and group.
+`fields` sets the other `CLIOptionMeta` attributes, for example
+`requires=_relations("--other-option", value=True, message="...")`.
 
 ### Step 4: Register the option in the recommender (Required)
 
