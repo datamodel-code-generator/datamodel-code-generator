@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticFloor
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
+    from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
@@ -203,6 +204,8 @@ class _KeptParentRoot:
     root: DataModel
     inner: DataModel
     holders: list[_KeptHolder]
+    facts: LaterHolderFacts
+    """The facts its first holder decided on, which ``settle_kept_parent_roots`` completes with the final names."""
 
 
 @record
@@ -369,7 +372,6 @@ class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
     unused_models: list[DataModel] = dataclasses.field(default_factory=list)
     module_to_import: dict[ModulePath, Imports] = dataclasses.field(default_factory=dict)
     contexts: list[ContextT] = dataclasses.field(default_factory=list)
-    opted_out: list[DataModel] = dataclasses.field(default_factory=list)
     decisions: DecisionOutcome = _NO_DECISIONS
     output: str | dict[tuple[str, ...], ResultT] = dataclasses.field(init=False)
 
@@ -386,7 +388,6 @@ class ProcessingRun(StructuredRun[ConfigT], Protocol[ConfigT, ContextT, ResultT]
 class FinishRun(ProcessingRun[ConfigT, ContextT, ResultT], Protocol[ConfigT, ContextT, ResultT]):
     """What the passes after the output modules are processed read and write."""
 
-    opted_out: list[DataModel]
     decisions: DecisionOutcome
     """What the decision phase changed."""
     output: str | dict[tuple[str, ...], ResultT]

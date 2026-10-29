@@ -10,8 +10,9 @@ import json
 import keyword
 import re
 from collections import defaultdict
+from dataclasses import replace
 from pathlib import Path
-from types import MappingProxyType, NoneType
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 from warnings import warn
 
@@ -27,6 +28,11 @@ from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQU
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model._decisions.hashability import (
+    HashClassFacts,
+    ValueHashFacts,
+    field_value_hashes,
+)
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
     CallPlan,
@@ -51,7 +57,6 @@ from datamodel_code_generator.model.base import (
     _model_key_of_model,
     _ModelKeys,
     _uses_original_template_loader,
-    get_effective_fields,
 )
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
@@ -125,7 +130,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
-    from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
@@ -1467,106 +1471,33 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
     )
 
 
-_NATIVE_HASH_SCALARS = frozenset({"str", "int", "float", "bool", "None"})
-
-
-def _has_native_bound_hash(bound_type: BoundPythonType) -> bool:
-    """Recognize containers whose validated values have builtin scalar hashes."""
-    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-        PythonTypeBoundName,
-        PythonTypeEllipsis,
-        PythonTypeName,
-        PythonTypeSubscript,
-        PythonTypeUnion,
-    )
-
-    pending = [bound_type.expression]
-    while pending:
-        expression = pending.pop()
-        if isinstance(expression, PythonTypeUnion):
-            # Pydantic 2.0 can retain unhashable subclasses in a multi-type union.
-            if len(expression.items) != 2 or PythonTypeName("None") not in expression.items:  # noqa: PLR2004
-                return False
-            pending.extend(expression.items)
-            continue
-        arguments = None
-        if isinstance(expression, PythonTypeSubscript):
-            arguments = expression.arguments
-            expression = expression.base
-        match expression:
-            case PythonTypeBoundName(import_from=module, import_name=name):
-                pass
-            case _:
-                module, name = "builtins", expression.value if isinstance(expression, PythonTypeName) else ""
-        if arguments is None:
-            if module != "builtins" or name not in _NATIVE_HASH_SCALARS:
-                return False
-            continue
-        match module, name:
-            case ("builtins", "tuple") | ("typing", "Tuple"):
-                match arguments:
-                    case (_, PythonTypeEllipsis()):
-                        arguments = arguments[:1]
-            case ("builtins", "frozenset") | ("typing", "FrozenSet") if len(arguments) == 1:
-                pass
-            case _:
-                return False
-        pending.extend(arguments)
-    return True
-
-
-def _has_native_hash_type(data_type: DataType) -> bool:
-    """Recognize types whose validation produces hashable builtin values."""
-    if data_type.is_list or data_type.is_sequence or data_type.is_dict or data_type.is_mapping or data_type.is_set:
-        return False
-    # Model instances, including frozen ones, can retain unhashable user subclasses.
-    if data_type.reference or data_type.data_types or data_type.is_custom_type or data_type.is_func or data_type.kwargs:
-        return False
-    if data_type.python_type:
-        return _has_native_bound_hash(data_type.python_type)
-    if data_type.literals:
-        return all(type(value) in {str, int, float, bool, NoneType} for value in data_type.literals)
-    # In particular, bytes/date/UUID can preserve an unhashable subclass instance.
-    return not data_type.import_ and data_type.type in _NATIVE_HASH_SCALARS
-
-
-def _has_native_hash_field(field: DataModelFieldBase) -> bool:
-    """Exclude arbitrary defaults, which Pydantic need not validate."""
-    return (
-        type(field) is DataModelField
-        and not field.has_default_factory
-        and (field.default is UNDEFINED or type(field.default) in {str, int, float, bool, NoneType})
-        and all(_has_native_hash_type(data_type) for data_type in field.data_type.all_data_types)
+def _validated_value_hashes(field: DataModelFieldBase) -> bool:
+    """Read the facts of a field of this exact class; a subclass may validate otherwise, and keeps no builtin hash."""
+    return type(field) is DataModelField and field_value_hashes(
+        default_factory=field.has_default_factory,
+        default=field.default,
+        defaulted=field.default is not UNDEFINED,
+        values=map(_value_hash_facts, field.data_type.all_data_types),
     )
 
 
-def _has_frozen_hash_config(
-    model: DataModel, cache: dict[ModelKey, bool | None], keys: _ModelKeys | None = None
-) -> bool:
-    """Read effective Pydantic frozen configuration in base declaration order.
-
-    ``cache`` holds the configuration found for each model by the model key that ``keys`` gives it.
-    """
-    from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
-
-    keys = keys or _ModelKeys()
-    pending = [model]
-    visited = _ModelKeys()
-    value = None
-    while pending:
-        current = pending.pop()
-        if not visited.first(current):
-            continue
-        if (key := keys.of(current)) in cache:
-            if (value := cache[key]) is not None:
-                break
-            continue
-        if isinstance(config := current.extra_template_data.get("config"), ConfigDict) and config.frozen is not None:
-            value = config.frozen
-            break
-        pending.extend(_find_base_classes(current))
-    cache[keys.of(model)] = value
-    return value is True
+def _value_hash_facts(data_type: DataType) -> ValueHashFacts:
+    """Read the facts of a data type that tell whether the values Pydantic validates for it hash as builtin values."""
+    return ValueHashFacts(
+        container=bool(
+            data_type.is_list or data_type.is_sequence or data_type.is_dict or data_type.is_mapping or data_type.is_set
+        ),
+        opaque=bool(
+            data_type.reference
+            or data_type.data_types
+            or data_type.is_custom_type
+            or data_type.is_func
+            or data_type.kwargs
+        ),
+        python_type=python_type.expression if (python_type := data_type.python_type) else None,
+        literals=tuple(data_type.literals or ()),
+        builtin_name=None if data_type.import_ else data_type.type,
+    )
 
 
 class BaseModel(BaseModelBase):
@@ -1584,6 +1515,7 @@ class BaseModel(BaseModelBase):
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
     _CHECKS_CONSTRAINTS: ClassVar[bool] = True
+    _FIELD_VALUE_HASHES = staticmethod(_validated_value_hashes)
     BASE_CLASS_ALIAS: ClassVar[str] = "_BaseModel"
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.PYDANTIC
@@ -1629,58 +1561,17 @@ class BaseModel(BaseModelBase):
         """Return whether hash analysis can trust this model implementation."""
         return cls is BaseModel
 
-    @classmethod
     @override
-    def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: PLR0912
-        """Preserve native hashes only for proven builtin frozen value models.
+    def _hash_class_facts(self) -> HashClassFacts:
+        """Read ``frozen`` from the class's ``ConfigDict``; the builtin class hashes frozen instances by value."""
+        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
 
-        The walks tell models apart by model key; the result names the models by path.
-        """
-        native_paths: set[str] = set()
-        keys = _ModelKeys()
-        frozen_configs: dict[ModelKey, bool | None] = {}
-        checked_models: dict[ModelKey, bool] = {}
-        checked_fields: dict[int, bool] = {}
-        template_dirs: dict[Path, bool] = {}
-        for model in models:
-            if not _has_frozen_hash_config(model, frozen_configs, keys):
-                continue
-            pending = [model]
-            visited = _ModelKeys()
-            while pending:
-                current = pending.pop()
-                if not visited.first(current):
-                    continue
-                if (key := keys.of(current)) not in checked_models:
-                    opaque = bool(
-                        not isinstance(current, BaseModel)
-                        or not current._uses_builtin_hash_implementation()  # noqa: SLF001
-                        or current.custom_base_class
-                        or current.methods
-                        or current.decorators
-                        or current.extra_template_data.get("validators")
-                        or current.extra_template_data.get("class_body_lines")
-                    )
-                    if (directory := current._custom_template_dir) is not None:  # noqa: SLF001
-                        if directory not in template_dirs:
-                            template_dirs[directory] = directory.resolve() == TEMPLATE_DIR.resolve()
-                        opaque = opaque or not template_dirs[directory]
-                    checked_models[key] = not opaque
-                if not checked_models[key]:
-                    break
-                pending.extend(_find_base_classes(current))
-            else:
-                for field in get_effective_fields(model):
-                    if field.is_class_var:
-                        continue
-                    field_id = id(field)
-                    if field_id not in checked_fields:
-                        checked_fields[field_id] = _has_native_hash_field(field)
-                    if not checked_fields[field_id]:
-                        break
-                else:
-                    native_paths.add(model.reference.path)
-        return native_paths
+        config = self.extra_template_data.get("config")
+        return replace(
+            super()._hash_class_facts(),
+            frozen=config.frozen if isinstance(config, ConfigDict) else None,
+            builtin_hash=self._uses_builtin_hash_implementation(),
+        )
 
     @classmethod
     @override

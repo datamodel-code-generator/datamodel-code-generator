@@ -31,7 +31,6 @@ Layer: TypeAlias = Literal[
     "requirements",
     "constraints",
     "regex",
-    "checks",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -77,6 +76,7 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_config",
     "datamodel_code_generator._target_documents",
     "datamodel_code_generator._target_format",
+    "datamodel_code_generator._target_operations",
     "datamodel_code_generator._target_render",
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
@@ -158,13 +158,6 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "datamodel_code_generator._regex_syntax"
         ),
     ),
-    "checks": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the debug check flags module is a leaf that every layer reads: import only the standard library "
-            "and typing_extensions"
-        ),
-    ),
 }
 """Leaf layers: the modules (with their submodules) each may import, and the reason shown on a violation."""
 _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
@@ -179,6 +172,7 @@ _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser._phases",
     "datamodel_code_generator.parser._pipeline",
     "datamodel_code_generator.parser._python_type_imports",
+    "datamodel_code_generator.parser._tag_plan",
     "datamodel_code_generator.parser.generation",
 })
 """The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
@@ -383,7 +377,6 @@ def _module_name(path: Path, layer: Layer) -> str:
             "requirements": "datamodel_code_generator.requirements_fixture",
             "constraints": "datamodel_code_generator.constraints_fixture",
             "regex": "datamodel_code_generator.regex_fixture",
-            "checks": "datamodel_code_generator.checks_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -1266,8 +1259,6 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "regex"
         case ("_json_schema.py",):
             layer = "json-schema"
-        case ("_checks.py",):
-            layer = "checks"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

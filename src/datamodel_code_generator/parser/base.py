@@ -48,7 +48,6 @@ from datamodel_code_generator import (
     ReuseScope,
     cached_path_exists,
 )
-from datamodel_code_generator._checks import read_check_flags
 from datamodel_code_generator._constraint_applicability import (
     overridden_declared_constraints,
     resplit_overridden_constraints,
@@ -56,7 +55,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
@@ -64,8 +63,6 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
-    reference_graph,
-    walk_graph,
 )
 from datamodel_code_generator._requirements import (
     REQUIREMENTS,
@@ -83,6 +80,15 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._target_unicode import title
 from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._user_keys import (
+    ConstructionKeys,
+    class_field_key,
+    field_keys,
+    first_given,
+    first_present,
+    mapped_base_class,
+    model_level_type_override,
+)
 from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
     DefaultValueType,
@@ -102,7 +108,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _bind_builtin_names,
-    _model_key_of_model,
     _overlay_constraints,
     _set_nested_model_default_factory_order,
     c3_merge,
@@ -129,6 +134,7 @@ from datamodel_code_generator.parser._imports_plan import (
 from datamodel_code_generator.parser._model_shapes import (
     KeySlot,
     ModelShapes,
+    ReuseGroups,
     ShapeRow,
     stdout_fingerprint,
 )
@@ -143,6 +149,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _MODEL_MODULE_PREFIX,
     _RAW_SCHEMA_DEFAULT_KEY,
 )
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     DiscriminatorValue,
@@ -153,7 +160,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _has_root_field_constraints,
     _hidden_type_names,
     _InheritedTypeModifiers,
-    _iter_discriminator_data_types,
     _iter_import_bindings,
     _ModelPositions,
     _module_name_from_module_path,
@@ -161,8 +167,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
     _string_or_identifier_pattern,
-    _tag_field_matches,
-    _VariantDiscriminatorTags,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
     alias_shadowed_imports,
     apply_inherited_field_default,
@@ -206,6 +210,7 @@ from datamodel_code_generator.parser._pipeline import (
     release_parse_caller,
 )
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
+from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.reference import (
@@ -238,7 +243,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes.modules import _DiscriminatorUnion, _InlineVariantTags
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -495,38 +499,6 @@ def title_to_class_name(title: str) -> str:
 def _find_field(field_name: str, models: list[DataModel]) -> DataModelFieldBase | None:
     """Find a field using generated models' C3 inheritance order."""
     return get_inherited_fields(models).get(field_name)
-
-
-def _root_type_models(model: DataModel) -> list[DataModel]:
-    """Return the models that the type of the root field of ``model`` names."""
-    if not model.fields:
-        return []
-    return [
-        source_model
-        for data_type in model.fields[0].data_type.all_data_types
-        if data_type.reference and isinstance(source_model := data_type.reference.source, DataModel)
-    ]
-
-
-def _constrains_root_field(model: DataModel) -> bool:
-    """Return whether the root field of ``model`` carries a constraint other than ``unique_items``."""
-    if not model.fields:
-        return False
-    constraints = model.fields[0].constraints
-    return isinstance(constraints, ConstraintsBase) and any(
-        value is not None for name, value in constraints.model_dump().items() if name != "unique_items"
-    )
-
-
-def _has_preservable_root_constraints(model: DataModel) -> bool:
-    """Return whether flattening a root wrapper would discard field-owned constraints.
-
-    True when ``model``, or a model the snapshot of root types reaches from it, constrains its root field.
-    """
-    walk = walk_graph(
-        GraphSnapshot.ROOT_CONSTRAINTS, EdgeKind.ROOT_TYPE, (model,), _model_key_of_model, _root_type_models
-    )
-    return any(map(_constrains_root_field, walk.node_of.values()))
 
 
 def _copy_data_model_field(
@@ -932,16 +904,6 @@ def _override_path(override_import: Import) -> str:
     return f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
 
 
-def _site_needs_model_regex_engine(model: DataModel) -> bool:
-    """Return whether ``model`` is a fieldless site (``FIELDLESS_SITE_KEY``) whose pattern needs its holder's engine.
-
-    The engine is one in the config of the model that holds the pattern.
-    """
-    return bool(model.reference.__dict__.get(FIELDLESS_SITE_KEY)) and (
-        (needs_engine := model.fields[0].NEEDS_MODEL_REGEX_ENGINE) is not None and needs_engine(model.fields)
-    )
-
-
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     """Abstract base class for schema parsers.
 
@@ -983,6 +945,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _graph_builder(self) -> GraphBuilder:
         """The capability through which the passes change the graph of the generation store."""
         return self.generation_store.builder()
+
+    @property
+    def _tag_capabilities(self) -> TagCapabilities:
+        """The rows of the output's model and field classes that the tag passes read."""
+        return tag_capabilities(self.data_model_type, self.data_model_field_type)
 
     @property
     def run_context(self) -> ParserRunContext:
@@ -1140,11 +1107,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._constrained_decimal_alias_model_ids: set[int] = set()
         self._hidden_named_types: dict[tuple[ModelKey, str | None], bool] = {}
         self._hiding_field_names: dict[tuple[ModelKey, str | None], str] = {}
-        self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
-        self._inline_variant_models: _InlineVariantTags | None = None
-        """The tag fields of the inline variants that may take the tag they inherit, once the first union asks."""
-        self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
-        self._defers_tagged_unions = False
+        self._tag_plan = TagPlan()
+        """What the tag passes of the parse recorded: the union tags reuse compares, then the run's tag ledger."""
         self._prepared_modules: list[_PreparedModule] = []
         """The output modules ``_process_single_module`` processed, in module order, for their render preparation."""
         self._base_stand_ins: dict[int, Reference | None] = {}
@@ -1170,9 +1134,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._self_named_root_models: list[DataModel] = []
         """The root models whose root names the model itself, which the deduplication of root models dropped while
         their users still name them, for ``reject_alias_cycles_without_schema``."""
-        self._reuse_union_tags: dict[DataModel, tuple[HashableComparable, ...]] = {}
         self._recursion_facts: RecursionFacts = _NO_RECURSION
-        self._reused_variant_tag_fields: dict[int, DataModelFieldBase] = {}
         self._quotes_hidden_types = False
 
         self.keyword_only = config.keyword_only
@@ -1263,7 +1225,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             "target_python_version": self.target_python_version,
         }
         self.reuse_model: bool = config.reuse_model
-        self._typed_map_value_reference_ids: set[int] = set()
+        self._reuse_groups = ReuseGroups()
         self._const_narrowed_references: list[tuple[Reference, _ConstNarrowing]] = []
         self._const_narrowed_values: dict[int, tuple[DataType, _ConstNarrowing]] = {}
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
@@ -1336,6 +1298,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             copy_extra_template_data(data) if (data := config.extra_template_data) else defaultdict(dict)
         )
         self.validators = config.validators
+        self._construction_keys = ConstructionKeys.of(
+            (config.base_class_map, config.extra_template_data, config.validators),
+            (config.aliases, config.serialization_aliases, config.default_value_overrides),
+        )
         self.generate_schema_validators: bool = config.generate_schema_validators
         self.check_pattern_maps_strictly: bool = config.check_pattern_maps_strictly
         self._set_typed_extra_annotation_mode(use_deferred_annotations=True)
@@ -1465,7 +1431,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for key, value in self.type_overrides.items()
         }
         self._model_type_override_imports: dict[str, Import] = {
-            key: import_ for key, import_ in self._type_override_imports.items() if "." not in key
+            key: import_ for key, import_ in self._type_override_imports.items() if model_level_type_override(key)
         }
         self._base_stand_in_imports: dict[ModelKey, Import] = {}
         """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
@@ -1586,14 +1552,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Get an explicit serialization alias for a field."""
         if not self.serialization_aliases:
             return None
-        keys = []
-        if class_name is not None:  # pragma: no branch
-            keys.extend((f"{class_name}.{original_field_name}", f"{class_name}.{field_name}"))
-        keys.extend((original_field_name, field_name))
-        for key in keys:
-            if key in self.serialization_aliases:
-                return self.serialization_aliases[key]
-        return None
+        return first_present(self.serialization_aliases, field_keys(class_name, original_field_name, field_name))[0]
 
     def _apply_final_class_field_aliases(
         self, fields: list[DataModelFieldBase], class_name: str, original_class_name: str
@@ -1601,14 +1560,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Apply final class scopes after name allocation, retaining already resolved fallback aliases."""
         if class_name == original_class_name or not (aliases := self.config.aliases):
             return
-        prefix = f"{class_name}."
+        prefix = class_field_key(class_name, "")
         if not any(key.startswith(prefix) for key in aliases):
             return
         scoped_aliases = {
             field.original_name
             for field in fields
             if field.original_name is not None
-            and (isinstance(alias_value := aliases.get(f"{class_name}.{field.original_name}"), str) or alias_value)
+            and first_given(aliases, (class_field_key(class_name, field.original_name),)) is not None
         }
         if not scoped_aliases:
             return
@@ -1632,8 +1591,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.serialization_aliases
                 and (
                     field.serialization_alias is None
-                    or f"{class_name}.{original_name}" in self.serialization_aliases
-                    or f"{class_name}.{field.name}" in self.serialization_aliases
+                    or not self.serialization_aliases.keys().isdisjoint((
+                        class_field_key(class_name, original_name),
+                        class_field_key(class_name, field.name),
+                    ))
                 )
                 and (serialization_alias := self.get_serialization_alias(original_name, field.name, class_name))
                 is not None
@@ -1769,8 +1730,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return result[0] if len(result) == 1 else result
             return value or None
 
-        if self.base_class_map and class_name in self.base_class_map:
-            return normalize(self.base_class_map[class_name])
+        mapped, found = mapped_base_class(self.base_class_map, class_name)
+        if found:
+            return normalize(mapped)
         if custom_base_path:
             return normalize(custom_base_path)
         return self.base_class or None
@@ -1837,36 +1799,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
         """Return the keys of one comparison pass of the dedup or reuse user of a row."""
-        return ModelShapes(row, _ModelShapeSource(self.target_python_version), self._reuse_union_tags)
-
-    def _names_have_class_keyed_options(self, names: set[str]) -> bool:
-        """Return whether an option keyed by class name, or by a class-scoped field, names one of ``names``.
-
-        These options are looked up while models are created, under the names models have then.
-        """
-        config = self.config
-        class_keys = {*(config.base_class_map or ()), *(config.extra_template_data or ()), *(config.validators or ())}
-        scoped_keys = (
-            *(config.aliases or ()),
-            *(config.serialization_aliases or ()),
-            *(config.default_value_overrides or ()),
-        )
-        return bool(names & class_keys) or any(key.rpartition(".")[0] in names for key in scoped_keys)
-
-    def _site_models_last(self, models: list[DataModel]) -> list[DataModel]:
-        """Order the site models a reference with more assertions gets after the others, which then stay canonical.
-
-        A site model of the same name and rendering as another model is removed for it and takes no name of its own.
-        """
-        if site_models := self._site_model_reference_ids:
-            return sorted(models, key=lambda model: id(model.reference) in site_models)
-        return models
-
-    def _typed_map_values_last(self, models: list[DataModel]) -> list[DataModel]:
-        """Order models of typed map values after the others, so the others stay canonical and keep their names."""
-        if typed_map_values := self._typed_map_value_reference_ids:
-            return sorted(models, key=lambda model: id(model.reference) in typed_map_values)
-        return models
+        return ModelShapes(row, _ModelShapeSource(self.target_python_version), self._tag_plan.reuse_snapshot)
 
     def _create_discriminator_data_type(
         self,
@@ -1901,34 +1834,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _get_enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
         return enum_discriminator_literal(enum_source, value)
 
-    def _get_discriminator_field_name(
-        self, data_types: Iterable[DataType], property_name: str, default_name: str
-    ) -> str:
-        """Resolve the shared Python field name without changing wire aliases."""
-        common_name: str | None = None
-        for data_type, _, _ in _iter_discriminator_data_types(data_types):
-            if not data_type.reference:
-                continue
-            variant = cast("DataModel", data_type.reference.source)
-            for variant_field in chain(variant.fields, variant.iter_all_fields()):
-                if _tag_field_matches(
-                    variant_field, "original-or-unaliased-python-name", property_name, python_name=default_name
-                ):
-                    variant_name = variant_field.name
-                    break
-            else:
-                variant_name, _ = self.model_resolver.get_valid_field_name_and_alias(
-                    property_name, model_type=self.field_name_model_type, class_name=variant.class_name
-                )
-            if common_name is not None and common_name != variant_name:
-                msg = (
-                    f"Discriminator {property_name!r} resolves to different field names "
-                    f"{common_name!r} and {variant_name!r}; use the same alias for all variants."
-                )
-                raise Error(msg)
-            common_name = variant_name
-        return common_name or default_name
-
     def _create_set_from_list(self, data_type: DataType) -> DataType | None:
         """Return a set copy of a list type, or ``data_type`` after its nested lists became sets in place.
 
@@ -1946,31 +1851,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     self._graph_builder.swap_data_type(nested_data_type, set_data_type, refresh="deferred")
             return data_type
         return None  # pragma: no cover
-
-    def _keeps_root_model_named(self, model: DataModel, circular_root_models: Collection[ModelKey]) -> bool:
-        """Return whether collapsing keeps a root model named wherever it is referenced.
-
-        A circular root model cannot be fully inlined, runtime rules the model owns would be lost with it, and
-        flattening it would discard constraints that live on a nested array or union alias, or on a mapping. The
-        model of a site that earlier releases wrote as a model without fields (``FIELDLESS_SITE_KEY``) stays where
-        its pattern needs a regex engine in the config of the model that holds it: inlined, that engine would apply
-        to the other patterns of its holder.
-        """
-        if (
-            not model.fields
-            or model_key_of(model.reference) in circular_root_models
-            or model.has_runtime_object_validation
-            or _site_needs_model_regex_engine(model)
-        ):
-            return True
-        if not self.field_constraints and _has_preservable_root_constraints(model):
-            return True
-        root_type_field = model.fields[0]
-        return (
-            isinstance(constraints := root_type_field.constraints, ConstraintsBase)
-            and constraints.has_constraints
-            and (root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping)
-        )
 
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""
@@ -2919,8 +2799,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _model_inventory(self, models: list[DataModel]) -> tuple[str, ...]:
         """Return the paths of the models other than typed map values, which a retry with untyped values omits."""
-        typed_map_values = self._typed_map_value_reference_ids
-        return tuple(sorted(model.path for model in models if id(model.reference) not in typed_map_values))
+        groups = self._reuse_groups
+        return tuple(sorted(model.path for model in models if not groups.is_typed_map_value(model)))
 
     def _flatten_invalid_modules(
         self,
@@ -2934,10 +2814,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model.class_name for model in live_models if id(model) not in affected_model_ids
         }
         unavailable_names.update(import_.alias or import_.import_ for model in live_models for import_ in model.imports)
-        scoped_resolver = ModelResolver(
+        scoped_resolver = scheme_resolver(
+            "flattened-module",
             exclude_names=unavailable_names,
-            duplicate_name_suffix="Model",
-            custom_class_name_generator=lambda name: name,
             duplicate_name_suffix_map=resolver.duplicate_name_suffix_map,
             target_python_version=self.target_python_version,
         )
@@ -3350,15 +3229,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             snapshot = GraphSnapshot.NESTED_MODEL_DEFAULT_FACTORIES
             keyed = keyed_models((model for models in modules for model in models), snapshot.value)
             index = self.generation_store.index
-            graph = reference_graph(
-                snapshot,
-                keyed.models,
-                {
-                    EdgeKind.REFERENCE: {
-                        key: index.referenced_keys_for_model(model, keyed) for key, model in keyed.models.items()
-                    }
-                },
-            )
+            graph = index.reference_graph(snapshot, keyed)
             for component in graph.circular_components((EdgeKind.REFERENCE,)):
                 recursive_keys = frozenset(component)
                 recursive_keys_by_model.update(dict.fromkeys(recursive_keys, recursive_keys))
@@ -3647,8 +3518,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
         caller = anchor_parse_caller()
         try:
-            with read_check_flags():
-                self.__runner().run_steps(PIPELINE, self, run)
+            self.__runner().run_steps(PIPELINE, self, run)
         finally:
             release_parse_caller(caller)
             PARSE_MEMO.reset(memo)

@@ -1236,6 +1236,8 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dot_notation_inheritance//*.py
 [test_main_openapi_dot_notation_root_package_inheritance]
 	main/openapi/dot_notation_root_package_inheritance//*.py
+[test_main_openapi_dynamic_anchor_registered_after_its_reference]
+	main/openapi/main_openapi/dynamic_anchor_registered_after_its_reference.txt
 [test_main_openapi_dynamic_ref]
 	main/openapi/dynamic_ref.py
 [test_main_openapi_dynamic_ref_component_anchors]
@@ -1422,6 +1424,8 @@ union-operator	main/openapi/msgspec_ref_nullable_strict_nullable.py
 [test_main_openapi_msgspec_tagged_unions_declaration_order]
 base_earlier	main/openapi/discriminator/msgspec_tagged_unions_base_earlier.py
 base_later	main/openapi/discriminator/msgspec_tagged_unions_base_later.py
+[test_main_openapi_msgspec_tagged_unions_diamond]
+	main/openapi/discriminator/msgspec_tagged_unions_diamond.py
 [test_main_openapi_msgspec_tagged_unions_inherited]
 api	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
 cli	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
@@ -1691,6 +1695,8 @@ typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model_
 	main/openapi/request_bodies_scope.py
 [test_main_openapi_request_bodies_scope_with_ref]
 	main/openapi/request_bodies_scope_with_ref.py
+[test_main_openapi_reserved_target_parsed_from_the_prepared_tree]
+	main/openapi/main_openapi/reserved_target_parsed_from_the_prepared_tree.txt
 [test_main_openapi_reuse_model_cross_module_users]
 layout-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/layout_collapse_dataclasses//*.py
 layout-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/layout_collapse_pydantic_v2//*.py
@@ -2013,15 +2019,6 @@ cli	main/openapi/type_union_nullable.py
 	main/openapi/query_parameters_with_config.py
 [test_ref_merge_parameters]
 	main/openapi/ref_merge_parameters.py
-[test_schema_graph_check_counts_references_without_an_edge]
-	main/openapi/main_openapi/schema_graph_check_counts_references_without_an_edge.txt
-[test_schema_graph_check_of_a_reserved_target_that_differs_from_its_source]
-off	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[off].txt
-report	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[report].report.txt
-report	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[report].txt	= main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[off].txt
-[test_schema_graph_check_records_a_dynamic_anchor_registered_after_its_reference]
-	main/openapi/main_openapi/schema_graph_check_records_a_dynamic_anchor_registered_after_its_reference.report.txt
-	main/openapi/main_openapi/schema_graph_check_records_a_dynamic_anchor_registered_after_its_reference.txt
 [test_stdin]
 	main/openapi/general.py	= main/openapi/custom_file_header_empty.py
 [test_target_python_version]

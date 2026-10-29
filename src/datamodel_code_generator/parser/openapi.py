@@ -34,7 +34,7 @@ from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
-from datamodel_code_generator.parser._schema_graph import RefOrigin, keep_resolved_ref
+from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -408,9 +408,7 @@ class OpenAPIParser(JsonSchemaParser):
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self._ref_path(ref).split("#", 1)
         ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
-        model = cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
-        self._check_ref_target("get_ref_model", ref, self._raw_location(model))
-        return model
+        return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:
@@ -634,7 +632,7 @@ class OpenAPIParser(JsonSchemaParser):
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         normalized = self._normalize_discriminator_mapping_ref(value)
-        return self._derived_ref(normalized, mapping, name, normalized, RefOrigin.DISCRIMINATOR_MAPPING)
+        return self._derived_ref(normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
         """Resolve one subtype without recursively expanding its discriminator."""
@@ -1438,12 +1436,7 @@ class OpenAPIParser(JsonSchemaParser):
                 # External parents may be registered after this child document is read.
                 if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:
                     self._discriminator_subtypes[resolved_ref].append(
-                        self._schema_key(
-                            schemas[schema_name],
-                            f"#/components/schemas/{schema_name}",
-                            "allOf",
-                            RefOrigin.DISCRIMINATOR_SUBTYPE,
-                        )
+                        self._schema_key(schemas[schema_name], f"#/components/schemas/{schema_name}", "allOf")
                     )
 
     def _register_discriminator_schema(self, ref: str, schema: dict[str, Any]) -> None:
@@ -1453,16 +1446,14 @@ class OpenAPIParser(JsonSchemaParser):
         """
         discriminator = schema.get("discriminator")
         if discriminator and not schema.get("oneOf") and not schema.get("anyOf"):
-            self._discriminator_schemas[
-                self._schema_key(schema, ref, "discriminator", RefOrigin.DISCRIMINATOR_SCHEMA)
-            ] = discriminator
+            self._discriminator_schemas[self._schema_key(schema, ref, "discriminator")] = discriminator
 
-    def _schema_key(self, schema: object, ref: str, keyword: str, origin: RefOrigin) -> str:
+    def _schema_key(self, schema: object, ref: str, keyword: str) -> str:
         """Return the key of a schema of a loaded document, with the edge of ``ref``, which names it from its document.
 
         The edge's source is the schema, so the key is the one ``ref`` resolves to in the schema's own document (its
         location, root `$id` and `$self`), the key the references to the schema get; a value the schema graph does
         not locate resolves ``ref`` in the current context.
         """
-        derived = self._derived_ref(ref, self._raw_location(schema), keyword, ref, origin)
+        derived = self._derived_ref(ref, self._raw_location(schema), keyword, ref)
         return keep_resolved_ref(derived, self._ref_path(derived))

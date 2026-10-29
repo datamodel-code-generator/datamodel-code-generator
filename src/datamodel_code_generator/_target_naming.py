@@ -39,7 +39,8 @@ __all__ = (
     "path_placeholders",
 )
 
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+PATH_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+"""A placeholder of a path or server URL template, ``{name}``, with its name as the group."""
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
 _PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
@@ -66,7 +67,7 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
 
 def path_placeholders(path: str) -> list[str]:
     """Return the placeholder names of a path template in order, with repeats."""
-    return _PLACEHOLDER.findall(path)
+    return PATH_PLACEHOLDER.findall(path)
 
 
 def operation_basis(method: str, path: str, operation_id: str | None, target_python_version: PythonVersion) -> str:
@@ -78,7 +79,7 @@ def operation_basis(method: str, path: str, operation_id: str | None, target_pyt
     if operation_id:
         return operation_id
     parts: list[str] = []
-    for index, piece in enumerate(_PLACEHOLDER.split(path)):
+    for index, piece in enumerate(PATH_PLACEHOLDER.split(path)):
         if words := (_WORDS if piece.isascii() else target_pattern(_WORDS_SOURCE, target_python_version)).findall(
             piece
         ):

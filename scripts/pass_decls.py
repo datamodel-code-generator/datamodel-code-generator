@@ -145,8 +145,11 @@ SETTLE_YIELDING_NAMES = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(RenderFact.CLASS_NAMES),
-    writes=_facts(RenderFact.CLASS_NAMES),
-    summary="Gives the names that yield to --model-name-map their final form.",
+    writes=_facts(RenderFact.CLASS_NAMES, RenderFact.PLANS),
+    summary=(
+        "Gives the names that yield to --model-name-map their final form, and records the reuse groups plan: the"
+        " models whose names yield, and the site models, yield the canonical place of a group of duplicates."
+    ),
 )
 REPORT_PARSE_DIAGNOSTICS = PassDecl(
     "report_parse_diagnostics",

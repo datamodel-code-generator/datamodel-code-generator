@@ -17,8 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
-from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
 from datamodel_code_generator.model.base import (
     DataModel,
     get_resolve_reference_action_capabilities,
@@ -27,9 +26,9 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE, skips_root_model
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
-    _get_mapping_discriminator_values,
     _parsed_rule_data_types,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
@@ -38,19 +37,18 @@ from datamodel_code_generator.parser._passes._shared import (
     require_update_action,
 )
 from datamodel_code_generator.parser._passes._state import Forwarder, RecursionFacts, _ModuleNames
-from datamodel_code_generator.reference import ModelResolver
+from datamodel_code_generator.parser._tag_plan import declared_union_tags
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._format_types import PythonVersion
-    from datamodel_code_generator._internal_utils import HashableComparable
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
     from datamodel_code_generator.model.base import BaseClassDataType
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ShapeRow
+    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._passes._shared import _ReuseOptimizationContext
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
@@ -61,6 +59,7 @@ if TYPE_CHECKING:
         StructuredRun,
         _StructureState,
     )
+    from datamodel_code_generator.parser._tag_plan import TagPlan
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
@@ -86,8 +85,11 @@ class StructureHost(BaseStandInHost, Protocol):
     """The options, run state and hooks of the parser that the structure passes read and write."""
 
     _recursion_facts: RecursionFacts
-    _reuse_union_tags: dict[DataModel, tuple[HashableComparable, ...]]
     _uses_standard_generation_templates: bool
+
+    @property
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
 
     @property
     def _collapsed_reuse_models(self) -> dict[int, list[DataModel]]:
@@ -122,8 +124,8 @@ class StructureHost(BaseStandInHost, Protocol):
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
     @property
-    def _typed_map_value_reference_ids(self) -> set[int]:
-        """The ids of the references of typed map values."""
+    def _reuse_groups(self) -> ReuseGroups:
+        """The plan of which model of a group of duplicates stays canonical."""
 
     @property
     def collapse_reuse_models(self) -> bool:
@@ -221,12 +223,6 @@ class StructureHost(BaseStandInHost, Protocol):
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether a class name of an explicit root keeps its leading underscore."""
 
-    def _site_models_last(self, models: list[DataModel]) -> list[DataModel]:
-        """Order the site models a reference with more assertions gets after the others."""
-
-    def _typed_map_values_last(self, models: list[DataModel]) -> list[DataModel]:
-        """Order models of typed map values after the others."""
-
 
 def _module_key(
     data_model: DataModel, module_split_mode: ModuleSplitMode | None, target_python_version: PythonVersion
@@ -315,40 +311,6 @@ def get_module_directory(module: tuple[str, ...]) -> tuple[str, ...]:
     return module[:-1]
 
 
-def _union_tags(model: DataModel) -> tuple[HashableComparable, ...]:
-    """Return the field index, property and the tags of each variant of each discriminated union of a model.
-
-    Unions that render alike decode other tags when their discriminators name another property or map their
-    variants to other tags. The tags a mapping gives the variants are listed by variant position, so unions that
-    map the same tags to variants that reuse merges match whatever schemas their mappings name.
-    """
-    if not (
-        discriminators := [
-            (index, discriminator, field.data_type.data_types)
-            for index, field in enumerate(model.fields)
-            if isinstance(discriminator := field.extras.get("discriminator"), dict)
-        ]
-    ):
-        return ()
-    from datamodel_code_generator._internal_utils import to_hashable  # noqa: PLC0415
-
-    return tuple(
-        (
-            index,
-            str(discriminator.get("propertyName")),
-            tuple(
-                to_hashable(_get_mapping_discriminator_values(source, mapping))
-                if (mapping := discriminator.get("mapping"))
-                and (reference := data_type.reference)
-                and isinstance(source := reference.source, DataModel)
-                else ()
-                for data_type in data_types
-            ),
-        )
-        for index, discriminator, data_types in discriminators
-    )
-
-
 def _distinct_bases(row: ShapeRow, bases: Iterable[BaseClassDataType]) -> Iterable[BaseClassDataType]:
     """Return the bases of a merged model's child once each, told apart as the user of the row tells them."""
     if row.base_dedup == "by-type-hint":
@@ -410,7 +372,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         if parser._reuse_optimization_context.constrains  # noqa: SLF001
         else None
     )
-    for model in parser._site_models_last(models):  # noqa: SLF001
+    for model in parser._reuse_groups.site_models_last(models):  # noqa: SLF001
         if model in models_to_remove:  # pragma: no cover
             continue
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
@@ -478,7 +440,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                     for group in content_key_to_models.values()
                     if len(group) > 1
                     for canonical, dup in shapes.iter_matching_duplicates(
-                        parser._typed_map_values_last(group),  # noqa: SLF001
+                        parser._reuse_groups.typed_map_values_last(group),  # noqa: SLF001
                         keyed=False,
                     )
                     if dup not in models_to_remove
@@ -517,7 +479,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
     keeps a name from the others, and the class it stands for binds its name as an import of each model that
     inherits it.
     """
-    models = all_models = parser._typed_map_values_last(models)  # noqa: SLF001
+    models = all_models = parser._reuse_groups.typed_map_values_last(models)  # noqa: SLF001
     for model in models:
         model._write_pre_render_nullability()  # noqa: SLF001
         remember_nested_factory_order_before_nullability(model)
@@ -532,10 +494,10 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             if base_class.reference is not None
             and (import_ := stand_ins.get(model_key_of(base_class.reference))) is not None
         )
-    scoped_model_resolver = ModelResolver(
+    scoped_model_resolver = scheme_resolver(
+        "module",
         exclude_names=exclude_names,
-        duplicate_name_suffix="Model",
-        custom_class_name_generator=(lambda name: name) if parser.custom_class_name_generator else None,
+        keeps_names=bool(parser.custom_class_name_generator),
         target_python_version=parser.target_python_version,
     )
 
@@ -588,7 +550,7 @@ def find_duplicate_models_across_modules(
     return [
         (model_modules[model], model, model_modules[canonical], canonical)
         for canonical, model in shapes.iter_matching_duplicates(
-            parser._typed_map_values_last(list(model_modules)),  # noqa: SLF001
+            parser._reuse_groups.typed_map_values_last(list(model_modules)),  # noqa: SLF001
             keyed=True,
         )
     ]
@@ -603,12 +565,12 @@ def replace_typed_map_value_duplicates(
 
     Those other models stay where they are, as they did before map values were typed.
     """
-    typed_map_values = parser._typed_map_value_reference_ids  # noqa: SLF001
+    groups = parser._reuse_groups  # noqa: SLF001
     module_lists = dict(module_models)
     remaining = []
     for duplicate in duplicates:
         duplicate_module, duplicate_model, _, canonical = duplicate
-        if id(duplicate_model.reference) in typed_map_values and id(canonical.reference) not in typed_map_values:
+        if groups.yields_to(duplicate_model, canonical):
             parser._graph_builder.redirect_reference_users(  # noqa: SLF001
                 duplicate_model.reference, canonical.reference, merged=True
             )
@@ -740,7 +702,7 @@ def reuse_model_tree_scope(
         return None
 
     duplicates = find_duplicate_models_across_modules(parser, module_models)
-    if parser._typed_map_value_reference_ids:  # noqa: SLF001
+    if parser._reuse_groups.typed_map_values:  # noqa: SLF001
         duplicates = replace_typed_map_value_duplicates(parser, module_models, duplicates)
     if not duplicates:
         return None
@@ -858,8 +820,8 @@ def _failing_cycles(
     imports unless a module of it imports from the package: the cycles left without running the packages of
     ``entered`` are checked again. Any other cycle finds one of its modules half built.
     """
-    graph = {node: (imports[node] | (packages[node] - entered)) & nodes for node in nodes}
-    for component in strongly_connected_components(graph):
+    graph = GroupGraph({node: (imports[node] | (packages[node] - entered)) & nodes for node in nodes})
+    for component in graph.components():
         if len(component) == 1:
             continue
         top = min(component, key=lambda node: len(node[0]))
@@ -897,7 +859,7 @@ def _same_path(module: tuple[str, ...]) -> tuple[str, ...]:
 
 def _failing_import_cycles(
     merges: list[set[tuple[str, ...]]],
-    module_graph: dict[tuple[str, ...], set[tuple[str, ...]]],
+    module_graph: GroupGraph[tuple[str, ...]],
     exporting: set[tuple[str, ...]],
     all_exports_scope: AllExportsScope | None,
     *,
@@ -921,10 +883,10 @@ def _failing_import_cycles(
 
     imports = {
         (place(module), -1): {forwarded[module]} if module in forwarded else set(map(node_of, targets))
-        for module, targets in module_graph.items()
+        for module, targets in module_graph.edges.items()
     }
     for node, merge in zip(internal_nodes, merges, strict=True):
-        imports[node] = set(map(node_of, {target for module in merge for target in module_graph[module]} - merge))
+        imports[node] = set(map(node_of, {target for module in merge for target in module_graph.edges[module]} - merge))
     exports: dict[tuple[tuple[str, ...], int], set[tuple[tuple[str, ...], int]]] = {}
     if all_exports_scope is not None:
         exporters = [(place(module), -1) for module in exporting if module not in forwarded]
@@ -939,7 +901,7 @@ def _failing_import_cycles(
         (path, index): {(path[:size], -1) for size in range(len(path)) if (path[:size], -1) in edges} - targets
         for (path, index), targets in edges.items()
     }
-    module_at = {place(module): module for module in module_graph}
+    module_at = {place(module): module for module in module_graph.edges}
     exported = set().union(*exports.values())
 
     def moves(node: tuple[tuple[str, ...], int], cycle: set[tuple[tuple[str, ...], int]]) -> bool:
@@ -1033,18 +995,9 @@ def _module_merges(
         )
         for key, model in keyed.models.items()
     }
-    graph = reference_graph(
-        snapshot,
-        keyed.models,
-        {
-            EdgeKind.REFERENCE: {
-                key: index.referenced_keys_for_model(model, keyed) for key, model in keyed.models.items()
-            },
-            EdgeKind.RULE_TYPE: rule_references,
-        },
-    )
+    graph = index.reference_graph(snapshot, keyed, edges={EdgeKind.RULE_TYPE: rule_references})
     module_graph = graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))
-    merges = find_circular_sccs(module_graph)
+    merges = module_graph.circular_components()
     exporting = {
         module
         for module, models in module_models_list
@@ -1225,8 +1178,8 @@ def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) 
 
 def snapshot_union_tags(parser: StructureHost, state: _StructureState) -> None:
     """Record the tags of each discriminated union before reuse merges any model."""
-    parser._reuse_union_tags = (  # noqa: SLF001
-        {model: tags for _, models in state.module_models for model in models if (tags := _union_tags(model))}
+    parser._tag_plan.reuse_snapshot = (  # noqa: SLF001
+        {model: tags for _, models in state.module_models for model in models if (tags := declared_union_tags(model))}
         if parser.reuse_model
         else {}
     )

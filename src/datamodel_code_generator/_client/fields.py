@@ -11,6 +11,7 @@ from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_A
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_naming import NameScope, explicit_name
+from datamodel_code_generator._target_operations import label as _label
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -32,10 +33,6 @@ def _problem(code: str, message: str, operation: OperationSpec, option_path: str
         source_pointer=operation.contract.id.use_site.pointer,
         option_path=option_path,
     )
-
-
-def _label(operation: OperationSpec) -> str:
-    return f"{operation.contract.method.upper()} {operation.contract.path}"
 
 
 class _Fields:
@@ -97,7 +94,8 @@ class _Fields:
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The body field name of the {media_type} property {name!r} of {_label(spec)} names no field argument",
+                f"The body field name of the {media_type} property {name!r} of {_label(spec.contract)} names no "
+                "field argument",
                 spec,
                 "operations",
             )
@@ -112,7 +110,7 @@ class _Fields:
                 self.problems.append(
                     _problem(
                         "E_NAME_COLLISION",
-                        f"The {media_type} body fields of {_label(spec)} cannot take the argument names "
+                        f"The {media_type} body fields of {_label(spec.contract)} cannot take the argument names "
                         f"{', '.join(map(repr, taken))}, which other arguments take",
                         spec,
                     )

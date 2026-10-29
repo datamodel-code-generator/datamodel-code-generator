@@ -20,6 +20,7 @@ from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
@@ -31,6 +32,7 @@ from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _b
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _bare_name_loads, _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
+from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
@@ -68,7 +70,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
-    from datamodel_code_generator.parser._passes._shared import _VariantDiscriminatorTags
+    from datamodel_code_generator.parser._model_shapes import ReuseGroups
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
         ForwarderMap,
@@ -77,6 +79,7 @@ if TYPE_CHECKING:
         SortedDataModels,
         _FinalizeState,
     )
+    from datamodel_code_generator.parser._tag_plan import TagPlan
     from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelType
     from datamodel_code_generator.types import DataType
@@ -129,8 +132,8 @@ class ImportsHost(ReplacedRootsHost, Protocol[ContextT]):
         """The modules ``--import-overrides`` routes imports through, by imported name."""
 
     @property
-    def _reused_variant_tag_fields(self) -> dict[int, DataModelFieldBase]:
-        """The tag fields that a union with a reused variant annotates with a new tag, by field id."""
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
 
     @property
     def data_model_type(self) -> type[DataModel]:
@@ -193,12 +196,12 @@ class FinishHost(Protocol):
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
     @property
-    def _typed_map_value_reference_ids(self) -> set[int]:
-        """The ids of the references of typed map values."""
+    def _reuse_groups(self) -> ReuseGroups:
+        """The plan of which model of a group of duplicates stays canonical."""
 
     @property
-    def _variant_discriminator_tags(self) -> dict[tuple[int, str], _VariantDiscriminatorTags]:
-        """The tags of discriminated union variants, by variant id and tag property."""
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
 
     @property
     def collapse_root_models(self) -> bool:
@@ -917,24 +920,34 @@ def _named_alias(model: DataModel) -> TypeAliasBase | None:
     return target
 
 
-def _alias_cycles(models: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...]]:
-    """Map each type alias that only names the next alias of a cycle to that cycle, starting at the alias."""
-    named = {id(model): target for model in models if (target := _named_alias(model)) is not None}
-    by_id = {id(model): model for model in models}
-    cycles: dict[int, tuple[DataModel, ...]] = {}
-    visited: set[int] = set()
-    for start in named:
-        path: dict[int, None] = {}
-        current = start
-        while current in named and current not in visited and current not in path:
-            path[current] = None
-            current = id(named[current])
-        visited.update(path)
-        if current in path:
-            members = [*path][[*path].index(current) :]
-            for index, member in enumerate(members):
-                cycles[member] = tuple(by_id[item] for item in (*members[index:], *members[:index]))
-    return cycles
+def alias_loop_failure(data_model_type: type[DataModel]) -> str | None:
+    """Return what fails on a model that reaches a type alias of a looping ``$ref`` chain in ``data_model_type`` output.
+
+    Pydantic builds the model and msgspec decodes it; None when nothing reads its annotations.
+    """
+    if data_model_type._READ_BY_PYDANTIC:  # noqa: SLF001
+        return "Pydantic cannot build"
+    if data_model_type._READ_BY_MSGSPEC:  # noqa: SLF001
+        return "msgspec cannot decode"
+    return None
+
+
+def _alias_loops(models: Sequence[DataModel], self_named: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...]]:
+    """Map each model of a ``$ref`` chain that loops back without reaching a schema to the loop, starting at it.
+
+    The loops are those of the alias graph (`EdgeKind.ALIAS`): type aliases that only name the next alias of a cycle,
+    and the root models of ``self_named``, whose root names the model itself.
+    """
+    snapshot = GraphSnapshot.ALIAS_LOOPS
+    keyed = keyed_models((*models, *self_named), snapshot.value)
+    edges = {
+        model_key_of(model.reference): (model_key_of(target.reference),)
+        for model in models
+        if (target := _named_alias(model)) is not None
+    }
+    edges.update((key, (key,)) for key in map(model_key_of, (model.reference for model in self_named)))
+    loops = reference_graph(snapshot, keyed.models, {EdgeKind.ALIAS: edges}).loops(EdgeKind.ALIAS)
+    return {id(keyed.models[key]): tuple(map(keyed.models.__getitem__, loop)) for key, loop in loops.items()}
 
 
 def _loop_error(model: DataModel, cycle: Sequence[DataModel], failure: str) -> Error:
@@ -973,11 +986,12 @@ def reject_alias_cycles_without_schema(
     class reaches keep their output, unless the module evaluates the name of a dropped root model as it runs, in an
     alias or, with ``evaluates_annotations``, in a class: it then fails to import, whatever reads the output.
     """
-    self_named = {id(model): (model,) for model in parser._self_named_root_models}  # noqa: SLF001
-    reads_annotations = parser.data_model_type._READ_BY_PYDANTIC or parser.data_model_type._READ_BY_MSGSPEC  # noqa: SLF001
+    self_named_models = parser._self_named_root_models  # noqa: SLF001
+    self_named = {id(model): (model,) for model in self_named_models}
     models = [model for context in contexts for model in context.models]
-    if reads_annotations and (cycles := _alias_cycles(models) | self_named):
-        failure = "Pydantic cannot build" if parser.data_model_type._READ_BY_PYDANTIC else "msgspec cannot decode"  # noqa: SLF001
+    if (failure := alias_loop_failure(parser.data_model_type)) is not None and (
+        cycles := _alias_loops(models, self_named_models)
+    ):
         for model in models:
             if isinstance(model, TypeAliasBase):
                 continue
@@ -1029,10 +1043,9 @@ def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextVi
 
 def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
     """Warn once per variant whose generated tag differs from a tag a union maps it to."""
-    for recorded in parser._variant_discriminator_tags.values():  # noqa: SLF001
+    for recorded in parser._tag_plan.first_tags.values():  # noqa: SLF001
         for message in recorded.warning_messages():
             warn_as_parser_base(message, UserWarning, stacklevel=2)
-    parser._variant_discriminator_tags.clear()  # noqa: SLF001
 
 
 def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
@@ -1135,7 +1148,7 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
     Such unions were left untagged before, so a model named ``Literal`` kept its name, which importers rely on.
     The alias takes no name that the module binds or its class decorators name, additional imports included.
     """
-    tag_fields = parser._reused_variant_tag_fields  # noqa: SLF001
+    tag_fields = parser._tag_plan.reused_tag_fields  # noqa: SLF001
     fields = [field for model in models for field in model.fields]
     annotated = [field for field in fields if tag_fields.get(id(field)) is field]
     bindings = {
@@ -1490,18 +1503,16 @@ def record_model_placement(
     cycle, or a module shared by reused models, and keep a model only as a nullable map they make recursive,
     which ``--collapse-root-models`` would otherwise collapse.
     """
-    typed_map_values = parser._typed_map_value_reference_ids  # noqa: SLF001
+    groups = parser._reuse_groups  # noqa: SLF001
     placement = {ctx.module: ctx.models for ctx in contexts}
     parser.model_placement = {
-        module: frozenset(model.class_name for model in models if id(model.reference) not in typed_map_values)
+        module: frozenset(model.class_name for model in models if not groups.is_typed_map_value(model))
         for module, models in placement.items()
     }
     parser.typed_map_values_may_move_models = (
         has_internal_modules
         or (parser.reuse_model and parser.reuse_scope == ReuseScope.Tree)
-        or any(
-            models and all(id(model.reference) in typed_map_values for model in models) for models in placement.values()
-        )
+        or any(models and all(map(groups.is_typed_map_value, models)) for models in placement.values())
         or (
             parser.collapse_root_models
             and any(

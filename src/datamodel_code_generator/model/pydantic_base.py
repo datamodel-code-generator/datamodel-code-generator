@@ -289,17 +289,17 @@ class DataModelField(DataModelFieldBase):
         """
         assert self.constraints is not None
         dumped = self.constraints._exclude_unset_dump  # noqa: SLF001
-        if (
-            self.data_type.type == "None"
+        if none_dropped := _applicability.none_type_keywords(
+            none_type=self.data_type.type == "None"
             and not self.data_type.is_custom_type
             and not ((parent := self.parent) and (parent.IS_ALIAS or parent._uses_custom_root_template))  # noqa: SLF001
         ):
             omitted.extend(
                 Omitted(f"constraint:{key}", value, "none-type", Why(_NONE_TYPE, key))
                 for key, value in dumped.items()
-                if key in self._INTEGER_CONSTRAINTS
+                if key in none_dropped
             )
-            dumped = {key: value for key, value in dumped.items() if key not in self._INTEGER_CONSTRAINTS}
+            dumped = {key: value for key, value in dumped.items() if key not in none_dropped}
         has_integer_constraints = bool(self._INTEGER_CONSTRAINTS & dumped.keys())
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float", "Float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int", "Int")
@@ -426,7 +426,10 @@ class DataModelField(DataModelFieldBase):
         """
         omitted: list[Omitted] = []
         constraints = self.constraints
-        anyurl = constraints is not None and self._can_apply_constraints and self._has_anyurl_outside_container()
+        anyurl = (
+            constraints is not None
+            and self._constraints_blocked_by(anyurl_outside_container=self._has_anyurl_outside_container()) == "anyurl"
+        )
         if constraints is not None and anyurl:
             fields = type(constraints).model_fields
             omitted.extend(

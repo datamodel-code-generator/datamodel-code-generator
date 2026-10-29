@@ -1875,6 +1875,14 @@ class DataTypeManager(ABC):
             reference=bool(data_type.reference),
         )
 
+    @property
+    def constraint_options(self) -> _applicability.ConstraintOptions:
+        """The options of the constraint table, as the parser sets them on the type manager."""
+        return _applicability.ConstraintOptions(
+            omit_redundant_constraints=self.omit_redundant_constraints,
+            use_decimal_in_field_forms=self.use_decimal_in_field_forms,
+        )
+
     @classmethod
     def constraint_keywords(
         cls,

@@ -28,10 +28,9 @@ from datamodel_code_generator._fastapi.plan import (
     ParameterDefault,
     RootDefault,
     default_media,
-    fact,
     json_value,
 )
-from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
+from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -46,6 +45,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_operations import fact, tags
 from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role, templated
 from datamodel_code_generator._target_unicode import casefold

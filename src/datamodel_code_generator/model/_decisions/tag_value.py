@@ -6,7 +6,7 @@ rows need, in their order, as an Enum lookup or a variant's mapped tags cost mor
 read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_keeps_instance_field``,
 ``_FieldTagFacts``, ``_get_mapping_discriminator_values``, ``enum_discriminator_literal``,
 ``enum_discriminator_members``),
-``parser/_passes/modules.py`` (``_VariantTagFacts`` and the passes that apply tags), ``parser/jsonschema.py``
+``parser/_tag_plan.py`` (``_VariantTagFacts``), the passes that apply tags, ``parser/jsonschema.py``
 (``_SchemaTagFacts`` behind ``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
 ``_get_tagged_union_field_values``, ``_set_tagged_union_discriminator``) and ``model/msgspec.py``
 (``Struct._tag_options``, ``Struct.discriminator_tag``).
@@ -143,7 +143,7 @@ FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-literal-onl
 * ``variant-field``: L5, the tag field of a variant (``_get_discriminator_field_value``): its ``const``, its one
   ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``).
 * ``legacy-literal-only``: L6, a field of a msgspec Struct that redeclares the tag field of a tagged base
-  (``_tag_fields_of_tagged_bases``): only its one ``Literal``, so a ``const``, a one-member Enum or a ``Literal``
+  (``iter_struct_tag_decisions``): only its one ``Literal``, so a ``const``, a one-member Enum or a ``Literal``
   msgspec refuses as a tag (``struct_tag_refused``) there opts the Struct out of the inherited tag instead of
   tagging it.
 """

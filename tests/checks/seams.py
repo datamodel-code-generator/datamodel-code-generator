@@ -62,6 +62,31 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "refresh_now", "model_graph.refresh_now"),
     Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "model_key", "model_graph.model_key"),
     Seam(f"{_PASSES}.modules", None, "collapse_module_root_models", "model_graph.collapse_module_root_models"),
+    *(
+        Seam(f"{_PACKAGE}.parser.jsonschema", "JsonSchemaParser", builder, "model_graph.builds_model")
+        for builder in (
+            "_parse_object_common_part",
+            "parse_all_of",
+            "parse_object",
+            "parse_array",
+            "parse_root_type",
+            "parse_enum",
+        )
+    ),
+    Seam(f"{_PACKAGE}.parser.jsonschema", "JsonSchemaParser", "_parse_file", "model_graph.parses_document"),
+    Seam(
+        f"{_PACKAGE}.parser.jsonschema",
+        "JsonSchemaParser",
+        "_get_rw_model_variant_reference",
+        "model_graph.get_rw_model_variant_reference",
+    ),
+    Seam(
+        f"{_PACKAGE}.parser.jsonschema",
+        "JsonSchemaParser",
+        "_record_schema_location",
+        "model_graph.record_schema_location",
+    ),
+    Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
     Seam(
         f"{_PASSES}._shared",

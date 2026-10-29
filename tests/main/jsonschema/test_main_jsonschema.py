@@ -28540,53 +28540,6 @@ def test_main_read_only_write_only_array_positions(
                 validate(json.dumps(payload))
 
 
-@pytest.mark.parametrize("flag", ["check", "report"])
-def test_schema_graph_check_of_read_write_splits(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    output_file: Path,
-    capsys: pytest.CaptureFixture[str],
-    flag: str,
-) -> None:
-    """Report a model that does not split while the references to it read a request/response variant.
-
-    The readOnly property of an inline object whose x-python-type gives its type makes the schema need variants, but
-    the model types the property with that Python type; the check (`1`) stops at the first such model and
-    `report:<path>` appends each one as an `rw-split` line. The check runs under --dedupe-request-response-variants,
-    where the schema graph decides the splits.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_python_type_override.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=[
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--read-only-write-only-model-type",
-            "request-response",
-            "--dedupe-request-response-variants",
-        ],
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr_contains={
-            "check": "#/$defs/Extended' does not split into request/response variants, but its references read a",
-            "report": "can not resolve classes",
-        }[flag],
-        output_should_not_exist=True,
-    )
-    if flag == "report":
-        assert_output(
-            "".join(
-                line
-                for line in report_path.read_text(encoding="utf-8").splitlines(keepends=True)
-                if '"rw-split"' in line
-            ),
-            name="report",
-        )
-
-
 def test_main_jsonschema_dynamic_ref_allof_inherited_fields(output_file: Path) -> None:
     """Bind $dynamicRef in fields copied from an allOf base class to the $dynamicAnchor of the inheriting schema."""
     with warnings.catch_warnings(record=True) as warning_records:
@@ -33209,75 +33162,15 @@ class _OtherTargetParser(JsonSchemaParser):
         return super()._get_ref_raw_schema(resolved_ref.replace("kept", "moved"))
 
 
-class _ContextErrorParser(JsonSchemaParser):
-    """Fails to normalize a reference it met before: the context of a later site resolves it to nothing."""
+@pytest.mark.parametrize("parser_type", [_LaterKeyParser, _OtherTargetParser], ids=["key", "target"])
+def test_main_jsonschema_reference_edges_of_parser_hooks(parser_type: type[JsonSchemaParser]) -> None:
+    """A `$ref` resolves through the edge it carries, and generation follows the target the parser loads.
 
-    def _normalize_external_ref(self, ref: str) -> str:
-        if ref in (seen := self.__dict__.setdefault("seen_refs", set())):
-            msg = f"no target for {ref}"
-            raise Error(msg)
-        seen.add(ref)
-        return super()._normalize_external_ref(ref)
-
-
-@pytest.mark.parametrize("flag", ["check", "report"])
-def test_schema_graph_check_of_a_reference_its_site_cannot_resolve(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
-) -> None:
-    """A reference whose site context resolves it to nothing is the case edges fix: recorded, never raised.
-
-    The edge key, resolved in the reference's own document, names the target; the check (`1`) generates from it and
-    `report:<path>` appends each such site as a `fixed-context` line.
+    The edge gets one key, resolved in its own document, so a parser that would resolve the reference to another key
+    when it meets it again keeps the first; a parser that loads another target than the edge names generates from it.
     """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
-    parser = _ContextErrorParser(JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN])
-    assert_output(str(parser.parse()))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
-
-
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-@pytest.mark.parametrize(
-    ("parser_type", "message"),
-    [
-        (
-            _LaterKeyParser,
-            (
-                "the $ref '#/$defs/Kept' at 'redirect.json#/properties/value' resolves to "
-                "'redirect.json#/$defs/Kept' in its document, but to 'redirect.json#/$defs/Moved' at get_ref_data_type"
-            ),
-        ),
-        (
-            _OtherTargetParser,
-            (
-                "the $ref '#/properties/kept' at 'redirect.json#/properties/other' names "
-                "'redirect.json#/properties/kept', but _load_ref_schema_object loads 'redirect.json#/properties/moved'"
-            ),
-        ),
-    ],
-    ids=["key", "target"],
-)
-def test_schema_graph_check_of_reference_edges(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str, parser_type: type[JsonSchemaParser], message: str
-) -> None:
-    """A reference resolved otherwise than the edge it carries is reported, and generation follows the parser.
-
-    The edge of a `$ref` gets one key, resolved in its own document, and names its registered target: the check (`1`,
-    as the test suite sets it) raises when the context of a site resolves the reference to another loaded value or a
-    site loads another target, `report:<path>` appends it as a JSON line, and with the check off (`0`) the parser
-    generates what the edge key and the loaded target name.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = parser_type(JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN])
-    if flag == "check":
-        with pytest.raises(Error, match=f"^{re.escape(f'{CHECK_SCHEMA_GRAPH_ENV}: {message}')}$"):
-            parser.parse()
-        return
     assert_output(str(parser.parse()))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
 class _SharedSchemaWriterParser(JsonSchemaParser):
@@ -33347,49 +33240,6 @@ def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path)
         )
 
 
-def test_schema_graph_check_records_reserved_targets_of_a_rewritten_document(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """The schema graph check records a reserved target read from a fresh load as the listed class, not a mismatch.
-
-    `report:<path>` appends one `rewritten-document` line for the target whose fresh load differs from the prepared
-    tree; the check (`1`, as the test suite sets it) does not raise for it.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
-    with pytest.warns(DanglingRefWarning, match="#/definitions/Item"):
-        generate(
-            JSON_SCHEMA_DATA_PATH / "reserved_target_rewritten_document",
-            input_file_type=InputFileType.JsonSchema,
-            output=tmp_path / "model",
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-        )
-    assert_output(report_path.read_text(encoding="utf-8"))
-
-
-def test_schema_graph_check_records_anchor_answers_that_differ_from_the_document(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """The schema graph check records a `$recursiveRef` answer that differs from every anchor of its document.
-
-    The parser registers the `$recursiveAnchor` of a document's root and definitions, not the one of the embedded
-    `branch.json` resource below `properties`, so its `$recursiveRef` resolves to the root `Tree` while the nearest
-    `$recursiveAnchor` of the whole document is `branch`. `report:<path>` appends it as an `anchor-answer` line; the
-    check (`1`, as the test suite sets it) does not raise for it, and the output keeps the registered answer.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
-    generate(
-        JSON_SCHEMA_DATA_PATH / "recursive_ref_resources" / "tree.json",
-        input_file_type=InputFileType.JsonSchema,
-        output=tmp_path / "model.py",
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
-    assert_output(report_path.read_text(encoding="utf-8"))
-
-
 def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:
     """A referenced schema whose extension value holds itself is validated once and shared by its readers.
 
@@ -33411,68 +33261,6 @@ def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:
             schema, input_file_type=InputFileType.JsonSchema, disable_timestamp=True, formatters=[Formatter.BUILTIN]
         )
     )
-
-
-@pytest.mark.parametrize(
-    ("input_path", "input_file_type", "extra_args"),
-    [
-        ("jsonschema/nested_json_pointer.json", "jsonschema", []),
-        ("jsonschema/merged_recursive_ref/holder.json", "jsonschema", []),
-        ("jsonschema/recursive_ref.json", "jsonschema", []),
-        ("jsonschema/dynamic_ref_embedded_generic_specialization.json", "jsonschema", []),
-        ("jsonschema/x_python_type_nested_unknown_type.json", "jsonschema", []),
-        ("openapi/discriminator_allof.yaml", "openapi", ["--intersect-allof-keywords"]),
-        ("generation_platform/api_scope/items-object.json", "openapi", ["--openapi-scopes", "schemas", "paths", "api"]),
-        ("asyncapi/user-events.yaml", "asyncapi", []),
-        ("asyncapi/stable-surface.yaml", "asyncapi", []),
-        ("asyncapi/protobuf-schema-format.yaml", "asyncapi", []),
-        ("asyncapi/dynamic_ref", "asyncapi", []),
-        (
-            "openapi/response_header_ref.yaml",
-            "openapi",
-            ["--openapi-scopes", "schemas", "paths", "api", "requestbodies"],
-        ),
-    ],
-    ids=[
-        "nested-definitions",
-        "recursive-ref-merged",
-        "recursive-ref",
-        "dynamic-ref",
-        "x-python-type",
-        "discriminator",
-        "item-schema",
-        "asyncapi-subscribe",
-        "asyncapi-bindings",
-        "asyncapi-converted",
-        "dynamic-ref-anchor-name",
-        "openapi-header-map",
-    ],
-)
-def test_schema_graph_check_counts_references_by_origin(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, input_path: str, input_file_type: str, extra_args: list[str]
-) -> None:
-    """The report of the schema graph check counts the references each site reads by the code that produced them.
-
-    Every reference whose target is static reaches its sites with an edge: a `$ref` written where the walk of the
-    document reads data or names but a reference names a schema (a nested definitions container, an AsyncAPI binding),
-    a discriminator mapping or subtype, an `x-python-type` name, a `$recursiveRef` merged with a fixed target, an
-    `itemSchema` projection and the references of converted schemas. Only the references resolved in the dynamic scope
-    (a `$recursiveRef`, a plain-name `$dynamicRef` bound there or read by anchor name) arrive as plain strings.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
-    source = DATA_PATH / input_path
-    output = tmp_path / ("out" if source.is_dir() else "out.py")
-    run_main_with_args([
-        "--input",
-        str(source),
-        "--input-file-type",
-        input_file_type,
-        "--output",
-        str(output),
-        *extra_args,
-    ])
-    assert_output(report_path.read_text(encoding="utf-8"))
 
 
 NESTED_FACTORY_DATA = JSON_SCHEMA_DATA_PATH / "optional_nested_factory_requirements"

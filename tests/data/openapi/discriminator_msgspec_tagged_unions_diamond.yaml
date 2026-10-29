@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Tagged union variant with a derived struct that two derived structs share
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Plant:
+      type: object
+      required: [plantType]
+      properties:
+        plantType:
+          type: string
+    Flower:
+      type: object
+      required: [plantType]
+      properties:
+        plantType:
+          type: string
+    Shrub:
+      allOf:
+        - $ref: "#/components/schemas/Plant"
+        - type: object
+          description: A woody plant
+    Vine:
+      allOf:
+        - $ref: "#/components/schemas/Plant"
+        - type: object
+          description: A climbing plant
+    Hybrid:
+      allOf:
+        - $ref: "#/components/schemas/Shrub"
+        - $ref: "#/components/schemas/Vine"
+        - type: object
+          properties:
+            fruit:
+              type: string
+    Garden:
+      type: object
+      properties:
+        plant:
+          oneOf:
+            - $ref: "#/components/schemas/Plant"
+            - $ref: "#/components/schemas/Flower"
+          discriminator:
+            propertyName: plantType
+            mapping:
+              plant: "#/components/schemas/Plant"
+              flower: "#/components/schemas/Flower"

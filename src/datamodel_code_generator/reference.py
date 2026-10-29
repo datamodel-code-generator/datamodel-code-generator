@@ -50,6 +50,7 @@ from datamodel_code_generator._target_unicode import (
     upper,
 )
 from datamodel_code_generator._url_redaction import redact_path, redact_reference
+from datamodel_code_generator._user_keys import field_keys, first_given, first_present
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
 
@@ -294,7 +295,6 @@ SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
 
 SCHEMA_LOCATION_KEY: Final = "_schema_location"
 SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
-SCHEMA_OWNER_FRAMES_KEY: Final = "_schema_owner_frames"
 
 
 @record
@@ -420,10 +420,7 @@ class FieldNameResolver:
             if (original_name := field.alias if field.alias is not None else field.original_name) is None:
                 continue
             class_name = field.__dict__.get(_ALIAS_RESOLUTION_CLASS_NAME_KEY, reference.original_name)
-            alias = aliases.get(f"{class_name}.{original_name}")
-            if not isinstance(alias, str) and not alias:
-                alias = aliases.get(original_name)
-            if isinstance(alias, str):
+            if isinstance(alias := first_given(aliases, field_keys(class_name, original_name)), str):
                 field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY] = (alias, original_name)
             else:
                 field.__dict__.pop(_EXPLICIT_FIELD_ALIAS_KEY, None)
@@ -603,15 +600,9 @@ class FieldNameResolver:
               or list[str] for multiple aliases (Pydantic v2 AliasChoices).
         """
         del path
-        if class_name:
-            scoped_key = f"{class_name}.{field_name}"
-            resolved_alias = self._resolve_alias_value(field_name, self.aliases.get(scoped_key), excludes)
-            if resolved_alias is not None:
+        for key in field_keys(class_name or None, field_name):
+            if (resolved_alias := self._resolve_alias_value(field_name, self.aliases.get(key), excludes)) is not None:
                 return resolved_alias
-
-        resolved_alias = self._resolve_alias_value(field_name, self.aliases.get(field_name), excludes)
-        if resolved_alias is not None:
-            return resolved_alias
 
         valid_name = self.get_valid_name(field_name, excludes=excludes)
         return (
@@ -2166,16 +2157,10 @@ class ModelResolver:  # noqa: PLR0904
         class_name: str | None,
     ) -> tuple[Any, bool]:
         """Resolve default value for a field, applying overrides if configured."""
-        if not self.default_value_overrides:
-            return original_default, has_default
-
-        scoped_key = f"{class_name}.{field_name}" if class_name else None
-        if scoped_key and scoped_key in self.default_value_overrides:
-            return self.default_value_overrides[scoped_key], True
-
-        if field_name in self.default_value_overrides:
-            return self.default_value_overrides[field_name], True
-
+        if self.default_value_overrides:
+            value, found = first_present(self.default_value_overrides, field_keys(class_name or None, field_name))
+            if found:
+                return value, True
         return original_default, has_default
 
 

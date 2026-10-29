@@ -16,6 +16,7 @@ from datamodel_code_generator._runtime.client.security import (
 )
 from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar, LiteralSequence
 from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_operations import fact, label, operation_literal
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -67,12 +68,8 @@ def _scope_tuple(value: object) -> tuple[str, ...]:
     return tuple(sorted(normalized))
 
 
-def _facts(declaration: WireDeclaration) -> dict[str, object]:
-    return {name: value.value for name, value in declaration.facts if isinstance(value, LiteralScalar)}
-
-
-def _key_scheme(name: str, facts: dict[str, object]) -> SecuritySchemeEntry:
-    location, wire_name = facts.get("in"), facts.get("name")
+def _key_scheme(name: str, declaration: WireDeclaration) -> SecuritySchemeEntry:
+    location, wire_name = fact(declaration, "in"), fact(declaration, "name")
     if location not in {"header", "query", "cookie"} or not isinstance(wire_name, str) or not wire_name:
         return UnavailableSecurityScheme(name=name)
     if location == "query":
@@ -136,11 +133,10 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
     unavailable = UnavailableSecurityScheme(name=name)
     if any(reference.state != "resolved" for reference in declaration.references):
         return unavailable
-    facts = _facts(declaration)
-    kind = facts.get("type")
+    kind = fact(declaration, "type")
     if kind == "apiKey":
-        return _key_scheme(name, facts)
-    scheme = facts.get("scheme")
+        return _key_scheme(name, declaration)
+    scheme = fact(declaration, "scheme")
     if kind == "http" and isinstance(scheme, str) and scheme.lower() in {"basic", "bearer"}:
         return SecurityScheme(
             name=name,
@@ -213,14 +209,14 @@ class SecurityPlanner:
                 code="E_CONFIG_CONFLICT" if conflict else "E_METADATA_REQUIRED",
                 severity="error",
                 stage="target",
-                message=f"The security of {operation.method.upper()} {operation.path} {message}",
+                message=f"The security of {label(operation)} {message}",
                 source_pointer=operation.id.use_site.pointer,
             )
         )
 
     def binding(self, operation: OperationContract) -> SecurityBinding | None:
         """Preserve absent, empty, and ordered AND/OR requirements, naming schemes of the using document."""
-        value = next((value for name, value in operation.facts if name == "security"), None)
+        value = operation_literal(operation, "security")
         if value is None:
             return None
         schemes = self.catalogues.get(operation.id.use_site.document, {})

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.pagination import _Pages
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES
+from datamodel_code_generator._target_operations import label as _label
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -31,10 +32,6 @@ class CacheSpec:
     helper: Helper
     operation: OperationSpec
     response: TypeUseBinding
-
-
-def _label(spec: OperationSpec) -> str:
-    return f"{spec.contract.method.upper()} {spec.contract.path}"
 
 
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
@@ -59,7 +56,7 @@ class _Caches:
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[CacheSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operation, and plan it when every check passes."""
-        at, name, label, tree = helper.at, helper.name, _label(spec), helper.tree
+        at, name, label, tree = helper.at, helper.name, _label(spec.contract), helper.tree
         problems: list[Diagnostic] = []
         method = spec.contract.method
         if method == "head":
@@ -85,7 +82,7 @@ class _Caches:
 
         Return the use of the first one's body.
         """
-        at, name, label = f"{helper.at}.statuses", helper.name, _label(spec)
+        at, name, label = f"{helper.at}.statuses", helper.name, _label(spec.contract)
         found: list[TypeUseBinding] = []
         for index, status in enumerate(helper.tree["statuses"]):
             response = next((item for item in spec.responses if item.status == str(status)), None)

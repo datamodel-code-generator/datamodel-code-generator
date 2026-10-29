@@ -19,7 +19,6 @@ from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
 from datamodel_code_generator._client.plan import (
-    PlanError,
     Planner,
     encoding_header_uses,
     form_uses,
@@ -56,6 +55,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
+from datamodel_code_generator._target_operations import PlanError
 from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 
