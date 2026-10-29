@@ -17,6 +17,7 @@ from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
 from datamodel_code_generator._target_naming import explicit_name
+from datamodel_code_generator._target_operations import LOCATIONS
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -31,7 +32,6 @@ BodyArguments: TypeAlias = Literal["body", "both"]
 RecordT = TypeVar("RecordT")
 
 OPTION_PREFIX: Final = "client"
-_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
 _RETRY_SAFETIES: Final = frozenset({"method_default", "idempotent", "never"})
 _MIN_REDIRECT: Final = 300
@@ -373,7 +373,7 @@ def _parameter_name(key: object, python_name: object, at: str) -> ParameterName:
 
 
 def _is_location(value: str) -> TypeIs[ParameterLocation]:
-    return value in _LOCATIONS
+    return value in LOCATIONS
 
 
 def _runtime(value: object, at: str) -> RuntimeOperationMetadata:

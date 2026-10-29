@@ -6,9 +6,10 @@ The targets keep their own scopes and forms, such as the client's resources and 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, TypeVar
+from typing import TYPE_CHECKING, Final, TypeVar, get_args
 
-from datamodel_code_generator._api_types import Diagnostic, OperationRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 
@@ -17,10 +18,11 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, OperationSelector
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
+    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
     from datamodel_code_generator._target_contract import (
         FrozenLiteral,
         OperationContract,
+        OperationId,
         SourceLocation,
         TypeUseBinding,
         TypeUseId,
@@ -33,13 +35,7 @@ SettingT = TypeVar("SettingT")
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 """The response statuses that never carry content."""
 
-LOCATIONS: Final[dict[object, ParameterLocation]] = {
-    "path": "path",
-    "query": "query",
-    "querystring": "querystring",
-    "header": "header",
-    "cookie": "cookie",
-}
+LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 _CLIENT_CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
 
 
@@ -95,8 +91,21 @@ class PlanError(Exception):
         self.diagnostics = tuple(diagnostics)
 
 
-def fact(declaration: WireDeclaration, name: str) -> object:
-    """Return one scalar wire fact of a declaration."""
+def raise_selected(diagnostics: Iterable[CodecDiagnostic], selected: Iterable[OperationId]) -> None:
+    """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations."""
+    operations = {None, *selected}
+    if problems := tuple(
+        Diagnostic(
+            code=item.code, severity="error", stage="binding", message=item.message, source_pointer=item.source.pointer
+        )
+        for item in diagnostics
+        if item.operation in operations
+    ):
+        raise APIGenerationError(problems)
+
+
+def fact(declaration: WireDeclaration | OperationContract, name: str) -> object:
+    """Return one scalar wire fact of a declaration or an operation."""
     return next(
         (value.value for key, value in declaration.facts if key == name and isinstance(value, LiteralScalar)), None
     )
@@ -110,6 +119,15 @@ def operation_literal(operation: OperationContract, name: str) -> FrozenLiteral 
 def label(operation: OperationContract) -> str:
     """Return the method and path that name an operation in messages."""
     return f"{operation.method.upper()} {operation.path}"
+
+
+def described(operation: OperationContract) -> str:
+    """Return the summary and description an operation declares, each stripped, without empty ones, a blank line apart.
+
+    Docstrings show it, as the models document their schemas, when `--use-schema-description` is set.
+    """
+    texts = (fact(operation, name) for name in ("summary", "description"))
+    return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
 
 
 def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:

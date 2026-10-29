@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final, cast
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps
+from datamodel_code_generator._api_types import APIGenerationError, NextSteps
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
@@ -55,7 +55,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
-from datamodel_code_generator._target_operations import PlanError
+from datamodel_code_generator._target_operations import PlanError, raise_selected
 from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 
@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -124,15 +124,9 @@ class ClientTarget:
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        types = TypeNames(
-            batch,
-            exact=bool(request.model_config.use_exact_imports),
-            overrides=request.model_config.import_overrides,
-        )
+        types = TypeNames.of(batch, request.model_config)
         codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
-        selected = {spec.contract.id for spec in plan.operations}
-        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(map(_diagnostic, problems)))
+        raise_selected(codecs.diagnostics, (spec.contract.id for spec in plan.operations))
         coded = frozenset(item.use for item in codecs.uses)
         assert batch.names is not None
         plan, named = plan_fields(plan, facts, coded, batch.names, helping)
@@ -223,16 +217,6 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
         operations=frozenset(operation.id for operation in request.operations),
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
-    )
-
-
-def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
-    return Diagnostic(
-        code=item.code,
-        severity="error",
-        stage="binding",
-        message=item.message,
-        source_pointer=item.source.pointer,
     )
 
 

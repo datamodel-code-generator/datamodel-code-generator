@@ -17,6 +17,7 @@ from datamodel_code_generator._json_schema import (
     DefinitionKey,  # noqa: F401
     _rewrite_schema_refs,
 )
+from datamodel_code_generator.parser._convert_common import _unique_name
 from datamodel_code_generator.util import BaseModel
 
 JSONSchemaDraft: TypeAlias = Literal["https://json-schema.org/draft/2020-12/schema"]
@@ -143,14 +144,7 @@ def _extract_tools(data: Any) -> list[MCPTool]:
 
 
 def _unique_definition_name(name: str, used_names: set[str]) -> str:
-    base_name = _to_definition_name(name)
-    if base_name not in used_names:
-        used_names.add(base_name)
-        return base_name
-
-    index = 2
-    while (candidate := f"{base_name}{index}") in used_names:
-        index += 1
+    candidate = _unique_name(_to_definition_name(name), used_names)
     used_names.add(candidate)
     return candidate
 

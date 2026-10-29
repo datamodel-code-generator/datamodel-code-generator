@@ -6,7 +6,7 @@ import keyword
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._runtime.model_codecs.media import TOKEN
-from datamodel_code_generator._target_naming import WINDOWS_DEVICES, explicit_name
+from datamodel_code_generator._target_naming import explicit_name, windows_device
 from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, nfc
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ def namespace_problem(value: object, target_python_version: PythonVersion) -> st
     for index, part in enumerate(value.split(".")):
         if part in RESERVED_MEMBERS:
             reason = "a member of the clients and their resources"
-        elif casefold(part, target_python_version) in WINDOWS_DEVICES:
+        elif windows_device(part, target_python_version):
             reason = "a device name on Windows"
         elif not index and part in TYPE_EXPORTS:
             reason = "which the `types` package exports"
@@ -99,7 +99,7 @@ def helper_name_problem(value: str, target_python_version: PythonVersion) -> str
         if (
             not is_nfkc(part, target_python_version)
             or part.startswith("_")
-            or casefold(part, target_python_version) in WINDOWS_DEVICES
+            or windows_device(part, target_python_version)
         ):
             return f"The helper name {value!r} cannot use the part {part!r}"
     return None
