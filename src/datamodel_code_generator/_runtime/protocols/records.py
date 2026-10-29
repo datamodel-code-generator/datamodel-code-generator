@@ -1,4 +1,4 @@
-"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
+"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, canonical JSON, and helper steps."""
 
 from __future__ import annotations
 
@@ -6,7 +6,8 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, get_args
+from enum import Enum
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
 
 from typing_extensions import Self, TypeVar
 
@@ -17,7 +18,11 @@ from ..model_codecs.media import (
     json_bytes,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 __all__ = (
+    "AsyncSteps",
     "BodySelector",
     "BodyTarget",
     "CancelReceipt",
@@ -29,11 +34,14 @@ __all__ = (
     "QuerystringTarget",
     "RequestTarget",
     "Selector",
+    "SessionState",
     "StatusSelector",
+    "Steps",
 )
 
 P_co = TypeVar("P_co", covariant=True, default=object)
 C_co = TypeVar("C_co", covariant=True, default=object)
+R_co = TypeVar("R_co", covariant=True)
 
 ProgressKey: TypeAlias = Literal[
     "pages",
@@ -229,3 +237,50 @@ class CancelReceipt(Generic[C_co]):
     def __post_init__(self) -> None:
         """Require the response metadata."""
         record_instance(self.response, ResponseInfo, "response must be a ResponseInfo")
+
+
+class SessionState(Enum):
+    """Where a stream or a WebSocket session stands: open, ended as declared, failed, or closed by its caller."""
+
+    OPEN = "open"
+    ENDED = "ended"
+    FAILED = "failed"
+    CLOSED = "closed"
+
+
+@final
+class Steps(Generic[R_co]):
+    """Iterate by calling a helper's step, such as the next page of a pager or the data of a stream's next event."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], R_co]) -> None:
+        """Keep the step that returns the next value, or raises StopIteration after the last."""
+        self._step = step
+
+    def __iter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    def __next__(self) -> R_co:
+        """Return the next value."""
+        return self._step()
+
+
+@final
+class AsyncSteps(Generic[R_co]):
+    """Iterate with asyncio by awaiting a helper's step, as `Steps` iterates by calling one."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], Awaitable[R_co]]) -> None:
+        """Keep the step that returns the next value, or raises StopAsyncIteration after the last."""
+        self._step = step
+
+    def __aiter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    async def __anext__(self) -> R_co:
+        """Return the next value."""
+        return await self._step()

@@ -304,9 +304,10 @@ Witness entries are never added for new writes either. When the scan learns to
 find a write that a witness covers, `--write-allowlist` turns the witness into a
 count entry; that move is the only one that may raise the counted total.
 
-If a new mutation helper is needed, add the method to
-`GENERATION_STORE_MUTATION_METHODS`, name it in the `store_ops` of the rows it
-writes, and update the checker tests so contributors get an actionable message.
+If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
+`NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
+the `store_ops` of the rows it writes, and update the checker tests so
+contributors get an actionable message.
 
 ## Debug checks
 

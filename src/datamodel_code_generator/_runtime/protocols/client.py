@@ -211,14 +211,6 @@ class _SessionCall(Call):
         self.url = str(request.url)
         return request
 
-    @staticmethod
-    def followed_query(schemes: tuple[CredentialPosition, ...]) -> frozenset[str]:
-        """Return the query fields a followed URL is sent and saved without, whatever its origin.
-
-        They are the positions of the package's declared security schemes, where the call's credentials go again.
-        """
-        return secret_names(schemes)[1]
-
 
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
@@ -313,6 +305,25 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             return ("options", "idempotency_key")
         names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
         return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
+
+    def patched(
+        self,
+        options: RequestOptions | None,
+        operations: Iterable[OperationPlan[object] | None],
+        headers: frozenset[str],
+        queried: Callable[[str], bool],
+    ) -> tuple[str, ...] | None:
+        """Return where a call fixes an idempotency key of the operations or patches a parameter a helper writes.
+
+        A patch is a header named in `headers`, by its lowercase name, or a query name `queried` accepts, among the
+        call's own extra ones and the client's and its views' default ones, each of which every request sends. It is
+        None when the call does neither.
+        """
+        return (
+            self.fixed_key(options, operations)
+            or self.named(options, lambda name, _: name.lower() in headers)
+            or self.named(options, lambda name, _: queried(name), query=True)
+        )
 
     def named(
         self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
@@ -478,7 +489,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
-        url = strip_query(url, call.followed_query(self._shared.security_schemes))
+        url = strip_query(url, self.follow_query())
         headers = HeadersView(request_fields(prepared))
         if request_origin(url) != server:
             items, url = strip_credentials(headers.items(), url, self._shared.security_schemes)
@@ -516,7 +527,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
             data, wire, content = _page(decoder, info, received)
             url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
+            result = build(data, wire, content, info, url, self.follow_query())
 
             return Response(data=data, info=info), result
 

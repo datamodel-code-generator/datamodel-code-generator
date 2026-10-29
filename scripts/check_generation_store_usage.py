@@ -1,8 +1,9 @@
 """Reject writes of generation facts that bypass GenerationStore.
 
 The checker reads two tables with ``ast``, so it never imports the package: the store mutation API
-(``GENERATION_STORE_MUTATION_METHODS`` in ``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS``
-in ``scripts/fact_tables.py``, whose rows name the ``Phase`` members of ``parser/_facts.py``). It scans
+(``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
+``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS`` in ``scripts/fact_tables.py``, whose rows
+name the ``Phase`` members of ``parser/_facts.py``). It scans
 
 * ``parser/`` (except the store and its runtime write guard) for writes of fact and presentation attributes, list
   and dict mutators on them, and direct reference and model-list mutations;
@@ -192,22 +193,6 @@ ALLOWLIST_HEADER = """\
 """
 
 
-def _literal_string_set(node: ast.AST) -> frozenset[str]:
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "frozenset" and node.args:
-        node = node.args[0]
-    if not isinstance(node, ast.Set):
-        msg = "GENERATION_STORE_MUTATION_METHODS must be a literal frozenset of strings"
-        raise TypeError(msg)
-
-    values: set[str] = set()
-    for item in node.elts:
-        if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
-            msg = "GENERATION_STORE_MUTATION_METHODS must contain only literal strings"
-            raise TypeError(msg)
-        values.add(item.value)
-    return frozenset(values)
-
-
 def _module_assignment(tree: ast.Module, name: str) -> ast.expr | None:
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
@@ -219,13 +204,38 @@ def _module_assignment(tree: ast.Module, name: str) -> ast.expr | None:
     return None
 
 
+def _literal_names(tree: ast.Module, name: str) -> frozenset[str]:
+    """Return the strings of the literal set, or the keys of the literal dict, that ``tree`` assigns to ``name``.
+
+    The literal may be wrapped in a ``frozenset(...)`` or ``MappingProxyType(...)`` call.
+    """
+    if (node := _module_assignment(tree, name)) is None:
+        msg = f"{name} was not found"
+        raise RuntimeError(msg)
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in {"frozenset", "MappingProxyType"}
+        and node.args
+    ):
+        node = node.args[0]
+    if not isinstance(node, ast.Set | ast.Dict):
+        msg = f"{name} must be a literal set or dict of strings"
+        raise TypeError(msg)
+    values: set[str] = set()
+    for item in node.elts if isinstance(node, ast.Set) else node.keys:
+        if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
+            msg = f"{name} must contain only literal strings"
+            raise TypeError(msg)
+        values.add(item.value)
+    return frozenset(values)
+
+
 def _load_generation_store_mutation_methods() -> frozenset[str]:
+    """Return the store mutations: the keys of ``SITE_EFFECTS`` and the names of ``NO_SITE_EFFECT``."""
     generation_store_module = ROOT / GENERATION_STORE_MODULE
     tree = ast.parse(generation_store_module.read_text(), filename=str(generation_store_module))
-    if (value := _module_assignment(tree, "GENERATION_STORE_MUTATION_METHODS")) is None:
-        msg = "GENERATION_STORE_MUTATION_METHODS was not found"
-        raise RuntimeError(msg)
-    return _literal_string_set(value)
+    return _literal_names(tree, "SITE_EFFECTS") | _literal_names(tree, "NO_SITE_EFFECT")
 
 
 GENERATION_STORE_MUTATION_METHODS = _load_generation_store_mutation_methods()
