@@ -1324,7 +1324,7 @@ class _Resources(_Typing):
         ]
         return templated(
             "client.jinja2",
-            client_template.render,
+            client_template.render_with_scope,
             asynchronous=asynchronous,
             docstring=f"The {'asyncio' if asynchronous else 'synchronous'} client of this package.",
             type_checking=module.name("typing", "TYPE_CHECKING") if lazy else "",
@@ -1469,7 +1469,7 @@ class _Resources(_Typing):
         kind = "asyncio" if asynchronous else "synchronous"
         return templated(
             "resource.jinja2",
-            resource_template.render,
+            resource_template.render_with_scope,
             docstring=f"The {kind} operations of the {resource.namespace} resource.",
             core=core,
             cached_property=cached,
@@ -1803,7 +1803,7 @@ class _Records:
         ]
         return templated(
             "arguments.jinja2",
-            arguments_template.render,
+            arguments_template.render_with_scope,
             docstring="The keyword arguments that unpacked operation methods take, with how each binds them.",
             imports=module.imports(),
             records=records,
@@ -1824,7 +1824,7 @@ class _Types(_Typing):
         overloaded = any(alias.headers is not None and alias.headers.overloads for alias in aliases)
         return templated(
             "types.jinja2",
-            types_template.render,
+            types_template.render_with_scope,
             docstring=f"The result types and header accessors of the {resource.namespace} operations.",
             type_alias=type_alias,
             overload_decorator=module.name("typing", "overload") if overloaded else "",
@@ -1953,7 +1953,7 @@ class _Security:
             operations.append(Plan(f"OPERATION_{spec.index}", final, constructor, tuple(arguments)))
         return templated(
             "security.jinja2",
-            security_template.render,
+            security_template.render_with_scope,
             docstring="Immutable security catalogues and ordered operation requirements.",
             imports=module.imports(),
             schemes=schemes,
@@ -1983,7 +1983,7 @@ class _Registry(_Typing):
             operations.append(Plan(f"OPERATION_{spec.index}", annotation, plan, arguments))
         return templated(
             "operations.jinja2",
-            operations_template.render,
+            operations_template.render_with_scope,
             docstring="The operation registry of this package; regenerate it instead of editing.",
             imports=module.imports(),
             servers=constants,
@@ -2340,7 +2340,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         })
         return templated(
             "helper_plans.jinja2",
-            helper_plans_template.render,
+            helper_plans_template.render_with_scope,
             docstring=(
                 f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
                 "instead of editing."
@@ -2628,7 +2628,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         return templated(
             "helpers.jinja2",
-            helpers_template.render,
+            helpers_template.render_with_scope,
             asynchronous=asynchronous,
             docstring=f"The {'asyncio' if asynchronous else 'synchronous'} protocol helpers of this package, by their "
             "dotted names.",
@@ -3119,7 +3119,7 @@ class ClientRenderer:
         summaries = list(resources.summaries())
         return templated(
             "readme.jinja2",
-            readme_template.render,
+            readme_template.render_with_scope,
             package=config.package,
             public_modules=f"{', '.join(public)}, and response types",
             reference="_generated_docs/runtime.md",
@@ -3215,7 +3215,7 @@ class ClientRenderer:
         kinds = {spec.continuation["kind"] for spec in pages}
         return templated(
             "runtime.jinja2",
-            runtime_template.render,
+            runtime_template.render_with_scope,
             package=self.config.package,
             oauth=capabilities.oauth,
             schemes=capabilities.schemes,

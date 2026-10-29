@@ -13,23 +13,15 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_get_type_annotation(_parent: _Scope, _field: Any) -> str:
         _parts: list[str] = []
         if _field.annotated:
-            _value_0 = _stringify(_field.annotated)
-            _parts.append(f"{_value_0}")
+            _parts.append(f"{_stringify(_field.annotated)}")
         elif _field.field:
-            _value_1 = _stringify(_field.type_hint)
-            _value_2 = _stringify(_field.field)
-            _parts.append(f"Annotated[{_value_1}, {_value_2}]")
+            _parts.append(f"Annotated[{_stringify(_field.type_hint)}, {_stringify(_field.field)}]")
         else:
-            _value_3 = _stringify(_field.type_hint)
-            _parts.append(f"{_value_3}")
+            _parts.append(f"{_stringify(_field.type_hint)}")
         return "".join(_parts)
 
     _context_base_class = _scope.get("base_class")
@@ -38,23 +30,16 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_description = _scope.get("description")
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
-    _value_4 = _stringify(_context_class_name)
-    _value_5 = _stringify(_context_class_name)
-    _parts.append(f'\n{_value_4} = TypeAliasType("{_value_5}", ')
+    _parts.append(f'\n{_stringify(_context_class_name)} = TypeAliasType("{_stringify(_context_class_name)}", ')
     if _context_fields:
-        _value_6 = _stringify(_macro_get_type_annotation(_scope, _getitem(_context_fields, 0)))
-        _parts.append(f"{_value_6}")
+        _parts.append(f"{_stringify(_macro_get_type_annotation(_scope, _getitem(_context_fields, 0)))}")
     else:
-        _value_7 = _stringify(_context_base_class)
-        _parts.append(f"{_value_7}")
+        _parts.append(f"{_stringify(_context_base_class)}")
     _parts.append(")")
     if _is_defined(_context_comment):
-        _value_8 = _stringify(_context_comment)
-        _parts.append(f"  # {_value_8}")
+        _parts.append(f"  # {_stringify(_context_comment)}")
     if _context_description:
-        _value_9 = _stringify(_context_description)
-        _parts.append(f"\n{_value_9}")
+        _parts.append(f"\n{_stringify(_context_description)}")
     elif _context_fields and _getattr(_getitem(_context_fields, 0), "docstring"):
-        _value_10 = _stringify(_getattr(_getitem(_context_fields, 0), "docstring"))
-        _parts.append(f"\n{_value_10}")
+        _parts.append(f"\n{_stringify(_getattr(_getitem(_context_fields, 0), 'docstring'))}")
     return "".join(_parts)

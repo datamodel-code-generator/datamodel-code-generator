@@ -2,18 +2,12 @@
 # Source: readme.jinja2 (sha256:eb0bbf38f9a4355a)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     getattr_ as _getattr,
     loop_last_iter as _loop_last_iter,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -39,44 +33,33 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_sockets = _scope.get("sockets")
     _context_stream_label = _scope.get("stream_label")
     _parts: list[str] = []
-    _value_0 = _stringify(_context_package)
-    _value_1 = _stringify(_context_package)
-    _value_2 = _stringify(_context_model_package)
-    _value_3 = _stringify(_context_backend)
-    _value_4 = _stringify(_context_reference)
     _parts.append(
-        f"# {_value_0}\n\nThe `{_value_1}` package is an HTTPX2 client of the API the OpenAPI document describes.\ndatamodel-code-generator generated it from the document, together with the `{_value_2}` models of the `{_value_3}` backend.\nGeneration overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).\n\nHTTPX2 client generation is experimental.\nThe [runtime reference]({_value_4}) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.\n\n## Quick start\n"
+        f"# {_stringify(_context_package)}\n\nThe `{_stringify(_context_package)}` package is an HTTPX2 client of the API the OpenAPI document describes.\ndatamodel-code-generator generated it from the document, together with the `{_stringify(_context_model_package)}` models of the `{_stringify(_context_backend)}` backend.\nGeneration overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).\n\nHTTPX2 client generation is experimental.\nThe [runtime reference]({_stringify(_context_reference)}) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.\n\n## Quick start\n"
     )
     if _context_example:
-        _value_5 = _stringify(_context_package)
-        _value_6 = _stringify(_getattr(_context_example, "arguments"))
-        _parts.append(f"\n```python\nfrom {_value_5} import Client\n\nwith Client({_value_6}) as client:")
+        _parts.append(
+            f"\n```python\nfrom {_stringify(_context_package)} import Client\n\nwith Client({_stringify(_getattr(_context_example, 'arguments'))}) as client:"
+        )
         for line in _getattr(_context_example, "calls"):
-            _value_7 = _stringify(line)
-            _parts.append(f"\n    {_value_7}")
+            _parts.append(f"\n    {_stringify(line)}")
         _parts.append("\n```\n\n")
         if _getattr(_context_example, "helper"):
             _parts.append("`AsyncClient` has the same protocol helpers, used with `async with` and `async for`:")
         else:
             _parts.append("`AsyncClient` has the same resources and methods, and each method is a coroutine:")
-        _value_8 = _stringify(_context_package)
-        _value_9 = _stringify(_getattr(_context_example, "arguments"))
         _parts.append(
-            f"\n\n```python\nfrom {_value_8} import AsyncClient\n\n\nasync def main() -> None:\n    async with AsyncClient({_value_9}) as client:"
+            f"\n\n```python\nfrom {_stringify(_context_package)} import AsyncClient\n\n\nasync def main() -> None:\n    async with AsyncClient({_stringify(_getattr(_context_example, 'arguments'))}) as client:"
         )
         for line in _getattr(_context_example, "awaited"):
-            _value_10 = _stringify(line)
-            _parts.append(f"\n        {_value_10}")
+            _parts.append(f"\n        {_stringify(line)}")
         _parts.append("\n```\n")
         if _getattr(_context_example, "placeholders"):
             _parts.append(
                 "\nReplace each `...` with a value of the type its argument declares; [Operations](#operations) lists the arguments of each method."
             )
         if _getattr(_context_example, "helper"):
-            _value_11 = _stringify(_getattr(_context_example, "operation"))
-            _value_12 = _stringify(_getattr(_context_example, "helper"))
             _parts.append(
-                f"\nNo operation of the API is a plain request and response, so the example calls `{_value_11}` through its protocol helper `{_value_12}`, as [Protocol helpers](#protocol-helpers) describes."
+                f"\nNo operation of the API is a plain request and response, so the example calls `{_stringify(_getattr(_context_example, 'operation'))}` through its protocol helper `{_stringify(_getattr(_context_example, 'helper'))}`, as [Protocol helpers](#protocol-helpers) describes."
             )
         else:
             _parts.append(
@@ -84,53 +67,46 @@ def render_with_scope(_scope: _Scope) -> str:
             )
     else:
         _parts.append("\nThe package has no operations, so `Client` and `AsyncClient` have no resource methods.")
-    _value_13 = _stringify(_context_public_modules)
     _parts.append(
-        f"\nLeaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.\nImport {_value_13} from the public modules of the package.\n`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response."
+        f"\nLeaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.\nImport {_stringify(_context_public_modules)} from the public modules of the package.\n`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response."
     )
     if _context_credentials:
         _parts.append(
             "\n\n`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: "
         )
-        for credential, _loop_last_14 in _loop_last_iter(_context_credentials):
-            _value_15 = _stringify(_getattr(credential, "name"))
-            _value_16 = _stringify(_getattr(credential, "label"))
-            _parts.append(f"`{_value_15}` ({_value_16})")
-            if not _loop_last_14:
+        for credential, _loop_last_0 in _loop_last_iter(_context_credentials):
+            _parts.append(f"`{_stringify(_getattr(credential, 'name'))}` ({_stringify(_getattr(credential, 'label'))})")
+            if not _loop_last_0:
                 _parts.append(", ")
         _parts.append(".")
         if _context_example and _getattr(_context_example, "secured"):
-            _value_17 = _stringify(_getattr(_context_example, "operation"))
-            _parts.append(f" The example gives those of the first security alternative of `{_value_17}`.")
-        _value_18 = _stringify(_context_reference)
-        _parts.append(f"\nSee [Authentication]({_value_18}#authentication) in the runtime reference.")
+            _parts.append(
+                f" The example gives those of the first security alternative of `{_stringify(_getattr(_context_example, 'operation'))}`."
+            )
+        _parts.append(
+            f"\nSee [Authentication]({_stringify(_context_reference)}#authentication) in the runtime reference."
+        )
     _parts.append(
         "\n\n## Base URL and servers\n\nWithout `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable"
     )
     if _context_example:
-        _value_19 = _stringify(_getattr(_context_example, "server"))
-        _value_20 = _stringify(_getattr(_context_example, "operation"))
-        _parts.append(f": `{_value_19}` for `{_value_20}`")
-    _value_21 = _stringify(_context_package)
+        _parts.append(
+            f": `{_stringify(_getattr(_context_example, 'server'))}` for `{_stringify(_getattr(_context_example, 'operation'))}`"
+        )
     _parts.append(
-        f".\nAn operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.\n`server=ServerSelection(index=..., variables={{...}})`, with `ServerSelection` from `{_value_21}.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.\n`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.\nGiving both on one of them raises `ConfigurationError`.\n\n## Errors\n"
+        f".\nAn operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.\n`server=ServerSelection(index=..., variables={{...}})`, with `ServerSelection` from `{_stringify(_context_package)}.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.\n`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.\nGiving both on one of them raises `ConfigurationError`.\n\n## Errors\n"
     )
     if _context_example:
-        _value_22 = _stringify(_context_package)
-        _value_23 = _stringify(_context_package)
-        _value_24 = _stringify(_getattr(_context_example, "arguments"))
         _parts.append(
-            f"\n```python\nfrom {_value_22} import Client\nfrom {_value_23}.errors import APIConnectionError, APIStatusError, NotFoundError\n\nwith Client({_value_24}) as client:\n    try:"
+            f"\n```python\nfrom {_stringify(_context_package)} import Client\nfrom {_stringify(_context_package)}.errors import APIConnectionError, APIStatusError, NotFoundError\n\nwith Client({_stringify(_getattr(_context_example, 'arguments'))}) as client:\n    try:"
         )
         for line in _getattr(_context_example, "calls"):
-            _value_25 = _stringify(line)
-            _parts.append(f"\n        {_value_25}")
+            _parts.append(f"\n        {_stringify(line)}")
         _parts.append(
             '\n    except NotFoundError as error:\n        print("not found:", error.body)\n    except APIStatusError as error:\n        print(error.status_code, error.body)\n    except APIConnectionError as error:\n        print(error)\n```\n'
         )
-    _value_26 = _stringify(_context_package)
     _parts.append(
-        f"\nA final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).\nIts `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.\nA failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.\nEvery exception of `{_value_26}.errors` derives from `SDKError`; the runtime reference describes the others.\n\n## Operations\n\n`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.\n"
+        f"\nA final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).\nIts `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.\nA failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.\nEvery exception of `{_stringify(_context_package)}.errors` derives from `SDKError`; the runtime reference describes the others.\n\n## Operations\n\n`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.\n"
     )
     if _context_signature_style == "unpack":
         _parts.append(
@@ -145,63 +121,50 @@ def render_with_scope(_scope: _Scope) -> str:
         )
     else:
         _parts.append("A request body is given as `body=`, unless an operation's `body_arguments` is `both`.")
-    _value_27 = _stringify(_context_package)
-    _value_28 = _stringify(_context_package)
-    _value_29 = _stringify(_context_package)
-    _value_30 = _stringify(_context_model_package)
     _parts.append(
-        f"\nAn optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.\nThe signatures spell types as `resources/<resource>/_sync.py` imports them: from `{_value_27}.options`, the result types from `{_value_28}.types.<resource>`, `JSONValue`, the type of any JSON value, from `{_value_29}.types`, the `{_value_30}` models, and the other public modules.\n`--client-operations` takes the operation reference of each as its key.\nThe `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response."
+        f"\nAn optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.\nThe signatures spell types as `resources/<resource>/_sync.py` imports them: from `{_stringify(_context_package)}.options`, the result types from `{_stringify(_context_package)}.types.<resource>`, `JSONValue`, the type of any JSON value, from `{_stringify(_context_package)}.types`, the `{_stringify(_context_model_package)}` models, and the other public modules.\n`--client-operations` takes the operation reference of each as its key.\nThe `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response."
     )
-    _iterated_31 = False
-    for operation, _loop_last_32 in _loop_last_iter(_context_operations):
-        _iterated_31 = True
-        _value_33 = _stringify(_getattr(operation, "name"))
-        _value_34 = _stringify(_getattr(operation, "method"))
-        _value_35 = _stringify(_getattr(operation, "path"))
-        _value_36 = _stringify(_getattr(operation, "reference"))
-        _parts.append(f"\n\n### `client.{_value_33}`\n\n`{_value_34} {_value_35}`, operation reference `{_value_36}`")
+    _iterated_1 = False
+    for operation, _loop_last_2 in _loop_last_iter(_context_operations):
+        _iterated_1 = True
+        _parts.append(
+            f"\n\n### `client.{_stringify(_getattr(operation, 'name'))}`\n\n`{_stringify(_getattr(operation, 'method'))} {_stringify(_getattr(operation, 'path'))}`, operation reference `{_stringify(_getattr(operation, 'reference'))}`"
+        )
         if _getattr(operation, "media") and (_getattr(operation, "body_arguments") == "body"):
             _parts.append(", request body as `body=` only (")
-            for media, _loop_last_37 in _loop_last_iter(_getattr(operation, "media")):
-                _value_38 = _stringify(_getattr(media, "media_type"))
-                _parts.append(f"`{_value_38}`")
-                if not _loop_last_37:
+            for media, _loop_last_3 in _loop_last_iter(_getattr(operation, "media")):
+                _parts.append(f"`{_stringify(_getattr(media, 'media_type'))}`")
+                if not _loop_last_3:
                     _parts.append(", ")
             _parts.append(")")
         elif _getattr(operation, "media"):
             _parts.append(", request body arguments `both`:\n")
-            for media, _loop_last_39 in _loop_last_iter(_getattr(operation, "media")):
-                _value_40 = _stringify(_getattr(media, "media_type"))
-                _parts.append(f"\n- `{_value_40}`:")
+            for media, _loop_last_4 in _loop_last_iter(_getattr(operation, "media")):
+                _parts.append(f"\n- `{_stringify(_getattr(media, 'media_type'))}`:")
                 if _getattr(media, "fields"):
                     _parts.append(" `body=` or the fields ")
-                    for argument, _loop_last_41 in _loop_last_iter(_getattr(media, "fields")):
-                        _value_42 = _stringify(_getattr(argument, "name"))
-                        _parts.append(f"`{_value_42}`")
+                    for argument, _loop_last_5 in _loop_last_iter(_getattr(media, "fields")):
+                        _parts.append(f"`{_stringify(_getattr(argument, 'name'))}`")
                         if _getattr(argument, "required"):
                             _parts.append(" (required)")
-                        if not _loop_last_41:
+                        if not _loop_last_5:
                             _parts.append(", ")
                 else:
-                    _value_43 = _stringify(_getattr(media, "reason"))
-                    _parts.append(f" `body=` only, since {_value_43}")
-        _value_44 = _stringify(_getattr(operation, "signature"))
-        _parts.append(f"\n\n```python\n{_value_44}\n```")
+                    _parts.append(f" `body=` only, since {_stringify(_getattr(media, 'reason'))}")
+        _parts.append(f"\n\n```python\n{_stringify(_getattr(operation, 'signature'))}\n```")
         if _getattr(operation, "overloads"):
-            _value_45 = _stringify(_getattr(operation, "module"))
             _parts.append(
-                f"\n\n`{_value_45}` also declares overloads of the method, which narrow its body or its result by the media types a call chooses."
+                f"\n\n`{_stringify(_getattr(operation, 'module'))}` also declares overloads of the method, which narrow its body or its result by the media types a call chooses."
             )
-    if not _iterated_31:
+    if not _iterated_1:
         _parts.append("\n\nThis package has no operations.")
     if _context_helpers:
         _parts.append(
             "\n\n## Protocol helpers\n\n`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike."
         )
         if _context_stream_label:
-            _value_46 = _stringify(_context_stream_label)
             _parts.append(
-                f"\nAn {_value_46} helper's `open` sends its operation in a session of its own and returns an event stream once the\nresponse is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases\nthe response."
+                f"\nAn {_stringify(_context_stream_label)} helper's `open` sends its operation in a session of its own and returns an event stream once the\nresponse is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases\nthe response."
             )
             if _context_resumes:
                 _parts.append(
@@ -229,55 +192,42 @@ def render_with_scope(_scope: _Scope) -> str:
             )
         if not _context_kinds:
             _parts.append("\nSee the runtime reference for their limits.")
-        _value_47 = _stringify(_context_helpers)
-        _parts.append(f"\n\n```json\n{_value_47}\n```")
+        _parts.append(f"\n\n```json\n{_stringify(_context_helpers)}\n```")
     if _context_compression:
-        _value_48 = _stringify(_context_compression)
         _parts.append(
-            f"\n\n## Request compression\n\nThese operations declare request compression. Their bodies are gzipped by default;\n`Client(compression=None)` disables it for the client. See the runtime reference.\n\n```json\n{_value_48}\n```"
+            f"\n\n## Request compression\n\nThese operations declare request compression. Their bodies are gzipped by default;\n`Client(compression=None)` disables it for the client. See the runtime reference.\n\n```json\n{_stringify(_context_compression)}\n```"
         )
     _parts.append("\n\n## Dependencies\n\nThe package needs these distributions at run time:\n")
     for dependency in _context_dependencies:
-        _value_49 = _stringify(dependency)
-        _parts.append(f"\n- `{_value_49}`")
+        _parts.append(f"\n- `{_stringify(dependency)}`")
     _parts.append("\n\nAdd them to your project with the command each generation prints:\n\n```console\nuv add")
     for dependency in _context_dependencies:
-        _value_50 = _stringify(dependency)
-        _parts.append(f' "{_value_50}"')
-    _value_51 = _stringify(_context_signature_style)
-    _value_52 = _stringify(_context_body_arguments)
-    _value_53 = _stringify(_context_backend)
-    _value_54 = _stringify(_context_model_package)
-    _value_55 = _stringify(_context_contracts)
+        _parts.append(f' "{_stringify(dependency)}"')
     _parts.append(
-        f"\n```\n\n## Regenerating\n\nRun the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.\nGeneration overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.\nEach generation prints the `uv add` command that adds the runtime dependencies of the package to your project;\nrun it again when a new version of datamodel-code-generator changes them.\n\n## Generation details\n\n### Retries\n\nThe default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.\nThe default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.\n`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;\ngive it deliberately to the client, a view, or a call. This package does not embed that override.\n\n### Profile\n\n| Setting | Value |\n| --- | --- |\n| `signature_style` | `{_value_51}` |\n| `body_arguments` | `{_value_52}` |\n| Model backend | `{_value_53}` |\n| Models | `{_value_54}` |\n\n### Selected operation contracts\n\nThese declarations come from the finalized operation selection and generation configuration. A key contract does\nnot guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.\nNo vendor retry-header name is inferred. Security requirements preserve ordered OR\nalternatives and their AND members; `[]` and `[{{}}]` remain distinct declared anonymous choices. Missing required\ncredentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at\n`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.\n\n```json\n{_value_55}\n```\n\n### Capabilities\n\n| Capability | Declared |\n| --- | --- |\n| Security | "
+        f"\n```\n\n## Regenerating\n\nRun the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.\nGeneration overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.\nEach generation prints the `uv add` command that adds the runtime dependencies of the package to your project;\nrun it again when a new version of datamodel-code-generator changes them.\n\n## Generation details\n\n### Retries\n\nThe default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.\nThe default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.\n`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;\ngive it deliberately to the client, a view, or a call. This package does not embed that override.\n\n### Profile\n\n| Setting | Value |\n| --- | --- |\n| `signature_style` | `{_stringify(_context_signature_style)}` |\n| `body_arguments` | `{_stringify(_context_body_arguments)}` |\n| Model backend | `{_stringify(_context_backend)}` |\n| Models | `{_stringify(_context_model_package)}` |\n\n### Selected operation contracts\n\nThese declarations come from the finalized operation selection and generation configuration. A key contract does\nnot guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.\nNo vendor retry-header name is inferred. Security requirements preserve ordered OR\nalternatives and their AND members; `[]` and `[{{}}]` remain distinct declared anonymous choices. Missing required\ncredentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at\n`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.\n\n```json\n{_stringify(_context_contracts)}\n```\n\n### Capabilities\n\n| Capability | Declared |\n| --- | --- |\n| Security | "
     )
-    _iterated_56 = False
-    for name, _loop_last_57 in _loop_last_iter(_context_security):
-        _iterated_56 = True
-        _value_58 = _stringify(name)
-        _parts.append(f"`{_value_58}`")
-        if not _loop_last_57:
+    _iterated_6 = False
+    for name, _loop_last_7 in _loop_last_iter(_context_security):
+        _iterated_6 = True
+        _parts.append(f"`{_stringify(name)}`")
+        if not _loop_last_7:
             _parts.append(", ")
-    if not _iterated_56:
+    if not _iterated_6:
         _parts.append("none")
     _parts.append(" |\n| Helpers | ")
-    _iterated_59 = False
-    for name, _loop_last_60 in _loop_last_iter(_context_capabilities):
-        _iterated_59 = True
-        _value_61 = _stringify(name)
-        _parts.append(f"`{_value_61}`")
-        if not _loop_last_60:
+    _iterated_8 = False
+    for name, _loop_last_9 in _loop_last_iter(_context_capabilities):
+        _iterated_8 = True
+        _parts.append(f"`{_stringify(name)}`")
+        if not _loop_last_9:
             _parts.append(", ")
-    if not _iterated_59:
+    if not _iterated_8:
         _parts.append("none")
     _parts.append(" |\n\nThe package copies the runtime modules its capabilities and model backend need:\n")
-    for group, _loop_last_62 in _loop_last_iter(_context_runtime):
-        _value_63 = _stringify(_getattr(group, "package"))
-        _parts.append(f"\n- `{_value_63}`: ")
-        for module, _loop_last_64 in _loop_last_iter(_getattr(group, "modules")):
-            _value_65 = _stringify(module)
-            _parts.append(f"`{_value_65}`")
-            if not _loop_last_64:
+    for group, _loop_last_10 in _loop_last_iter(_context_runtime):
+        _parts.append(f"\n- `{_stringify(_getattr(group, 'package'))}`: ")
+        for module, _loop_last_11 in _loop_last_iter(_getattr(group, "modules")):
+            _parts.append(f"`{_stringify(module)}`")
+            if not _loop_last_11:
                 _parts.append(", ")
     return "".join(_parts)

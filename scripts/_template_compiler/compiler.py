@@ -110,8 +110,7 @@ class _Compiler:
             f"# Source: {self.relative_path.as_posix()} (sha256:{source_hash})",
             "from __future__ import annotations",
             "",
-            "from typing import Any",
-            "",
+            *(("from typing import Any", "") if self._macros else ()),
             _RUNTIME_IMPORT_MARKER,
             "",
         ])
@@ -119,10 +118,6 @@ class _Compiler:
             self.lines.append(f"from .{module_name_for_path(include_path)} import render_with_scope as {alias}")
         if self._includes:
             self.lines.append("")
-        self.emit("def render(**context: Any) -> str:")
-        with self.block():
-            self.emit("return render_with_scope(_Scope(context))")
-        self.emit("")
         self.emit("def render_with_scope(_scope: _Scope) -> str:")
         with self.block():
             for macro in self.ast.body:
@@ -247,25 +242,34 @@ class _Compiler:
                     self._unsupported(node, type(node).__name__)
 
     def _emit_output(self, node: nodes.Output, scope: str, parts: str, names: dict[str, str]) -> None:
-        static: list[str] = []
-        format_segments: list[str] = []
-        has_dynamic = False
-        for output_node in node.nodes:
-            if isinstance(output_node, nodes.TemplateData):
-                if output_node.data:
-                    static.append(output_node.data)
-                    format_segments.append(output_node.data.replace("{", "{{").replace("}", "}}"))
+        """Append an output's text, or an f-string that writes each of its values in place.
+
+        Python before 3.12 rejects a backslash or the f-string's quote inside a replacement field, so a value whose
+        source holds one is bound to a name first, and so is every value before it, to keep their order.
+        """
+        outputs = [
+            (False, output_node.data)
+            if isinstance(output_node, nodes.TemplateData)
+            else (True, f"_stringify({self.expression(output_node, scope, names)})")
+            for output_node in node.nodes
+        ]
+        if not any(dynamic for dynamic, _ in outputs):
+            self.emit(f"{parts}.append({''.join(source for _, source in outputs)!r})")
+            return
+        last_bound = max(
+            (index for index, (dynamic, source) in enumerate(outputs) if dynamic and ('"' in source or "\\" in source)),
+            default=-1,
+        )
+        segments: list[str] = []
+        for index, (dynamic, source) in enumerate(outputs):
+            if not dynamic:
+                segments.append(dumps(source.replace("{", "{{").replace("}", "}}"), ensure_ascii=False)[1:-1])
+            elif index <= last_bound:
+                self.emit(f"{(value := self.unique('value'))} = {source}")
+                segments.append(f"{{{value}}}")
             else:
-                has_dynamic = True
-                value = self.unique("value")
-                self.emit(f"{value} = _stringify({self.expression(output_node, scope, names)})")
-                format_segments.append("{" + value + "}")
-        if not format_segments:
-            return
-        if not has_dynamic:
-            self.emit(f"{parts}.append({''.join(static)!r})")
-            return
-        self.emit(f"{parts}.append(f{dumps(''.join(format_segments), ensure_ascii=False)})")
+                segments.append(f"{{{source}}}")
+        self.emit(f'{parts}.append(f"{"".join(segments)}")')
 
     def _emit_if(self, node: nodes.If, scope: str, parts: str, names: dict[str, str]) -> None:
         self.emit(f"if {self.expression(node.test, scope, names)}:")

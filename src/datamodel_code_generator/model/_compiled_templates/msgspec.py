@@ -2,8 +2,6 @@
 # Source: msgspec.jinja2 (sha256:dcc7e71d929a9819)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     filter_default as _filter_default,
@@ -15,10 +13,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     _context_base_class = _scope.get("base_class")
     _context_base_class_kwargs = _scope.get("base_class_kwargs")
@@ -28,60 +22,42 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
     for decorator in _context_decorators:
-        _value_0 = _stringify(decorator)
-        _parts.append(f"{_value_0}\n")
+        _parts.append(f"{_stringify(decorator)}\n")
     if _context_base_class:
-        _value_1 = _stringify(_context_class_name)
-        _value_2 = _stringify(_context_base_class)
-        _parts.append(f"\nclass {_value_1}({_value_2}")
+        _parts.append(f"\nclass {_stringify(_context_class_name)}({_stringify(_context_base_class)}")
         for key, value in _getattr(_filter_default(_context_base_class_kwargs, {}), "items")():
-            _value_3 = _stringify(key)
-            _value_4 = _stringify(value)
-            _parts.append(f", {_value_3}={_value_4}")
+            _parts.append(f", {_stringify(key)}={_stringify(value)}")
         _parts.append("):")
     else:
-        _value_5 = _stringify(_context_class_name)
-        _parts.append(f"\nclass {_value_5}:")
+        _parts.append(f"\nclass {_stringify(_context_class_name)}:")
     if _context_description:
-        _value_6 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_6}")
+        _parts.append(f"\n    {_stringify(_context_description)}")
     ns = _namespace(has_rendered_field=False)
-    for field, _loop_last_7 in _loop_last_iter(_context_fields):
+    for field, _loop_last_0 in _loop_last_iter(_context_fields):
         if field.extras.get("is_classvar"):
             pass
         elif (not field.annotated) and field.field:
             _setattr(ns, "has_rendered_field", True)
-            _value_8 = _stringify(field.name)
-            _value_9 = _stringify(field.type_hint)
-            _value_10 = _stringify(field.field)
-            _parts.append(f"\n    {_value_8}: {_value_9} = {_value_10}")
+            _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)} = {_stringify(field.field)}")
         else:
             _setattr(ns, "has_rendered_field", True)
             if field.annotated and (not field.field):
-                _value_11 = _stringify(field.name)
-                _value_12 = _stringify(field.annotated)
-                _parts.append(f"\n    {_value_11}: {_value_12}")
+                _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.annotated)}")
             elif field.annotated and field.field:
-                _value_13 = _stringify(field.name)
-                _value_14 = _stringify(field.annotated)
-                _value_15 = _stringify(field.field)
-                _parts.append(f"\n    {_value_13}: {_value_14} = {_value_15}")
+                _parts.append(
+                    f"\n    {_stringify(field.name)}: {_stringify(field.annotated)} = {_stringify(field.field)}"
+                )
             else:
-                _value_16 = _stringify(field.name)
-                _value_17 = _stringify(field.type_hint)
-                _parts.append(f"\n    {_value_16}: {_value_17}")
+                _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)}")
             if (not field.field) and ((not field.required) or field.use_default_with_required):
-                _value_18 = _stringify(field.represented_default)
-                _parts.append(f" = {_value_18}")
+                _parts.append(f" = {_stringify(field.represented_default)}")
         if (not field.extras.get("is_classvar")) and field.docstring:
-            _value_19 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_19}")
-            if field.use_inline_field_description and (not _loop_last_7):
+            _parts.append(f"\n    {_stringify(field.docstring)}")
+            if field.use_inline_field_description and (not _loop_last_0):
                 _parts.append("\n\n")
         elif (not field.extras.get("is_classvar")) and field.inline_field_docstring:
-            _value_20 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_20}")
-            if not _loop_last_7:
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
+            if not _loop_last_0:
                 _parts.append("\n\n")
     if (not _getattr(ns, "has_rendered_field")) and (not _context_description):
         _parts.append("\n    pass")

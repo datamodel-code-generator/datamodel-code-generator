@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import PurePosixPath
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from datamodel_code_generator.config import GenerateConfig
+    from datamodel_code_generator.model._compiled_template_runtime import Scope
 
 Role: TypeAlias = Callable[..., Callable[..., str]]
 
@@ -28,15 +30,15 @@ class Templated:
     """A generated module as its role renders it: the role, the role's compiled builtin renderer, and its values."""
 
     role: str
-    compiled: Callable[..., str]
+    compiled: Callable[[Scope], str]
     values: Mapping[str, object]
 
     def render(self, role: Role) -> str:
         """Render the module through a target's roles: a custom template directory's override, or the builtin."""
-        return role(self.role, self.compiled)(**self.values)
+        return role(self.role, partial(render_compiled, self.compiled))(**self.values)
 
 
-def templated(role: str, compiled: Callable[..., str], **values: object) -> Templated:
+def templated(role: str, compiled: Callable[[Scope], str], **values: object) -> Templated:
     """Return the module a role renders from these values."""
     return Templated(role, compiled, values)
 

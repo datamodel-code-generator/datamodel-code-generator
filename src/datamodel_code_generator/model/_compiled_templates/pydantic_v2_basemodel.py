@@ -2,8 +2,6 @@
 # Source: pydantic_v2/BaseModel.jinja2 (sha256:702d9cf0d94dd726)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     MISSING as _MISSING,
     Scope as _Scope,
@@ -16,10 +14,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 
 from .pydantic_v2_configdict import render_with_scope as _include_0
 from .pydantic_v2_schema_runtime_validation import render_with_scope as _include_1
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -38,104 +32,82 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_schema_runtime_validation_use_base = _scope.get("schema_runtime_validation_use_base")
     _parts: list[str] = []
     for decorator in _context_decorators:
-        _value_0 = _stringify(decorator)
-        _parts.append(f"{_value_0}\n")
-    _value_1 = _stringify(_context_class_name)
-    _parts.append(f"class {_value_1}(")
+        _parts.append(f"{_stringify(decorator)}\n")
+    _parts.append(f"class {_stringify(_context_class_name)}(")
     if _context_schema_runtime_validation_use_base:
-        _value_2 = _stringify(_context_schema_runtime_validation_base_class_name)
-        _parts.append(f"{_value_2}")
+        _parts.append(f"{_stringify(_context_schema_runtime_validation_base_class_name)}")
         if _context_base_class != "BaseModel":
-            _value_3 = _stringify(_context_base_class)
-            _parts.append(f", {_value_3}")
+            _parts.append(f", {_stringify(_context_base_class)}")
     else:
-        _value_4 = _stringify(_context_base_class)
-        _parts.append(f"{_value_4}")
+        _parts.append(f"{_stringify(_context_base_class)}")
     _parts.append("):")
     if _is_defined(_context_comment):
-        _value_5 = _stringify(_context_comment)
-        _parts.append(f"  # {_value_5}")
+        _parts.append(f"  # {_stringify(_context_comment)}")
     if _context_description:
-        _value_6 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_6}")
+        _parts.append(f"\n    {_stringify(_context_description)}")
     if (
         (((not _context_fields) and (not _context_description)) and (not _context_config))
         and (not _context_class_body_lines)
     ) and (not _context_schema_runtime_validation):
         _parts.append("\n    pass")
     if _context_config:
-        _captured_7: list[str] = []
-        _captured_7.append("\n")
-        _include_scope_8 = _scope.child()
-        _captured_7.append(_include_0(_include_scope_8))
-        _parts.append(_filter_indent("".join(_captured_7), 4))
+        _captured_0: list[str] = []
+        _captured_0.append("\n")
+        _include_scope_1 = _scope.child()
+        _captured_0.append(_include_0(_include_scope_1))
+        _parts.append(_filter_indent("".join(_captured_0), 4))
     for field in _context_fields:
         if getattr(field, "use_pydantic_extra_annotations_dict", _MISSING):
-            _value_9 = _stringify(getattr(field, "pydantic_extra_type_hint", _MISSING))
-            _parts.append(f"\n    __annotations__ = {{\n        '__pydantic_extra__': {_value_9},\n    }}")
+            _parts.append(
+                f"\n    __annotations__ = {{\n        '__pydantic_extra__': {_stringify(getattr(field, 'pydantic_extra_type_hint', _MISSING))},\n    }}"
+            )
     for line in _context_class_body_lines:
-        _value_10 = _stringify(line)
-        _parts.append(f"\n    {_value_10}")
-    _include_scope_11 = _scope.child()
-    _parts.append(_include_1(_include_scope_11))
-    for field, _loop_last_12 in _loop_last_iter(_context_fields):
+        _parts.append(f"\n    {_stringify(line)}")
+    _include_scope_2 = _scope.child()
+    _parts.append(_include_1(_include_scope_2))
+    for field, _loop_last_3 in _loop_last_iter(_context_fields):
         if (
             (not getattr(field, "use_pydantic_extra_annotations_dict", _MISSING)) and (not field.annotated)
         ) and field.field:
-            _value_13 = _stringify(field.name)
-            _value_14 = _stringify(field.type_hint)
-            _value_15 = _stringify(field.field)
-            _parts.append(f"\n    {_value_13}: {_value_14} = {_value_15}")
+            _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)} = {_stringify(field.field)}")
         elif not getattr(field, "use_pydantic_extra_annotations_dict", _MISSING):
             if field.annotated:
-                _value_16 = _stringify(field.name)
-                _value_17 = _stringify(field.annotated)
-                _parts.append(f"\n    {_value_16}: {_value_17}")
+                _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.annotated)}")
             else:
-                _value_18 = _stringify(field.name)
-                _value_19 = _stringify(field.type_hint)
-                _parts.append(f"\n    {_value_18}: {_value_19}")
+                _parts.append(f"\n    {_stringify(field.name)}: {_stringify(field.type_hint)}")
             if (
                 (not getattr(field, "has_default_factory_in_field", _MISSING))
                 and ((not field.required) or field.use_default_with_required)
             ) and (
                 ((field.represented_default != "None") or (not field.strip_default_none)) or field.data_type.is_optional
             ):
-                _value_20 = _stringify(field.represented_default)
-                _parts.append(f" = {_value_20}")
+                _parts.append(f" = {_stringify(field.represented_default)}")
         if field.docstring:
-            _value_21 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_21}")
-            if field.use_inline_field_description and (not _loop_last_12):
+            _parts.append(f"\n    {_stringify(field.docstring)}")
+            if field.use_inline_field_description and (not _loop_last_3):
                 _parts.append("\n\n")
         elif field.inline_field_docstring:
-            _value_22 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_22}")
-            if not _loop_last_12:
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
+            if not _loop_last_3:
                 _parts.append("\n\n")
     for method in _context_methods:
-        _value_23 = _stringify(method)
-        _parts.append(f"\n\n    {_value_23}")
+        _parts.append(f"\n\n    {_stringify(method)}")
     if _context_prepared_validators:
         _parts.append("\n")
         for v in _context_prepared_validators:
-            _value_24 = _stringify(_getattr(v, "fields_str"))
-            _value_25 = _stringify(_getattr(v, "mode_str"))
-            _parts.append(f"\n\n    @field_validator({_value_24}, {_value_25})\n    @classmethod")
+            _parts.append(
+                f"\n\n    @field_validator({_stringify(_getattr(v, 'fields_str'))}, {_stringify(_getattr(v, 'mode_str'))})\n    @classmethod"
+            )
             if _getattr(v, "mode") == "wrap":
-                _value_26 = _stringify(_getattr(v, "method_name"))
-                _value_27 = _stringify(_getattr(v, "function_name"))
                 _parts.append(
-                    f"\n    def {_value_26}(cls, v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:\n        return {_value_27}(v, handler, info)"
+                    f"\n    def {_stringify(_getattr(v, 'method_name'))}(cls, v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:\n        return {_stringify(_getattr(v, 'function_name'))}(v, handler, info)"
                 )
             elif _getattr(v, "mode") == "plain":
-                _value_28 = _stringify(_getattr(v, "method_name"))
-                _value_29 = _stringify(_getattr(v, "function_name"))
-                _parts.append(f"\n    def {_value_28}(cls, v: Any) -> Any:\n        return {_value_29}(v)")
-            else:
-                _value_30 = _stringify(_getattr(v, "method_name"))
-                _value_31 = _stringify(_getattr(v, "function_name"))
                 _parts.append(
-                    f"\n    def {_value_30}(cls, v: Any, info: ValidationInfo) -> Any:\n        return {_value_31}(v, info)"
+                    f"\n    def {_stringify(_getattr(v, 'method_name'))}(cls, v: Any) -> Any:\n        return {_stringify(_getattr(v, 'function_name'))}(v)"
+                )
+            else:
+                _parts.append(
+                    f"\n    def {_stringify(_getattr(v, 'method_name'))}(cls, v: Any, info: ValidationInfo) -> Any:\n        return {_stringify(_getattr(v, 'function_name'))}(v, info)"
                 )
     return "".join(_parts)

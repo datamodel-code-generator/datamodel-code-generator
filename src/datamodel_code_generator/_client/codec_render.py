@@ -147,7 +147,7 @@ class _Renderer:
             imports.append(statement(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
         source = templated(
             "model_bindings.jinja2",
-            model_bindings_template.render,
+            model_bindings_template.render_with_scope,
             imports=self.module.imports(),
             codec_imports=imports,
             models_annotation=annotation,

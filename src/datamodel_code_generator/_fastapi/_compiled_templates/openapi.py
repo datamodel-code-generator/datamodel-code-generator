@@ -2,15 +2,9 @@
 # Source: openapi.jinja2 (sha256:01eece82956fee9d)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:

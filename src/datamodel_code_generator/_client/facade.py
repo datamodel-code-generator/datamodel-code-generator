@@ -77,7 +77,7 @@ def facade_module(  # noqa: PLR0913
     """
     return templated(
         "facade.jinja2",
-        facade_template.render,
+        facade_template.render_with_scope,
         module=module,
         docstring=docstring,
         future=future,
