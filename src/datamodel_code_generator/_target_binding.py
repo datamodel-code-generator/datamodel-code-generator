@@ -2051,10 +2051,7 @@ def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
     """Pair a type's member types with the subschemas they were generated from."""
     inner = data_type
     while (
-        len(inner.data_types) == 1
-        and inner.reference is None
-        and not (inner.is_list or inner.is_sequence or inner.is_set or inner.is_frozen_set or inner.is_tuple)
-        and not (inner.is_dict or inner.is_mapping)
+        len(inner.data_types) == 1 and inner.reference is None and not inner._is_container  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
     ):
         inner = inner.data_types[0]
     if inner.is_tuple:
@@ -2974,15 +2971,7 @@ class _Models:
             current = pending.pop()
             if current.is_optional or current.type == "None":
                 return True
-            if any((
-                current.is_list,
-                current.is_dict,
-                current.is_set,
-                current.is_frozen_set,
-                current.is_mapping,
-                current.is_sequence,
-                current.is_tuple,
-            )):
+            if current._is_container:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                 continue
             if (reference := current.reference) is not None:
                 named = references.get(id(reference), (reference, False))[1]

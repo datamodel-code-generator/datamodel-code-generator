@@ -597,15 +597,7 @@ def union_members(data_type: DataType) -> Sequence[DataType]:
 
     A container of several items is no union at its top level: it writes the union of its items inside it.
     """
-    if len(data_type.data_types) < 2 or any((  # noqa: PLR2004
-        data_type.is_dict,
-        data_type.is_list,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-    )):
+    if len(data_type.data_types) < 2 or data_type._is_container:  # noqa: PLR2004, SLF001
         return ()
     return data_type.data_types
 
@@ -1120,9 +1112,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             or not getattr(reference.source, "IS_EVALUATED_ALIAS", False)
         ):
             return False
-        if self.is_tuple or any(
-            _container_name(self, container) is not None for container in self._TYPE_HINT_CONTAINER_ORDER
-        ):
+        if self._is_container:
             return False
         if reference is None:
             members = self.data_types
@@ -1132,6 +1122,19 @@ class DataType(_BaseModel):  # noqa: PLR0904
             )
         fields = getattr(reference.source, "fields", ())[:1]
         return any(_writes_none_alone(field, (*chain, reference)) for field in fields)
+
+    @property
+    def _is_container(self) -> bool:
+        """Return whether the type is a dict, list, set, frozen set, mapping, sequence or tuple."""
+        return (
+            self.is_dict
+            or self.is_list
+            or self.is_set
+            or self.is_frozen_set
+            or self.is_mapping
+            or self.is_sequence
+            or self.is_tuple
+        )
 
     @property
     def _is_bare_none(self) -> bool:

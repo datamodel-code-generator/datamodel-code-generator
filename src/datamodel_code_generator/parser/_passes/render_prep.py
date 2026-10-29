@@ -37,9 +37,13 @@ from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
+    GenerationStoreHost,
+    ImportOptionsHost,
+    OutputOptionsHost,
     RecursionFactsHost,
     ReferenceExpressionHost,
     ReplacedRootsHost,
+    RootModelTypeHost,
     RuntimeExpressionFlags,
     _context_models,
     _copy_data_type,
@@ -68,10 +72,8 @@ from datamodel_code_generator.types import DataType, DefaultValueRecipe
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
-    from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.model._render_plan import (
         AssignmentFacts,
         FieldRenderPlan,
@@ -87,7 +89,7 @@ if TYPE_CHECKING:
         _FinalizeState,
         _PreparedModule,
     )
-    from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
+    from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
@@ -122,16 +124,16 @@ class RenderPrepHost(
     ReferenceExpressionHost,
     ReplacedRootsHost,
     RuntimeExpressionFlags,
+    GenerationStoreHost,
+    OutputOptionsHost,
+    RootModelTypeHost,
+    ImportOptionsHost,
     Protocol,
 ):
     """The options, run state and hooks of the parser that the render preparation passes read and write."""
 
     _decimal_default_warning_count: int
     _decimal_default_warning_examples: list[str] | None
-
-    @property
-    def _import_overrides(self) -> dict[str, str] | None:
-        """The modules ``--import-overrides`` routes imports through, by imported name."""
 
     @property
     def _quotes_hidden_types(self) -> bool:
@@ -146,32 +148,8 @@ class RenderPrepHost(
         """The field type of the output."""
 
     @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
     def data_type_manager(self) -> DataTypeManager:
         """The data type manager of the output."""
-
-    @property
-    def deserialize_default_value_types(self) -> frozenset[DefaultValueType]:
-        """The kinds of default values deserialized into their types."""
-
-    @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
-
-    @property
-    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
-        """The root model type whose class body evaluates its root type, if the output has one."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
 
     def _copy_model_field(self, field: DataModelFieldBase) -> DataModelFieldBase:
         """Copy a field with its data types."""
@@ -274,19 +252,6 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     It reads the facts that are final at the end of the module loop: the required state, the default and the type.
     """
     return _applies_default(field) and _needs_validate_default(field.data_type)
-
-
-def _wraps_member_hints(data_type: DataType) -> bool:
-    """Return whether the type writes the hints of its members inside a container."""
-    return (
-        data_type.is_list
-        or data_type.is_dict
-        or data_type.is_set
-        or data_type.is_frozen_set
-        or data_type.is_mapping
-        or data_type.is_sequence
-        or data_type.is_tuple
-    )
 
 
 def _no_hidden_type_names(model: DataModel) -> Collection[str | None]:  # noqa: ARG001
@@ -847,7 +812,7 @@ def disable_union_operator_for_forward_ref(
                 continue
             seen.add(id(holder))
             joins_members = holder.is_union and not holder.is_tuple
-            wraps_members = _wraps_member_hints(holder)
+            wraps_members = holder._is_container  # noqa: SLF001
             if joins_members or (writes_name and not wraps_members):
                 graph_builder.drop_union_operator(holder)
             if use_typing_generics and node is data_type:

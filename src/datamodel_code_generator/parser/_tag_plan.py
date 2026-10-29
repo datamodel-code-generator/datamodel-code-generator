@@ -40,6 +40,8 @@ from functools import cache
 from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, final
 
+from typing_extensions import Protocol
+
 from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
@@ -71,7 +73,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _get_enum_from_base,
     _get_mapping_discriminator_values,
     _get_schema_path,
-    _is_discriminator_container,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _keeps_instance_field,
@@ -109,6 +110,7 @@ __all__ = [
     "StructTagKind",
     "TagCapabilities",
     "TagPlan",
+    "TagPlanHost",
     "UnionSite",
     "UnionTagDecision",
     "UnionView",
@@ -531,7 +533,7 @@ def site_validity(  # noqa: PLR0913
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
             continue
-        if _is_discriminator_container(data_type) or not data_type.reference:
+        if data_type._is_container or not data_type.reference:  # noqa: SLF001
             return "dropped-invalid"
         variant = data_type.reference.source
         if (
@@ -1220,6 +1222,14 @@ class TagPlan:
     def record_settled(self, site: UnionSite, status: SiteStatus) -> None:
         """Remember that the end of L5 drops the discriminator of a union site."""
         self.unions.setdefault(id(site.field), UnionTagDecision(site, None, status)).status = status
+
+
+class TagPlanHost(Protocol):
+    """The tag plan of the parse, which the passes that tag unions and structs read and write."""
+
+    @property
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
 
 
 def declared_union_tags(model: DataModel) -> tuple[HashableComparable, ...]:

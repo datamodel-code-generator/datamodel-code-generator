@@ -12,6 +12,7 @@ from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -153,33 +154,11 @@ def _get_config_class() -> type[Config]:
             """Get model fields."""
             return cls.model_fields
 
-        @field_validator(
-            "aliases",
-            "serialization_aliases",
-            "extra_template_data",
-            "custom_formatters_kwargs",
-            "default_values",
-            "base_class_map",
-            "model_name_map",
-            "enum_field_as_literal_map",
-            "duplicate_name_suffix",
-            "import_overrides",
-            "type_overrides",
-            "server_handler_modes",
-            "server_body_modes",
-            "server_primary_responses",
-            "server_operation_names",
-            "server_router_names",
-            "server_parameter_names",
-            "client_resource_names",
-            "client_operations",
-            "client_protocols",
-            mode="before",
-        )
+        @field_validator(*JSON_CONFIG_FIELDS, mode="before")
         @classmethod
         def validate_json_config(cls, value: Any, info: ValidationInfo) -> Any:
             """Load and validate JSON configuration values from inline JSON or file paths."""
-            if value is None:  # pragma: no cover
+            if value is None:
                 return value
             from datamodel_code_generator.json_config import JsonConfigError, load_json_config_field  # noqa: PLC0415
 
@@ -187,20 +166,6 @@ def _get_config_class() -> type[Config]:
             try:
                 json_config_source: JsonConfigSource = cast("JsonConfigSource", value)
                 return load_json_config_field(field_name, json_config_source)
-            except JsonConfigError as e:
-                raise Error(str(e)) from e
-
-        @field_validator("validators", mode="before")
-        @classmethod
-        def validate_validators_config(cls, value: Any) -> Any:
-            """Validate validators lazily only when the option is present."""
-            if value is None:
-                return None
-
-            from datamodel_code_generator.json_config import JsonConfigError, load_json_config_field  # noqa: PLC0415
-
-            try:
-                return load_json_config_field("validators", cast("JsonConfigSource", value))
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 

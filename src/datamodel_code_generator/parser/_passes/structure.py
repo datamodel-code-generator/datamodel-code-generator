@@ -29,6 +29,11 @@ from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_N
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
+    DataModelTypeHost,
+    DeduplicationHost,
+    RecursionFactsHost,
+    RootModelTypeHost,
+    TargetPythonVersionHost,
     _parsed_rule_data_types,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
@@ -36,8 +41,8 @@ from datamodel_code_generator.parser._passes._shared import (
     replace_model_in_list,
     require_update_action,
 )
-from datamodel_code_generator.parser._passes._state import Forwarder, RecursionFacts, _ModuleNames
-from datamodel_code_generator.parser._tag_plan import declared_union_tags
+from datamodel_code_generator.parser._passes._state import Forwarder, _ModuleNames
+from datamodel_code_generator.parser._tag_plan import TagPlanHost, declared_union_tags
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
@@ -48,8 +53,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
     from datamodel_code_generator.model.base import BaseClassDataType
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
-    from datamodel_code_generator.parser._passes._shared import _ReuseOptimizationContext
+    from datamodel_code_generator.parser._model_shapes import ModelShapes, ShapeRow
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
         ForwarderMap,
@@ -59,8 +63,6 @@ if TYPE_CHECKING:
         StructuredRun,
         _StructureState,
     )
-    from datamodel_code_generator.parser._tag_plan import TagPlan
-    from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -81,23 +83,19 @@ __all__ = [
 ]
 
 
-class StructureHost(BaseStandInHost, Protocol):
+class StructureHost(
+    RecursionFactsHost,
+    BaseStandInHost,
+    DeduplicationHost,
+    DataModelTypeHost,
+    RootModelTypeHost,
+    TargetPythonVersionHost,
+    TagPlanHost,
+    Protocol,
+):
     """The options, run state and hooks of the parser that the structure passes read and write."""
 
-    _recursion_facts: RecursionFacts
     _uses_standard_generation_templates: bool
-
-    @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
-
-    @property
-    def _collapsed_reuse_models(self) -> dict[int, list[DataModel]]:
-        """The models collapsed reuse removed, by the id of their canonical model."""
-
-    @property
-    def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
-        """The data types collapsed reuse redirected, with the reference each named before."""
 
     @property
     def _configured_generation_types_are_builtin(self) -> bool:
@@ -108,32 +106,12 @@ class StructureHost(BaseStandInHost, Protocol):
         """The stand-ins of schemas whose ``x-python-import`` declares the class, which no root-model rule drops."""
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
     def _merged_copies(self) -> set[DataModel]:
         """The copies of schemas merged from another document."""
 
     @property
-    def _reuse_optimization_context(self) -> _ReuseOptimizationContext:
-        """The constraints that type overrides put on reuse."""
-
-    @property
     def _self_named_root_models(self) -> list[DataModel]:
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
-
-    @property
-    def _reuse_groups(self) -> ReuseGroups:
-        """The plan of which model of a group of duplicates stays canonical."""
-
-    @property
-    def collapse_reuse_models(self) -> bool:
-        """Whether reuse removes duplicates instead of subclassing them."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
 
     @property
     def config(self) -> ParserConfig:
@@ -148,10 +126,6 @@ class StructureHost(BaseStandInHost, Protocol):
         """The custom formatter modules, if configured."""
 
     @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
     def defer_formatting(self) -> bool:
         """Whether formatting waits until every module is written."""
 
@@ -160,28 +134,8 @@ class StructureHost(BaseStandInHost, Protocol):
         """The configured formatters."""
 
     @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
-
-    @property
-    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
-        """The root model type whose class body evaluates its root type, if the output has one."""
-
-    @property
-    def reuse_model(self) -> bool:
-        """Whether models that render the same are reused."""
-
-    @property
-    def reuse_scope(self) -> ReuseScope | None:
-        """The scope of reuse."""
-
-    @property
     def shared_module_name(self) -> str:
         """The name of the module tree-scope reuse moves shared models to."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version of the output."""
 
     @property
     def treat_dot_as_module(self) -> bool | None:
@@ -213,12 +167,6 @@ class StructureHost(BaseStandInHost, Protocol):
         self, model: DataModel, root_data_type: DataType, models_set: set[DataModel]
     ) -> Reference | None:
         """Return the model a duplicated root model names, which replaces it."""
-
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
-
-    def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
-        """Return the keys of one comparison pass of the dedup or reuse user of a row."""
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether a class name of an explicit root keeps its leading underscore."""
@@ -449,13 +397,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 break
 
             for canonical, duplicate in duplicates:
-                redirect_collapsed_reuse_users(
-                    parser._graph_builder,  # noqa: SLF001
-                    parser._collapsed_reuse_models,  # noqa: SLF001
-                    parser._collapsed_reuse_users,  # noqa: SLF001
-                    duplicate,
-                    canonical,
-                )
+                redirect_collapsed_reuse_users(parser, duplicate, canonical)
                 for child in duplicate.reference.iter_data_model_children():
                     parser._graph_builder.set_base_classes(  # noqa: SLF001
                         child,
@@ -642,13 +584,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912, PLR0915
             if module != duplicate_module:
                 continue
             if isinstance(duplicate_model, Enum) or not supports_inheritance or parser.collapse_reuse_models:
-                redirect_collapsed_reuse_users(
-                    parser._graph_builder,  # noqa: SLF001
-                    parser._collapsed_reuse_models,  # noqa: SLF001
-                    parser._collapsed_reuse_users,  # noqa: SLF001
-                    duplicate_model,
-                    canonical_model,
-                )
+                redirect_collapsed_reuse_users(parser, duplicate_model, canonical_model)
                 models_to_remove[module].add(duplicate_model)
                 parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
             else:

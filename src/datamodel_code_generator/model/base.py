@@ -845,15 +845,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def _self_reference_outside_container(self) -> bool:
         """Return whether the field's type names its model outside a container, through single-member wrappers."""
         data_type = self.data_type
-        while not (
-            data_type.is_list
-            or data_type.is_sequence
-            or data_type.is_dict
-            or data_type.is_mapping
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_tuple
-        ):
+        while not data_type._is_container:  # noqa: SLF001
             if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
                 return True
             data_type = data_type.data_types[0]
@@ -1159,13 +1151,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             or data_type.dict_key
             or data_type.literals
             or data_type.enum_member_literals
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
+            or data_type._is_container  # noqa: SLF001
         )
 
     def _admits_none(self) -> bool:
@@ -1186,15 +1172,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         )
 
     def _data_type_renders_none(self, data_type: DataType) -> bool:
-        if any((
-            data_type.is_dict,
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_mapping,
-            data_type.is_sequence,
-            data_type.is_tuple,
-        )):
+        if data_type._is_container:  # noqa: SLF001
             return False
         if data_type.alias or data_type.reference or data_type.literals or data_type.enum_member_literals:
             return False
@@ -1244,13 +1222,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             or data_type.python_type
             or data_type.kwargs
             or data_type.is_optional
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
+            or data_type._is_container  # noqa: SLF001
             or data_type.use_generic_container
         )
 
@@ -1268,16 +1240,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return whether this simple DataType renders to something other than None."""
         data_type = data_type or self.data_type
         return bool(
-            data_type.alias
-            or data_type.type
-            or data_type.reference
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
+            data_type.alias or data_type.type or data_type.reference or data_type._is_container  # noqa: SLF001
         )
 
     @property

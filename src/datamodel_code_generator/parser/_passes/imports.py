@@ -36,8 +36,15 @@ from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
+    DataModelTypeHost,
+    GraphBuilderHost,
+    ImportOptionsHost,
+    OutputOptionsHost,
     RecursionFactsHost,
+    ReferenceExpressionHost,
     ReplacedRootsHost,
+    ReuseOptionsHost,
+    RootModelHost,
     _context_models,
     _declares_unique_items,
     _format_tags,
@@ -55,16 +62,15 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.render_prep import _DECIMAL_WARNING_EXAMPLE_LIMIT
+from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import union_members, written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
-    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -79,8 +85,6 @@ if TYPE_CHECKING:
         SortedDataModels,
         _FinalizeState,
     )
-    from datamodel_code_generator.parser._tag_plan import TagPlan
-    from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelType
     from datamodel_code_generator.types import DataType
 
@@ -116,28 +120,16 @@ __all__ = [
 ]
 
 
-class ImportsHost(ReplacedRootsHost, Protocol[ContextT]):
+class ImportsHost(
+    ReferenceExpressionHost,
+    ReplacedRootsHost,
+    GraphBuilderHost,
+    DataModelTypeHost,
+    ImportOptionsHost,
+    TagPlanHost,
+    Protocol[ContextT],
+):
     """The options, run state and hooks of the parser that the import passes read and write."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
-    def _import_ledger(self) -> ModuleImportLedger:
-        """The ledger of the imports each module adds."""
-
-    @property
-    def _import_overrides(self) -> dict[str, str] | None:
-        """The modules ``--import-overrides`` routes imports through, by imported name."""
-
-    @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
-
-    @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
 
     @property
     def field_name_model_type(self) -> ModelType:
@@ -150,14 +142,6 @@ class ImportsHost(ReplacedRootsHost, Protocol[ContextT]):
     @property
     def model_resolver(self) -> ModelResolver:
         """The resolver of model and field names."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
-
-    @property
-    def treat_dot_as_module(self) -> bool | None:
-        """Whether dots in schema names make modules."""
 
     def _collect_used_names_from_models(
         self,
@@ -177,7 +161,7 @@ class ImportsHost(ReplacedRootsHost, Protocol[ContextT]):
         """Merge the imports that planning the helpers added into the imports of each module."""
 
 
-class FinishHost(Protocol):
+class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost, Protocol):
     """The options and run state of the parser that the finish passes read and write."""
 
     _decimal_default_warning_count: int
@@ -200,36 +184,8 @@ class FinishHost(Protocol):
         """The plan of which model of a group of duplicates stays canonical."""
 
     @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
-
-    @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
-    def deserialize_default_value_types(self) -> frozenset[DefaultValueType]:
-        """The kinds of default values deserialized into their types."""
-
-    @property
     def generate_schema_validators(self) -> bool:
         """Whether models get the schema validator rules the types cannot express."""
-
-    @property
-    def reuse_model(self) -> bool:
-        """Whether models that render the same are reused."""
-
-    @property
-    def reuse_scope(self) -> ReuseScope | None:
-        """The scope of reuse."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
 
     @property
     def typed_nullable_map_reference_ids(self) -> set[int]:
@@ -251,11 +207,14 @@ class FinishHost(Protocol):
     def use_unique_items_as_set(self) -> bool:
         """Whether arrays of unique items are written as sets."""
 
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
 
-
-class RenderHost(RecursionFactsHost, BaseStandInHost, Protocol[ConfigT, ContextT, ResultT]):
+class RenderHost(
+    RecursionFactsHost,
+    ReferenceExpressionHost,
+    BaseStandInHost,
+    ImportOptionsHost,
+    Protocol[ConfigT, ContextT, ResultT],
+):
     """The options, run state and rendering hooks of the parser that planning imports and rendering read and call."""
 
     model_metadata: ModelMetadata | None
@@ -270,28 +229,12 @@ class RenderHost(RecursionFactsHost, BaseStandInHost, Protocol[ConfigT, ContextT
         """The generated base class of every model, if the output has one."""
 
     @property
-    def _import_ledger(self) -> ModuleImportLedger:
-        """The ledger of the imports each module adds."""
-
-    @property
-    def _import_overrides(self) -> dict[str, str] | None:
-        """The modules ``--import-overrides`` routes imports through, by imported name."""
-
-    @property
     def _result_modules_postprocessor(self) -> Callable[..., dict[tuple[str, ...], ResultT]]:
         """The function that lays out the results of the modules under ``--treat-dot-as-module``."""
 
     @property
     def imports(self) -> Imports:
         """The imports every module shares."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
-
-    @property
-    def treat_dot_as_module(self) -> bool | None:
-        """Whether dots in schema names make modules."""
 
     def _build_model_metadata(
         self, contexts: list[ContextT], model_identities: Mapping[DataModel, str]
