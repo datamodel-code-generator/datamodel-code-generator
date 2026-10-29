@@ -127,6 +127,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
+    _field_source_name,
     _linearize_depth_first,
     _sort_for_mro,
     get_inherited_fields,
@@ -769,8 +770,6 @@ def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
     return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
 
 
-def _field_source_name(field: DataModelFieldBase) -> str | None:
-    return field.original_name if field.original_name is not None else field.name
 
 
 def _is_rw_model_variant_path(path: str) -> bool:

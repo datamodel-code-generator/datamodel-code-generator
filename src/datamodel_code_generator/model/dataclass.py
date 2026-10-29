@@ -34,7 +34,7 @@ from datamodel_code_generator.model._render_plan import (
     FieldRenderPlan,
     RuleId,
     Why,
-    field_call_text,
+    _FieldCallWriter,
     written_argument_names,
     written_text,
 )
@@ -117,20 +117,21 @@ def _nested_dataclass_sources(data_type: DataType) -> tuple[DataClass, ...]:
     return tuple(sources)
 
 
+def _mapping_annotation(data_type: DataType) -> bool:
+    """Return whether the annotation is a mapping, or a union with a mapping member, which a mapping default fits."""
+    return any(member.is_dict or member.is_mapping for member in (data_type, *data_type.data_types))
+
+
 def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass]:
     """Yield dataclass models that the mapping defaults of model's constructor fields materialize."""
     effective_fields = model.fields if not model.base_classes else get_effective_fields(model)
     for field in effective_fields:
-        if not field_participates_in_constructor(field) or not isinstance(field.default, dict):
-            continue
-        data_types = field.data_type.data_types or (field.data_type,)
         if (
-            field.data_type.is_dict
-            or field.data_type.is_mapping
-            or any(data_type.is_dict or data_type.is_mapping for data_type in data_types)
+            field_participates_in_constructor(field)
+            and isinstance(field.default, dict)
+            and not _mapping_annotation(field.data_type)
         ):
-            continue
-        yield from _nested_dataclass_sources(field.data_type)
+            yield from _nested_dataclass_sources(field.data_type)
 
 
 def _has_recursive_nested_mapping_default(model: DataClass) -> bool:
@@ -368,7 +369,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         self._set_deprecated_decorator()
 
 
-class DataModelField(DataModelFieldBase):
+class DataModelField(_FieldCallWriter, DataModelFieldBase):
     """Field implementation for dataclass models."""
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "dataclass"
@@ -402,10 +403,7 @@ class DataModelField(DataModelFieldBase):
     @override
     def field(self) -> str | None:
         """For backwards compatibility."""
-        result = str(self)
-        if not result:
-            return None
-        return result
+        return str(self) or None
 
     def _get_default_factory_for_nested_model(self) -> _NestedModelFactory | None:
         """Get default_factory for nested dataclass model fields.
@@ -416,15 +414,10 @@ class DataModelField(DataModelFieldBase):
 
     def _get_default_factory_for_nested_value(self, default: dict[Any, Any]) -> _NestedDataclassFactory | None:
         """Return the factory that builds a nested dataclass from a mapping default, if exactly one can."""
-        if self.data_type.is_dict or self.data_type.is_mapping:
+        if _mapping_annotation(self.data_type):
             return None
-
-        data_types = self.data_type.data_types or (self.data_type,)
-        if any(data_type.is_dict or data_type.is_mapping for data_type in data_types):
-            return None
-
         default_factory: _NestedDataclassFactory | None = None
-        for data_type in data_types:
+        for data_type in self.data_type.data_types or (self.data_type,):
             if (factory := _build_nested_dataclass_default_factory(data_type, default)) is None:
                 continue
             if default_factory is not None:
@@ -520,12 +513,6 @@ class DataModelField(DataModelFieldBase):
             bare_default=bare_default,
         )
 
-    def _plan_text(self, plan: FieldRenderPlan) -> str:  # noqa: PLR6301
-        """Write what follows the annotation from ``plan``: ``field(...)``, the default alone, or nothing."""
-        if (call := plan.call) is not None:
-            return field_call_text(call)
-        return represent_python_value(plan.default.value) if plan.bare_default else ""
-
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
         return (
@@ -538,18 +525,6 @@ class DataModelField(DataModelFieldBase):
         """Return the items the field declares that its plan must write or omit: its ``field()`` arguments."""
         return frozenset(f"extra:{key}" for key in self.extras if key in self._FIELD_KEYS)
 
-    def _get_field_data(self) -> dict[str, Any]:
-        """Return the ``field()`` arguments the field writes, its default factory as text."""
-        plan = self._render_plan()
-        if plan.bare_default:
-            return {"default": plan.default.value}
-        if (call := plan.call) is None:
-            return {}
-        return {
-            argument.name: str(argument.value) if argument.name == "default_factory" else argument.value
-            for argument in call.kwargs
-        }
-
     @override
     def _written_assignment(self) -> DataclassWritten:
         """Return the ``field()`` arguments the field writes and whether it forces a ``field()``."""
@@ -559,11 +534,6 @@ class DataModelField(DataModelFieldBase):
         """Return the written assignment of the ``field()`` arguments ``data``, with what the field's call renders."""
         forced = self._has_forced_field_assignment
         return DataclassWritten(data=data, forced=forced, text=written_text(self, writes=data.any or forced))
-
-    @override
-    def __str__(self) -> str:
-        """Generate field() call or default value representation."""
-        return self._plan_text(self._render_plan())
 
 
 class DataTypeManager(_DataTypeManager):

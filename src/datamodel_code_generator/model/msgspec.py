@@ -43,7 +43,7 @@ from datamodel_code_generator.model._render_plan import (
     Omitted,
     RuleId,
     Why,
-    field_call_text,
+    _FieldCallWriter,
     written_argument_names,
     written_text,
 )
@@ -723,7 +723,7 @@ class Constraints(_Constraints):
 
 
 @import_extender
-class DataModelField(DataModelFieldBase):
+class DataModelField(_FieldCallWriter, DataModelFieldBase):
     """Field implementation for msgspec Struct models."""
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "msgspec"
@@ -1046,13 +1046,6 @@ class DataModelField(DataModelFieldBase):
             written_type=self._written_type(meta),
         )
 
-    @staticmethod
-    def _plan_text(plan: FieldRenderPlan) -> str:
-        """Write what follows the annotation from ``plan``: ``field(...)``, the default alone, or nothing."""
-        if (call := plan.call) is not None:
-            return field_call_text(call)
-        return represent_python_value(plan.default.value) if plan.bare_default else ""
-
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
         return (
@@ -1076,23 +1069,6 @@ class DataModelField(DataModelFieldBase):
                 f"constraint:{key}" for key, value in self.constraints.model_dump().items() if value is not None
             )
         return frozenset(items)
-
-    def _get_field_data(self) -> dict[str, Any]:
-        """Return the ``field()`` arguments the field writes, its default factory as text."""
-        plan = self._render_plan()
-        if plan.bare_default:
-            return {"default": plan.default.value}
-        if (call := plan.call) is None:
-            return {}
-        return {
-            argument.name: str(argument.value) if argument.name == "default_factory" else argument.value
-            for argument in call.kwargs
-        }
-
-    @override
-    def __str__(self) -> str:
-        """Generate field() call or default value representation."""
-        return self._plan_text(self._render_plan())
 
     @property
     @override

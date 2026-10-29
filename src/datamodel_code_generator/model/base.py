@@ -2395,6 +2395,11 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
+def _field_source_name(field: DataModelFieldBase) -> str | None:
+    """Return the name the schema gives the field: its original name, else its name."""
+    return field.original_name if field.original_name is not None else field.name
+
+
 def _has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a standard model field renders with an assignment."""
     return _classify_field_assignment(field, "model").assigned
