@@ -3,12 +3,15 @@
 A YAML key such as ``1`` or ``200`` loads as a number. A key that names a component, path, webhook, callback, method,
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
 must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
-path its error names, which only the reader can locate, as a function called when the error is raised.
+path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
+JSON pointer tokens through a loaded document is here too; each reader passes how it reads one member.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final, cast
+
+from typing_extensions import Sentinel
 
 from datamodel_code_generator import SchemaParseError
 
@@ -17,7 +20,33 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._source import YamlValue
 
-__all__ = ["document_statuses", "string_key", "string_keys"]
+__all__ = ["MISSING", "as_mapping", "descend", "document_statuses", "string_key", "string_keys"]
+
+MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
+
+
+def as_mapping(value: object) -> dict[str, YamlValue]:
+    """Return a loaded value that is a mapping, or an empty mapping for any other value."""
+    return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
+
+
+def descend(
+    value: YamlValue,
+    tokens: Iterable[str],
+    member: Callable[[YamlValue, str], YamlValue],
+    missing: YamlValue = None,
+    errors: tuple[type[Exception], ...] = (LookupError, TypeError, ValueError),
+) -> YamlValue:
+    """Return the node pointer tokens name below a loaded value, or ``missing`` (such as ``MISSING``) when it has none.
+
+    ``member`` reads one token's member of a value and raises one of ``errors`` when the value has none.
+    """
+    try:
+        for token in tokens:
+            value = member(value, token)
+    except errors:
+        return missing
+    return value
 
 
 def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]) -> str:
