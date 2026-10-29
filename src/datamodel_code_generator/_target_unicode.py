@@ -19,12 +19,12 @@ import unicodedata
 from bisect import bisect_left, bisect_right
 from functools import cache, cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, NamedTuple, TypeVar
 
 from datamodel_code_generator._format_types import PythonVersion, PythonVersionMin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = (
     "NEWEST_TARGET",
@@ -71,6 +71,9 @@ _HANGUL_SYLLABLE_COUNT: Final = 11172
 _PLACEHOLDER_RANGES: Final = {2: ((0x0780, 0x07A5), (0x07CA, 0x07EA)), 3: ((0x4E00, 0x9FFC),), 4: ((0x20000, 0x2A6DD),)}
 """Letters lent to the running interpreter for identifier characters it does not know, by UTF-8 length: Thaana and
 N'Ko, CJK ideographs and CJK Extension B, which every target has without case or normalization data."""
+
+
+_R = TypeVar("_R")
 
 
 class _Case(NamedTuple):
@@ -187,20 +190,33 @@ class _TargetUnicode:
         """Match a character the target does not have."""
         return re.compile(f"[^{_class(self.assigned)}]")
 
+    def _latest(
+        self,
+        changes: Mapping[tuple[int, int], Iterable[tuple[Any, ...]]],
+        unchanged: Sequence[Any],
+        record: Callable[..., _R],
+    ) -> dict[str, _R]:
+        """Return each changed character's data as of the target: its last change up to the target, or `unchanged`.
+
+        A row holds texts, each standing for the character itself when empty, and a number last.
+        """
+        table: dict[str, _R] = {}
+        for (first, last), rows in changes.items():
+            latest = unchanged
+            for index, *values in rows:
+                if index > self._index:
+                    break
+                latest = values
+            *texts, number = latest
+            for code_point in range(first, last + 1):
+                character = chr(code_point)
+                table[character] = record(*[text or character for text in texts], number)
+        return table
+
     @cached_property
     def case(self) -> dict[str, _Case]:
         """Return the case data of each character whose case data differs between targets."""
-        cases: dict[str, _Case] = {}
-        for (first, last), changes in self._data.CASE_CHANGES.items():
-            for code_point in range(first, last + 1):
-                character = chr(code_point)
-                case = _Case(character, character, character, character, 0)
-                for index, upper, lower, title, fold, flags in changes:
-                    if index > self._index:
-                        break
-                    case = _Case(upper or character, lower or character, title or character, fold or character, flags)
-                cases[character] = case
-        return cases
+        return self._latest(self._data.CASE_CHANGES, ("", "", "", "", 0), _Case)
 
     @cached_property
     def case_special(self) -> re.Pattern[str]:
@@ -210,17 +226,7 @@ class _TargetUnicode:
     @cached_property
     def normalization(self) -> dict[str, _Normalization]:
         """Return the normalization data of each character whose data differs between targets."""
-        items: dict[str, _Normalization] = {}
-        for (first, last), changes in self._data.NORMALIZATION_CHANGES.items():
-            for code_point in range(first, last + 1):
-                character = chr(code_point)
-                item = _Normalization(character, character, 0)
-                for index, canonical, compatibility, combining in changes:
-                    if index > self._index:
-                        break
-                    item = _Normalization(canonical or character, compatibility or character, combining)
-                items[character] = item
-        return items
+        return self._latest(self._data.NORMALIZATION_CHANGES, ("", "", 0), _Normalization)
 
     @cached_property
     def compositions(self) -> dict[tuple[str, str], str]:

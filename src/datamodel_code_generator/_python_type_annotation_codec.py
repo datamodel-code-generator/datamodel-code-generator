@@ -16,7 +16,7 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeSubscript,
     PythonTypeTuple,
     PythonTypeUnion,
-    _python_type_name,
+    python_type_name,
 )
 
 
@@ -173,7 +173,7 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
 ) -> PythonTypeExpr:
     match node:
         case ast.Name(id=name):
-            return _python_type_name(name)
+            return python_type_name(name)
         case ast.Attribute():
             if (parts := _qualified_name_parts(node)) is None:
                 raise _InvalidPythonTypeAnnotationError
@@ -201,7 +201,7 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.BinOp(op=ast.BitOr()):
             return _python_type_union_from_ast(node)
         case ast.Constant(value=None):
-            return _python_type_name("None")
+            return python_type_name("None")
         case ast.Constant(value=value) if allow_literal and value is Ellipsis:
             return PythonTypeEllipsis()
         case ast.Constant(value=value) if allow_literal and isinstance(value, (str, bytes)):

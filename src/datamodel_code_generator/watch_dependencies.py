@@ -19,7 +19,12 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Mapping
 
 _JSON_CONFIG_FIELDS = frozenset(JSON_CONFIG_FIELDS)
-_TARGET_OUTPUT_FIELDS = ("server_output", "client_output")
+_CONFIG_PATH_FIELDS = ("input", "custom_file_header_path", "custom_template_dir", "http_local_ref_path")
+_FILE_FIELDS = ("custom_file_header_path", *_JSON_CONFIG_FIELDS)
+_DIRECTORY_FIELDS = ("custom_template_dir", "http_local_ref_path")
+_OUTPUT_FIELDS = (("output", None), ("emit_model_metadata", False), ("server_output", True), ("client_output", True))
+"""Output fields with whether each is a directory: the model output is judged by what it is, the metadata is always a
+single file, including when its name has no suffix, and the target outputs are always directories."""
 
 
 class _Weakrefable:
@@ -280,36 +285,43 @@ class WatchDependencies(_Weakrefable):
     def _add_config(
         self,
         candidate: _StaticDependencies,
-        config: _WatchConfig,
-        *,
         config_values: Mapping[str, Any],
-        pyproject_path: Path | None,
+        config: _WatchConfig | None = None,
+        pyproject_path: Path | None = None,
     ) -> None:
-        """Add one validated configuration to a staged static dependency graph."""
+        """Add one configuration to a staged static dependency graph.
 
-        def add_file(path: Path | None) -> None:
+        A validated `config` supplies the paths `config_values` lacks, the outputs and the project file; without one,
+        only the raw values count, before validation can fail.
+        """
+        fallbacks = {} if config is None else {name: getattr(config, name) for name in _CONFIG_PATH_FIELDS}
+
+        def add(path: Path | None, paths: set[Path]) -> None:
             if path is not None:
-                self._add_path(path, candidate.files, candidate.symlink_events)
+                self._add_path(path, paths, candidate.symlink_events)
 
-        def add_directory(path: Path | None) -> None:
-            if path is not None:
-                self._add_path(path, candidate.directories, candidate.symlink_events)
+        def read(name: str) -> Path | None:
+            return _configured_path(config_values, name, fallbacks.get(name))
 
-        input_path = _configured_path(config_values, "input", config.input)
-        if input_path is not None:
-            (add_directory if input_path.is_dir() else add_file)(input_path)
-        add_file(pyproject_path or _nearest_pyproject_toml(_logical_working_directory()))
-        add_file(_configured_path(config_values, "custom_file_header_path", config.custom_file_header_path))
-        add_directory(_configured_path(config_values, "custom_template_dir", config.custom_template_dir))
-        add_directory(_configured_path(config_values, "http_local_ref_path", config.http_local_ref_path))
-        for field_name in _JSON_CONFIG_FIELDS:
-            value = config_values.get(field_name)
-            add_file(Path(value) if isinstance(value, (str, Path)) else None)
-        self._add_output(config.output, candidate.outputs)
-        # Metadata is always a single file, including when its name has no suffix.
-        self._add_output(config.emit_model_metadata, candidate.outputs, is_directory=False)
-        for field_name in _TARGET_OUTPUT_FIELDS:
-            self._add_output(getattr(config, field_name, None), candidate.outputs, is_directory=True)
+        input_path = read("input")
+        add(input_path, candidate.directories if input_path is not None and input_path.is_dir() else candidate.files)
+        if config is not None:
+            add(pyproject_path or _nearest_pyproject_toml(_logical_working_directory()), candidate.files)
+        for name in _FILE_FIELDS:
+            add(read(name), candidate.files)
+        for name in _DIRECTORY_FIELDS:
+            add(read(name), candidate.directories)
+        for name, is_directory in _OUTPUT_FIELDS:
+            self._add_output(
+                read(name) if config is None else getattr(config, name, None),
+                candidate.outputs,
+                is_directory=is_directory,
+            )
+
+    def _set_pending(self, candidate: _StaticDependencies) -> None:
+        with self._lock:
+            self._pending_static = candidate
+            self._publish()
 
     def configure(
         self,
@@ -319,25 +331,19 @@ class WatchDependencies(_Weakrefable):
     ) -> None:
         """Stage a static graph without exposing a generation-sized membership gap."""
         candidate = _StaticDependencies()
-        self._add_config(candidate, config, config_values=config_values, pyproject_path=None)
-        with self._lock:
-            self._pending_static = candidate
-            self._publish()
+        self._add_config(candidate, config_values, config)
+        self._set_pending(candidate)
 
     def configure_many(self, configs: Iterable[tuple[_WatchConfig, Mapping[str, Any], Path]]) -> None:
         """Stage the union of all validated batch-job dependency graphs."""
         candidate = _StaticDependencies()
         for config, config_values, pyproject_path in configs:
-            self._add_config(candidate, config, config_values=config_values, pyproject_path=pyproject_path)
-        with self._lock:
-            self._pending_static = candidate
-            self._publish()
+            self._add_config(candidate, config_values, config, pyproject_path)
+        self._set_pending(candidate)
 
     def begin_raw_attempt(self) -> None:
         """Discard an older unvalidated candidate before recording the latest replan."""
-        with self._lock:
-            self._pending_static = _StaticDependencies()
-            self._publish()
+        self._set_pending(_StaticDependencies())
 
     def add_recovery_file(self, path: Path) -> None:
         """Add an unvalidated input to the latest candidate's recovery graph."""
@@ -350,32 +356,16 @@ class WatchDependencies(_Weakrefable):
     def stage_raw_config(self, config_values: Mapping[str, Any]) -> None:
         """Stage lexical raw paths before typed config validation can fail."""
         candidate = _StaticDependencies()
+        self._add_config(candidate, config_values)
+        self._set_pending(candidate)
 
-        def add_file(value: object) -> None:
-            if isinstance(value, (str, Path)):
-                self._add_path(Path(value), candidate.files, candidate.symlink_events)
-
-        def add_directory(value: object) -> None:
-            if isinstance(value, (str, Path)):
-                self._add_path(Path(value), candidate.directories, candidate.symlink_events)
-
-        input_value = config_values.get("input")
-        if isinstance(input_value, (str, Path)):
-            (add_directory if Path(input_value).is_dir() else add_file)(input_value)
-        add_file(config_values.get("custom_file_header_path"))
-        add_directory(config_values.get("custom_template_dir"))
-        add_directory(config_values.get("http_local_ref_path"))
-        for field_name in _JSON_CONFIG_FIELDS:
-            add_file(config_values.get(field_name))
-        if isinstance(output := config_values.get("output"), (str, Path)):
-            self._add_output(Path(output), candidate.outputs)
-        if isinstance(metadata := config_values.get("emit_model_metadata"), (str, Path)):
-            self._add_output(Path(metadata), candidate.outputs, is_directory=False)
-        for field_name in _TARGET_OUTPUT_FIELDS:
-            if isinstance(target_output := config_values.get(field_name), (str, Path)):
-                self._add_output(Path(target_output), candidate.outputs, is_directory=True)
+    def _fail(self, collected: _CollectedGeneration) -> None:
+        """Keep the candidate and the files a failed generation observed for recovery."""
         with self._lock:
-            self._pending_static = candidate
+            self._failed_static = self._pending_static
+            self._pending_static = None
+            self._failed_generation_files = collected.files
+            self._failed_generation_symlink_events = collected.symlink_events
             self._publish()
 
     @contextmanager
@@ -389,21 +379,12 @@ class WatchDependencies(_Weakrefable):
         try:
             yield collected
         except BaseException:
-            with self._lock:
-                self._failed_static = self._pending_static
-                self._pending_static = None
-                self._failed_generation_files = collected.files
-                self._failed_generation_symlink_events = collected.symlink_events
-                self._publish()
+            self._fail(collected)
             raise
         else:
             with self._lock:
                 if collected.failed:
-                    self._failed_static = self._pending_static
-                    self._pending_static = None
-                    self._failed_generation_files = collected.files
-                    self._failed_generation_symlink_events = collected.symlink_events
-                    self._publish()
+                    self._fail(collected)
                     return
                 if self._pending_static is not None:
                     self._static_files = self._pending_static.files

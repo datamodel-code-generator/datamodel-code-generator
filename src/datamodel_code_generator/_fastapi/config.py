@@ -16,6 +16,7 @@ from datamodel_code_generator._target_config import (
 )
 from datamodel_code_generator._target_naming import explicit_name
 from datamodel_code_generator._target_operations import LOCATIONS
+from datamodel_code_generator.enums import ServerBodyMode, ServerHandlerMode
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -25,8 +26,8 @@ Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
 BodyMode: TypeAlias = Literal["typed", "request"]
 
-_HANDLER_MODES: Final = frozenset({"sync", "async"})
-_BODY_MODES: Final = frozenset({"typed", "request"})
+_HANDLER_MODES: Final = frozenset(mode.value for mode in ServerHandlerMode)
+_BODY_MODES: Final = frozenset(mode.value for mode in ServerBodyMode)
 _MIN_STATUS: Final = 100
 _MAX_STATUS: Final = 599
 
