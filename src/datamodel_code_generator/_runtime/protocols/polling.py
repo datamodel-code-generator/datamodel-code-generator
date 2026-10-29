@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.responses import ResponseInfo
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_refusal
-from .options import HelperLimits, PollOptions, StepLock, checked_options, layered, new_session, patched_extra
+from .options import HelperLimits, PollOptions, StepLock, checked_options, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import (
     BodySelector,
@@ -214,11 +214,11 @@ def _limits(
     The interval defaults to the helper's; one longer than the allowed wait, or not shorter than the session, could
     never be waited out, so it is refused before anything is sent. A fixed idempotency key, the call's own or a header
     of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
-    their own, and so are the call's extra headers or query names of a parameter the helper writes.
+    their own, and so are the headers or query names of a parameter the helper writes that any of them sends.
     """
     request = checked_options(plan.helper_id, "poll_options", poll_options, PollOptions, options)
-    fixed = core.fixed_key(request, (plan.create, plan.poll, plan.fetch))
-    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+    operations = (plan.create, plan.poll, plan.fetch)
+    if (path := core.patched(request, operations, plan.headers, plan.queries.__contains__)) is not None:
         raise configuration_error(plan.helper_id, path)
     kinds = (poll_options, core.helper_defaults(plan.helper_id))
     limits = _Limits(

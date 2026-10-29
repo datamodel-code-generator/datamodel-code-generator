@@ -331,12 +331,8 @@ def _unpatched(
     """
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    written = (
-        core.fixed_key(request, (plan.call, resume.call))
-        or core.named(request, lambda name, _: name.lower() in resume.headers)
-        or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
-    )
-    if written is not None:
+    queried = partial(query_written, resume.call, resume.writes)
+    if (written := core.patched(request, (plan.call, resume.call), resume.headers, queried)) is not None:
         raise configuration_error(plan.helper_id, written)
 
 

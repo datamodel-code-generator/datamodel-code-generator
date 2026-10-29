@@ -31,7 +31,7 @@ from ..client.retry import Delivery
 from ..model_codecs.media import SUCCESS_STATUSES
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, StepLock, UploadOptions, checked_options, layered, new_session, patched_extra
+from .options import HelperLimits, StepLock, UploadOptions, checked_options, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
@@ -206,12 +206,12 @@ def _limits(
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is refused,
-    since the create call and each append need keys of their own, and so are the call's extra headers or query names
-    of a parameter the helper writes.
+    since the create call and each append need keys of their own, and so are the headers or query names of a
+    parameter the helper writes that any of them sends.
     """
     request = checked_options(plan.helper_id, "upload_options", upload_options, UploadOptions, options)
-    fixed = core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))
-    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+    operations = (plan.create, plan.probe, plan.append, plan.completion)
+    if (path := core.patched(request, operations, plan.headers, plan.queries.__contains__)) is not None:
         raise configuration_error(plan.helper_id, path)
     kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
     chunk_path = _DEFAULTS.chunk_path

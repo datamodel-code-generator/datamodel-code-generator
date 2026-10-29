@@ -430,12 +430,16 @@ def _limits(
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is
-    refused, since every page is a request of its own that needs its own key, and so are the call's extra headers or
-    query names of a parameter the helper writes, which would replace the values it writes.
+    refused, since every page is a request of its own that needs its own key, and so are the headers or query names
+    of a parameter the helper writes that the call, the client, or a view sends, which would replace those values.
+    The client's and a view's default of a count's header or query position is the first request's position instead,
+    so only the call's own one is refused.
     """
     request = checked_options(plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options)
-    fixed = core.fixed_key(request, (plan.call,))
-    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+    header, query = _started(plan.continuation)
+    headers, queries = plan.headers - header, plan.queries - query
+    path = core.patched(request, (plan.call,), headers, queries.__contains__) or patched_extra(request, header, query)
+    if path is not None:
         raise configuration_error(plan.helper_id, path)
     kinds = (pagination_options, core.helper_defaults(plan.helper_id))
     return _Limits(
@@ -445,6 +449,14 @@ def _limits(
         options=request,
         clock=core.clock,
     )
+
+
+def _started(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the header, by its lowercase name, or the query name of a count's position a first request reads."""
+    if not isinstance(rule, CountPlan) or not isinstance(target := rule.write, ParameterTarget):
+        return frozenset(), frozenset()
+    location, name = target.location, target.name
+    return frozenset({name.lower()} if location == "header" else ()), frozenset({name} if location == "query" else ())
 
 
 def _data_error(
