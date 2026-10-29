@@ -169,7 +169,7 @@ class SourceDocument:
 
     def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
         """Return whether a pointer names a node of a loaded document."""
-        return descend(self.documents[document], tokens, _step, MISSING) is not MISSING
+        return descend(self.documents[document], tokens, _step, MISSING, (LookupError,)) is not MISSING
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
