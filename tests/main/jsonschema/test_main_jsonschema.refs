@@ -7224,7 +7224,7 @@ typing.TypedDict	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[t
 [test_main_jsonschema_ref_with_additional_keywords]
 	main/jsonschema/ref_with_additional_keywords//*.py
 [test_main_jsonschema_reference_edges_of_parser_hooks]
-key	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[key].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+key	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[key].txt
 target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 [test_main_jsonschema_reference_to_schema_without_model]
 	main/jsonschema/main_jsonschema/reference_to_schema_without_model.py

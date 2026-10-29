@@ -23,3 +23,8 @@ class ItemModel(RootModel[Any]):
 
 class Box(BaseModel):
     item: Item | None = None
+    other: Item | None = None
+
+
+class Other(RootModel[ItemModel]):
+    root: ItemModel
