@@ -18,8 +18,10 @@ def _resolve_profile_extends(
     profiles: Mapping[str, Any],
     profile_name: str,
     visited: set[str] | None = None,
+    *,
+    missing: str | None = None,
 ) -> dict[str, Any]:
-    """Resolve profile inheritance via extends key."""
+    """Resolve profile inheritance via extends key; ``missing`` names a missing requested profile."""
     if visited is None:
         visited = set()
 
@@ -30,7 +32,8 @@ def _resolve_profile_extends(
 
     if profile_name not in profiles:
         available = list(profiles.keys()) if profiles else "none"
-        msg = f"Extended profile '{profile_name}' not found in pyproject.toml. Available profiles: {available}"
+        missing = missing or f"Extended profile '{profile_name}' not found in pyproject.toml"
+        msg = f"{missing}. Available profiles: {available}"
         raise Error(msg)
 
     visited.add(profile_name)
@@ -95,12 +98,9 @@ def _get_pyproject_toml_config_with_path(
             if not isinstance(profiles, Mapping):
                 msg = "[tool.datamodel-codegen.profiles] must be a table"
                 raise Error(msg)
-            if profile not in profiles:
-                available = list(profiles.keys()) if profiles else "none"
-                msg = f"Profile '{profile}' not found in pyproject.toml. Available profiles: {available}"
-                raise Error(msg)
-            resolved_profile = _resolve_profile_extends(profiles, profile)
-            base_config.update(resolved_profile)
+            base_config.update(
+                _resolve_profile_extends(profiles, profile, missing=f"Profile '{profile}' not found in pyproject.toml")
+            )
 
         return _normalize_pyproject_config(base_config), pyproject_path
 
