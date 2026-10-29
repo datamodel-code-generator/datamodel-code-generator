@@ -14,7 +14,7 @@ from datamodel_code_generator._api_generation import TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
-from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig
+from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
+    from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
@@ -249,55 +250,28 @@ class _HelperDigests:
 
         The settings are the helper's normalized metadata, so equivalent spellings of its references digest alike.
         """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
         signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            **self.call(spec.helper, spec.operation, settings),
+            "body": self.body(spec.operation),
             "item": self.spelled(spec.item),
             "page": self.type(spec.page),
-            "settings": settings,
         }
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [self.request.documents.operation(operation.contract.id)],
-            "schemas": [spec.item_schema],
-            "type_uses": [self.contract(spec.page)],
-        })
+        return self.digest(spec.helper.kind, signature, spec.operation, [spec.item_schema], [self.contract(spec.page)])
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
         """Return the digest of a cache helper's contract closure: its fetch signature and operation.
 
         The fetch's signature carries the settings, and the type use of its cacheable response closes the contract.
         """
-
-        def signature(name: str, operation: OperationSpec) -> dict[str, object]:
-            body = operation.body
-            return {
-                "name": name,
-                "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-                "body": None
-                if body is None
-                else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-                "responses": [
-                    (item.status, [self.type(media.use) for media in item.media]) for item in operation.responses
-                ],
-            }
-
-        operations = (spec.operation,)
-        return _digest({
-            "kind": "cache",
-            "signatures": [
-                {**signature(spec.helper.name, spec.operation), "settings": settings},
+        operation = spec.operation
+        signature = {
+            **self.call(spec.helper, operation, settings),
+            "body": self.body(operation),
+            "responses": [
+                (item.status, [self.type(media.use) for media in item.media]) for item in operation.responses
             ],
-            "operations": [self.request.documents.operation(item.contract.id) for item in operations],
-            "schemas": [],
-            "type_uses": [self.contract(spec.response)],
-        })
+        }
+        return self.digest("cache", signature, operation, [], [self.contract(spec.response)])
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
         """Return the digest of a webhook helper's contract closure: its signature, settings, schemas, and event uses.
@@ -312,34 +286,54 @@ class _HelperDigests:
             "key": key_class(spec.helper.tree["signature"]["kind"]),
             "settings": settings,
         }
-        return _digest({
-            "kind": "webhook",
-            "signatures": [signature],
-            "operations": [],
-            "schemas": [event.schema for event in events],
-            "type_uses": [self.contract(event.use) for event in events],
-        })
+        schemas, uses = [event.schema for event in events], [self.contract(event.use) for event in events]
+        return self.digest("webhook", signature, None, schemas, uses)
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
         """Return the digest of a WebSocket helper's contract closure: its signature, settings, operation, and schemas.
 
         Each message use contributes its type and contract, so a changed schema changes the digest.
         """
-        operation, helper = spec.operation, spec.helper
         signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            **self.call(spec.helper, spec.operation, settings),
             "send": None if spec.send is None else self.type(spec.send),
             "receive": None if spec.receive is None else self.type(spec.receive),
+        }
+        uses = [self.contract(use) for use in spec.uses]
+        return self.digest(spec.helper.kind, signature, spec.operation, list(spec.schemas), uses)
+
+    def call(self, helper: Helper, operation: OperationSpec, settings: JSONValue) -> dict[str, object]:
+        """Return the name, parameters, and settings of a helper's signature for the operation it calls."""
+        return {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
             "settings": settings,
         }
-        return _digest({
-            "kind": helper.kind,
+
+    def body(self, operation: OperationSpec) -> object:
+        """Return the requiredness and the typed media of an operation's request body, or None without one."""
+        if (body := operation.body) is None:
+            return None
+        return body.required, [(item.media_type, self.type(item.use)) for item in body.media]
+
+    def digest(
+        self,
+        kind: str,
+        signature: dict[str, object],
+        operation: OperationSpec | None,
+        schemas: list[Mapping[str, str]],
+        uses: list[object],
+    ) -> str:
+        """Return the digest of a helper's contract closure from its one signature, operation, schemas, and uses."""
+        operations = [] if operation is None else [self.request.documents.operation(operation.contract.id)]
+        closure = {
+            "kind": kind,
             "signatures": [signature],
-            "operations": [self.request.documents.operation(operation.contract.id)],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in spec.uses],
-        })
+            "operations": operations,
+            "schemas": schemas,
+            "type_uses": uses,
+        }
+        return sha256(canonical_bytes(_projection(closure)))
 
     def spelled(self, value: TypeView) -> str:
         """Return a type's canonical spelling: its containers and unions by structure, its leaves as models spell them.
@@ -422,14 +416,6 @@ def _named(value: TypeView) -> tuple[SymbolId, ...]:
         *((value.symbol,) if isinstance(value, GeneratedSymbolType) else ()),
         *(symbol for item in nested for symbol in _named(item)),
     )
-
-
-def _digest(value: object) -> str:
-    return sha256(canonical_bytes(_projection(value)))
-
-
-def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
-    return isinstance(value, (tuple, list))
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeGuard
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._client.config import _is_sequence
 from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, token
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
@@ -50,13 +51,9 @@ class CredentialSpec:
     prefix: str = ""
 
 
-def _scope_items(value: object) -> TypeGuard[tuple[object, ...] | list[object]]:
-    return isinstance(value, (tuple, list))
-
-
 def _scope_tuple(value: object) -> tuple[str, ...]:
     """Copy explicit scope collections into sorted, distinct ASCII tokens."""
-    if not _scope_items(value):
+    if not _is_sequence(value):
         msg = "Scopes must be a tuple or list."
         raise ValueError(msg)
     normalized: set[str] = set()

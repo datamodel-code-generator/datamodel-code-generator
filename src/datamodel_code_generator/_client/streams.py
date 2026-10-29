@@ -20,14 +20,14 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _parameter_key,
     _problem,
     _target_key,
-    credential_place,
 )
-from datamodel_code_generator._client.plan import schema_use, schema_uses, success_media
+from datamodel_code_generator._client.plan import schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
+from datamodel_code_generator._client.protocol_plan import HelperPlanner
+from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Container, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import SchemaRef
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._target_contract import Direction, SourceLocation
 
 __all__ = ("StreamSpec", "plan_streams", "stream_only", "stream_uses")
 
@@ -56,12 +57,11 @@ _TARGETS: Final = {"body": "the request body", "querystring": "a querystring"}
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StreamSpec:
-    """A stream helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
+    """A stream helper ready to render: its operation and stream media, and each event and error schema's use.
 
     `media` is the event stream or NDJSON media type the operation declares in `response`, which the helper requests.
-    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the source
-    reference of every schema the helper decodes, in the order of its settings. A helper declaring resumption reopens
-    its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
+    An event's key is its discriminator value, None for a helper with one event schema. A helper declaring resumption
+    reopens its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
     """
 
     helper: Helper
@@ -70,7 +70,6 @@ class StreamSpec:
     response: ResponseSpec
     events: tuple[tuple[str | None, TypeUseBinding], ...]
     errors: tuple[tuple[str, TypeUseBinding], ...]
-    schemas: tuple[Mapping[str, str], ...]
     reopen: OperationSpec | None = None
     reopen_response: ResponseSpec | None = None
     reopen_media: str | None = None
@@ -100,12 +99,6 @@ def _errors(helper: Helper) -> Iterator[tuple[str, str, SchemaRef]]:
     """Yield where each error event schema of a helper is set, its discriminator value, and itself."""
     for key, reference in helper.tree["error_events"].items():
         yield f"{helper.at}.error_events[{key!r}]", key, reference
-
-
-def _references(helper: Helper) -> Iterator[tuple[str, SchemaRef]]:
-    """Yield where each schema of a helper is set and itself, its events' before its errors'."""
-    for where, _, reference in (*_events(helper), *_errors(helper)):
-        yield where, reference
 
 
 def _essence(media: str) -> str:
@@ -139,24 +132,51 @@ def _media_problem(helper: Helper) -> str | None:
     return f"The media type {media!r} of {helper.name!r} is not {expected}"
 
 
-class _Streams:
+class _Streams(HelperPlanner):
     """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
-    def __init__(self, protocols: Protocols, request: TargetRequest) -> None:
-        """Index the documents by pointer and the value use of each schema by its location and direction."""
-        self.protocols = protocols
-        self.request = request
-        self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
-        self.schemas = schema_uses(request.batch.type_uses)
+    def locations(
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        references: Iterable[tuple[str, str, SchemaRef]],
+        problems: list[Diagnostic],
+    ) -> dict[str, SourceLocation]:
+        """Return the location of each schema reference by its key, refusing where it is set one its document lacks."""
+        locations: dict[str, SourceLocation] = {}
+        for key, where, reference in references:
+            if (location := self.location(reference)) is None:
+                message = f"The schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
+                problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
+            else:
+                locations[key] = location
+        return locations
 
-    def location(self, reference: SchemaRef) -> SourceLocation | None:
-        """Return the location of a schema reference, or None when its document has no such pointer."""
-        location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
-        return location if self.request.lease.exists(location) else None
+    def bind(
+        self,
+        spec: OperationSpec,
+        location: SourceLocation,
+        direction: Direction,
+        media: str,
+        status: str | None = None,
+    ) -> TypeUseBinding:
+        """Return the use that reads or sends a schema as its operation's body, bound as the schema's value use is."""
+        schema = schema_use(self.schemas, location, direction)
+        use = TypeUseId(
+            owner=spec.contract.id,
+            role="request_body" if direction == "request" else "response_body",
+            use_site=location,
+            schema_site=location,
+            declaration=DeclarationId(location) if schema is None else schema.id.declaration,
+            direction=direction,
+            status=status,
+            media=media,
+        )
+        if schema is None:
+            return TypeUseBinding(use, "not_generated", None, None, schema=location)
+        return TypeUseBinding(use, schema.state, schema.type, schema.reason, schema=location)
 
-    def helper(
-        self, helper: Helper, spec: OperationSpec, reopen: OperationSpec | None
-    ) -> tuple[StreamSpec | None, list[Diagnostic]]:
+    def helper(self, helper: Helper, spec: OperationSpec) -> tuple[StreamSpec | None, list[Diagnostic]]:
         """Check one enabled helper's settings against its operation, and bind its schemas when every check passes.
 
         A helper declaring resumption also needs a success response of its media type from the operation it reopens
@@ -164,6 +184,7 @@ class _Streams:
         """
         tree = helper.tree
         at, name, label = helper.at, helper.name, _LABELS[helper.kind]
+        reopen = next((self.spec(link.ref) for link in helper.links[1:]), None)
         essence = _essence(tree["media"])
         problems: list[Diagnostic] = []
         response = reopened = None
@@ -181,16 +202,14 @@ class _Streams:
                 where = f"{at}.resume.reopen_operation"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, reopen))
         problems.extend(self.terminal(helper, spec))
-        locations: dict[str, SourceLocation] = {}
-        for where, reference in _references(helper):
-            if (location := self.location(reference)) is None:
-                message = f"The schema {reference.pointer!r} of {name!r} does not exist in its document"
-                problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
-            else:
-                locations[where] = location
+        references = ((where, where, reference) for where, _, reference in (*_events(helper), *_errors(helper)))
+        locations = self.locations(helper, spec, references, problems)
         if problems or response is None:
             return None, problems
         media = next(item.media_type for item in response.media if _essence(item.media_type) == essence)
+        bound = {
+            where: self.bind(spec, place, "response", media, response.status) for where, place in locations.items()
+        }
         return StreamSpec(
             helper=helper,
             operation=spec,
@@ -201,12 +220,8 @@ class _Streams:
             reopen_media=None
             if reopened is None
             else next(item.media_type for item in reopened.media if _essence(item.media_type) == essence),
-            events=tuple((key, self.use(spec, response, media, locations[where])) for where, key, _ in _events(helper)),
-            errors=tuple((key, self.use(spec, response, media, locations[where])) for where, key, _ in _errors(helper)),
-            schemas=tuple(
-                {"document": self.protocols.documents[reference], "pointer": reference.pointer}
-                for _, reference in _references(helper)
-            ),
+            events=tuple((key, bound[where]) for where, key, _ in _events(helper)),
+            errors=tuple((key, bound[where]) for where, key, _ in _errors(helper)),
         ), problems
 
     @staticmethod
@@ -224,23 +239,6 @@ class _Streams:
                 message = f"The completion event type {value!r} of {helper.name!r} is also a key of its {setting}"
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, spec)
 
-    def use(self, spec: OperationSpec, response: ResponseSpec, media: str, location: SourceLocation) -> TypeUseBinding:
-        """Return the use that reads a schema as the stream response's events, bound as the schema's value use is."""
-        schema = schema_use(self.schemas, location, "response")
-        use = TypeUseId(
-            owner=spec.contract.id,
-            role="response_body",
-            use_site=location,
-            schema_site=location,
-            declaration=DeclarationId(location) if schema is None else schema.id.declaration,
-            direction="response",
-            status=response.status,
-            media=media,
-        )
-        if schema is None:
-            return TypeUseBinding(use, "not_generated", None, None, schema=location)
-        return TypeUseBinding(use, schema.state, schema.type, schema.reason, schema=location)
-
 
 def stream_uses(
     protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
@@ -251,19 +249,10 @@ def stream_uses(
     """
     if protocols is None:
         return (), (), {}
-    streams = _Streams(protocols, request)
-    operations = {spec.contract.id: spec for spec in plan.operations}
-    specs: list[StreamSpec] = []
-    problems: dict[str, list[Diagnostic]] = {}
-    for helper in protocols.helpers:
-        if not helper.enabled or helper.kind not in _LABELS:
-            continue
-        spec, *reopened = (operations[protocols.operations[link.ref].id] for link in helper.links)
-        planned, problems[helper.name] = streams.helper(helper, spec, reopened[0] if reopened else None)
-        if planned is not None:
-            specs.append(planned)
+    streams = _Streams(protocols, plan, request)
+    specs, problems = streams.each(_LABELS, streams.helper)
     uses = {use.id: use for spec in specs for use in spec.uses}
-    return tuple(specs), tuple(uses.values()), problems
+    return specs, tuple(uses.values()), problems
 
 
 def plan_streams(  # noqa: PLR0913, PLR0917
@@ -283,7 +272,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     if protocols is None or not specs:
         return ()
     pages = _Pages(protocols, plan, facts, codecs, request)
-    polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, protocols)
+    polls = _Polls(pages)
     planned: list[StreamSpec] = []
     for spec in specs:
         helper = spec.helper
@@ -334,9 +323,8 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
     resume, name, label = helper.tree["resume"], helper.name, _label(reopen)
     at, write, cursor = f"{helper.at}.resume", helper.tree["resume"]["write"], helper.tree["resume"]["cursor"]
     where, place = f"{at}.write", f"the {write['in']} parameter {write.get('name')!r} of {label}"
-    if (secret := credential_place(write, pages.secret_headers, pages.secret_queries, reopen)) is not None:
-        message = f"The cursor of {name!r} writes {secret}, which carries credentials no helper writes"
-        yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
+    if (secret := pages.credential(helper, reopen, write, where, "cursor")) is not None:
+        yield secret
         return
     if write["in"] == "path":
         message = f"The cursor of {name!r} is written to {place}, which is not supported yet"

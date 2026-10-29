@@ -181,28 +181,19 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.Subscript(value=value, slice=slice_node):
             base = _python_type_expr_from_ast(value, allow_literal=False)
             strings_allowed = _is_literal_base(base)
-            if isinstance(slice_node, ast.Tuple):
-                arguments = tuple(
+            arguments = slice_node.elts if isinstance(slice_node, ast.Tuple) else (slice_node,)
+            return PythonTypeSubscript(
+                base,
+                tuple(
                     _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=strings_allowed)
-                    for item in slice_node.elts
-                )
-            else:
-                arguments = (
-                    _python_type_expr_from_ast(slice_node, allow_literal=True, allow_string_literal=strings_allowed),
-                )
-            return PythonTypeSubscript(base, arguments)
-        case ast.List(elts=items) if allow_literal:
-            return PythonTypeParameterList(
-                tuple(
-                    _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
-                    for item in items
-                )
+                    for item in arguments
+                ),
             )
-        case ast.Tuple(elts=items) if allow_literal:
-            return PythonTypeTuple(
+        case ast.List() | ast.Tuple() if allow_literal:
+            return (PythonTypeParameterList if isinstance(node, ast.List) else PythonTypeTuple)(
                 tuple(
                     _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
-                    for item in items
+                    for item in node.elts
                 )
             )
         case ast.Starred(value=value) if allow_literal:

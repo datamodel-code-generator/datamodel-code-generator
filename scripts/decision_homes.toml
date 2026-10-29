@@ -1354,9 +1354,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_client/webhooks.py"."webhook_uses"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
-
 [allow."src/datamodel_code_generator/_fastapi/config.py"."<module>"]
 "T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
 

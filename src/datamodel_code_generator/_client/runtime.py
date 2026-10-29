@@ -72,8 +72,7 @@ _VERIFIED: Final = ("protocols/signatures.py", "protocols/verification.py", "pro
 _SIGNATURES: Final[dict[str, tuple[str, ...]]] = {
     "none": (),
     "adapter": ("protocols/adapters.py",),
-    "ed25519": (*_VERIFIED, "protocols/public_keys.py"),
-    "rsa-pss-sha256": (*_VERIFIED, "protocols/public_keys.py"),
+    **dict.fromkeys(("ed25519", "rsa-pss-sha256"), (*_VERIFIED, "protocols/public_keys.py")),
 }
 _KINDS: Final[dict[str, Helper]] = {
     "pagination": "pagination",
@@ -127,24 +126,19 @@ class Capabilities:
         modules = {*_CORE, *(module for runtime in self.backends for module in runtime.modules)}
         modules.update(module for helper in self.helpers for module in _HELPERS[helper])
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
-        if self.protocols:
-            modules.update(_PROTOCOLS)
-        if self.schemes:
-            modules.update(_SCHEMES)
-        if self.security:
-            modules.update(_OAUTH if self.oauth else _AUTH)
-        if self.keywords:
-            modules.add("client/arguments.py")
-        if self.binary_bodies:
-            modules.update(_BINARY)
-        if self.multipart_requests:
-            modules.update(_MULTIPART)
-        if self.response_headers:
-            modules.update(_HEADERS)
-        if self.multipart_responses:
-            modules.update((*_MULTIPART, "client/multipart_responses.py"))
-        if self.extras:
-            modules.add("model_codecs/pydantic_extras.py")
+        for declared, needed in (
+            (self.protocols, _PROTOCOLS),
+            (self.schemes, _SCHEMES),
+            (self.security, _OAUTH if self.oauth else _AUTH),
+            (self.keywords, ("client/arguments.py",)),
+            (self.binary_bodies, _BINARY),
+            (self.multipart_requests, _MULTIPART),
+            (self.response_headers, _HEADERS),
+            (self.multipart_responses, (*_MULTIPART, "client/multipart_responses.py")),
+            (self.extras, ("model_codecs/pydantic_extras.py",)),
+        ):
+            if declared:
+                modules.update(needed)
         return tuple(sorted(modules))
 
     @property

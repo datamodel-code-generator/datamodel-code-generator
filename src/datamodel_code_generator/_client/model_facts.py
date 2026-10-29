@@ -8,11 +8,9 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from functools import cached_property
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
@@ -160,15 +158,6 @@ class ModelFacts:
         for member in batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
-
-    @cached_property
-    def imports(self) -> dict[int, str]:
-        """Return where each emitted symbol is imported from, as `module:Name` by symbol identity."""
-        return {
-            symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
-            for symbol in self.symbols.values()
-            if symbol.artifact is not None
-        }
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""
