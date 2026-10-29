@@ -119,6 +119,11 @@ from datamodel_code_generator.model.enum import escape_characters as _enum_escap
 from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
+from datamodel_code_generator.parser._field_rows import (
+    FIELD_OPTIONS_LEFT_OUT,
+    FIELD_ROWS_BUILT_WITHOUT_VALIDATION,
+    FIELD_ROWS_WITHOUT_VALIDATION_ALIASES,
+)
 from datamodel_code_generator.parser._graph_ids import (
     keyed_models,
 )
@@ -230,6 +235,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
+    from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
@@ -872,14 +878,60 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     @property
     def _field_option_kwargs(self) -> dict[str, Any]:
-        """The configured field options that the field builders pass to the fields they build from a schema."""
+        """The configured field options; a field ``_build_field`` builds takes each unless its row leaves it out."""
         return {
             "strip_default_none": self.strip_default_none,
             "order_constructor_fields_by_written_defaults": self.order_constructor_fields_by_written_defaults,
             "use_field_description": self.use_field_description,
             "use_field_description_example": self.use_field_description_example,
             "use_inline_field_description": self.use_inline_field_description,
+            "use_annotated": self.use_annotated,
+            "use_serialize_as_any": self.use_serialize_as_any,
+            "use_default_kwarg": self.use_default_kwarg,
+            "use_frozen_field": self.use_frozen_field,
+            "use_serialization_alias": self.use_serialization_alias,
+            "use_default_factory_for_optional_nested_models": self.use_default_factory_for_optional_nested_models,
         }
+
+    def _build_field(
+        self,
+        row: FieldRow,
+        /,
+        data_type: DataType,
+        *,
+        source_name: str | None = None,
+        class_name: str | None = None,
+        **facts: Unpack[FieldFacts],
+    ) -> DataModelFieldBase:
+        """Build a field of a model the parser writes, with the configured options its ``row`` takes.
+
+        The field gets exactly the ``facts`` given, which also override the options they name. A given ``alias`` splits
+        into the alias and the validation aliases, beside the ``--serialization-aliases`` entry of ``class_name`` for a
+        field with a ``name`` and the ``source_name`` it is read from.
+        """
+        options = self._field_option_kwargs
+        if left_out := FIELD_OPTIONS_LEFT_OUT[row]:
+            options = {key: value for key, value in options.items() if key not in left_out}
+        aliases: dict[str, Any] = {}
+        if "alias" in facts:
+            aliases["alias"], validation_aliases = self._split_field_alias(facts.pop("alias"))
+            if row not in FIELD_ROWS_WITHOUT_VALIDATION_ALIASES:
+                aliases["validation_aliases"] = validation_aliases
+            aliases["serialization_alias"] = (
+                self.get_serialization_alias(source_name, name, class_name)
+                if source_name is not None and (name := facts.get("name")) is not None
+                else None
+            )
+        constructor = (
+            _get_model_field_constructor(self.data_model_field_type)
+            if row in FIELD_ROWS_BUILT_WITHOUT_VALIDATION
+            else self.data_model_field_type
+        )
+        return constructor(
+            data_type=data_type,
+            **{**options, **aliases, **facts},
+            **self._data_model_field_common_kwargs(),
+        )
 
     @classmethod
     def _get_config_class(cls) -> type[ParserConfig]:
@@ -1020,7 +1072,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.data_model_root_type
         )
         self.data_model_field_type: type[DataModelFieldBase] = config.data_model_field_type
-        self._data_model_field_constructor = _get_model_field_constructor(self.data_model_field_type)
         self._configured_generation_types_are_builtin = all(
             generation_type.__module__.startswith(_MODEL_MODULE_PREFIX)
             for generation_type in (

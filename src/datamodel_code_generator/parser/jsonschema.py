@@ -4725,51 +4725,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 source_fields=all_fields,
             )
 
-    def _build_neutral_object_field(  # noqa: PLR0913
-        self,
-        *,
-        field_name: str | None,
-        required: bool,
-        field_type: DataType,
-        alias: str | list[str] | None,
-        original_field_name: str | None,
-        effective_default: Any = None,
-        effective_has_default: bool | None = None,
-        use_default_with_required: bool = False,
-        class_name: str | None = None,
-    ) -> DataModelFieldBase:
-        """Build a field without schema-owned constraints or metadata."""
-        single_alias, validation_aliases = self._split_field_alias(alias)
-        serialization_alias = (
-            self.get_serialization_alias(original_field_name, field_name, class_name)
-            if original_field_name is not None and field_name is not None
-            else None
-        )
-        return self._data_model_field_constructor(
-            name=field_name,
-            default=effective_default,
-            data_type=field_type,
-            required=required,
-            alias=single_alias,
-            validation_aliases=validation_aliases,
-            serialization_alias=serialization_alias,
-            strip_default_none=self.strip_default_none,
-            order_constructor_fields_by_written_defaults=self.order_constructor_fields_by_written_defaults,
-            use_annotated=self.use_annotated,
-            use_serialize_as_any=self.use_serialize_as_any,
-            use_field_description=self.use_field_description,
-            use_field_description_example=self.use_field_description_example,
-            use_inline_field_description=self.use_inline_field_description,
-            use_default_kwarg=self.use_default_kwarg,
-            original_name=original_field_name,
-            has_default=effective_has_default is True,
-            use_frozen_field=self.use_frozen_field,
-            use_serialization_alias=self.use_serialization_alias,
-            use_default_factory_for_optional_nested_models=self.use_default_factory_for_optional_nested_models,
-            use_default_with_required=use_default_with_required,
-            **self._data_model_field_common_kwargs(),
-        )
-
     def get_object_field(  # noqa: PLR0913
         self,
         *,
@@ -4784,26 +4739,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         use_default_with_required: bool = False,
         class_name: str | None = None,
     ) -> DataModelFieldBase:
-        """Build an output field using the shared JSON Schema field policy."""
+        """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords."""
         if field is None:
-            return self._build_neutral_object_field(
-                field_name=field_name,
-                required=required,
-                field_type=field_type,
+            return self._build_field(
+                "property",
+                field_type,
+                name=field_name,
                 alias=alias,
-                original_field_name=original_field_name,
-                effective_default=effective_default,
-                effective_has_default=effective_has_default,
-                use_default_with_required=use_default_with_required,
+                source_name=original_field_name,
                 class_name=class_name,
+                default=effective_default,
+                required=required,
+                original_name=original_field_name,
+                has_default=effective_has_default is True,
+                use_default_with_required=use_default_with_required,
             )
 
-        single_alias, validation_aliases = self._split_field_alias(alias)
-        serialization_alias = (
-            self.get_serialization_alias(original_field_name, field_name, class_name)
-            if original_field_name is not None and field_name is not None
-            else None
-        )
         default_value = effective_default if effective_has_default is not None else field.default
         has_default = effective_has_default if effective_has_default is not None else field.has_default
         skip_constraints = (
@@ -4836,35 +4787,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         extras = self.get_field_extras(field)
         read_only = self._resolve_field_flag(field, "readOnly")
         write_only = self._resolve_field_flag(field, "writeOnly")
-        model_field = self._data_model_field_constructor(
+        model_field = self._build_field(
+            "property",
+            field_type,
             name=field_name,
+            alias=alias,
+            source_name=original_field_name,
+            class_name=class_name,
             default=default_value,
-            data_type=field_type,
             required=required,
-            alias=single_alias,
-            validation_aliases=validation_aliases,
-            serialization_alias=serialization_alias,
             constraints=constraints,
             nullable=nullable,
-            strip_default_none=self.strip_default_none,
-            order_constructor_fields_by_written_defaults=self.order_constructor_fields_by_written_defaults,
             extras=extras,
-            use_annotated=self.use_annotated,
-            use_serialize_as_any=self.use_serialize_as_any,
-            use_field_description=self.use_field_description,
-            use_field_description_example=self.use_field_description_example,
-            use_inline_field_description=self.use_inline_field_description,
-            use_default_kwarg=self.use_default_kwarg,
             original_name=original_field_name,
             has_default=has_default,
             type_has_null=self._type_has_null(field),
             read_only=read_only,
             write_only=write_only,
-            use_frozen_field=self.use_frozen_field,
-            use_serialization_alias=self.use_serialization_alias,
-            use_default_factory_for_optional_nested_models=self.use_default_factory_for_optional_nested_models,
             use_default_with_required=use_default_with_required,
-            **self._data_model_field_common_kwargs(),
         )
         if self.model_resolver.default_value_overrides:
             model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = (
@@ -8726,10 +8666,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         inherited_field = self._get_inherited_field(required_field_name, base_classes, inherited_fields)
         if inherited_field is not None and inherited_field.name and inherited_field.name not in excludes:
             field_name = inherited_field.name
-        single_alias, validation_aliases = self._split_field_alias(alias)
-        serialization_alias = self.get_serialization_alias(required_field_name, field_name, class_name)
-
         if inherited_field is not None:
+            single_alias, validation_aliases = self._split_field_alias(alias)
+            serialization_alias = self.get_serialization_alias(required_field_name, field_name, class_name)
             copied_field = self._copy_model_field(inherited_field)
             copied_field.name = field_name
             copied_field.required = True
@@ -8743,19 +8682,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return copied_field
 
         deferred = self._get_inherited_field_schema(required_field_name, base_classes) is not None
-        field = self.data_model_field_type(
-            name=field_name,
-            required=True,
-            original_name=required_field_name,
-            alias=single_alias,
-            validation_aliases=validation_aliases,
-            serialization_alias=serialization_alias,
-            data_type=self.data_type()
+        field = self._build_field(
+            "legacy-alias-option-only",
+            self.data_type()
             if deferred
             else self._get_inherited_field_type(required_field_name, base_classes)
             or DataType(type=ANY, import_=IMPORT_ANY),
-            use_serialization_alias=self.use_serialization_alias,
-            **self._data_model_field_common_kwargs(),
+            name=field_name,
+            alias=alias,
+            source_name=required_field_name,
+            class_name=class_name,
+            required=True,
+            original_name=required_field_name,
         )
         if deferred:
             field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = class_name
@@ -11321,12 +11259,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
         self._record_schema_object(reference, obj)
-        field = self.data_model_field_type(
-            name=None,
-            data_type=ref_data_type,
-            required=True,
-            **self._data_model_field_common_kwargs(),
-        )
+        field = self._build_field("bare", ref_data_type, name=None, required=True)
         self._register_root_model(
             reference=reference,
             fields=[field],
@@ -11848,20 +11781,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             exclude_field_names.add(field_name)
 
             if isinstance(field, bool):
-                single_alias, validation_aliases = self._split_field_alias(alias)
                 fields.append(
-                    self.data_model_field_type(
+                    self._build_field(
+                        "legacy-boolean-property",
+                        self.data_type_manager.get_data_type(Types.any),
                         name=field_name,
-                        data_type=self.data_type_manager.get_data_type(Types.any),
+                        alias=alias,
+                        source_name=original_field_name,
+                        class_name=class_name,
                         required=False if self.force_optional_for_required_fields else original_field_name in requires,
-                        alias=single_alias,
-                        validation_aliases=validation_aliases,
-                        serialization_alias=self.get_serialization_alias(original_field_name, field_name, class_name),
-                        use_annotated=self.use_annotated,
                         original_name=original_field_name,
-                        use_serialization_alias=self.use_serialization_alias,
-                        **self._field_option_kwargs,
-                        **self._data_model_field_common_kwargs(),
                     )
                 )
                 continue
@@ -13477,8 +13406,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints = {}
         if suppress_item_constraints:
             self._suppress_array_length_constraints(constraints, obj)
-        return self.data_model_field_type(
-            data_type=build_union(
+        return self._build_field(
+            "array-root",
+            build_union(
                 self.data_type,
                 data_types,
                 "legacy-non-array-first",
@@ -13495,11 +13425,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             nullable=nullable,
             extras=self.get_field_extras(obj),
             use_annotated=use_annotated,
-            use_serialize_as_any=self.use_serialize_as_any,
             original_name=None,
             has_default=obj.has_default,
-            **self._field_option_kwargs,
-            **self._data_model_field_common_kwargs(),
         )
 
     def parse_array(
@@ -13529,8 +13456,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             # self-reference
             recursive_tuple_item_count = direct_data_types[0].tuple_item_count
-            field = self.data_model_field_type(
-                data_type=build_union(
+            field = self._build_field(
+                "root",
+                build_union(
                     self.data_type,
                     [
                         self.data_type(
@@ -13547,11 +13475,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 constraints=field.constraints,
                 nullable=field.nullable,
                 extras=field.extras,
-                use_annotated=self.use_annotated,
                 original_name=None,
                 has_default=field.has_default,
-                **self._field_option_kwargs,
-                **self._data_model_field_common_kwargs(),
             )
 
         self._register_root_model(
@@ -13736,8 +13661,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if data_type.is_dict or data_type.is_mapping:
             constraints.update(self._get_property_count_constraints(constraint_obj))
         fields = [
-            self.data_model_field_type(
-                data_type=data_type,
+            self._build_field(
+                "root",
+                data_type,
                 default=default_value,
                 required=required,
                 constraints=constraints,
@@ -13746,8 +13672,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 use_annotated=effective_use_annotated,
                 original_name=None,
                 has_default=has_default_override,
-                **self._field_option_kwargs,
-                **self._data_model_field_common_kwargs(),
             )
         ]
         takes_constraints = self.field_constraints and not self._should_skip_root_field_constraints_for_multiple_types(
@@ -13902,18 +13826,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._register_root_model(
             reference=reference,
             fields=[
-                self.data_model_field_type(
-                    data_type=build_union(self.data_type, data_types),
+                self._build_field(
+                    "root",
+                    build_union(self.data_type, data_types),
                     default=obj.default,
                     required=bool(null_facts.required),
                     constraints=constraints,
                     nullable=null_facts.admits_null,
                     extras=self.get_field_extras(obj),
-                    use_annotated=self.use_annotated,
                     original_name=None,
                     has_default=obj.has_default,
-                    **self._field_option_kwargs,
-                    **self._data_model_field_common_kwargs(),
                 )
             ],
             obj=obj,
@@ -14165,18 +14087,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if enum_descriptions and i < len(enum_descriptions) and enum_descriptions[i]:
                 field_extras["description"] = enum_descriptions[i]
             enum_fields.append(
-                self.data_model_field_type(
-                    name=field_name,
-                    default=default,
-                    data_type=self.data_type_manager.get_data_type(
+                self._build_field(
+                    "enum-member",
+                    self.data_type_manager.get_data_type(
                         Types.any,
                     ),
+                    name=field_name,
+                    default=default,
                     required=True,
                     has_default=obj.has_default,
                     extras=field_extras,
                     original_name=None,
-                    **self._field_option_kwargs,
-                    **self._data_model_field_common_kwargs(),
                 )
             )
 
@@ -14241,17 +14162,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._register_root_model(
             reference=reference,
             fields=[
-                self.data_model_field_type(
-                    data_type=data_type,
+                self._build_field(
+                    "root",
+                    data_type,
                     default=obj.default,
                     required=False,
                     nullable=True,
                     extras=self.get_field_extras(obj),
-                    use_annotated=self.use_annotated,
-                    has_default=obj.has_default,
                     original_name=None,
-                    **self._field_option_kwargs,
-                    **self._data_model_field_common_kwargs(),
+                    has_default=obj.has_default,
                 )
             ],
             obj=obj,

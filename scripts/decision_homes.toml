@@ -198,6 +198,17 @@ paths = ["parser/"]
 what = "predicts the children a site types for the request/response split; ask the table (typed_children)"
 audit = "D-X-02"
 
+[homes.Hx-field-build]
+decision = "how a parser builds a field it writes: the field class's constructor, the configured field options each kind of field takes, the alias, validation aliases and serialization alias"
+core = ["parser/base.py:Parser._build_field", "parser/_field_rows.py"]
+
+[homes.Hx-field-build.signatures.field-construction]
+kind = "call"
+names = ["data_model_field_type", "_data_model_field_constructor"]
+paths = ["parser/"]
+what = "builds a field outside Parser._build_field; pass its facts to Parser._build_field with the row of its kind"
+audit = "PF-1"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
@@ -971,6 +982,18 @@ audit = "C17-7"
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
+
+[legacy_rows."legacy-graphql-field"]
+home = "Hx-field-build"
+fix = "#5588"
+
+[legacy_rows."legacy-boolean-property"]
+home = "Hx-field-build"
+fix = "#5588"
+
+[legacy_rows."legacy-alias-option-only"]
+home = "Hx-field-build"
+fix = "#5588"
 
 [legacy_rows."legacy-rw-parsed-facts"]
 home = "F-dedupe-request-response-variants"
@@ -1821,12 +1844,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_enum_as_enum_class"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
 
@@ -1835,9 +1852,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_reference_value_schema"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_neutral_object_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_literal_const"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
@@ -1940,9 +1954,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_combined_schema"]
 "F-keep-field-defaults-off-branch-roots.option-read" = { home = "F-keep-field-defaults-off-branch-roots", count = 2, audit = "D-L1-30" }
 
@@ -1951,6 +1962,9 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser._get_data_type"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-08" }
+
+[allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser.parse_object_fields"]
+"Hx-field-build.field-construction" = { home = "Hx-field-build", count = 1, audit = "PF-3" }
 
 [allow."src/datamodel_code_generator/preset.py"."_config_item_to_cli_option"]
 "Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }

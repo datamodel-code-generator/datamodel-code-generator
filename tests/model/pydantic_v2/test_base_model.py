@@ -552,32 +552,63 @@ def test_parser_simple_field_falls_back_for_processed_values() -> None:
 
 @pytest.mark.allow_direct_assert
 def test_parser_simple_field_call_keywords_match_model_fields() -> None:
-    """Move future parser keyword audits out of the per-field runtime path."""
-    parser_tree = ast.parse(textwrap.dedent(inspect.getsource(JsonSchemaParser)))
+    """Move future parser keyword audits out of the per-field runtime path.
+
+    Every field a parser builds goes through ``Parser._build_field``: its constructor call, the aliases it splits, the
+    configured options of ``Parser._field_option_kwargs``, the facts its callers may pass and the options its rows leave
+    out are model fields.
+    """
+    parser_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser)))
+    build_field = next(
+        node for node in ast.walk(parser_tree) if isinstance(node, ast.FunctionDef) and node.name == "_build_field"
+    )
     constructor_calls = [
         node
-        for node in ast.walk(parser_tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "_data_model_field_constructor"
+        for node in ast.walk(build_field)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "constructor"
     ]
-    assert len(constructor_calls) == 2
+    assert len(constructor_calls) == 1
+    assert [ast.unparse(keyword.value) for keyword in constructor_calls[0].keywords if keyword.arg is None] == [
+        "{**options, **aliases, **facts}",
+        "self._data_model_field_common_kwargs()",
+    ]
+    keywords = {keyword.arg for keyword in constructor_calls[0].keywords if keyword.arg is not None} | {
+        node.slice.value
+        for node in ast.walk(build_field)
+        if isinstance(node, ast.Subscript)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "aliases"
+        and isinstance(node.slice, ast.Constant)
+    }
 
-    constructor_keywords: set[str] = set()
-    for call in constructor_calls:
-        expansions = [keyword.value for keyword in call.keywords if keyword.arg is None]
-        assert len(expansions) == 1
-        match expansions[0]:
-            case ast.Call(
-                func=ast.Attribute(
-                    value=ast.Name(id="self"),
-                    attr="_data_model_field_common_kwargs",
-                )
-            ):
-                pass
-            case expansion:  # pragma: no cover
-                pytest.fail(f"Unexpected field-constructor kwargs expansion: {ast.unparse(expansion)}")
-        constructor_keywords.update(keyword.arg for keyword in call.keywords if keyword.arg is not None)
+    (option_dict,) = [
+        node
+        for node in ast.walk(
+            next(
+                node
+                for node in ast.walk(parser_tree)
+                if isinstance(node, ast.FunctionDef) and node.name == "_field_option_kwargs"
+            )
+        )
+        if isinstance(node, ast.Dict)
+    ]
+    option_names = {key.value for key in option_dict.keys if isinstance(key, ast.Constant)}
+    assert len(option_names) == len(option_dict.keys)
+
+    rows_tree = ast.parse((Path(inspect.getfile(Parser)).parent / "_field_rows.py").read_text(encoding="utf-8"))
+    facts = next(node for node in rows_tree.body if isinstance(node, ast.ClassDef) and node.name == "FieldFacts")
+    fact_names = {node.target.id for node in facts.body if isinstance(node, ast.AnnAssign)}
+    left_out_names = {
+        element.value
+        for statement in rows_tree.body
+        if isinstance(statement, ast.Assign | ast.AnnAssign) and not ast.unparse(statement).startswith("FIELD_ROWS_")
+        for node in ast.walk(statement)
+        if isinstance(node, ast.Set)
+        for element in node.elts
+        if isinstance(element, ast.Constant)
+    }
+    assert left_out_names
+    assert left_out_names <= option_names
 
     init_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser.__init__)))
     common_kwargs_assignments = [
@@ -595,10 +626,21 @@ def test_parser_simple_field_call_keywords_match_model_fields() -> None:
         isinstance(key, ast.Constant) and isinstance(key.value, str) for key in assignment.keys
     ):  # pragma: no cover
         pytest.fail(f"Common field kwargs must stay a static dict: {ast.unparse(assignment)}")
-    constructor_keywords.update(key.value for key in assignment.keys if isinstance(key, ast.Constant))
+    common_names = {key.value for key in assignment.keys if isinstance(key, ast.Constant)}
 
-    assert "data_type" in constructor_keywords
-    assert constructor_keywords <= DataModelField.model_fields.keys()
+    assert "data_type" in keywords
+    assert keywords | option_names | fact_names | common_names <= DataModelField.model_fields.keys()
+    builder_calls = [
+        node
+        for path in sorted(Path(inspect.getfile(Parser)).parent.rglob("*.py"))
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "_build_field"
+    ]
+    assert len(builder_calls) > 1
+    assert {keyword.arg for call in builder_calls for keyword in call.keywords} <= fact_names | {
+        "source_name",
+        "class_name",
+    }
 
 
 @pytest.mark.parametrize(

@@ -18,7 +18,7 @@ from dataclasses import replace
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
@@ -167,6 +167,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -445,10 +446,6 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
         """The parser configuration."""
 
     @property
-    def data_model_field_type(self) -> type[DataModelFieldBase]:
-        """The field type of the output."""
-
-    @property
     def force_optional_for_required_fields(self) -> bool:
         """Whether required fields are made optional."""
 
@@ -460,10 +457,6 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
     def use_msgspec_tagged_unions(self) -> bool:
         """Whether msgspec unions are tagged by their discriminators."""
 
-    @property
-    def use_serialization_alias(self) -> bool:
-        """Whether aliases are written as serialization aliases."""
-
     def _create_discriminator_data_type(
         self,
         enum_source: Enum | None,
@@ -473,16 +466,17 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
     ) -> DataType:
         """Return the type of a tag field, of the members of its enum if it has one."""
 
-    def _data_model_field_common_kwargs(self) -> dict[str, Any]:
-        """Return the keyword arguments every field the parser builds takes."""
-
-    def _split_field_alias(self, alias: str | list[str] | None) -> tuple[str | None, list[str] | None]:
-        """Split one output alias from multiple validation aliases."""
-
-    def get_serialization_alias(
-        self, original_field_name: str, field_name: str, class_name: str | None = None
-    ) -> str | None:
-        """Return the serialization alias configured for a field, if any."""
+    def _build_field(
+        self,
+        row: FieldRow,
+        /,
+        data_type: DataType,
+        *,
+        source_name: str | None = None,
+        class_name: str | None = None,
+        **facts: Unpack[FieldFacts],
+    ) -> DataModelFieldBase:
+        """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
 
 
 class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, GraphBuilderHost, Protocol):
@@ -1988,21 +1982,16 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     discriminator_model,
                     imports,
                 )
-                # Handle multiple aliases (Pydantic v2 AliasChoices)
-                single_alias, validation_aliases = parser._split_field_alias(names.alias)  # noqa: SLF001
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser.data_model_field_type(
+                    discriminator_field := parser._build_field(  # noqa: SLF001
+                        "legacy-alias-option-only",
+                        new_data_type,
                         name=field_name,
-                        data_type=new_data_type,
+                        alias=names.alias,
+                        source_name=names.property_name,
+                        class_name=discriminator_model.name,
                         required=True,
-                        alias=single_alias,
-                        validation_aliases=validation_aliases,
-                        serialization_alias=parser.get_serialization_alias(
-                            names.property_name, field_name, discriminator_model.name
-                        ),
-                        use_serialization_alias=parser.use_serialization_alias,
-                        **parser._data_model_field_common_kwargs(),  # noqa: SLF001
                     ),
                 )
                 if parser.config.aliases:
