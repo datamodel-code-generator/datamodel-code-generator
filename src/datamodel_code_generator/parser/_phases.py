@@ -52,9 +52,6 @@ class DecisionWriter(Protocol):
 class DecisionStore(Protocol):
     """The generation store as the decision writer sees it."""
 
-    def note_changed_models(self, *models: object) -> None:
-        """Note that a change outside the store's operations reached ``models``."""
-
     def drop_held_null(self, data_type: Any) -> None:
         """Drop the None a type restates of the model it names, which holds null itself."""
 

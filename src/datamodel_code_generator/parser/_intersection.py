@@ -226,6 +226,11 @@ def _retained_indices(first: Sequence[Any], second: Sequence[Any]) -> list[int]:
     ]
 
 
+def _same_values(first: Sequence[Any], second: Sequence[Any]) -> bool:
+    """Return whether each of two lists lists every value of the other."""
+    return len(_retained_indices(first, second)) == len(first) and len(_retained_indices(second, first)) == len(second)
+
+
 def intersect_enum_values(first: Sequence[Any], second: Sequence[Any]) -> list[Any]:
     """Return the values of ``first`` that ``second`` also lists, in the order of ``first``."""
     return [first[index] for index in _retained_indices(first, second)]
@@ -385,10 +390,9 @@ class _Reconciler:
         updates: dict[str, Any] = {}
         for lower, upper in _BOUND_DIMENSIONS:
             self._bounds(lower, upper, parts, row, updates)
-        if (merged := _intersect_values("multipleOf", parts)) is not None and row.get("multipleOf") != merged:
-            updates["multipleOf"] = merged
-        if (merged := _intersect_values("uniqueItems", parts)) is not None and row.get("uniqueItems") != merged:
-            updates["uniqueItems"] = merged
+        for keyword in ("multipleOf", "uniqueItems"):
+            if (merged := _intersect_values(keyword, parts)) is not None and row.get(keyword) != merged:
+                updates[keyword] = merged
         names = [part["required"] for part in parts if part.get("required")]
         if len(names) > 1 and set(union := list(dict.fromkeys(chain.from_iterable(names)))) != set(
             row.get("required") or ()
@@ -480,11 +484,7 @@ class _Reconciler:
             self.unsatisfiable.append("enum")
             return
         retained = [first[index] for index in indices]
-        if (
-            isinstance(row_enum := row.get("enum"), list)
-            and len(_retained_indices(row_enum, retained)) == len(row_enum)
-            and len(_retained_indices(retained, row_enum)) == len(retained)
-        ):
+        if isinstance(row_enum := row.get("enum"), list) and _same_values(row_enum, retained):
             return
         updates["enum"] = retained
         updates.update({
@@ -773,9 +773,6 @@ def _all_of_enum(parent: list[Any], child: list[Any]) -> list[Any]:
 
     Both concatenated also where each lists the other's values.
     """
-    intersection = intersect_enum_values(parent, child)
-    if not intersection or (
-        len(intersection) == len(parent) and len(intersect_enum_values(child, parent)) == len(child)
-    ):
+    if not (intersection := intersect_enum_values(parent, child)) or _same_values(parent, child):
         return parent + child
     return intersection

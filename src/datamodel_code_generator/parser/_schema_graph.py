@@ -173,6 +173,14 @@ class ResolvedRef(str):  # noqa: FURB189 - it must be a str wherever the parser 
         return str, (str(self),)
 
 
+def _keyword_ref(
+    ref: str, source: SchemaLocation, keyword: str, document: DocumentId, converted: ConvertedRefs | None
+) -> ResolvedRef:
+    """Return the reference keyword ``ref`` of ``source`` carrying its edge, read as ``converted`` says if given."""
+    mounted, home = (converted.mounted(ref), converted.home) if converted is not None else (ref, None)
+    return ResolvedRef(ref, RefEdge(source, keyword, document, mounted, canonical_ref_spelling(ref), home=home))
+
+
 def keep_resolved_ref(value: object, result: str) -> str:
     """Return ``result``, the validated form of the reference keyword ``value``, with the edge of ``value``."""
     if not isinstance(value, ResolvedRef):
@@ -456,7 +464,6 @@ class SchemaGraphBuilder:
         A copied container keeps its type and attributes, as ``index_document`` copies them.
         """
         active: set[int] = set()
-        mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
 
         def visit(value: Any, tokens: tuple[str, ...], entries: str) -> Any:
             if not isinstance(value, (dict, list)) or (value_id := id(value)) in active:
@@ -482,10 +489,7 @@ class SchemaGraphBuilder:
                 source = SchemaLocation(root.document, tokens)
                 for keyword in REF_KEYWORDS:
                     if type(ref := changed.get(keyword, value.get(keyword))) is str:
-                        changed[keyword] = ResolvedRef(
-                            ref,
-                            RefEdge(source, keyword, document, mounted(ref), canonical_ref_spelling(ref), home=home),
-                        )
+                        changed[keyword] = _keyword_ref(ref, source, keyword, document, converted)
             active.discard(value_id)
             if not changed:
                 return value
@@ -536,7 +540,6 @@ class SchemaGraphBuilder:
         locations = self.locations
         false_all_of = self._false_all_of_documents
         ancestors: dict[int, Any] = {}
-        mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
         reads_refs = set() if reading is None else {reading.objects, reading.root}
 
         def write(value: dict[Any, Any] | list[Any], value_id: int, key: Any, updated: Any) -> None:
@@ -577,15 +580,8 @@ class SchemaGraphBuilder:
             if entries in reads_refs:
                 for keyword in REF_KEYWORDS:
                     if type(ref := ancestors[value_id].get(keyword)) is str:
-                        edge = RefEdge(
-                            location,
-                            keyword,
-                            cast("DocumentId", document),
-                            mounted(ref),
-                            canonical_ref_spelling(ref),
-                            home=home,
-                        )
-                        write(value, value_id, keyword, ResolvedRef(ref, edge))
+                        resolved = _keyword_ref(ref, location, keyword, cast("DocumentId", document), converted)
+                        write(value, value_id, keyword, resolved)
             node = ancestors.pop(value_id)
             locations[id(node)] = location
             return node

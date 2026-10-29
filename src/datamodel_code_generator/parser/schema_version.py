@@ -35,6 +35,46 @@ class FeatureMetadata(TypedDict):
     """Implementation status: supported, partial, or not_supported."""
 
 
+_DRAFT_FLAG_CHANGES: tuple[tuple[JsonSchemaVersion, dict[str, Any]], ...] = (
+    (
+        JsonSchemaVersion.Draft4,
+        {
+            "null_in_type_array": True,
+            "id_field": "id",
+            "definitions_key": "definitions",
+            "const_support": False,
+            "property_names": False,
+        },
+    ),
+    (
+        JsonSchemaVersion.Draft6,
+        {
+            "boolean_schemas": True,
+            "id_field": "$id",
+            "exclusive_as_number": True,
+            "const_support": True,
+            "property_names": True,
+        },
+    ),
+    (JsonSchemaVersion.Draft7, {"read_only_write_only": True}),
+    (
+        JsonSchemaVersion.Draft201909,
+        {"defs_not_definitions": True, "definitions_key": "$defs", "anchor": True, "recursive_ref": True},
+    ),
+    (JsonSchemaVersion.Draft202012, {"prefix_items": True, "dynamic_ref": True}),
+)
+
+
+def _draft_flags(version: JsonSchemaVersion) -> dict[str, Any]:
+    """Return the flags that differ from the defaults up to ``version``; every other version reads as 2020-12."""
+    flags: dict[str, Any] = {}
+    for draft, changes in _DRAFT_FLAG_CHANGES:
+        flags |= changes
+        if draft == version:
+            break
+    return flags
+
+
 @dataclass(frozen=True)
 class JsonSchemaFeatures:
     """Feature flags for JSON Schema versions.
@@ -262,69 +302,7 @@ class JsonSchemaFeatures:
     @classmethod
     def from_version(cls, version: JsonSchemaVersion) -> JsonSchemaFeatures:
         """Create JsonSchemaFeatures from a JSON Schema version."""
-        match version:
-            case JsonSchemaVersion.Draft4:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=False,
-                    prefix_items=False,
-                    boolean_schemas=False,
-                    id_field="id",
-                    definitions_key="definitions",
-                    exclusive_as_number=False,
-                    read_only_write_only=False,
-                    const_support=False,
-                    property_names=False,
-                )
-            case JsonSchemaVersion.Draft6:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=False,
-                    prefix_items=False,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="definitions",
-                    exclusive_as_number=True,
-                    read_only_write_only=False,
-                )
-            case JsonSchemaVersion.Draft7:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=False,
-                    prefix_items=False,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="definitions",
-                    exclusive_as_number=True,
-                    read_only_write_only=True,
-                )
-            case JsonSchemaVersion.Draft201909:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=True,
-                    prefix_items=False,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="$defs",
-                    exclusive_as_number=True,
-                    read_only_write_only=True,
-                    anchor=True,
-                    recursive_ref=True,
-                )
-            case _:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=True,
-                    prefix_items=True,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="$defs",
-                    exclusive_as_number=True,
-                    read_only_write_only=True,
-                    anchor=True,
-                    recursive_ref=True,
-                    dynamic_ref=True,
-                )
+        return cls(**_draft_flags(version))
 
 
 @dataclass(frozen=True)
@@ -451,59 +429,16 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
     @classmethod
     def from_openapi_version(cls, version: OpenAPIVersion) -> OpenAPISchemaFeatures:
         """Create OpenAPISchemaFeatures from an OpenAPI version."""
-        match version:
-            case OpenAPIVersion.V30:
-                return cls(
-                    null_in_type_array=False,
-                    defs_not_definitions=False,
-                    prefix_items=False,
-                    boolean_schemas=False,
-                    id_field="$id",
-                    definitions_key="definitions",
-                    exclusive_as_number=False,
-                    read_only_write_only=True,
-                    nullable_keyword=True,
-                    discriminator_support=True,
-                )
-            case OpenAPIVersion.V32:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=True,
-                    prefix_items=True,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="$defs",
-                    exclusive_as_number=True,
-                    read_only_write_only=True,
-                    anchor=True,
-                    recursive_ref=True,
-                    dynamic_ref=True,
-                    nullable_keyword=False,
-                    discriminator_support=True,
-                    webhooks=True,
-                    ref_sibling_keywords=True,
-                    media_item_schema=True,
-                    openapi_self=True,
-                    querystring_parameter=True,
-                )
-            case _:
-                return cls(
-                    null_in_type_array=True,
-                    defs_not_definitions=True,
-                    prefix_items=True,
-                    boolean_schemas=True,
-                    id_field="$id",
-                    definitions_key="$defs",
-                    exclusive_as_number=True,
-                    read_only_write_only=True,
-                    anchor=True,
-                    recursive_ref=True,
-                    dynamic_ref=True,
-                    nullable_keyword=False,
-                    discriminator_support=True,
-                    webhooks=True,
-                    ref_sibling_keywords=True,
-                )
+        if version == OpenAPIVersion.V30:
+            return cls(definitions_key="definitions", read_only_write_only=True, nullable_keyword=True)
+        flags: dict[str, Any] = {
+            **_draft_flags(JsonSchemaVersion.Draft202012),
+            "webhooks": True,
+            "ref_sibling_keywords": True,
+        }
+        if version == OpenAPIVersion.V32:
+            flags |= {"media_item_schema": True, "openapi_self": True, "querystring_parameter": True}
+        return cls(**flags)
 
     @classmethod
     def from_asyncapi_version(cls, version: AsyncAPIVersion) -> OpenAPISchemaFeatures:
@@ -515,22 +450,12 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
 
 SchemaFeaturesT = TypeVar("SchemaFeaturesT", bound=JsonSchemaFeatures)
 
-_JsonSchemaVersionPatterns: TypeAlias = dict[str, JsonSchemaVersion]
-
-_JSONSCHEMA_VERSION_PATTERNS: _JsonSchemaVersionPatterns = {
-    "draft-04": JsonSchemaVersion.Draft4,
-    "draft-06": JsonSchemaVersion.Draft6,
-    "draft-07": JsonSchemaVersion.Draft7,
-    "2019-09": JsonSchemaVersion.Draft201909,
-    "2020-12": JsonSchemaVersion.Draft202012,
-}
-
 
 def _detect_declared_jsonschema_version(data: dict[str, Any]) -> JsonSchemaVersion | None:
     """Detect a recognized declaration without applying undeclared-schema heuristics."""
     if isinstance(schema_url := data.get("$schema", ""), str):
-        for pattern, version in _JSONSCHEMA_VERSION_PATTERNS.items():
-            if pattern in schema_url:
+        for version, _ in _DRAFT_FLAG_CHANGES:
+            if version.value in schema_url:
                 return version
     return None
 
@@ -589,22 +514,26 @@ def detect_openapi_version(data: dict[str, Any]) -> OpenAPIVersion:
 
 def detect_asyncapi_version(data: dict[str, Any]) -> AsyncAPIVersion:
     """Detect AsyncAPI major version from asyncapi field."""
-    if isinstance(version := data.get("asyncapi", ""), str):
-        if version.startswith("2."):
-            return AsyncAPIVersion.V2
-        if version.startswith("3."):
-            return AsyncAPIVersion.V3
+    if isinstance(version := data.get("asyncapi", ""), str) and version.startswith("2."):
+        return AsyncAPIVersion.V2
     return AsyncAPIVersion.V3
 
 
 DataFormatMapping: TypeAlias = "dict[str, dict[str, Types]]"
 
 
-def _get_common_data_formats() -> DataFormatMapping:
-    """Get common data formats valid for both JsonSchema and OpenAPI."""
+def get_data_formats(*, is_openapi: bool = False) -> DataFormatMapping:
+    """Get merged data formats based on schema type.
+
+    Args:
+        is_openapi: If True, includes OpenAPI-specific formats.
+
+    Returns:
+        Merged dictionary of data formats.
+    """
     from datamodel_code_generator.types import Types  # noqa: PLC0415
 
-    return {
+    formats: DataFormatMapping = {
         "integer": {
             "int32": Types.int32,
             "int64": Types.int64,
@@ -666,43 +595,9 @@ def _get_common_data_formats() -> DataFormatMapping:
         "null": {"default": Types.null},
         "array": {"default": Types.array},
     }
-
-
-def _get_openapi_only_formats() -> DataFormatMapping:
-    """Get formats specific to OpenAPI."""
-    from datamodel_code_generator.types import Types  # noqa: PLC0415
-
-    return {
-        "string": {
-            "binary": Types.binary,
-            "password": Types.password,
-        },
-    }
-
-
-def _get_openapi_data_formats() -> DataFormatMapping:
-    """Get common data formats extended with OpenAPI-specific formats."""
-    formats = _get_common_data_formats()
-    for type_key, type_formats in _get_openapi_only_formats().items():
-        if current_type_formats := formats.get(type_key):
-            formats[type_key] = {**current_type_formats, **type_formats}
-            continue
-        formats[type_key] = type_formats  # pragma: no cover
-    return formats
-
-
-def get_data_formats(*, is_openapi: bool = False) -> DataFormatMapping:
-    """Get merged data formats based on schema type.
-
-    Args:
-        is_openapi: If True, includes OpenAPI-specific formats.
-
-    Returns:
-        Merged dictionary of data formats.
-    """
     if is_openapi:
-        return _get_openapi_data_formats()
-    return _get_common_data_formats()
+        formats["string"] |= {"binary": Types.binary, "password": Types.password}
+    return formats
 
 
 __all__ = [
