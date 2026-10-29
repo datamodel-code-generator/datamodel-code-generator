@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
+from .options import retryable_status
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -33,9 +34,6 @@ _StopReason: TypeAlias = Literal[
 ]
 _ASCII_WHITESPACE: Final = " \t\r\n\f\v"
 _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
-_AUTH_STATUSES: Final = frozenset({401, 403, 407})
-_ERROR_STATUS_MIN: Final = 400
-_ERROR_STATUS_MAX: Final = 599
 _RFC850_YEAR: Final = re.compile(r"[A-Za-z]+, *[0-9]{1,2}-[A-Za-z]+-(?P<year>[0-9]{2})[ \t]")
 _YEAR_WINDOW: Final = 50
 
@@ -104,11 +102,7 @@ def should_retry(headers: HeadersView | None, name: str | None) -> bool | None:
 
 def status_retry_reason(status: int, retry: ResolvedRetryOptions, *, hint: bool | None) -> RetryReason | None:
     """Select ordinary error-status candidates without enabling authentication retries."""
-    if (
-        _ERROR_STATUS_MIN <= status <= _ERROR_STATUS_MAX
-        and status not in _AUTH_STATUSES
-        and (status in retry.statuses or hint is True)
-    ):
+    if retryable_status(status) and (status in retry.statuses or hint is True):
         return "status"
     return None
 

@@ -35,6 +35,7 @@ from .errors import (
     add_secondary,
     is_transport,
     kept_primary,
+    request_failure,
 )
 from .logical import LogicalCallContext, run_sync
 from .native import (
@@ -55,7 +56,7 @@ from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
 from .positions import positional, protected_positions, secret_names
-from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse, buffered, is_raw, released, settled
+from .raw import AsyncRawResponse, RawResponse, ReceivedBody, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
@@ -138,12 +139,7 @@ R = TypeVar("R")
 AdapterT = TypeVar("AdapterT", bound="httpx2.Client | httpx2.AsyncClient")
 HandleT = TypeVar("HandleT", bound="AnyRaw")
 
-CLEANUP_TIMEOUT: Final = 5.0
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
-_OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
-_MIN_STATUS: Final = 200
-_NOT_MODIFIED: Final = 304
-_MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _BODY: Final = "datamodel_code_generator.body"
 _SWITCHING: Final = 101
@@ -312,14 +308,6 @@ def _server_url(operation: OperationPlan[object], selection: ServerSelection) ->
     return PLACEHOLDER.sub(lambda match: values[match[1]], server.url).rstrip("/")
 
 
-def request_decode_error(
-    operation: OperationPlan[object], location: tuple[str | int, ...], error: BaseException | None = None
-) -> DecodeError:
-    return DecodeError(
-        reason="unencodable", direction="request", location=location, operation_id=operation.operation_id, cause=error
-    )
-
-
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
     """Return the path parameter that makes its segment a dot segment, which URL normalization would remove.
 
@@ -345,14 +333,14 @@ def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...])
         plan = spec.plan
         if value is UNSET:
             if plan.required:
-                raise request_decode_error(operation, (plan.location, plan.name))
+                raise request_failure((plan.location, plan.name), operation.operation_id)
             continue
         try:
             if (wire := spec.dump(value)) is None and not plan.required and plan.content_media_type is None:
                 continue
             request.add(plan, wire)
         except request_errors(spec.codec) as error:
-            raise request_decode_error(operation, (plan.location, plan.name), error) from None
+            raise request_failure((plan.location, plan.name), operation.operation_id, error) from None
     return request
 
 
@@ -377,31 +365,6 @@ class _Request:
                 self.headers.extend((key or "", text) for key, text in pairs(plan, value))
             case _:
                 self.cookies.extend(query_pairs(plan, value))
-
-
-class ReceivedBody:
-    __slots__ = ("chunks", "problem", "size", "success", "truncated")
-
-    def __init__(self, *, success: bool) -> None:
-        self.success = success
-        self.chunks: list[bytes] = []
-        self.size = 0
-        self.truncated = False
-        self.problem: DecodeError | None = None
-
-    def add(self, chunk: bytes) -> bool:
-        """Keep a chunk and return whether reading continues: an error body keeps only its bounded prefix."""
-        self.size += len(chunk)
-        if self.success or self.size <= MAX_ERROR_BODY_BYTES:
-            self.chunks.append(chunk)
-            return True
-        self.chunks.append(chunk[: len(chunk) - (self.size - MAX_ERROR_BODY_BYTES)])
-        self.truncated = True
-        return False
-
-    @property
-    def content(self) -> bytes:
-        return b"".join(self.chunks)
 
 
 def _info(status: int, headers: HeadersView, request_id_header: str | None, call: LogicalCallContext) -> ResponseInfo:
@@ -451,10 +414,6 @@ def _checked_raw(method: object, url: object) -> tuple[str, str]:
     return method.upper(), target.url
 
 
-def delivery_state(call: Call) -> Delivery:
-    return call.furthest()
-
-
 def decode_response(
     decoder: ResponseDecoder[T], info: ResponseInfo, body: ReceivedBody, operation_id: str | None
 ) -> Response[T]:
@@ -499,13 +458,8 @@ def _compressed(
 def _bound(bodies: BodyBinder | None, content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BodySource:
     """Bind a body that builds its own attempts, which only a package that declares binary or multipart bodies takes."""
     if bodies is None:
-        raise DecodeError(reason="unencodable", direction="request", location=("body",), cause=TypeError(_BYTES))
+        raise request_failure(("body",), cause=TypeError(_BYTES))
     return bodies.bind(content, entry, asynchronous=asynchronous)
-
-
-async def _aclose_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
-    """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
-    _close_failed(await owner.aclose(), call, error)
 
 
 def _release_failure(call: Call, failure: BaseException, error: BaseException | None) -> BaseException | None:
@@ -641,9 +595,7 @@ def _failed_send(
     """Record how far a failed native send got and convert it; a failure a request hook raised is never sent again."""
     if (request_hooks := hooks["request"]) and _in_hook(error, request_hooks):
         call.retry_blocked = True
-    call.delivery_state = delivery(
-        error, send_started=True, response_started=_answered(error, outgoing, hooks["response"])
-    )
+    call.delivery_state = delivery(error, response_started=_answered(error, outgoing, hooks["response"]))
     return native_error(error)
 
 
@@ -682,14 +634,10 @@ class Call(LogicalCallContext):
     handshake: ClassVar[bool] = False
 
     __slots__ = (
-        "attempt_index",
-        "current_origin",
         "decoder",
         "idempotency",
         "initial_origin",
         "key",
-        "last_failure",
-        "last_info",
         "method",
         "operation",
         "placements",
@@ -716,14 +664,10 @@ class Call(LogicalCallContext):
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
         self.key = str(uuid4()) if self.idempotency is not None and key is UNSET else key
-        self.last_failure: BaseException | None = None
-        self.last_info: ResponseInfo | None = None
         self.raw_response = False
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.initial_origin: Origin | None = None
-        self.current_origin: Origin | None = None
         self.server_origin: Origin | None = None
-        self.attempt_index = 0
         self.previous_cap: float | None = None
         self.method = ""
         self.received_at = self.started
@@ -757,7 +701,7 @@ class Call(LogicalCallContext):
         """
         self.method = request.method
         if self.placements:
-            self.initial_origin = self.current_origin = request_origin(str(request.url))
+            self.initial_origin = request_origin(str(request.url))
         if self.idempotency is None:
             return request
         name = self.idempotency.header_name
@@ -773,9 +717,8 @@ class Call(LogicalCallContext):
             body=request_body(request),
         )
 
-    def received(self, info: ResponseInfo) -> None:
+    def received(self) -> None:
         """Retain header receipt timing before callbacks and body decoding."""
-        self.last_info = info
         self.received_at = self.monotonic()
         self.received_wall_time = self.settings.clock.time()
 
@@ -843,20 +786,11 @@ class Call(LogicalCallContext):
         self.previous_cap = planned.backoff_cap
         return planned
 
-    def stopped(self, error: BaseException) -> BaseException:
-        """Return the call's final failure."""
-        return self.failure(error)
-
     def resending(self, error: BaseException) -> None:
         """Recheck termination before waiting or opening another body."""
         self.check()
         if self.retry_blocked:
-            raise self.stopped(error)
-
-    def restart(self) -> None:
-        """Begin the next resource candidate from the once-encoded original request."""
-        self.attempt_index += 1
-        self.current_origin = self.initial_origin
+            raise self.failure(error)
 
     def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool | None:
         """Return whether HTTPX2 follows a redirect of the outgoing request, or None for the HTTP client's own choice.
@@ -992,12 +926,7 @@ class Core(Generic[AdapterT, HandleT]):
         media_type = None
         if (bodies := self._shared.bodies) is not None:
             body, media_type = bodies.raw(body)
-        fixed = self._shared.fixed
-        call = None if options is None else options.extra_headers
-        if self._settings.headers or call:
-            headers = _headers([*fixed], (self._settings.headers,), call, media_type)
-        else:
-            headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
+        headers = self._call_headers([*self._shared.fixed], [], options, media_type=media_type)
         attempt, deferred = _encoded(body, None)
         return build_request(method=verb, url=target, headers=headers, body=attempt), deferred
 
@@ -1081,7 +1010,7 @@ class Core(Generic[AdapterT, HandleT]):
                 and dotted_route(route)
                 and (name := _dot_parameter(operation.path, path)) is not None
             ):
-                raise request_decode_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
+                raise request_failure(("path", name), operation.operation_id, ParameterEncodingError(_DOT_CAUSE))
             query = self._call_query(request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]
@@ -1156,6 +1085,28 @@ class Core(Generic[AdapterT, HandleT]):
         shared.protocols, shared.credentials = protocols, checked
         return cls(shared, settings)
 
+    def _operation_request(  # noqa: PLR0913, PLR0917
+        self,
+        call: Call,
+        operation: OperationPlan[object],
+        arguments: tuple[object, ...],
+        body: object,
+        media_type: str | None,
+        options: RequestOptions | None,
+        response_media_type: str | None,
+    ) -> tuple[httpx2.Request, object]:
+        """Return an operation call's request, keeping on the call the decoder of the response media it accepts."""
+        call.decoder = decoder = self._decoder(operation, response_media_type)
+        return self._prepare(
+            operation,
+            arguments,
+            call.settings,
+            body=body,
+            media_type=media_type,
+            options=options,
+            accept=decoder.accept,
+        )
+
     async def _execute(  # noqa: PLR0913, PLR0917
         self,
         operation: OperationPlan[T],
@@ -1166,38 +1117,25 @@ class Core(Generic[AdapterT, HandleT]):
         options: RequestOptions | None,
         response_media_type: str | None,
     ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy."""
         settings = self._call_settings(options, operation.operation_id)
         call = Call(settings, operation)
         self._admitted(call)
-        decoder = operation.responses
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            nonlocal decoder
-            decoder = self._decoder(operation, response_media_type)
-            call.decoder = decoder
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=body,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-            )
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
-            received = await self._read(response, info, decoder, call)
+            received = await self._read(response, info, call.decoder, call)
 
-            return decode_response(decoder, info, received, call.operation_id)
+            return cast("Response[T]", decode_response(call.decoder, info, received, call.operation_id))
 
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
+            prepare = partial(
+                self._operation_request, call, operation, arguments, body, media_type, options, response_media_type
+            )
             result = await self._run(call, body, prepare, receive)
 
         except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
+            failure = call.failure(error)
             raise failure from failure.__cause__
         else:
             return result
@@ -1215,30 +1153,9 @@ class Core(Generic[AdapterT, HandleT]):
         stream: bool = False,
         _call: Call | None = None,
     ) -> HandleT:
-        """Execute one encoded logical call through its retry and redirect policy.
-
-        A helper supplies its prepared call. A response other than a declared success of the response media type
-        raises the call's typed failure before the stream is handed over.
-        """
         call = self._raw_call(operation, options, _call)
-        call.handing_off = stream
         self._admitted(call)
-        decoder = operation.responses
         result: HandleT | None = None
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            nonlocal decoder
-            decoder = self._decoder(operation, response_media_type)
-            call.decoder = decoder
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=body,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-            )
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
             return await self._raw_response(response, info, call, stream=stream)
@@ -1246,16 +1163,19 @@ class Core(Generic[AdapterT, HandleT]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
+            prepare = partial(
+                self._operation_request, call, operation, arguments, body, media_type, options, response_media_type
+            )
             result = await self._run(call, body, prepare, receive)
 
             if _call is not None:
                 await settled(result)
-                decoder.streamed(result.info)
+                call.decoder.streamed(result.info)
 
             if stream:
                 call.handoff()
         except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if result is not None:
                 await released(result, failure)
             raise failure from failure.__cause__
@@ -1265,21 +1185,16 @@ class Core(Generic[AdapterT, HandleT]):
     async def _request_raw(
         self, method: str, url: str, *, body: object, options: RequestOptions | None, stream: bool
     ) -> HandleT:
-        """Execute an unbound raw call with the same resource and retry ownership."""
         call = Call(self._call_settings(options, None))
-        call.handing_off = stream
         self._admitted(call)
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
             return await self._raw_response(response, info, call, stream=stream)
 
-        def prepare() -> tuple[httpx2.Request, object]:
-            return self._raw_prepared(method, url, body, options)
-
         try:
-            result = await self._run(call, body, prepare, receive)
+            result = await self._run(call, body, partial(self._raw_prepared, method, url, body, options), receive)
         except BaseException as error:  # noqa: BLE001
-            failure = call.stopped(error)
+            failure = call.failure(error)
             raise failure from failure.__cause__
         if stream:
             call.handoff()
@@ -1371,7 +1286,7 @@ class Core(Generic[AdapterT, HandleT]):
                     raise _failed_send(error, outgoing, call, self._shared.http_client.event_hooks) from None
                 call.redirects_followed = _redirects(response)
                 info = self._response_info(response, call.request_id_header, call)
-                call.received(info)
+                call.received()
                 planned = _status_plan(info, source, call)
                 if planned is None:
                     result = await receive(response, info)
@@ -1389,17 +1304,15 @@ class Core(Generic[AdapterT, HandleT]):
                 if response is not None and not call.response_transferred:
                     await self._close_response(response, call, failure)
                 if not is_transport(failure) or call.sends == sends_before:
-                    failure = call.stopped(failure)
+                    failure = call.failure(failure)
                     raise failure from failure.__cause__
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
-                    failure = call.stopped(failure)
+                    failure = call.failure(failure)
                     raise failure from failure.__cause__
-            call.last_failure = failure
             call.resending(failure)
             await self._sleep_until(call, planned.not_before)
             call.resending(failure)
-            call.restart()
 
     async def _raw_response(
         self, response: httpx2.Response, info: ResponseInfo, call: Call, *, stream: bool
@@ -1782,7 +1695,10 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
     @staticmethod
     async def _close_body(owner: BodyEntry, call: Call, error: BaseException | None = None) -> None:
-        await call.cleanup(partial(_aclose_body, owner, call, error), error=error)
+        async def close() -> None:
+            _close_failed(await owner.aclose(), call, error)
+
+        await call.cleanup(close, error=error)
 
     @staticmethod
     async def _sleep_until(call: Call, not_before: float) -> None:

@@ -36,6 +36,7 @@ from ..client.errors import (
     SDKError,
     is_client_closed,
     is_phase_timeout,
+    request_failure,
 )
 from ..client.operations import request_errors
 from ..client.raw import afinished, finished
@@ -382,9 +383,7 @@ class _Sockets(Generic[SendT, RecvT]):
         try:
             return _encoded(plan, value)
         except request_errors(plan.encoder) as error:
-            raise self._stamped(
-                DecodeError(reason="unencodable", direction="request", location=("message",), cause=error)
-            ) from None
+            raise self._stamped(request_failure(("message",), cause=error)) from None
 
     def _message(self, event: Event) -> Message[RecvT]:
         """Return a received message decoded as declared, raising DecodeError for one that is not."""

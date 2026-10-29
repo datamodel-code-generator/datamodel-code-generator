@@ -16,11 +16,9 @@ from ..client.client import (
     Core,
     HandleT,
     R,
-    ReceivedBody,
     T,
     build_request,
     decode_response,
-    delivery_state,
     request_body,
     strip_credentials,
 )
@@ -29,7 +27,7 @@ from ..client.client import ClientCore as NativeClientCore
 from ..client.logical import LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
-from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
+from ..client.raw import AsyncRawResponse, RawResponse, ReceivedBody, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
@@ -535,9 +533,9 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, body, prepare, receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if failed is not None:
-                failed(failure, delivery_state(call))
+                failed(failure, call.furthest())
             raise failure from failure.__cause__
         else:
             return result
@@ -579,7 +577,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             raise failure from failure.__cause__
         else:
             return result
@@ -635,7 +633,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             accept(result.info)
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if result is not None:
                 await released(result, failure)
             raise failure from failure.__cause__

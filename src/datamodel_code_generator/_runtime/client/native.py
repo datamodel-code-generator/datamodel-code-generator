@@ -7,12 +7,13 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
-from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DecodeError
+from .errors import APIConnectionError, APITimeoutError, ConfigurationError, response_failure
 from .retry import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Collection, Iterator
 
+    from .errors import DecodeError
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
 
@@ -22,11 +23,11 @@ def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
     return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
-def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> Delivery:
+def delivery(error: BaseException, *, response_started: bool = False) -> Delivery:
     """Classify how far a failed send got, only by the public send boundary and native exception class."""
     if response_started:
         return Delivery.RESPONSE_STARTED
-    if not send_started or isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
+    if isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
         return Delivery.NOT_SENT
     return Delivery.MAYBE_SENT
 
@@ -71,7 +72,7 @@ def wire_fields(fields: Collection[tuple[str, str]]) -> list[tuple[bytes, bytes]
 
 
 def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:
-    return DecodeError(reason="malformed_coding", operation_id=operation_id, info=info, cause=error)
+    return response_failure(info, "malformed_coding", cause=error, operation_id=operation_id)
 
 
 class _Held(httpx2.SyncByteStream):
