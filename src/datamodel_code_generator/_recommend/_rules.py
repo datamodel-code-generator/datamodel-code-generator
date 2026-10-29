@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from datamodel_code_generator._option_names import option_flag, toml_value
+from datamodel_code_generator import _option_names
+from datamodel_code_generator._option_names import toml_value
 from datamodel_code_generator._recommend._signals import (
     SignalName,
     normalize_name,
@@ -181,16 +182,9 @@ class Decision:
 
 def option_arguments(field: str, value: OptionValue) -> list[str] | None:
     """Return the CLI arguments that set a config field to a value, or None when no option can express it."""
-    option = option_flag(field)
-    if value is True:
-        return [option]
-    if value is False:
-        from datamodel_code_generator.cli_options import _option_actions  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
 
-        negative = option_flag(field, negative=True)
-        action = _option_actions().get(field)
-        return [negative] if action is not None and negative in action.option_strings else None
-    return [option, *value] if isinstance(value, list) else [option, value]
+    return _option_names.option_arguments(field, value, negative=_negative_option)
 
 
 def _rule_values(rule: Rule) -> dict[str, OptionValue]:

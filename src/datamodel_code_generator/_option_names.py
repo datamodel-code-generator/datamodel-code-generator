@@ -6,12 +6,24 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
 
 def option_flag(field: str, *, negative: bool = False) -> str:
     """Return the option of a config field, or its --no- form."""
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
+
+
+def option_arguments(field: str, value: object, *, negative: Callable[[str], str | None]) -> list[Any] | None:
+    """Return the arguments that set a config field to a value, or None when no option can express it.
+
+    True is the field's option and False the --no- option ``negative`` finds for the field (None when the parser has
+    none); a list or tuple is the option followed by its items, any other value the option followed by the value.
+    Items and values are returned as given, so that each writer spells them: ``str``, its quoting, an enum's value.
+    """
+    if isinstance(value, bool):
+        return [option_flag(field)] if value else None if (flag := negative(field)) is None else [flag]
+    return [option_flag(field), *(value if isinstance(value, list | tuple) else (value,))]
 
 
 def hyphenated(config: Mapping[str, Any], *, ordered: bool = False) -> dict[str, Any]:

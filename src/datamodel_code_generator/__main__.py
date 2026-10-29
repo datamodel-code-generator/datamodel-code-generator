@@ -128,7 +128,7 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
-from datamodel_code_generator._option_names import hyphenated, option_flag
+from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -1363,21 +1363,15 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
     for key, value in sorted(config.items()):
         if key in EXCLUDED_CONFIG_OPTIONS:
             continue
-
-        option = option_flag(key)
-
-        if isinstance(value, bool):
-            if value:
-                parts.append(option)
-            elif negative := _negative_option(key):
-                parts.append(negative)
-        elif isinstance(value, list):
-            parts.extend((option, _format_cli_value(cast("list[str]", value))))
-        elif isinstance(value, Mapping):
+        if isinstance(value, Mapping):
             if argument := _format_cli_mapping(key, value):
-                parts.extend((option, argument))
-        else:
-            parts.extend((option, _format_cli_value(str(value))))
+                parts.extend((option_flag(key), argument))
+            continue
+        match option_arguments(key, value, negative=_negative_option):
+            case [option, *items] if isinstance(value, list | tuple):
+                parts.extend((option, _format_cli_value(items)))
+            case [option, *items]:
+                parts.extend((option, *(_format_cli_value(str(item)) for item in items)))
 
     return " ".join(parts)
 
@@ -1505,18 +1499,11 @@ def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
     """Return the CLI arguments for configuration values keyed by field name, as an argument list."""
     from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
 
-    arguments: list[str] = []
-    for key, value in sorted(config.items()):
-        option = option_flag(key)
-        match value:
-            case bool():
-                negative = _negative_option(key)
-                arguments.extend([option] if value else [negative] if negative else [])
-            case list() | tuple():
-                arguments.extend([option, *(str(item) for item in value)])
-            case _:
-                arguments.extend([option, str(value)])
-    return arguments
+    return [
+        str(argument)
+        for key, value in sorted(config.items())
+        for argument in option_arguments(key, value, negative=_negative_option) or ()
+    ]
 
 
 def _recommend_lock_observer(config: Config, pyproject_path: Path | None) -> Any:
