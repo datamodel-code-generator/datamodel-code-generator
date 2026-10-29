@@ -155,9 +155,11 @@ class WirePlan:
 
 
 class _PlanError(Exception):
-    def __init__(self, *, code: CodecReason, source: SourceLocation, message: str) -> None:
+    """Refuse a parameter, header or form member no builtin encoding writes, as `MC_PARAMETER_ENCODING`."""
+
+    def __init__(self, source: SourceLocation, message: str) -> None:
         super().__init__(message)
-        self.diagnostic = CodecDiagnostic(code, source, message)
+        self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message)
 
 
 def _fact(declaration: WireDeclaration, key: str) -> object:
@@ -304,7 +306,7 @@ def _form(
         encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in styled.values())
         encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
     except _PlanError as error:
-        _refused(planner, use, error)
+        _refused(planner, error, use.id.owner, (use.id,))
         return None
     return use.id, fields, additional, encoded
 
@@ -320,7 +322,7 @@ def _styles(
         styled = {plan.name for plan in encoded}
         encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
     except _PlanError as error:
-        _refused(planner, use, error)
+        _refused(planner, error, use.id.owner, (use.id,))
         return None
     return use.id, encoded
 
@@ -390,14 +392,14 @@ def _additional(planner: _WirePlanner, use: TypeUseBinding) -> FieldPlan | None:
     typed = None if extras is None else _text(extras)
     if (problem := shape.problem) is not None:
         source, message = problem
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=message)
+        raise _PlanError(source, message)
     return typed or (None if shape.additional is None else FieldPlan(""))
 
 
 def _text(member: FormMember) -> FieldPlan:
     """Return the text plan of a URL-encoded member, refusing one whose type has no one kind."""
     if member.kind is None:
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=member.source, message=NO_SCALAR_KIND)
+        raise _PlanError(member.source, NO_SCALAR_KIND)
     return FieldPlan(member.name, member.kind, repeated=member.repeated)
 
 
@@ -408,11 +410,9 @@ def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation,
             yield member.wire_name, member.schema, member
 
 
-def _refused(planner: _WirePlanner, use: TypeUseBinding, error: _PlanError) -> None:
-    owner = use.id.owner
-    planner.diagnostics.append(
-        replace(error.diagnostic, operation=owner if isinstance(owner, OperationId) else None, uses=(use.id,))
-    )
+def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tuple[TypeUseId, ...]) -> None:
+    operation = owner if isinstance(owner, OperationId) else None
+    planner.diagnostics.append(replace(error.diagnostic, operation=operation, uses=uses))
 
 
 def _distinct(
@@ -433,7 +433,7 @@ def _distinct(
         *(plan.name for plan in encoded if not _spread(plan)),
     ]
     if len(set(claimed)) != len(claimed):
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=location, message="Expanded form member names collide")
+        raise _PlanError(location, "Expanded form member names collide")
     absorbing = [plan.name for plan in encoded if plan.additional is not None and _spread(plan)]
     if absorbing and (
         len(absorbing) > 1
@@ -445,7 +445,7 @@ def _distinct(
             f"The exploded form member {absorbing[0]!r} allows other properties and takes every name no other member "
             "writes, so the form cannot have another such member, a deepObject member, or other properties of its own"
         )
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=location, message=message)
+        raise _PlanError(location, message)
     plans = list(encoded)
     return tuple(_reserving(plan, plans) if plan.name in absorbing else plan for plan in plans)
 
@@ -474,7 +474,7 @@ def _encoding(
     """
     name, source = encoding.name or "", encoding.use_site
     if (member := members.get(name)) is None:
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message="An encoding names no member of its form")
+        raise _PlanError(source, "An encoding names no member of its form")
     style, explode, reserved, content = (
         _fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )
@@ -482,11 +482,7 @@ def _encoding(
         if style is None and explode is None and reserved is None:
             media = normalize_media_type(str(content))
             if not builtin_content("query", media):
-                raise _PlanError(
-                    code="MC_PARAMETER_ENCODING",
-                    source=source,
-                    message="The member content has no builtin encoding",
-                )
+                raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
         shape, kind, fields, additional = _shape(planner, _member_shape(form, member))
         chosen = str(style or "form")
@@ -503,7 +499,7 @@ def _encoding(
             reserved_names=tuple(sorted(other for other in members if other != name)),
         )
     except ValueError as error:
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
+        raise _PlanError(source, str(error)) from None
 
 
 def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
@@ -536,13 +532,7 @@ def _planned(
     try:
         return _parameter(planner, declaration, names)
     except _PlanError as error:
-        planner.diagnostics.append(
-            replace(
-                error.diagnostic,
-                operation=operation,
-                uses=_uses(declaration),
-            )
-        )
+        _refused(planner, error, operation, _uses(declaration))
     return None
 
 
@@ -675,7 +665,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
     style = str(_fact(declaration, "style") or _DEFAULT_STYLES[location])
     if style == "cookie" and not planner.version.startswith("3.2"):
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message="Cookie style requires OpenAPI 3.2")
+        raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
     explode = _fact(declaration, "explode")
     try:
         return ParameterPlan(
@@ -692,7 +682,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
         )
     except ValueError as error:
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
+        raise _PlanError(source, str(error)) from None
 
 
 def _content_parameter(
@@ -700,16 +690,10 @@ def _content_parameter(
 ) -> ParameterPlan:
     source = declaration.use_site
     if location == "querystring" and not planner.version.startswith("3.2"):
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="Querystring parameters require OpenAPI 3.2"
-        )
+        raise _PlanError(source, "Querystring parameters require OpenAPI 3.2")
     media = normalize_media_type(declaration.children[0].name or "")
     if not builtin_content(location, media):
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING",
-            source=source,
-            message="The parameter content has no builtin encoding",
-        )
+        raise _PlanError(source, "The parameter content has no builtin encoding")
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
     content = declaration.children[0]
@@ -719,9 +703,7 @@ def _content_parameter(
     elif (
         kind == "text" and content.schemas and _encoded(_schema_use(planner, content.schemas, source)).types != _STRING
     ):
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="Text parameter content requires a string schema"
-        )
+        raise _PlanError(source, "Text parameter content requires a string schema")
     try:
         return ParameterPlan(
             location=location,
@@ -732,7 +714,7 @@ def _content_parameter(
             additional=additional,
         )
     except ValueError as error:
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
+        raise _PlanError(source, str(error)) from None
 
 
 def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
@@ -741,18 +723,14 @@ def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
         if isinstance(value := getattr(use.default, "value", None), float) and not isfinite(value):
             location = _located(use)
             raise _PlanError(
-                code="MC_PARAMETER_ENCODING",
-                source=replace(location, pointer=f"{location.pointer}/default"),
-                message="A schema value must be a finite JSON number",
+                replace(location, pointer=f"{location.pointer}/default"), "A schema value must be a finite JSON number"
             )
 
 
 def _schema_use(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> TypeUseBinding:
     """Return the first of a declaration's type uses that has a schema."""
     if (use := next((item for item in planner.batch.type_uses if item.id in uses and item.schema), None)) is None:
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="A style-based parameter requires a schema"
-        )
+        raise _PlanError(source, "A style-based parameter requires a schema")
     return use
 
 
@@ -777,11 +755,7 @@ def _kind(planner: _WirePlanner, site: KindSite) -> LexicalKind:
     A leaf bound to no type, to a model or a container, or to values of several kinds no text reaches, is refused.
     """
     if (kind := planner.kinds.at(*site.leaves)) is None:
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING",
-            source=site.source,
-            message=NO_SCALAR_KIND,
-        )
+        raise _PlanError(site.source, NO_SCALAR_KIND)
     return kind
 
 
@@ -795,7 +769,7 @@ def _shape(
     fields = tuple(_field(planner, member) for member in shape.members)
     if (problem := shape.problem) is not None:
         source, message = problem
-        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=message)
+        raise _PlanError(source, message)
     if shape.shape == "object":
         return "object", "string", fields, None if shape.additional is None else _field(planner, shape.additional)
     return shape.shape, _kind(planner, cast("KindSite", shape.kind)), (), None

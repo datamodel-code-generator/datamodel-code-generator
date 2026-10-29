@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
-    from datamodel_code_generator.enums import DataModelType, OpenAPIScope
+    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 _PYTHON_MINIMUM = (3, 11)
@@ -184,10 +184,7 @@ def prepare_target(
         Error,
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
     )
-    from datamodel_code_generator._target_render import (  # noqa: PLC0415
-        PYDANTIC_TARGET_MINIMUM,
-        pydantic_target_problem,
-    )
+    from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     if sys.version_info < _PYTHON_MINIMUM:
@@ -205,12 +202,14 @@ def prepare_target(
     if implied := implied_settings(model_config, _given_fields(model_config)):
         model_config = model_config.model_copy(update=implied)
     target = model_config.target_pydantic_version
-    if (sentinel := model_config.use_missing_sentinel) and (
-        needed := pydantic_target_problem(
-            model_config.output_model_type.value, target, sentinel=True, implied="use_missing_sentinel" in implied
+    if sentinel := model_config.use_missing_sentinel:
+        _check_pydantic_target(
+            generator,
+            model_config.output_model_type.value,
+            target,
+            sentinel=True,
+            implied="use_missing_sentinel" in implied,
         )
-    ) is not None:
-        raise _target_pydantic_error(generator, needed)
     effective = _prepare_generate_facade_config(model_config)
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
         raise Error(requirement)
@@ -233,8 +232,7 @@ def prepare_target(
                 "from None"
             ),
         )
-    if (needed := pydantic_target_problem(backend.value, target, sentinel=False)) is not None:
-        raise _target_pydantic_error(generator, needed)
+    _check_pydantic_target(generator, backend.value, target, sentinel=False)
     if backend is DataModelType.MsgspecStruct and (
         missing := tuple(
             Diagnostic(
@@ -269,14 +267,11 @@ def prepare_target(
 
 def implied_conflict(config: Any, implied: dict[str, Any], generator: TargetGenerator) -> None:
     """Refuse a given target pydantic version older than the MISSING sentinel the target implied needs, saying so."""
-    from datamodel_code_generator._target_render import pydantic_target_problem  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     backend = DataModelType(config.output_model_type).value
-    if "use_missing_sentinel" in implied and (
-        needed := pydantic_target_problem(backend, config.target_pydantic_version, sentinel=True, implied=True)
-    ):
-        raise _target_pydantic_error(generator, needed)
+    if "use_missing_sentinel" in implied:
+        _check_pydantic_target(generator, backend, config.target_pydantic_version, sentinel=True, implied=True)
 
 
 def _given_fields(config: GenerateConfig) -> set[str]:
@@ -316,13 +311,23 @@ def python_problem(config: Any, kind: str) -> str | None:
     return f"{message}, which the preset {name} sets to {version.value}: use a preset for Python 3.11 or later"
 
 
-def _target_pydantic_error(generator: TargetGenerator, needed: str) -> APIGenerationError:
+def _check_pydantic_target(
+    generator: TargetGenerator,
+    backend: str,
+    target: TargetPydanticVersion | None,
+    *,
+    sentinel: bool,
+    implied: bool = False,
+) -> None:
     """Refuse the target pydantic version a target cannot use, before the models are generated with it."""
-    return config_error(
-        code="E_CONFIG_VALUE",
-        option_path="model_config.target_pydantic_version",
-        message=f"The {generator.kind} target {needed}",
-    )
+    from datamodel_code_generator._target_render import pydantic_target_problem  # noqa: PLC0415
+
+    if (needed := pydantic_target_problem(backend, target, sentinel=sentinel, implied=implied)) is not None:
+        raise config_error(
+            code="E_CONFIG_VALUE",
+            option_path="model_config.target_pydantic_version",
+            message=f"The {generator.kind} target {needed}",
+        )
 
 
 def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> str | None:
@@ -546,6 +551,19 @@ def _implementation(item: Implementation, path: Path, kept: frozenset[Path], cwd
     return replace(item, path=path, created=path not in kept)
 
 
+def _collision(message: str, path: Path) -> Diagnostic:
+    """Report files of a run that cannot be written or imported together, at the path named in messages."""
+    return Diagnostic(
+        code="E_PATH_COLLISION", severity="error", stage="publication", message=message, artifact_path=path.as_posix()
+    )
+
+
+def _services(server: str) -> tuple[str, str]:
+    """Return the parent package of a server package and the `services` package it imports implementations from."""
+    parent = server.rpartition(".")[0]
+    return parent, f"{parent}.services" if parent else "services"
+
+
 def _adopted(owner: re.Match[str], server: str) -> str:
     """Return an initializer of implementations whose docstring names another server package as this one's."""
     text = owner.string
@@ -638,15 +656,7 @@ class _Planner:
             elif location.suffix == ".py" and _collision_key(location.with_suffix(""), target) in packages:
                 message = "The module has the name of a generated package directory beside it"
             if message is not None:
-                problems.append(
-                    Diagnostic(
-                        code="E_PATH_COLLISION",
-                        severity="error",
-                        stage="publication",
-                        message=message,
-                        artifact_path=shown(artifact.path, self.cwd).as_posix(),
-                    )
-                )
+                problems.append(_collision(message, shown(artifact.path, self.cwd)))
             seen.add(key)
         if problems:
             raise APIGenerationError(tuple(problems))
@@ -676,7 +686,7 @@ class _Planner:
             for file in rendered.implementations
             if _present(self.cwd / home.joinpath(*file.path.parts))
         }
-        finished, stubs = _Finisher(self).finish(rendered)
+        finished, stubs = self.finish(rendered)
         written = [file for file in stubs if file.path not in kept]
         artifacts = (
             *(self.artifact(self.model_path(artifact), "model", artifact.content) for artifact in models.artifacts),
@@ -725,9 +735,7 @@ class _Planner:
             return artifacts, None
         module = (package := paths[0].parent).with_suffix(".py")
         models = [artifact.path for artifact in artifacts if artifact.kind == "model"]
-        server = self.config.package
-        parent = server.rpartition(".")[0]
-        services = f"{parent}.services" if parent else "services"
+        parent, services = _services(server := self.config.package)
         job = f" of job '{self.job}'" if self.job else ""
         clash = f"the {services} package, from which {server}.main{job} imports your implementations"
         remedy = "put the server package under a parent package of its own"
@@ -750,15 +758,7 @@ class _Planner:
         else:
             adopted = self.artifact(path, "implementation", _adopted(owner, server).encode(*self.codec))
             return tuple(adopted if artifact.path == path else artifact for artifact in artifacts), owner[1]
-        raise APIGenerationError((
-            Diagnostic(
-                code="E_PATH_COLLISION",
-                severity="error",
-                stage="publication",
-                message=message,
-                artifact_path=shown(path, self.cwd).as_posix(),
-            ),
-        ))
+        raise APIGenerationError((_collision(message, shown(path, self.cwd)),))
 
     @property
     def codec(self) -> tuple[str, str]:
@@ -802,6 +802,114 @@ class _Planner:
             timestamp=self.effective._generation_timestamp,  # noqa: SLF001
         )
 
+    def finish(self, rendered: TargetRender) -> tuple[tuple[PlannedFile, ...], tuple[PlannedFile, ...]]:
+        """Format, head, and encode every file like a model file, from the model output settings.
+
+        Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
+        package is a multi-module output of the model backend, so the backend decides the default. The implementations
+        are formatted the same way, without the generated header, returned second, and put where a text file holds
+        their `implementation_text`. Every text is checked against the encoding of its file before any is staged, as
+        model files are before any is written.
+        """
+        from datamodel_code_generator import (  # noqa: PLC0415
+            _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
+            _build_module_content,  # pyright: ignore[reportPrivateUsage]
+            _ensure_output_text_encodable,  # pyright: ignore[reportPrivateUsage]
+            _format_file_header,  # pyright: ignore[reportPrivateUsage]
+        )
+        from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
+        from datamodel_code_generator.format import resolve_use_type_checking_imports  # noqa: PLC0415
+        from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
+
+        effective, models = self.effective, self.models
+        backend = get_data_model_types(
+            effective.output_model_type,
+            effective.target_python_version,
+            target_pydantic_version=effective.target_pydantic_version,
+        ).data_model
+        files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
+        formatter = TargetCodeFormatter(
+            effective.target_python_version,
+            models.settings_path,
+            effective.wrap_string_literal,
+            skip_string_normalization=not effective.use_double_quotes,
+            model_package=self.config.model_package,
+            package=self.config.package,
+            custom_formatters=effective.custom_formatters,
+            custom_formatters_kwargs=effective.custom_formatters_kwargs,
+            encoding=effective.encoding,
+            formatters=effective.formatters,
+            builtin_format_line_length=effective.builtin_format_line_length,
+            use_type_checking_imports=resolve_use_type_checking_imports(
+                effective.use_type_checking_imports,
+                is_multi_module_output=True,
+                formatters=effective.formatters,
+                requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
+            ),
+            defer_formatting=True,
+            formatter_cwd=models.formatter_cwd,
+        )
+        custom_header = models.custom_header
+        header = _format_file_header(*_build_file_header_parts(custom_header, effective), models.filename)
+        formatted = {file.path for file in files if _is_python(file.path) and not file.verbatim}
+        texts: dict[PurePosixPath, str] = {}
+        for file in files:
+            body = formatter.format_code(file.text) if file.path in formatted else file.text
+            texts[file.path] = (
+                _build_module_content(body, header, has_custom_file_header=bool(custom_header))
+                if _is_python(file.path)
+                else body
+            )
+        own = {file.path: formatter.format_code(file.text) for file in rendered.implementations}
+        for path, text in (*texts.items(), *own.items()):
+            _ensure_output_text_encodable(text, self.encoding(path))
+        self.defer(formatter, texts, formatted, own)
+        for key, value in list(texts.items()):
+            if not _is_python(key):
+                for path, text in own.items():
+                    value = value.replace(implementation_text(path), text.rstrip("\n"))  # noqa: PLW2901
+                texts[key] = value
+        return self.encoded(texts), self.encoded(own)
+
+    def encoding(self, path: PurePosixPath) -> str:
+        """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
+        return self.effective.encoding if _is_python(path) else "utf-8"
+
+    def encoded(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
+        """Encode formatted texts as their files hold them."""
+        return tuple(
+            PlannedFile(path=path, content=_written(_normalized(text), self.encoding(path)))
+            for path, text in texts.items()
+        )
+
+    def defer(
+        self,
+        formatter: TargetCodeFormatter,
+        texts: dict[PurePosixPath, str],
+        paths: set[PurePosixPath],
+        own: dict[PurePosixPath, str],
+    ) -> None:
+        """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory.
+
+        The staged package keeps the target directory's name, which Ruff reads as the package name, and the user
+        modules, `own`, are staged beside it as they lie beside the package.
+        """
+        from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
+
+        if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
+            return
+        encoding = self.effective.encoding
+        with ExitStack() as stack:
+            staged = _staging(stack, self.config.output, self.cwd) / self.root.name
+            files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
+            for base, path, held in files:
+                (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
+                location.write_text(held[path], encoding=encoding)
+            for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
+                formatter.format_directory(directory)
+            for base, path, held in files:
+                held[path] = base.joinpath(*path.parts).read_text(encoding=encoding)
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PlannedTarget:
@@ -843,20 +951,12 @@ def check_shared_services(job: str, target: PlannedTarget, earlier: Iterable[tup
     location = (target.cwd / services).resolve()
     for owner, planned in earlier:
         if planned.services is not None and (planned.cwd / planned.services).resolve() == location:
-            parent = target.name.rpartition(".")[0]
-            raise APIGenerationError((
-                Diagnostic(
-                    code="E_PATH_COLLISION",
-                    severity="error",
-                    stage="publication",
-                    message=(
-                        f"The server packages {planned.name} of job '{owner}' and {target.name} of job '{job}' would "
-                        f"both import their implementations from the {f'{parent}.services' if parent else 'services'} "
-                        "package: put each server package under a parent package of its own"
-                    ),
-                    artifact_path=shown(services, target.cwd).as_posix(),
-                ),
-            ))
+            message = (
+                f"The server packages {planned.name} of job '{owner}' and {target.name} of job '{job}' would both "
+                f"import their implementations from the {_services(target.name)[1]} package: put each server package "
+                "under a parent package of its own"
+            )
+            raise APIGenerationError((_collision(message, shown(services, target.cwd)),))
 
 
 def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack: ExitStack) -> list[StagedFile]:
@@ -954,13 +1054,7 @@ def _unshared(
             yield artifact
         elif planned.content != artifact.content:
             raise APIGenerationError((
-                Diagnostic(
-                    code="E_PATH_COLLISION",
-                    severity="error",
-                    stage="publication",
-                    message=f"Jobs '{owner}' and '{job}' generate different models",
-                    artifact_path=artifact.path.as_posix(),
-                ),
+                _collision(f"Jobs '{owner}' and '{job}' generate different models", artifact.path),
             ))
 
 
@@ -994,123 +1088,6 @@ def _quietly(cleanup: Callable[[], None]) -> None:
         cleanup()
 
 
-class _Finisher:
-    def __init__(self, planner: _Planner) -> None:
-        self.config = planner.config
-        self.effective = planner.effective
-        self.cwd = planner.cwd
-        self.models = planner.models
-        self.root = planner.root
-
-    def finish(self, rendered: TargetRender) -> tuple[tuple[PlannedFile, ...], tuple[PlannedFile, ...]]:
-        """Format, head, and encode every file like a model file, from the model output settings.
-
-        Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
-        package is a multi-module output of the model backend, so the backend decides the default. The implementations
-        are formatted the same way, without the generated header, returned second, and put where a text file holds
-        their `implementation_text`. Every text is checked against the encoding of its file before any is staged, as
-        model files are before any is written.
-        """
-        from datamodel_code_generator import (  # noqa: PLC0415
-            _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
-            _build_module_content,  # pyright: ignore[reportPrivateUsage]
-            _ensure_output_text_encodable,  # pyright: ignore[reportPrivateUsage]
-            _format_file_header,  # pyright: ignore[reportPrivateUsage]
-        )
-        from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
-        from datamodel_code_generator.format import resolve_use_type_checking_imports  # noqa: PLC0415
-        from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
-
-        effective, models = self.effective, self.models
-        backend = get_data_model_types(
-            effective.output_model_type,
-            effective.target_python_version,
-            target_pydantic_version=effective.target_pydantic_version,
-        ).data_model
-        files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
-        formatter = TargetCodeFormatter(
-            effective.target_python_version,
-            models.settings_path,
-            effective.wrap_string_literal,
-            skip_string_normalization=not effective.use_double_quotes,
-            model_package=self.config.model_package,
-            package=self.config.package,
-            custom_formatters=effective.custom_formatters,
-            custom_formatters_kwargs=effective.custom_formatters_kwargs,
-            encoding=effective.encoding,
-            formatters=effective.formatters,
-            builtin_format_line_length=effective.builtin_format_line_length,
-            use_type_checking_imports=resolve_use_type_checking_imports(
-                effective.use_type_checking_imports,
-                is_multi_module_output=True,
-                formatters=effective.formatters,
-                requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
-            ),
-            defer_formatting=True,
-            formatter_cwd=models.formatter_cwd,
-        )
-        custom_header = models.custom_header
-        header = _format_file_header(*_build_file_header_parts(custom_header, effective), models.filename)
-        formatted = {file.path for file in files if _is_python(file.path) and not file.verbatim}
-        texts: dict[PurePosixPath, str] = {}
-        for file in files:
-            body = formatter.format_code(file.text) if file.path in formatted else file.text
-            texts[file.path] = (
-                _build_module_content(body, header, has_custom_file_header=bool(custom_header))
-                if _is_python(file.path)
-                else body
-            )
-        own = {file.path: formatter.format_code(file.text) for file in rendered.implementations}
-        for path, text in (*texts.items(), *own.items()):
-            _ensure_output_text_encodable(text, self.encoding(path))
-        self.defer(formatter, texts, formatted, own)
-        for key, value in list(texts.items()):
-            if not _is_python(key):
-                for path, text in own.items():
-                    value = value.replace(implementation_text(path), text.rstrip("\n"))  # noqa: PLW2901
-                texts[key] = value
-        return self.planned(texts), self.planned(own)
-
-    def encoding(self, path: PurePosixPath) -> str:
-        """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
-        return self.effective.encoding if _is_python(path) else "utf-8"
-
-    def planned(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
-        """Encode formatted texts as their files hold them."""
-        return tuple(
-            PlannedFile(path=path, content=_written(_normalized(text), self.encoding(path)))
-            for path, text in texts.items()
-        )
-
-    def defer(
-        self,
-        formatter: TargetCodeFormatter,
-        texts: dict[PurePosixPath, str],
-        paths: set[PurePosixPath],
-        own: dict[PurePosixPath, str],
-    ) -> None:
-        """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory.
-
-        The staged package keeps the target directory's name, which Ruff reads as the package name, and the user
-        modules, `own`, are staged beside it as they lie beside the package.
-        """
-        from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
-
-        if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
-            return
-        encoding = self.effective.encoding
-        with ExitStack() as stack:
-            staged = _staging(stack, self.config.output, self.cwd) / self.root.name
-            files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
-            for base, path, held in files:
-                (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
-                location.write_text(held[path], encoding=encoding)
-            for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
-                formatter.format_directory(directory)
-            for base, path, held in files:
-                held[path] = base.joinpath(*path.parts).read_text(encoding=encoding)
-
-
 def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:
     from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
@@ -1123,24 +1100,26 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
 
 
-def _plan(  # noqa: PLR0913
+def plan_target(  # noqa: PLR0913
     input_: _GenerationInput,
+    *,
     model_config: GenerateConfig,
     config: TargetConfig,
     generator: TargetGenerator,
-    *,
-    publish: bool,
+    publish: bool = False,
     timestamp: str | None = None,
     models_module: bool = False,
     shown_root: Path | None = None,
     job: str = "",
 ) -> PlannedTarget:
-    """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished.
+    """Render one target and its models without writing them, for a caller that compares or publishes them later.
 
-    The files carry `timestamp` as their generation timestamp, or the current time without one. With
-    `models_module`, models generated as one file are planned as the module that the suffixless output names.
-    Warnings name target paths relative to `shown_root`, or to the working directory without one, and refusals name
-    the batch `job` that plans the target.
+    A caller that publishes it with other files owns the remote lock the models record into, so the target leaves
+    the lock out; one that will `publish` it alone cannot leave a lock update another caller owns unpublished. Targets
+    published together pass on the `timestamp` of the first, so the models they share carry one generation timestamp;
+    without one, the files carry the current time. `models_module` plans models generated as one file as the module
+    `<output>.py`, warnings name target paths relative to `shown_root`, or to the working directory without one, and
+    refusals name the batch `job` that plans the target.
     """
     effective = prepare_target(input_, model_config, generator)
     config.check_target(effective.target_python_version)
@@ -1164,42 +1143,11 @@ def _plan(  # noqa: PLR0913
         models.product.close()
 
 
-def plan_target(  # noqa: PLR0913
-    input_: _GenerationInput,
-    *,
-    model_config: GenerateConfig,
-    config: TargetConfig,
-    generator: TargetGenerator,
-    publish: bool = False,
-    timestamp: str | None = None,
-    models_module: bool = False,
-    shown_root: Path | None = None,
-    job: str = "",
-) -> PlannedTarget:
-    """Render one target and its models without writing them, for a caller that compares or publishes them later.
-
-    A caller that publishes it with other files owns the remote lock the models record into, so the target leaves
-    the lock out. Targets published together pass on the `timestamp` of the first, so the models they share carry
-    one generation timestamp. `models_module` plans models generated as one file as the module `<output>.py`,
-    warnings name target paths relative to `shown_root`, or to the working directory without one, and refusals name
-    the batch `job` that plans the target.
-    """
-    return _plan(
-        input_,
-        model_config,
-        config,
-        generator,
-        publish=publish,
-        timestamp=timestamp,
-        models_module=models_module,
-        shown_root=shown_root,
-        job=job,
-    )
-
-
 def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
     """Render one target and its models once, then write every changed file together, as an atomic model run does."""
-    publish_target(planned := _plan(input_, model_config, config, generator, publish=True))
+    publish_target(
+        planned := plan_target(input_, model_config=model_config, config=config, generator=generator, publish=True)
+    )
     return planned.project
