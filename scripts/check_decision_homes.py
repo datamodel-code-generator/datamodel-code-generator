@@ -24,9 +24,19 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
-place is the
-core a later change creates: it need not exist yet, and the check fails once it does, so that the change moves it to
-``core``. Every other hit must be in the allowlist, the
+place is the core a later change creates: it need not exist yet, and the check fails once it does, so that the change
+moves it to ``core``.
+
+A ``call`` hit is also at home wherever it occurs when its callee is a function or class that the home's ``core``
+defines: calling the core is the reuse a home is for, so its callers need no adapter entry (an adapter reads raw facts
+and hands them to the core). The callee is looked up like Python does, in the scopes around the call and then in the
+module: a parameter, variable, nested definition or ``global`` rebinding of the name is not the imported function, and
+nor is a module-level rebinding of it. An import leads to a module-level function or class (re-exports followed; a
+method or nested definition of that name is not one), and ``module.name`` leads through the module the alias names.
+A hand-written copy outside the core, a method of a value, a name outside the package and every other kind of
+signature are not exempt.
+
+Every other hit must be in the allowlist, the
 section of the toml after ``ALLOWLIST_MARKER``, keyed by (file, function, signature) with a count, the home and the
 entry of ``docs`` / the audit it belongs to. A new hit fails, and so does an entry whose count is higher than what the
 scan finds (the list only shrinks). ``--write-allowlist`` lowers it after hits were routed to their home and refuses
@@ -48,7 +58,7 @@ import sys
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 if sys.version_info >= (3, 11):
@@ -82,6 +92,8 @@ REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "key
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
+Origin = tuple[str, str]
+UNRESOLVED: Origin = ("", "")
 
 
 class ConfigError(ValueError):
@@ -134,6 +146,10 @@ class Home:
     def covers(self, file: str, function: str) -> bool:
         """Return whether the hit is in the core, an adapter or a planned place."""
         return any(place.covers(file, function) for place in (*self.core, *self.adapters, *self.planned))
+
+    def in_core(self, file: str, function: str) -> bool:
+        """Return whether the function or class ``function`` defined in ``file`` is part of the core."""
+        return any(place.covers(file, function) for place in self.core)
 
     @property
     def where(self) -> str:
@@ -446,13 +462,19 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
         }
         if not any(signatures.values()):
             continue
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)
                     if signature.paths and not any(place.covers(file, function) for place in signature.paths):
                         continue
-                    if not config.homes[signature.home].covers(file, function):
+                    home = config.homes[signature.home]
+                    if not home.covers(file, function) and not (
+                        signature.kind == "call"
+                        and isinstance(node, ast.Call)
+                        and calls_core(home, root, file, tree, node)
+                    ):
                         scan.hits.append(Hit(file, function, signature.id, node.lineno, node.col_offset))
     return scan
 
@@ -513,6 +535,205 @@ def _function_names(path: Path) -> frozenset[str]:
             else:
                 pending.append((child, scope))
     return frozenset(names)
+
+
+Binder = tuple[str, tuple[str, ...] | None, str | None]
+Scope = (
+    ast.Module
+    | ast.FunctionDef
+    | ast.AsyncFunctionDef
+    | ast.ClassDef
+    | ast.Lambda
+    | ast.ListComp
+    | ast.SetComp
+    | ast.DictComp
+    | ast.GeneratorExp
+)
+DEFINITION: Binder = ("def", None, None)
+REBINDING: Binder = ("other", None, None)
+SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
+COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+
+def _module_parts(name: str, package: tuple[str, ...], module: str | None, level: int) -> tuple[str, ...] | None:
+    """Return the path under the package ``name`` of the module an import names, or None for a module outside it."""
+    parts = tuple(module.split(".")) if module else ()
+    if level:
+        return (*package[: len(package) - level + 1], *parts) if level <= len(package) + 1 else None
+    return parts[1:] if parts[:1] == (name,) else None
+
+
+def _module_file(root: Path, parts: tuple[str, ...]) -> str | None:
+    """Return the file under ``root`` of the module at ``parts``, or None when the package has no such module."""
+    base = "/".join(parts)
+    return next((file for file in (f"{base}.py", f"{base}/__init__.py".lstrip("/")) if (root / file).is_file()), None)
+
+
+def _parameters(arguments: ast.arguments) -> list[ast.arg]:
+    parameters = (*arguments.posonlyargs, *arguments.args, arguments.vararg, *arguments.kwonlyargs, arguments.kwarg)
+    return [parameter for parameter in parameters if parameter]
+
+
+def _scope_roots(scope: Scope) -> list[ast.AST]:
+    """Return the nodes that bind the names of ``scope``: its comprehension targets, parameters and body."""
+    if isinstance(scope, COMPREHENSIONS):
+        return [generator.target for generator in scope.generators]
+    if isinstance(scope, ast.Module | ast.ClassDef):
+        return list(scope.body)
+    if isinstance(scope, ast.Lambda):
+        return [*_parameters(scope.args), scope.body]
+    return [*_parameters(scope.args), *scope.body]
+
+
+def _own_nodes(scope: Scope) -> Iterator[ast.AST]:
+    """Yield the nodes of ``scope`` itself: a nested scope is yielded (it binds its name) but not entered."""
+    pending = _scope_roots(scope)
+    while pending:
+        node = pending.pop()
+        yield node
+        if isinstance(node, COMPREHENSIONS):
+            yield from (inner.target for inner in ast.walk(node) if isinstance(inner, ast.NamedExpr))
+        elif not isinstance(node, SCOPES):
+            pending.extend(ast.iter_child_nodes(node))
+
+
+def _binds(root: Path, file: str, node: ast.AST, *, module_level: bool) -> Iterator[tuple[str, Binder]]:
+    """Yield each name ``node`` binds with what binds it: an import, a definition or any other (re)binding."""
+    package = PurePosixPath(file).parent.parts
+    if isinstance(node, ast.Name) and not isinstance(node.ctx, ast.Load):
+        yield node.id, REBINDING
+    elif isinstance(node, ast.arg):
+        yield node.arg, REBINDING
+    elif isinstance(node, ast.ExceptHandler | ast.MatchAs | ast.MatchStar) and node.name:
+        yield node.name, REBINDING
+    elif isinstance(node, ast.MatchMapping) and node.rest:
+        yield node.rest, REBINDING
+    elif isinstance(node, ast.Global | ast.Nonlocal):
+        yield from ((name, REBINDING) for name in node.names)
+    elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+        yield node.name, DEFINITION if module_level else REBINDING
+    elif isinstance(node, ast.ImportFrom):
+        module = _module_parts(root.name, package, node.module, node.level)
+        yield from ((alias.asname or alias.name, ("import", module, alias.name)) for alias in node.names)
+    elif isinstance(node, ast.Import):
+        for alias in node.names:
+            imported = alias.name if alias.asname else alias.name.partition(".")[0]
+            yield alias.asname or imported, ("import", _module_parts(root.name, package, imported, 0), None)
+
+
+def _binders(root: Path, file: str, scope: Scope) -> dict[str, list[Binder]]:
+    """Return what binds each name in ``scope`` itself."""
+    binders: dict[str, list[Binder]] = {}
+    for node in _own_nodes(scope):
+        for name, binder in _binds(root, file, node, module_level=isinstance(scope, ast.Module)):
+            binders.setdefault(name, []).append(binder)
+    return binders
+
+
+@cache
+def _module_binders(root: Path, file: str) -> dict[str, list[Binder]]:
+    """Return what binds each module-level name of ``file``; a ``global`` statement anywhere rebinds its names."""
+    tree = ast.parse((root / file).read_text(encoding="utf-8"))
+    binders = _binders(root, file, tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Global):
+            for name in node.names:
+                binders.setdefault(name, []).append(REBINDING)
+    return binders
+
+
+def _enclosing_scopes(tree: ast.Module, target: ast.Call) -> list[Scope]:
+    """Return the scopes in which ``target`` looks a name up, innermost first and the module last.
+
+    A function, lambda or class scope starts at its body (not at its decorators, defaults or bases) and a
+    comprehension scope at the whole comprehension. A class scope counts only for code directly in the class body.
+    """
+    pending: list[tuple[ast.AST, tuple[Scope, ...]]] = [(tree, (tree,))]
+    while True:
+        node, scopes = pending.pop()
+        if node is target:
+            return [
+                scope for index, scope in enumerate(reversed(scopes)) if not (index and isinstance(scope, ast.ClassDef))
+            ]
+        children: list[tuple[ast.AST, tuple[Scope, ...]]] = []
+        for attribute, value in ast.iter_fields(node):
+            inner = scopes
+            if isinstance(node, COMPREHENSIONS) or (isinstance(node, SCOPES) and attribute == "body"):
+                inner = (*scopes, node)
+            children.extend(
+                (child, inner)
+                for child in (value if isinstance(value, list) else [value])
+                if isinstance(child, ast.AST) and (getattr(child, "end_lineno", None) or target.lineno) >= target.lineno
+            )
+        pending.extend(reversed(children))
+
+
+def _imported_origins(
+    root: Path, module: tuple[str, ...] | None, imported: str | None, seen: frozenset[Origin]
+) -> set[Origin]:
+    if module is None:
+        return {UNRESOLVED}
+    target = _module_file(root, module)
+    if imported is None:
+        return {(target, "")} if target else {UNRESOLVED}
+    found = _origins(root, target, imported, seen) if target else {UNRESOLVED}
+    if found == {UNRESOLVED} and (submodule := _module_file(root, (*module, imported))):
+        return {(submodule, "")}
+    return set(found)
+
+
+def _binder_origins(
+    root: Path, file: str, name: str, binders: Iterable[Binder], seen: frozenset[Origin]
+) -> frozenset[Origin]:
+    """Return what ``name`` is where ``binders`` bind it, as ``(file, name)`` of a module-level definition.
+
+    An import leads to what it imports (re-exports followed; a module is ``(file, "")``). Any other binding, and a name
+    that nothing binds, is ``UNRESOLVED``.
+    """
+    origins: set[Origin] = set()
+    for kind, module, imported in binders:
+        if kind == "import":
+            origins |= _imported_origins(root, module, imported, seen)
+        else:
+            origins.add((file, name) if kind == "def" else UNRESOLVED)
+    return frozenset(origins or {UNRESOLVED})
+
+
+def _origins(root: Path, file: str, name: str, seen: frozenset[Origin] = frozenset()) -> frozenset[Origin]:
+    """Return what the module-level ``name`` of the module ``file`` is."""
+    if (file, name) in seen:
+        return frozenset({UNRESOLVED})
+    return _binder_origins(root, file, name, _module_binders(root, file).get(name, ()), seen | {(file, name)})
+
+
+def _scoped_origins(root: Path, file: str, tree: ast.Module, call: ast.Call, name: str) -> frozenset[Origin]:
+    """Return what ``name`` is where ``call`` looks it up: the innermost scope that binds it, else the module."""
+    for scope in _enclosing_scopes(tree, call)[:-1]:
+        if binders := _binders(root, file, scope).get(name):
+            return _binder_origins(root, file, name, binders, frozenset())
+    return _origins(root, file, name)
+
+
+def calls_core(home: Home, root: Path, file: str, tree: ast.Module, call: ast.Call) -> bool:
+    """Return whether ``call`` in ``file`` (parsed as ``tree``) calls a function or class of the core of ``home``.
+
+    A name is looked up in the lexical scopes around the call, then in the module; a parameter, a local variable, a
+    nested definition or a ``global`` rebinding of the name is not the imported function. Imports lead to the
+    definition (re-exports followed), and only module-level definitions of the module count. ``module.name`` resolves
+    through the module the alias names; a method of a value or a computed callee is not resolved.
+    """
+    callee = call.func
+    if isinstance(callee, ast.Name):
+        origins = _scoped_origins(root, file, tree, call, callee.id)
+    elif isinstance(callee, ast.Attribute) and isinstance(callee.value, ast.Name):
+        origins = frozenset(
+            origin
+            for module, qualified in _scoped_origins(root, file, tree, call, callee.value.id)
+            for origin in (_origins(root, module, callee.attr) if module and not qualified else (UNRESOLVED,))
+        )
+    else:
+        return False
+    return all(function and home.in_core(defined_in, function) for defined_in, function in origins)
 
 
 def _place_exists(place: Place, source_root: Path) -> bool:
