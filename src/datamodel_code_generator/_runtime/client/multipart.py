@@ -26,7 +26,7 @@ from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import UNSET
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .body_sources import BinaryBodies, BodyBindings, BoundBody
-from .errors import DecodeError
+from .errors import request_failure
 from .logical import in_thread
 from .media import encode_text
 from .parts import MEDIA_OUTSIDE_ENCODING, PartPlan
@@ -204,11 +204,6 @@ class FormParts:
     media_type: str
 
 
-def _malformed(name: object, cause: BaseException) -> DecodeError:
-    location = ("body",) if name is None else ("body", name if isinstance(name, str) else "?")
-    return DecodeError(reason="unencodable", direction="request", location=location, cause=cause)
-
-
 def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[bytes, str | None]:
     """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON.
 
@@ -281,7 +276,7 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
     opened.
     """
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
-        raise _malformed(None, ValueError(_DISPOSITION))
+        raise request_failure(("body",), cause=ValueError(_DISPOSITION))
     boundary = urandom(16).hex()
     sent = f"{media_type or _FORM_DATA}; boundary={boundary}"
     if not entries:
@@ -291,7 +286,7 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
             return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
         httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
     except (TypeError, ValueError) as error:
-        raise _malformed(None, error) from None
+        raise request_failure(("body",), cause=error) from None
     return FormParts(tuple(entries), sent), sent
 
 
@@ -338,7 +333,9 @@ def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = N
 
 
 def _refused(part: object) -> NoReturn:
-    raise _malformed(getattr(part, "name", "?"), TypeError(_PART))
+    name = getattr(part, "name", "?")
+    location = ("body",) if name is None else ("body", name if isinstance(name, str) else "?")
+    raise request_failure(location, cause=TypeError(_PART))
 
 
 def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
@@ -369,7 +366,7 @@ def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
         items = wire if plan.repeated and isinstance(wire, list) else (wire,)
         return [_member(part, item, plan) for item in items]
     except _errors(plan) as error:
-        raise _malformed(part.name, error) from None
+        raise request_failure(("body", part.name), cause=error) from None
 
 
 def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
@@ -383,13 +380,13 @@ def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
 
 def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> Entry:
     if not is_binary_input(part.content):
-        raise _malformed(part.name, TypeError(_SYNC))
+        raise request_failure(("body", part.name), cause=TypeError(_SYNC))
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:
             raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
     except (CodecError, TypeError, AttributeError) as error:
-        raise _malformed(part.name, error) from None
+        raise request_failure(("body", part.name), cause=error) from None
     return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
 
 
@@ -417,7 +414,7 @@ def encode_parts(
     A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
     """
     if not is_multipart(body):
-        raise _malformed(None, TypeError(_MULTIPART))
+        raise request_failure(("body",), cause=TypeError(_MULTIPART))
     declared = {} if plans is None else {plan.name: plan for plan in plans}
     entries: list[Entry] = []
     for part in body.parts:

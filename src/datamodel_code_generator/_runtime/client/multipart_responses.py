@@ -22,7 +22,6 @@ from .responses import HeadersView
 if TYPE_CHECKING:
     from collections.abc import Callable
     from email.message import Message
-    from typing import Protocol
 
     from ..model_codecs.media import JSONValue, LexicalKind
     from .operations import InboundModelCodec
@@ -31,29 +30,6 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
-
-if TYPE_CHECKING:
-
-    class ValueCodec(Protocol[T_co]):
-        """The codec of a received member's values."""
-
-        def decode(self, content: bytes) -> T_co:
-            """Return the value of received JSON bytes."""
-            ...
-
-        def text(self, value: object) -> T_co:
-            """Return the value of a parsed text value."""
-            ...
-
-        @property
-        def errors(self) -> tuple[type[Exception], ...]:
-            """Return the failures of the codec's backend."""
-            ...
-
-        def malformed(self, error: Exception) -> bool:
-            """Return whether a failure of the codec's backend is received bytes that are not JSON."""
-            ...
-
 
 _PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
 _BROKEN: Final = "A multipart body must hold its boundary and parts with headers, each part ending at the next boundary"
@@ -231,24 +207,6 @@ def decode_parts(
     return result
 
 
-class PartSyntaxError(Exception):
-    """A received part that is not text of its member's kind, or not JSON."""
-
-    def __init__(self, cause: BaseException) -> None:
-        """Keep the failure of reading the part."""
-        super().__init__()
-        self.cause = cause
-
-
-class PartValueError(Exception):
-    """A received part whose value its member's codec refuses."""
-
-    def __init__(self, cause: BaseException) -> None:
-        """Keep the codec's failure."""
-        super().__init__()
-        self.cause = cause
-
-
 class PartDecoder(Generic[T_co]):
     """How the parts of one member of a form-data response with file parts are read, and whether they repeat.
 
@@ -277,7 +235,7 @@ class PartDecoder(Generic[T_co]):
         self.excluded = excluded
 
     def read(self, part: DecodedPart[bytes]) -> T_co:
-        """Return the value of one part, raising PartSyntaxError when it is not text of its kind."""
+        """Return the value of one part, raising InvalidBodyError when it is not text of its kind."""
         return self._read(part)
 
 
@@ -296,24 +254,24 @@ def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONValue:
     try:
         return typed(part.value.decode(charset(part.content_type or "")), kind)
     except ValueError as error:
-        raise PartSyntaxError(error) from None
+        raise InvalidBodyError(error) from None
 
 
-def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
+def _decoded(codec: InboundModelCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
     try:
         if kind == "json" or _json_part(part):
             return codec.decode(part.value)
         return codec.text(_part_text(part, kind))
     except codec.errors as error:
         if codec.malformed(error):
-            raise PartSyntaxError(error) from None
-        raise PartValueError(error) from None
+            raise InvalidBodyError(error) from None
+        raise BodyValueError(error) from None
 
 
 def value_part(  # noqa: PLR0913
     name: str,
     kind: PartKind,
-    codec: ValueCodec[T],
+    codec: InboundModelCodec[T],
     *,
     repeated: bool = False,
     required: bool = False,
@@ -375,13 +333,7 @@ class PartsReader(Generic[T]):
             if name in seen and not plan.repeated:
                 raise InvalidBodyError(MalformedError("A form-data body repeats a single-valued member"))
             seen.add(name)
-            try:
-                value = plan.read(part)
-            except PartSyntaxError as error:
-                raise InvalidBodyError(error.cause) from None
-            except PartValueError as error:
-                raise BodyValueError(error.cause) from None
-            parts.append(DecodedPart(name, value, part.filename, part.content_type, part.headers))
+            parts.append(DecodedPart(name, plan.read(part), part.filename, part.content_type, part.headers))
         for plan in self._declared.values():
             if plan.required and plan.name not in seen:
                 raise BodyValueError(MalformedError("A required form-data member has no part"))
