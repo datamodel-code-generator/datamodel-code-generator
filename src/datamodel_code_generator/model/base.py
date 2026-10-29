@@ -26,7 +26,7 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, cached_path_exists
-from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
+from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
@@ -96,6 +96,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._constraint_applicability import RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -833,33 +834,30 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             ),
         )
 
-    @property
-    def _can_apply_constraints(self) -> bool:
-        """Apply constraints to containers without suppressing recursive item types."""
-        return self._constraints_blocked_by() is None
+    def _constraints_blocked_by(self, *, anyurl_outside_container: bool = False) -> RenderDrop | None:
+        """Return why the field's call cannot write its constraints, or None when it can (``render_drop``)."""
+        return render_drop(
+            self_reference_outside_container=self.self_reference() and self._self_reference_outside_container(),
+            strict_arguments=bool(self.data_type.strict and self.data_type.kwargs),
+            anyurl_outside_container=anyurl_outside_container,
+        )
 
-    def _constraints_blocked_by(self) -> Literal["self-reference-container", "strict-kwargs"] | None:
-        """Return why the field's call cannot write its constraints, or None when it can.
-
-        A field naming its own model outside a container takes none; a strict type with arguments writes them itself.
-        """
-        if self.self_reference():
-            data_type = self.data_type
-            while True:
-                if (
-                    data_type.is_list  # noqa: PLR0916
-                    or data_type.is_sequence
-                    or data_type.is_dict
-                    or data_type.is_mapping
-                    or data_type.is_set
-                    or data_type.is_frozen_set
-                    or data_type.is_tuple
-                ):
-                    break
-                if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
-                    return "self-reference-container"
-                data_type = data_type.data_types[0]
-        return "strict-kwargs" if self.data_type.strict and self.data_type.kwargs else None
+    def _self_reference_outside_container(self) -> bool:
+        """Return whether the field's type names its model outside a container, through single-member wrappers."""
+        data_type = self.data_type
+        while not (
+            data_type.is_list
+            or data_type.is_sequence
+            or data_type.is_dict
+            or data_type.is_mapping
+            or data_type.is_set
+            or data_type.is_frozen_set
+            or data_type.is_tuple
+        ):
+            if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
+                return True
+            data_type = data_type.data_types[0]
+        return False
 
     @property
     def _use_union_operator(self) -> bool:

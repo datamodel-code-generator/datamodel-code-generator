@@ -6,8 +6,10 @@ the ``con*`` types and ``msgspec.Meta`` take, and the rows that keep today's ans
 (``legacy-*``; a fix of that output deletes its row). Every function is pure: facts in, keywords out. The adapters
 read the live objects: ``types.py:DataTypeManager.constraint_keywords`` and ``type_constraint_keywords`` (emitted
 types), ``parser/jsonschema.py:JsonSchemaParser._split_constraint_values`` and ``_keywords_taken`` (the L1 split),
-``parser/base.py:Parser._decide_overridden_constraints`` (``--type-overrides``) and
-``model/msgspec.py:DataModelField._meta_keywords`` (``msgspec.Meta``).
+``parser/base.py:Parser._decide_overridden_constraints`` (``--type-overrides``),
+``model/msgspec.py:DataModelField._meta_keywords`` (``msgspec.Meta``), ``model/base.py:DataModelFieldBase.
+_constraints_blocked_by`` (the constraints a field drops when it is written) and
+``types.py:DataTypeManager.constraint_options`` (the options of the table, ``ConstraintOptions``).
 
 Legacy rows, each named by the function that decides it:
 
@@ -40,7 +42,7 @@ from dataclasses import replace
 from fractions import Fraction
 from math import inf, isfinite
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from typing_extensions import final
 
@@ -50,6 +52,7 @@ from datamodel_code_generator._requirements import pydantic_target_meets
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -77,15 +80,21 @@ __all__ = [
     "TAG_LITERAL_UNTAKEN_KEYWORD",
     "TYPE_DEPENDENT_CONSTRAINTS_KEY",
     "TYPE_DEPENDENT_KEYWORDS",
+    "ConstraintOptions",
     "DeclaredKinds",
     "OutputKeywords",
+    "RenderDrop",
     "all_of_root_keyword_kinds",
     "base64_bytes_consumed_keywords",
     "constrained_type_keyword_order",
+    "decimal_field_form",
     "declared_keywords",
     "declared_string_keywords_taken",
+    "enforced_keywords",
     "exact_float",
+    "field_form_zero_bound",
     "holds_number_format",
+    "inexact_float_divisor",
     "int_beyond_values",
     "int_constraint_beyond_values",
     "is_non_finite",
@@ -93,21 +102,27 @@ __all__ = [
     "length_reading",
     "listed_type_keywords",
     "literal_check",
+    "literal_enforces_every_keyword",
+    "literal_met_keywords",
     "literal_number_keywords",
     "member_keywords",
     "meta_keywords",
     "non_finite_written",
+    "none_type_keywords",
     "overridden_declared_constraints",
     "property_consumed_keywords",
+    "render_drop",
     "resplit_overridden_constraints",
     "saturating_float",
     "shape_keywords",
     "shape_meta_keywords",
     "split_declared_keywords",
+    "strict_decimal_multiple",
     "undeclared_keywords_taken",
     "unlisted_type_keywords",
     "untaken_minimums",
     "untaken_values",
+    "writes_beside_literal",
 ]
 
 NUMBER_KEYWORD_ORDER: Final[tuple[str, ...]] = (
@@ -466,15 +481,144 @@ def undeclared_keywords_taken(taken: frozenset[str], *, value_literal: bool) -> 
     return NO_KEYWORDS if value_literal else taken
 
 
+@final
+@record
+class ConstraintOptions:
+    """The options that decide which constraints a field writes beside its type, read only by this table.
+
+    ``omit_redundant_constraints`` (``--omit-redundant-constraints``) leaves out of a field every keyword its type
+    enforces itself (``enforced_keywords``, ``literal_enforces_every_keyword``, ``writes_beside_literal``,
+    ``field_form_zero_bound``). ``use_decimal_in_field_forms`` (``--use-decimal-in-field-forms``) writes the number
+    of a field form with ``multipleOf`` as a ``Decimal`` too, strict in every form (``decimal_field_form``,
+    ``strict_decimal_multiple``).
+    """
+
+    omit_redundant_constraints: bool = False
+    use_decimal_in_field_forms: bool = False
+
+
+def _class_keywords(zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None) -> tuple[str, ...]:
+    """Return the keywords a type enforces by its class: the zero bound of a zero-bound class."""
+    return zero_bound_classes.get(type_name, ()) if type_name else ()
+
+
 def property_consumed_keywords(
     zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None
 ) -> tuple[str, ...]:
     """Return the keywords a field at an object property leaves out, as its own type is a class that enforces them.
 
     Row ``legacy-consumed-at-object-property``: only an object property whose own type is a zero-bound class leaves
-    them out; a root, an item or a union member of the class writes them again.
+    them out; a root, an item or a union member of the class writes them again, unless ``enforced_keywords`` leaves
+    them out at every position.
     """
-    return zero_bound_classes.get(type_name, ()) if type_name else ()
+    return _class_keywords(zero_bound_classes, type_name)
+
+
+def enforced_keywords(
+    options: ConstraintOptions,
+    leaves: Iterable[tuple[str | None, Sequence[object]]],
+    constraints: Mapping[str, float | str],
+    zero_bound_classes: Mapping[str, tuple[str, ...]],
+) -> frozenset[str]:
+    """Return the keywords of a schema that its field's type enforces itself, which the field leaves out.
+
+    Only under ``omit_redundant_constraints``. ``leaves`` gives each type a value of the field's type validates as,
+    but ``None``: its class name (None for a container) and the values of its ``Literal`` (empty for another type).
+    Every leaf must enforce a keyword: a zero-bound class its bound, a ``Literal`` each keyword of ``constraints``
+    all its values meet (``literal_met_keywords``).
+    """
+    if not options.omit_redundant_constraints:
+        return NO_KEYWORDS
+    return frozenset.intersection(
+        *(
+            literal_met_keywords(values, constraints)
+            if values
+            else frozenset(_class_keywords(zero_bound_classes, type_name))
+            for type_name, values in leaves
+        )
+    )
+
+
+def literal_enforces_every_keyword(
+    options: ConstraintOptions,
+    values: Sequence[object],
+    constraints: Mapping[str, float | str],
+    declared: AbstractSet[str],
+) -> bool:
+    """Return whether the ``Literal`` of values enforces every constraint beside them, so the field writes none.
+
+    Only under ``omit_redundant_constraints``: the literal check decides each keyword the schema sets (``declared``)
+    and every value meets it.
+    """
+    return (
+        options.omit_redundant_constraints
+        and constraints.keys() == declared
+        and len(literal_met_keywords(values, constraints)) == len(constraints)
+    )
+
+
+def writes_beside_literal(options: ConstraintOptions, *, writes_field_arguments: bool) -> bool:
+    """Return whether a field writes the keywords it takes beside the ``Literal`` of its values.
+
+    A field that writes ``Field()`` arguments does, which Pydantic checks on the ``Literal``; under
+    ``omit_redundant_constraints`` the literal check decides them all and the field writes none of them.
+    """
+    return writes_field_arguments and not options.omit_redundant_constraints
+
+
+def field_form_zero_bound(
+    options: ConstraintOptions, values: Mapping[str, object], *, zero_bound_types: bool, strict: bool
+) -> str | None:
+    """Return the one bound equal to 0 that the type of a field form takes, as its zero-bound class, or None.
+
+    Under ``--use-non-positive-negative-number-constrained-types`` (``zero_bound_types``) a schema with exactly one
+    bound equal to 0 keeps it on its type (row ``legacy-consumed-at-object-property`` writes it again); under
+    ``omit_redundant_constraints`` a strict number takes none, so its field writes the bound beside ``StrictInt`` or
+    ``StrictFloat`` instead of a strict ``con*`` type that repeats it.
+    """
+    if not zero_bound_types or (options.omit_redundant_constraints and strict):
+        return None
+    return bounds[0] if len(bounds := [key for key in NUMBER_BOUND_KEYWORDS if values.get(key) == 0]) == 1 else None
+
+
+def decimal_field_form(options: ConstraintOptions, *, decimal_for_multiple_of: bool, float_multiple_of: bool) -> bool:
+    """Return whether a field form writes a float number with ``multipleOf`` (``float_multiple_of``) as a ``Decimal``.
+
+    It does under ``--use-decimal-for-multiple-of`` with ``use_decimal_in_field_forms``; without the latter the
+    field forms write a float, as in 0.86.0.
+    """
+    return decimal_for_multiple_of and options.use_decimal_in_field_forms and float_multiple_of
+
+
+def strict_decimal_multiple(options: ConstraintOptions, *, strict: bool) -> bool:
+    """Return whether the ``Decimal`` a float number with ``multipleOf`` is written as is strict.
+
+    It is under ``--strict-types float`` (``strict``) with ``use_decimal_in_field_forms``.
+    """
+    return strict and options.use_decimal_in_field_forms
+
+
+RenderDrop: TypeAlias = Literal["self-reference-container", "strict-kwargs", "anyurl"]
+"""Why a field writes none of its constraints when it is written."""
+
+
+def render_drop(
+    *, self_reference_outside_container: bool, strict_arguments: bool, anyurl_outside_container: bool = False
+) -> RenderDrop | None:
+    """Return why a field writes none of its constraints when it is written, or None when it writes them.
+
+    A field naming its own model outside a container takes none, and a strict type with arguments writes them
+    itself. Row ``legacy-anyurl-keeps-string-keywords``: the Pydantic outputs leave out every constraint of a field
+    whose type holds ``AnyUrl`` outside a container, with a warning.
+    """
+    if self_reference_outside_container:
+        return "self-reference-container"
+    return "strict-kwargs" if strict_arguments else "anyurl" if anyurl_outside_container else None
+
+
+def none_type_keywords(*, none_type: bool) -> frozenset[str]:
+    """Return the number constraints of a field a ``None`` type leaves out when the field is written (``none_type``)."""
+    return NUMBER_FIELD_KEYWORDS if none_type else NO_KEYWORDS
 
 
 def base64_bytes_consumed_keywords(arguments: Mapping[str, object]) -> frozenset[str]:
@@ -688,6 +832,13 @@ def _is_finite(number: float) -> bool:
     return isinstance(number, int) or isfinite(number)
 
 
+def _met_by_keyword(
+    values: Sequence[object], constraints: Mapping[str, float | str]
+) -> dict[str, tuple[bool | None, ...]]:
+    """Return, for each keyword of ``constraints``, whether each value meets it (None where the check cannot say)."""
+    return {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
+
+
 def literal_check(
     values: Sequence[object], constraints: Mapping[str, float | str]
 ) -> tuple[tuple[str, ...], tuple[bool, ...]]:
@@ -695,9 +846,34 @@ def literal_check(
 
     ``constraints`` holds keywords of ``LITERAL_DECIDABLE_KEYWORDS`` with their limits, in the order to report them.
     """
-    met = {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
+    met = _met_by_keyword(values, constraints)
     decided = tuple(keyword for keyword, results in met.items() if None not in results)
     return decided, tuple(all(met[keyword][index] for keyword in decided) for index in range(len(values)))
+
+
+def literal_met_keywords(
+    values: Sequence[object], constraints: Mapping[str, float | str], *, unmet_too: bool = False
+) -> frozenset[str]:
+    """Return the keywords of ``constraints`` the literal check decides that every one of the values meets.
+
+    With ``unmet_too`` also those no value meets, whose values stay as written with the unsatisfiable warning.
+    """
+    met = _met_by_keyword(values, constraints)
+    return frozenset(
+        keyword
+        for keyword, results in met.items()
+        if None not in results and (all(results) or (unmet_too and not any(results)))
+    )
+
+
+def inexact_float_divisor(divisor: float) -> bool:
+    """Return whether a float holds a ``multipleOf`` divisor only approximately: it is no dyadic rational it holds.
+
+    msgspec checks a float ``multipleOf`` by the floating-point remainder, so it leaves out such a divisor, as 0.01,
+    which would reject its own multiples.
+    """
+    exact = Fraction(str(divisor))
+    return bool(exact.denominator & (exact.denominator - 1)) or Fraction(float(divisor)) != exact
 
 
 NUMBER_FIELD_KEYWORDS: Final[frozenset[str]] = frozenset({"gt", "ge", "lt", "le", "multiple_of"})

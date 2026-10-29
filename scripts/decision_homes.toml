@@ -775,7 +775,7 @@ audit = "D-L1-25"
 [homes.F-omit-redundant-constraints]
 decision = "where --omit-redundant-constraints is read"
 core = ["_constraint_applicability.py"]
-adapters = ["parser/base.py:Parser.__init__"]
+adapters = ["parser/base.py:Parser.__init__", "types.py:DataTypeManager.constraint_options"]
 
 [homes.F-omit-redundant-constraints.signatures.option-read]
 kind = "name"
@@ -786,7 +786,7 @@ audit = "D-L1-23"
 [homes.F-use-decimal-in-field-forms]
 decision = "where --use-decimal-in-field-forms is read"
 core = ["_constraint_applicability.py"]
-adapters = ["parser/base.py:Parser.__init__"]
+adapters = ["parser/base.py:Parser.__init__", "types.py:DataTypeManager.constraint_options"]
 
 [homes.F-use-decimal-in-field-forms.signatures.option-read]
 kind = "name"
@@ -1827,15 +1827,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/model/msgspec.py"."DataModelField._annotated_union_data_type"]
 "H10.union-construction" = { home = "H10", count = 1, audit = "D-PP-15" }
 
-[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager._field_form_kwargs"]
-"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
-
-[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager._is_decimal_multiple"]
-"F-use-decimal-in-field-forms.option-read" = { home = "F-use-decimal-in-field-forms", count = 1, audit = "D-L1-23" }
-
-[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager.get_data_float_type"]
-"F-use-decimal-in-field-forms.option-read" = { home = "F-use-decimal-in-field-forms", count = 1, audit = "D-L1-23" }
-
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
 
@@ -1884,9 +1875,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._combined_values_admitted"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._const_literal_enforces_constraints"]
-"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enforced_value_keywords"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
 
@@ -1911,7 +1899,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_written"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
-"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_additional_properties_all_of"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
@@ -1994,9 +1981,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._type_enforced_keywords"]
-"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
