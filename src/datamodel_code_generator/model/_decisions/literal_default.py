@@ -3,14 +3,9 @@
 A field is fixed to one value by its ``const``, by a type of one ``Literal`` under ``--use-one-literal-as-default``,
 or as the tag field of a discriminated union variant. Every input is an immutable fact passed by keyword, so the
 functions read nothing else. The adapters read the facts from the live objects and write the decision with
-``model/base.py:_apply_literal_default``: ``model/base.py:DataModelFieldBase._process_const_as_literal`` (the
-``process_const`` hook of the Pydantic, dataclass and TypedDict fields, at L1 and again when L5 collapse inlines a
-root model's extras), ``model/msgspec.py:DataModelField.process_const``, and at L5 in ``parser/_passes/modules.py``
-``set_one_literal_on_default`` and ``set_tag_literal_default``, for the tags fields hold (also those nested choices
-give a union) and those ``apply_discriminator_type`` writes (with the default from
-``_get_single_discriminator_default``). ``const_type`` gives the type of a const, for the field hook and for
-``parser/jsonschema.py:JsonSchemaParser._get_const_data_type`` (L1), which returns it before the null a ``type`` list
-or ``nullable`` (under ``--strict-nullable``) adds beside it.
+``model/base.py:_apply_literal_default``; they are listed under H09 in ``scripts/decision_homes.toml``. ``const_type``
+gives the type of a const, for the field hook and for the L1 const type, which returns it before the null a ``type``
+list or ``nullable`` (under ``--strict-nullable``) adds beside it.
 
 The rows named ``legacy-*`` keep today's output where sources or backends disagree on a fixed value's default or
 nullability; the fix of each (G12b, which also moves the decision after the facts it reads are final) deletes its row.

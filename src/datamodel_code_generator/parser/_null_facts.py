@@ -4,8 +4,8 @@ A schema object admits null through its own keywords: a ``type`` of null or a ``
 ``anyOf`` or ``oneOf`` member typed null, ``nullable`` (OpenAPI 3.0 and many JSON Schema documents), or a null in its
 ``enum``. :class:`NullSources` records them as written, and :func:`resolve_null_facts` returns what one site of
 ``parser/jsonschema.py`` reads from them, with the row of :data:`NullRule` the answer comes from. Every input is an
-immutable fact, so the function reads nothing else; the adapter ``parser/jsonschema.py:_null_sources`` reads the facts
-from the live schema object and ``JsonSchemaParser._null_mode`` the options. The converters write null in the forms of
+immutable fact, so the function reads nothing else; the adapters that read the facts and the options from the live
+objects are listed under H06 in ``scripts/decision_homes.toml``. The converters write null in the forms of
 :data:`NullForm` (:func:`with_null`, :func:`null_schema`), which the sites then read as written.
 
 The sites disagree today on which sources count and whether ``nullable`` needs ``--strict-nullable``. The rows named

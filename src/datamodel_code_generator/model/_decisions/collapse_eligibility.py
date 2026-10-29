@@ -4,10 +4,8 @@ A site is a data type of a holder's field that names a model of the configured r
 an immutable fact, so the functions read nothing else. ``keeps_root_model_named`` decides whether
 ``--collapse-root-models`` leaves the site naming the root model, with the rule that keeps it, or inlines it there.
 ``later_holders_follow`` decides whether the later holders of a root model that the ``parent`` strategy collapsed at
-its first holder name its inner model too. The adapters read the facts from the live models at L5:
-``parser/_passes/modules.py:collapse_site_facts`` for ``collapse_root_models_in_scope``, and
-``collapse_root_models_in_scope`` (at the first holder) and ``settle_kept_parent_roots`` (once every module is
-processed) for the later holders.
+its first holder name its inner model too. The adapters read the facts from the live models at L5; they are listed
+under H13 in ``scripts/decision_homes.toml``.
 
 The row named ``legacy-*`` keeps today's output where the decision reads a fact before it is final; its fix deletes
 the row.
