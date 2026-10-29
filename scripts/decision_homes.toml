@@ -258,10 +258,13 @@ decision = "whether a type's rendered hint, or the annotation a field writes aro
 core = ["model/_decisions/nullability.py"]
 adapters = [
     "types.py:DataType.admits_none",
+    "types.py:reference_names_nullable",
     "model/base.py:DataModelFieldBase._field_null_source",
     "types.py:DataType._materialize_render_state",
+    "_target_types.py",
+    "_target_binding.py:_Binder.schema_null",
 ]
-planned = ["_target_types.py:admits_none", "_target_types.py:without_none", "_target_types.py:freeze_type"]
+planned = ["_target_types.py:freeze_type"]
 
 [homes.H24]
 decision = "what the class body writes after a field's annotation and what that gives the constructor"
@@ -1227,11 +1230,7 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.discriminator"]
 "H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
 
-[allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.flattened"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.shape"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.union"]
@@ -1247,22 +1246,11 @@ fix = "G05"
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
-[allow."src/datamodel_code_generator/_client/model_facts.py"."ModelFacts.nullable"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-
-[allow."src/datamodel_code_generator/_client/model_facts.py"."_present"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
-
-[allow."src/datamodel_code_generator/_client/model_facts.py"."_without_none"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_client/pagination.py"."_Pages.items"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
 [allow."src/datamodel_code_generator/_client/pagination.py"."_Pages.present"]
 "H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_client/pagination.py"."_json_type"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
@@ -1272,9 +1260,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_client/plan.py"."Planner._sent"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
-
-[allow."src/datamodel_code_generator/_client/plan.py"."Planner._takes_null"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."Planner.check_statuses"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
@@ -1292,7 +1277,6 @@ fix = "G05"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_default"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "H24.default-function" = { home = "H24", count = 1, audit = "M-05" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_essence"]
@@ -1318,11 +1302,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_client/polling.py"."_Polls.result"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
-
-[allow."src/datamodel_code_generator/_client/polling.py"."_nonnull"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-"H23.target-null-member" = { home = "H23", count = 2, audit = "M-01" }
-"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.cache"]
 "T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
@@ -1406,11 +1385,9 @@ fix = "G05"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.kind"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.member"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.operation_names"]
@@ -1419,11 +1396,7 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.scheme"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
 
-[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.takes_null"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_constrained"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_declaring"]
@@ -1462,10 +1435,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_fastapi/render.py"."_keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
-
-[allow."src/datamodel_code_generator/_fastapi/render.py"."_nullable"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_fastapi/render.py"."_registration"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-13" }
@@ -1510,17 +1479,11 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_own_extra"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
 
-[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_written_null"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_openapi_codec_plan.py"."extras_symbols"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
 
 [allow."src/datamodel_code_generator/_openapi_codec_plan.py"."keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
-
-[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."takes_null"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds._leaves"]
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
@@ -1530,9 +1493,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds.member"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
-
-[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."_present"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_openapi_wire_plan.py"."form_members"]
 "H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
@@ -1608,9 +1568,6 @@ fix = "G05"
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.raw"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.response"]
 "T-wire.raw-key" = { home = "T-wire", count = 3, audit = "R-02" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
@@ -1661,7 +1618,6 @@ fix = "G05"
 "T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._structural"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 "T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector.declaration"]
@@ -1711,9 +1667,6 @@ fix = "G05"
 "T-wire.raw-key" = { home = "T-wire", count = 11, audit = "R-11" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-11" }
 
-[allow."src/datamodel_code_generator/_target_binding.py"."_SchemaUses.held"]
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."_annotation_null"]
 "H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
 
@@ -1739,10 +1692,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_facts"]
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_has_null"]
-"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
-"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_json_type"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }

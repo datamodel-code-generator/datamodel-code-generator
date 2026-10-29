@@ -18,9 +18,9 @@ from datamodel_code_generator._target_contract import (
     KnownBackendValue,
     LiteralScalar,
     LiteralType,
-    NoneType,
     UnionType,
 )
+from datamodel_code_generator._target_types import is_none
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
@@ -256,7 +256,7 @@ class _Planner:
         self, value: TypeView, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
     ) -> Shape:
         """Return a type's conversion; an alias passes the discriminator it declares to the union it stands for."""
-        if isinstance(value, NoneType):
+        if is_none(value):
             return None
         if isinstance(value, UnionType):
             return self.union(value, schema, declared or value.discriminator)
@@ -329,7 +329,7 @@ class _Planner:
                 yield from self.flattened(
                     root.members if isinstance(root, UnionType) else (root,), seen | {member.symbol}
                 )
-            elif not isinstance(member, NoneType):
+            elif not is_none(member):
                 yield member
 
     def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
