@@ -102,7 +102,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
-    _register_data_type_import,
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
@@ -110,6 +109,7 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
+    import_references,
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
@@ -316,6 +316,10 @@ class ModulesHost(
     @property
     def snake_case_field(self) -> bool:
         """Whether field names are written in snake case."""
+
+    @property
+    def treat_dot_as_module(self) -> bool | None:
+        """Whether dots in schema names make modules."""
 
     @property
     def use_annotated(self) -> bool:
@@ -1446,16 +1450,19 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     raise _CollapseRootModelsRecursionError(msg)
                 producer = ImportProducer("collapse-root-models", model, model_field)
                 with replacement_context:
-                    for d in copied_data_type.all_data_types:
-                        _register_data_type_import(
-                            d,
-                            model,
-                            imports,
-                            scoped_model_resolver,
-                            model_path_to_module_name,
-                            ledger=parser._import_ledger,  # noqa: SLF001
-                            producer=producer,
-                        )
+                    import_references(
+                        parser,
+                        model,
+                        copied_data_type.all_data_types,
+                        imports,
+                        scoped_model_resolver,
+                        model_path_to_module_name,
+                        init=is_init,
+                        internal_modules=internal_modules,
+                        members=None,
+                        producer=producer,
+                        row="legacy-collapse-import-path",
+                    )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
                     if original_field:  # pragma: no cover
@@ -2476,16 +2483,19 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                 parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
                 _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
-                for nested in root_type.all_data_types:
-                    _register_data_type_import(
-                        nested,
-                        model,
-                        imports,
-                        state.scoped_model_resolver,
-                        state.model_path_to_module_name,
-                        ledger=parser._import_ledger,  # noqa: SLF001
-                        producer=producer,
-                    )
+                import_references(
+                    parser,
+                    model,
+                    root_type.all_data_types,
+                    imports,
+                    state.scoped_model_resolver,
+                    state.model_path_to_module_name,
+                    init=state.is_init,
+                    internal_modules=state.internal_modules,
+                    members=None,
+                    producer=producer,
+                    row="legacy-collapse-import-path",
+                )
                 parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                 changed = True

@@ -181,9 +181,6 @@ use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inli
 import_ = 1
 type = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
-alias = 1
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."apply_inherited_field_default"]
 default = 2
 has_default = 1

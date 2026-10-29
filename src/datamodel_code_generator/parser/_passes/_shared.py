@@ -393,19 +393,6 @@ def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
     return f"{from_}.{import_}", short_name
 
 
-def _relative_import(
-    current_module: str, target_full_name: str, short_name: str, *, use_exact: bool
-) -> tuple[str, str]:
-    """Return the module and name ``current_module`` imports a model by; ``use_exact`` imports it from its module.
-
-    A model of an ancestor package keeps the package import.
-    """
-    full_path = relative(current_module, target_full_name)
-    if not use_exact or is_ancestor_package_reference(current_module, target_full_name):
-        return full_path
-    return exact_import(*full_path, short_name)
-
-
 def _join_module(from_: str, name: str) -> str:
     """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
     return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
@@ -661,6 +648,18 @@ def replace_model_in_list(
     models[idx] = replacement
 
 
+ImportPathRow: TypeAlias = Literal["reference", "legacy-collapse-import-path"]
+"""How a module imports a model of another module (``reference_import_target``).
+
+* ``reference``: the import a module writes for the models its own types name (``change_from_import``).
+* ``legacy-collapse-import-path``: the import of a model that a type inlined into the module names (collapsed root
+  types, dict keys typed by root types), as these wrote it since 0.25.9 (#2043): the module path alone, without the
+  ``_`` of a hyphenated module, the import from an ``_internal`` module or from a module named like its class, or the
+  leading dot of a package ``__init__``; a model of the module itself imports nothing and keeps the expression it was
+  copied with, and every other one writes its binding even where it is the class name.
+"""
+
+
 @final
 @record
 class ReferenceImportTarget:
@@ -674,10 +673,16 @@ class ReferenceImportTarget:
     from_: str
     import_: str
     written_from: str
+    row: ImportPathRow = "reference"
+
+    @property
+    def same_module(self) -> bool:
+        """Return whether the model is one of the module itself, which the module names without an import."""
+        return not (self.from_ and self.import_)
 
     def expression(self, name: str, binding: str) -> str | None:
         """Return what the module writes for the model ``name`` under the binding, or None for the class name."""
-        if not (self.from_ and self.import_) or binding == name:
+        if self.same_module or (binding == name and self.row == "reference"):
             return None
         return binding if name == self.import_ else f"{binding}.{name}"
 
@@ -692,9 +697,13 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
     treat_dot_as_module: bool | None,
+    row: ImportPathRow = "reference",
 ) -> ReferenceImportTarget:
-    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``."""
-    if base_class:
+    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
+
+    ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
+    """
+    if base_class and row == "reference":
         left, right = relative(current_module_name, target_full_name)
         from_ = (
             left if is_ancestor_package_reference(current_module_name, target_full_name) else _join_module(left, right)
@@ -702,7 +711,11 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         import_ = name
         full_path = from_, import_
     else:
-        from_, import_ = full_path = _relative_import(current_module_name, target_full_name, name, use_exact=use_exact)
+        from_, import_ = full_path = relative(current_module_name, target_full_name)
+        if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
+            from_, import_ = full_path = exact_import(from_, import_, name)
+        if row == "legacy-collapse-import-path":
+            return ReferenceImportTarget(full_path, from_, import_, from_, row)
         import_ = import_.replace("-", "_")
         current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
         if (  # pragma: no cover
@@ -736,8 +749,12 @@ def register_reference_import(  # noqa: PLR0913
     producer: ImportProducer,
     treat_dot_as_module: bool | None,
     import_ledger: ModuleImportLedger,
+    row: ImportPathRow = "reference",
 ) -> str | None:
-    """Import a reference from another module and return its expression when it is not the class name."""
+    """Import a reference from another module and return its expression when it is not the class name.
+
+    Under row ``legacy-collapse-import-path`` a model of the module itself imports nothing.
+    """
     name = reference.short_name
     target = reference_import_target(
         name,
@@ -748,7 +765,10 @@ def register_reference_import(  # noqa: PLR0913
         internal_modules=internal_modules,
         base_class=base_class,
         treat_dot_as_module=treat_dot_as_module,
+        row=row,
     )
+    if row == "legacy-collapse-import-path" and target.same_module:
+        return None
     alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
     import_ledger.append(
         imports,
@@ -1438,13 +1458,15 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     init: bool,
     internal_modules: set[ModulePath],
     producer: ImportProducer,
+    row: ImportPathRow = "reference",
 ) -> None:
     """Write how a data type names its reference in the current module.
 
     A model the module emits is written by its class name; any other is imported, and written by the expression
-    the import gives when that is not the class name.
+    the import gives when that is not the class name. Under row ``legacy-collapse-import-path`` a model of the module
+    itself keeps the expression the data type has.
     """
-    data_type.alias = (
+    expression = (
         None
         if same_module
         else register_reference_import(
@@ -1459,8 +1481,11 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             producer=producer,
             treat_dot_as_module=host.treat_dot_as_module,
             import_ledger=host._import_ledger,  # noqa: SLF001
+            row=row,
         )
     )
+    if expression is not None or row == "reference":
+        data_type.alias = expression
 
 
 def set_reference_expressions(  # noqa: PLR0913
@@ -1478,20 +1503,54 @@ def set_reference_expressions(  # noqa: PLR0913
     A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``);
     without ``members`` every one is. ``naming`` gives the module names of ``model`` and of the models named.
     """
+    import_references(
+        host,
+        model,
+        data_types,
+        ctx.imports,
+        ctx.scoped_model_resolver,
+        naming.model_path_to_module_name,
+        init=ctx.is_init,
+        internal_modules=naming.internal_modules,
+        members=members,
+        producer=producer,
+    )
+
+
+def import_references(  # noqa: PLR0913, PLR0917
+    host: ReferenceExpressionHost,
+    model: DataModel,
+    data_types: Iterable[DataType],
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    model_path_to_module_name: Mapping[str, str],
+    *,
+    init: bool,
+    internal_modules: set[ModulePath],
+    members: KeyedModels | None,
+    producer: ImportProducer,
+    row: ImportPathRow = "reference",
+) -> None:
+    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``imports``.
+
+    ``set_reference_expressions`` with the module's imports, resolver and module names given one by one, under
+    ``row`` (``ImportPathRow``).
+    """
     for data_type in data_types:
         if (reference := data_type.reference) is None:
             continue
         set_reference_expression(
             host,
             data_type,
-            _get_model_module_name(model, naming.model_path_to_module_name),
-            _get_data_type_target_full_name(data_type, reference, naming.model_path_to_module_name),
-            ctx.imports,
-            ctx.scoped_model_resolver,
+            _get_model_module_name(model, model_path_to_module_name),
+            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+            imports,
+            scoped_model_resolver,
             same_module=members is not None and members.key_of(reference) in members.models,
-            init=ctx.is_init,
-            internal_modules=naming.internal_modules,
+            init=init,
+            internal_modules=internal_modules,
             producer=producer,
+            row=row,
         )
 
 
@@ -1567,41 +1626,6 @@ def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataMode
         for base_model in _find_base_classes(derived_model):
             derived_models[keys.of(base_model)].append(derived_model)
     return derived_models
-
-
-def _register_data_type_import(  # ruff: ignore[too-many-arguments]
-    data_type: DataType,
-    model: DataModel,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
-    *,
-    ledger: ModuleImportLedger,
-    producer: ImportProducer,
-) -> None:
-    if (reference := data_type.reference) is None:
-        return
-    from_, import_ = full_path = _relative_import(
-        _get_model_module_name(model, model_path_to_module_name),
-        _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-        reference.short_name,
-        use_exact=imports.use_exact,
-    )
-    if not (from_ and import_):
-        return
-
-    alias = ledger.add_name(imports, scoped_model_resolver, full_path, import_)
-    data_type.alias = alias.name if reference.short_name == import_ else f"{alias.name}.{reference.short_name}"
-    ledger.append(
-        imports,
-        Import(
-            from_=from_,
-            import_=import_,
-            alias=alias.name,
-            reference_path=reference.path,
-        ),
-        producer,
-    )
 
 
 class RenamedTypesHost(Protocol):
