@@ -69029,6 +69029,7 @@ exception to a home is a new named row, never an anonymous `if`.
 | `legacy-nested-factory-order-before-nullability` | H24 | a Pydantic dataclass under `--strip-default-none` keeps the required-fields answer of the first read | PH2 |
 | `legacy.L-NF` | H24 | the import snapshot reads fields as if the nested factory were written | PH2 |
 | `legacy-stdlib-annotated` | H24 | a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned | DC12 |
+| `legacy-collapse-import-path` | H26 | the models a type inlined into a module names (collapsed root types, dict keys typed by root types) are imported by the module path alone: no `_internal` or same-named module rule, no package `__init__` dot, the binding written even where it is the class name | #5465 |
 | `legacy.alias-order` | H26 | import names in the order that L5 and L6 repairs asked for them | RP15b |
 | `legacy.enum-member-import-bindings` | H26 | an enum's `Field` import is bound but not written | RP15b |
 | `legacy.pdc-annotated-strip` | H26 | a Pydantic dataclass drops the `Annotated` import whenever it must see the field's metadata, also when the hint writes `Annotated` | RP15b |

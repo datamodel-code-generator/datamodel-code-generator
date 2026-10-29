@@ -286,8 +286,20 @@ adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
 decision = "module imports, bindings and final names"
-core = ["parser/_imports_plan.py"]
+core = [
+    "parser/_imports_plan.py",
+    "parser/_passes/_shared.py:ReferenceImportTarget",
+    "parser/_passes/_shared.py:reference_import_target",
+    "parser/_passes/_shared.py:register_reference_import",
+    "parser/_passes/_shared.py:set_reference_expression",
+]
 adapters = []
+
+[homes.H26.signatures.model-import-path]
+kind = "call"
+names = ["relative", "exact_import", "is_ancestor_package_reference"]
+what = "computes the module a module imports a model of another module from; call register_reference_import or set_reference_expression (parser/_passes/_shared.py) with its row"
+audit = "C04-K10"
 
 # Target homes (docs/architecture.md, "Targets"; design: targets-parse-once, T0). The client and server targets read an
 # OpenAPI document once, in the API walk, and read model facts only through the homes. A place under `planned` is the
@@ -1252,6 +1264,10 @@ fix = "PH2"
 home = "H24"
 fix = "DC12"
 
+[legacy_rows."legacy-collapse-import-path"]
+home = "H26"
+fix = "#5465"
+
 [legacy_rows."legacy.alias-order"]
 home = "H26"
 fix = "RP15b"
@@ -1840,6 +1856,9 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
 
+[allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
+"H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
+
 [allow."src/datamodel_code_generator/parser/_passes/imports.py"."tuple_unique_items_warning"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
 
@@ -1851,6 +1870,9 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/parser/_passes/settle.py"."sort_parsed_models"]
 "F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/base.py"."Parser.__generate_forwarder_content"]
+"H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K26" }
 
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._field_option_kwargs"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
