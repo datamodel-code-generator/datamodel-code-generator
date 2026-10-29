@@ -1607,19 +1607,18 @@ def _write_results_to_output(  # noqa: PLR0913
 
         warn_shadowed_modules([output] if isinstance(results, str) else starmap(output.joinpath, sorted(results)))
 
-    module_texts = {
-        output.joinpath(*name): f"{text}\n"
-        for name, text in _module_texts(
-            results, input_filename, header_prefix, header_suffix, has_custom_file_header=has_custom_file_header
-        ).items()
-    }
+    module_texts = _module_texts(
+        results, input_filename, header_prefix, header_suffix, has_custom_file_header=has_custom_file_header
+    )
     for module_text in module_texts.values():
         _ensure_output_text_encodable(module_text, config.encoding)
-    for path, module_text in module_texts.items():
+    for name, module_text in module_texts.items():
+        path = output.joinpath(*name)
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
         with path.open("wt", encoding=config.encoding) as file:
             file.write(module_text)
+            file.write("\n")
 
 
 def _format_deferred_output(
