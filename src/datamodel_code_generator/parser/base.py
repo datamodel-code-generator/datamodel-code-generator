@@ -303,28 +303,6 @@ def _get_model_field_constructor(
     return field_type
 
 
-def _source_context_from_config(config: ParserConfig) -> ParserSourceContext:
-    """Adapt a public parser config to the neutral source policy."""
-    remote_lock = getattr(config, "remote_lock", None)
-    response_observer = remote_lock.record_response if remote_lock is not None else None
-    return ParserSourceContext(
-        base_path=config.base_path,
-        encoding=config.encoding,
-        remote_text_cache=config.remote_text_cache,
-        allow_remote_refs=config.allow_remote_refs,
-        strict_refs=config.strict_refs,
-        allow_private_network=config.allow_private_network,
-        http_backend=config.http_backend,
-        http_headers=config.http_headers,
-        http_local_ref_path=config.http_local_ref_path,
-        http_ignore_tls=config.http_ignore_tls,
-        http_query_parameters=config.http_query_parameters,
-        http_timeout=config.http_timeout,
-        external_ref_mapping=config.external_ref_mapping,
-        remote_response_observer=response_observer,
-    )
-
-
 def _get_builtin_pydantic_v2_field_constructor(
     field_type: type[DataModelFieldBase],
 ) -> Callable[..., DataModelFieldBase] | None:
@@ -1073,7 +1051,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             config = self._create_default_config(options)
 
         self.config = config
-        self._source_context = getattr(config, "_source_context", None) or _source_context_from_config(config)
+        self._source_context = getattr(config, "_source_context", None) or ParserSourceContext.of(
+            config, getattr(config, "remote_lock", None)
+        )
         self._has_bound_python_types = False
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
