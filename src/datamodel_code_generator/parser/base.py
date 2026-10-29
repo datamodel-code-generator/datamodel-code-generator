@@ -151,7 +151,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     DiscriminatorValue,
     _assign_module_name,
-    _copy_data_type,
     _data_types_beside_fields,
     _forward_enum_member_literals,
     _has_root_field_constraints,
@@ -222,6 +221,7 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     DataTypeManager,
+    _copy_data_type,
     build_union,
     union_members,
 )

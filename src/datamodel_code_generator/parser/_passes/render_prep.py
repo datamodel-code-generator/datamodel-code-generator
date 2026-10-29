@@ -46,7 +46,6 @@ from datamodel_code_generator.parser._passes._shared import (
     RootModelTypeHost,
     RuntimeExpressionFlags,
     _context_models,
-    _copy_data_type,
     _forward_enum_member_literals,
     _get_data_type_target_full_name,
     _get_model_module_name,
@@ -67,7 +66,7 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.types import DataType, DefaultValueRecipe
+from datamodel_code_generator.types import DataType, DefaultValueRecipe, _copy_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence

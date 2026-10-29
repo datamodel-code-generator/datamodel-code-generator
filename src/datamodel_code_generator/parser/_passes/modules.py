@@ -91,7 +91,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _annotated_references,
     _assign_module_name,
     _context_models,
-    _copy_data_type,
     _declares_unique_items,
     _derived_models,
     _get_data_type_target_full_name,
@@ -157,7 +156,7 @@ from datamodel_code_generator.parser._tag_plan import (
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
-from datamodel_code_generator.types import DataType, Types
+from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence

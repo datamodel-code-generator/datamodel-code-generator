@@ -70,6 +70,7 @@ from datamodel_code_generator.model._render_plan import (
     AssignmentFacts,
     FieldDefault,
     FieldRenderPlan,
+    Kwarg,
     RuleId,
     Why,
     frozen_render_plan,
@@ -87,6 +88,8 @@ from datamodel_code_generator.types import (
     DataType,
     Nullable,
     chain_as_tuple,
+    merge_normalized_constraint,
+    strict_number_constraint,
 )
 
 if TYPE_CHECKING:
@@ -96,7 +99,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._constraint_applicability import RenderDrop
+    from datamodel_code_generator._constraint_applicability import OutputKeywords, RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -107,6 +110,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
     from datamodel_code_generator.model._render_plan import (
         NestedFactoryMetadata,
+        Omitted,
         PlannedField,
         RenderInputs,
         RenderReady,
@@ -238,12 +242,16 @@ class _MissingCustomTemplateState:
     __slots__ = ("count", "dependencies", "lock", "overflow", "paths", "signatures")
 
     def __init__(self) -> None:
+        self.lock = RLock()
+        self.reset()
+
+    def reset(self) -> None:
+        """Forget every remembered missing path, signature and dependency."""
         self.paths: dict[Path, tuple[Path, ...]] = {}
         self.signatures: OrderedDict[Path, _CustomTemplateSignature] = OrderedDict()
         self.dependencies: dict[Path, _CustomTemplateDependencies] = {}
         self.count = 0
         self.overflow = False
-        self.lock = RLock()
 
 
 _missing_custom_template_state = _MissingCustomTemplateState()
@@ -266,17 +274,6 @@ class _TypingImportNames:
                 self.optional = True
             case IMPORT_ANNOTATED.import_:
                 self.annotated = True
-
-    def requirements(self) -> _TypingImportRequirements:
-        return _TypingImportRequirements(self.union, self.optional, self.annotated, self.any_)
-
-
-@record
-class _TypingImportRequirements:
-    union: bool = False
-    optional: bool = False
-    annotated: bool = False
-    any_: bool = False
 
     def allows(self, import_: Import) -> bool:
         match import_:
@@ -603,6 +600,38 @@ def _overlay_constraints(
     return constraints_class.model_validate(values) if issubclass(constraints_class, ConstraintsBase) else None
 
 
+def _normalized_constraint_kwargs(  # noqa: PLR0913
+    constraints: Mapping[str, Any],
+    omitted: list[Omitted],
+    output: OutputKeywords,
+    rule: RuleId,
+    drop: Callable[[str, str, Any, tuple[str, Any] | None], Omitted | None],
+    *,
+    is_float_type: bool,
+    is_int_type: bool,
+) -> dict[str, Kwarg]:
+    """Return the constraint arguments a call writes, normalized for the field's numeric type, merging collisions.
+
+    A constraint that ``drop`` returns an entry for, given its item, keyword, value and normalized form (None where
+    ``strict_number_constraint`` leaves it out), goes to ``omitted`` as that entry.
+    """
+    values: dict[str, Any] = {}
+    sources: dict[str, tuple[str, ...]] = {}
+    for k, v in constraints.items():
+        item = f"constraint:{k}"
+        normalized = strict_number_constraint(output, k, v, is_float_type=is_float_type, is_int_type=is_int_type)
+        if (dropped := drop(item, k, v, normalized)) is not None:
+            omitted.append(dropped)
+            continue
+        key, value = cast("tuple[str, Any]", normalized)
+        merge_normalized_constraint(values, key, value)
+        sources[key] = (*sources.get(key, ()), item)
+    return {
+        key: Kwarg(key, value, Why(rule, sources[key][0].removeprefix("constraint:")), sources[key])
+        for key, value in values.items()
+    }
+
+
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     """Base class for model field representation and rendering."""
 
@@ -631,6 +660,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = False
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "model"
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = False
+    """Whether the field renders from a plan that the parse freezes at B2 (``_build_frozen_render_plan``)."""
 
     if TYPE_CHECKING:
 
@@ -1030,26 +1061,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     @staticmethod
     def _has_explicit_typing_import_requirements(data_type: DataType) -> bool:
-        if data_type.python_type:
-            from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-                iter_python_type_expr_names,
-            )
-
-            if any(
-                name in _TYPING_IMPORT_NAMES for name in iter_python_type_expr_names(data_type.python_type.expression)
-            ):
-                return True
-        for annotation in data_type._annotation_texts:  # noqa: SLF001
-            if annotation and (names := _annotation_typing_import_names(annotation)):
-                return bool(names)
-        return False
+        DataModelFieldBase._add_explicit_typing_import_names(data_type, names := _TypingImportNames())
+        return names.union or names.optional or names.annotated
 
     def _typing_import_requirements(
         self,
         *,
         needs_annotated: bool,
         data_type: DataType | None = None,
-    ) -> _TypingImportRequirements:
+    ) -> _TypingImportNames:
         data_type = data_type or self.data_type
         names = _TypingImportNames()
         self._add_typing_import_names(data_type, names)
@@ -1057,7 +1077,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             names.add(IMPORT_ANNOTATED.import_)
         if not names.optional and self._needs_field_optional_import_from_structure(data_type=data_type):
             names.add(IMPORT_OPTIONAL.import_)
-        return names.requirements()
+        return names
 
     def _add_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
         """Add the typing imports the hint of ``data_type`` needs to ``names``."""
@@ -1247,15 +1267,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def docstring(self) -> str | None:
         """Get the docstring for this field from its description and/or example."""
         parts = []
-
+        description = self.extras.get("description")
         if self.use_field_description:
-            description = self.extras.get("description")
             if description is not None:
                 parts.append(description)
-        elif self.use_inline_field_description and self.use_field_description_example:
-            description = self.extras.get("description")
-            if description is not None and "\n" in description:
-                parts.append(description)
+        elif (
+            self.use_inline_field_description
+            and self.use_field_description_example
+            and description is not None
+            and "\n" in description
+        ):
+            parts.append(description)
 
         if self.use_field_description_example:
             example = self.extras.get("example")
@@ -1272,11 +1294,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if parts:
             return "\n\n".join(parts)
 
-        if self.use_inline_field_description:
-            description = self.extras.get("description")
-            if description is not None and "\n" in description:
-                return description
-
+        if self.use_inline_field_description and description is not None and "\n" in description:
+            return description
         return None
 
     @property
@@ -1339,13 +1358,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the constructor default of the field, as its own written assignment gives it."""
         return _classify_field_assignment(self, self._FIELD_ASSIGNMENT_ROW).default_info
 
-    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:  # noqa: PLR6301
+    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:
         """Return the render plan the parse freezes for this field at B2, or None when it renders without one.
 
-        A field that renders from a plan freezes its live plan (``_render_plan`` before B2), which ``RenderReady``
-        rebuilds from the field's facts while it compares or refreshes a frozen plan.
+        A field that renders from a plan (``_FREEZES_RENDER_PLAN``) freezes its live plan (``_render_plan`` before B2),
+        which ``RenderReady`` rebuilds from the field's facts while it compares or refreshes a frozen plan.
         """
-        return None
+        return self._render_plan() if self._FREEZES_RENDER_PLAN else None
 
     def _render_inputs(self) -> RenderInputs:
         """Return what the field's render plan reads from the field, to compare when it renders (``RenderReady``)."""
@@ -1389,6 +1408,19 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             metadata_assignment=self.use_annotated and getattr(self, "requires_dataclass_field_assignment", False),
             factory_in_field=getattr(self, "has_default_factory_in_field", False),
             admits_none=not _ORDERS_BY_CONSTRUCTION_DEFAULTS.get() and self.data_type.admits_none,
+        )
+
+    def _has_numeric_data_type(self, type_name: str, strict_import_part: str | None = None) -> bool:
+        """Return whether a field data type is ``type_name``, or a strict import naming ``strict_import_part``."""
+        return any(
+            data_type.type == type_name
+            or (
+                strict_import_part is not None
+                and data_type.strict
+                and data_type.import_
+                and strict_import_part in data_type.import_.import_
+            )
+            for data_type in self.data_type.all_data_types
         )
 
     def _takes_nested_model_factory(self) -> bool:
@@ -1495,6 +1527,17 @@ def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) 
         field.nullable = False
 
 
+@contextmanager
+def _context_values(values: Mapping[ContextVar[Any], Any]) -> Generator[None, None, None]:
+    """Set each context variable to its value while the block runs."""
+    tokens = [(variable, variable.set(value)) for variable, value in values.items()]
+    try:
+        yield
+    finally:
+        for variable, token in reversed(tokens):
+            variable.reset(token)
+
+
 _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar(
     "looking_up_required_fields", default=frozenset()
 )
@@ -1503,11 +1546,17 @@ _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar
 
 def _nested_model_required_fields(source: DataModel, key: ModelKey) -> bool:
     """Look up whether ``source`` has required constructor fields, with ``source`` marked as being looked up."""
-    token = _LOOKING_UP_REQUIRED_FIELDS.set(_LOOKING_UP_REQUIRED_FIELDS.get() | {key})
-    try:
+    with _context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
         return _nested_model_has_required_constructor_fields(source)
-    finally:
-        _LOOKING_UP_REQUIRED_FIELDS.reset(token)
+
+
+def _has_opaque_custom_base(model: DataModel, base_class: str) -> bool:
+    """Return whether a model's configured base other than ``base_class`` hides what it inherits: no generated model."""
+    return (
+        (custom_base_class := model.custom_base_class) is not None
+        and custom_base_class not in (base_class, [base_class])
+        and any(not base.reference for base in model.base_classes)
+    )
 
 
 def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
@@ -1516,13 +1565,9 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     models = linearize_data_models([source]) if inherited else (source,)
     for model in models:
         if (
-            model.decorators or (model._custom_template_dir is not None and model._uses_custom_root_template)  # noqa: SLF001
-        ):
-            return False
-        if (
-            (custom_base_class := model.custom_base_class) is not None
-            and custom_base_class not in (model.BASE_CLASS, [model.BASE_CLASS])
-            and any(not base.reference for base in model.base_classes)
+            model.decorators
+            or (model._custom_template_dir is not None and model._uses_custom_root_template)  # noqa: SLF001
+            or _has_opaque_custom_base(model, model.BASE_CLASS)
         ):
             return False
     fields = get_effective_fields(source) if inherited else source.fields
@@ -1702,15 +1747,12 @@ def ordering_constructor_fields(
     ``legacy-nested-factory-order-before-nullability`` otherwise. ``construction_defaults`` counts the defaults as the
     construction key gives them, for an ordering that runs before the rendered nullability is final.
     """
-    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(True)
-    token = _ORDERS_BEFORE_NULLABILITY.set(before_nullability)
-    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(construction_defaults)
-    try:
+    with _context_values({
+        _ORDERS_CONSTRUCTOR_FIELDS: True,
+        _ORDERS_BEFORE_NULLABILITY: before_nullability,
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS: construction_defaults,
+    }):
         yield
-    finally:
-        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
-        _ORDERS_BEFORE_NULLABILITY.reset(token)
-        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 
 
 def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool) -> bool:
@@ -1718,17 +1760,13 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
 
     A required check is no constructor ordering: the nested factories it reads are those it would answer anywhere.
     """
-    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(False)
-    orders = _ORDERS_BEFORE_NULLABILITY.set(counts)
-    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(False)
-    token = _COUNTS_CONSTRUCTION_DEFAULTS.set(counts)
-    try:
+    with _context_values({
+        _ORDERS_CONSTRUCTOR_FIELDS: False,
+        _ORDERS_BEFORE_NULLABILITY: counts,
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS: False,
+        _COUNTS_CONSTRUCTION_DEFAULTS: counts,
+    }):
         return compute()
-    finally:
-        _COUNTS_CONSTRUCTION_DEFAULTS.reset(token)
-        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
-        _ORDERS_BEFORE_NULLABILITY.reset(orders)
-        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 
 
 def _plan_view(field: DataModelFieldBase, ready: RenderReady) -> Hashable:
@@ -1926,14 +1964,19 @@ def _get_template_with_custom_dir(
     This allows users to override individual templates (including included ones)
     while keeping other templates from the default directory.
     """
-    template_subdir = template_file_path.parent
-    environment = _get_environment(template_subdir, custom_template_dir)
-    template = environment.get_template(template_file_path.name)
-    return (
-        _apply_custom_template_adapter(template, template_adapter, custom_template_dir)
-        if template_adapter is not None
-        else template
-    )
+    environment = _get_environment(template_file_path.parent, custom_template_dir)
+    return _adapted_template(environment, template_file_path.name, template_adapter, custom_template_dir)
+
+
+def _adapted_template(
+    environment: Environment,
+    name: str,
+    adapter: Callable[[Template], Template] | None,
+    custom_template_dir: Path | None,
+) -> Template:
+    """Load the template ``name`` from ``environment``, through ``adapter`` when there is one."""
+    template = environment.get_template(name)
+    return template if adapter is None else _apply_custom_template_adapter(template, adapter, custom_template_dir)
 
 
 def _uses_original_template_loader(adapter: Callable[[Template], Template]) -> Callable[[Template], Template]:
@@ -1966,11 +2009,7 @@ def _clear_custom_template_caches() -> None:
     """Clear mutable custom-template path, environment, and template caches."""
     with _missing_custom_template_state.lock:
         _clear_custom_template_render_caches()
-        _missing_custom_template_state.paths.clear()
-        _missing_custom_template_state.signatures.clear()
-        _missing_custom_template_state.dependencies.clear()
-        _missing_custom_template_state.count = 0
-        _missing_custom_template_state.overflow = False
+        _missing_custom_template_state.reset()
 
 
 def _remember_missing_custom_template_subdir(custom_template_dir: Path, custom_subdir: Path) -> None:
@@ -2197,12 +2236,7 @@ def _get_template_with_absolute_path(
     environment = _get_environment_with_absolute_path(
         absolute_template_path.parent, builtin_subdir, custom_template_dir
     )
-    template = environment.get_template(absolute_template_path.name)
-    return (
-        _apply_custom_template_adapter(template, template_adapter, custom_template_dir)
-        if template_adapter is not None
-        else template
-    )
+    return _adapted_template(environment, absolute_template_path.name, template_adapter, custom_template_dir)
 
 
 @lru_cache
@@ -3238,26 +3272,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         resolved_path = self.template_file_path
         template_adapter = self.CUSTOM_TEMPLATE_ADAPTER if self._custom_template_dir is not None else None
         if self._uses_custom_root_template:
-            absolute_template_path = resolved_path.absolute()
-            if template_adapter is None:
-                return _get_template_with_absolute_path(
-                    absolute_template_path,
-                    Path(self.TEMPLATE_FILE_PATH).parent,
-                    custom_template_dir=self._custom_template_dir,
-                )
             return _get_template_with_absolute_path(
-                absolute_template_path,
+                resolved_path.absolute(),
                 Path(self.TEMPLATE_FILE_PATH).parent,
                 template_adapter,
                 self._custom_template_dir,
             )
-        if template_adapter is None:
-            return _get_template_with_custom_dir(Path(self.TEMPLATE_FILE_PATH), self._custom_template_dir)
-        return _get_template_with_custom_dir(
-            Path(self.TEMPLATE_FILE_PATH),
-            self._custom_template_dir,
-            template_adapter,
-        )
+        return _get_template_with_custom_dir(Path(self.TEMPLATE_FILE_PATH), self._custom_template_dir, template_adapter)
 
     @property
     def imports(self) -> tuple[Import, ...]:
@@ -3407,9 +3428,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @staticmethod
     def _get_class_name(name: str) -> str:
-        if "." in name:
-            return name.rsplit(".", 1)[-1]
-        return name
+        return name.rsplit(".", 1)[-1]
 
     @property
     def class_name(self) -> str:
