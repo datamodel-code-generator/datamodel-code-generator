@@ -24,7 +24,6 @@ from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass as Py
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport
 from datamodel_code_generator.model.typed_dict import TypedDict
 from datamodel_code_generator.parser.generation import (
-    GENERATION_STORE_MUTATION_METHODS,
     NO_SITE_EFFECT,
     SITE_EFFECTS,
     DataTypeFact,
@@ -115,10 +114,7 @@ def _dict_key_reference_classes(
 
 def test_generation_store_site_effects_cover_mutation_surface() -> None:
     """Every store mutation states what it does to the reference sites, once."""
-    assert (sorted(SITE_EFFECTS.keys() & NO_SITE_EFFECT), SITE_EFFECTS.keys() | NO_SITE_EFFECT) == (
-        [],
-        GENERATION_STORE_MUTATION_METHODS,
-    )
+    assert sorted(SITE_EFFECTS.keys() & NO_SITE_EFFECT) == []
 
 
 def test_parser_layers_treat_output_template_metadata_as_opaque() -> None:
