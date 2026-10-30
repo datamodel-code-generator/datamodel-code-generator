@@ -893,6 +893,18 @@ def apply_inherited_field_default(
     field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
 
 
+def take_placeholder_identity(field: DataModelFieldBase, placeholder: DataModelFieldBase) -> None:
+    """Give the copy that replaces ``placeholder`` its name, original name and aliases (its own list of them)."""
+    field.name = placeholder.name
+    field.original_name = placeholder.original_name
+    field.alias = placeholder.alias
+    field.validation_aliases = (
+        list(placeholder.validation_aliases) if placeholder.validation_aliases is not None else None
+    )
+    field.serialization_alias = placeholder.serialization_alias
+    field.use_serialization_alias = placeholder.use_serialization_alias
+
+
 def _inherited_placeholder_name(field: DataModelFieldBase) -> str | None:
     """Return the name of the inherited property that a placeholder field without a type of its own names, or None."""
     data_type = field.data_type
@@ -952,14 +964,7 @@ def override_required_field(
                 )
             ) is None:
                 copied_original_field = host._copy_model_field(original_field)  # noqa: SLF001
-                copied_original_field.name = model_field.name
-                copied_original_field.original_name = model_field.original_name
-                copied_original_field.alias = model_field.alias
-                copied_original_field.validation_aliases = (
-                    list(model_field.validation_aliases) if model_field.validation_aliases is not None else None
-                )
-                copied_original_field.serialization_alias = model_field.serialization_alias
-                copied_original_field.use_serialization_alias = model_field.use_serialization_alias
+                take_placeholder_identity(copied_original_field, model_field)
                 copied_original_field.required = True
             default_source = original_field
             if (

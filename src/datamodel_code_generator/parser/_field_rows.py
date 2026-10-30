@@ -22,6 +22,7 @@ __all__ = [
     "FIELD_OPTIONS_LEFT_OUT",
     "FIELD_ROWS_BUILT_WITHOUT_VALIDATION",
     "FIELD_ROWS_WITHOUT_VALIDATION_ALIASES",
+    "FieldAliasRow",
     "FieldFacts",
     "FieldRow",
 ]
@@ -51,6 +52,20 @@ FieldRow: TypeAlias = Literal[
 * ``enum-member``, ``graphql-enum-member``: a member of an enum class.
 * ``bare``: the root field of a root model that only names another type, a GraphQL enum alias and a GraphQL union
   member.
+"""
+
+
+FieldAliasRow: TypeAlias = Literal["required-copy", "final-class", "rename"]
+"""What a field built earlier takes with a new name in ``Parser._take_field_aliases``, beside its alias.
+
+* ``required-copy``: the copy of an inherited field that a required name without a property takes: also the name as
+  its original name, the validation aliases, the serialization alias and ``--use-serialization-alias``, as a field
+  built for the name would.
+* ``final-class``: a field of a class whose final name differs from the one it was built under: also the validation
+  aliases; it keeps the serialization alias it took unless it took none or ``--serialization-aliases`` names the field
+  under the final class.
+* ``rename``: a field renamed to keep its wire name (GraphQL typename slots): also the serialization alias of the new
+  name; it keeps its validation aliases.
 """
 
 
