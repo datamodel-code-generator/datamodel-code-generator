@@ -226,7 +226,6 @@ if TYPE_CHECKING:
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
     _ParserSource: TypeAlias = str | Path | list[Path] | ParseResult | dict[str, Any]
     _PythonTypeExpressions: TypeAlias = Mapping[str, PythonTypeExpr]
-    _StagedArtifact: TypeAlias = tuple[Path, Path, Path, Path, PublicationAnchor]
     _PreparedGenerationInput: TypeAlias = tuple[
         GenerateConfig,
         _GenerationInput,
@@ -1843,7 +1842,7 @@ def _prepare_atomic_generation_remote_lock(
     return config, canonical_lockfile, remote_lock
 
 
-def _generate_with_atomic_remote_update(  # noqa: PLR0914
+def _generate_with_atomic_remote_update(
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,
@@ -1855,8 +1854,7 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
         StagingDirectory,
         publish_staged_files,
         release_all,
-        stage_artifact,
-        staged_artifact_files,
+        stage_outputs,
     )
     from datamodel_code_generator.remote_lock import _open_lock_staging, _staged_lock  # noqa: PLC0415
 
@@ -1866,50 +1864,29 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
     lock_anchor: PublicationAnchor | None = None
     lock_staging: StagingDirectory | None = None
     try:
-        staged_updates: dict[str, Path] = {}
-        staged_artifacts: list[_StagedArtifact] = []
-        if (output := config.output) is not None:
-            resolved_output_root = output.expanduser().resolve(strict=False)
-            resolved_output_parent = output.parent.expanduser().resolve(strict=False)
-            is_directory = output.is_dir()
-            staged_output, output_anchor = stage_artifact(
-                output,
-                "output",
-                resolved_output_root if is_directory else resolved_output_parent,
-                contexts,
-                anchors,
-                make_directory=is_directory,
-            )
-            staged_updates["output"] = staged_output
-            staged_artifacts.append((
-                staged_output,
-                output,
-                resolved_output_root,
-                resolved_output_parent,
-                output_anchor,
-            ))
-        if (metadata := config.emit_model_metadata) is not None:
-            resolved_metadata_parent = metadata.parent.expanduser().resolve(strict=False)
-            staged_metadata, metadata_anchor = stage_artifact(
-                metadata, "model-metadata.json", resolved_metadata_parent, contexts, anchors
-            )
-            staged_updates["emit_model_metadata"] = staged_metadata
-            staged_artifacts.append((
-                staged_metadata,
-                metadata,
-                resolved_metadata_parent,
-                resolved_metadata_parent,
-                metadata_anchor,
-            ))
+        output, metadata = config.output, config.emit_model_metadata
+        staging = stage_outputs(
+            output,
+            metadata,
+            (
+                None if output is None else output.expanduser().resolve(strict=False),
+                None if output is None else output.parent.expanduser().resolve(strict=False),
+                None if metadata is None else metadata.parent.expanduser().resolve(strict=False),
+            ),
+            contexts,
+            anchors,
+            make_directory=True,
+        )
         lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
-        staged_config = config.model_copy(update=staged_updates)
-        staged_config._logical_output = config.output  # noqa: SLF001
-        staged_config._logical_model_metadata = config.emit_model_metadata  # noqa: SLF001
+        staged_config = config.model_copy(update=staging.updates)
+        staged_config._logical_output = output  # noqa: SLF001
+        staged_config._logical_model_metadata = metadata  # noqa: SLF001
         staged_config.resolve_remote_lock(remote_lock)
         generated = _run_generation(input_, staged_config, caller_cwd, use_output_cwd=use_output_cwd)
-        publication_files = [file for artifact in staged_artifacts for file in staged_artifact_files(*artifact)]
-        publication_files.append(_staged_lock(remote_lock, lock_staging, lock_anchor))
-        publish_staged_files(publication_files)
+        publish_staged_files([
+            *staging.files("legacy-api-skips-missing-metadata"),
+            _staged_lock(remote_lock, lock_staging, lock_anchor),
+        ])
         remote_lock.mark_committed()
     except BaseException:
         with contextlib.suppress(OSError):

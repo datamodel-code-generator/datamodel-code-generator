@@ -1093,6 +1093,23 @@ keywords = ["prefix"]
 what = "reserves private staging for a lock update; call remote_lock.py:_open_lock_staging"
 audit = "C17-7"
 
+[homes.Hx-output-staging]
+decision = "how a generation's output and model metadata are staged for the publication journal: their private staging, the options that write there, the held directory each is published into and the staged files paired with their targets"
+core = ["_publication.py:stage_outputs", "_publication.py:StagedOutputs", "_publication.py:StagedArtifact"]
+
+[homes.Hx-output-staging.signatures.artifact-staging]
+kind = "call"
+names = ["stage_artifact"]
+what = "stages a generated artifact itself; call _publication.py:stage_outputs"
+audit = "C17-6"
+
+[homes.Hx-output-staging.signatures.hand-pairing]
+kind = "call"
+names = ["StagedFile"]
+paths = ["__init__.py", "__main__.py"]
+what = "pairs a staged artifact with its target itself; use _publication.py:StagedOutputs.files"
+audit = "C17-6"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
@@ -1408,6 +1425,10 @@ fix = "G05"
 [legacy_rows."legacy-api-lockfile-as-written"]
 home = "Hx-remote-lock-plan"
 fix = "#5583"
+
+[legacy_rows."legacy-api-skips-missing-metadata"]
+home = "Hx-output-staging"
+fix = "#5620"
 
 [legacy_rows."legacy-predicted-tag-names"]
 home = "H11"
