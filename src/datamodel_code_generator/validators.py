@@ -11,8 +11,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, field_validator
 
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._target_unicode import is_python_name
-from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_public_type_name
+from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_python_name
 
 
 class ValidatorMode(str, Enum):
@@ -28,15 +27,14 @@ _VALIDATOR_MODE_VALUES = frozenset(mode.value for mode in ValidatorMode)
 
 
 def _validate_python_identifier(value: str) -> str:
-    normalized_value = _normalize_string(value)
-    if not is_python_name(normalized_value, rule="legacy-host-identifiers"):
+    if (normalized_value := _normalized_safe_python_name(_normalize_string(value))) is None:
         msg = f"must be a valid Python identifier: {value!r}"
         raise ValueError(msg)
     return normalized_value
 
 
 def _validate_dotted_python_identifier_path(value: str) -> str:
-    if (normalized_value := _normalized_safe_public_type_name(value)) is None or "." not in normalized_value:
+    if (normalized_value := _normalized_safe_python_name(value, dotted=True)) is None or "." not in normalized_value:
         msg = f"must be a dotted Python identifier path: {value!r}"
         raise ValueError(msg)
     return normalized_value
@@ -46,7 +44,7 @@ def _validate_python_import_path(value: object) -> str:
     """Validate an import path with an optional dotted symbol suffix."""
     if (
         not isinstance(value, str)
-        or (normalized_value := _normalized_safe_public_type_name(_normalize_string(value).strip())) is None
+        or (normalized_value := _normalized_safe_python_name(_normalize_string(value).strip(), dotted=True)) is None
     ):
         msg = f"must be a Python import path composed of identifiers: {value!r}"
         raise ValueError(msg)

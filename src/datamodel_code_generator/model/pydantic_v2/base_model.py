@@ -27,7 +27,6 @@ from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
-from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -127,6 +126,7 @@ from datamodel_code_generator.model.runtime_validation import (
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     _normalize_string,
+    _normalized_safe_python_name,
     represent_python_value,
     represent_untrusted_python_value,
 )
@@ -452,10 +452,7 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
     """Return Python-source-safe ConfigDict arguments for built-in templates."""
     safe_items: list[tuple[str, str]] = []
     for field_name, value in _config_dict_items(config):
-        if not isinstance(field_name, str):
-            continue
-        normalized_field_name = _normalize_string(field_name)
-        if not is_python_name(normalized_field_name, rule="legacy-host-identifiers"):
+        if (normalized_field_name := _normalized_safe_python_name(field_name)) is None:
             continue
         normalized_value = _normalize_string(value) if isinstance(value, str) else value
         if normalized_field_name == _ALIAS_GENERATOR_TEMPLATE_DATA_KEY and (
@@ -1730,17 +1727,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if not runtime_models:
             return None
 
-        configured_base_class_name = runtime_models[0].extra_template_data.get("schema_validator_base_class_name")
-        normalized_base_class_name = (
-            _normalize_string(configured_base_class_name) if isinstance(configured_base_class_name, str) else None
-        )
         base_class_name = (
-            normalized_base_class_name
-            if (
-                normalized_base_class_name is not None
-                and is_python_name(normalized_base_class_name, rule="legacy-host-identifiers")
-            )
-            else cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
+            _normalized_safe_python_name(runtime_models[0].extra_template_data.get("schema_validator_base_class_name"))
+            or cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
         )
         runtime_validation_by_model = {
             id(model): runtime_validations[index] for index, model in enumerate(runtime_models)

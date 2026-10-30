@@ -316,7 +316,11 @@ audit = "D-L1-21"
 [homes.Hx-python-names]
 decision = "whether text is a name Python binds: an identifier by the target's, ASCII or the running interpreter's characters, and no keyword; alone or as a dotted path"
 core = ["_target_unicode.py:is_python_name", "_target_unicode.py:is_dotted_python_name"]
-adapters = []
+adapters = [
+    "python_literal.py:_normalized_safe_python_name",
+    "config.py:validate_schema_validator_base_class_name",
+    "_cli_config.py:_get_config_class.Config.validate_schema_validator_base_class_name",
+]
 
 [homes.Hx-python-names.signatures.keyword-test]
 kind = "call"
@@ -326,6 +330,14 @@ names = ["iskeyword"]
 exclude = ["_python_decorator.py:_parse_direct_target", "reference.py:FieldNameResolver.get_valid_name"]
 what = "tests whether text is a Python name itself; call _target_unicode.py:is_python_name (or is_dotted_python_name) with the row of its characters"
 audit = "C10-K03"
+
+[homes.Hx-python-names.signatures.host-row]
+kind = "literal"
+contains = ["legacy-host-identifiers"]
+# Left out: _target_unicode.py, which defines the row.
+exclude = ["_target_unicode.py"]
+what = "decides a name by the running interpreter's Unicode itself; read untrusted data through python_literal.py:_normalized_safe_python_name, or call the core with the target's row"
+audit = "C10-K16"
 
 [homes.Hx-free-names]
 decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
