@@ -12,7 +12,7 @@ enforces something else.
 
 Pure: the parts and the row are dumped schema dicts, nothing is written to them, and nested schemas that change are
 copied with ``copy.copy``, so a located dump keeps its location. The adapters are
-``parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
+``parser/_schema_refs.py:intersect_ref_siblings`` (for ``merge_ref_with_schema`` and
 ``parser/_inherited_schemas.py:resolve_inherited_parent_property``) and
 ``parser/_inherited_schemas.py:merge_properties_with_parent_constraints``.
 
