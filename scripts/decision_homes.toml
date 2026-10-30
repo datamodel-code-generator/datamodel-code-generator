@@ -875,6 +875,27 @@ default = "C-01"
 "_fastapi/render.py:_scheme" = "C-12"
 "_fastapi/render.py:_registration" = "C-13"
 
+[homes.T-operation.signatures.unbound-use]
+kind = "literal"
+contains = ["has no generated native type", "has no expression a generated module can import"]
+paths = ["_client/", "_fastapi/"]
+what = "refuses a use without a native type, or one no module can import, itself; call _target_operations.py:native_type, read UNSPELLABLE"
+audit = "C21-A2"
+
+[homes.T-operation.signatures.media-key]
+kind = "call"
+names = ["declared_media"]
+paths = ["_client/", "_fastapi/"]
+what = "reads a media key itself; call _target_operations.py:declared_media_type with the target's policy"
+audit = "C21-A14"
+
+[homes.T-operation.signatures.json-null]
+kind = "call"
+names = ["takes_null"]
+paths = ["_client/", "_fastapi/"]
+what = "decides itself whether a body or response sends JSON null; call _target_operations.py:json_null"
+audit = "C21-A6"
+
 [homes.Hx-http]
 decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes and keys, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
 core = ["_runtime/model_codecs/media.py"]

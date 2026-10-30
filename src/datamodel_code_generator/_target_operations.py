@@ -9,22 +9,31 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._openapi_wire_plan import declared_media
 from datamodel_code_generator._runtime.model_codecs.media import bodyless
 from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence, fact, label, operation_literal
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
+from datamodel_code_generator._target_types import takes_null
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, OperationSelector
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
+    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason
+    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
+        DeclarationId,
+        FieldUseBinding,
+        FinalModelSymbol,
         OperationContract,
         OperationId,
+        SourceDocumentId,
         SourceLocation,
+        SymbolId,
         TypeUseBinding,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
     from datamodel_code_generator._target_naming import TargetNames
@@ -42,7 +51,8 @@ class TargetPolicy:
     option and the operation key, of two settings of one option that select one operation; `path_code` the code of
     a path placeholder without a path parameter and of a path parameter without a placeholder, and
     `placeholder_label` whether the first names its operation; `informational_bodyless` whether a declared 1XX status
-    carries no content (the client's row until #5603).
+    carries no content (the client's row until #5603); `media_code` the code of a media key that no Content-Type
+    header carries.
     """
 
     stage: Callable[[str], DiagnosticStage]
@@ -50,6 +60,7 @@ class TargetPolicy:
     path_code: str
     placeholder_label: bool
     informational_bodyless: bool
+    media_code: str
 
     def problem(
         self, code: str, message: str, source: SourceLocation | None = None, option_path: str | None = None
@@ -71,6 +82,7 @@ CLIENT: Final = TargetPolicy(
     path_code="E_METADATA_REQUIRED",
     placeholder_label=True,
     informational_bodyless=False,
+    media_code="E_METADATA_REQUIRED",
 )
 SERVER: Final = TargetPolicy(
     stage=lambda code: "config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
@@ -78,6 +90,7 @@ SERVER: Final = TargetPolicy(
     path_code="F_ROUTE_INVALID",
     placeholder_label=False,
     informational_bodyless=True,
+    media_code="F_MEDIA_UNSUPPORTED",
 )
 
 
@@ -90,15 +103,44 @@ class PlanError(Exception):
         self.diagnostics = tuple(diagnostics)
 
 
+def raise_planned(problems: list[Diagnostic]) -> None:
+    """Stop a planning phase that reported any failure, with every failure in order."""
+    if problems:
+        raise PlanError(problems)
+
+
+@dataclass(frozen=True, slots=True)
+class Refusal:
+    """Why a target cannot plan a type use: its diagnostic code and message."""
+
+    code: CodecReason
+    message: str
+
+
+UNSPELLABLE: Final = Refusal(
+    "BND_TYPE_EXPRESSION_UNSUPPORTED", "The use's final type has no expression a generated module can import"
+)
+"""The refusal of a use whose final type no generated module can import."""
+
+
+def native_type(use: TypeUseBinding) -> TypeView | Refusal:
+    """Return the native type the model generator gave a use, or the refusal of a use it gave none."""
+    if use.state == "bound" and use.type is not None:
+        return use.type
+    code = "BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING"
+    return Refusal(code, "The use has no generated native type")
+
+
+def binding_problem(code: str, message: str, source: SourceLocation) -> Diagnostic:
+    """Return one error at the binding stage, whatever stage a target's policy reports its code at."""
+    return Diagnostic(code=code, severity="error", stage="binding", message=message, source_pointer=source.pointer)
+
+
 def raise_selected(diagnostics: Iterable[CodecDiagnostic], selected: Iterable[OperationId]) -> None:
     """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations."""
     operations = {None, *selected}
     if problems := tuple(
-        Diagnostic(
-            code=item.code, severity="error", stage="binding", message=item.message, source_pointer=item.source.pointer
-        )
-        for item in diagnostics
-        if item.operation in operations
+        binding_problem(item.code, item.message, item.source) for item in diagnostics if item.operation in operations
     ):
         raise APIGenerationError(problems)
 
@@ -126,14 +168,43 @@ def first_use(uses: Mapping[TypeUseId, TypeUseBinding], ids: Iterable[TypeUseId]
     return next((uses[use] for use in ids if use in uses), None)
 
 
+def declared_in(declaration: DeclarationId, document: SourceDocumentId) -> bool:
+    """Return whether a document declares a declaration itself, rather than referencing it in another document.
+
+    A name claimed for such a declaration is the document's own, which the primary-first naming claims first.
+    """
+    return declaration.location.document == document
+
+
 def local(operation: OperationContract) -> bool:
     """Return whether the document that names the operation's path item declares the operation itself."""
-    return operation.declaration.location.document == operation.id.use_site.document
+    return declared_in(operation.declaration, operation.id.use_site.document)
 
 
 def declared_by(declaration: WireDeclaration, operation: OperationContract) -> bool:
     """Return whether the document that names an operation's path item declares one of its declarations."""
-    return declaration.declaration.location.document == operation.id.use_site.document
+    return declared_in(declaration.declaration, operation.id.use_site.document)
+
+
+def declared_media_type(
+    policy: TargetPolicy, operation: OperationContract, declaration: WireDeclaration, problems: list[Diagnostic]
+) -> str:
+    """Return a media declaration's normalized type, reporting a key that no Content-Type header carries."""
+    media_type, problem = declared_media(declaration.name or "")
+    if problem is not None:
+        message = f"The media type {declaration.name!r} of {label(operation)} {problem}"
+        problems.append(policy.problem(policy.media_code, message, declaration.use_site))
+    return media_type
+
+
+def json_null(
+    kind: MediaKind,
+    use: TypeUseBinding | None,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> bool:
+    """Return whether a body or response of a media kind sends None as JSON null: JSON whose type takes null."""
+    return kind == "json" and takes_null(None if use is None else use.type, symbols, members)
 
 
 def tags(operation: OperationContract) -> tuple[str, ...]:

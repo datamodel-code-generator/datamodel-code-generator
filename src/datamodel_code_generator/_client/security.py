@@ -25,6 +25,7 @@ from datamodel_code_generator._target_contract import (
     operation_literal,
 )
 from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_operations import declared_in
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -186,7 +187,7 @@ class SecurityPlanner:
             for item in alternative
         }
         bases = {name: self.names.function(name) for name in used}
-        local = {name: self.declarations[name].declaration.location.document == self.root_document for name in used}
+        local = {name: declared_in(self.declarations[name].declaration, self.root_document) for name in used}
         arguments = self.names.claim(NameScope(_ARGUMENTS), [(base, local[name], ()) for name, base in bases.items()])
         flows = {name: _flows(self.declarations[name]) for name in used}
         provided = [(name, argument) for name, argument in zip(used, arguments, strict=True) if _provided(flows[name])]

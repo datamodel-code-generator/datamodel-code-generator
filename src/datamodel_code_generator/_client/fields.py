@@ -11,7 +11,7 @@ from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_naming import NameScope, explicit_name
-from datamodel_code_generator._target_operations import CLIENT
+from datamodel_code_generator._target_operations import CLIENT, declared_by
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -149,8 +149,7 @@ class _Fields:
 
 def _local(spec: OperationSpec) -> bool:
     """Return whether the document that names the operation declares its request body."""
-    body = spec.contract.request_body
-    return body is not None and body.declaration.location.document == spec.contract.id.use_site.document
+    return (body := spec.contract.request_body) is not None and declared_by(body, spec.contract)
 
 
 def plan_fields(

@@ -18,7 +18,6 @@ from datamodel_code_generator._client.security import CredentialSpec, SecurityPl
 from datamodel_code_generator._openapi_wire_plan import (
     body_kind,
     content_types,
-    declared_media,
     form_extras,
     form_styled,
     parameter_plans,
@@ -57,20 +56,22 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
 from datamodel_code_generator._target_operations import (
     CLIENT,
-    PlanError,
     alias,
     argument_names,
     declared_by,
+    declared_media_type,
     derived_name,
     first_use,
     group_tag,
+    json_null,
     local,
     placeholder_problems,
+    raise_planned,
     resolve_settings,
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present, takes_null
+from datamodel_code_generator._target_types import present
 from datamodel_code_generator._target_unicode import casefold
 
 if TYPE_CHECKING:
@@ -388,8 +389,7 @@ class Planner:
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
-        if self.problems:
-            raise PlanError(self.problems)
+        raise_planned(self.problems)
 
     def resolved(self) -> dict[str, ClientOperationConfig]:
         """Resolve each operation setting's reference to its operation key."""
@@ -656,17 +656,9 @@ class Planner:
         """Return the first type use of a declaration."""
         return first_use(self.uses, uses)
 
-    def _declared(self, operation: OperationContract, declaration: WireDeclaration) -> str:
-        """Return a media declaration's normalized type, reporting a key that no Content-Type header carries."""
-        media_type, problem = declared_media(declaration.name or "")
-        if problem is not None:
-            message = f"The media type {declaration.name!r} of {label(operation)} {problem}"
-            self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
-        return media_type
-
     def media(self, operation: OperationContract, declaration: WireDeclaration, *, request: bool) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and form member plans."""
-        media_type = self._declared(operation, declaration)
+        media_type = declared_media_type(CLIENT, operation, declaration, self.problems)
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
         bare = essence(media_type)
@@ -715,9 +707,7 @@ class Planner:
             media_type=media_type,
             kind=kind,
             use=use,
-            null=request
-            and kind == "json"
-            and takes_null(None if use is None else use.type, self.facts.symbols, self.facts.members),
+            null=request and json_null(kind, use, self.facts.symbols, self.facts.members),
             fields=fields,
             additional=additional,
             encoded=encoded,
