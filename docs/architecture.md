@@ -1516,7 +1516,9 @@ no `Parser`, or only a narrow host of it, lives below it the same way (`parser/_
 behind the `_copy_model_field` and `_copy_inherited_field` hooks; `parser/_inheritance_check.py`: the inheritance check
 behind the `_check_model_inheritance` hook, through `InheritanceCheckHost`; `parser/_type_overrides.py`: the
 `--type-overrides` and `x-python-type` binding behind `Parser._bind_python_type`, `_apply_override_to_field` and the
-other methods it is named after, through `TypeOverridesHost`; `parser/base.py` re-exports what other modules import from it). This keeps
+other methods it is named after, through `TypeOverridesHost`; `parser/_init_exports.py`: the `--all-exports-scope`
+exports of an `__init__.py` behind the `_init_export_imports` hook and the collision hooks, through
+`InitExportsHost`; `parser/base.py` re-exports what other modules import from it). This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,

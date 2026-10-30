@@ -122,7 +122,7 @@ from datamodel_code_generator.model.enum import escape_characters as _enum_escap
 from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
-from datamodel_code_generator.parser import _inheritance_check, _type_overrides
+from datamodel_code_generator.parser import _inheritance_check, _init_exports, _type_overrides
 from datamodel_code_generator.parser._field_copies import (
     _copy_data_model_field,
     _copy_resolved_inherited_field,
@@ -549,11 +549,6 @@ def _resolve_module_file(module_: ModulePath, results: dict[ModulePath, Result])
     if (*module_, "__init__.py") in results:
         return (*module_, "__init__.py"), True
     return tuple(part.replace("-", "_") for part in (*module_[:-1], f"{module_[-1]}.py")), False
-
-
-def _exported_names(models: Iterable[DataModel]) -> Iterator[str]:
-    """Return the names of ``models`` that ``--all-exports-scope`` exports: those not starting with ``_``."""
-    return (ref.short_name for model in models if (ref := model.reference) and not ref.short_name.startswith("_"))
 
 
 def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_code: bool = False) -> str:
@@ -1689,24 +1684,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         scope: AllExportsScope,
     ) -> list[tuple[str, tuple[str, ...], str]]:
         """Collect exports for __init__.py based on scope."""
-        exports: list[tuple[str, tuple[str, ...], str]] = []
-        normalized_module = tuple(part.replace("-", "_") for part in module)
-        base = normalized_module[:-1] if normalized_module[-1] == "__init__.py" else normalized_module
-        base_len = len(base)
-
-        for proc_module, _, proc_models, _, _, _ in processed_models:
-            normalized_proc_module = tuple(part.replace("-", "_") for part in proc_module)
-            if not proc_models or normalized_proc_module == normalized_module:
-                continue
-            last = normalized_proc_module[-1]
-            prefix = normalized_proc_module[:-1] if last == "__init__.py" else (*normalized_proc_module[:-1], last[:-3])
-            if prefix[:base_len] != base or (depth := len(prefix) - base_len) < 1:
-                continue
-            if scope == AllExportsScope.Children and depth != 1:
-                continue
-            rel = prefix[base_len:]
-            exports.extend((name, rel, ".".join(rel)) for name in _exported_names(proc_models))
-        return exports
+        return _init_exports.collect_exports_for_init(cls, module, processed_models, scope)
 
     @classmethod
     def _resolve_export_collisions(
@@ -1717,37 +1695,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         target_python_version: PythonVersion | None = None,
     ) -> dict[str, list[tuple[str, tuple[str, ...], str]]]:
         """Resolve name collisions in exports based on strategy, titling module names as the target does."""
-        reserved = reserved or set()
-        by_name: dict[str, list[tuple[str, tuple[str, ...], str]]] = {}
-        for item in exports:
-            by_name.setdefault(item[0], []).append(item)
-
-        if not (colliding := {n for n, items in by_name.items() if len(items) > 1 or n in reserved}):
-            return dict(by_name)
-        if (effective := strategy or AllExportsCollisionStrategy.Error) == AllExportsCollisionStrategy.Error:
-            cls._raise_collision_error(by_name, colliding)
-
-        used: set[str] = {n for n in by_name if n not in colliding} | reserved
-        result = {n: items for n, items in by_name.items() if n not in colliding}
-
-        for name in sorted(colliding):
-            for item in sorted(by_name[name], key=lambda x: len(x[1])):
-                new_name = cls._make_prefixed_name(
-                    item[0],
-                    item[1],
-                    used,
-                    minimal=effective == AllExportsCollisionStrategy.MinimalPrefix,
-                    target_python_version=target_python_version,
-                )
-                if new_name in reserved:
-                    msg = (
-                        f"Cannot resolve collision: '{new_name}' conflicts with __init__.py model. "
-                        "Please rename one of the models."
-                    )
-                    raise Error(msg)
-                result[new_name] = [item]
-                used.add(new_name)
-        return result
+        return _init_exports.resolve_export_collisions(cls, exports, strategy, reserved, target_python_version)
 
     @classmethod
     def _raise_collision_error(
@@ -1756,18 +1704,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         colliding: set[str],
     ) -> None:
         """Raise an error with collision details."""
-        details = []
-        for n in sorted(colliding):
-            if len(items := by_name[n]) > 1:
-                details.append(f"  '{n}' is defined in: {', '.join(f'.{s}' for _, _, s in items)}")
-            else:
-                details.append(f"  '{n}' conflicts with a model in __init__.py")
-        raise Error(
-            "Name collision detected with --all-exports-scope:\n"
-            + "\n".join(details)
-            + "\n\nUse --all-exports-collision-strategy minimal-prefix or full-prefix to prefix the colliding names "
-            "with their module names."
-        )
+        _init_exports.raise_collision_error(cls, by_name, colliding)
 
     @staticmethod
     def _make_prefixed_name(
@@ -1792,13 +1729,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         resolved: dict[str, list[tuple[str, tuple[str, ...], str]]],
     ) -> Imports:
         """Build import statements from resolved exports."""
-        export_imports = Imports()
-        for export_name, items in resolved.items():
-            for orig, _, short in items:
-                export_imports.append(
-                    Import(from_=f".{short}", import_=orig, alias=export_name if export_name != orig else None)
-                )
-        return export_imports
+        return _init_exports.build_all_exports_code(cls, resolved)
 
     @classmethod
     def _collect_used_names_from_models(
@@ -2579,7 +2510,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         if (scope := config.all_exports_scope) is not None and ctx.module[-1] == "__init__.py":
             export_imports = self._init_export_imports(
-                ctx.module, contexts, scope, config, set(_exported_names(ctx.models))
+                ctx.module, contexts, scope, config, set(_init_exports.exported_names(ctx.models))
             )
 
         if ctx.models:
@@ -2590,7 +2521,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             if export_imports:
                 result += [str(export_imports), ""]
-                for name in _exported_names(ctx.models):
+                for name in _init_exports.exported_names(ctx.models):
                     export_imports.add_export(name)
                 result += [export_imports.dump_all(multiline=True) + "\n"]
 
@@ -2671,13 +2602,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         Names that collide with each other or with ``reserved`` are resolved by ``--all-exports-collision-strategy``.
         """
-        if not (exports := self._collect_exports_for_init(module, contexts, scope)):
-            return None
-        return self._build_all_exports_code(
-            self._resolve_export_collisions(
-                exports, config.all_exports_collision_strategy, reserved, self.target_python_version
-            )
-        )
+        return _init_exports.init_export_imports(self, module, contexts, scope, config, reserved)
 
     def _formatted_body(self, body: str, config: ParseConfig) -> str:
         """Return a module body formatted by the run's code formatter, or as it is without one."""
