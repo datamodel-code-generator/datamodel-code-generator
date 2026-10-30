@@ -88,11 +88,11 @@ NullSite: TypeAlias = Literal[
 * ``combined-branch``: an ``anyOf`` or ``oneOf`` member that is ``nullable``
   (``JsonSchemaParser._add_nullable_combined_schema_branches``).
 * ``inherited-child``: a property that overrides an inherited one, which drops the null of the inherited type unless
-  it admits null itself (``JsonSchemaParser._merge_inherited_type_shape_dict``,
-  ``JsonSchemaParser._mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's
-  own ``type`` and ``nullable``, ``parser/jsonschema.py:_dump_drops_inherited_null``).
+  it admits null itself (``parser/_inherited_schemas.py``: ``merge_inherited_type_shape_dict``,
+  ``mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's own ``type`` and
+  ``nullable``, ``_dump_drops_inherited_null``).
 * ``inherited-types``: the null among the JSON types an inherited schema accepts, beside the types it collects
-  (``JsonSchemaParser._get_inherited_schema_types``).
+  (``parser/_inherited_schemas.py:get_inherited_schema_types``).
 * ``enforced-value``: the null a value schema enforces, beside its types
   (``JsonSchemaParser._enforced_value_keywords``).
 * ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null

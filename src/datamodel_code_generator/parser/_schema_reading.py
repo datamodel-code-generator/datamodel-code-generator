@@ -168,3 +168,12 @@ def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
     if not types.issubset(_NUMERIC_TYPE_DOMAINS):
         return None
     return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
+
+
+_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
+_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
+
+
+def _without_contains_keywords(extras: Mapping[str, Any]) -> dict[str, Any]:
+    """Return extension keywords without ``contains`` and its bounds (``_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS``)."""
+    return {key: value for key, value in extras.items() if key not in _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS}

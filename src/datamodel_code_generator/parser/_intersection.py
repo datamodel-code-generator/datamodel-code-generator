@@ -11,15 +11,16 @@ conjunction enforces, so working output keeps its bytes, and writes the intersec
 enforces something else.
 
 Pure: the parts and the row are dumped schema dicts, nothing is written to them, and nested schemas that change are
-copied with ``copy.copy``, so a located dump keeps its location. The adapters are ``parser/jsonschema.py``:
-``JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
-``_resolve_inherited_parent_property``) and ``JsonSchemaParser._merge_properties_with_parent_constraints``.
+copied with ``copy.copy``, so a located dump keeps its location. The adapters are
+``parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
+``parser/_inherited_schemas.py:resolve_inherited_parent_property``) and
+``parser/_inherited_schemas.py:merge_properties_with_parent_constraints``.
 
 The presentation row of an inherited property override is built here (:func:`inherited_override_row`), by the rows of
 ``--allof-merge-mode``: which keywords an override inherits (:func:`inherits_keyword`, also read for the default of an
 inherited field), and how one subschema value or keyword of the inherited property merges with the override's
 (:func:`merge_inherited_value`, :func:`merge_inherited_keyword`, rows of :data:`InheritedRow`), which the type shape
-``--allof-merge-mode none`` writes (``JsonSchemaParser._merge_inherited_type_shape_dict``) reads too.
+``--allof-merge-mode none`` writes (``parser/_inherited_schemas.py:merge_inherited_type_shape_dict``) reads too.
 
 ``pattern`` is the conjunction of the parts' patterns (``_regex_syntax.py:conjoin_patterns``) unless the row's pattern
 implies each of them; patterns not every engine runs, and patterns no single expression conjoins, keep the row's pattern

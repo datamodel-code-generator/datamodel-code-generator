@@ -204,6 +204,9 @@ kwargs = 1
 'kwargs[...]' = 1
 tuple_item_count = 1
 
+["src/datamodel_code_generator/parser/_inherited_schemas.py"."build_missing_required_field"]
+required = 1
+
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
 '_additional_imports[...]' = 1
 
@@ -273,9 +276,6 @@ import_ = 1
 is_list = 1
 is_optional = 1
 type = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_missing_required_field"]
-required = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._collect_inherited_fields_for_request_response"]
 required = 1
