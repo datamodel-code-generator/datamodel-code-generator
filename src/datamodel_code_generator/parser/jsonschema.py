@@ -1818,8 +1818,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataModelFieldBase | None:
         """Return the copy of ``inherited_field`` that the deferred override ``field`` resolves to, else None.
 
-        The copy takes the overlay of both fields (``parser/base.py:_copy_resolved_inherited_field``) and the required
-        state of the override, without the inherited constructor default.
+        The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``) and
+        the required state of the override, without the inherited constructor default.
         """
         if (
             resolved_field := self._copy_inherited_field(

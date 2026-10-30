@@ -13,7 +13,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import Counter, defaultdict
 from contextvars import ContextVar
-from copy import deepcopy
+from copy import deepcopy  # noqa: F401  # Preserve the established parser.base export.
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
@@ -107,7 +107,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _bind_builtin_names,
-    _overlay_constraints,
     _set_nested_model_default_factory_order,
     forget_model_memos,
     get_resolve_reference_action_capabilities,
@@ -118,6 +117,12 @@ from datamodel_code_generator.model.enum import (
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
     prepare_output_model_config,
+)
+from datamodel_code_generator.parser._field_copies import (
+    _copy_data_model_field,
+    _copy_resolved_inherited_field,
+    _get_inherited_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
+    _merge_data_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._field_rows import (
     FIELD_OPTIONS_LEFT_OUT,
@@ -144,11 +149,11 @@ from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
 from datamodel_code_generator.parser._passes._keys import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
+    _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
+    _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
+    _DEFERRED_INHERITED_TYPE_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _MODEL_MODULE_PREFIX,
-    _RAW_SCHEMA_DEFAULT_KEY,
+    _RAW_SCHEMA_DEFAULT_KEY,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -159,7 +164,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _forward_enum_member_literals,
     _has_root_field_constraints,
     _hidden_type_names,
-    _InheritedTypeModifiers,
     _iter_import_bindings,
     _ModelPositions,
     _module_name_from_module_path,
@@ -175,7 +179,7 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     field_name_model_type_of,
     normalize_default_value_constraints,
-    placeholder_identity,
+    placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
     register_runtime_expression,
     relative,
 )
@@ -215,12 +219,12 @@ from datamodel_code_generator.reference import (
     split_module_name,
 )
 from datamodel_code_generator.types import (
-    NONE,
+    NONE,  # noqa: F401  # Preserve the established parser.base export.
     DataType,
     DataTypeManager,
     _copy_data_type,
-    build_union,
-    union_members,
+    build_union,  # noqa: F401  # Preserve the established parser.base export.
+    union_members,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.util import record_watch_dependency
 
@@ -237,7 +241,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldIdentity, FieldRow
-    from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -421,207 +424,6 @@ def title_to_class_name(title: str) -> str:
     """Convert a schema title to a valid Python class name."""
     classname = _CLASS_NAME_SEPARATOR_PATTERN.sub(" ", title)
     return "".join(x for x in classname.title() if not x.isspace())
-
-
-def _copy_data_model_field(
-    field: DataModelFieldBase,
-    *,
-    data_type: DataType | None = None,
-    register_references: bool = True,
-    identity: FieldIdentity | None = None,
-) -> DataModelFieldBase:
-    """Copy a field and its mutable state without copying model references, under the names ``identity`` gives."""
-    copied_data_type = data_type or _copy_data_type(
-        field.data_type,
-        register_references=register_references,
-    )
-    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None, "extras": deepcopy(field.extras)}
-    if field.validation_aliases is not None:
-        update["validation_aliases"] = list(field.validation_aliases)
-    match field.default:
-        case dict() | list() | set():
-            update["default"] = deepcopy(field.default)
-    if identity is not None:
-        update.update(identity)
-    copied_field = field.model_copy(update=update)
-    copied_data_type.parent = copied_field
-    return copied_field
-
-
-def _wraps_one_list(data_type: DataType) -> bool:
-    """Return whether ``data_type`` is not a list and holds one member, which is a list."""
-    return not data_type.is_list and len(data_type.data_types) == 1 and data_type.data_types[0].is_list
-
-
-def _get_inherited_type_modifiers(
-    data_type: DataType,
-    *,
-    null_rule: NullRule | None = None,
-    drops_null_members: bool = False,
-) -> _InheritedTypeModifiers:
-    """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = _copy_data_type(data_type, register_references=False) if _wraps_one_list(data_type) else None
-    return _InheritedTypeModifiers(
-        null_rule=null_rule,
-        is_optional=data_type.is_optional,
-        is_dict=data_type.is_dict,
-        is_list=data_type.is_list,
-        is_set=data_type.is_set,
-        is_frozen_set=data_type.is_frozen_set,
-        is_mapping=data_type.is_mapping,
-        is_sequence=data_type.is_sequence,
-        is_tuple=data_type.is_tuple,
-        tuple_item_count=data_type.tuple_item_count,
-        kwargs=deepcopy(data_type.kwargs),
-        list_wrapper=list_wrapper,
-        drops_null_members=drops_null_members,
-    )
-
-
-def _without_null_members(data_type: DataType, current_type: DataType | _InheritedTypeModifiers) -> DataType:
-    """Return a fresh copy of the inherited ``data_type`` without the None members its override excludes."""
-    if not (
-        isinstance(current_type, _InheritedTypeModifiers)
-        and current_type.drops_null_members
-        and (members := union_members(data_type))
-    ):
-        return data_type
-    kept = [member for member in members if member.type != NONE or member.data_types]
-    rebuilt = data_type.model_copy(update={"data_types": build_union(DataType, kept).data_types})
-    for member in rebuilt.data_types:
-        member.parent = rebuilt
-    return rebuilt
-
-
-def _merge_data_type_modifiers(
-    new_type: DataType,
-    current_type: DataType | _InheritedTypeModifiers,
-    *,
-    preserve_container_shape: bool = False,
-    preserve_optional: bool = False,
-    preserve_inherited_kwargs: bool = False,
-) -> None:
-    """Merge an overriding type's container modifiers into an inherited type."""
-    if preserve_optional:
-        new_type.is_optional = new_type.is_optional or current_type.is_optional
-    if isinstance(current_type, _InheritedTypeModifiers) and current_type.excludes_null:
-        new_type.is_optional = False
-    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):  # noqa: SLF001
-        new_type.is_dict = new_type.is_dict or current_type.is_dict
-        new_type.is_list = new_type.is_list or current_type.is_list
-        new_type.is_set = new_type.is_set or current_type.is_set
-        new_type.is_frozen_set = new_type.is_frozen_set or current_type.is_frozen_set
-        new_type.is_mapping = new_type.is_mapping or current_type.is_mapping
-        new_type.is_sequence = new_type.is_sequence or current_type.is_sequence
-        new_type.is_tuple = new_type.is_tuple or current_type.is_tuple
-        if new_type.tuple_item_count is None:
-            new_type.tuple_item_count = current_type.tuple_item_count
-    if preserve_inherited_kwargs or current_type.kwargs is None:
-        return
-    if new_type.kwargs is None:
-        new_type.kwargs = deepcopy(current_type.kwargs)
-        return
-    for name, value in current_type.kwargs.items():
-        new_type.kwargs[name] = deepcopy(value)
-
-
-def _apply_inherited_field_nullability(
-    field: DataModelFieldBase,
-    inherited_field: DataModelFieldBase,
-    copied_field: DataModelFieldBase,
-    current_type: DataType | _InheritedTypeModifiers,
-) -> None:
-    """Keep omission optionality separate from the schema's null intersection."""
-    if not copied_field.required and current_type.is_optional:
-        copied_field.data_type.is_optional = True
-        GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
-
-    match current_type:
-        case _InheritedTypeModifiers(excludes_null=True):
-            copied_field.nullable = False if copied_field.required or field.nullable is False else None
-            copied_field.type_has_null = False
-        case _:
-            copied_field.nullable = inherited_field.nullable
-            copied_field.type_has_null = inherited_field.type_has_null
-
-
-def _copy_resolved_inherited_field(  # noqa: PLR0913
-    field: DataModelFieldBase,
-    inherited_field: DataModelFieldBase,
-    *,
-    force_optional: bool = False,
-    partial_merge_mode: AllOfMergeMode = AllOfMergeMode.All,
-    register_references: bool = True,
-    reserved_names: set[str] | None = None,
-) -> DataModelFieldBase | None:
-    """Resolve a deferred inherited field without copying its reference graph."""
-    deferred_type = field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY)
-    deferred_field = field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)
-    match deferred_type, deferred_field:
-        case (DataType() | _InheritedTypeModifiers()) as current_type, _:
-            metadata_source = field if partial_merge_mode == AllOfMergeMode.NoMerge else inherited_field
-            copied_data_type = _copy_data_type(
-                inherited_field.data_type,
-                register_references=register_references,
-            )
-            copied_data_type = _without_null_members(copied_data_type, current_type)
-            wrapper_template = (
-                current_type.list_wrapper
-                if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if _wraps_one_list(current_type) else None)
-            )
-            if wrapper_template is not None and copied_data_type.is_list:
-                wrapper = _copy_data_type(wrapper_template, register_references=register_references)
-                wrapper.data_types[0] = copied_data_type
-                copied_data_type.parent = wrapper
-                copied_data_type = wrapper
-            else:
-                _merge_data_type_modifiers(
-                    copied_data_type,
-                    current_type,
-                    preserve_inherited_kwargs=partial_merge_mode == AllOfMergeMode.NoMerge,
-                )
-            copied_field = _copy_data_model_field(
-                metadata_source,
-                data_type=copied_data_type,
-                register_references=False,
-                identity=placeholder_identity(field),
-            )
-            copied_field.required = False if force_optional else inherited_field.required or field.required
-            _apply_inherited_field_nullability(field, inherited_field, copied_field, current_type)
-            if partial_merge_mode != AllOfMergeMode.NoMerge:
-                copied_field.constraints = _overlay_constraints(
-                    inherited_field.constraints, field.constraints, class_from="first-given"
-                )
-                copied_field.extras.update(deepcopy(field.extras))
-                copied_field.read_only = inherited_field.read_only or field.read_only
-                copied_field.write_only = inherited_field.write_only or field.write_only
-            if (has_default := bool(field.has_default)) or partial_merge_mode != AllOfMergeMode.All:
-                copied_field.default = deepcopy(field.default) if has_default else field.default
-                copied_field.has_default = has_default
-                copied_field.use_default_with_required = has_default and field.use_default_with_required
-                if _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
-                    copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
-        case _, str():
-            identity = placeholder_identity(field)
-            if inherited_field.name and (
-                inherited_field.name == field.name
-                or reserved_names is None
-                or inherited_field.name not in reserved_names
-            ):
-                identity["name"] = inherited_field.name
-                identity["alias"] = inherited_field.alias if field.alias is None else field.alias
-            copied_field = _copy_data_model_field(
-                inherited_field, register_references=register_references, identity=identity
-            )
-            copied_field.required = field.required
-        case _:
-            return None
-
-    copied_field.__dict__.pop(_DEFERRED_INHERITED_FIELD_KEY, None)
-    copied_field.__dict__.pop(_DEFERRED_INHERITED_CLASS_KEY, None)
-    copied_field.__dict__.pop(_DEFERRED_INHERITED_TYPE_KEY, None)
-    return copied_field
 
 
 class Result(BaseModel):

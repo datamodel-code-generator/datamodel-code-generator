@@ -74,7 +74,7 @@ class FieldIdentity(TypedDict, total=False):
     """The names and aliases a field takes, the attributes ``GenerationStore.set_field_identity`` writes.
 
     A field takes exactly the keys given and keeps the others: a copy takes all of them from the placeholder it
-    replaces when it is made (``parser/base.py:_copy_data_model_field``), a field built earlier takes those its
+    replaces when it is made (``parser/_field_copies.py:_copy_data_model_field``), a field built earlier takes those its
     ``FieldAliasRow`` names through the store.
     """
 
