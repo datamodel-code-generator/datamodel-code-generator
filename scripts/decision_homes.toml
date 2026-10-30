@@ -61,7 +61,7 @@ adapters = [
     "parser/jsonschema.py:JsonSchemaParser._type_has_null",
     "parser/jsonschema.py:_null_sources",
     "parser/jsonschema.py:_dump_parts_admit_null",
-    "parser/jsonschema.py:_type_null_sources",
+    "parser/_schema_object.py:_type_null_sources",
     "parser/openapi.py:OpenAPIParser._null_mode",
 ]
 
@@ -1950,6 +1950,9 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/parser/_passes/settle.py"."sort_parsed_models"]
 "F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
 
+[allow."src/datamodel_code_generator/parser/_schema_object.py"."JsonSchemaObject.is_ref_with_nullable_only"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
+
 [allow."src/datamodel_code_generator/parser/base.py"."Parser.__generate_forwarder_content"]
 "H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K26" }
 
@@ -1958,9 +1961,6 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
-"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_enum_site_schema"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
