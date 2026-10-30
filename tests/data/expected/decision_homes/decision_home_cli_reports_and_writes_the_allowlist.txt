@@ -23,6 +23,9 @@ other.py:49:4: decision sample (the sample decision) has its home in core.py; re
 other.py:50:4: decision sample (the sample decision) has its home in core.py; reads a key of a raw document. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in read_keys)
 other.py:58:11: decision sample (the sample decision) has its home in core.py; spells the segment itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in spell)
 other.py:58:31: decision sample (the sample decision) has its home in core.py; spells the segment itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in spell)
+other.py:64:8: decision sample (the sample decision) has its home in core.py; joins the items of a display itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in displays)
+other.py:65:8: decision sample (the sample decision) has its home in core.py; joins the items of a display itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in displays)
+other.py:66:8: decision sample (the sample decision) has its home in core.py; joins the items of a display itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in displays)
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
@@ -42,6 +45,7 @@ other.py: Other.method: sample.read-flag
 other.py: Other.method: sample.write-size
 other.py: _merge_values: sample.merge-function
 other.py: _merge_values._merge_inner: sample.merge-function
+other.py: displays: sample.hand-display
 other.py: other_helper: sample.keyword-table
 other.py: read_keys: sample.read-key
 other.py: spell: sample.spelling

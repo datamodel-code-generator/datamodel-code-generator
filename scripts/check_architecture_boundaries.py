@@ -22,6 +22,7 @@ Layer: TypeAlias = Literal[
     "facts",
     "schema-graph",
     "json-pointer",
+    "python-syntax",
     "config",
     "input-model",
     "reference",
@@ -109,6 +110,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the RFC 6901 pointer codec is a leaf that every layer reads: import only the standard library and "
             "typing_extensions"
+        ),
+    ),
+    "python-syntax": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the Python display writer is a leaf that the model backends, the formatter and the targets read: import "
+            "only the standard library and typing_extensions"
         ),
     ),
     "requirements": (
@@ -1254,6 +1262,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "json-schema"
         case ("_json_pointer.py",):
             layer = "json-pointer"
+        case ("_python_syntax.py",):
+            layer = "python-syntax"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

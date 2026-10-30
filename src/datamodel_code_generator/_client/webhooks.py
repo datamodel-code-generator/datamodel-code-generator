@@ -19,10 +19,11 @@ from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_render import Keyword, Parameter, Plan, call
+from datamodel_code_generator._target_render import Keyword, Parameter, Plan
 from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
@@ -271,7 +272,7 @@ class _Webhooks:
     def decoder(self, module: TargetModule, event: WebhookEvent) -> str:
         """Return the runtime decoder of one event type."""
         codec = f"{module.local('_generated', 'model_bindings')}.{self.accessors[event.use.id].codec}"
-        return call(module.local(_EVENTS, "EventDecoder"), (codec,))
+        return call_text(module.local(_EVENTS, "EventDecoder"), (codec,))
 
     def event(self, module: TargetModule, spec: WebhookSpec) -> tuple[str, str]:
         """Return the spelling of a helper's event type, the union of its mapped types, and its decoder."""
@@ -284,7 +285,7 @@ class _Webhooks:
             return module.union(*types), self.decoder(module, first)
         pointer = spec.helper.tree["event_schema"]["discriminator"]["pointer"]
         mapping = ", ".join(f"{event.name!r}: {self.decoder(module, event)}" for event in spec.events)
-        return module.union(*types), call(
+        return module.union(*types), call_text(
             module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), f"{{{mapping}}}")
         )
 

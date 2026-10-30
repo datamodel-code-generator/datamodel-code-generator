@@ -16,6 +16,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -163,7 +164,7 @@ class _NestedDataclassFactory:
     @override
     def __str__(self) -> str:
         """Return the factory as the field's call writes it."""
-        return f"lambda: {_default_factory_type_name(self.data_type)}({', '.join(self.arguments)})"
+        return f"lambda: {call_text(_default_factory_type_name(self.data_type), self.arguments)}"
 
 
 def _build_nested_dataclass_default_factory(

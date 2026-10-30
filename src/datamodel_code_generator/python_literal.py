@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
+from datamodel_code_generator._python_syntax import call_text, list_display, tuple_display
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
@@ -61,7 +63,7 @@ class PythonRuntimeExpression:
     @classmethod
     def from_import_call(cls, import_: Import, *arguments: str, value: str | None = None) -> Self:
         """Create a call expression that retains its constructor import identity."""
-        return cls(import_, "", f"({', '.join(arguments)})", value)
+        return cls(import_, "", call_text("", arguments), value)
 
     def with_import_aliases(self, aliases: Mapping[tuple[str | None, str], Import]) -> Self:
         """Return self unless module-wide import resolution changed a referenced binding."""
@@ -314,9 +316,9 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
         case dict():
             return "{" + ", ".join(f"{render(key)}: {render(item)}" for key, item in value.items()) + "}"
         case list():
-            return "[" + ", ".join(map(render, value)) + "]"
+            return list_display(map(render, value))
         case tuple():
-            return "(" + ", ".join(map(render, value)) + ("," if len(value) == 1 else "") + ")"
+            return tuple_display(map(render, value))
         case set() if not value:
             return "set()"
         case set():

@@ -19,6 +19,9 @@
 [allow."other.py"."_merge_values._merge_inner"]
 "sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
 
+[allow."other.py"."displays"]
+"sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
+
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
 

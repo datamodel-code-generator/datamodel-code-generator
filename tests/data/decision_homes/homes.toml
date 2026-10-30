@@ -64,6 +64,12 @@ contains = ["seg-"]
 what = "spells the segment itself"
 audit = "X-10"
 
+[homes.sample.signatures.hand-display]
+kind = "display"
+brackets = ["(", "["]
+what = "joins the items of a display itself"
+audit = "X-11"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

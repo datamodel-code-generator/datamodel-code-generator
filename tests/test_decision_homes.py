@@ -45,6 +45,9 @@ ALLOWED = """
 
 [allow."other.py"."spell"]
 "sample.spelling" = { home = "sample", count = 2, audit = "X-10" }
+
+[allow."other.py"."displays"]
+"sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
