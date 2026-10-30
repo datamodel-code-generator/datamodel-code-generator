@@ -24,7 +24,7 @@ from datamodel_code_generator._client.pagination import (
     _problem,
     _target_key,
 )
-from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES, status_key
+from datamodel_code_generator._client.plan import success_response
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
@@ -86,14 +86,6 @@ class _Result:
     steps: tuple[ItemStep, ...] = ()
     fetch: OperationSpec | None = None
     fetch_use: TypeUseBinding | None = None
-
-
-def _response(spec: OperationSpec, status: int) -> ResponseSpec | None:
-    """Return the success response a status selects, by its exact key, its hundreds range, or default, or None."""
-    if not (status in SUCCESS_STATUSES or status in spec.success_statuses):
-        return None
-    keys = {response.status: response for response in spec.responses if response.success}
-    return None if (key := status_key(status, keys)) is None else keys[key]
 
 
 class _Polls:
@@ -177,7 +169,7 @@ class _Polls:
         """Return the create responses the accepted statuses select, refusing a status no success response declares."""
         sources: list[_Source] = []
         for index, status in enumerate(helper.tree["accepted_statuses"]):
-            if (response := _response(create, status)) is None:
+            if (response := success_response(create, status)) is None:
                 message = (
                     f"The accepted status {status} of {helper.name!r} selects no success response of {_label(create)}"
                 )
@@ -400,7 +392,7 @@ class _Polls:
             problems.append(_problem("E_CONFIG_VALUE", "config", at, message, create))
             return None
         for index, status in enumerate(immediate["statuses"]):
-            if _response(create, status) is None:
+            if success_response(create, status) is None:
                 message = f"The immediate status {status} of {name!r} selects no success response of {label}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.statuses[{index}]", message, create))
         successes = [response for response in create.responses if response.success]

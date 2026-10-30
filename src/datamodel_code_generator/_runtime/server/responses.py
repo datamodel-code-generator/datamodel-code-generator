@@ -14,7 +14,7 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, status_key
+from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, declaring
 from ..model_codecs.parameters import header_text
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
@@ -87,7 +87,7 @@ class OperationResponses:
 
     def find(self, status: int) -> Declared | None:
         """Return the response that declares a status: exact, then the same status class, then default."""
-        return None if (key := status_key(status, self.responses)) is None else self.responses[key]
+        return declaring(status, self.responses)
 
 
 def dispatch(value: object, plan: OperationResponses) -> object:

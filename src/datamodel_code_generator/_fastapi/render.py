@@ -32,7 +32,7 @@ from datamodel_code_generator._fastapi.plan import (
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
 from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
-from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
+from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind, range_key
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
@@ -1464,8 +1464,7 @@ def _response_description(spec: OperationSpec) -> object:
     if (primary := spec.primary) is not None:
         return fact(primary.response.declaration, "description")
     responses = {response.status: response for response in spec.responses}
-    status = str(spec.registration_status)
-    represented = responses.get(f"{status[0]}XX")
+    represented = responses.get(range_key(spec.registration_status))
     return None if represented is None else fact(represented.declaration, "description")
 
 

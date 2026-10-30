@@ -34,14 +34,15 @@ from datamodel_code_generator._openapi_wire_plan import (
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
+    OK,
     SUCCESS_STATUSES,
     FieldPlan,
     charset,
+    declaring,
     essence,
     media_kind,
     media_range,
     normalized,
-    status_key,
 )
 from datamodel_code_generator._target_contract import (
     LOCATIONS,
@@ -74,12 +75,14 @@ from datamodel_code_generator._target_operations import (
     declared_in,
     declared_media_type,
     derived_name,
+    exact_status,
     first_use,
     json_null,
     local,
     native_type,
     placeholder_problems,
     raise_planned,
+    range_start,
     resolve_settings,
     response_bodyless,
     type_names,
@@ -190,7 +193,7 @@ _INFO: Final = (
     ("info", "contact", "contact", "object"),
     ("info", "license", "license_info", "object"),
 )
-_DEFAULT_STATUS: Final = 200
+_DEFAULT_STATUS: Final = OK
 
 
 class Default(Enum):
@@ -1372,7 +1375,7 @@ class Planner:  # noqa: PLR0904
         """
         if (choice := self.primaries.get(operation.id.use_site.pointer)) is not None:
             return self.chosen(operation, responses, choice)
-        exact = {int(response.status): response for response in responses if response.status.isdigit()}
+        exact = {code: response for response in responses if (code := exact_status(response.status)) is not None}
         successful = [code for code in exact if code in SUCCESS_STATUSES]
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact or not successful else min(successful)
         if (response := _declaring(responses, status)) is None and exact:
@@ -1673,14 +1676,13 @@ def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:
 
 def _declaring(responses: tuple[ResponseSpec, ...], status: int) -> ResponseSpec | None:
     """Return the response that declares a status: exact, then the same status class, then default."""
-    declared = {response.status: response for response in responses}
-    return None if (key := status_key(status, declared)) is None else declared[key]
+    return declaring(status, {response.status: response for response in responses})
 
 
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:
     if primary is not None:
         return primary.status
-    ranges = (int(response.status[0]) * 100 for response in responses if response.status.endswith("XX"))
+    ranges = (range_start(response.status) for response in responses if response.status.endswith("XX"))
     return min(ranges, default=_DEFAULT_STATUS)
 
 

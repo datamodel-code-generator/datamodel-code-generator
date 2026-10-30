@@ -23,7 +23,7 @@ import httpx2
 from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import TOKEN, normalized
+from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
 from ..model_codecs.unset import UNSET
 from .content import EncodedAttempt
@@ -140,9 +140,7 @@ AdapterT = TypeVar("AdapterT", bound="httpx2.Client | httpx2.AsyncClient")
 HandleT = TypeVar("HandleT", bound="AnyRaw")
 
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
-_ERROR_STATUS: Final = 400
 _BODY: Final = "datamodel_code_generator.body"
-_SWITCHING: Final = 101
 _BYTES: Final = "A raw body must be bytes, since this package declares no binary or multipart request body"
 
 
@@ -552,7 +550,7 @@ class _AsyncReplayed:
 
 def _status_plan(info: ResponseInfo, source: BodySource | None, call: Call) -> RetryDelay | None:
     """Plan a status retry of a complete error response, or of a refused WebSocket handshake."""
-    if info.status_code < _ERROR_STATUS and not (call.handshake and info.status_code != _SWITCHING):
+    if info.status_code < ERROR_STATUSES.start and not (call.handshake and info.status_code != SWITCHING_PROTOCOLS):
         return None
     return call.retry(info, None, replayable=source is None or source.replayable)
 

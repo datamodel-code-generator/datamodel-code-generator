@@ -15,6 +15,7 @@ from ..model_codecs.media import (
     SUCCESS_STATUSES,
     bodyless,
     charset,
+    declaring,
     decode_form,
     encode_form,
     finite,
@@ -766,8 +767,7 @@ class ResponseDecoder(Generic[T_co]):
         self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None
     ) -> APIStatusError:
         data: object = body
-        key = status_key(info.status_code, self._error_groups.keys())
-        declared = () if key is None else self._error_groups[key]
+        declared = declaring(info.status_code, self._error_groups) or ()
         if declared and not truncated:
             try:
                 branch = _select(info, body, declared, bodyless=self._bodyless(info.status_code))
