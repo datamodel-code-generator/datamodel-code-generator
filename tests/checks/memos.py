@@ -42,7 +42,7 @@ LEGACY_ROWS: Final[Mapping[MemoTable, str]] = MappingProxyType({
 def _dedup_key(owner: Any, args: tuple[str | None, bool]) -> object:
     """Render the dedup key that ``DataModel.get_dedup_key`` keeps for ``args``, without the writes that precede it."""
     class_name, use_default = args
-    return owner._render_dedup_key(class_name if class_name is not None or not use_default else "M")
+    return owner._render_dedup_key(owner._dedup_key_class_name(class_name, use_default=use_default))
 
 
 _RECOMPUTE: Final[Mapping[MemoTable, Callable[[Any, Any], object]]] = MappingProxyType({

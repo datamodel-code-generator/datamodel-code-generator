@@ -502,8 +502,7 @@ class _ModelShapeSource:
 
     def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:  # noqa: PLR6301
         """Return the model rendered under a class name, its imports and its values as written, uncached."""
-        model._prepare_dedup_key()  # noqa: SLF001
-        rendered, imports, *written = model._render_dedup_key(class_name)  # noqa: SLF001
+        rendered, imports, *written = model._fresh_dedup_key(class_name)  # noqa: SLF001
         return rendered, imports, tuple(written)
 
     def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:  # noqa: PLR6301

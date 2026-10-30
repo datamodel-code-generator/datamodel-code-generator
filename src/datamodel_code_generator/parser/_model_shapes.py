@@ -167,15 +167,11 @@ class ReuseGroups:
 
     def site_models_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
         """Order the site models after the others, which then stay canonical in same-name deduplication."""
-        if site_models := self.site_models:
-            return sorted(models, key=lambda model: id(model.reference) in site_models)
-        return models
+        return _yielding_last(models, self.site_models)
 
     def typed_map_values_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
         """Order the models whose names yield after the others, which then stay canonical and keep their names."""
-        if self.typed_map_values:
-            return sorted(models, key=self.is_typed_map_value)
-        return models
+        return _yielding_last(models, self.typed_map_values)
 
     def yields_to(self, model: _Referenced, other: _Referenced) -> bool:
         """Return whether ``model`` yields the canonical place to ``other``, which does not yield."""
@@ -184,6 +180,13 @@ class ReuseGroups:
     def canonical_pair(self, first: ReferencedT, duplicate: ReferencedT) -> tuple[ReferencedT, ReferencedT]:
         """Return the canonical and the duplicate of a pair that a user found in model order."""
         return (duplicate, first) if self.yields_to(first, duplicate) else (first, duplicate)
+
+
+def _yielding_last(models: list[ReferencedT], yielding: frozenset[int]) -> list[ReferencedT]:
+    """Order the models whose references' ids are in ``yielding`` after the others, each part keeping its order."""
+    if yielding:
+        return sorted(models, key=lambda model: id(model.reference) in yielding)
+    return models
 
 
 def skips_root_model(row: ShapeRow, *, collapse_root_models: bool) -> bool:
@@ -334,17 +337,21 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
         )
         key = (type(model), masked, imports, len(references), *written)
-        compared = (*references, *self.source.rule_references(model))
+        compared = self._compared_references(model, references)
         self.memo[model] = shape = self._tagged(model, key), compared
         return shape
 
-    def _compared_references(self, model: ModelT) -> tuple[ReferenceT, ...]:
+    def _compared_references(
+        self, model: ModelT, references: Sequence[ReferenceT] | None = None
+    ) -> tuple[ReferenceT, ...]:
         """Return the references that the models a model matches must match too: its own, then those its rules name.
 
-        Rules name a model by its class name alone until imports are final, so models of other modules that share a
-        name tell the rules apart only by their shapes. The masked rendering keeps the names that rules write.
+        ``references`` are the model's own when the caller already read them. Rules name a model by its class name
+        alone until imports are final, so models of other modules that share a name tell the rules apart only by their
+        shapes. The masked rendering keeps the names that rules write.
         """
-        return (*self.source.references(model), *self.source.rule_references(model))
+        own = self.source.references(model) if references is None else references
+        return (*own, *self.source.rule_references(model))
 
     def references_match(self, left: ModelT, right: ModelT) -> bool:
         """Return whether equally rendered models also reference models of the same shape.

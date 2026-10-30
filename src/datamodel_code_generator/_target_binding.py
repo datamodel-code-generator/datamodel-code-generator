@@ -101,7 +101,13 @@ from datamodel_code_generator.model._decisions.enum_kind import literal_value_ki
 from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
-from datamodel_code_generator.model.base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase
+from datamodel_code_generator.model.base import (
+    _REUSE_PATH_SUFFIX,
+    UNDEFINED,
+    ConstraintsBase,
+    DataModel,
+    DataModelFieldBase,
+)
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
@@ -317,9 +323,6 @@ class _Union:
 
     members: tuple[DataType, ...]
     selector: _Selector | None
-
-
-_REUSE: Final = "/reuse"
 
 
 @dataclass(slots=True)
@@ -1121,15 +1124,15 @@ class _Binder:
         A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
         """
         path = reference.path
-        return _source_path(path.removesuffix(_REUSE) if id(reference) not in self.keys else path)
+        return _source_path(path.removesuffix(_REUSE_PATH_SUFFIX) if id(reference) not in self.keys else path)
 
     def reused(self, model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
         path = model.reference.path
         original = (
             None
-            if id(model.reference) in self.keys or not path.endswith(_REUSE)
-            else self.parser.model_resolver.references.get(path.removesuffix(_REUSE))
+            if id(model.reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX)
+            else self.parser.model_resolver.references.get(path.removesuffix(_REUSE_PATH_SUFFIX))
         )
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 

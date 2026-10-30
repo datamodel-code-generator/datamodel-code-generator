@@ -451,7 +451,20 @@ adapters = [
 [homes.H12]
 decision = "the keys deduplication and reuse compare models by"
 core = ["parser/_model_shapes.py"]
-adapters = ["parser/_passes/structure.py:delete_duplicate_models"]
+adapters = ["parser/_passes/_shared.py:compared_models", "model/base.py:DataModel._fresh_dedup_key"]
+
+[homes.H12.signatures.compared-models]
+kind = "call"
+names = ["eligible_models"]
+paths = ["parser/"]
+what = "picks the models a deduplication or reuse user compares itself; call parser/_passes/_shared.py:compared_models with the user's row"
+audit = "C08-filter"
+
+[homes.H12.signatures.fresh-dedup-key]
+kind = "call"
+names = ["_prepare_dedup_key", "_render_dedup_key"]
+what = "renders a dedup key itself; call model/base.py:DataModel._fresh_dedup_key, which writes what the rendering decides first"
+audit = "C08-U15"
 
 [homes.Hx-duplicate-merge]
 decision = "what becomes of a duplicate that deduplication or reuse found: it leaves the output and every user names the equal canonical model, keeping the tags of its unions or not, its children taking their bases once; or it becomes an empty subclass of the canonical model in its place"
@@ -478,6 +491,14 @@ names = ["create_reuse_model"]
 paths = ["parser/"]
 what = "makes a duplicate an empty subclass itself; call parser/_passes/_shared.py:subclass_duplicate"
 audit = "C08-U4"
+
+[homes.Hx-duplicate-merge.signatures.reuse-path-suffix]
+kind = "literal"
+contains = ["/reuse"]
+# Left out: the module level of model/base.py, which defines the suffix beside the model that writes it.
+exclude = ["model/base.py:<module>"]
+what = "spells the path suffix of the subclass reuse makes itself; read model/base.py:_REUSE_PATH_SUFFIX"
+audit = "C08-U12"
 
 [homes.H21]
 decision = "model identity, holders and shared nodes of the generation graph"
