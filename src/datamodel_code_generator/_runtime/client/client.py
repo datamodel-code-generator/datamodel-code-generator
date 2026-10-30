@@ -16,7 +16,7 @@ from contextlib import (
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypedDict, TypeVar, cast
-from urllib.parse import quote, unquote_plus
+from urllib.parse import quote
 from uuid import uuid4
 
 import httpx2
@@ -54,8 +54,8 @@ from .native import (
 )
 from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
-from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
-from .positions import positional, protected_positions, secret_names
+from .paths import dot_segment, dotted_route, filled, path_segments
+from .positions import cookie_name, positional, protected_positions, secret_names
 from .raw import AsyncRawResponse, RawResponse, ReceivedBody, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -71,7 +71,7 @@ from .retry import (
     status_retry_reason,
 )
 from .timing import SYSTEM_CLOCK
-from .urls import URLValidationError, absolute_target, request_origin, strip_query
+from .urls import URLValidationError, absolute_target, query_field, request_origin, strip_query
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -276,7 +276,7 @@ def _query(lower: Pairs, explicit: list[str], call: Mapping[str, str | None] | N
     `&`, compare by their names decoded as forms decode them, a plus sign being a space.
     """
     named: list[tuple[str, str | None]] = [
-        (unquote_plus(pair.partition("=")[0]), pair) for item in explicit for pair in item.split("&") if pair
+        (query_field(pair)[0], pair) for item in explicit for pair in item.split("&") if pair
     ]
     pairs: list[tuple[str, str]] = []
     for layer in (_encoded_query(lower), named, _encoded_query(() if call is None else call.items())):
@@ -305,7 +305,7 @@ def _server_url(operation: OperationPlan[object], selection: ServerSelection) ->
             raise ConfigurationError(
                 field_path=("server", "variables", name), reason="not_allowed", operation_id=operation_id
             )
-    return PLACEHOLDER.sub(lambda match: values[match[1]], server.url).rstrip("/")
+    return filled(server.url, values).rstrip("/")
 
 
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
@@ -611,7 +611,7 @@ def _credentialed(request: httpx2.Request, schemes: tuple[CredentialPosition, ..
     if any(name in sent for name in headers) or (query and any(name in request.url.params for name in query)):
         return True
     return bool(cookies) and any(
-        pair.partition("=")[0].strip() in cookies for value in sent.get_list("cookie") for pair in value.split(";")
+        cookie_name(pair) in cookies for value in sent.get_list("cookie") for pair in value.split(";")
     )
 
 
@@ -1003,7 +1003,7 @@ class Core(Generic[AdapterT, HandleT]):
         if url is None:
             base = self._base(operation, settings)
             path = request.path
-            route = PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            route = filled(operation.path, path) if path else operation.path
             if (
                 path
                 and ("/." in route or "/%2" in route)

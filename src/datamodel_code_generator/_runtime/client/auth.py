@@ -16,6 +16,7 @@ import httpx2
 from ..model_codecs.media import TCHARS
 from ..model_codecs.parameters import header_text
 from .errors import ConfigurationError, SDKError
+from .positions import cookie_name
 from .security import Credentials
 from .urls import request_origin
 
@@ -191,7 +192,7 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
         part
         for value in request.headers.get_list("cookie")
         for part in (item.strip(" \t") for item in value.split(";"))
-        if part and part.partition("=")[0].strip() != name
+        if part and cookie_name(part) != name
     ]
     request.headers["Cookie"] = "; ".join((*kept, f"{name}={text}"))
 

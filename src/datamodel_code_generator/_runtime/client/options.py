@@ -31,7 +31,7 @@ __all__ = (
 
 Pairs: TypeAlias = tuple[tuple[str, str | None], ...]
 
-_SCHEMES: Final = frozenset({"http", "https"})
+HTTP_SCHEMES: Final = frozenset({"http", "https"})
 _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
@@ -42,7 +42,7 @@ def is_base_url(value: str) -> bool:
     Raises ValueError when the URL or its port does not parse.
     """
     parts = urlsplit(value)
-    absolute = parts.scheme in _SCHEMES and bool(parts.hostname) and parts.port != 0
+    absolute = parts.scheme in HTTP_SCHEMES and bool(parts.hostname) and parts.port != 0
     return absolute and parts.username is None and not parts.query and not parts.fragment
 
 

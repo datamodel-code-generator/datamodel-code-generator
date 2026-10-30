@@ -30,6 +30,11 @@ if TYPE_CHECKING:
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
+def cookie_name(pair: str) -> str:
+    """Return the name of a `name=value` pair of a Cookie header, without the whitespace around it."""
+    return pair.partition("=")[0].strip()
+
+
 def positional(placements: tuple[Placement, ...]) -> bool:
     """Return whether a placement sends a credential elsewhere than in Authorization, which HTTPX2 keeps in origin."""
     return any(scheme.location != "header" or scheme.wire_name.lower() != "authorization" for scheme, _ in placements)

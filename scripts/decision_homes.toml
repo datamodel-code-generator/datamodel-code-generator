@@ -942,6 +942,41 @@ exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
 audit = "C20-8"
 
+[homes.Hx-request-parts]
+decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"
+core = [
+    "_runtime/client/options.py",
+    "_runtime/client/paths.py",
+    "_runtime/client/urls.py:query_field",
+    "_runtime/client/positions.py:cookie_name",
+]
+adapters = []
+
+[homes.Hx-request-parts.signatures.http-schemes]
+kind = "keyword-set"
+keywords = ["http", "https"]
+min = 2
+paths = ["_client/", "_fastapi/", "_runtime/"]
+what = "lists the schemes of an HTTP URL itself; read client/options.py:HTTP_SCHEMES"
+audit = "C24-B25"
+
+[homes.Hx-request-parts.signatures.template-fill]
+kind = "name"
+names = ["PLACEHOLDER"]
+paths = ["_runtime/client/", "_runtime/protocols/"]
+what = "reads the placeholders of a path or server template itself; call client/paths.py:filled or path_segments"
+audit = "C24-fill"
+
+[homes.Hx-request-parts.signatures.field-name]
+kind = "call"
+names = ["partition"]
+strings = ["="]
+paths = ["_runtime/client/", "_runtime/protocols/"]
+# A webhook signature header's `name=value` items are neither query fields nor cookies.
+exclude = ["_runtime/protocols/verification.py"]
+what = "splits the name off a query field or a Cookie pair itself; call client/urls.py:query_field or client/positions.py:cookie_name"
+audit = "C24-B30"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.
