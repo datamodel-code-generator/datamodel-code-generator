@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
+
+from datamodel_code_generator._json_output import dump_json
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 
 def _render_registry_json(entries: Iterable[Mapping[str, object]]) -> str:
     """Render registry entries as stable JSON."""
-    return json.dumps(list(entries), indent=2, sort_keys=True)
+    return dump_json(list(entries), "sorted-ascii")
 
 
 def _render_registry_table(rows: Sequence[Sequence[str]]) -> str:

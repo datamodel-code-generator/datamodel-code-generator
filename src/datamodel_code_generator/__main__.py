@@ -2223,13 +2223,14 @@ def _run_staged_job(
 
 def _write_batch_json_spool(spool: Any) -> None:
     """Write a batch JSON document from validated, line-delimited job payloads."""
+    from datamodel_code_generator._json_output import dump_json  # noqa: PLC0415
+
     sys.stdout.write('{\n  "version": 1,\n  "format": "json",\n  "kind": "batch",\n  "jobs": [')
     for index, line in enumerate(spool):
         if index:
             sys.stdout.write(",")
         sys.stdout.write("\n")
-        rendered = json.dumps(json.loads(line), indent=2, ensure_ascii=False)
-        sys.stdout.write("\n".join(f"    {rendered_line}" for rendered_line in rendered.splitlines()))
+        sys.stdout.write(dump_json(json.loads(line), "ordered", depth=2))
     sys.stdout.write("\n  ]\n}\n")
 
 

@@ -6,7 +6,6 @@ about appropriate CLI options for datamodel-code-generator.
 
 from __future__ import annotations
 
-import json
 import re
 from argparse import SUPPRESS, Action, ArgumentParser, BooleanOptionalAction
 from collections import defaultdict
@@ -15,9 +14,13 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from datamodel_code_generator._json_output import (
+    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established prompt export.
+    dump_json,
+    schema_document,
+)
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest
-from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
@@ -205,15 +208,10 @@ class PromptPayload(_Envelope):
     )
 
 
-def _dump_json(value: Any) -> str:
-    """Serialize a JSON-compatible value with stable formatting."""
-    return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
-
-
 def _dump_payload(payload: PromptPayload) -> str:
     """Serialize a prompt payload with stable JSON formatting, leaving out a recommendation it does not have."""
     exclude = None if payload.recommendation else {"recommendation"}
-    return _dump_json(payload.model_dump(mode="json", exclude=exclude))
+    return dump_json(payload.model_dump(mode="json", exclude=exclude), "sorted")
 
 
 def generate_prompt_json_schema() -> str:
@@ -222,7 +220,7 @@ def generate_prompt_json_schema() -> str:
     The payload has no serializers, so it validates as it serializes; validation mode keeps a key the payload may leave
     out optional on every Pydantic 2 release, which serialization mode marks required before Pydantic 2.4.
     """
-    return _dump_json({"$schema": JSON_SCHEMA_DRAFT_2020_12, **PromptPayload.model_json_schema(mode="validation")})
+    return schema_document(PromptPayload.model_json_schema(mode="validation"), "sorted")
 
 
 def _serialize_value(value: Any) -> Any:
