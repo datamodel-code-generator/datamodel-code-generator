@@ -39,6 +39,7 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._records import record
@@ -2019,18 +2020,15 @@ class ModelResolver:  # noqa: PLR0904
         if not suffix and self.duplicate_name_suffix:
             suffix = self.duplicate_name_suffix
 
-        delimiter = "" if camel else "_"
+        numbering: Numbering = "joined" if camel else "underscore"
         if yields:
-            return self._get_yielding_unique_name(name, suffix, delimiter, prefix)
+            return self._get_yielding_unique_name(name, suffix, numbering, prefix)
         is_taken = self._is_taken_beside_yielding_names if self._yielding_names else self._is_taken
-        hint_key = (name, suffix or "", delimiter)
+        hint_key = (name, suffix or "", "" if camel else "_")
         count = self._unique_name_start_hints.get(hint_key, 0)
-        if count and not is_taken(self._build_unique_name_candidate(name, suffix, delimiter, count - 1)):
+        if count and not is_taken(candidate_at(name, numbering, count - 1, suffix)):
             count = 0
-        unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        while is_taken(unique_name):
-            count += 1
-            unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
+        unique_name, count = first_free(name, is_taken, numbering, suffix=suffix, start=count)
         if count:
             self._unique_name_start_hints[hint_key] = count + 1
         return unique_name
@@ -2046,59 +2044,34 @@ class ModelResolver:  # noqa: PLR0904
             or name in self._released_model_names
         )
 
-    def _get_yielding_unique_name(self, name: str, suffix: str | None, delimiter: str, prefix: str) -> str:
+    def _get_yielding_unique_name(self, name: str, suffix: str | None, numbering: Numbering, prefix: str) -> str:
         """Return a duplicate candidate free also in the module of a yielding reference, after those given before.
 
         Candidates before the last one given stay skipped even when a name among them is released later, which only
         numbers a later model of a map value higher.
         """
         reference_names = self._reference_names_cache
-        hint_key = (name, suffix or "", delimiter, prefix)
-        count = self._yielding_name_start_hints.get(hint_key, 0)
-        unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        while (
-            unique_name in reference_names
-            or f"{prefix}{unique_name}" in reference_names
-            or unique_name in self.exclude_names
-        ):
-            count += 1
-            unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        self._yielding_name_start_hints[hint_key] = count
+        hint_key = (name, suffix or "", numbering, prefix)
+        unique_name, self._yielding_name_start_hints[hint_key] = first_free(
+            name,
+            lambda unique_name: (
+                unique_name in reference_names
+                or f"{prefix}{unique_name}" in reference_names
+                or unique_name in self.exclude_names
+            ),
+            numbering,
+            suffix=suffix,
+            start=self._yielding_name_start_hints.get(hint_key, 0),
+        )
         return unique_name
-
-    @staticmethod
-    def _build_unique_name_candidate(name: str, suffix: str | None, delimiter: str, count: int) -> str:
-        """Build the same duplicate candidate sequence used by _get_unique_name."""
-        if count == 0:
-            return name
-        if suffix:
-            suffix_count = count - 1
-            return delimiter.join((name, suffix, str(suffix_count))) if suffix_count else delimiter.join((name, suffix))
-        return delimiter.join((name, str(count)))
-
-    @staticmethod
-    def _matches_unique_name_candidate(candidate: str, name: str, suffix: str, delimiter: str) -> bool:
-        """Return whether candidate belongs to the duplicate sequence for name."""
-        if candidate == name:
-            return True
-        if suffix:
-            first_duplicate = delimiter.join((name, suffix))
-            if candidate == first_duplicate:
-                return True
-            prefix = f"{first_duplicate}{delimiter}" if delimiter else first_duplicate
-        else:
-            prefix = f"{name}{delimiter}" if delimiter else name
-        if not candidate.startswith(prefix):
-            return False
-        count = candidate.removeprefix(prefix)
-        return bool(count) and count.isdecimal()
 
     def _invalidate_unique_name_hints(self, released_name: str) -> None:
         """Drop duplicate-name hints whose sequence may reuse a released name."""
         if not self._unique_name_start_hints:
             return
         for hint_key in tuple(self._unique_name_start_hints):
-            if self._matches_unique_name_candidate(released_name, *hint_key):
+            name, suffix, delimiter = hint_key
+            if is_numbered(released_name, name, "underscore" if delimiter else "joined", suffix):
                 del self._unique_name_start_hints[hint_key]
 
     def _get_suffix_for_model_type(self, model_type: str) -> str:

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
 from datamodel_code_generator.model.base import (
@@ -230,9 +231,7 @@ def _merged_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
             held.add(name)
             names.append(name)
             continue
-        suffix = 1
-        while (candidate := f"{name}_{suffix}") in taken:
-            suffix += 1
+        candidate, _ = first_free(name, taken.__contains__, "underscore", start=1)
         taken.add(candidate)
         names.append(candidate)
     return tuple(names)
@@ -628,11 +627,8 @@ def compute_internal_module_path(
         common = os.path.commonpath(path_strings)
         prefix = tuple(common.split("/")) if common else ()
 
-    candidate, counter = (*prefix, base_name), 0
-    while candidate in existing_modules:
-        counter += 1
-        candidate = (*prefix, f"{base_name}_{counter}")
-    return candidate
+    name, _ = first_free(base_name, lambda name: (*prefix, name) in existing_modules, "underscore")
+    return (*prefix, name)
 
 
 def collect_scc_models(

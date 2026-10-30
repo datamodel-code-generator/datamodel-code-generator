@@ -214,10 +214,7 @@ from datamodel_code_generator.parser._pipeline import (
     release_parse_caller,
 )
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
-from datamodel_code_generator.parser._stdout_repair import (
-    _TOP_LEVEL_FUTURE_IMPORT_PATTERN,
-    _TOP_LEVEL_RELATIVE_IMPORT_PATTERN,
-)
+from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
@@ -277,6 +274,9 @@ ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 
 
 _CLASS_NAME_SEPARATOR_PATTERN: Final = re.compile(r"[^A-Za-z0-9]+")
+
+
+_TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 
 _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")

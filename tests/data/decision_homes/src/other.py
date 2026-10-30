@@ -79,3 +79,28 @@ def displays(head, items):
         f"({'; '.join(items)})",
         ", ".join(items),
     )
+
+
+def search(name, taken, words, refresh):
+    """Search for free names with an f-string, an annotated f-string and a padded string.
+
+    A loop writing a message does not count, nor one whose f-string is only an argument of the call it assigns.
+    """
+    candidate, count = name, 0
+    while candidate in taken:
+        count += 1
+        candidate = f"{name}_{count}"
+    annotated, index = name, 0
+    while annotated in taken:
+        index += 1
+        annotated: str = f"{name}-{index}"
+    padded = name
+    while padded in taken:
+        padded += "_"
+    message = ""
+    while words:
+        message = f"{words.pop()} left"
+    remaining = words
+    while remaining:
+        remaining = refresh(f"{name}") or (lambda: f"{name}")
+    return candidate, annotated, padded, message

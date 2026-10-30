@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_ori
 from pydantic import BaseModel
 from typing_extensions import Self, Sentinel
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
 from datamodel_code_generator._json_schema import MODEL_VALUE_POSITIONS, SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
@@ -1460,7 +1461,7 @@ class _InputModelDefinitions:
         self.nested_types: dict[str, type] = {}
         self.names: dict[type | str, str] = {}
         self.owners: dict[str, type | str] = {}
-        self.next_suffixes: dict[str, int] | None = None
+        self.next_positions: dict[str, int] | None = None
         self.reserved = {model.__name__ for model in models}
         for model in models:
             self.reserved.update(_collect_nested_models(model))
@@ -1471,13 +1472,16 @@ class _InputModelDefinitions:
             return name
         name = proposed
         if name in self.owners:
-            if self.next_suffixes is None:
-                self.next_suffixes = {}
-            suffix = self.next_suffixes.get(proposed, 2)
-            while (name := f"{proposed}_{suffix}") in self.owners or name in self.reserved:
-                suffix += 1
+            if self.next_positions is None:
+                self.next_positions = {}
+            name, position = first_free(
+                proposed,
+                lambda name: name in self.owners or name in self.reserved,
+                "underscore-from-2",
+                start=self.next_positions.get(proposed, 1),
+            )
             # Owners and reservations only grow, so earlier suffixes stay occupied.
-            self.next_suffixes[proposed] = suffix + 1
+            self.next_positions[proposed] = position + 1
         self.names[model] = name
         self.owners[name] = model
         return name

@@ -6,6 +6,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import PythonTypeName, rewrite_python_type_expr
 from datamodel_code_generator._python_type_binding import python_type_import_key, python_type_import_name
 from datamodel_code_generator.imports import Import
@@ -58,14 +59,8 @@ class _StructuredImportAliasState:
     def unique_alias(self, name: str, *, field_collision: bool = False) -> str:
         """Allocate the deterministic spelling used by existing collision policy."""
         if field_collision:
-            alias = f"{name}_aliased"
-            while alias in self.used_names:
-                alias += "_"
-            return alias
-        suffix = 1
-        while (alias := f"{name}_{suffix}") in self.used_names:
-            suffix += 1
-        return alias
+            return first_free(f"{name}_aliased", self.used_names.__contains__, "padded")[0]
+        return first_free(name, self.used_names.__contains__, "underscore", start=1)[0]
 
     def alias_import(self, import_: Import, alias: str) -> None:
         """Bind one exact import identity to an alias."""

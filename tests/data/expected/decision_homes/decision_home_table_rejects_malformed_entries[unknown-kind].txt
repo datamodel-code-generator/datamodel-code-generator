@@ -1,1 +1,1 @@
-signature a.s: kind must be one of branch, call, compare-in, display, function, key, keyword-set, literal, name, number
+signature a.s: kind must be one of branch, call, compare-in, display, function, key, keyword-set, literal, name, name-search, number

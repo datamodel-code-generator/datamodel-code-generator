@@ -77,6 +77,11 @@ names = ["lower"]
 what = "folds a name by a tested value itself"
 audit = "X-12"
 
+[homes.sample.signatures.name-search]
+kind = "name-search"
+what = "searches for a free name itself"
+audit = "X-13"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

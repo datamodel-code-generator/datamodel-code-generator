@@ -11,6 +11,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -249,10 +250,7 @@ class TargetModule:
     def _claim(self, identity: _Identity, preferred: str) -> str:
         if (bound := self.bound.get(identity)) is not None:
             return bound
-        name, count = preferred, 0
-        while self.taken.get(name, identity) != identity:
-            count += 1
-            name = f"{preferred}_{count}"
+        name, _ = first_free(preferred, lambda name: self.taken.get(name, identity) != identity, "underscore")
         self.taken[name] = identity
         self.bound[identity] = name
         return name

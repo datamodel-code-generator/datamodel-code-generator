@@ -4,8 +4,8 @@ A command line invocation opens a scope with ``naming_hint_scope``. A generation
 collecting with ``collect_class_names``; its parse then keeps the final class names of its models, the generation
 records those of the parse it keeps, and the command line warns at most once per invocation, also when a watch
 regenerates the models. Outside a scope, as for ``generate()`` callers, and in runs that do not collect, such as the
-candidate runs of ``--recommend-options``, nothing is counted. The module imports nothing from the package, so the
-parser and the generation pipeline can import it.
+candidate runs of ``--recommend-options``, nothing is counted. The module imports from the package only the leaf
+``_free_names``, which numbers the names, so the parser and the generation pipeline can import it.
 """
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
+
+from datamodel_code_generator._free_names import is_numbered
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
@@ -51,7 +53,7 @@ def numbered_names(names: Sequence[tuple[str, str]]) -> NumberedNames | None:
     families: dict[str, set[str]] = {}
     count = 0
     for name, wanted in names:
-        if wanted and name != wanted and name.startswith(wanted) and name[len(wanted) :].isdecimal():
+        if wanted and name != wanted and is_numbered(name, wanted, "joined"):
             count += 1
             families.setdefault(wanted, set()).add(name)
     if not count:

@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, field_validator
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_public_type_name
 
@@ -138,11 +139,7 @@ def normalize_validators(validators: Any) -> list[dict[str, Any]]:
 
 def _reserve_validator_name(name: str, reserved_names: set[str], next_suffixes: dict[str, int]) -> str:
     """Reserve a Python identifier without changing an available user spelling."""
-    count = next_suffixes.get(name, 0)
-    candidate = name if count == 0 else f"{name}_{count}"
-    while candidate in reserved_names:
-        count += 1
-        candidate = f"{name}_{count}"
+    candidate, count = first_free(name, reserved_names.__contains__, "underscore", start=next_suffixes.get(name, 0))
     reserved_names.add(candidate)
     next_suffixes[name] = count + 1
     return candidate

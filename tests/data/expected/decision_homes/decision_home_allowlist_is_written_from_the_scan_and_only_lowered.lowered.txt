@@ -30,5 +30,8 @@
 [allow."other.py"."read_keys"]
 "sample.read-key" = { home = "sample", count = 4, audit = "X-9" }
 
+[allow."other.py"."search"]
+"sample.name-search" = { home = "sample", count = 3, audit = "X-13" }
+
 [allow."other.py"."spell"]
 "sample.spelling" = { home = "sample", count = 2, audit = "X-10" }
