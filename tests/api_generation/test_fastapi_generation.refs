@@ -97,6 +97,8 @@ services	main/generation_platform/fastapi/packages/services/
 services	main/generation_platform/fastapi/services.txt
 single	main/generation_platform/fastapi/packages/single/
 single	main/generation_platform/fastapi/single.txt
+status-keys	main/generation_platform/fastapi/packages/status-keys/
+status-keys	main/generation_platform/fastapi/status-keys.txt
 template-invalid	main/generation_platform/fastapi/packages/template-invalid/
 template-invalid	main/generation_platform/fastapi/template-invalid.txt
 templates	main/generation_platform/fastapi/packages/templates/

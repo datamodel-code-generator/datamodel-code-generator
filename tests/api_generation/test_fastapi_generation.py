@@ -68,6 +68,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "services",
         "empty",
         "docstrings",
+        "status-keys",
         "templates",
         "template-invalid",
     ],

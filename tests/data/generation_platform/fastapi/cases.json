@@ -498,5 +498,8 @@
         "date": ".local"
       }
     }
+  },
+  "status-keys": {
+    "input": "status-keys.yaml"
   }
 }

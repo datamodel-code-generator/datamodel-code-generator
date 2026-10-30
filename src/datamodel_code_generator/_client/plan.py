@@ -996,7 +996,7 @@ class Planner:
             for name, count in Counter(header.name.lower() for header in headers).items()
             if count > 1
         )
-        exact = int(status) if status.isdigit() else None
+        exact = int(status) if status.isascii() and status.isdigit() else None
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
@@ -1119,13 +1119,15 @@ def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralSc
 
 
 def _success(status: str, success_statuses: tuple[int, ...]) -> bool:
-    if status in {"default", "2XX"} or (status.isdigit() and int(status) in SUCCESS_STATUSES):
+    if status in {"default", "2XX"} or (status.isascii() and status.isdigit() and int(status) in SUCCESS_STATUSES):
         return True
     return any(status in {str(item), f"{item // 100}XX"} for item in success_statuses)
 
 
 def _error(status: str) -> bool:
-    return status in {"default", "4XX", "5XX"} or (status.isdigit() and int(status) in ERROR_STATUSES)
+    return status in {"default", "4XX", "5XX"} or (
+        status.isascii() and status.isdigit() and int(status) in ERROR_STATUSES
+    )
 
 
 def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:

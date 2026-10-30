@@ -186,6 +186,8 @@ _INFO: Final = (
     ("info", "license", "license_info", "object"),
 )
 _DEFAULT_STATUS: Final = 200
+_STATUS_CLASS_BASE: Final = 100
+_STATUS_RANGE_WIDTH: Final = 3
 
 
 class Default(Enum):
@@ -1393,7 +1395,11 @@ class Planner:  # noqa: PLR0904
         """
         if (choice := self.primaries.get(operation.id.use_site.pointer)) is not None:
             return self.chosen(operation, responses, choice)
-        exact = {int(response.status): response for response in responses if response.status.isdigit()}
+        exact = {
+            int(response.status): response
+            for response in responses
+            if response.status.isascii() and response.status.isdigit()
+        }
         successful = [code for code in exact if code in SUCCESS_STATUSES]
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact or not successful else min(successful)
         if (response := _declaring(responses, status)) is None and exact:
@@ -1701,7 +1707,13 @@ def _declaring(responses: tuple[ResponseSpec, ...], status: int) -> ResponseSpec
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:
     if primary is not None:
         return primary.status
-    ranges = (int(response.status[0]) * 100 for response in responses if response.status.endswith("XX"))
+    ranges = (
+        int(response.status[0]) * _STATUS_CLASS_BASE
+        for response in responses
+        if len(response.status) == _STATUS_RANGE_WIDTH
+        and response.status[0] in "12345"
+        and response.status.endswith("XX")
+    )
     return min(ranges, default=_DEFAULT_STATUS)
 
 
