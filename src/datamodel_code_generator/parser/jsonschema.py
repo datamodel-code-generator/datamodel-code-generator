@@ -14,7 +14,12 @@ from collections import (
     defaultdict,
     deque,
 )
-from contextlib import ExitStack, contextmanager, nullcontext, suppress
+from contextlib import (
+    ExitStack,
+    contextmanager,
+    nullcontext,
+    suppress,  # noqa: F401  # Preserve the established parser.jsonschema export.
+)
 from copy import copy, deepcopy
 from dataclasses import replace
 from functools import cached_property, lru_cache, partial, reduce
@@ -177,7 +182,7 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     _make_internal_schema_runtime_validation,
 )
-from datamodel_code_generator.parser import _union_tags
+from datamodel_code_generator.parser import _lightweight_types, _union_tags
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
@@ -193,10 +198,10 @@ from datamodel_code_generator.parser._intersection import (
     inherited_override_row,
     inherited_positional_tail,
     inherits_keyword,
-    intersect_constraint,
+    intersect_constraint,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_enum_values,
     intersect_keywords,
-    intersect_multiple_of,
+    intersect_multiple_of,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_types,
     merge_inherited_keyword,
     merge_inherited_value,
@@ -204,6 +209,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._lightweight_types import _numeric_type_domain
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
@@ -668,23 +674,6 @@ def _mark_copied_nullable(
     if default_left_off:
         branch.__dict__[_DEFAULT_LEFT_OFF_KEY] = True
     return branch
-
-
-_NUMERIC_TYPE_DOMAINS = {
-    "integer": frozenset({"integer"}),
-    "number": frozenset({"integer", "number"}),
-    "null": frozenset({"null"}),
-}
-
-
-def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
-    """Expand number to its numeric subtypes within the numeric/null domain."""
-    if isinstance(schema_type, str):
-        return _NUMERIC_TYPE_DOMAINS.get(schema_type)
-    types = frozenset(schema_type)
-    if not types.issubset(_NUMERIC_TYPE_DOMAINS):
-        return None
-    return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
 
 
 def _external_ref_mapping_key(file_part: str, base_path: Path) -> str:
@@ -1468,8 +1457,6 @@ _PATTERN_SCAN_SKIPPED_KEYWORDS: Final = frozenset({
     *DEFINITION_KEYS,
 })
 """The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
-_ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
-"""The end of an allOf member's location, which a warning about the site leaves out."""
 
 
 def _is_empty_property_schema(item: JsonSchemaObject, *, allowed_keywords: frozenset[str] = frozenset()) -> bool:
@@ -5663,32 +5650,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             yield
 
     def _merge_primitive_schemas(self, items: list[JsonSchemaObject]) -> JsonSchemaObject:
-        """Merge multiple primitive schemas by computing the intersection of their constraints."""
-        if len(items) == 1:
-            return items[0]
-
-        base_dict = JsonSchemaParser._first_typed_schema_dict(items)
-        self._merge_schema_constraints(base_dict, items, intersect=True)
-
-        return self._schema_object(base_dict)
+        """Merge primitive schemas into the intersection of their constraints (``parser/_lightweight_types.py``)."""
+        return _lightweight_types.merge_primitive_schemas(self, items)
 
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
-        """Merge primitive schemas for allOf, respecting allof_merge_mode setting."""
-        if len(items) == 1:
-            return items[0]  # pragma: no cover
-
-        formats = {item.format for item in items if item.format}
-        if len(formats) > 1:
-            return None
-
-        if self.allof_merge_mode != AllOfMergeMode.NoMerge:
-            base_dict = self._merge_primitive_schemas(items).model_dump(exclude_unset=True, by_alias=True)
-        else:
-            base_dict = JsonSchemaParser._first_typed_schema_dict(items)
-            self._merge_schema_constraints(base_dict, items, intersect=False)
-        if formats:
-            base_dict["format"] = formats.pop()
-        return self._schema_object(base_dict)
+        """Merge primitive schemas for allOf under ``allof_merge_mode`` (``parser/_lightweight_types.py``)."""
+        return _lightweight_types.merge_primitive_schemas_for_allof(self, items)
 
     @staticmethod
     def _first_typed_schema_dict(items: list[JsonSchemaObject]) -> dict[str, Any]:
@@ -5706,21 +5673,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             base_dict["type"] = types[0] if len(types) == 1 else list(types)
         return base_dict
 
-    @staticmethod
-    def _schema_constraint_value(item: JsonSchemaObject, field: str) -> Any:
-        return value if (value := getattr(item, field, None)) is not None else item.extras.get(field)
-
-    @staticmethod
-    def _intersect_constraint(field: str, val1: Any, val2: Any) -> Any:
-        """Compute the intersection of two constraint values; ``multipleOf`` takes their least common multiple."""
-        if field == "multipleOf":
-            with suppress(TypeError, ValueError, ZeroDivisionError):
-                return intersect_multiple_of(val1, val2)
-            return val1  # pragma: no cover
-        v1 = val1.value if isinstance(val1, UnionIntFloat) else val1
-        v2 = val2.value if isinstance(val2, UnionIntFloat) else val2
-        return val1 if intersect_constraint(field, v1, v2) is v1 else val2
-
     def _merge_schema_constraints(
         self,
         base_dict: dict[str, Any],
@@ -5728,34 +5680,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         intersect: bool,
     ) -> None:
-        patterns: list[str] | None = None
-        for item in items:
-            for field in JsonSchemaObject.__constraint_fields__:
-                if (value := JsonSchemaParser._schema_constraint_value(item, field)) is None:
-                    continue
-                if intersect and field == "pattern":
-                    if patterns is None:
-                        patterns = [] if (base_pattern := base_dict.get(field)) is None else [base_pattern]
-                    patterns.append(value)
-                    continue
-                if intersect and field in base_dict and base_dict[field] is not None:
-                    base_dict[field] = JsonSchemaParser._intersect_constraint(field, base_dict[field], value)
-                else:
-                    base_dict[field] = value
-        if patterns:
-            base_dict["pattern"] = self._conjoined_pattern(
-                patterns,
-                _ALL_OF_MEMBER_SUFFIX.sub(
-                    "", next((str(item.schema_location) for item in items if item.schema_location), "allOf")
-                ),
-            )
-        if (
-            base_dict.get("type") in ("null", ["null"])
-            and all(not item.type or _numeric_type_domain(item.type) is not None for item in items)
-            and any("integer" in (_numeric_type_domain(item.type or "") or ()) for item in items)
-        ):
-            for field in NUMBER_KEYWORD_ORDER:
-                base_dict.pop(field, None)
+        _lightweight_types.merge_schema_constraints(self, base_dict, items, intersect=intersect)
 
     def _group_allof_items(
         self,
@@ -5855,44 +5780,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return None
 
-    def _build_lightweight_array_type(
-        self,
-        schema: JsonSchemaObject,
-        depth: int,
-        visited: frozenset[int],
-        max_depth: int,
-        max_union_elements: int,
-    ) -> DataType:
-        """Build a lightweight list type from array item schemas."""
-        item_schemas, _, _, tuple_item_count = self._get_array_item_schemas(
-            schema,
-            include_true_tail_schema=True,
-            force_prefix_items=True,
-        )
-        is_homogeneous_tuple = tuple_item_count is not None
-        item_types = (
-            []
-            if is_homogeneous_tuple and tuple_item_count == 0
-            else [
-                item_type
-                for item_schema in item_schemas
-                if (
-                    item_type := self._build_lightweight_item_type(
-                        item_schema, depth, visited, max_depth, max_union_elements
-                    )
-                )
-                is not None
-            ]
-        )
-        if not item_types and not (is_homogeneous_tuple and tuple_item_count == 0):
-            item_types = [DataType(type=ANY, import_=IMPORT_ANY)]
-        return self.data_type(
-            data_types=item_types,
-            is_list=not is_homogeneous_tuple,
-            is_tuple=is_homogeneous_tuple,
-            tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
-        )
-
     def _build_lightweight_item_type(
         self,
         item_schema: JsonSchemaObject | bool,  # noqa: FBT001
@@ -5911,19 +5798,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             type=ANY, import_=IMPORT_ANY
         )
 
-    def _is_false_schema_item(self, item: JsonSchemaObject | bool) -> bool:  # noqa: FBT001, PLR6301
-        return item is False or (isinstance(item, JsonSchemaObject) and item.is_boolean_schema_false)
+    def _is_false_schema_item(self, item: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
+        return _lightweight_types.is_false_schema_item(self, item)
 
     def _contains_false_schema(self, items: Iterable[JsonSchemaObject | bool]) -> bool:
-        return any(self._is_false_schema_item(item) for item in items)
+        return _lightweight_types.contains_false_schema(self, items)
 
     def _unvisited_ref_target(
         self, ref: str, visited_refs: frozenset[_TargetNode]
     ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-        """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-        if (node := self._key_node(self._ref_path(ref))) in visited_refs:
-            return None
-        return self._load_ref_schema_object(ref), visited_refs | {node}
+        """Return the schema ``ref`` names and its node, None once visited (``parser/_lightweight_types.py``)."""
+        return _lightweight_types.unvisited_ref_target(self, ref, visited_refs)
 
     def _schema_requires_model_type(
         self,
@@ -6298,7 +6183,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._enum_literal(schema)
 
         if schema.is_array:
-            return self._build_lightweight_array_type(schema, depth, visited, max_depth, max_union_elements)
+            return _lightweight_types.build_lightweight_array_type(
+                self, schema, depth, visited, max_depth, max_union_elements
+            )
 
         if schema.allOf:
             return self._build_allof_type(
@@ -6347,26 +6234,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return None
 
-    def _is_list_with_any_item_type(self, data_type: DataType | None) -> bool:  # noqa: PLR6301
-        """Return True when data_type represents List[Any] (including nested lists)."""
-        if not data_type:  # pragma: no cover
-            return False
-
-        candidate = data_type
-        if not candidate.is_list and len(candidate.data_types) == 1 and candidate.data_types[0].is_list:
-            candidate = candidate.data_types[0]
-
-        if not candidate.is_list or len(candidate.data_types) != 1:
-            return False
-
-        item_type = candidate.data_types[0]
-        while len(item_type.data_types) == 1:
-            inner = item_type.data_types[0]
-            if (not item_type.is_list and inner.is_list) or item_type.is_list:
-                item_type = inner
-            else:
-                break
-        return item_type.type == ANY
+    def _is_list_with_any_item_type(self, data_type: DataType | None) -> bool:
+        """Return True when data_type represents List[Any], nested lists included (``parser/_lightweight_types.py``)."""
+        return _lightweight_types.is_list_with_any_item_type(self, data_type)
 
     def _get_inherited_override_shape(  # noqa: PLR6301
         self,
