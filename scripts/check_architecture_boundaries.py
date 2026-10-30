@@ -25,6 +25,7 @@ Layer: TypeAlias = Literal[
     "python-syntax",
     "free-names",
     "name-words",
+    "graph-links",
     "config",
     "input-model",
     "reference",
@@ -126,6 +127,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the class name made from the words of a text is a leaf that every layer reads: import only the standard "
             "library and typing_extensions"
+        ),
+    ),
+    "graph-links": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
+            "import while they import each other: import only the standard library and typing_extensions"
         ),
     ),
     "python-syntax": (
@@ -1285,6 +1293,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "free-names"
         case ("_name_words.py",):
             layer = "name-words"
+        case ("_graph_links.py",):
+            layer = "graph-links"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

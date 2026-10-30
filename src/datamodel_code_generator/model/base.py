@@ -34,6 +34,7 @@ from typing_extensions import Self, deprecated, final, override
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
+from datamodel_code_generator._graph_links import add_child, data_type_children
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import (
@@ -2655,7 +2656,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
         for base_class in self.base_classes:
             if base_class.reference:
-                base_class.reference.children.append(self)
+                add_child(base_class.reference, self)
 
         if extra_template_data is not None:
             all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
@@ -2845,9 +2846,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
-        for child in self.reference.children[:]:
-            if not isinstance(child, DataType):
-                continue
+        for child in data_type_children(self.reference):
             owner_model = get_most_of_parent(child, DataModel)
             if isinstance(owner_model, DataModel):
                 if owner_model not in models:

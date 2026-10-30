@@ -60,6 +60,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._graph_links import add_child, drop_child
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
 from datamodel_code_generator._python_syntax import call_text
@@ -784,25 +785,21 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if not self.reference:  # pragma: no cover
             msg = f"`{self.__class__.__name__}.replace_reference()` can't be called when `reference` field is empty."
             raise Exception(msg)  # noqa: TRY002
-        self_id = id(self)
-        self.reference.children = [c for c in self.reference.children if id(c) != self_id]
+        drop_child(self.reference, self)
         self.reference = reference
         if reference:
-            reference.children.append(self)
+            add_child(reference, self)
 
     def register_reference(self) -> None:
         """Register this newly copied type with its existing reference."""
         if self.reference:
-            self.reference.children.append(self)
+            add_child(self.reference, self)
 
     def unregister_reference(self) -> None:
         """Detach this temporary type from reverse-reference tracking without losing its target."""
         if not self.reference:
             return
-        children = self.reference.children
-        for index in range(len(children) - 1, -1, -1):
-            if children[index] is self:
-                children.pop(index)
+        drop_child(self.reference, self)
 
     def remove_reference(self) -> None:
         """Remove the reference from this DataType."""
@@ -1008,7 +1005,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             self.dict_key.parent = self
 
         if self.reference:
-            self.reference.children.append(self)
+            add_child(self.reference, self)
 
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:  # noqa: PLR6301
         """Wrap reference type name if needed (override in subclasses, e.g., for SerializeAsAny).
