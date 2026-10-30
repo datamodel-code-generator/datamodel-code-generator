@@ -174,6 +174,36 @@ _requires_literal_validation = 1
 ["src/datamodel_code_generator/model/typed_dict.py"."TypedDict.create_reuse_model"]
 use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inline_definitions.json --input-file-type jsonschema --output-model-type typing.TypedDict --reuse-model --target-python-version 3.11 --use-total-false-for-typed-dict"
 
+["src/datamodel_code_generator/parser/_field_copies.py"."_apply_inherited_field_nullability"]
+is_optional = 1
+nullable = 2
+type_has_null = 2
+
+["src/datamodel_code_generator/parser/_field_copies.py"."_copy_resolved_inherited_field"]
+'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
+constraints = 1
+'data_types[...]' = 1
+default = 1
+'extras.update()' = 1
+has_default = 1
+read_only = 1
+required = 2
+use_default_with_required = 1
+write_only = 1
+
+["src/datamodel_code_generator/parser/_field_copies.py"."_merge_data_type_modifiers"]
+is_dict = 1
+is_frozen_set = 1
+is_list = 1
+is_mapping = 1
+is_optional = 2
+is_sequence = 1
+is_set = 1
+is_tuple = 1
+kwargs = 1
+'kwargs[...]' = 1
+tuple_item_count = 1
+
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
 '_additional_imports[...]' = 1
 
@@ -236,36 +266,6 @@ alias = 1
 alias = 1
 import_ = 1
 kwargs = 1
-
-["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
-is_optional = 1
-nullable = 2
-type_has_null = 2
-
-["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
-'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
-constraints = 1
-'data_types[...]' = 1
-default = 1
-'extras.update()' = 1
-has_default = 1
-read_only = 1
-required = 2
-use_default_with_required = 1
-write_only = 1
-
-["src/datamodel_code_generator/parser/base.py"."_merge_data_type_modifiers"]
-is_dict = 1
-is_frozen_set = 1
-is_list = 1
-is_mapping = 1
-is_optional = 2
-is_sequence = 1
-is_set = 1
-is_tuple = 1
-kwargs = 1
-'kwargs[...]' = 1
-tuple_item_count = 1
 
 ["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
 data_types = 1
