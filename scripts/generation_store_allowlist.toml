@@ -261,6 +261,14 @@ use_default_with_required = 1
 ["src/datamodel_code_generator/parser/_rw_split.py"."prepare_required_inherited_field"]
 '__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
 
+["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_data_type"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_field"]
+alias = 1
+import_ = 1
+kwargs = 1
+
 ["src/datamodel_code_generator/parser/_value_keywords.py"."mark_type_dependent_constraints"]
 '__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
 
@@ -272,14 +280,6 @@ results = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_final_class_field_aliases"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_data_type"]
-alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_field"]
-alias = 1
-import_ = 1
-kwargs = 1
 
 ["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
 data_types = 1
