@@ -97,8 +97,8 @@ _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _TYPE_NULL_DATA_TYPE_KEY = "_type_null"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
-_VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
-_DROPPED_MULTIPLE_OF_KEY = _applicability.DROPPED_MULTIPLE_OF_KEY
+_DEEP_COPY_LEAVES_OUT: Final = frozenset({_LITERAL_IMPORT_DATA_TYPE_KEY})
+"""The private state of a type that a deep copy leaves out and every other copy keeps: the ``Literal`` import alias."""
 _RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
@@ -706,7 +706,12 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     @override
     def __deepcopy__(self, memo: dict[int, Any] | None = None) -> DataType:
-        """Create a deep copy handling circular references in parent/children fields."""
+        """Create a deep copy handling circular references in parent/children fields.
+
+        The copy keeps the private state of the type except the one key ``_DEEP_COPY_LEAVES_OUT`` names, the
+        ``Literal`` import alias (``_literal_import``), which a deep copy has always dropped; the None that render
+        preparation marked as rendered is not rendered on it yet.
+        """
         if memo is None:
             memo = {}
 
@@ -730,15 +735,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 value = getattr(self, field_name)
                 copied_value = deepcopy(value, memo)
                 object.__setattr__(new_obj, field_name, copied_value)
-        new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
-        new_obj._set_forward_reference(self._is_forward_reference)
-        for key in (_VALUES_AS_WRITTEN_KEY, _DROPPED_MULTIPLE_OF_KEY):
-            if key in self.__dict__:
-                new_obj.__dict__[key] = self.__dict__[key]
+        for key, value in self.__dict__.items():
+            if key not in model_fields and key not in _DEEP_COPY_LEAVES_OUT:
+                new_obj.__dict__[key] = value
         if (null := self.__dict__.get(_TYPE_NULL_DATA_TYPE_KEY)) is not None:
             new_obj._set_type_null(replace(null, rendered=False))
-        if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
-            new_obj._set_enum_member_literal_reference(enum_member_literal_reference)
 
         return new_obj
 
@@ -949,10 +950,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether the type renders as one quoted forward reference, before any nullability."""
         return self.__dict__.get(_FORWARD_REFERENCE_DATA_TYPE_KEY, False)
 
-    def _set_forward_reference(self, is_forward_reference: bool) -> None:  # noqa: FBT001
+    def _set_forward_reference(self) -> None:
         """Render the type as one string so the names inside it stay unquoted."""
-        if is_forward_reference:
-            self.__dict__[_FORWARD_REFERENCE_DATA_TYPE_KEY] = True
+        self.__dict__[_FORWARD_REFERENCE_DATA_TYPE_KEY] = True
 
     @property
     def _enum_member_literal_reference(self) -> Reference | None:
@@ -1730,19 +1730,29 @@ def _import_paths(module: ModuleType) -> frozenset[str]:
     )
 
 
+def _copied_node(data_type: DataType) -> DataType:
+    """Copy one node of a DataType tree with lists and ``kwargs`` of its own and the private state of the original.
+
+    The copy still holds the original's parent, members and dict key; every other value it shares is immutable or
+    shared on purpose (the Reference, the imports and the bound Python type).
+    """
+    copied = data_type.model_copy()
+    copied.children = []
+    copied.literals = list(data_type.literals)
+    copied.enum_member_literals = list(data_type.enum_member_literals)
+    if (kwargs := data_type.kwargs) is not None:
+        copied.kwargs = deepcopy(kwargs)
+    return copied
+
+
 def _copy_data_type(data_type: DataType, *, register_references: bool = True, link_parents: bool = True) -> DataType:
     """Copy a DataType tree without detaching its model references.
 
     The copy has no parent; ``link_parents`` makes each nested copy the parent of the copies it holds, and
     ``register_references`` registers every copy with the reference it names.
     """
-    copied = data_type.model_copy()
+    copied = _copied_node(data_type)
     copied.parent = None
-    copied.children = []
-    copied.literals = list(data_type.literals)
-    copied.enum_member_literals = list(data_type.enum_member_literals)
-    if (kwargs := data_type.kwargs) is not None:
-        copied.kwargs = deepcopy(kwargs)
     copied.data_types = [
         _copy_data_type(child, register_references=register_references, link_parents=link_parents)
         for child in data_type.data_types
@@ -1861,9 +1871,9 @@ class DataTypeManager(ABC):
         """Copy a type-map prototype for caller-owned mutation.
 
         Leaf prototypes (no nested data types, reference, dict key, or parent)
-        take a shallow-copy fast path with fresh mutable containers, which is
-        equivalent to deepcopy because every other shared value is immutable
-        (scalars, enums, and the frozen Import dataclass).
+        take the one-node copy (``_copied_node``) with a list of members of its
+        own, which is equivalent to deepcopy because every other shared value is
+        immutable (scalars, enums, and the frozen Import dataclass).
         """
         if (
             data_type.data_types
@@ -1875,13 +1885,8 @@ class DataTypeManager(ABC):
             for nested_data_type in copied_data_type.all_data_types:
                 nested_data_type.children = []
             return copied_data_type
-        copied_data_type = data_type.model_copy()
+        copied_data_type = _copied_node(data_type)
         copied_data_type.data_types = []
-        copied_data_type.children = []
-        copied_data_type.literals = list(data_type.literals)
-        copied_data_type.enum_member_literals = list(data_type.enum_member_literals)
-        if (kwargs := data_type.kwargs) is not None:
-            copied_data_type.kwargs = deepcopy(kwargs)
         return copied_data_type
 
     @staticmethod

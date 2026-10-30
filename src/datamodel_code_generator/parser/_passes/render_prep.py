@@ -823,7 +823,7 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
         ):
             return data_type
         forward = type(data_type)(data_types=[_copy_data_type(data_type)])
-        forward._set_forward_reference(True)  # noqa: FBT003, SLF001
+        forward._set_forward_reference()  # noqa: SLF001
         return forward
 
     rules = [
@@ -895,7 +895,7 @@ def defer_recursive_containers(  # noqa: PLR0913
         if True in kinds
     ]
     for container, wrappers in deferred:
-        container._set_forward_reference(True)  # noqa: FBT003, SLF001
+        container._set_forward_reference()  # noqa: SLF001
         for quoted in (container, *wrappers):
             quoted.use_union_operator = False
         for nested in container.all_data_types:
@@ -917,7 +917,7 @@ def quote_forward_enum_member_literals(  # noqa: PLR0913
     """Write each enum member literal of the field whose enum is defined later as a string; return whether any."""
     member_literals = _forward_enum_member_literals(field, positions, index)
     for member_literal in member_literals:
-        member_literal._set_forward_reference(True)  # noqa: FBT003, SLF001
+        member_literal._set_forward_reference()  # noqa: SLF001
         disable_union_operator_for_forward_ref(
             member_literal, graph_builder, inlined_holders, use_typing_generics=use_typing_generics
         )

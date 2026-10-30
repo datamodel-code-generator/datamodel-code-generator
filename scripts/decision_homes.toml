@@ -239,6 +239,18 @@ paths = ["parser/"]
 what = "derives a field's aliases itself; call Parser._field_aliases, or Parser._take_field_aliases for a field built earlier"
 audit = "PF2-2"
 
+[homes.Hx-type-copy]
+decision = "how a DataType is copied: what a copy owns (its lists and kwargs) and carries (its private state), and whether a tree copy shares the References it names, registered with them and linked to its holders or not, or is a deep copy"
+core = ["types.py:_copied_node", "types.py:_copy_data_type", "types.py:DataType.__deepcopy__"]
+adapters = []
+
+[homes.Hx-type-copy.signatures.node-state-copy]
+kind = "call"
+names = ["list"]
+mentions = ["literals", "enum_member_literals"]
+what = "copies the lists of a DataType node itself; call types.py:_copied_node, or _copy_data_type for a tree"
+audit = "C05-B08"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
