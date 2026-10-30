@@ -326,6 +326,9 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
         if not isinstance(options[key], list) or not all(type(item) is int for item in options[key]):
             msg = f"{owner}: {key} must be a list of integers"
             raise ConfigError(msg)
+    if not isinstance(options.get("dict_values", False), bool):
+        msg = f"{owner}: dict_values must be a boolean"
+        raise ConfigError(msg)
     if kind == "function":
         options["pattern"] = re.compile(table.get("pattern", ""))
     elif kind in REQUIRED_STRINGS:

@@ -217,6 +217,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         HOME + 'kind = "call"\naudit = "X"\npaths = "a"\n',
         HOME + 'kind = "number"\naudit = "X"\npowers = ["63"]\n',
         HOME + 'kind = "key"\naudit = "X"\n',
+        HOME + 'kind = "keyword-set"\naudit = "X"\nkeywords = ["x"]\ndict_values = "yes"\n',
         '[allow."a.py"."f"]\n"a.s" = 3\n',
     ],
     ids=[
@@ -227,6 +228,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         "paths-not-a-list",
         "powers-not-integers",
         "key-without-keys",
+        "dict-values-not-a-boolean",
         "entry-not-a-table",
     ],
 )

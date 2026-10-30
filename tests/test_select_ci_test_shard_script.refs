@@ -13,6 +13,7 @@ windows	ci_shards/new-tests-windows.txt
 [test_recipe_cli_validates_external_cases]
 balanced	ci_shards/balanced.txt
 blank-nodeid	ci_shards/blank-nodeid.txt
+boolean-tests	ci_shards/boolean-tests.txt
 boolean-weight	ci_shards/boolean-weight.txt
 cr-nodeid	ci_shards/cr-nodeid.txt
 duplicate	ci_shards/duplicate.txt
@@ -26,14 +27,17 @@ negative-index	ci_shards/negative-index.txt	= ci_shards/zero-count.txt
 negative-weight	ci_shards/negative-weight.txt
 newline-nodeid	ci_shards/newline-nodeid.txt
 not-list	ci_shards/not-list.txt	= ci_shards/empty.txt
+one-test-unsplit	ci_shards/one-test-unsplit.txt	= ci_shards/balanced.txt
 ordered	ci_shards/ordered.txt
 parted	ci_shards/parted.txt
 parts-apart	ci_shards/parts-apart.txt
+parts-capped-at-tests	ci_shards/parts-capped-at-tests.txt
 parts-exceed-shards	ci_shards/parts-exceed-shards.txt
 second	ci_shards/second.txt
 unsupported	ci_shards/unsupported.txt
 zero-count	ci_shards/zero-count.txt
 zero-index	ci_shards/zero-index.txt	= ci_shards/zero-count.txt
+zero-tests	ci_shards/zero-tests.txt
 zero-weight	ci_shards/zero-weight.txt
 [test_recipe_discovers_split_nodeids]
 	ci_shards/discovery.txt
@@ -57,3 +61,4 @@ record-empty	ci_shards/weights-record-empty.txt
 record-median	ci_shards/weights-record-median.txt
 record-missing-provenance	ci_shards/weights-record-missing-provenance.txt	= ci_shards/missing-index.txt
 record-no-split	ci_shards/weights-record-no-split.txt
+unmeasured-tests	ci_shards/weights-unmeasured-tests.txt
