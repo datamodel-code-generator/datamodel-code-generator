@@ -9,7 +9,7 @@ from collections.abc import Callable, Container, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
-from typing import Final, Literal, cast
+from typing import Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from typing_extensions import Self, TypeAliasType
@@ -17,7 +17,11 @@ from typing_extensions import Self, TypeAliasType
 from .errors import MalformedError, ParameterEncodingError
 
 __all__ = (
+    "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "NO_CONTENT",
+    "REDIRECT_STATUSES",
+    "STATUSES",
     "SUCCESS_STATUSES",
     "TCHARS",
     "TOKEN",
@@ -26,7 +30,9 @@ __all__ = (
     "JSONValue",
     "LexicalKind",
     "MediaKind",
+    "MediaOrder",
     "Unparsed",
+    "bodyless",
     "charset",
     "decode_form",
     "decode_text",
@@ -40,6 +46,8 @@ __all__ = (
     "lexical",
     "media_kind",
     "media_parts",
+    "media_range",
+    "most_specific",
     "normalize_media_type",
     "normalized",
     "percent_decode",
@@ -54,11 +62,16 @@ JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
+MediaOrder: TypeAlias = Literal["specific", "declared"]
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
+STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
+REDIRECT_STATUSES: Final = range(300, 400)
 ERROR_STATUSES: Final = range(400, 600)
+NO_CONTENT: Final = 204
+BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
 _MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{TCHARS})/(?P<subtype>{TCHARS})[ \t]*")
 _PARAMETER: Final = re.compile(
     rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|"
@@ -166,6 +179,14 @@ def status_key(status: int, keys: Container[str]) -> str | None:
     return next((key for key in (str(status), f"{status // 100}XX", "default") if key in keys), None)
 
 
+def bodyless(status: int, *, head: bool = False, informational: bool = True) -> bool:
+    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one.
+
+    `informational=False` reads a status below 200 as one that may carry content (the client plan's row).
+    """
+    return head or status in BODYLESS_STATUSES or (informational and status < SUCCESS_STATUSES.start)
+
+
 def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[str, str, list[tuple[str, str]]]:
     """Split a media type into lowercase type and subtype and its lowercase parameter names with their raw values.
 
@@ -200,6 +221,32 @@ def normalized(media_type: str) -> str | None:
 def essence(media_type: str) -> str:
     """Return a media type without its parameters."""
     return media_type.partition(";")[0]
+
+
+def media_range(media_type: str) -> bool:
+    """Return whether a media type is a range such as image/* or */*."""
+    return "*" in essence(media_type)
+
+
+def most_specific(received: str, declared: Iterable[str], *, order: MediaOrder = "specific") -> str | None:
+    """Return the declared media type a received one falls under: itself, then its essence, type/*, and */*.
+
+    Among the declarations of one of these, the first without parameters wins (#4185); `order="declared"` instead takes
+    the first declaration of the most specific one in declared order (the client's row).
+    """
+    declared = tuple(declared)
+    if received in declared:
+        return received
+    bare = essence(received)
+    candidates = (bare, f"{bare.partition('/')[0]}/*", "*/*")
+    if order == "declared":
+        return next((media for candidate in candidates for media in declared if essence(media) == candidate), None)
+    return min((media for media in declared if essence(media) in candidates), key=_specificity, default=None)
+
+
+def _specificity(media_type: str) -> tuple[int, bool]:
+    """Rank a declared media type: fewer `*` first, then one without parameters."""
+    return essence(media_type).count("*"), ";" in media_type
 
 
 def media_kind(media_type: str) -> MediaKind:

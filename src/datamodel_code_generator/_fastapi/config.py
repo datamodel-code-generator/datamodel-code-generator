@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
+from datamodel_code_generator._runtime.model_codecs.media import STATUSES
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
@@ -28,8 +29,6 @@ BodyMode: TypeAlias = Literal["typed", "request"]
 
 _HANDLER_MODES: Final = frozenset(mode.value for mode in ServerHandlerMode)
 _BODY_MODES: Final = frozenset(mode.value for mode in ServerBodyMode)
-_MIN_STATUS: Final = 100
-_MAX_STATUS: Final = 599
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -109,7 +108,7 @@ def _response_choice(value: object) -> bool:
     return (
         isinstance(value, ResponseChoice)
         and type(value.status_code) is int
-        and _MIN_STATUS <= value.status_code <= _MAX_STATUS
+        and value.status_code in STATUSES
         and _optional_text(value.media_type)
     )
 

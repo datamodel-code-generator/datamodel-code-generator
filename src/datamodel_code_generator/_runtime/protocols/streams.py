@@ -31,11 +31,10 @@ from ..client.errors import (
     is_transport,
 )
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
-from ..client.operations import NO_CONTENT
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import json_value
+from ..model_codecs.media import NO_CONTENT, json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     HELPER_ERRORS,

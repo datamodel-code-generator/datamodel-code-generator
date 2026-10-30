@@ -20,6 +20,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
+from ..model_codecs.media import SUCCESS_STATUSES
 from .auth import OAUTH_ERROR_CODES, AuthError, OAuthErrorCode, SchemeAuth, TokenSource
 from .errors import ConfigurationError, SDKError
 from .security import SecurityScheme
@@ -37,7 +38,6 @@ __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
 _LOOPBACK: Final = frozenset({"localhost", "127.0.0.1", "::1"})
 _BEARER: Final = SecurityScheme(name="oauth", kind="bearer", location="header", wire_name="Authorization")
-_SUCCESS: Final = range(200, 300)
 
 
 def refresh_margin(ttl: float) -> float:
@@ -160,7 +160,13 @@ def _answer(response: httpx2.Response, *, refreshing: bool) -> dict[str, object]
     fields = cast("dict[str, object]", data) if isinstance(data, dict) else {}
     status = response.status_code
     token, kind = fields.get("access_token"), fields.get("token_type")
-    if status in _SUCCESS and isinstance(token, str) and token and isinstance(kind, str) and kind.lower() == "bearer":
+    if (
+        status in SUCCESS_STATUSES
+        and isinstance(token, str)
+        and token
+        and isinstance(kind, str)
+        and kind.lower() == "bearer"
+    ):
         return fields
     code = fields.get("error")
     reason: Literal["oauth_error", "reauthorization_required"] = (

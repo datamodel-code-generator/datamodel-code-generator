@@ -1253,7 +1253,10 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
 
 
 def _body_status(spec: OperationSpec, status: str) -> bool:
-    """Return whether a declared response of an operation carries a body: not for HEAD, 1XX, 204, 205, or 304."""
+    """Return whether a declared response of an operation carries a body: not for HEAD, 1XX, 204, 205, or 304.
+
+    It reads the key text, which the plan reads as a number (#5604).
+    """
     return not spec.head and not status.startswith("1") and status not in {"204", "205", "304"}
 
 
