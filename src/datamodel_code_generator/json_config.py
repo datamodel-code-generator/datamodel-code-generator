@@ -14,8 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
+from datamodel_code_generator._json_output import (
+    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established json_config export.
+    schema_document,
+)
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
 DEFAULT_ENCODING = "utf-8"
@@ -183,16 +186,9 @@ class JsonConfigSchemasPayload(BaseModel):
     validators: ValidatorsConfig | None = Field(default=None)
 
 
-def _dump_json(value: Any) -> str:
-    return json.dumps(value, indent=2, sort_keys=True)
-
-
 def json_config_json_schema() -> str:
     """Return JSON Schema for strict JSON configuration payloads."""
-    return _dump_json({
-        "$schema": JSON_SCHEMA_DRAFT_2020_12,
-        **JsonConfigSchemasPayload.model_json_schema(mode="validation"),
-    })
+    return schema_document(JsonConfigSchemasPayload.model_json_schema(mode="validation"), "sorted-ascii")
 
 
 def _invalid_json_message(option_name: str, error: object, load_error_name: str | None) -> str:

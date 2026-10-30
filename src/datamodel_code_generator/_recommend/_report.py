@@ -7,6 +7,7 @@ import textwrap
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator._json_output import dump_json
 from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text, option_arguments
 from datamodel_code_generator._recommend._signals import Signals
@@ -408,9 +409,7 @@ def _nested(table: tuple[str, ...], values: dict[str, Any]) -> dict[str, Any]:
 
 def render_json(recommendation: Recommendation, *, content: str, arguments: list[str]) -> str:
     """Render a recommendation as the recommend-options JSON payload."""
-    return json.dumps(
-        recommendation_payload(recommendation, content=content, arguments=arguments), indent=2, ensure_ascii=False
-    )
+    return dump_json(recommendation_payload(recommendation, content=content, arguments=arguments), "ordered")
 
 
 def recommendation_payload(recommendation: Recommendation, *, content: str, arguments: list[str]) -> dict[str, Any]:

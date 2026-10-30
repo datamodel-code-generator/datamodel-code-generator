@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
+from datamodel_code_generator._json_output import dump_json
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -277,8 +278,7 @@ class RemoteReferenceLock:
             for index, entry in enumerate(entries):
                 if index:
                     file.write(",\n")
-                serialized_entry = json.dumps(asdict(entry), ensure_ascii=False, indent=2, sort_keys=True)
-                file.write("\n".join(f"    {line}" for line in serialized_entry.splitlines()))
+                file.write(dump_json(asdict(entry), "sorted", depth=2))
             file.write("\n  ]")
         file.write(f',\n  "version": {_LOCK_VERSION}\n}}\n')
 

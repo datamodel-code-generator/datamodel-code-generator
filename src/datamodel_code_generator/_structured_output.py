@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import VERSION, ConfigDict, Field, TypeAdapter
 
 from datamodel_code_generator import _StructuredOutputUnavailableError
-from datamodel_code_generator.model_metadata import JSON_SCHEMA_DRAFT_2020_12
+from datamodel_code_generator._json_output import dump_json, schema_document
 from datamodel_code_generator.prompt import PromptPayload, _Envelope, _Payload
 
 try:
@@ -490,13 +489,9 @@ _COMMAND_OUTPUT_PAYLOADS: dict[CommandOutputKind, type[CommandOutputPayload]] = 
 _STRUCTURED_OUTPUT_ADAPTER = TypeAdapter(StructuredOutputPayload)
 
 
-def _dump_json(value: Any) -> str:
-    return json.dumps(value, indent=2, ensure_ascii=False)
-
-
 def _dump_payload(payload: GenerationPayload | CheckOutputPayload) -> str:
     """Dump a payload, leaving out the target of a model-only run and the keys a server's or client's target lacks."""
-    return _dump_json(payload.model_dump(mode="json", by_alias=True, exclude=_absent(payload)))
+    return dump_json(payload.model_dump(mode="json", by_alias=True, exclude=_absent(payload)), "ordered")
 
 
 def _absent(payload: GenerationPayload | CheckOutputPayload) -> dict[str, Any] | set[str]:
@@ -512,10 +507,6 @@ def _absent(payload: GenerationPayload | CheckOutputPayload) -> dict[str, Any] |
 def batch_job_json(job: BatchJobPayload) -> dict[str, Any]:
     """Return a job's entry of the batch payload, leaving out what its payload leaves out."""
     return job.model_dump(mode="json", by_alias=True, exclude={"result": _absent(job.result)})
-
-
-def _schema_document(schema: dict[str, Any]) -> str:
-    return _dump_json({"$schema": JSON_SCHEMA_DRAFT_2020_12, **schema})
 
 
 def generation_output_json(
@@ -543,7 +534,7 @@ def command_output_json(
         "content": content,
         **{name: value for name, value in extras.items() if name in payload_class.model_fields},
     })
-    return _dump_json(payload.model_dump(mode="json"))
+    return dump_json(payload.model_dump(mode="json"), "ordered")
 
 
 def check_output_json(
@@ -568,15 +559,15 @@ def check_output_json(
 
 
 def generation_output_json_schema() -> str:
-    return _schema_document(GenerationPayload.model_json_schema(mode="serialization"))
+    return schema_document(GenerationPayload.model_json_schema(mode="serialization"), "ordered")
 
 
 def structured_output_json_schema() -> str:
     schema = _STRUCTURED_OUTPUT_ADAPTER.json_schema(mode="serialization")
     schema.setdefault("title", "StructuredOutputPayload")
     schema.setdefault("description", "Schema for all structured JSON outputs emitted by the CLI.")
-    return _schema_document(schema)
+    return schema_document(schema, "ordered")
 
 
 def recommend_options_json_schema() -> str:
-    return _schema_document(RecommendOptionsPayload.model_json_schema(mode="serialization"))
+    return schema_document(RecommendOptionsPayload.model_json_schema(mode="serialization"), "ordered")

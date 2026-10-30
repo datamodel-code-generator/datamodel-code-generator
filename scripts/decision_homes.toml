@@ -1338,6 +1338,21 @@ paths = ["__init__.py", "__main__.py"]
 what = "pairs a staged artifact with its target itself; use _publication.py:StagedOutputs.files"
 audit = "C17-6"
 
+[homes.Hx-json-output]
+decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with"
+core = ["_json_output.py:dump_json", "_json_output.py:schema_document"]
+adapters = []
+
+[homes.Hx-json-output.signatures.indented-dump]
+kind = "call"
+names = ["dump", "dumps"]
+keywords = ["indent"]
+# Left out: files of a generated package, which are generated output, not command output (the contracts and helpers a
+# client README lists, the OpenAPI document a generated server serves).
+exclude = ["_client/render.py:ClientRenderer.readme", "_fastapi/source_document.py:SourceDocument.text"]
+what = "dumps indented JSON itself; call _json_output.py:dump_json (or schema_document) with the style of its output"
+audit = "C15-B1"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
