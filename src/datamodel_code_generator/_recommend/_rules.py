@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import operator
-import re
 from dataclasses import dataclass
 from functools import cache
 from importlib.resources import files
@@ -12,6 +11,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from datamodel_code_generator import _option_names
+from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._option_names import toml_value
 from datamodel_code_generator._recommend._signals import (
     SignalName,
@@ -54,7 +54,6 @@ _OPERATORS: dict[str, Callable[[float, float], bool]] = {
     "==": operator.eq,
     "!=": operator.ne,
 }
-_WORDS = re.compile(r"[A-Za-z0-9]+")
 
 
 class _Data(BaseModel):
@@ -227,10 +226,8 @@ def matches(condition: Condition, counts: Mapping[str, int]) -> bool:
 
 def pascal_case_input_stem(stem: str | None, taken: AbstractSet[str]) -> str | None:
     """Return a class name made of the words of an input file name, unless a named schema already has that name."""
-    if not stem or not (words := _WORDS.findall(stem)):
+    if not stem or not (name := pascal_words(stem, digit_prefix="Model")):
         return None
-    name = "".join(word[:1].upper() + word[1:] for word in words)
-    name = name if name[0].isalpha() else f"Model{name}"
     return None if normalize_name(name) in taken else name
 
 

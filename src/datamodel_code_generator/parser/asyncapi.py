@@ -6,7 +6,6 @@ OpenAPI/JSON Schema parser stack.
 
 from __future__ import annotations
 
-import re
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -18,6 +17,10 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._document_reader import string_keys
 from datamodel_code_generator._json_pointer import escape_token
+from datamodel_code_generator._name_words import (
+    ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
+)
+from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -45,7 +48,6 @@ if TYPE_CHECKING:
 
 
 OPERATION_NAMES: tuple[str, ...] = ("publish", "subscribe")
-NAME_PART_PATTERN = re.compile(r"[A-Za-z0-9]+")
 BINDING_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset({"headers", "query", "key", "groupId", "clientId"})
 ASYNCAPI_SCHEMA_FORMATS: frozenset[str] = frozenset({
     "application/vnd.aai.asyncapi",
@@ -154,10 +156,7 @@ def _path_to_string(path: list[str]) -> str:
 
 
 def _make_model_name(*parts: object) -> str:
-    words: list[str] = []
-    for part in parts:
-        words.extend(word[:1].upper() + word[1:] for word in NAME_PART_PATTERN.findall(str(part)))
-    return "".join(words) or "AsyncAPIModel"
+    return pascal_words(*map(str, parts)) or "AsyncAPIModel"
 
 
 def _member_schemas(

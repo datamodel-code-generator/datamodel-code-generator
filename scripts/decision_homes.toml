@@ -315,6 +315,17 @@ exclude = ["reference.py:FieldNameResolver.get_valid_name"]
 what = "searches for the first name its scope does not hold; call _free_names.py:first_free with the row of the feature's numbering"
 audit = "C09-N1"
 
+[homes.Hx-name-words]
+decision = "how a class name is made from the words of a free text: its runs of ASCII letters and digits, each titled by the feature's row, joined, with the feature's prefix for a name that would start with a digit"
+core = ["_name_words.py"]
+adapters = []
+
+[homes.Hx-name-words.signatures.word-pattern]
+kind = "literal"
+contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
+what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
+audit = "C18-N2"
+
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
 core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]
