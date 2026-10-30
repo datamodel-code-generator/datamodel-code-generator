@@ -58,7 +58,12 @@ from warnings import warn
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator._json_schema import SEQUENCE_SCHEMA_SHAPES, SINGLE_SCHEMA_SHAPES, schema_positions
+from datamodel_code_generator._json_schema import (
+    MODELED_SCHEMA_MAPS,
+    SEQUENCE_SCHEMA_SHAPES,
+    SINGLE_SCHEMA_SHAPES,
+    schema_positions,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
@@ -110,7 +115,6 @@ _SCHEMA_KEYWORDS: Final = (
     *_UNEVALUATED_KEYWORDS,
 )
 """The keywords of one nested schema the intersection reads: the core ones, then those of the unevaluated vocabulary."""
-_SCHEMA_MAP_KEYWORDS: Final = schema_positions("modeled", shapes=("map",))
 INHERITED_SCHEMA_KEYWORDS: Final = schema_positions("modeled", "child")
 """The subschema keywords whose values an inherited property and its override merge value by value."""
 POSITIONAL_SCHEMA_KEYWORDS: Final = frozenset(schema_positions("child", shapes=SEQUENCE_SCHEMA_SHAPES))
@@ -416,7 +420,7 @@ class _Reconciler:
             values = [part[keyword] for part in parts if keyword in part]
             if len(values) > 1 and (merged := self._value(values, row.get(keyword))) is not None:
                 updates[keyword] = merged
-        for keyword in _SCHEMA_MAP_KEYWORDS:
+        for keyword in MODELED_SCHEMA_MAPS:
             self._schema_map(keyword, parts, row, updates)
         if not updates:
             return None
@@ -639,7 +643,7 @@ def merge_inherited_keyword(  # noqa: PLR0913
         return [
             merge_value(parent[index] if index < len(parent) else tail, item) for index, item in enumerate(child)
         ] + parent[len(child) :]
-    if maps_by_name and key in _SCHEMA_MAP_KEYWORDS and isinstance(parent, dict) and isinstance(child, dict):
+    if maps_by_name and key in MODELED_SCHEMA_MAPS and isinstance(parent, dict) and isinstance(child, dict):
         result = parent.copy()
         for name, schema in child.items():
             result[name] = schema if (inherited := parent.get(name)) is None else merge_value(inherited, schema)
@@ -741,7 +745,7 @@ def all_of_member_row(
                         previous,
                         value,
                         conjoin_patterns=conjoin_patterns,
-                        schema_map=not schema_map and key in _SCHEMA_MAP_KEYWORDS,
+                        schema_map=not schema_map and key in MODELED_SCHEMA_MAPS,
                         intersect_bounds=intersect_bounds,
                     ),
                 )

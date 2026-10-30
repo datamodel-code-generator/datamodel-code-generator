@@ -15,7 +15,12 @@ from typing_extensions import Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
 from datamodel_code_generator._json_pointer import unescape_token
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_POSITIONS, schema_positions
+from datamodel_code_generator._json_schema import (
+    INSTANCE_DATA_KEYWORDS,
+    SCHEMA_MAP_KEYS,
+    SCHEMA_POSITIONS,
+    schema_positions,
+)
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser._intersection import intersect_keywords
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -28,9 +33,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._intersection import KeywordIntersection
 
 __all__ = ["get_model_by_path", "split_json_pointer", "unescape_json_pointer_segment"]
-
-_MODELED_SCHEMA_MAPS = schema_positions("modeled", shapes=("map",))
-"""The maps of named subschemas ``JsonSchemaObject`` models: ``properties`` and ``patternProperties``."""
 
 
 def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
@@ -298,18 +300,13 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
     return parts, reference_parts
 
 
-_NON_SCHEMA_KEYWORDS = frozenset({
-    "const",
-    "default",
-    "enum",
-    "example",
-    "examples",
+_NON_SCHEMA_KEYWORDS = INSTANCE_DATA_KEYWORDS | {
     "links",
     "security",
     "server",
     "serverVariables",
     "servers",
-})
+}
 _NAMED_ENTRY_MAP_KEYWORDS = SCHEMA_MAP_KEYS | {
     "callbacks",
     "channels",

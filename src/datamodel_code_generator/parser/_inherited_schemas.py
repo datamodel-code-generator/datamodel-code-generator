@@ -19,7 +19,7 @@ from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
-from datamodel_code_generator._json_schema import schema_positions
+from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS, MODELED_SCHEMA_MAPS, schema_positions
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.imports import IMPORT_ANY
@@ -47,7 +47,6 @@ from datamodel_code_generator.parser._schema_object import (
 from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
     _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
-    _MODELED_SCHEMA_MAPS,
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
     _get_json_value_type,
     _intersect_dumps,
@@ -865,7 +864,7 @@ def normalize_inherited_constraint_compositions(
     schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
     schema_dict.update(nested_updates)
     changed = bool(nested_updates)
-    for keyword in ("allOf", "anyOf", "oneOf"):
+    for keyword in COMBINATOR_POSITIONS:
         match schema_dict.get(keyword):
             case list() as raw_items if (
                 raw_items
@@ -933,7 +932,7 @@ def is_partial_inherited_property(
             nested_parent,
             parent_tail=parent_tail,
             context=context,
-            schema_map=field_name in _MODELED_SCHEMA_MAPS,
+            schema_map=field_name in MODELED_SCHEMA_MAPS,
         ):
             return False
     return True
@@ -1228,7 +1227,7 @@ def merge_inherited_type_shape_dict(  # noqa: PLR0914
     )
     if (
         "type" not in parent_shape
-        and not any(parent_shape.get(key) for key in ("allOf", "anyOf", "oneOf"))
+        and not any(parent_shape.get(key) for key in COMBINATOR_POSITIONS)
         and len(parent_types) == 1
     ):
         parent_shape["type"] = next(iter(parent_types))

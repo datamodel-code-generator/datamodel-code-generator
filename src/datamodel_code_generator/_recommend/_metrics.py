@@ -15,6 +15,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._json_pointer import fragment_tokens
+from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
+    DEFINITION_KEYS,
+    ITEM_POSITIONS,
+    NAMED_SCHEMA_MAPS,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -60,9 +66,6 @@ _GENERIC_NUMBER: Final = re.compile(
 _STATUS_CODE: Final = re.compile(r"(?<![0-9])[1-5][0-9][0-9](?![0-9])")
 _SPECIAL: Final = re.compile(r"#-datamodel-code-generator-#-(\w+?)-#-special-#")
 _UNNAMED_KINDS: Final = frozenset({"object", "enum"})
-_BRANCH_KEYWORDS: Final = frozenset({"oneOf", "anyOf", "allOf"})
-_ITEM_KEYWORDS: Final = frozenset({"items", "prefixItems", "additionalItems", "unevaluatedItems"})
-_NAMED_KEYWORDS: Final = frozenset({"properties", "patternProperties", "dependentSchemas", "definitions", "$defs"})
 _UNION_VARIANT: Final = re.compile(r"(?:^|/)(oneOf|anyOf)/(\d+)(/allOf)?$")
 _ROOT_REF: Final = re.compile(r"^(?:.*?\.(?:json|ya?ml))?#?/?")
 _TRAILING_DIGITS: Final = re.compile(r"\d+$")
@@ -188,11 +191,11 @@ def readable_location(tokens: Sequence[str]) -> str:
     while index < len(tokens):
         token, following = tokens[index], tokens[index + 1] if index + 1 < len(tokens) else None
         step = 2
-        if following is not None and token in _NAMED_KEYWORDS:
+        if following is not None and token in NAMED_SCHEMA_MAPS:
             inline.append(following)
-        elif following is not None and following.isdigit() and token in _BRANCH_KEYWORDS:
+        elif following is not None and following.isdigit() and token in COMBINATOR_POSITIONS:
             inline.append(f"{token} {following}")
-        elif token in _ITEM_KEYWORDS:
+        elif token in ITEM_POSITIONS:
             inline.append("item")
             step = 2 if following is not None and following.isdigit() else 1
         else:
@@ -259,7 +262,7 @@ def _number_class(name: str, normalized: str, vocabulary: SchemaVocabulary, all_
 
 def _is_component_location(parts: list[str]) -> bool:
     return (parts[:2] == ["components", "schemas"] and len(parts) == _COMPONENT_DEPTH) or (
-        parts[0] in {"definitions", "$defs"} and len(parts) == _DEFINITION_DEPTH
+        parts[0] in DEFINITION_KEYS and len(parts) == _DEFINITION_DEPTH
     )
 
 

@@ -18,7 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, schema_positions
+from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, schema_positions
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
@@ -51,7 +51,6 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _is_false_all_of
 from datamodel_code_generator.parser._schema_reading import (
-    _MODELED_SCHEMA_MAPS,
     _constraint_values,
     _get_json_value_type,
     _intersect_dumps,
@@ -505,7 +504,7 @@ def _keyword_implies(keyword: str, declared: dict[str, Any], other: dict[str, An
     if keyword in _UNMATCHED_SCHEMA_KEYWORDS:
         return _schema_keywords(other_value) == {} or (
             keyword == "additionalProperties"
-            and all(set(declared.get(names) or ()) == set(other.get(names) or ()) for names in _MODELED_SCHEMA_MAPS)
+            and all(set(declared.get(names) or ()) == set(other.get(names) or ()) for names in MODELED_SCHEMA_MAPS)
             and _schema_implies(declared_value, other_value, same_document=same_document)
         )
     if keyword == JsonSchemaObject.__extra_key__ and isinstance(other_value, dict):

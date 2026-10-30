@@ -18,7 +18,12 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import AllOfClassHierarchy, AllOfMergeMode, SchemaParseError
 from datamodel_code_generator._constraint_applicability import all_of_root_keyword_kinds
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, SINGLE_SCHEMA_SHAPES, schema_positions
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    INSTANCE_DATA_KEYWORDS,
+    SINGLE_SCHEMA_SHAPES,
+    schema_positions,
+)
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY
 from datamodel_code_generator._regex_syntax import is_portable_pattern
 from datamodel_code_generator.model._decisions.enum_kind import holds_inherited_member_value, holds_member_value
@@ -204,15 +209,7 @@ _ALL_OF_VALUE_KEYWORDS: Final = frozenset({
     *JsonSchemaObject.__constraint_fields__,
 })
 """The keywords of an allOf site that its parts' intersection writes, not its own annotations."""
-_PATTERN_SCAN_SKIPPED_KEYWORDS: Final = frozenset({
-    "enum",
-    "const",
-    "default",
-    "examples",
-    "example",
-    "patternProperties",
-    *DEFINITION_KEYS,
-})
+_PATTERN_SCAN_SKIPPED_KEYWORDS: Final = INSTANCE_DATA_KEYWORDS | {"patternProperties", *DEFINITION_KEYS}
 """The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
 
 

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._document_reader import descend
 from datamodel_code_generator._json_pointer import pointer_tokens
-from datamodel_code_generator._json_schema import SCHEMA_VALUE_SHAPES, schema_positions
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -235,7 +235,7 @@ def _uses_definitions(kind: SchemaKind) -> bool:
 def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]:
     """Return the named schemas of a document: $defs and definitions, or components/schemas."""
     if _uses_definitions(kind):
-        return {key: value for keyword in ("$defs", "definitions") for key, value in _items(document.get(keyword))}
+        return {key: value for keyword in DEFINITION_KEYS for key, value in _items(document.get(keyword))}
     components = document.get("components")
     return {
         key: _unwrap(value)
@@ -758,7 +758,7 @@ def measure_signals(
     }
     root_title = ""
     if kind == "jsonschema":
-        root = {key: value for key, value in document.items() if key not in {"definitions", "$defs"}}
+        root = {key: value for key, value in document.items() if key not in DEFINITION_KEYS}
         walker.count_keywords(root)
         walker.walk_children(root, parent="#", name="", depth=0, component="")
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
