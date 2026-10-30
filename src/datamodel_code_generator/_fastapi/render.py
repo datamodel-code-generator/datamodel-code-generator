@@ -31,7 +31,7 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
-from datamodel_code_generator._python_syntax import call_text, list_display, tuple_display
+from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -825,7 +825,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
         options = f"dict[str, {module.name('typing', 'Any')}]"
-        info = "{" + ", ".join(f"{key!r}: {value!r}" for key, value in self.plan.info) + "}"
+        info = dict_display((repr(key), repr(value)) for key, value in self.plan.info)
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
         exports = sorted({
@@ -1001,7 +1001,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authenticate=authenticate,
             parameters=tuple(parameters),
             requirements=tuple_display(_requirement(item) for item in requirements),
-            credentials="{" + ", ".join(f"{scheme!r}: {names[scheme]}" for scheme in scopes) + "}",
+            credentials=dict_display((repr(scheme), names[scheme]) for scheme in scopes),
             challenge=repr(challenge),
         )
 
@@ -1210,9 +1210,11 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
     A primary response the route sends itself with a chosen media other than its default also declares that media.
     """
     responses = [
-        f"{response.status!r}: "
-        + _declared(
-            module, default_media(response) if _body_status(spec, response.status) else None, null=response.null
+        (
+            repr(response.status),
+            _declared(
+                module, default_media(response) if _body_status(spec, response.status) else None, null=response.null
+            ),
         )
         for response in spec.responses
     ]
@@ -1226,7 +1228,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
         ):
             media = _declared(module, chosen, null=primary.null)
     return ResponsesPlan(
-        responses="{" + ", ".join(responses) + "}",
+        responses=dict_display(responses),
         primary=status,
         media=media,
         head=spec.head,
@@ -1480,7 +1482,7 @@ def _value(spec: OperationSpec, argument: Argument, record: str) -> str:
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> str:
     if not (wanted := {item.wire_name for item in adapters if item.location == "path" and item.wire_name is not None}):
         return ""
-    names = f"frozenset({{{', '.join(repr(name) for name in sorted(wanted))}}})"
+    names = f"frozenset({set_display(map(repr, sorted(wanted)))})"
     return f"{module.local('_runtime.server.requests', 'RawPath')}(template={spec.route.path!r}, names={names})"
 
 
@@ -1490,7 +1492,7 @@ def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
 
 
 def _services(services: list[str]) -> str:
-    return "{" + ", ".join(f"{service!r}: {service}" for service in services) + "}"
+    return dict_display((repr(service), service) for service in services)
 
 
 def _builder(  # ruff: ignore[too-many-arguments]
