@@ -34,6 +34,7 @@ from ..client.errors import (
     ConfigurationError,
     DecodeError,
     SDKError,
+    bounded_body,
     is_client_closed,
     is_phase_timeout,
     request_failure,
@@ -44,12 +45,11 @@ from ..client.timing import Budget
 from .errors import (
     HELPER_ERRORS,
     MAX_CLOSE_REASON,
-    MAX_RAW_PREFIX,
     ProtocolDataError,
     WebSocketClosedError,
     configuration_error,
 )
-from .options import HelperLimits, WSOptions, checked_options, layered, new_session
+from .options import HelperLimits, WSOptions, layered, new_session
 from .records import SessionState
 
 if TYPE_CHECKING:
@@ -170,8 +170,7 @@ def _limits(
     An idle timeout neither layer sets is the call's merged native read timeout, and a message size neither sets is
     left to HTTPX2.
     """
-    request = checked_options(plan.helper_id, "ws_options", ws_options, WSOptions, options)
-    kinds = (ws_options, core.helper_defaults(plan.helper_id))
+    request, kinds = core.helper_layers(plan.helper_id, "ws_options", ws_options, WSOptions, options)
     return _Limits(
         open_timeout=layered(kinds, "open_timeout", 5.0),
         idle_timeout=layered(kinds, "idle_timeout", core.call_settings(request, plan.call).timeout.read),
@@ -260,7 +259,6 @@ class _Sockets(Generic[SendT, RecvT]):
         "_limits",
         "_lock",
         "_plan",
-        "_prefix",
         "_received",
         "_receiving",
         "_sent",
@@ -282,7 +280,6 @@ class _Sockets(Generic[SendT, RecvT]):
         self._session = session
         self._info = info
         self._call = call
-        self._prefix = MAX_RAW_PREFIX if (size := limits.max_message_bytes) is None else min(size, MAX_RAW_PREFIX)
         self._lock = threading.Lock()
         self._receiving = threading.Lock()
         self._state = SessionState.OPEN
@@ -416,13 +413,13 @@ class _Sockets(Generic[SendT, RecvT]):
         self, data: bytes, condition: Literal["type", "value", "malformed"], cause: BaseException | None = None
     ) -> DecodeError:
         """Return the decode failure of a message, keeping at most the message limit or 64 KiB of its bytes."""
-        limit = self._prefix
+        body, truncated = bounded_body(data, self._limits.max_message_bytes)
         return self._stamped(
             DecodeError(
                 reason=condition,
                 location=("message", self._received),
-                body_bytes=data[:limit],
-                truncated=len(data) > limit,
+                body_bytes=body,
+                truncated=truncated,
                 cause=cause,
             )
         )

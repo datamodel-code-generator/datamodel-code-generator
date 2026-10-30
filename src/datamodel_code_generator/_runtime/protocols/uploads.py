@@ -33,7 +33,7 @@ from ..model_codecs.media import SUCCESS_STATUSES
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, StepLock, UploadOptions, checked_options, layered, new_session
+from .options import HelperLimits, StepLock, UploadOptions, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
@@ -208,16 +208,11 @@ def _limits(
     since the create call and each append need keys of their own, and so are the headers or query names of a
     parameter the helper writes that any of them sends.
     """
-    request = checked_options(plan.helper_id, "upload_options", upload_options, UploadOptions, options)
+    request, kinds = core.helper_layers(plan.helper_id, "upload_options", upload_options, UploadOptions, options)
     operations = (plan.create, plan.probe, plan.append, plan.completion)
-    if (path := core.patched(request, operations, plan.headers, plan.queries.__contains__)) is not None:
-        raise configuration_error(plan.helper_id, path)
-    kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
+    core.refuse_patched(plan.helper_id, request, operations, plan.headers, plan.queries.__contains__)
     chunk_path = _DEFAULTS.chunk_path
-    if (
-        layered((upload_options,), "chunk_bytes", None) is None
-        and layered((defaults,), "chunk_bytes", None) is not None
-    ):
+    if layered(kinds[:1], "chunk_bytes", None) is None and layered(kinds[1:], "chunk_bytes", None) is not None:
         chunk_path = ("helper_defaults", plan.helper_id, "chunk_bytes")
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),

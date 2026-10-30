@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.responses import ResponseInfo
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_refusal
-from .options import HelperLimits, PollOptions, StepLock, checked_options, layered, new_session
+from .options import HelperLimits, PollOptions, StepLock, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import (
     BodySelector,
@@ -216,11 +216,9 @@ def _limits(
     of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
     their own, and so are the headers or query names of a parameter the helper writes that any of them sends.
     """
-    request = checked_options(plan.helper_id, "poll_options", poll_options, PollOptions, options)
+    request, kinds = core.helper_layers(plan.helper_id, "poll_options", poll_options, PollOptions, options)
     operations = (plan.create, plan.poll, plan.fetch)
-    if (path := core.patched(request, operations, plan.headers, plan.queries.__contains__)) is not None:
-        raise configuration_error(plan.helper_id, path)
-    kinds = (poll_options, core.helper_defaults(plan.helper_id))
+    core.refuse_patched(plan.helper_id, request, operations, plan.headers, plan.queries.__contains__)
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),

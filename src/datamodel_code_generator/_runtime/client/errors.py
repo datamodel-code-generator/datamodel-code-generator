@@ -148,6 +148,12 @@ def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
 
 
+def bounded_body(body: bytes, cap: int | None = None) -> tuple[bytes, bool]:
+    """Return the bytes an error keeps of a received body, at most 64 KiB or a lower `cap`, and whether it cut them."""
+    limit = MAX_ERROR_BODY_BYTES if cap is None else min(cap, MAX_ERROR_BODY_BYTES)
+    return body[:limit], len(body) > limit
+
+
 def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
     """Return the start of an error body as text, marking where it was cut."""
     text = body.decode("utf-8", "replace").strip()

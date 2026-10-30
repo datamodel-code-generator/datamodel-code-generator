@@ -22,7 +22,7 @@ from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations s
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, PaginationOptions, checked_options, layered, new_session, patched_extra
+from .options import HelperLimits, PaginationOptions, layered, new_session
 from .records import (
     AsyncSteps,
     BodySelector,
@@ -453,13 +453,12 @@ def _limits(
     The client's and a view's default of a count's header or query position is the first request's position instead,
     so only the call's own one is refused.
     """
-    request = checked_options(plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options)
+    request, kinds = core.helper_layers(
+        plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options
+    )
     header, query = _started(plan.continuation)
     headers, queries = plan.headers - header, plan.queries - query
-    path = core.patched(request, (plan.call,), headers, queries.__contains__) or patched_extra(request, header, query)
-    if path is not None:
-        raise configuration_error(plan.helper_id, path)
-    kinds = (pagination_options, core.helper_defaults(plan.helper_id))
+    core.refuse_patched(plan.helper_id, request, (plan.call,), headers, queries.__contains__, (header, query))
     return _Limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
         max_items=layered(kinds, "max_items", _DEFAULTS.max_items),

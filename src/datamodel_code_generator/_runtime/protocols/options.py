@@ -80,20 +80,6 @@ def checked_options(helper_id: str, name: str, value: object, kind: type, option
     return options if isinstance(options, RequestOptions) else None
 
 
-def patched_extra(
-    request: RequestOptions | None, headers: frozenset[str], queries: frozenset[str]
-) -> tuple[str, ...] | None:
-    """Return the field path of the call's first extra header, then query name, of a parameter a helper writes."""
-    if request is not None:
-        for name in request.extra_headers or ():
-            if name.lower() in headers:
-                return ("options", "extra_headers", name)
-        for name in request.extra_query or ():
-            if name in queries:
-                return ("options", "extra_query", name)
-    return None
-
-
 def new_session(limits: HelperLimits) -> OperationSession:
     """Start the session of one helper call."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
