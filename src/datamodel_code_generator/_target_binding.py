@@ -43,6 +43,7 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     DeclarationId,
+    Direction,
     EmittedFieldFacts,
     EncodingFacts,
     FieldSlot,
@@ -111,21 +112,26 @@ from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as P
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
-from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path, location_of
+from datamodel_code_generator.reference import (
+    _RW_DIRECTIONS,
+    SPECIAL_PATH_MARKER,
+    SchemaLocation,
+    _rw_variant_of,
+    _rw_variant_path,
+    _source_path,
+    location_of,
+)
 from datamodel_code_generator.types import DataType, Types, reference_names_nullable
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
     "property", "required_only", "additional_properties", "root_value", "discriminator_synthetic"
 ]
-Direction: TypeAlias = Literal["request", "response", "neutral"]
 Projection: TypeAlias = Literal["value", "item_stream_array"]
-_DIRECTIONS: Final[tuple[Direction, ...]] = ("request", "response")
 
 _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
     pydantic_v2.BaseModel: "pydantic",
@@ -1169,11 +1175,10 @@ class _Binder:
             pending.extend((new, null if merged else named) for new, merged in self.redirects.get(id(current), ()))
         return next(iter(terminals.values())) if len(terminals) == 1 else (None, None)
 
-    def _variant(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
+    def _variant(self, reference: Reference, direction: _RwDirection) -> tuple[Reference | None, bool | None]:
         resolver = self.parser.model_resolver
-        special = f"read-write-{direction}"
         for base in dict.fromkeys((self.keys.get(id(reference), reference.path), reference.path)):
-            key = resolver.join_path(tuple(get_special_path(special, base.split("/"))))
+            key = resolver.join_path(tuple(_rw_variant_path(base, direction)))
             if (variant := resolver.references.get(key)) is not None:
                 return self._terminal(variant)
         return None, None
@@ -2653,7 +2658,7 @@ class _Models:
         ] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
         self.helpers: dict[SchemaLocation, list[TypeProjection]] = {}
-        self.variants = any(SPECIAL_PATH_MARKER + "read-write-" in key for key in self.parser.model_resolver.references)
+        self.variants = any(_rw_variant_of(key) for key in self.parser.model_resolver.references)
 
     def model_location(self, model: DataModel) -> SchemaLocation | None:
         """Return the location the parser recorded for the schema a model is built from, where the walk read it.
@@ -2697,7 +2702,7 @@ class _Models:
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
         special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return next((found for found in _DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
+        return next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
@@ -3140,7 +3145,7 @@ class _SchemaUses(_Models):
                 self.relocate(declaration, value.symbol)
             directional = [
                 self.directional(source, declaration, projection, direction, neutral)
-                for direction in (_DIRECTIONS if self.variants else ())
+                for direction in (_RW_DIRECTIONS if self.variants else ())
             ]
             if not acquired and not any(directional) and self.uses[neutral].type is None:
                 del self.uses[neutral]
@@ -3845,4 +3850,4 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
-    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.reference import Reference, _RwDirection

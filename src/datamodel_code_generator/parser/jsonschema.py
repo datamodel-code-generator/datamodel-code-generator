@@ -252,7 +252,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
-    SPECIAL_PATH_FORMAT,
+    SPECIAL_PATH_FORMAT,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Parser,
     Source,
     _ConstNarrowing,
@@ -279,6 +279,8 @@ from datamodel_code_generator.reference import (
     ModelType,
     Reference,
     SchemaLocation,
+    _rw_variant_of,
+    _rw_variant_path,
     get_inferred_module_name,
     is_url,
     location_of,
@@ -405,10 +407,6 @@ applicators held in extras, except ``dependencies`` and ``extends`` (legacy)."""
 _NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
-_RW_MODEL_VARIANT_SPECIAL_MARKERS = frozenset({
-    SPECIAL_PATH_FORMAT.format("read-write-request"),
-    SPECIAL_PATH_FORMAT.format("read-write-response"),
-})
 _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS = frozenset({
     JsonSchemaVersion.Draft4,
     JsonSchemaVersion.Draft6,
@@ -669,11 +667,6 @@ def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
     if not types.issubset(_NUMERIC_TYPE_DOMAINS):
         return None
     return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
-
-
-def _is_rw_model_variant_path(path: str) -> bool:
-    """Return whether a path belongs to an internal Request/Response variant."""
-    return any(marker in path for marker in _RW_MODEL_VARIANT_SPECIAL_MARKERS)
 
 
 def _external_ref_mapping_key(file_part: str, base_path: Path) -> str:
@@ -3319,7 +3312,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         cache_key = resolved_ref, suffix
         if (cached := self._rw_model_variant_requirement_cache.get(cache_key)) is not None:
             return cached
-        if _is_rw_model_variant_path(resolved_ref):
+        if _rw_variant_of(resolved_ref):
             return False
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._request_response_ref_schema_generates_variant(resolved_ref)
@@ -3345,7 +3338,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     break
                 case False:
                     continue
-            if _is_rw_model_variant_path(current_ref):
+            if _rw_variant_of(current_ref):
                 continue
             has_direct_variant, nested_refs = self._get_rw_model_variant_graph_node(current_ref)
             if has_direct_variant:
@@ -3730,7 +3723,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             yields=yielding,
         ).name
         reference = self.model_resolver.add(
-            get_special_path(f"read-write-{suffix.lower()}", base_reference.path.split("/")),
+            _rw_variant_path(base_reference.path, "request" if suffix == "Request" else "response"),
             unique_name,
             class_name=False,
             unique=False,

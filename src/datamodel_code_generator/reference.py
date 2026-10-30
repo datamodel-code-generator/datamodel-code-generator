@@ -58,6 +58,7 @@ from datamodel_code_generator.util import camel_to_snake
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
+    from typing import Literal, TypeAlias
 
     import inflect
 
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
+    _RwDirection: TypeAlias = Literal["request", "response"]
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -304,6 +306,9 @@ SINGULAR_NAME_SUFFIX: str = "Item"
 ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
+_SPECIAL_PATH_FORMAT: Final = f"{SPECIAL_PATH_MARKER}{{}}-#-special-#"
+"""The path token of a model that the generator makes at a path (``parser.base.SPECIAL_PATH_FORMAT``)."""
+_RW_DIRECTIONS: Final[tuple[_RwDirection, ...]] = ("request", "response")
 
 SCHEMA_LOCATION_KEY: Final = "_schema_location"
 SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
@@ -340,11 +345,36 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
 
 
+def _special_path(keyword: str, path: list[str]) -> list[str]:
+    """Return ``path`` followed by the token of the model that the generator makes there for ``keyword``."""
+    return [*path, _SPECIAL_PATH_FORMAT.format(keyword)]
+
+
+def _rw_variant_path(base: str, direction: _RwDirection) -> list[str]:
+    """Return the path of the read (request) or write (response) variant of the model at ``base``.
+
+    The parser adds the variant at this path and the target binding finds it there: both join it with the model
+    resolver's ``join_path``.
+    """
+    return _special_path(f"read-write-{direction}", base.split("/"))
+
+
+def _rw_variant_of(path: str) -> tuple[str, _RwDirection] | None:
+    """Return the base path and the direction of the read or write variant a reference path names, else None.
+
+    The variant is named by the last special token of the path.
+    """
+    base, marker, special = path.rpartition(SPECIAL_PATH_MARKER)
+    if marker and (
+        direction := next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), None)
+    ):
+        return base.rstrip("/"), direction
+    return None
+
+
 def _source_path(path: str) -> str:
     """Return a reference path without the marker of a read or write variant of its model."""
-    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
-        return variant[0].rstrip("/")
-    return path
+    return variant[0] if (variant := _rw_variant_of(path)) else path
 
 
 T = TypeVar("T")

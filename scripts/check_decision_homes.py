@@ -23,6 +23,8 @@ them, ``what`` words the message):
 * ``key``: a subscript ``x["k"]`` that is read (not assigned or deleted) or a call ``x.get("k")`` / ``x.pop("k")`` /
   ``x.setdefault("k", ...)`` whose string key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so
   a raw read of a loaded document is invisible to them).
+* ``literal``: a string literal, or an f-string with a literal part, that holds one of ``contains`` (the spelling of a
+  value that only its home may write); an f-string is one hit at its own position.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -82,15 +84,31 @@ DOCS_PATH = Path("docs/architecture.md")
 CONFIG_PATH = Path("scripts/decision_homes.toml")
 COMPILED_TEMPLATE_DIRECTORY = store.COMPILED_TEMPLATE_DIRECTORY
 ALLOWLIST_MARKER = "# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ===="
-SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set", "key"})
+SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set", "key", "literal"})
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
 FIX_FORMAT = re.compile(r"#\d+|keep|[A-Z]{1,4}-?\d+[a-z]?(?:-\d+)?")
 ALLOWLIST_START = re.compile(rf"^(?:{re.escape(ALLOWLIST_MARKER)}|\[allow\.)", re.MULTILINE)
-STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "strings", "values", "receivers", "keys"})
+STRING_OPTIONS = frozenset({
+    "names",
+    "keywords",
+    "without",
+    "mentions",
+    "strings",
+    "values",
+    "receivers",
+    "keys",
+    "contains",
+})
 INTEGER_OPTIONS = frozenset({"powers", "literals"})
-REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "keywords", "key": "keys"}
+REQUIRED_STRINGS = {
+    "name": "names",
+    "compare-in": "values",
+    "keyword-set": "keywords",
+    "key": "keys",
+    "literal": "contains",
+}
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
@@ -436,6 +454,13 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return False
         case "key":
             return _key_read(node) in options["keys"]
+        case "literal":
+            texts = [
+                part.value
+                for part in (node.values if isinstance(node, ast.JoinedStr) else [node])
+                if isinstance(part, ast.Constant) and isinstance(part.value, str)
+            ]
+            return any(spelling in text for text in texts for spelling in options["contains"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node)) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -449,6 +474,7 @@ NODE_TYPES = {
     "number": (ast.Constant, ast.BinOp),
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
     "key": (ast.Subscript, ast.Call),
+    "literal": (ast.Constant, ast.JoinedStr),
 }
 
 
@@ -475,7 +501,12 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
         if not any(signatures.values()):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        f_string_parts: set[int] = set()
         for node in ast.walk(tree):
+            if isinstance(node, ast.JoinedStr):
+                f_string_parts.update(id(part) for part in node.values if isinstance(part, ast.Constant))
+            elif id(node) in f_string_parts:
+                continue
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)

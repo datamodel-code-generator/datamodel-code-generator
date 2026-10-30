@@ -51,3 +51,8 @@ def read_keys(schema, config):
     config["type"] = schema["other"]
     del config["items"]
     return first, second, schema.get(first), schema.get("other")
+
+
+def spell(direction):
+    """Spell the segment in a string literal and in an f-string, and write other text."""
+    return "seg-" + direction, f"seg-{direction}", f"{direction}-other", "other"

@@ -18,5 +18,11 @@
 [allow."other.py"."_merge_values._merge_inner"]
 "sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
 
+[allow."other.py"."other_helper"]
+"sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
+
 [allow."other.py"."read_keys"]
 "sample.read-key" = { home = "sample", count = 4, audit = "X-9" }
+
+[allow."other.py"."spell"]
+"sample.spelling" = { home = "sample", count = 1, audit = "X-10" }

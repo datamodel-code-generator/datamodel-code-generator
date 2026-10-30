@@ -19,3 +19,5 @@ other.py:47:12: decision sample (the sample decision) has its home in core.py; r
 other.py:48:13: decision sample (the sample decision) has its home in core.py; reads a key of a raw document. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in read_keys)
 other.py:49:4: decision sample (the sample decision) has its home in core.py; reads a key of a raw document. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in read_keys)
 other.py:50:4: decision sample (the sample decision) has its home in core.py; reads a key of a raw document. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in read_keys)
+other.py:58:11: decision sample (the sample decision) has its home in core.py; spells the segment itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in spell)
+other.py:58:31: decision sample (the sample decision) has its home in core.py; spells the segment itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in spell)

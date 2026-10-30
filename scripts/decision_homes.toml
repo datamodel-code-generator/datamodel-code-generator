@@ -516,6 +516,17 @@ names = ["is_array_index"]
 what = "reads a list item by the JSON Pointer index grammar itself; pick a row of _document_reader.member"
 audit = "C01"
 
+[homes.Hx-rw-variant]
+decision = "the path of a model's read (request) or write (response) variant: how the parser builds it from its base path and how a reader takes its base path and direction back"
+core = ["reference.py:_rw_variant_path", "reference.py:_rw_variant_of"]
+adapters = []
+
+[homes.Hx-rw-variant.signatures.variant-keyword]
+kind = "literal"
+contains = ["read-write-"]
+what = "spells the read/write variant keyword itself; call reference.py:_rw_variant_path or _rw_variant_of"
+audit = "C03-R1"
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]
@@ -1854,6 +1865,9 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Models.reused_discriminator"]
 "H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.variant_direction"]
+"Hx-rw-variant.variant-keyword" = { home = "Hx-rw-variant", count = 1, audit = "#5628" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._atomic"]
 "T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }

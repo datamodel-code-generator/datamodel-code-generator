@@ -42,6 +42,9 @@ ALLOWED = """
 
 [allow."adapter.py"."Adapter.read_again"]
 "sample.read-flag" = { home = "sample", count = 1, audit = "X-1" }
+
+[allow."other.py"."spell"]
+"sample.spelling" = { home = "sample", count = 2, audit = "X-10" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
