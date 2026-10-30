@@ -20,6 +20,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
+from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
@@ -33,7 +34,6 @@ JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | Non
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
 Child: TypeAlias = "tuple[str, str]"
 
-_METHODS: Final = ("get", "put", "post", "delete", "options", "head", "patch", "trace", "query")
 _MEDIA: Final[dict[str, Child]] = {
     "schema": ("one", "schema"),
     "itemSchema": ("one", "schema"),
@@ -49,7 +49,7 @@ _PARAMETER: Final[dict[str, Child]] = {
 }
 _CHILDREN: Final[dict[str, dict[str, Child]]] = {
     "pathItem": {
-        **dict.fromkeys(_METHODS, ("one", "operation")),
+        **dict.fromkeys(PATH_ITEM_METHODS, ("one", "operation")),
         "additionalOperations": ("map", "operation"),
         "parameters": ("list", "parameter"),
     },

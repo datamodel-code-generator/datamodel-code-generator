@@ -1140,6 +1140,24 @@ exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
 audit = "C20-8"
 
+[homes.Hx-openapi-paths]
+decision = "what the keys of an OpenAPI document's paths say: which fields of a path item hold an operation (and the views of the paths scope, the API walk before OpenAPI 3.2 and the recommender), and which paths --openapi-include-paths selects"
+core = ["_openapi_paths.py"]
+adapters = []
+
+[homes.Hx-openapi-paths.signatures.path-item-methods]
+kind = "keyword-set"
+keywords = ["get", "put", "post", "delete", "patch", "head", "options", "trace", "query"]
+min = 4
+what = "lists the operation fields of a path item itself; read PATH_ITEM_METHODS (or OPERATION_METHODS) of _openapi_paths.py"
+audit = "C20-4"
+
+[homes.Hx-openapi-paths.signatures.include-path-match]
+kind = "call"
+names = ["fnmatch", "fnmatchcase"]
+what = "matches a path against --openapi-include-paths itself; call _openapi_paths.py:path_selected"
+audit = "C20-5"
+
 [homes.Hx-request-parts]
 decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"
 core = [
