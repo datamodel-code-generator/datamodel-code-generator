@@ -10,6 +10,7 @@ from typing import Generic, Literal, Protocol, TypeAlias
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
+from ..model_codecs.media import STATUSES
 
 __all__ = ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheSource", "CacheStore", "string_tuple")
 
@@ -18,8 +19,6 @@ T_co = TypeVar("T_co", covariant=True, default=object)
 CacheSource: TypeAlias = Literal["network", "fresh_cache", "revalidated"]
 
 _SOURCES: tuple[CacheSource, ...] = ("network", "fresh_cache", "revalidated")
-_MIN_STATUS = 100
-_MAX_STATUS = 599
 
 
 def _kind(valid: bool, name: str) -> None:  # noqa: FBT001
@@ -74,7 +73,7 @@ class CacheEntry:
         _typed(self.status_code, int, "status_code")
         _typed(self.headers, HeadersView, "headers")
         _typed(self.body, bytes, "body")
-        _range(_MIN_STATUS <= self.status_code <= _MAX_STATUS, "status_code must be from 100 to 599")
+        _range(self.status_code in STATUSES, "status_code must be from 100 to 599")
         _range(len(self.vary_values) == len(self.vary), "vary_values must match vary one to one")
         for name in ("request_time", "response_time", "stored_at"):
             _typed(instant := getattr(self, name), datetime, name)

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-SupResponse: TypeAlias = None
+import models
+
+SupResponse: TypeAlias = models.SupGetResponse
 
 
 RangeOnlyResponse: TypeAlias = None

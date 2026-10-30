@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
-from datamodel_code_generator._runtime.model_codecs.media import normalized
+from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_documents import canonical_bytes
 
@@ -372,7 +372,7 @@ class _Validator:  # noqa: PLR0904
 
     def statuses(self, value: object, at: str) -> object:
         def status(item: object, where: str) -> object:
-            valid = type(item) is int and 100 <= item <= 599  # noqa: PLR2004
+            valid = type(item) is int and item in STATUSES
             return item if valid else self.value(where, f"{where} must be a status from 100 to 599")
 
         return self.distinct(at, self.items(value, at, status, nonempty=True), "a status")

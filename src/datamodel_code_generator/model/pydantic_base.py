@@ -15,6 +15,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
     UNDEFINED,
@@ -599,14 +600,16 @@ class DataModelField(DataModelFieldBase):
         rendered = self._render_field_call(arguments)
         return _PydanticFieldRenderPlan(
             rendered=rendered,
-            assignment=f"Field(default={', '.join(arguments)})" if call.default_keyword else rendered,
+            assignment=call_text("Field", (f"default={arguments[0]}", *arguments[1:]))
+            if call.default_keyword
+            else rendered,
             arguments=arguments,
             default_factory=None if call.factory is None else call.factory.value,
         )
 
     @staticmethod
     def _render_field_call(arguments: tuple[str, ...]) -> str:
-        return f"Field({', '.join(arguments)})"
+        return call_text("Field", arguments)
 
     def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
         """Write all Field() views from the field's render plan."""

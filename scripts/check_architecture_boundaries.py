@@ -22,6 +22,10 @@ Layer: TypeAlias = Literal[
     "facts",
     "schema-graph",
     "json-pointer",
+    "python-syntax",
+    "free-names",
+    "name-words",
+    "graph-links",
     "config",
     "input-model",
     "reference",
@@ -111,6 +115,34 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "typing_extensions"
         ),
     ),
+    "free-names": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the free-name numbering is a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
+        ),
+    ),
+    "name-words": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the class name made from the words of a text is a leaf that every layer reads: import only the standard "
+            "library and typing_extensions"
+        ),
+    ),
+    "graph-links": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
+            "import while they import each other: import only the standard library and typing_extensions"
+        ),
+    ),
+    "python-syntax": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the Python display writer is a leaf that the model backends, the formatter and the targets read: import "
+            "only the standard library and typing_extensions"
+        ),
+    ),
     "requirements": (
         frozenset({
             *sys.stdlib_module_names,
@@ -173,6 +205,7 @@ _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
 """Layers of parser code: the parser modules and the pass modules under ``parser/_passes/``."""
 _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser._facts",
+    "datamodel_code_generator.parser._field_rows",
     "datamodel_code_generator.parser._graph_ids",
     "datamodel_code_generator.parser._imports_plan",
     "datamodel_code_generator.parser._model_shapes",
@@ -197,7 +230,9 @@ _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "enum.py",
     "imports.py",
     "output.py",
+    "_field_imports.py",
     "_render_plan.py",
+    "_rendered_names.py",
     "runtime_validation.py",
     "scalar.py",
     "type_alias.py",
@@ -1252,6 +1287,14 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "json-schema"
         case ("_json_pointer.py",):
             layer = "json-pointer"
+        case ("_python_syntax.py",):
+            layer = "python-syntax"
+        case ("_free_names.py",):
+            layer = "free-names"
+        case ("_name_words.py",):
+            layer = "name-words"
+        case ("_graph_links.py",):
+            layer = "graph-links"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

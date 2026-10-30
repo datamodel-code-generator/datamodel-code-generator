@@ -7,9 +7,10 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
+from datamodel_code_generator._document_reader import descend
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import SCHEMA_VALUE_SHAPES, schema_positions
 
@@ -207,12 +208,7 @@ def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
     """Return the schema a local JSON Pointer reference points at, or None."""
     if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
-    node: object = document
-    for key in pointer_tokens(ref[1:]):
-        if not isinstance(node, dict) or key not in node:
-            return None
-        node = node[key]
-    return node
+    return descend(cast("Any", document), pointer_tokens(ref[1:]), "legacy-objects-only")
 
 
 def _dereferenced(document: Mapping[str, Any], node: object) -> object:

@@ -7,6 +7,7 @@ paths:
       operationId: sup
       responses:
         "²00": {description: superscript, content: {application/json: {schema: {type: string}}}}
+        "200": {description: ascii, content: {application/json: {schema: {type: string}}}}
   /r:
     get:
       operationId: rangeOnly

@@ -15,6 +15,7 @@ from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_bytes as _json_bytes
+from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch, written
@@ -109,15 +110,11 @@ class ReadMedia(BodyMedia):
 
 def position(call: OperationPlan[T], location: str, name: str) -> int:
     """Return the argument position of a declared parameter, matching a header's name without regard to case."""
-
-    def key(value: str) -> str:
-        return value.lower() if location == "header" else value
-
-    wanted = key(name)
+    wanted = parameter_key(location, name)
     return next(
         index
         for index, spec in enumerate(call.parameters)
-        if spec.plan.location == location and key(spec.plan.name) == wanted
+        if parameter_key(spec.plan.location, spec.plan.name) == wanted
     )
 
 
@@ -145,10 +142,11 @@ def targeted(
             index, pointer = position(call, "querystring", target.name), target.pointer
         else:
             index, pointer = position(call, target.location, target.name), None
-            if (location := target.location) == "header":
-                headers.add(target.name.lower())
+            location, key = parameter_key(target.location, target.name)
+            if location == "header":
+                headers.add(key)
             elif location == "query":
-                queries.add(target.name)
+                queries.add(key)
         spec = parameters[index]
         parameters[index] = (
             replace(spec, codec=None)

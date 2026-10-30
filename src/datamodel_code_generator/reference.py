@@ -39,6 +39,8 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
+from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._records import record
@@ -46,6 +48,7 @@ from datamodel_code_generator._target_unicode import (
     is_identifier,
     is_nfkc,
     is_numeric,
+    is_python_name,
     nfkc,
     replace_non_word,
     upper,
@@ -58,13 +61,14 @@ from datamodel_code_generator.util import camel_to_snake
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
+    from typing import Literal, TypeAlias
 
     import inflect
 
     from datamodel_code_generator.model import base as model_base
-    from datamodel_code_generator.types import DataType
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
+    _RwDirection: TypeAlias = Literal["request", "response"]
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -112,11 +116,7 @@ def split_module_name(
 
     parts = name.split(".")
     for part in parts:
-        if (
-            not is_identifier(part, target_python_version)
-            or iskeyword(part)
-            or not is_nfkc(part, target_python_version)
-        ):
+        if not is_python_name(part, target_python_version) or not is_nfkc(part, target_python_version):
             return None
     return parts
 
@@ -141,13 +141,6 @@ def get_inferred_module_name(
     return ".".join(parts[:-1])
 
 
-def _is_data_type(value: object) -> TypeIs[DataType]:
-    """Check if value is a DataType instance."""
-    from datamodel_code_generator.types import DataType as DataType_  # noqa: PLC0415
-
-    return isinstance(value, DataType_)
-
-
 def _is_data_model(value: object) -> TypeIs[model_base.DataModel]:
     """Check if value is a DataModel instance."""
     from datamodel_code_generator.model.base import DataModel as DataModel_  # noqa: PLC0415
@@ -159,10 +152,9 @@ def _is_data_model(value: object) -> TypeIs[model_base.DataModel]:
 class ReferenceChild(Protocol):
     """Protocol for objects that can be stored in Reference.children.
 
-    This is a minimal protocol - actual usage checks isinstance for DataType
-    or DataModel to access specific methods like replace_reference or class_name.
-    Using a property makes the type covariant, allowing both DataModel (Reference)
-    and DataType (Reference | None) to satisfy this protocol.
+    This is a minimal protocol: `_graph_links.py` tells a DataType child by its replace_reference method, and
+    `Reference.iter_data_model_children` checks isinstance for DataModel. Using a property makes the type covariant,
+    allowing both DataModel (Reference) and DataType (Reference | None) to satisfy this protocol.
     """
 
     @property
@@ -288,9 +280,8 @@ class Reference(_BaseModel):
 
     def replace_children_references(self, new_reference: Reference) -> None:
         """Replace all DataType children's reference with new_reference."""
-        for child in self.children[:]:
-            if _is_data_type(child):
-                child.replace_reference(new_reference)
+        for child in data_type_children(self):
+            child.replace_reference(new_reference)
 
     def iter_data_model_children(self) -> Iterator[Any]:
         """Yield all DataModel children."""
@@ -304,6 +295,9 @@ SINGULAR_NAME_SUFFIX: str = "Item"
 ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
+_SPECIAL_PATH_FORMAT: Final = f"{SPECIAL_PATH_MARKER}{{}}-#-special-#"
+"""The path token of a model that the generator makes at a path (``parser.base.SPECIAL_PATH_FORMAT``)."""
+_RW_DIRECTIONS: Final[tuple[_RwDirection, ...]] = ("request", "response")
 
 SCHEMA_LOCATION_KEY: Final = "_schema_location"
 SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
@@ -340,11 +334,36 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
 
 
+def _special_path(keyword: str, path: list[str]) -> list[str]:
+    """Return ``path`` followed by the token of the model that the generator makes there for ``keyword``."""
+    return [*path, _SPECIAL_PATH_FORMAT.format(keyword)]
+
+
+def _rw_variant_path(base: str, direction: _RwDirection) -> list[str]:
+    """Return the path of the read (request) or write (response) variant of the model at ``base``.
+
+    The parser adds the variant at this path and the target binding finds it there: both join it with the model
+    resolver's ``join_path``.
+    """
+    return _special_path(f"read-write-{direction}", base.split("/"))
+
+
+def _rw_variant_of(path: str) -> tuple[str, _RwDirection] | None:
+    """Return the base path and the direction of the read or write variant a reference path names, else None.
+
+    The variant is named by the last special token of the path.
+    """
+    base, marker, special = path.rpartition(SPECIAL_PATH_MARKER)
+    if marker and (
+        direction := next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), None)
+    ):
+        return base.rstrip("/"), direction
+    return None
+
+
 def _source_path(path: str) -> str:
     """Return a reference path without the marker of a read or write variant of its model."""
-    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
-        return variant[0].rstrip("/")
-    return path
+    return variant[0] if (variant := _rw_variant_of(path)) else path
 
 
 T = TypeVar("T")
@@ -473,9 +492,7 @@ class FieldNameResolver:
             names[name] = field
             if not final:
                 continue
-            invalid = explicit and (
-                not is_identifier(cast("str", field.name), target_python_version) or iskeyword(cast("str", field.name))
-            )
+            invalid = explicit and not is_python_name(cast("str", field.name), target_python_version)
             if (
                 explicit
                 and (conflicts_with_alias := cast("model_base.DataModel", field.parent).EXPLICIT_ALIAS_CONFLICT_CHECKER)
@@ -551,8 +568,7 @@ class FieldNameResolver:
         else:
             new_name = name
         while (
-            not is_identifier(new_name, target)
-            or iskeyword(new_name)
+            not is_python_name(new_name, target)
             or (excludes and new_name in excludes)
             or not self._validate_field_name(new_name)
         ):
@@ -1995,18 +2011,15 @@ class ModelResolver:  # noqa: PLR0904
         if not suffix and self.duplicate_name_suffix:
             suffix = self.duplicate_name_suffix
 
-        delimiter = "" if camel else "_"
+        numbering: Numbering = "joined" if camel else "underscore"
         if yields:
-            return self._get_yielding_unique_name(name, suffix, delimiter, prefix)
+            return self._get_yielding_unique_name(name, suffix, numbering, prefix)
         is_taken = self._is_taken_beside_yielding_names if self._yielding_names else self._is_taken
-        hint_key = (name, suffix or "", delimiter)
+        hint_key = (name, suffix or "", "" if camel else "_")
         count = self._unique_name_start_hints.get(hint_key, 0)
-        if count and not is_taken(self._build_unique_name_candidate(name, suffix, delimiter, count - 1)):
+        if count and not is_taken(candidate_at(name, numbering, count - 1, suffix)):
             count = 0
-        unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        while is_taken(unique_name):
-            count += 1
-            unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
+        unique_name, count = first_free(name, is_taken, numbering, suffix=suffix, start=count)
         if count:
             self._unique_name_start_hints[hint_key] = count + 1
         return unique_name
@@ -2022,59 +2035,34 @@ class ModelResolver:  # noqa: PLR0904
             or name in self._released_model_names
         )
 
-    def _get_yielding_unique_name(self, name: str, suffix: str | None, delimiter: str, prefix: str) -> str:
+    def _get_yielding_unique_name(self, name: str, suffix: str | None, numbering: Numbering, prefix: str) -> str:
         """Return a duplicate candidate free also in the module of a yielding reference, after those given before.
 
         Candidates before the last one given stay skipped even when a name among them is released later, which only
         numbers a later model of a map value higher.
         """
         reference_names = self._reference_names_cache
-        hint_key = (name, suffix or "", delimiter, prefix)
-        count = self._yielding_name_start_hints.get(hint_key, 0)
-        unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        while (
-            unique_name in reference_names
-            or f"{prefix}{unique_name}" in reference_names
-            or unique_name in self.exclude_names
-        ):
-            count += 1
-            unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        self._yielding_name_start_hints[hint_key] = count
+        hint_key = (name, suffix or "", numbering, prefix)
+        unique_name, self._yielding_name_start_hints[hint_key] = first_free(
+            name,
+            lambda unique_name: (
+                unique_name in reference_names
+                or f"{prefix}{unique_name}" in reference_names
+                or unique_name in self.exclude_names
+            ),
+            numbering,
+            suffix=suffix,
+            start=self._yielding_name_start_hints.get(hint_key, 0),
+        )
         return unique_name
-
-    @staticmethod
-    def _build_unique_name_candidate(name: str, suffix: str | None, delimiter: str, count: int) -> str:
-        """Build the same duplicate candidate sequence used by _get_unique_name."""
-        if count == 0:
-            return name
-        if suffix:
-            suffix_count = count - 1
-            return delimiter.join((name, suffix, str(suffix_count))) if suffix_count else delimiter.join((name, suffix))
-        return delimiter.join((name, str(count)))
-
-    @staticmethod
-    def _matches_unique_name_candidate(candidate: str, name: str, suffix: str, delimiter: str) -> bool:
-        """Return whether candidate belongs to the duplicate sequence for name."""
-        if candidate == name:
-            return True
-        if suffix:
-            first_duplicate = delimiter.join((name, suffix))
-            if candidate == first_duplicate:
-                return True
-            prefix = f"{first_duplicate}{delimiter}" if delimiter else first_duplicate
-        else:
-            prefix = f"{name}{delimiter}" if delimiter else name
-        if not candidate.startswith(prefix):
-            return False
-        count = candidate.removeprefix(prefix)
-        return bool(count) and count.isdecimal()
 
     def _invalidate_unique_name_hints(self, released_name: str) -> None:
         """Drop duplicate-name hints whose sequence may reuse a released name."""
         if not self._unique_name_start_hints:
             return
         for hint_key in tuple(self._unique_name_start_hints):
-            if self._matches_unique_name_candidate(released_name, *hint_key):
+            name, suffix, delimiter = hint_key
+            if is_numbered(released_name, name, "underscore" if delimiter else "joined", suffix):
                 del self._unique_name_start_hints[hint_key]
 
     def _get_suffix_for_model_type(self, model_type: str) -> str:
@@ -2084,7 +2072,7 @@ class ModelResolver:  # noqa: PLR0904
     @classmethod
     def validate_name(cls, name: str, target_python_version: PythonVersion | None = None) -> bool:
         """Check if a name is a valid Python identifier in the target Python version."""
-        return is_identifier(name, target_python_version) and not iskeyword(name)
+        return is_python_name(name, target_python_version)
 
     def get_valid_field_name(
         self,

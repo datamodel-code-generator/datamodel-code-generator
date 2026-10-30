@@ -14,5 +14,8 @@ from .._runtime.model_codecs.pydantic_models import PydanticCodec
 codec_0: Final[PydanticCodec[models.SupGetResponse]] = PydanticCodec(models.SupGetResponse)
 """Codec of /paths/~1sup/get response_body (response ²00 application/json)."""
 
-codec_1: Final[PydanticCodec[models.RGetResponse]] = PydanticCodec(models.RGetResponse)
+codec_1: Final[PydanticCodec[models.SupGetResponse]] = PydanticCodec(models.SupGetResponse)
+"""Codec of /paths/~1sup/get response_body (response 200 application/json)."""
+
+codec_2: Final[PydanticCodec[models.RGetResponse]] = PydanticCodec(models.RGetResponse)
 """Codec of /paths/~1r/get response_body (response AXX application/json)."""

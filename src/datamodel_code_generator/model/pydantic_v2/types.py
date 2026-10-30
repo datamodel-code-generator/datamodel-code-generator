@@ -14,6 +14,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -591,9 +592,7 @@ class PydanticV2DataType(DataType):
 
         assert self.reference is not None
 
-        from datamodel_code_generator.model.base import DataModel  # noqa: PLC0415
-
-        return any(isinstance(child, DataModel) and child.fields for child in self.reference.children)
+        return any(child.fields for child in self.reference.iter_data_model_children())
 
     @override
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:
@@ -653,8 +652,8 @@ class EncodedBytesDataType(_RuntimeAnnotatedDataType):
     @override
     def type_hint(self) -> str:
         """Render the lengths and the base64 decoding inside an Annotated subscript."""
-        keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
+        keywords = (f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
         return (
-            f"{self._binding('Annotated')}[bytes, {self._binding('Field')}({keywords}), "
+            f"{self._binding('Annotated')}[bytes, {call_text(self._binding('Field'), keywords)}, "
             f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})]"
         )

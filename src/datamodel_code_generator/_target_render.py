@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._python_syntax import call_text, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
 
@@ -59,17 +60,6 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def display(values: Iterable[str]) -> str:
-    """Return the tuple display of expressions, with the comma a lone item needs."""
-    items = tuple(values)
-    return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-
-
-def call(head: str, arguments: Iterable[str]) -> str:
-    """Return a call of `head` with its arguments, each already spelled with its keyword when it has one."""
-    return f"{head}({', '.join(arguments)})"
-
-
 def runtime_sources(modules: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
     """Yield the declared runtime modules and their packages' initializers, in ascending path order.
 
@@ -93,7 +83,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
     def spelled(name: str, value: Any) -> str:
         match name:
             case "fields":
-                return display(field_plan(local, item) for item in value)
+                return tuple_display(field_plan(local, item) for item in value)
             case "additional":
                 return field_plan(local, value)
         return repr(value)
@@ -103,7 +93,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
         for item in fields(plan)
         if (value := getattr(plan, item.name)) != item.default
     ]
-    return call(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
+    return call_text(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
 
 
 def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:

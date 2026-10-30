@@ -16,7 +16,7 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError, MalformedError
 from ..model_codecs.media import charset, essence, json_value, media_kind, typed
-from .operations import BodyFramingError, BodyValueError, Branch, InvalidBodyError, read_branch
+from .operations import BodyFramingError, BodyValueError, Branch, InvalidBodyError, coded, read_branch
 from .responses import HeadersView
 
 if TYPE_CHECKING:
@@ -258,14 +258,9 @@ def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONValue:
 
 
 def _decoded(codec: InboundModelCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
-    try:
-        if kind == "json" or _json_part(part):
-            return codec.decode(part.value)
-        return codec.text(_part_text(part, kind))
-    except codec.errors as error:
-        if codec.malformed(error):
-            raise InvalidBodyError(error) from None
-        raise BodyValueError(error) from None
+    if kind == "json" or _json_part(part):
+        return coded(codec, partial(codec.decode, part.value))
+    return coded(codec, lambda: codec.text(_part_text(part, kind)))
 
 
 def value_part(  # noqa: PLR0913

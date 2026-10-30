@@ -7,7 +7,6 @@ with support for Field() constraints and ConfigDict.
 from __future__ import annotations
 
 import json
-import keyword
 import re
 from abc import abstractmethod
 from collections import defaultdict
@@ -22,10 +21,13 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
+from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -453,7 +455,7 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
         if not isinstance(field_name, str):
             continue
         normalized_field_name = _normalize_string(field_name)
-        if not normalized_field_name.isidentifier() or keyword.iskeyword(normalized_field_name):
+        if not is_python_name(normalized_field_name, rule="legacy-host-identifiers"):
             continue
         normalized_value = _normalize_string(value) if isinstance(value, str) else value
         if normalized_field_name == _ALIAS_GENERATOR_TEMPLATE_DATA_KEY and (
@@ -684,9 +686,7 @@ def _pattern_needs_holder_engine(
 
     if not issubclass(root_type, TypeAliasBase) or pydantic_target_meets("pydantic.compiled_pattern", target_pydantic):
         return False
-    return has_lookaround(pattern) or (
-        (scan := scan_regex_syntax(pattern)) is not None and scan[0] and target_python.version_key >= scan[1]
-    )
+    return needs_python_engine(pattern, row="model", target_python=target_python.version_key)
 
 
 def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
@@ -1006,9 +1006,11 @@ class DataModelField(_PydanticBaseDataModelField):
         else:
             serialization_alias, serialization_items = unique_validation_aliases[0], ("validation_aliases",)
         args.pop("alias", "validation-aliases", _VALIDATION_ALIASES)
-        aliases_repr = ", ".join(repr(a) for a in unique_validation_aliases)
         args.put(
-            "validation_alias", _RawRepr(f"AliasChoices({aliases_repr})"), _VALIDATION_ALIASES, ("validation_aliases",)
+            "validation_alias",
+            _RawRepr(call_text("AliasChoices", map(repr, unique_validation_aliases))),
+            _VALIDATION_ALIASES,
+            ("validation_aliases",),
         )
         if (
             self.use_serialization_alias
@@ -1184,19 +1186,16 @@ def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType
 
 
 def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataModelFieldBase) -> bool:
-    """Return whether a pattern emitted for ``field`` needs Python's ``re``.
+    """Return whether a pattern emitted for ``field`` needs Python's ``re``: row ``model`` of ``needs_python_engine``.
 
-    Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns
-    and keyed on the target Python and Pydantic versions, so the output never depends on the installed
-    pydantic-core or on the Python running the generator. A pattern Python's ``re`` also rejects fails at
-    import either way.
+    Lookaround keeps its long-standing textual check. Other syntax counts for string patterns Pydantic compiles,
+    keyed on the target Python and Pydantic versions, so the output never depends on the installed pydantic-core or
+    on the Python running the generator. A pattern Python's ``re`` also rejects fails at import either way.
     """
-    if has_lookaround(pattern):
-        return True
-    if (string_type := _string_pattern_data_type(data_type, field.parent)) is None:
-        return False
-    scan = scan_regex_syntax(pattern)
-    return scan is not None and scan[0] and field.target_version_key(string_type) >= scan[1]
+    string_type = _string_pattern_data_type(data_type, field.parent)
+    return needs_python_engine(
+        pattern, row="model", target_python=None if string_type is None else field.target_version_key(string_type)
+    )
 
 
 if TYPE_CHECKING:
@@ -1739,8 +1738,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             normalized_base_class_name
             if (
                 normalized_base_class_name is not None
-                and normalized_base_class_name.isidentifier()
-                and not keyword.iskeyword(normalized_base_class_name)
+                and is_python_name(normalized_base_class_name, rule="legacy-host-identifiers")
             )
             else cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
         )
@@ -2083,12 +2081,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         )
         if reserved_names:
             class_names.update(reserved_names)
-        candidate = f"{base_class_name}{suffix}"
-        number = 2
-        while candidate in class_names:
-            candidate = f"{base_class_name}{suffix}{number}"
-            number += 1
-        return candidate
+        return first_free(f"{base_class_name}{suffix}", class_names.__contains__, "joined-from-2")[0]
 
     @classmethod
     def _render_property_count_validation_helpers(

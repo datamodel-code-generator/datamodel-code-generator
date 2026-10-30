@@ -18,7 +18,7 @@ from dataclasses import replace
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
@@ -102,7 +102,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
-    _register_data_type_import,
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
@@ -110,16 +109,19 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
+    import_references,
+    merge_duplicate,
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
-    redirect_collapsed_reuse_users,
     register_reference_import,
+    removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
     set_reference_expression,
     set_reference_expressions,
     site_display_name,
+    subclass_duplicate,
     without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
@@ -167,6 +169,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -317,6 +320,10 @@ class ModulesHost(
         """Whether field names are written in snake case."""
 
     @property
+    def treat_dot_as_module(self) -> bool | None:
+        """Whether dots in schema names make modules."""
+
+    @property
     def use_annotated(self) -> bool:
         """Whether field constraints are written inside ``Annotated``."""
 
@@ -445,10 +452,6 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
         """The parser configuration."""
 
     @property
-    def data_model_field_type(self) -> type[DataModelFieldBase]:
-        """The field type of the output."""
-
-    @property
     def force_optional_for_required_fields(self) -> bool:
         """Whether required fields are made optional."""
 
@@ -460,10 +463,6 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
     def use_msgspec_tagged_unions(self) -> bool:
         """Whether msgspec unions are tagged by their discriminators."""
 
-    @property
-    def use_serialization_alias(self) -> bool:
-        """Whether aliases are written as serialization aliases."""
-
     def _create_discriminator_data_type(
         self,
         enum_source: Enum | None,
@@ -473,16 +472,17 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
     ) -> DataType:
         """Return the type of a tag field, of the members of its enum if it has one."""
 
-    def _data_model_field_common_kwargs(self) -> dict[str, Any]:
-        """Return the keyword arguments every field the parser builds takes."""
-
-    def _split_field_alias(self, alias: str | list[str] | None) -> tuple[str | None, list[str] | None]:
-        """Split one output alias from multiple validation aliases."""
-
-    def get_serialization_alias(
-        self, original_field_name: str, field_name: str, class_name: str | None = None
-    ) -> str | None:
-        """Return the serialization alias configured for a field, if any."""
+    def _build_field(
+        self,
+        row: FieldRow,
+        /,
+        data_type: DataType,
+        *,
+        source_name: str | None = None,
+        class_name: str | None = None,
+        **facts: Unpack[FieldFacts],
+    ) -> DataModelFieldBase:
+        """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
 
 
 class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, GraphBuilderHost, Protocol):
@@ -1034,7 +1034,6 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
     if not parser.reuse_model or parser.reuse_scope == ReuseScope.Tree:
         return
     duplicates = []
-    require_update = parser._recursion_facts["require_update"]  # noqa: SLF001
     updated_models: list[DataModel] = []
     reuse_candidates = (
         model
@@ -1051,7 +1050,6 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         cached_model, model = groups.canonical_pair(canonical_models.get(id(first_model), first_model), duplicate_model)
         if model is not duplicate_model:
             canonical_models[id(first_model)] = cached_model
-        cached_model_reference = cached_model.reference
         if (
             groups.is_typed_map_value(model)
             and not parser.collapse_reuse_models
@@ -1059,23 +1057,18 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         ):
             # A module written earlier names the value, as a field of a collapsed root model does, so it stays.
             continue
-        if isinstance(model, Enum) or parser.collapse_reuse_models:
+        if removes_reuse_duplicate(parser, model, inherits=True):
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            parser._graph_builder.redirect_model_reference_users(model, models, cached_model_reference)  # noqa: SLF001
+            parser._graph_builder.redirect_model_reference_users(model, models, cached_model.reference)  # noqa: SLF001
+            parser._graph_builder.retire_model(model)  # noqa: SLF001
             duplicates.append(model)
-        else:
-            inherited_model = model.create_reuse_model(cached_model_reference)
-            parser._graph_builder.redirect_model_reference_users(model, models, inherited_model.reference)  # noqa: SLF001
-            if model_key_of(cached_model_reference) in require_update:
-                updated_models.append(inherited_model)
-            replace_model_in_list(models, model, inherited_model)
-            parser._graph_builder.replace_model(model, inherited_model)  # noqa: SLF001
+        elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
+            updated_models.append(updated)
 
     for duplicate in duplicates:
         models.remove(duplicate)
-        parser._graph_builder.retire_model(duplicate)  # noqa: SLF001
     if updated_models:
         require_update_action(parser, updated_models, require_update_action_models)
 
@@ -1086,7 +1079,7 @@ def redirect_removed_reuse_users(parser: ReuseHost, duplicate: DataModel, canoni
     Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
     """
     users = parser._removed_reuse_users  # noqa: SLF001
-    for user in redirect_collapsed_reuse_users(parser, duplicate, canonical):
+    for user in merge_duplicate(parser, duplicate, canonical, REUSE_MODEL, keeps_duplicate_tags=True):
         users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
 
 
@@ -1452,16 +1445,19 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     raise _CollapseRootModelsRecursionError(msg)
                 producer = ImportProducer("collapse-root-models", model, model_field)
                 with replacement_context:
-                    for d in copied_data_type.all_data_types:
-                        _register_data_type_import(
-                            d,
-                            model,
-                            imports,
-                            scoped_model_resolver,
-                            model_path_to_module_name,
-                            ledger=parser._import_ledger,  # noqa: SLF001
-                            producer=producer,
-                        )
+                    import_references(
+                        parser,
+                        model,
+                        copied_data_type.all_data_types,
+                        imports,
+                        scoped_model_resolver,
+                        model_path_to_module_name,
+                        init=is_init,
+                        internal_modules=internal_modules,
+                        members=None,
+                        producer=producer,
+                        row="legacy-collapse-import-path",
+                    )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
                     if original_field:  # pragma: no cover
@@ -1988,21 +1984,16 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     discriminator_model,
                     imports,
                 )
-                # Handle multiple aliases (Pydantic v2 AliasChoices)
-                single_alias, validation_aliases = parser._split_field_alias(names.alias)  # noqa: SLF001
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser.data_model_field_type(
+                    discriminator_field := parser._build_field(  # noqa: SLF001
+                        "legacy-alias-option-only",
+                        new_data_type,
                         name=field_name,
-                        data_type=new_data_type,
+                        alias=names.alias,
+                        source_name=names.property_name,
+                        class_name=discriminator_model.name,
                         required=True,
-                        alias=single_alias,
-                        validation_aliases=validation_aliases,
-                        serialization_alias=parser.get_serialization_alias(
-                            names.property_name, field_name, discriminator_model.name
-                        ),
-                        use_serialization_alias=parser.use_serialization_alias,
-                        **parser._data_model_field_common_kwargs(),  # noqa: SLF001
                     ),
                 )
                 if parser.config.aliases:
@@ -2487,16 +2478,19 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                 parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
                 _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
-                for nested in root_type.all_data_types:
-                    _register_data_type_import(
-                        nested,
-                        model,
-                        imports,
-                        state.scoped_model_resolver,
-                        state.model_path_to_module_name,
-                        ledger=parser._import_ledger,  # noqa: SLF001
-                        producer=producer,
-                    )
+                import_references(
+                    parser,
+                    model,
+                    root_type.all_data_types,
+                    imports,
+                    state.scoped_model_resolver,
+                    state.model_path_to_module_name,
+                    init=state.is_init,
+                    internal_modules=state.internal_modules,
+                    members=None,
+                    producer=producer,
+                    row="legacy-collapse-import-path",
+                )
                 parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                 changed = True

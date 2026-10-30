@@ -19,16 +19,35 @@
 decision = "the intersection of the parts of an allOf or a $ref with siblings, keyword by keyword"
 core = ["parser/_intersection.py"]
 adapters = [
-    "parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings",
-    "parser/jsonschema.py:JsonSchemaParser._merge_properties_with_parent_constraints",
-    "parser/jsonschema.py:_intersect_dumps",
-    "parser/jsonschema.py:JsonSchemaParser._intersect_constraint",
+    "parser/_schema_refs.py:intersect_ref_siblings",
+    "parser/_inherited_schemas.py:merge_properties_with_parent_constraints",
+    "parser/_schema_reading.py:_intersect_dumps",
+    "parser/_lightweight_types.py:_intersect_constraint",
 ]
 
 [homes.H03.signatures.merge-function]
 kind = "function"
-pattern = "^_merge"
-paths = ["parser/jsonschema.py", "parser/openapi.py"]
+pattern = "^_?merge"
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
+exclude = [
+    "parser/_all_of_values.py:AllOfValuesHost",
+    "parser/_inherited_schemas.py:InheritedSchemasHost",
+    "parser/_lightweight_types.py:LightweightTypesHost",
+    "parser/_object_maps.py:ObjectMapsHost",
+    "parser/_rw_split.py:RwSplitHost",
+    "parser/_schema_refs.py:SchemaRefsHost",
+    "parser/jsonschema.py:JsonSchemaParser._merge_all_of_object",
+    "parser/jsonschema.py:JsonSchemaParser._merge_all_of_root_schema",
+    "parser/jsonschema.py:JsonSchemaParser._merge_conditional_properties",
+    "parser/jsonschema.py:JsonSchemaParser._merge_inherited_field_overrides",
+    "parser/jsonschema.py:JsonSchemaParser._merge_inherited_type_shape_dict",
+    "parser/jsonschema.py:JsonSchemaParser._merge_inherited_union_branch",
+    "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas",
+    "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas_for_allof",
+    "parser/jsonschema.py:JsonSchemaParser._merge_properties_with_parent_constraints",
+    "parser/jsonschema.py:JsonSchemaParser._merge_ref_with_schema",
+    "parser/jsonschema.py:JsonSchemaParser._merge_schema_constraints",
+]
 what = "a function that merges schema keywords itself; call parser/_intersection.py:intersect_keywords"
 audit = "D-L1-18"
 
@@ -48,7 +67,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/openapi.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
@@ -60,8 +79,8 @@ adapters = [
     "parser/jsonschema.py:JsonSchemaParser._null_facts",
     "parser/jsonschema.py:JsonSchemaParser._type_has_null",
     "parser/jsonschema.py:_null_sources",
-    "parser/jsonschema.py:_dump_parts_admit_null",
-    "parser/jsonschema.py:_type_null_sources",
+    "parser/_schema_reading.py:_dump_parts_admit_null",
+    "parser/_schema_object.py:_type_null_sources",
     "parser/openapi.py:OpenAPIParser._null_mode",
 ]
 
@@ -86,7 +105,7 @@ kind = "compare-in"
 values = ["null"]
 paths = ["parser/", "_target_binding.py"]
 what = "tests a type list for \"null\"; call resolve_null_facts"
-audit = { default = "D-L1-04", "parser/_intersection.py" = "D-L1-16", "parser/jsonschema.py:JsonSchemaParser._extract_const_enum_from_combined" = "D-L1-10" }
+audit = { default = "D-L1-04", "parser/_intersection.py" = "D-L1-16", "parser/_value_keywords.py:extract_const_enum_from_combined" = "D-L1-10" }
 
 [homes.H10]
 decision = "which members a union holds, in which order, and whether it writes None itself"
@@ -186,7 +205,7 @@ decision = "which child schemas a site of a dispatch table types, and which mode
 core = ["parser/_schema_dispatch.py"]
 adapters = [
     "parser/jsonschema.py:JsonSchemaParser._typed_model_children",
-    "parser/jsonschema.py:JsonSchemaParser._typed_field_site",
+    "parser/_rw_split.py:typed_field_site",
     "parser/jsonschema.py:JsonSchemaParser._types_site_model",
     "parser/jsonschema.py:JsonSchemaParser._types_nothing",
 ]
@@ -198,14 +217,67 @@ paths = ["parser/"]
 what = "predicts the children a site types for the request/response split; ask the table (typed_children)"
 audit = "D-X-02"
 
+[homes.Hx-field-build]
+decision = "how a parser builds a field it writes: the field class's constructor, the configured field options each kind of field takes, the alias, validation aliases and serialization alias, and the name and aliases a field built earlier takes from the placeholder it replaces or for a new name"
+core = [
+    "parser/base.py:Parser._build_field",
+    "parser/base.py:Parser._field_aliases",
+    "parser/base.py:Parser._take_field_aliases",
+    "parser/_field_rows.py",
+    "parser/_passes/_shared.py:placeholder_identity",
+]
+
+[homes.Hx-field-build.signatures.field-construction]
+kind = "call"
+names = ["data_model_field_type", "_data_model_field_constructor"]
+paths = ["parser/"]
+what = "builds a field outside Parser._build_field; pass its facts to Parser._build_field with the row of its kind"
+audit = "PF-1"
+
+[homes.Hx-field-build.signatures.field-alias-write]
+kind = "name"
+ctx = "store"
+names = ["serialization_alias", "use_serialization_alias", "validation_aliases"]
+paths = ["parser/"]
+exclude = ["parser/base.py:Parser.__init__"]
+what = "writes a field's aliases; a copy is made with its placeholder's (placeholder_identity), a field built earlier takes them for a new name with Parser._take_field_aliases"
+audit = "PF2-1"
+
+[homes.Hx-field-build.signatures.field-identity-literal]
+kind = "keyword-set"
+keywords = ["original_name", "validation_aliases", "serialization_alias", "use_serialization_alias"]
+min = 2
+paths = ["parser/"]
+what = "lists the aliases a field takes by hand; a copy takes its placeholder's from placeholder_identity, a field built earlier takes them for a new name with Parser._take_field_aliases"
+audit = "PF3-1"
+
+[homes.Hx-field-build.signatures.field-alias-derivation]
+kind = "call"
+names = ["_split_field_alias", "get_serialization_alias"]
+paths = ["parser/"]
+what = "derives a field's aliases itself; call Parser._field_aliases, or Parser._take_field_aliases for a field built earlier"
+audit = "PF2-2"
+
+[homes.Hx-type-copy]
+decision = "how a DataType is copied: what a copy owns (its lists and kwargs) and carries (its private state), and whether a tree copy shares the References it names, registered with them and linked to its holders or not, or is a deep copy"
+core = ["types.py:_copied_node", "types.py:_copy_data_type", "types.py:DataType.__deepcopy__"]
+adapters = []
+
+[homes.Hx-type-copy.signatures.node-state-copy]
+kind = "call"
+names = ["list"]
+mentions = ["literals", "enum_member_literals"]
+what = "copies the lists of a DataType node itself; call types.py:_copied_node, or _copy_data_type for a tree"
+audit = "C05-B08"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
 adapters = [
     "parser/jsonschema.py:JsonSchemaParser._literal_view",
-    "parser/jsonschema.py:JsonSchemaParser._check_literal_const",
-    "parser/jsonschema.py:JsonSchemaParser._combined_values_admitted",
-    "parser/jsonschema.py:JsonSchemaParser._literal_written",
+    "parser/_value_keywords.py:check_literal_const",
+    "parser/_value_keywords.py:combined_values_admitted",
+    "parser/_value_keywords.py:literal_written",
     "parser/jsonschema.py:JsonSchemaParser._admitted_or_warn",
 ]
 
@@ -214,6 +286,57 @@ kind = "number"
 powers = [63, 64]
 what = "writes the int64 range itself; add a representability row to _constraint_applicability.py"
 audit = "D-L1-21"
+
+[homes.Hx-python-names]
+decision = "whether text is a name Python binds: an identifier by the target's, ASCII or the running interpreter's characters, and no keyword; alone or as a dotted path"
+core = ["_target_unicode.py:is_python_name", "_target_unicode.py:is_dotted_python_name"]
+adapters = []
+
+[homes.Hx-python-names.signatures.keyword-test]
+kind = "call"
+names = ["iskeyword"]
+# Left out: a NAME token of the running tokenizer (the decorator matcher reads tokens, not names), and the keyword
+# escape of the field-name resolver (how a name is made: a keyword takes a trailing underscore).
+exclude = ["_python_decorator.py:_parse_direct_target", "reference.py:FieldNameResolver.get_valid_name"]
+what = "tests whether text is a Python name itself; call _target_unicode.py:is_python_name (or is_dotted_python_name) with the row of its characters"
+audit = "C10-K03"
+
+[homes.Hx-free-names]
+decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
+core = ["_free_names.py"]
+adapters = []
+
+[homes.Hx-free-names.signatures.name-search]
+kind = "name-search"
+# Left out: the field-name resolver makes a name valid, and its numbered candidates follow the name before
+# --capitalise-enum-members or the class-name casing changes it, with an ASCII fallback that restarts the numbers
+# (C09 design, H: issue draft).
+exclude = ["reference.py:FieldNameResolver.get_valid_name"]
+what = "searches for the first name its scope does not hold; call _free_names.py:first_free with the row of the feature's numbering"
+audit = "C09-N1"
+
+[homes.Hx-name-words]
+decision = "how a class name is made from the words of a free text: its runs of ASCII letters and digits, each titled by the feature's row, joined, with the feature's prefix for a name that would start with a digit"
+core = ["_name_words.py"]
+adapters = []
+
+[homes.Hx-name-words.signatures.word-pattern]
+kind = "literal"
+contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
+what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
+audit = "C18-N2"
+
+[homes.Hx-regex-engine]
+decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
+core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]
+adapters = []
+
+[homes.Hx-regex-engine.signatures.syntax-scan]
+kind = "call"
+names = ["has_lookaround", "scan_regex_syntax"]
+exclude = ["_regex_syntax.py"]
+what = "decides a regex engine from the static scan itself; call _regex_syntax.py:needs_python_engine with the row of its output"
+audit = "C06"
 
 [homes.H08]
 decision = "which class an enum is written as, whether it is a Literal, and the kind of a literal value"
@@ -250,10 +373,49 @@ decision = "the keys deduplication and reuse compare models by"
 core = ["parser/_model_shapes.py"]
 adapters = ["parser/_passes/structure.py:delete_duplicate_models"]
 
+[homes.Hx-duplicate-merge]
+decision = "what becomes of a duplicate that deduplication or reuse found: it leaves the output and every user names the equal canonical model, keeping the tags of its unions or not, its children taking their bases once; or it becomes an empty subclass of the canonical model in its place"
+core = [
+    "parser/_passes/_shared.py:merge_duplicate",
+    "parser/_passes/_shared.py:_distinct_bases",
+    "parser/_passes/_shared.py:removes_reuse_duplicate",
+    "parser/_passes/_shared.py:subclass_duplicate",
+]
+adapters = []
+
+[homes.Hx-duplicate-merge.signatures.merged-redirect]
+kind = "call"
+names = ["redirect_reference_users"]
+keywords = ["merged"]
+paths = ["parser/"]
+exclude = ["parser/generation.py"]
+what = "merges a duplicate into its canonical model itself; call parser/_passes/_shared.py:merge_duplicate"
+audit = "C08-U5"
+
+[homes.Hx-duplicate-merge.signatures.reuse-subclass]
+kind = "call"
+names = ["create_reuse_model"]
+paths = ["parser/"]
+what = "makes a duplicate an empty subclass itself; call parser/_passes/_shared.py:subclass_duplicate"
+audit = "C08-U4"
+
 [homes.H21]
 decision = "model identity, holders and shared nodes of the generation graph"
 core = ["parser/_graph_ids.py", "parser/generation.py"]
 adapters = []
+
+[homes.Hx-reference-children]
+decision = "which data types and models name a Reference (its back links, Reference.children): how a child is added, dropped and told apart, and which children the store redirects"
+core = ["_graph_links.py", "reference.py:Reference.iter_data_model_children"]
+adapters = []
+
+[homes.Hx-reference-children.signatures.children-access]
+kind = "name"
+names = ["children"]
+ctx = "any"
+receivers = ["reference", "old_reference", "new_reference"]
+what = "reads or writes Reference.children itself; call _graph_links.py (add_child, drop_child, data_type_children) or Reference.iter_data_model_children"
+audit = "C11-K01"
 
 [homes.H23]
 decision = "whether a type's rendered hint, or the annotation a field writes around it, includes None"
@@ -275,8 +437,20 @@ adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
 decision = "module imports, bindings and final names"
-core = ["parser/_imports_plan.py"]
+core = [
+    "parser/_imports_plan.py",
+    "parser/_passes/_shared.py:ReferenceImportTarget",
+    "parser/_passes/_shared.py:reference_import_target",
+    "parser/_passes/_shared.py:register_reference_import",
+    "parser/_passes/_shared.py:set_reference_expression",
+]
 adapters = []
+
+[homes.H26.signatures.model-import-path]
+kind = "call"
+names = ["relative", "exact_import", "is_ancestor_package_reference"]
+what = "computes the module a module imports a model of another module from; call register_reference_import or set_reference_expression (parser/_passes/_shared.py) with its row"
+audit = "C04-K10"
 
 # Target homes (docs/architecture.md, "Targets"; design: targets-parse-once, T0). The client and server targets read an
 # OpenAPI document once, in the API walk, and read model facts only through the homes. A place under `planned` is the
@@ -414,6 +588,40 @@ exclude = ["_runtime/"]
 what = "escapes or unescapes a JSON Pointer token itself; call _json_pointer.py (the generated runtime keeps its own copy)"
 audit = "C01"
 
+[homes.Hx-pointer-members]
+decision = "which member of a loaded document one JSON Pointer token names (list index grammar, integer YAML keys, the tokens that are errors and not misses)"
+core = ["_document_reader.py:member", "_document_reader.py:descend", "_document_reader.py:_array_item"]
+adapters = []
+
+[homes.Hx-pointer-members.signatures.index-grammar]
+kind = "call"
+names = ["is_array_index"]
+what = "reads a list item by the JSON Pointer index grammar itself; pick a row of _document_reader.member"
+audit = "C01"
+
+[homes.Hx-python-syntax]
+decision = "how generated Python spells a call and a tuple, list, set or dict display from the texts of their items: the separator, the comma a lone tuple item needs, the set() of a set without items and the colon of a dict entry"
+core = ["_python_syntax.py"]
+adapters = []
+
+[homes.Hx-python-syntax.signatures.hand-display]
+kind = "display"
+brackets = ["(", "[", "{"]
+exclude = ["_runtime/", "__main__.py:_format_toml_value"]
+what = "joins expression texts into a call or a tuple, list, set or dict display itself; call _python_syntax.py (a TOML array is not Python)"
+audit = "C13"
+
+[homes.Hx-rw-variant]
+decision = "the path of a model's read (request) or write (response) variant: how the parser builds it from its base path and how a reader takes its base path and direction back"
+core = ["reference.py:_rw_variant_path", "reference.py:_rw_variant_of"]
+adapters = []
+
+[homes.Hx-rw-variant.signatures.variant-keyword]
+kind = "literal"
+contains = ["read-write-"]
+what = "spells the read/write variant keyword itself; call reference.py:_rw_variant_path or _rw_variant_of"
+audit = "C03-R1"
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]
@@ -500,14 +708,42 @@ audit = "M-09"
 
 [homes.H14]
 decision = "the method resolution order of generated models and the fields a model has with its bases"
-core = ["model/base.py:linearize_data_models", "model/base.py:c3_merge"]
-adapters = ["model/base.py:DataModel.iter_all_fields", "parser/_passes/settle.py:sort_base_classes_for_mro"]
+core = ["_mro.py", "model/base.py:linearize_data_models"]
+adapters = [
+    "model/base.py:DataModel.iter_all_fields",
+    "model/base.py:_effective_field_owners",
+    "model/base.py:sort_data_models_for_mro",
+    "parser/_passes/_shared.py:takes_positional_place",
+    "parser/_inherited_schemas.py:linearize_inherited_schema_refs",
+    "parser/_inherited_schemas.py:sort_inherited_base_classes_for_mro",
+    "parser/_passes/settle.py:sort_base_classes_for_mro",
+]
 
 [homes.H14.signatures.mro-function]
 kind = "function"
-pattern = "^_?(c3|linearize|parent_first|mro)"
-paths = ["_target_binding.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
-what = "computes a method resolution order itself; call model/base.py:linearize_data_models"
+pattern = "^_?(c3|linearize|parent_first|mro)|.*_for_mro$"
+exclude = [
+    "_runtime/",
+    "parser/_inherited_schemas.py:InheritedSchemasHost",
+    "parser/_rw_split.py:RwSplitHost",
+    "parser/jsonschema.py:JsonSchemaParser._linearize_inherited_schema_refs",
+]
+what = "computes a method resolution order itself; call _mro.py:linearize or c3_merge with its rule"
+audit = "M-04"
+
+[homes.H14.signatures.member-resolution]
+kind = "call"
+names = ["reversed"]
+mentions = ["linearize_data_models", "constructor_base_models", "linearize"]
+exclude = ["_runtime/"]
+what = "reads members through a method resolution order itself; call _mro.py:resolve_members (a model's fields: model/base.py:_effective_field_owners)"
+audit = "M-04"
+
+[homes.H14.signatures.positional-place]
+kind = "name"
+names = ["constructor_keyword_only"]
+exclude = ["_runtime/"]
+what = "decides itself whether a field takes a positional place in a constructor; call parser/_passes/_shared.py:takes_positional_place"
 audit = "M-04"
 
 [homes.H14.signatures.member-enumeration]
@@ -592,13 +828,6 @@ decision = "the operation plan both targets read: groups, names, arguments, defa
 core = ["_target_operations.py"]
 adapters = ["_client/plan.py:Planner.resolved", "_fastapi/plan.py:Planner.selected"]
 
-[homes.T-operation.signatures.status-number]
-kind = "number"
-literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
-paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
-what = "decides a status class or a bodyless status; read ResponseSpec of the operation plan"
-audit = "C-11"
-
 [homes.T-operation.signatures.twin-planner]
 kind = "function"
 pattern = "^_?(tag_namespaces|groups|group_name|group_key|operation_names|named|alias|selected|resolved|check_statuses|declaring|registration|primary_decision|success_media|default_media|normalized|essence|media_range|reachable|form_read|form_plan|part_media|sent|received|json_members|typed_members|planned|requirements|scheme)$"
@@ -646,6 +875,132 @@ default = "C-01"
 "_fastapi/render.py:_scheme" = "C-12"
 "_fastapi/render.py:_registration" = "C-13"
 
+[homes.Hx-http]
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes and keys, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
+core = ["_runtime/model_codecs/media.py"]
+adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
+
+[homes.Hx-http.signatures.media-essence]
+kind = "call"
+names = ["partition"]
+strings = [";"]
+what = "cuts the parameters off a media type itself; call model_codecs/media.py:essence"
+audit = "C19-M02"
+
+[homes.Hx-http.signatures.media-range]
+kind = "compare-in"
+values = ["*"]
+paths = ["_client/", "_fastapi/", "_runtime/", "_openapi_wire_plan.py", "_target_binding.py", "_target_operations.py"]
+what = "tests whether a media type is a range itself; call model_codecs/media.py:media_range"
+audit = "C19-M01"
+
+[homes.Hx-http.signatures.media-precedence]
+kind = "keyword-set"
+keywords = ["*/*"]
+min = 1
+what = "ranks declared media types for a received one itself; call model_codecs/media.py:most_specific"
+audit = "C19-M06"
+
+[homes.Hx-http.signatures.bodyless-status]
+kind = "number"
+literals = [205]
+what = "lists the statuses that carry no content; read model_codecs/media.py:BODYLESS_STATUSES or call bodyless"
+audit = "C19-M12"
+
+[homes.Hx-http.signatures.bodyless-key]
+kind = "keyword-set"
+keywords = ["204", "205", "304"]
+min = 2
+what = "lists the status keys that carry no content; call _target_operations.py:response_bodyless"
+audit = "C19-M13"
+
+[homes.Hx-http.signatures.status-number]
+kind = "number"
+literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
+paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
+what = "decides a status class or a bodyless status; read the ranges of model_codecs/media.py or call _target_operations.py:response_bodyless"
+audit = "C-11"
+
+[homes.Hx-http.signatures.runtime-status-number]
+kind = "number"
+literals = [300, 399, 599]
+paths = ["_runtime/"]
+what = "bounds a status class in the runtime itself; read the ranges of model_codecs/media.py"
+audit = "C19-M11"
+
+[homes.Hx-codec-failure]
+decision = "what a received model codec's failure says of the data (bytes that are not JSON, or a value the model refuses), the body error each condition becomes, and the response failure a body error becomes"
+core = [
+    "_runtime/client/operations.py:codec_condition",
+    "_runtime/client/operations.py:coded",
+    "_runtime/client/operations.py:ResponseDecoder._decoded",
+]
+
+[homes.Hx-codec-failure.signatures.codec-condition]
+kind = "call"
+names = ["malformed"]
+paths = ["_runtime/"]
+what = "classifies a codec failure itself; call client/operations.py:codec_condition (or coded for a body)"
+audit = "C23-K01"
+
+[homes.Hx-codec-failure.signatures.body-failure]
+kind = "call"
+names = ["failure"]
+mentions = ["body"]
+without = ["truncated"]
+paths = ["_runtime/"]
+what = "turns a body's decode failure into the response failure itself; call ResponseDecoder._decoded"
+audit = "C23-K36"
+
+[homes.Hx-parameter-key]
+decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime"
+core = ["_runtime/model_codecs/parameters.py:parameter_key"]
+adapters = []
+
+[homes.Hx-parameter-key.signatures.header-fold]
+kind = "branch"
+values = ["header"]
+names = ["lower"]
+# The cache names the header a declared header or cookie parameter travels in (Vary), not a parameter's identity.
+exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
+what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
+audit = "C20-8"
+
+[homes.Hx-request-parts]
+decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"
+core = [
+    "_runtime/client/options.py",
+    "_runtime/client/paths.py",
+    "_runtime/client/urls.py:query_field",
+    "_runtime/client/positions.py:cookie_name",
+]
+adapters = []
+
+[homes.Hx-request-parts.signatures.http-schemes]
+kind = "keyword-set"
+keywords = ["http", "https"]
+min = 2
+paths = ["_client/", "_fastapi/", "_runtime/"]
+what = "lists the schemes of an HTTP URL itself; read client/options.py:HTTP_SCHEMES"
+audit = "C24-B25"
+
+[homes.Hx-request-parts.signatures.template-fill]
+kind = "name"
+names = ["PLACEHOLDER"]
+paths = ["_runtime/client/", "_runtime/protocols/"]
+what = "reads the placeholders of a path or server template itself; call client/paths.py:filled or path_segments"
+audit = "C24-fill"
+
+[homes.Hx-request-parts.signatures.field-name]
+kind = "call"
+names = ["partition"]
+strings = ["="]
+paths = ["_runtime/client/", "_runtime/protocols/"]
+# A webhook signature header's `name=value` items are neither query fields nor cookies.
+exclude = ["_runtime/protocols/verification.py"]
+what = "splits the name off a query field or a Cookie pair itself; call client/urls.py:query_field or client/positions.py:cookie_name"
+audit = "C24-B30"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.
@@ -684,7 +1039,7 @@ decision = "where --use-typed-map-values-beside-other-types is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
 adapters = [
     "parser/base.py:Parser.__init__",
-    "parser/jsonschema.py:JsonSchemaParser._typed_nullable_map_value_schema",
+    "parser/_object_maps.py:typed_nullable_map_value_schema",
 ]
 
 [homes.F-use-typed-map-values-beside-other-types.signatures.option-read]
@@ -826,7 +1181,7 @@ audit = "D-L1-30"
 [homes.F-use-single-dict-for-object-maps]
 decision = "where --use-single-dict-for-object-maps is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
+adapters = ["parser/base.py:Parser.__init__", "parser/_object_maps.py:legacy_object_maps"]
 
 [homes.F-use-single-dict-for-object-maps.signatures.option-read]
 kind = "name"
@@ -837,7 +1192,7 @@ audit = "D-L1-32"
 [homes.F-check-pattern-maps-strictly]
 decision = "where --check-pattern-maps-strictly is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
+adapters = ["parser/base.py:Parser.__init__", "parser/_object_maps.py:legacy_object_maps"]
 
 [homes.F-check-pattern-maps-strictly.signatures.option-read]
 kind = "name"
@@ -847,8 +1202,8 @@ audit = "D-L1-32"
 
 [homes.F-dedupe-request-response-variants]
 decision = "where --dedupe-request-response-variants is read"
-core = ["parser/jsonschema.py:JsonSchemaParser._create_request_response_models"]
-adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_rw_variants"]
+core = ["parser/_rw_split.py:create_request_response_models"]
+adapters = ["parser/base.py:Parser.__init__", "parser/_rw_split.py:legacy_rw_variants"]
 
 [homes.F-dedupe-request-response-variants.signatures.option-read]
 kind = "name"
@@ -874,7 +1229,7 @@ audit = "D-PP-18"
 
 [homes.F-use-tuple-for-closed-arrays]
 decision = "where --use-tuple-for-closed-arrays is read"
-core = ["parser/jsonschema.py:JsonSchemaParser._get_fixed_positional_items"]
+core = ["parser/_value_keywords.py:get_fixed_positional_items"]
 adapters = ["parser/base.py:Parser.__init__"]
 
 [homes.F-use-tuple-for-closed-arrays.signatures.option-read]
@@ -928,9 +1283,104 @@ adapters = [
     "model/pydantic_v2/base_model.py:_validated_value_hashes",
 ]
 
+[homes.Hx-option-arguments]
+decision = "which command-line arguments set a config field to a value: its option, the --no- option the parser defines for False, the items of a list"
+core = ["_option_names.py:option_arguments"]
+adapters = ["cli_options.py:_negative_option", "_recommend/_rules.py:option_arguments"]
+
+[homes.Hx-option-arguments.signatures.negative-option]
+kind = "call"
+names = ["option_flag"]
+keywords = ["negative"]
+what = "spells the --no- option of a config field by hand"
+audit = "C14-B8"
+
+[homes.Hx-option-arguments.signatures.negative-lookup]
+kind = "call"
+names = ["_negative_option", "_option_actions"]
+what = "looks up the --no- option of a config field outside the core"
+audit = "C14-B9"
+
+[homes.Hx-preset-values]
+decision = "the values that preset config items set, keyed by field name, as pyproject.toml spells them"
+core = ["preset.py:_pyproject_values"]
+adapters = ["preset.py:PresetConfigItem"]
+
+[homes.Hx-preset-values.signatures.item-pyproject-read]
+kind = "name"
+names = ["pyproject_value"]
+what = "spells preset items as pyproject values itself; call preset.py:_pyproject_values"
+audit = "C28-R4"
+
+[homes.Hx-remote-lock-plan]
+decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"
+core = ["_lock_plan.py"]
+
+[homes.Hx-remote-lock-plan.signatures.lockfile-read]
+kind = "name"
+names = ["lockfile"]
+receivers = ["config", "effective", "generate_config", "model_config", "prepared", "settings", "staged_config"]
+what = "reads the lockfile option; call _lock_plan.py:remote_lock_plan"
+audit = "C17-8"
+
+[homes.Hx-lock-staging]
+decision = "how a remote lock update is staged for the publication journal: the held directory it is published into, its private staging there and the staged file"
+core = ["remote_lock.py:_open_lock_staging", "remote_lock.py:_staged_lock"]
+
+[homes.Hx-lock-staging.signatures.private-staging]
+kind = "call"
+names = ["create"]
+keywords = ["prefix"]
+what = "reserves private staging for a lock update; call remote_lock.py:_open_lock_staging"
+audit = "C17-7"
+
+[homes.Hx-output-staging]
+decision = "how a generation's output and model metadata are staged for the publication journal: their private staging, the options that write there, the held directory each is published into and the staged files paired with their targets"
+core = ["_publication.py:stage_outputs", "_publication.py:StagedOutputs", "_publication.py:StagedArtifact"]
+
+[homes.Hx-output-staging.signatures.artifact-staging]
+kind = "call"
+names = ["stage_artifact"]
+what = "stages a generated artifact itself; call _publication.py:stage_outputs"
+audit = "C17-6"
+
+[homes.Hx-output-staging.signatures.hand-pairing]
+kind = "call"
+names = ["StagedFile"]
+paths = ["__init__.py", "__main__.py"]
+what = "pairs a staged artifact with its target itself; use _publication.py:StagedOutputs.files"
+audit = "C17-6"
+
+[homes.Hx-json-output]
+decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with"
+core = ["_json_output.py:dump_json", "_json_output.py:schema_document"]
+adapters = []
+
+[homes.Hx-json-output.signatures.indented-dump]
+kind = "call"
+names = ["dump", "dumps"]
+keywords = ["indent"]
+# Left out: files of a generated package, which are generated output, not command output (the contracts and helpers a
+# client README lists, the OpenAPI document a generated server serves).
+exclude = ["_client/render.py:ClientRenderer.readme", "_fastapi/source_document.py:SourceDocument.text"]
+what = "dumps indented JSON itself; call _json_output.py:dump_json (or schema_document) with the style of its output"
+audit = "C15-B1"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
+
+[legacy_rows."legacy-graphql-field"]
+home = "Hx-field-build"
+fix = "#5588"
+
+[legacy_rows."legacy-boolean-property"]
+home = "Hx-field-build"
+fix = "#5588"
+
+[legacy_rows."legacy-alias-option-only"]
+home = "Hx-field-build"
+fix = "#5588"
 
 [legacy_rows."legacy-rw-parsed-facts"]
 home = "F-dedupe-request-response-variants"
@@ -1184,6 +1634,10 @@ fix = "PH2"
 home = "H24"
 fix = "DC12"
 
+[legacy_rows."legacy-collapse-import-path"]
+home = "H26"
+fix = "#5465"
+
 [legacy_rows."legacy.alias-order"]
 home = "H26"
 fix = "RP15b"
@@ -1224,6 +1678,14 @@ fix = "G05"
 home = "H11"
 fix = "G05"
 
+[legacy_rows."legacy-api-lockfile-as-written"]
+home = "Hx-remote-lock-plan"
+fix = "#5583"
+
+[legacy_rows."legacy-api-skips-missing-metadata"]
+home = "Hx-output-staging"
+fix = "#5620"
+
 [legacy_rows."legacy-predicted-tag-names"]
 home = "H11"
 fix = "G05"
@@ -1232,7 +1694,30 @@ fix = "G05"
 home = "H11"
 fix = "G05"
 
+[legacy_rows."legacy-int-tokens"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
+[legacy_rows."legacy-decimal-tokens"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
+[legacy_rows."legacy-objects-only"]
+home = "Hx-pointer-members"
+fix = "#5579"
+
+[legacy_rows."legacy-dataclass-overwrites-engine"]
+home = "Hx-regex-engine"
+fix = "#5637"
+
+[legacy_rows."legacy-host-identifiers"]
+home = "Hx-python-names"
+fix = "#5656"
+
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
+
+[allow."src/datamodel_code_generator/__main__.py"."_target_usage_errors"]
+"Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }
 
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."<module>"]
 "T-kind.kind-table" = { home = "T-kind", count = 2, audit = "M-02" }
@@ -1248,9 +1733,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_literal_kind"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
-
-[allow."src/datamodel_code_generator/_client/config.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/model_facts.py"."ModelFacts.json_types"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
@@ -1293,13 +1775,10 @@ fix = "G05"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_success"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_variables"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
-
-[allow."src/datamodel_code_generator/_client/plan.py"."media_range"]
-"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."reachable"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
@@ -1314,16 +1793,13 @@ fix = "G05"
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.cache"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
-
-[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.statuses.status"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.stream"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
@@ -1346,9 +1822,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_client/streams.py"."_discriminated"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
-[allow."src/datamodel_code_generator/_client/streams.py"."_essence"]
-"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
-
 [allow."src/datamodel_code_generator/_client/streams.py"."_events"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
@@ -1361,11 +1834,8 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_fastapi/config.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 3, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.by_name"]
@@ -1419,7 +1889,7 @@ fix = "G05"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_registration"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_requirements"]
@@ -1433,6 +1903,9 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."default_media"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_body_status"]
+"Hx-http.bodyless-key" = { home = "Hx-http", count = 1, audit = "C19-G9" }
 
 [allow."src/datamodel_code_generator/_fastapi/render.py"."_keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
@@ -1600,6 +2073,9 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_target_binding.py"."_Models.reused_discriminator"]
 "H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
 
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.variant_direction"]
+"Hx-rw-variant.variant-keyword" = { home = "Hx-rw-variant", count = 1, audit = "#5628" }
+
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._atomic"]
 "T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
 
@@ -1671,9 +2147,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_target_binding.py"."_annotation_null"]
 "H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
 
-[allow."src/datamodel_code_generator/_target_binding.py"."_c3"]
-"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."_constrained_base"]
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
@@ -1701,9 +2174,6 @@ fix = "G05"
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_keywords"]
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
-
-[allow."src/datamodel_code_generator/_target_binding.py"."_linearize"]
-"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_literal_scalar"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
@@ -1735,9 +2205,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_target_binding.py"."_settings"]
 "H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
 
-[allow."src/datamodel_code_generator/_target_binding.py"."_source_member"]
-"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-11" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."_spelled"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-10" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
@@ -1753,8 +2220,61 @@ fix = "G05"
 [allow."src/datamodel_code_generator/model/msgspec.py"."DataModelField._annotated_union_data_type"]
 "H10.union-construction" = { home = "H10", count = 1, audit = "D-PP-15" }
 
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."all_of_enum_site_schema"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."all_of_reference_value_schema"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_object"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_value_children"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_value_nodes"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_value_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merged_enum_fails"]
+"F-keep-enum-member-values.option-read" = { home = "F-keep-enum-member-values", count = 1, audit = "D-L1-26" }
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-17" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."reference_site_value"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/_inherited_schemas.py"."get_inherited_type_shape"]
+"F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
+
+[allow."src/datamodel_code_generator/parser/_inherited_schemas.py"."merge_inherited_type_shape_dict"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/_inherited_schemas.py"."merge_inherited_union_branch"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-15" }
+
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
+
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_primitive_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_primitive_schemas_for_allof"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_schema_constraints"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_object_maps.py"."_merge_additional_properties_all_of"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
+"H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
 
 [allow."src/datamodel_code_generator/parser/_passes/imports.py"."tuple_unique_items_warning"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
@@ -1768,47 +2288,53 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/_passes/settle.py"."sort_parsed_models"]
 "F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
 
+[allow."src/datamodel_code_generator/parser/_rw_split.py"."merge_inherited_field_overrides"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/_rw_split.py"."merged_ref_model_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/_rw_split.py"."merged_ref_sibling_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/_schema_object.py"."JsonSchemaObject.is_ref_with_nullable_only"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
+
+[allow."src/datamodel_code_generator/parser/_schema_reading.py"."_merges_ref_siblings"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/_schema_refs.py"."merge_ref_with_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/_schema_validators.py"."merge_conditional_properties"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/_value_keywords.py"."check_literal_const"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/_value_keywords.py"."combined_values_admitted"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/_value_keywords.py"."extract_const_enum_from_combined"]
+"F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
+
+[allow."src/datamodel_code_generator/parser/_value_keywords.py"."literal_written"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/base.py"."Parser.__generate_forwarder_content"]
+"H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K26" }
+
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._field_option_kwargs"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_enum_as_enum_class"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
-"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_enum_site_schema"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_reference_value_schema"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_neutral_object_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_literal_const"]
-"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_version_specific_features"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._combined_values_admitted"]
-"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enum_positions_outside_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._extract_const_enum_from_combined"]
-"F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_type_shape"]
-"F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_type_array_data_type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
@@ -1816,70 +2342,14 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_view"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_written"]
-"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_additional_properties_all_of"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_object"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_schema"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_validation_keywords"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_children"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_nodes"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_value_schema"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_conditional_properties"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_definition_ref"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_field_overrides"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_dict"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_union_branch"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-15" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas_for_allof"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_ref_with_schema"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_schema_constraints"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_value_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_enum_fails"]
-"F-keep-enum-member-values.option-read" = { home = "F-keep-enum-member-values", count = 1, audit = "D-L1-26" }
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-17" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_model_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_sibling_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_field_item"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
@@ -1890,20 +2360,20 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reads_enum_as_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_combined_schema"]
 "F-keep-field-defaults-off-branch-roots.option-read" = { home = "F-keep-field-defaults-off-branch-roots", count = 2, audit = "D-L1-30" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."_merges_ref_siblings"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
-
 [allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser._get_data_type"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-08" }
+
+[allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser.parse_object_fields"]
+"Hx-field-build.field-construction" = { home = "Hx-field-build", count = 1, audit = "PF-3" }
+
+[allow."src/datamodel_code_generator/preset.py"."_config_item_to_cli_option"]
+"Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }
+
+[allow."src/datamodel_code_generator/prompt.py"."_format_current_option"]
+"Hx-option-arguments.negative-lookup" = { home = "Hx-option-arguments", count = 1, audit = "C14-B9" }
 
 [allow."src/datamodel_code_generator/reference.py"."ModelResolver._evict_yielding_reference"]
 "H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }

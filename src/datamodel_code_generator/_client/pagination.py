@@ -24,7 +24,7 @@ from datamodel_code_generator._runtime.client.positions import secret_names
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._runtime.model_codecs.parameters import path_text
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
 from datamodel_code_generator._target_types import admits_none, present
@@ -126,21 +126,16 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     return frozenset(dotted)
 
 
-def _parameter_key(location: str, name: str) -> tuple[str, str]:
-    """Return what a target naming a parameter writes, a header by its case-insensitive name.
-
-    A querystring's targets point into it instead, so its key is no target's.
-    """
-    return (location, name.lower() if location == "header" else name)
-
-
 def _target_key(target: Mapping[str, Any]) -> tuple[str, ...]:
-    """Return what a request target writes, a header by its case-insensitive name."""
+    """Return what a request target writes, a header by its case-insensitive name.
+
+    A querystring's targets point into it, so their key adds the pointer, which no parameter's key has.
+    """
     if (location := target["in"]) == "body":
         return (location, target["pointer"])
     if location == "querystring":
         return (location, target["name"], target["pointer"])
-    return _parameter_key(location, target["name"])
+    return parameter_key(location, target["name"])
 
 
 def _overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
@@ -474,7 +469,7 @@ class _Pages(HelperPlanner):
         else:
             key = _target_key(target)
             place = f"the {where} parameter {target['name']!r} of {label}"
-            uses = [item.use for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key]
+            uses = [item.use for item in spec.parameters if parameter_key(item.location, item.wire_name) == key]
         schemas: list[_Types] = []
         for use in uses:
             if (found := self.declared(None if use is None else use.type, pointer)) == "absent":

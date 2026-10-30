@@ -6,7 +6,7 @@ representation, and DataModel as the abstract base for all model types.
 
 from __future__ import annotations
 
-import ast
+import ast  # noqa: F401  # Preserve the established model.base export.
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -14,9 +14,15 @@ from collections import OrderedDict, defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,  # noqa: F401  # Preserve the established model.base export.
+)
 from functools import cached_property, lru_cache
-from itertools import accumulate, chain, takewhile
+from itertools import (
+    accumulate,  # noqa: F401  # Preserve the established model.base export.
+    chain,
+    takewhile,
+)
 from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
@@ -25,9 +31,10 @@ from warnings import warn
 from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
-from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
+from datamodel_code_generator._graph_links import add_child, data_type_children
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import (
@@ -42,14 +49,18 @@ from datamodel_code_generator._parse_memo import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
-from datamodel_code_generator._target_unicode import host_identifiers, host_parsable
+from datamodel_code_generator._target_unicode import (
+    host_identifiers,  # noqa: F401  # Preserve the established model.base export.
+    host_parsable,  # noqa: F401  # Preserve the established model.base export.
+)
 from datamodel_code_generator.imports import (
-    IMPORT_ANNOTATED,
-    IMPORT_ANY,
-    IMPORT_OPTIONAL,
-    IMPORT_UNION,
+    IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_ANY,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_OPTIONAL,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_UNION,  # noqa: F401  # Preserve the established model.base export.
     Import,
 )
+from datamodel_code_generator.model import _field_imports
 from datamodel_code_generator.model._decisions.assignment import (
     AssignmentInputs,
     DataclassVisibility,
@@ -65,6 +76,10 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
+from datamodel_code_generator.model._field_imports import (
+    _annotation_typing_import_names,  # noqa: F401  # Preserve the established model.base export.
+    _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
+)
 from datamodel_code_generator.model._render_plan import (
     RENDER_READY,
     AssignmentFacts,
@@ -75,6 +90,11 @@ from datamodel_code_generator.model._render_plan import (
     Why,
     frozen_render_plan,
     visible_nested_factories,
+)
+from datamodel_code_generator.model._rendered_names import (
+    _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
+    _bind_builtin_names,
+    _bind_field_expressions,
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
@@ -116,11 +136,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
-_TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
-    IMPORT_ANNOTATED.import_,
-    IMPORT_OPTIONAL.import_,
-    IMPORT_UNION.import_,
-})
 _ADDITIONAL_PROPERTIES_REFERENCE_CLASSES_TEMPLATE_DATA_KEY = "additionalPropertiesReferenceClasses"
 _ADDITIONAL_PROPERTIES_TEMPLATE_DATA_KEY = "additionalProperties"
 _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
@@ -253,65 +268,6 @@ class _MissingCustomTemplateState:
 
 
 _missing_custom_template_state = _MissingCustomTemplateState()
-
-
-@dataclass(slots=True)
-class _TypingImportNames:
-    """The typing imports a field's type hint needs, collected over its type tree into one value."""
-
-    union: bool = False
-    optional: bool = False
-    annotated: bool = False
-    any_: bool = False
-
-    def add(self, name: str) -> None:
-        match name:
-            case IMPORT_UNION.import_:
-                self.union = True
-            case IMPORT_OPTIONAL.import_:
-                self.optional = True
-            case IMPORT_ANNOTATED.import_:
-                self.annotated = True
-
-    def allows(self, import_: Import) -> bool:
-        match import_:
-            case _ if import_ == IMPORT_UNION:
-                return self.union
-            case _ if import_ == IMPORT_OPTIONAL:
-                return self.optional
-        return True
-
-    @property
-    def leading_imports(self) -> tuple[Import, ...]:
-        return (IMPORT_ANY,) if self.any_ else ()
-
-    @property
-    def trailing_imports(self) -> tuple[Import, ...]:
-        imports = []
-        if self.union:
-            imports.append(IMPORT_UNION)
-        if self.optional:
-            imports.append(IMPORT_OPTIONAL)
-        if self.annotated:
-            imports.append(IMPORT_ANNOTATED)
-        return tuple(imports)
-
-
-@lru_cache(maxsize=1024)
-def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
-    if annotation in _TYPING_IMPORT_NAMES:
-        return frozenset((annotation,))
-    if annotation.isidentifier():
-        return frozenset()
-
-    try:
-        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
-    except SyntaxError:
-        return frozenset()
-
-    return frozenset(
-        node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and node.id in _TYPING_IMPORT_NAMES
-    )
 
 
 class _EscapedDocstring(str):  # noqa: FURB189
@@ -965,72 +921,33 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
         ``needs_annotated`` is passed in so subclasses can precompute it.
         """
-        data_type = data_type or self.data_type
-        if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
-            return self._collect_field_imports_without_type_hint(data_type=data_type)
-        requirements = self._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)
-        imports = tuple(data_type.all_imports)
-        if requirements.any_ and IMPORT_ANY not in imports:
-            imports = chain_as_tuple(requirements.leading_imports, imports)
-
-        filtered_imports = tuple(import_ for import_ in imports if requirements.allows(import_))
-        missing_imports = tuple(import_ for import_ in requirements.trailing_imports if import_ not in filtered_imports)
-        if not missing_imports:
-            return filtered_imports
-        return chain_as_tuple(filtered_imports, missing_imports)
+        return _field_imports.collect_field_imports(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _collect_field_imports_without_type_hint(self, *, data_type: DataType) -> tuple[Import, ...]:
-        needs_optional = self._needs_optional_import_without_type_hint(data_type=data_type)
-        if self._can_skip_data_type_imports(data_type=data_type):
-            return (IMPORT_OPTIONAL,) if needs_optional else ()
-
-        imports = tuple(data_type.all_imports)
-        if needs_optional and IMPORT_OPTIONAL not in imports:
-            return chain_as_tuple(imports, (IMPORT_OPTIONAL,))
-        return imports
+        return _field_imports.collect_field_imports_without_type_hint(self, data_type=data_type)
 
     def _import_state_data_type(self) -> DataType | None:
         """Return the data type ``imports`` collects from, or None when it collects without a type hint."""
-        return self._import_state_target(
-            needs_annotated=self.use_annotated and self.needs_annotated_import, data_type=self.data_type
-        )
+        return _field_imports.import_state_data_type(self)
 
     def _hint_renders_own_type(self) -> bool:  # noqa: PLR6301
         """Return whether the type hint renders the field's own data type rather than a copy of it."""
         return True
 
     def _import_state_target(self, *, needs_annotated: bool, data_type: DataType) -> DataType | None:
-        if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
-            return None
-        return data_type
+        return _field_imports.import_state_target(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _write_pre_render_nullability(self, data_type: DataType) -> None:
         """Write the None of the nullable models the type names and of bare None union members, as L3 imports did."""
-        if data_type.reference:
-            data_type._materialize_render_state("reference-null")  # noqa: SLF001
-
-        for child in data_type.data_types:
-            self._write_pre_render_nullability(child)
-        if data_type.dict_key:
-            self._write_pre_render_nullability(data_type.dict_key)
-
-        if not data_type.is_union or data_type.preserve_union_member_order:
-            return
-        if any(self._data_type_renders_none(child) for child in data_type.data_types):
-            data_type._materialize_render_state("member-null")  # noqa: SLF001
+        _field_imports.write_pre_render_nullability(self, data_type)
 
     @staticmethod
     def _import_key(import_: Import | None) -> tuple[str, str | None, str | None, str | None] | None:
-        if import_ is None:
-            return None
-        return (import_.import_, import_.from_, import_.alias, import_.reference_path)
+        return _field_imports.import_key(import_)
 
     @staticmethod
     def _reference_source_import_key(reference: Reference | None) -> tuple[bool, bool] | None:
-        if reference is None:
-            return None
-        source = reference.source
-        return (bool(getattr(source, "nullable", False)), bool(getattr(source, "is_alias", False)))
+        return _field_imports.reference_source_import_key(reference)
 
     def _can_collect_imports_without_type_hint(
         self,
@@ -1039,30 +956,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         data_type: DataType | None = None,
     ) -> bool:
         """Return whether imports can be collected without rendering the type hint."""
-        if needs_annotated:
-            return False
-        if self.parent and self.parent.has_forward_reference:
-            return False
-
-        data_type = data_type or self.data_type
-        if data_type.use_serialize_as_any:
-            return False
-
-        if self._has_explicit_typing_import_requirements(data_type):
-            return False
-
-        return not (
-            data_type.data_types
-            or data_type.dict_key
-            or data_type.literals
-            or data_type.enum_member_literals
-            or (data_type.is_optional and data_type.type == ANY)
+        return _field_imports.can_collect_imports_without_type_hint(
+            self, needs_annotated=needs_annotated, data_type=data_type
         )
 
     @staticmethod
     def _has_explicit_typing_import_requirements(data_type: DataType) -> bool:
-        DataModelFieldBase._add_explicit_typing_import_names(data_type, names := _TypingImportNames())
-        return names.union or names.optional or names.annotated
+        return _field_imports.has_explicit_typing_import_requirements(data_type)
 
     def _typing_import_requirements(
         self,
@@ -1070,198 +970,67 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         needs_annotated: bool,
         data_type: DataType | None = None,
     ) -> _TypingImportNames:
-        data_type = data_type or self.data_type
-        names = _TypingImportNames()
-        self._add_typing_import_names(data_type, names)
-        if needs_annotated:
-            names.add(IMPORT_ANNOTATED.import_)
-        if not names.optional and self._needs_field_optional_import_from_structure(data_type=data_type):
-            names.add(IMPORT_OPTIONAL.import_)
-        return names
+        return _field_imports.typing_import_requirements(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _add_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
         """Add the typing imports the hint of ``data_type`` needs to ``names``."""
-        self._add_explicit_typing_import_names(data_type, names)
-
-        if data_type.is_union:
-            self._add_union_typing_import_names(data_type, names)
-        elif len(data_type.data_types) == 1:
-            self._add_typing_import_names(data_type.data_types[0], names)
-
-        if data_type.dict_key:
-            self._add_typing_import_names(data_type.dict_key, names)
-            if not self._mapping_writes_value(data_type):
-                names.any_ = True
-
-        if data_type.discriminator:
-            names.add(IMPORT_ANNOTATED.import_)
-        if self._data_type_needs_optional_import(data_type):
-            names.add(IMPORT_OPTIONAL.import_)
+        _field_imports.add_typing_import_names(self, data_type, names)
 
     def _add_union_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
         """Add the typing imports a union needs; one whose members all write nothing or None renders ``Any``."""
-        branch_keys: set[tuple[Any, ...]] = set()
-        has_none = False
-        writes_member = False
-        for child in data_type.data_types:
-            self._add_typing_import_names(child, names)
-            if self._data_type_renders_none(child):
-                has_none = True
-                continue
-            branch_keys.add(self._data_type_import_key(child))
-            writes_member = writes_member or self._data_type_writes_hint(child)
-
-        if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
-            names.add(IMPORT_OPTIONAL.import_)
-        ordered_none_branch_count = int(data_type.preserve_union_member_order and has_none)
-        if not writes_member and data_type.data_types and not ordered_none_branch_count:
-            names.any_ = True
-        if len(branch_keys) + ordered_none_branch_count > 1 and not data_type.use_union_operator:
-            names.add(IMPORT_UNION.import_)
+        _field_imports.add_union_typing_import_names(self, data_type, names)
 
     @staticmethod
     def _add_explicit_typing_import_names(data_type: DataType, names: _TypingImportNames) -> None:
-        if data_type.python_type:
-            from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-                iter_python_type_expr_names,
-            )
-
-            for name in iter_python_type_expr_names(data_type.python_type.expression):
-                names.add(name)
-        for annotation in data_type._annotation_texts:  # noqa: SLF001
-            if not annotation:
-                continue
-            for name in _annotation_typing_import_names(annotation):
-                names.add(name)
+        _field_imports.add_explicit_typing_import_names(data_type, names)
 
     def _data_type_needs_optional_import(self, data_type: DataType) -> bool:
-        if data_type.use_union_operator or data_type.type == ANY:
-            return False
-        return data_type.admits_none and self._data_type_renders_importable_hint(data_type)
+        return _field_imports.data_type_needs_optional_import(self, data_type)
 
     def _needs_field_optional_import_from_structure(self, *, data_type: DataType | None = None) -> bool:
-        data_type = data_type or self.data_type
-        if self._use_union_operator or not self._data_type_renders_importable_hint(data_type):
-            return False
-        return self._field_null_source(data_type) is not None
+        return _field_imports.needs_field_optional_import_from_structure(self, data_type=data_type)
 
     def _data_type_renders_importable_hint(self, data_type: DataType) -> bool:
-        if self._data_type_renders_none(data_type):
-            return False
-        return self._data_type_has_renderable_structure(data_type)
+        return _field_imports.data_type_renders_importable_hint(self, data_type)
 
     @classmethod
     def _data_type_writes_hint(cls, data_type: DataType) -> bool:
         """Return whether a data type writes a hint: a renderable structure or a hint of its own."""
-        return cls._data_type_has_renderable_structure(data_type) or bool(data_type.type_hint)
+        return _field_imports.data_type_writes_hint(cls, data_type)
 
     @classmethod
     def _mapping_writes_value(cls, data_type: DataType) -> bool:
         """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
-        return bool(data_type.alias or data_type.type) or any(
-            cls._data_type_writes_hint(child) for child in data_type.data_types
-        )
+        return _field_imports.mapping_writes_value(cls, data_type)
 
     @staticmethod
     def _data_type_has_renderable_structure(data_type: DataType) -> bool:
-        if data_type.alias or data_type.type or data_type.reference:
-            return True
-        return bool(
-            data_type.data_types
-            or data_type.dict_key
-            or data_type.literals
-            or data_type.enum_member_literals
-            or data_type._is_container  # noqa: SLF001
-        )
+        return _field_imports.data_type_has_renderable_structure(data_type)
 
     def _admits_none(self) -> bool:
         """Return whether the field's annotation admits None, from the facts final at B1 and without rendering it."""
-        data_type = self.data_type
-        return (
-            data_type.admits_none
-            or self._data_type_renders_none(data_type)
-            or field_renders_none(
-                hint_has_none=False,
-                has_default_factory=self.has_default_factory,
-                nullable=self.nullable,
-                required=(required := self.required),
-                type_has_null=required and self.type_has_null,
-                fall_back_to_nullable=not required and self.fall_back_to_nullable,
-            )
-            is not None
-        )
+        return _field_imports.field_admits_none(self)
 
     def _data_type_renders_none(self, data_type: DataType) -> bool:
-        if data_type._is_container:  # noqa: SLF001
-            return False
-        if data_type.alias or data_type.reference or data_type.literals or data_type.enum_member_literals:
-            return False
-        if data_type.type == NONE:
-            return not data_type.data_types
-        return len(data_type.data_types) == 1 and self._data_type_renders_none(data_type.data_types[0])
+        return _field_imports.data_type_renders_none(self, data_type)
 
     def _data_type_import_key(self, data_type: DataType) -> tuple[Any, ...]:
-        return (
-            data_type.__class__,
-            data_type.alias,
-            data_type.type,
-            data_type.python_type,
-            self._import_key(data_type.import_),
-            data_type.reference.path if data_type.reference else None,
-            self._reference_source_import_key(data_type.reference),
-            tuple(self._data_type_import_key(child) for child in data_type.data_types),
-            self._data_type_import_key(data_type.dict_key) if data_type.dict_key else None,
-            tuple(data_type.literals),
-            tuple(data_type.enum_member_literals),
-            to_hashable(data_type.kwargs),
-            data_type.strict,
-            data_type.is_custom_type,
-            data_type.admits_none,
-            data_type.is_func,
-            data_type.is_dict,
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_mapping,
-            data_type.is_sequence,
-            data_type.is_tuple,
-            data_type.tuple_item_count,
-            data_type.use_standard_collections,
-            data_type.use_generic_container,
-            data_type.use_union_operator,
-            data_type.preserve_union_member_order,
-            data_type.use_serialize_as_any,
-            data_type.discriminator,
-        )
+        return _field_imports.data_type_import_key(self, data_type)
 
     def _can_skip_data_type_imports(self, *, data_type: DataType | None = None) -> bool:
         """Return whether the simple DataType cannot contribute imports."""
-        data_type = data_type or self.data_type
-        return not (
-            data_type.import_
-            or data_type.python_type
-            or data_type.kwargs
-            or data_type.is_optional
-            or data_type._is_container  # noqa: SLF001
-            or data_type.use_generic_container
-        )
+        return _field_imports.can_skip_data_type_imports(self, data_type=data_type)
 
     def _needs_optional_import_without_type_hint(self, *, data_type: DataType | None = None) -> bool:
         """Return whether the field-level nullable wrapper needs typing.Optional.
 
         No hint is rendered here, so the None of a nullable model that the type names is not written yet.
         """
-        data_type = data_type or self.data_type
-        if self._use_union_operator or not self._has_renderable_data_type_without_type_hint(data_type=data_type):
-            return False
-        return self._field_null_source(data_type, pending_reference_null=data_type.names_nullable_model) is not None
+        return _field_imports.needs_optional_import_without_type_hint(self, data_type=data_type)
 
     def _has_renderable_data_type_without_type_hint(self, *, data_type: DataType | None = None) -> bool:
         """Return whether this simple DataType renders to something other than None."""
-        data_type = data_type or self.data_type
-        return bool(
-            data_type.alias or data_type.type or data_type.reference or data_type._is_container  # noqa: SLF001
-        )
+        return _field_imports.has_renderable_data_type_without_type_hint(self, data_type=data_type)
 
     @property
     def docstring(self) -> str | None:
@@ -2417,108 +2186,6 @@ def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     )
 
 
-def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) -> str:
-    """Write each name node parsed from ``rendered`` as its replacement, at the UTF-8 offsets ``ast`` gives."""
-    source = rendered.encode()
-    offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
-    spans = [
-        (
-            offsets[node.lineno - 1] + node.col_offset,
-            offsets[cast("int", node.end_lineno) - 1] + cast("int", node.end_col_offset),
-            alias,
-        )
-        for node, alias in replacements
-    ]
-    for start, end, alias in sorted(spans, reverse=True):
-        source = source[:start] + alias.encode() + source[end:]
-    return source.decode()
-
-
-def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects.
-
-    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length and a type
-    statement is parsed as an assignment of the same length (`host_parsable`), so the offsets it parses hold for the
-    rendered text.
-    """
-    replacements: list[tuple[ast.Name, str]] = []
-    host_source, restore_name = host_parsable(rendered)
-    for statement in ast.parse(host_source).body:
-        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
-            continue
-        for field in statement.body:
-            if not isinstance(field, ast.AnnAssign):
-                continue
-            expressions = (field.annotation,) if field.value is None else (field.annotation, field.value)
-            replacements.extend(
-                (node, alias)
-                for expression in expressions
-                for node in ast.walk(expression)
-                if isinstance(node, ast.Name)
-                and isinstance(node.ctx, ast.Load)
-                and (alias := bindings.get(restore_name(node.id))) is not None
-            )
-    return _rewrite_names(rendered, replacements)
-
-
-_NAME_SCOPES: Final = (
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.Lambda,
-    ast.ListComp,
-    ast.SetComp,
-    ast.DictComp,
-    ast.GeneratorExp,
-)
-
-
-def _local_names(scope: ast.AST) -> set[str]:
-    """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
-    arguments = getattr(scope, "args", None)
-    parameters = (
-        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
-        if isinstance(arguments, ast.arguments)
-        else ()
-    )
-    return {parameter.arg for parameter in parameters if parameter is not None} | {
-        node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
-    }
-
-
-def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
-    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
-    match tree:
-        case ast.Name(ctx=ast.Load()):
-            if tree.id not in bound:
-                yield tree
-        case ast.Attribute(value=ast.Name()):
-            return
-        case _:
-            if isinstance(tree, _NAME_SCOPES):
-                bound |= _local_names(tree)
-            for child in ast.iter_child_nodes(tree):
-                yield from _bare_loads(child, bound)
-
-
-def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:
-    """Return the names of ``names`` that ``rendered`` loads bare, the loads ``_bind_builtin_names`` rewrites."""
-    host_source, restore_name = host_parsable(rendered)
-    return {name for node in _bare_loads(ast.parse(host_source)) if (name := restore_name(node.id)) in names}
-
-
-def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
-    """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
-    host_source, restore_name = host_parsable(rendered)
-    return _rewrite_names(
-        rendered,
-        [
-            (node, alias)
-            for node in _bare_loads(ast.parse(host_source))
-            if (alias := bindings.get(restore_name(node.id))) is not None
-        ],
-    )
-
-
 class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Abstract base class for all data model types.
 
@@ -2989,7 +2656,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
         for base_class in self.base_classes:
             if base_class.reference:
-                base_class.reference.children.append(self)
+                add_child(base_class.reference, self)
 
         if extra_template_data is not None:
             all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
@@ -3179,9 +2846,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
-        for child in self.reference.children[:]:
-            if not isinstance(child, DataType):
-                continue
+        for child in data_type_children(self.reference):
             owner_model = get_most_of_parent(child, DataModel)
             if isinstance(owner_model, DataModel):
                 if owner_model not in models:
@@ -3898,36 +3563,12 @@ def sort_data_models_for_mro(
     models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
 ) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
-    return _sort_for_mro(models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins))
+    return _mro.sort_descendants_first(
+        models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins)
+    )
 
 
-def _sort_for_mro(
-    items: list[MroT], key: Callable[[MroT], Hashable | None], ancestors_of: Callable[[MroT], Collection[Hashable]]
-) -> list[MroT]:
-    """Order ``items`` descendants first, stably: by how many ancestor sets of their distinct keys hold an item's key.
-
-    ``ancestors_of`` gives the keys of an item's ancestors; an item whose key is None counts in no ancestor set.
-    """
-    if len(items) <= 1:
-        return items.copy()
-    ancestor_keys = {item_key: ancestors_of(item) for item in items if (item_key := key(item)) is not None}
-    return sorted(items, key=lambda item: sum(key(item) in ancestors for ancestors in ancestor_keys.values()))
-
-
-def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> list[MroT]:
-    """Merge inheritance sequences using C3 with a deterministic cycle fallback."""
-    result: list[MroT] = []
-    while sequences := [sequence for sequence in sequences if sequence]:
-        tail_keys = {key(item) for sequence in sequences for item in sequence[1:]}
-        candidate = next(
-            (sequence[0] for sequence in sequences if key(sequence[0]) not in tail_keys),
-            sequences[0][0],
-        )
-        candidate_key = key(candidate)
-        result.append(candidate)
-        for sequence in sequences:
-            sequence[:] = [item for item in sequence if key(item) != candidate_key]
-    return result
+c3_merge = _mro.c3_merge
 
 
 def linearize_data_models(
@@ -3936,75 +3577,77 @@ def linearize_data_models(
     """Return the effective C3 order for direct generated models; ``stand_ins`` give the bases overrides replaced.
 
     Each model is linearized after its bases, from the snapshot of the models reached through base classes, a base a
-    type override replaced counted at every level. An inheritance cycle, which the generated code cannot define, keeps
-    the depth-first walk that cuts the cycle where it meets a model again (`_linearize_depth_first`).
+    type override replaced counted at every level, each level descendants first. An inheritance cycle, which the
+    generated code cannot define, keeps the walk that cuts the cycle where it meets a model again, each level sorted
+    by the ancestors of its own models (`_mro.linearize`, row ``first-head``).
     """
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
     walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models, stand_ins)
     graph = walk.graph
-    if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
-        return _linearize_depth_first(
+    if graph.acyclic_order((EdgeKind.BASE,)) is None:
+        return _mro.linearize(
             sort_data_models_for_mro(models, stand_ins),
             _model_key_of_model,
             lambda model: sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins),
         )
     node_of = walk.node_of
 
-    def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
-        return graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
-
-    def merged(heads: list[DataModel]) -> list[DataModel]:
-        heads = _sort_for_mro(heads, _model_key_of_model, ancestors_of)
-        return c3_merge(
-            [*[lineages[model_key_of(head.reference)].copy() for head in heads], heads.copy()], key=_model_key_of_model
+    def descendants_first(heads: list[DataModel]) -> list[DataModel]:
+        return _mro.sort_descendants_first(
+            heads, _model_key_of_model, lambda model: graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
         )
 
-    lineages: dict[ModelKey, list[DataModel]] = {}
-    for key in order:
-        lineages[key] = [node_of[key], *merged([node_of[base] for base in graph.ordered_targets(key, EdgeKind.BASE)])]
-    return [node_of[key] for key in map(_model_key_of_model, merged(list(models)))]
+    order = _mro.linearize(
+        descendants_first(list(models)),
+        _model_key_of_model,
+        lambda model: descendants_first([
+            node_of[base] for base in graph.ordered_targets(model_key_of(model.reference), EdgeKind.BASE)
+        ]),
+    )
+    return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
-def _linearize_depth_first(
-    heads: list[MroT],
-    key: Callable[[MroT], Hashable],
-    parents_of: Callable[[MroT], list[MroT]],
-    node_of: Callable[[MroT], Hashable] | None = None,
-) -> list[MroT]:
-    """Return the effective C3 order of ``heads`` by a depth-first walk of the parents ``parents_of`` gives in order.
+_ClassVarRow: TypeAlias = Literal["declared", "no-place"]
+"""How a class variable counts among the fields a model has with its bases.
 
-    Each item is linearized once by ``key``; the walk cuts a cycle where it meets an item again, told apart by
-    ``node_of`` (``key`` by default).
+* ``declared``: like any other declaration, so one overrides an inherited field of its name.
+* ``no-place``: not at all, as msgspec leaves class variables out of a struct's fields: a field named like an inherited
+  class variable comes after the inherited fields (`parser/_passes/render_prep.py:fix_tag_opt_out_field_ordering`).
+"""
+
+
+def _named_field(field: DataModelFieldBase) -> str | None:
+    return field.name or None
+
+
+def _named_instance_field(field: DataModelFieldBase) -> str | None:
+    return None if field.is_class_var else field.name or None
+
+
+def _fields_of(model: DataModel) -> list[DataModelFieldBase]:
+    return model.fields
+
+
+def _effective_field_owners(
+    model: DataModel, ancestors: Sequence[DataModel], *, class_vars: _ClassVarRow = "declared"
+) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
+    """Return the field each name of ``model`` resolves to with its bases, and the model that declares it.
+
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`). A
+    name keeps the place where the farthest of them declares it and takes the nearest declaration, the model's own
+    last (`_mro.resolve_members`); unnamed fields are left out. ``class_vars`` names how a class variable counts.
     """
-    lineages: dict[Hashable, list[MroT]] = {}
-
-    def linearize(item: MroT, active: frozenset[Hashable] = frozenset()) -> list[MroT]:
-        if cached := lineages.get(key(item)):
-            return cached
-        if (node := (node_of or key)(item)) in active:
-            return [item]
-        parents = parents_of(item)
-        lineages[key(item)] = lineage = [
-            item,
-            *c3_merge([*[linearize(parent, active | {node}).copy() for parent in parents], parents.copy()], key=key),
-        ]
-        return lineage
-
-    return c3_merge([*[linearize(head).copy() for head in heads], heads.copy()], key=key)
+    return _mro.resolve_members(
+        (model, *ancestors), _fields_of, _named_field if class_vars == "declared" else _named_instance_field
+    )
 
 
 def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
     """Return constructor-visible fields after C3 inheritance and overrides."""
     if not model.base_classes:
         return tuple(field for field in model.fields if field.name is not None)
-
-    effective_fields: dict[str, DataModelFieldBase] = {}
-    for inherited_model in reversed(linearize_data_models([model])):
-        for field in inherited_model.fields:
-            if field.name is not None:
-                effective_fields[field.name] = field
-    return tuple(effective_fields.values())
+    return tuple(field for _, field in _effective_field_owners(model, linearize_data_models([model])[1:]).values())
 
 
 def get_inherited_fields(models: list[DataModel]) -> dict[str, DataModelFieldBase]:

@@ -14,13 +14,13 @@ the newest one, and the target checks them again.
 
 from __future__ import annotations
 
-import keyword
 import re
 from copy import copy
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
-from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, target_pattern
+from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
@@ -59,8 +59,7 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
     """Return whether an explicit name is an identifier of the target: no keyword, no leading `__`, and in NFKC form."""
     return (
         isinstance(value, str)
-        and is_identifier(value, target_python_version)
-        and not keyword.iskeyword(value)
+        and is_python_name(value, target_python_version)
         and not value.startswith("__")
         and is_nfkc(value, target_python_version)
     )
@@ -133,14 +132,9 @@ class NameScope:
 
         A field takes `name_1`, `name_2`; a class `Name1`, `Name2`, or `NameSuffix`, `NameSuffix1` with a suffix.
         """
-        delimiter = "" if camel else "_"
-        candidate, count = name, 0
-        while candidate in self:
-            count += 1
-            if camel and suffix:
-                candidate = f"{name}{suffix}{count - 1 if count > 1 else ''}"
-            else:
-                candidate = f"{name}{delimiter}{count}"
+        candidate, _ = first_free(
+            name, self.__contains__, "joined" if camel else "underscore", suffix=suffix if camel else None
+        )
         self._taken.add(self._key(candidate))
         return candidate
 

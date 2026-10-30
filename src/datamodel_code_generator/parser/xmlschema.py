@@ -23,6 +23,7 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
@@ -225,7 +226,7 @@ def _documentation(element: ET.Element) -> str | None:
 
 def _to_class_title(name: str) -> str:
     if PYTHON_NAME_PATTERN.match(name):
-        return f"{name[:1].upper()}{name[1:]}"
+        return first_upper(name)
     return title_to_class_name(name)
 
 

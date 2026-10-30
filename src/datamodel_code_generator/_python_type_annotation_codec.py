@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from functools import lru_cache
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import (
     _LITERAL_VALUE_TYPES,
     PythonTypeEllipsis,
@@ -65,9 +66,7 @@ def _legacy_starred_parse_text(type_str: str) -> tuple[str, str] | None:
         tokenize.NL,
     })
     identifiers = {token_info.string for token_info in tokens if token_info.type == tokenize.NAME}
-    sentinel = _LEGACY_STARRED_SENTINEL_BASE
-    while sentinel in identifiers:
-        sentinel += "_"
+    sentinel, _ = first_free(_LEGACY_STARRED_SENTINEL_BASE, identifiers.__contains__, "padded")
 
     result: list[tuple[int, str]] = []
     delimiter_stack: list[str] = []

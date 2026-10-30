@@ -17,14 +17,11 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.media import TOKEN, status_key
+from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, status_key
 from ..model_codecs.parameters import header_text
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
 
-_EMPTY_STATUSES: Final = frozenset({204, 205, 304})
-_MIN_CONTENT_STATUS: Final = 200
-_MIN_REDIRECT_STATUS: Final = 300
 _JSON: Final = "application/json"
 
 
@@ -70,7 +67,7 @@ class Declared:
 
     def sends_none(self, status: int) -> bool:
         """Return whether the response sends None as a body: JSON that accepts null, or content of a success status."""
-        return self.null or (self.media_type is not None and status < _MIN_REDIRECT_STATUS)
+        return self.null or (self.media_type is not None and status < REDIRECT_STATUSES.start)
 
 
 _UNDECLARED: Final = Declared()
@@ -132,12 +129,7 @@ def _respond(
     if headers:
         _check_headers(headers.items())
     declared = chosen or plan.find(status) or _UNDECLARED
-    if (
-        (body is None and not declared.sends_none(status))
-        or plan.head
-        or status < _MIN_CONTENT_STATUS
-        or status in _EMPTY_STATUSES
-    ):
+    if (body is None and not declared.sends_none(status)) or bodyless(status, head=plan.head):
         if inspect.isawaitable(body):
             raise _unawaited(body)
         return Response(status_code=status, headers=headers)

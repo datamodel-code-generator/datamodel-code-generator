@@ -22,6 +22,8 @@ from ..model_codecs.media import (
     decode_text,
     essence,
     media_kind,
+    media_range,
+    most_specific,
     normalized,
     plain,
     typed,
@@ -264,17 +266,6 @@ class BodyAdapter:
 
     media: tuple[BodyMedia, ...]
     required: bool = True
-    _essences: tuple[tuple[str, BodyMedia], ...] = field(init=False, repr=False, compare=False)
-
-    def __post_init__(self) -> None:
-        """Index the declared media by essence, most specific first: exact types, then type/*, then */*.
-
-        Within each, a declaration without parameters comes before one with parameters the request did not name.
-        """
-        essences = [(essence(item.media_type), item) for item in self.media]
-        object.__setattr__(
-            self, "_essences", tuple(sorted(essences, key=lambda pair: (pair[0].count("*"), ";" in pair[1].media_type)))
-        )
 
     async def __call__(self, request: Request) -> object:
         """Return the validated body, or None for an omitted optional body."""
@@ -309,16 +300,16 @@ class BodyAdapter:
             return None, None
 
     def _select(self, header: str | None) -> tuple[BodyMedia, str, str] | None:
+        """Return the declared media a request's media type dispatches to, the media type it is read as, and its own.
+
+        A media range reads the request's media type without its parameters.
+        """
         if (wanted := normalized(header or "")) is None:
             return None
-        if (exact := next((media for media in self.media if media.media_type == wanted), None)) is not None:
-            return exact, exact.media_type, wanted
-        received = essence(wanted)
-        kind = received.partition("/")[0]
-        for declared, media in self._essences:
-            if declared in {received, f"{kind}/*", "*/*"}:
-                return media, media.media_type if "*" not in declared else received, wanted
-        return None
+        if (declared := most_specific(wanted, (media.media_type for media in self.media))) is None:
+            return None
+        media = next(media for media in self.media if media.media_type == declared)
+        return media, essence(wanted) if declared != wanted and media_range(declared) else declared, wanted
 
 
 async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request) -> object:

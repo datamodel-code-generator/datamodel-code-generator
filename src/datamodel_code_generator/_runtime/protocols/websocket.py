@@ -38,7 +38,7 @@ from ..client.errors import (
     is_phase_timeout,
     request_failure,
 )
-from ..client.operations import request_errors
+from ..client.operations import codec_condition, request_errors
 from ..client.raw import afinished, finished
 from ..client.timing import Budget
 from .errors import (
@@ -405,8 +405,7 @@ class _Sockets(Generic[SendT, RecvT]):
                 try:
                     value = codec.decode(data)
                 except codec.errors as error:
-                    condition: Literal["value", "malformed"] = "malformed" if codec.malformed(error) else "value"
-                    raise self._decode_error(data, condition, error) from None
+                    raise self._decode_error(data, codec_condition(codec, error), error) from None
             case "utf8":
                 value = cast("TextMessage", event).data
             case _:

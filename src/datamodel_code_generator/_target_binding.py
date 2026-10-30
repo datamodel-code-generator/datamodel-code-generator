@@ -31,6 +31,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
 )
+from datamodel_code_generator._mro import linearize, resolve_members
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
@@ -42,6 +43,7 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     DeclarationId,
+    Direction,
     EmittedFieldFacts,
     EncodingFacts,
     FieldSlot,
@@ -110,21 +112,26 @@ from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as P
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
-from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path, location_of
+from datamodel_code_generator.reference import (
+    _RW_DIRECTIONS,
+    SPECIAL_PATH_MARKER,
+    SchemaLocation,
+    _rw_variant_of,
+    _rw_variant_path,
+    _source_path,
+    location_of,
+)
 from datamodel_code_generator.types import DataType, Types, reference_names_nullable
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
     "property", "required_only", "additional_properties", "root_value", "discriminator_synthetic"
 ]
-Direction: TypeAlias = Literal["request", "response", "neutral"]
 Projection: TypeAlias = Literal["value", "item_stream_array"]
-_DIRECTIONS: Final[tuple[Direction, ...]] = ("request", "response")
 
 _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
     pydantic_v2.BaseModel: "pydantic",
@@ -520,7 +527,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         walked = self._walked_schemas
         if walked and (parent := walked[-1]) is not None:
             tokens = path[parent[0] :]
-            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, _source_member)
+            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, "legacy-int-tokens")
         else:
             declaration = cast("SchemaLocation", obj.schema_location)
             value = self._reader.borrow(declaration)
@@ -1168,11 +1175,10 @@ class _Binder:
             pending.extend((new, null if merged else named) for new, merged in self.redirects.get(id(current), ()))
         return next(iter(terminals.values())) if len(terminals) == 1 else (None, None)
 
-    def _variant(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
+    def _variant(self, reference: Reference, direction: _RwDirection) -> tuple[Reference | None, bool | None]:
         resolver = self.parser.model_resolver
-        special = f"read-write-{direction}"
         for base in dict.fromkeys((self.keys.get(id(reference), reference.path), reference.path)):
-            key = resolver.join_path(tuple(get_special_path(special, base.split("/"))))
+            key = resolver.join_path(tuple(_rw_variant_path(base, direction)))
             if (variant := resolver.references.get(key)) is not None:
                 return self._terminal(variant)
         return None, None
@@ -1184,8 +1190,7 @@ class _Binder:
         return _Reference(
             self.symbols[id(model)],
             model.IS_ALIAS,
-            self.serialize_as_any
-            and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
+            self.serialize_as_any and any(child.fields for child in model.reference.iter_data_model_children()),
         )
 
     @staticmethod
@@ -1972,15 +1977,6 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
-def _source_member(value: YamlValue, key: str) -> YamlValue:
-    """Return a mapping's member by key, its canonical integer YAML key first, or another value's item by ``int``."""
-    if not isinstance(value, dict):
-        return cast("list[YamlValue]", value)[int(key)]
-    if key.isascii() and key.isdecimal() and str(number := int(key)) == key and number in value:  # type: ignore[comparison-overlap]
-        return value[number]  # type: ignore[index]
-    return value[key]
-
-
 def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
     node: _SchemaNode, data_type: DataType
 ) -> list[tuple[tuple[str, ...], DataType]]:
@@ -2020,51 +2016,6 @@ def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
 
 def _wire_name(field: DataModelFieldBase) -> str:
     return field_source_name(name=field.name, original_name=field.original_name, alias=field.alias) or ""
-
-
-def _linearize(symbol: SymbolId, bases: dict[SymbolId, tuple[SymbolId, ...]]) -> tuple[SymbolId, ...] | None:
-    """Return a class's C3 method resolution order, or None when it has none."""
-    mro: dict[SymbolId, tuple[SymbolId, ...]] = {}
-    pending = [(symbol, False)]
-    active: set[SymbolId] = set()
-    while pending:
-        current, leaving = pending.pop()
-        if current in mro:
-            continue
-        if leaving:
-            active.discard(current)
-            parents = bases[current]
-            sequences = [mro[parent] for parent in parents]
-            if (merged := _c3((*sequences, parents) if len(parents) > 1 else tuple(sequences))) is None:
-                return None
-            mro[current] = (current, *merged)
-            continue
-        if current in active:
-            return None
-        active.add(current)
-        pending.append((current, True))
-        pending.extend((parent, False) for parent in reversed(bases[current]))
-    return mro[symbol]
-
-
-def _c3(sequences: tuple[tuple[SymbolId, ...], ...]) -> tuple[SymbolId, ...] | None:
-    """Merge base linearizations by C3 head selection, or return None when no order exists."""
-    remaining = [list(sequence) for sequence in sequences if sequence]
-    result: list[SymbolId] = []
-    while remaining:
-        candidate = next(
-            (sequence[0] for sequence in remaining if not any(sequence[0] in other[1:] for other in remaining)),
-            None,
-        )
-        if candidate is None:
-            return None
-        result.append(candidate)
-        remaining = [
-            rest
-            for sequence in remaining
-            if (rest := [item for item in sequence if item != candidate] if sequence[0] == candidate else sequence)
-        ]
-    return tuple(result)
 
 
 class _ShapeError(Exception):
@@ -2314,7 +2265,7 @@ class _Reader(_SchemaLocations):
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.loaded.get(declaration.document), declaration.tokens, _source_member, missing)
+        return descend(self.loaded.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
 
     def node(self, declaration: SchemaLocation, raw: YamlValue = MISSING) -> _SchemaNode | None:
         """Record and return where a loaded schema declares its members, None when its document lacks it."""
@@ -2668,7 +2619,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.documents.get(declaration.document), declaration.tokens, _source_member, missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -2706,7 +2657,7 @@ class _Models:
         ] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
         self.helpers: dict[SchemaLocation, list[TypeProjection]] = {}
-        self.variants = any(SPECIAL_PATH_MARKER + "read-write-" in key for key in self.parser.model_resolver.references)
+        self.variants = any(_rw_variant_of(key) for key in self.parser.model_resolver.references)
 
     def model_location(self, model: DataModel) -> SchemaLocation | None:
         """Return the location the parser recorded for the schema a model is built from, where the walk read it.
@@ -2750,7 +2701,7 @@ class _Models:
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
         special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return next((found for found in _DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
+        return next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
@@ -2967,17 +2918,20 @@ class _Models:
             if symbol.kind == "enum":
                 continue
             functional = symbol.facts is not None and symbol.facts.functional_typeddict
-            order = self.parent_first(symbol.id, bases) if functional else _linearize(symbol.id, bases)
+            order = (
+                self.parent_first(symbol.id, bases)
+                if functional
+                else linearize([symbol.id], lambda item: item, bases.__getitem__, rule="python")
+            )
             if order is None or any(owner in unknown for owner in order):
                 continue
-            fields: dict[str, tuple[DataModel, DataModelFieldBase]] = {}
-            for owner in order if functional else reversed(order):
-                owner_model = models[owner]
-                for field in owner_model.fields:
-                    key = _wire_name(field) if functional else self.slots[id(field)].name
-                    fields[key] = owner_model, field
+            fields = resolve_members(
+                order[::-1] if functional else order,
+                lambda owner: models[owner].fields,
+                _wire_name if functional else lambda field: self.slots[id(field)].name,
+            )
             members = self.variant_exclusions(
-                model, symbol, [self.member(symbol, owner, field) for owner, field in fields.values()]
+                model, symbol, [self.member(symbol, models[owner], field) for owner, field in fields.values()]
             )
             self.members[symbol.id] = members
             bindings.extend(members)
@@ -3190,7 +3144,7 @@ class _SchemaUses(_Models):
                 self.relocate(declaration, value.symbol)
             directional = [
                 self.directional(source, declaration, projection, direction, neutral)
-                for direction in (_DIRECTIONS if self.variants else ())
+                for direction in (_RW_DIRECTIONS if self.variants else ())
             ]
             if not acquired and not any(directional) and self.uses[neutral].type is None:
                 del self.uses[neutral]
@@ -3895,4 +3849,4 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
-    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.reference import Reference, _RwDirection

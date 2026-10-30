@@ -7,7 +7,13 @@ from __future__ import annotations
 
 from typing import Final
 
-from ._runtime.client.operations import OperationPlan, ResponseDecoder, ServerPlan
+from ._generated import model_bindings
+from ._runtime.client.operations import (
+    OperationPlan,
+    ResponseDecoder,
+    ServerPlan,
+    model_branch,
+)
 from .types.default import RangeOnlyResponse, SupResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
@@ -17,7 +23,7 @@ OPERATION_0: Final[OperationPlan[SupResponse]] = OperationPlan(
     method='GET',
     path='/sup',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((), ()),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()),
 )
 
 OPERATION_1: Final[OperationPlan[RangeOnlyResponse]] = OperationPlan(

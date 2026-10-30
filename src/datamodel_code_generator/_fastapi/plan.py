@@ -36,10 +36,12 @@ from datamodel_code_generator._openapi_wire_plan import (
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
+    SUCCESS_STATUSES,
     FieldPlan,
     charset,
     essence,
     media_kind,
+    media_range,
     normalized,
     status_key,
 )
@@ -64,7 +66,6 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_naming import NameScope, windows_device
 from datamodel_code_generator._target_operations import (
-    BODYLESS_STATUSES,
     SERVER,
     PlanError,
     alias,
@@ -75,6 +76,7 @@ from datamodel_code_generator._target_operations import (
     local,
     placeholder_problems,
     resolve_settings,
+    response_bodyless,
     type_names,
 )
 from datamodel_code_generator._target_types import present, takes_null
@@ -183,9 +185,9 @@ _INFO: Final = (
     ("info", "contact", "contact", "object"),
     ("info", "license", "license_info", "object"),
 )
-_MIN_CONTENT_STATUS: Final = 200
-_MAX_SUCCESS_STATUS: Final = 299
 _DEFAULT_STATUS: Final = 200
+_STATUS_CLASS_BASE: Final = 100
+_STATUS_RANGE_WIDTH: Final = 3
 
 
 class Default(Enum):
@@ -468,7 +470,7 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
 
 def _single_media(encoding: WireDeclaration) -> str | None:
     """Return the one contentType of an encoding, or None when it names several media types or a range."""
-    if (found := content_types(encoding)) is None or len(found) != 1 or "*" in essence(found[0]):
+    if (found := content_types(encoding)) is None or len(found) != 1 or media_range(found[0]):
         return None
     return found[0]
 
@@ -1398,7 +1400,7 @@ class Planner:  # noqa: PLR0904
             for response in responses
             if response.status.isascii() and response.status.isdigit()
         }
-        successful = [code for code in exact if _MIN_CONTENT_STATUS <= code <= _MAX_SUCCESS_STATUS]
+        successful = [code for code in exact if code in SUCCESS_STATUSES]
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact or not successful else min(successful)
         if (response := _declaring(responses, status)) is None and exact:
             status = min(exact)
@@ -1602,7 +1604,7 @@ def _member(source: object, key: str) -> JSONValue | None:
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
     """Decide whether a bare primary value goes to FastAPI's response_model or through the response codecs."""
-    bodyless = operation.method == "head" or status in BODYLESS_STATUSES or status < _MIN_CONTENT_STATUS
+    bodyless = response_bodyless(SERVER, operation, status)
     native = (
         not bodyless
         and media is not None
@@ -1706,9 +1708,11 @@ def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | No
     if primary is not None:
         return primary.status
     ranges = (
-        int(response.status[0]) * 100
+        int(response.status[0]) * _STATUS_CLASS_BASE
         for response in responses
-        if len(response.status) == 3 and response.status[0] in "12345" and response.status.endswith("XX")
+        if len(response.status) == _STATUS_RANGE_WIDTH
+        and response.status[0] in "12345"
+        and response.status.endswith("XX")
     )
     return min(ranges, default=_DEFAULT_STATUS)
 

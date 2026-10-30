@@ -61,6 +61,8 @@ DocumentId = NewType("DocumentId", str)
 
 SchemaNodeId = NewType("SchemaNodeId", SchemaLocation)
 """A JSON object of a loaded document as a node of the graph: its location, which names one object per parse."""
+_TargetNode: TypeAlias = "SchemaNodeId | str"  # noqa: PYI047, TC008  # A string, as it was in parser/jsonschema.py.
+"""The schema a walk reaches through a reference: its graph node, or its key when the graph does not locate it."""
 
 
 class ReservedTarget(TypedDict):

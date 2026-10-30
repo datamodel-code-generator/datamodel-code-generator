@@ -7,20 +7,7 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 from datamodel_code_generator._document_reader import MISSING, descend
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import is_array_index, pointer_tokens
-
-
-def _member(value: YamlValue, key: str) -> YamlValue:
-    """Return a list's item by index, or a mapping's member by key, its integer YAML key first."""
-    index = is_array_index(key)
-    mapping = cast("dict[object, YamlValue]", value)
-    return (
-        value[int(key)]
-        if isinstance(value, list) and index
-        else mapping[int(key)]
-        if index and int(key) in mapping
-        else mapping[key]
-    )
+from datamodel_code_generator._json_pointer import pointer_tokens
 
 
 class SourceLease:
@@ -48,7 +35,7 @@ class SourceLease:
     def exists(self, location: SourceLocation) -> bool:
         """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
         tokens = pointer_tokens(location.pointer)
-        return descend(self._raw[location.document], tokens, _member, MISSING, (LookupError, TypeError)) is not MISSING
+        return descend(self._raw[location.document], tokens, "canonical", MISSING) is not MISSING
 
     def documents(self) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
         """Return every held document and where it was read from, for a target that copies them into documentation.

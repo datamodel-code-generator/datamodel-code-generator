@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
+from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -40,6 +41,7 @@ class AsyncDefaultResource:
     async def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SupResponse:
         """
@@ -49,6 +51,7 @@ class AsyncDefaultResource:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )).data
 
     async def range_only(
@@ -76,6 +79,7 @@ class AsyncDefaultWithResponse:
     async def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SupResponse]:
         """
@@ -85,6 +89,7 @@ class AsyncDefaultWithResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     async def range_only(
@@ -112,6 +117,7 @@ class AsyncDefaultWithRawResponse:
     async def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """
@@ -121,6 +127,7 @@ class AsyncDefaultWithRawResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     async def range_only(
@@ -148,6 +155,7 @@ class AsyncDefaultWithStreamingResponse:
     def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """
@@ -157,6 +165,7 @@ class AsyncDefaultWithStreamingResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     def range_only(

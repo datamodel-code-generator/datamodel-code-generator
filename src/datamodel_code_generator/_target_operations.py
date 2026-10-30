@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._runtime.model_codecs.media import bodyless
 from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence, fact, label, operation_literal
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 
@@ -30,9 +31,6 @@ if TYPE_CHECKING:
 
 SettingT = TypeVar("SettingT")
 
-BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
-"""The response statuses that never carry content."""
-
 _CLIENT_CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
 
 
@@ -43,13 +41,15 @@ class TargetPolicy:
     `stage` is the stage a planning diagnostic's code reports at; `duplicate_setting` the code and message, by the
     option and the operation key, of two settings of one option that select one operation; `path_code` the code of
     a path placeholder without a path parameter and of a path parameter without a placeholder, and
-    `placeholder_label` whether the first names its operation.
+    `placeholder_label` whether the first names its operation; `informational_bodyless` whether a declared 1XX status
+    carries no content (the client's row until #5603).
     """
 
     stage: Callable[[str], DiagnosticStage]
     duplicate_setting: tuple[str, str]
     path_code: str
     placeholder_label: bool
+    informational_bodyless: bool
 
     def problem(
         self, code: str, message: str, source: SourceLocation | None = None, option_path: str | None = None
@@ -70,12 +70,14 @@ CLIENT: Final = TargetPolicy(
     duplicate_setting=("E_CONFIG_CONFLICT", "Two settings name {key!r}"),
     path_code="E_METADATA_REQUIRED",
     placeholder_label=True,
+    informational_bodyless=False,
 )
 SERVER: Final = TargetPolicy(
     stage=lambda code: "config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
     duplicate_setting=("E_CONFIG_VALUE", "The {option} setting names {key!r} twice"),
     path_code="F_ROUTE_INVALID",
     placeholder_label=False,
+    informational_bodyless=True,
 )
 
 
@@ -108,6 +110,15 @@ def described(operation: OperationContract) -> str:
     """
     texts = (fact(operation, name) for name in ("summary", "description"))
     return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
+
+
+def response_bodyless(policy: TargetPolicy, operation: OperationContract, status: int | None) -> bool:
+    """Return whether a response of an operation never carries content: by its method, then by its status.
+
+    `status` is the one status a response declares, or None for a range or `default`, which only HEAD leaves bodyless.
+    """
+    head = operation.method == "head"
+    return head if status is None else bodyless(status, head=head, informational=policy.informational_bodyless)
 
 
 def first_use(uses: Mapping[TypeUseId, TypeUseBinding], ids: Iterable[TypeUseId]) -> TypeUseBinding | None:

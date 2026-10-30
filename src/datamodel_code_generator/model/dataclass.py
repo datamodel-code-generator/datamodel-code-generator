@@ -16,6 +16,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -124,8 +125,7 @@ def _mapping_annotation(data_type: DataType) -> bool:
 
 def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass]:
     """Yield dataclass models that the mapping defaults of model's constructor fields materialize."""
-    effective_fields = model.fields if not model.base_classes else get_effective_fields(model)
-    for field in effective_fields:
+    for field in get_effective_fields(model):
         if (
             field_participates_in_constructor(field)
             and isinstance(field.default, dict)
@@ -164,7 +164,7 @@ class _NestedDataclassFactory:
     @override
     def __str__(self) -> str:
         """Return the factory as the field's call writes it."""
-        return f"lambda: {_default_factory_type_name(self.data_type)}({', '.join(self.arguments)})"
+        return f"lambda: {call_text(_default_factory_type_name(self.data_type), self.arguments)}"
 
 
 def _build_nested_dataclass_default_factory(
@@ -173,12 +173,11 @@ def _build_nested_dataclass_default_factory(
     """Build one valid dataclass constructor factory candidate."""
     if not (data_type.reference and isinstance(source := data_type.reference.source, DataClass)):
         return None
-    effective_fields = source.fields if not source.base_classes else get_effective_fields(source)
     field_names: dict[str, str] = {}
     original_names: dict[str, str] | None = None
     required_names: set[str] = set()
     has_nested_mapping_default = False
-    for model_field in effective_fields:
+    for model_field in get_effective_fields(source):
         if model_field.name is None or not field_participates_in_constructor(model_field):
             continue
         field_names[model_field.name] = model_field.name

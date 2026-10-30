@@ -5,13 +5,12 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 
 from __future__ import annotations
 
-import keyword
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator._target_unicode import is_identifier
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
 from datamodel_code_generator.model import DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model import dataclass as _dataclass_module
@@ -291,7 +290,10 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
     @override
     def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` in the dataclass config."""
+        """Set ``regex_engine`` in the dataclass config.
+
+        Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
+        """
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
         config = self.extra_template_data.setdefault("config", {})
         config["regex_engine"] = '"python-re"'
@@ -508,9 +510,7 @@ class DataModelFieldBackport(DataModelField):
     def __init__(self, **data: Any) -> None:
         """Initialize and make non-identifier aliases safe for dataclass signatures."""
         super().__init__(**data)
-        if self.alias is None or (
-            is_identifier(self.alias, self.data_type.python_version) and not keyword.iskeyword(self.alias)
-        ):
+        if self.alias is None or is_python_name(self.alias, self.data_type.python_version):
             return
 
         validation_aliases = list(self.validation_aliases or ())

@@ -10,6 +10,8 @@ from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
 import httpx2
 
+from .options import HTTP_SCHEMES
+
 Origin = tuple[str, str, int]
 URLValidationError = httpx2.InvalidURL
 _PORT_MAX: Final = 65535
@@ -25,7 +27,7 @@ class URLTarget:
 
 
 def _origin(url: httpx2.URL) -> Origin:
-    if url.scheme not in {"http", "https"} or not url.is_absolute_url or url.userinfo:
+    if url.scheme not in HTTP_SCHEMES or not url.is_absolute_url or url.userinfo:
         msg = "Expected an absolute HTTP URL without user information"
         raise URLValidationError(msg)
     port = url.port
@@ -69,9 +71,15 @@ def redirect_target(current_url: str, location: str) -> URLTarget:
     return URLTarget(str(url.copy_with(fragment=None)), origin)
 
 
+def query_field(atom: str) -> tuple[str, str]:
+    """Return the name of a query atom as forms decode it, a plus sign being a space, and its value as written."""
+    name, _, value = atom.partition("=")
+    return unquote_plus(name), value
+
+
 def strip_query(url: str, names: frozenset[str]) -> str:
     """Remove the query fields of the given names, as forms decode them, retaining the other encoded query atoms."""
     if not names or not (parsed := urlsplit(url)).query:
         return url
-    kept = [part for part in parsed.query.split("&") if unquote_plus(part.partition("=")[0]) not in names]
+    kept = [part for part in parsed.query.split("&") if query_field(part)[0] not in names]
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(kept), parsed.fragment))

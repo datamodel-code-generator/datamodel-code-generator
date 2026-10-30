@@ -174,6 +174,39 @@ _requires_literal_validation = 1
 ["src/datamodel_code_generator/model/typed_dict.py"."TypedDict.create_reuse_model"]
 use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inline_definitions.json --input-file-type jsonschema --output-model-type typing.TypedDict --reuse-model --target-python-version 3.11 --use-total-false-for-typed-dict"
 
+["src/datamodel_code_generator/parser/_field_copies.py"."_apply_inherited_field_nullability"]
+is_optional = 1
+nullable = 2
+type_has_null = 2
+
+["src/datamodel_code_generator/parser/_field_copies.py"."_copy_resolved_inherited_field"]
+'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
+constraints = 1
+'data_types[...]' = 1
+default = 1
+'extras.update()' = 1
+has_default = 1
+read_only = 1
+required = 2
+use_default_with_required = 1
+write_only = 1
+
+["src/datamodel_code_generator/parser/_field_copies.py"."_merge_data_type_modifiers"]
+is_dict = 1
+is_frozen_set = 1
+is_list = 1
+is_mapping = 1
+is_optional = 2
+is_sequence = 1
+is_set = 1
+is_tuple = 1
+kwargs = 1
+'kwargs[...]' = 1
+tuple_item_count = 1
+
+["src/datamodel_code_generator/parser/_inherited_schemas.py"."build_missing_required_field"]
+required = 1
+
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
 '_additional_imports[...]' = 1
 
@@ -181,25 +214,16 @@ use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inli
 import_ = 1
 type = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
-alias = 1
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."apply_inherited_field_default"]
 default = 2
 has_default = 1
 use_default_with_required = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."override_required_field"]
-alias = 1
 'fields.pop()' = 1
 'fields.reverse()' = 1
-name = 1
-original_name = 1
 required = 1
-serialization_alias = 1
 use_default_with_required = 1
-use_serialization_alias = 1
-validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
 alias = 1
@@ -226,6 +250,28 @@ data_types = 1
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
 use_union_operator = 1
 
+["src/datamodel_code_generator/parser/_rw_split.py"."collect_inherited_fields_for_request_response"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/_rw_split.py"."get_raw_inherited_fields"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/_rw_split.py"."prepare_required_inherited_field"]
+'__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
+
+["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_data_type"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_field"]
+alias = 1
+import_ = 1
+kwargs = 1
+
+["src/datamodel_code_generator/parser/_value_keywords.py"."mark_type_dependent_constraints"]
+'__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
+
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1
 
@@ -234,64 +280,6 @@ results = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_final_class_field_aliases"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-alias = 1
-name = 1
-serialization_alias = 1
-validation_aliases = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_data_type"]
-alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_field"]
-alias = 1
-import_ = 1
-kwargs = 1
-
-["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
-is_optional = 1
-nullable = 2
-type_has_null = 2
-
-["src/datamodel_code_generator/parser/base.py"."_copy_data_model_field"]
-default = 1
-extras = 1
-validation_aliases = 1
-
-["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
-'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
-alias = 3
-constraints = 1
-'data_types[...]' = 1
-default = 1
-'extras.update()' = 1
-has_default = 1
-name = 3
-original_name = 2
-read_only = 1
-required = 2
-serialization_alias = 2
-use_default_with_required = 1
-use_serialization_alias = 2
-validation_aliases = 2
-write_only = 1
-
-["src/datamodel_code_generator/parser/base.py"."_merge_data_type_modifiers"]
-is_dict = 1
-is_frozen_set = 1
-is_list = 1
-is_mapping = 1
-is_optional = 2
-is_sequence = 1
-is_set = 1
-is_tuple = 1
-kwargs = 1
-'kwargs[...]' = 1
-tuple_item_count = 1
-
-["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser._resolve_typename_collisions.resolve"]
-alias = 1
-name = 2
-serialization_alias = 2
 
 ["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
 data_types = 1
@@ -300,38 +288,13 @@ is_list = 1
 is_optional = 1
 type = 1
 
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_missing_required_field"]
-alias = 1
-name = 1
-original_name = 1
-required = 1
-serialization_alias = 1
-use_serialization_alias = 1
-validation_aliases = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._collect_inherited_fields_for_request_response"]
-required = 1
-use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_raw_inherited_fields"]
-required = 1
-use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._mark_type_dependent_constraints"]
-'__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
-
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_root_value"]
 data_types = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_common_part"]
-alias = 1
-name = 1
 required = 2
 target_python_version = 1
 use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._prepare_required_inherited_field"]
-'__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
@@ -375,12 +338,12 @@ reference = "--input tests/data/openapi/not_real_string.json --input-file-type o
 
 ["src/datamodel_code_generator/types.py"."DataTypeManager.copy_data_type"]
 data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
-enum_member_literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
-literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+
+["src/datamodel_code_generator/types.py"."_copied_node"]
+enum_member_literals = 1
+kwargs = 1
+literals = 1
 
 ["src/datamodel_code_generator/types.py"."_copy_data_type"]
 data_types = 1
 dict_key = 1
-enum_member_literals = 1
-kwargs = 1
-literals = 1

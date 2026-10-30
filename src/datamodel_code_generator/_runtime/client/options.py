@@ -10,7 +10,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
 
-from ..model_codecs.media import TOKEN
+from ..model_codecs.media import ERROR_STATUSES, TOKEN
 from ..model_codecs.parameters import header_text
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
@@ -31,9 +31,7 @@ __all__ = (
 
 Pairs: TypeAlias = tuple[tuple[str, str | None], ...]
 
-_SCHEMES: Final = frozenset({"http", "https"})
-_RETRY_STATUS_MIN: Final = 400
-_RETRY_STATUS_MAX: Final = 599
+HTTP_SCHEMES: Final = frozenset({"http", "https"})
 _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
@@ -44,7 +42,7 @@ def is_base_url(value: str) -> bool:
     Raises ValueError when the URL or its port does not parse.
     """
     parts = urlsplit(value)
-    absolute = parts.scheme in _SCHEMES and bool(parts.hostname) and parts.port != 0
+    absolute = parts.scheme in HTTP_SCHEMES and bool(parts.hostname) and parts.port != 0
     return absolute and parts.username is None and not parts.query and not parts.fragment
 
 
@@ -91,7 +89,7 @@ _UNLIMITED: Final = ResolvedTimeoutOptions(connect=None, read=None, write=None, 
 
 def retryable_status(status: int) -> bool:
     """Return whether a retry may select a status: an error status other than an authentication challenge."""
-    return _RETRY_STATUS_MIN <= status <= _RETRY_STATUS_MAX and status not in _RETRY_STATUS_EXCLUDED
+    return status in ERROR_STATUSES and status not in _RETRY_STATUS_EXCLUDED
 
 
 def _statuses(value: AbstractSet[int]) -> frozenset[int]:

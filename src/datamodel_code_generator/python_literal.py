@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-import keyword
 from dataclasses import dataclass
 from math import isfinite, isnan
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
+
+from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
+from datamodel_code_generator._target_unicode import is_dotted_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -61,7 +63,7 @@ class PythonRuntimeExpression:
     @classmethod
     def from_import_call(cls, import_: Import, *arguments: str, value: str | None = None) -> Self:
         """Create a call expression that retains its constructor import identity."""
-        return cls(import_, "", f"({', '.join(arguments)})", value)
+        return cls(import_, "", call_text("", arguments), value)
 
     def with_import_aliases(self, aliases: Mapping[tuple[str | None, str], Import]) -> Self:
         """Return self unless module-wide import resolution changed a referenced binding."""
@@ -284,9 +286,7 @@ def _normalized_safe_public_type_name(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     normalized_value = _normalize_string(value)
-    if normalized_value and all(
-        part.isidentifier() and not keyword.iskeyword(part) for part in normalized_value.split(".")
-    ):
+    if is_dotted_python_name(normalized_value, rule="legacy-host-identifiers"):
         return normalized_value
     return None
 
@@ -312,13 +312,11 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
     """
     match value:
         case dict():
-            return "{" + ", ".join(f"{render(key)}: {render(item)}" for key, item in value.items()) + "}"
+            return dict_display((render(key), render(item)) for key, item in value.items())
         case list():
-            return "[" + ", ".join(map(render, value)) + "]"
+            return list_display(map(render, value))
         case tuple():
-            return "(" + ", ".join(map(render, value)) + ("," if len(value) == 1 else "") + ")"
-        case set() if not value:
-            return "set()"
+            return tuple_display(map(render, value))
         case set():
             from operator import itemgetter  # noqa: PLC0415
 
@@ -328,7 +326,7 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
                 for text in (render(item),)
             ]
             rows.sort(key=itemgetter(0, 1))
-            return "{" + ", ".join(text for _, _, text in rows) + "}"
+            return set_display(text for _, _, text in rows)
     return None
 
 

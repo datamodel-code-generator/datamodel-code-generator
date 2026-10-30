@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import keyword
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._runtime.model_codecs.media import TOKEN
 from datamodel_code_generator._target_naming import explicit_name, windows_device
-from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, nfc
+from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -94,7 +93,7 @@ def folded(name: str, target_python_version: PythonVersion) -> str:
 def helper_name_problem(value: str, target_python_version: PythonVersion) -> str | None:
     """Return why a helper name is invalid, or None for dotted public identifiers of the target in NFKC form."""
     for part in value.split("."):
-        if not is_identifier(part, target_python_version) or keyword.iskeyword(part):
+        if not is_python_name(part, target_python_version):
             return f"The helper name {value!r} must be Python identifiers separated by dots, without keywords"
         if (
             not is_nfkc(part, target_python_version)

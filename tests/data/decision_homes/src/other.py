@@ -51,3 +51,56 @@ def read_keys(schema, config):
     config["type"] = schema["other"]
     del config["items"]
     return first, second, schema.get(first), schema.get("other")
+
+
+def spell(direction):
+    """Spell the segment in a string literal and in an f-string, and write other text."""
+    return "seg-" + direction, f"seg-{direction}", f"{direction}-other", "other"
+
+
+def fold(location, name, other):
+    """Fold by a tested value in an expression and in a statement; other tests and branches do not count."""
+    key = name.lower() if location == "upper" else name
+    if location == "upper":
+        key = (location, name.lower())
+    kept = name.lower() if location == "lower" else name
+    same = name if location == "upper" else other
+    return key, kept, same
+
+
+def displays(head, items):
+    """Join items inside a call, a tuple and a list, and write a subscript and other joins."""
+    return (
+        f"{head}({', '.join(items)})",
+        "(" + ", ".join(items) + ("," if len(items) == 1 else "") + ")",
+        f"[{', '.join(items)}]",
+        f"{head}[{', '.join(items)}]",
+        f"Union[{', '.join(items)}]",
+        f"({'; '.join(items)})",
+        ", ".join(items),
+    )
+
+
+def search(name, taken, words, refresh):
+    """Search for free names with an f-string, an annotated f-string and a padded string.
+
+    A loop writing a message does not count, nor one whose f-string is only an argument of the call it assigns.
+    """
+    candidate, count = name, 0
+    while candidate in taken:
+        count += 1
+        candidate = f"{name}_{count}"
+    annotated, index = name, 0
+    while annotated in taken:
+        index += 1
+        annotated: str = f"{name}-{index}"
+    padded = name
+    while padded in taken:
+        padded += "_"
+    message = ""
+    while words:
+        message = f"{words.pop()} left"
+    remaining = words
+    while remaining:
+        remaining = refresh(f"{name}") or (lambda: f"{name}")
+    return candidate, annotated, padded, message

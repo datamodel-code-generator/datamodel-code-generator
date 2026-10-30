@@ -297,7 +297,9 @@ def _resolve_preset(preset: str, request: RecommendRequest) -> ResolvedPresetCon
 
 def _preset_values(preset: str, request: RecommendRequest) -> dict[str, Any]:
     """Return the values a preset gives the fields the user left unset."""
-    return {item.field_name: item.pyproject_value for item in _resolve_preset(preset, request).items}
+    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
+
+    return _pyproject_values(_resolve_preset(preset, request).items)
 
 
 def _plan(

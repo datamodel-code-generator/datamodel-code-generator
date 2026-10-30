@@ -23,6 +23,16 @@ them, ``what`` words the message):
 * ``key``: a subscript ``x["k"]`` that is read (not assigned or deleted) or a call ``x.get("k")`` / ``x.pop("k")`` /
   ``x.setdefault("k", ...)`` whose string key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so
   a raw read of a loaded document is invisible to them).
+* ``literal``: a string literal, or an f-string with a literal part, that holds one of ``contains`` (the spelling of a
+  value that only its home may write); an f-string is one hit at its own position.
+* ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
+  of ``brackets`` (``(`` a call or tuple display, ``[`` a list display): Python source spelled by hand; a ``[`` right
+  after a name, a value or a closing bracket opens a subscript and does not count.
+* ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
+  of whose branches calls a callee ending in one of ``names`` (a rule applied only where a value is that string).
+* ``name-search``: a ``while`` loop whose test reads a name that the loop builds itself (its test or body, not a
+  function inside it, assigns the name an f-string or a value holding one, or adds a string to it with ``+=``): a
+  search for the first name a scope does not hold.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -82,15 +92,46 @@ DOCS_PATH = Path("docs/architecture.md")
 CONFIG_PATH = Path("scripts/decision_homes.toml")
 COMPILED_TEMPLATE_DIRECTORY = store.COMPILED_TEMPLATE_DIRECTORY
 ALLOWLIST_MARKER = "# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ===="
-SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set", "key"})
+SIGNATURE_KINDS = frozenset({
+    "name",
+    "call",
+    "function",
+    "compare-in",
+    "number",
+    "keyword-set",
+    "key",
+    "literal",
+    "display",
+    "branch",
+    "name-search",
+})
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
 FIX_FORMAT = re.compile(r"#\d+|keep|[A-Z]{1,4}-?\d+[a-z]?(?:-\d+)?")
 ALLOWLIST_START = re.compile(rf"^(?:{re.escape(ALLOWLIST_MARKER)}|\[allow\.)", re.MULTILINE)
-STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "strings", "values", "receivers", "keys"})
+STRING_OPTIONS = frozenset({
+    "names",
+    "keywords",
+    "without",
+    "mentions",
+    "strings",
+    "values",
+    "receivers",
+    "keys",
+    "contains",
+    "brackets",
+})
 INTEGER_OPTIONS = frozenset({"powers", "literals"})
-REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "keywords", "key": "keys"}
+REQUIRED_STRINGS = {
+    "name": "names",
+    "compare-in": "values",
+    "keyword-set": "keywords",
+    "key": "keys",
+    "literal": "contains",
+    "display": "brackets",
+    "branch": "values",
+}
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
@@ -292,6 +333,8 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
             msg = f"{owner}: ctx must be load, store or any"
             raise ConfigError(msg)
         _strings(options, REQUIRED_STRINGS[kind], owner, required=True)
+        if kind == "branch":
+            _strings(options, "names", owner, required=True)
     return Signature(
         id=f"{home}.{name}",
         home=home,
@@ -383,6 +426,99 @@ def _key_read(node: ast.AST) -> str | None:
     return None
 
 
+def _string_parts(node: ast.AST) -> list[ast.AST]:
+    """Return the parts of an f-string or a ``+`` chain in order: string constants and the values between them."""
+    match node:
+        case ast.JoinedStr(values=values):
+            return [part.value if isinstance(part, ast.FormattedValue) else part for part in values]
+        case ast.BinOp(left=left, op=ast.Add(), right=right):
+            return [*_string_parts(left), *_string_parts(right)]
+    return [node]
+
+
+def _is_comma_join(node: ast.AST) -> bool:
+    match node:
+        case ast.Call(func=ast.Attribute(value=ast.Constant(value=", "), attr="join")):
+            return True
+    return False
+
+
+def _opens_display(parts: list[ast.AST], index: int, brackets: Iterable[str]) -> bool:
+    """Return whether the part before ``parts[index]`` ends with an opening bracket of a display or a call."""
+    match parts[index - 1] if index else None:
+        case ast.Constant(value=str() as text) if text and text[-1] in brackets:
+            before = text[:-1]
+            subscript = (bool(before) and (before[-1].isidentifier() or before[-1] in ")]")) or (
+                not before and index > 1
+            )
+            return text[-1] != "[" or not subscript
+    return False
+
+
+def _hand_display(node: ast.AST, brackets: Iterable[str]) -> bool:
+    """Return whether ``node`` joins expression texts with ``", "`` right inside a bracket it opens itself.
+
+    A ``+`` chain counts at the operation whose right operand is the join, so a chain is one hit.
+    """
+    if isinstance(node, ast.BinOp):
+        if not (isinstance(node.op, ast.Add) and _is_comma_join(node.right)):
+            return False
+        parts = [*_string_parts(node.left), node.right]
+        return _opens_display(parts, len(parts) - 1, brackets)
+    parts = _string_parts(node)
+    return any(_is_comma_join(part) and _opens_display(parts, index, brackets) for index, part in enumerate(parts))
+
+
+def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) -> bool:
+    """Return whether an ``if`` or a conditional expression tests for one of ``values`` and a branch calls ``names``."""
+    if not isinstance(node, ast.If | ast.IfExp) or not isinstance(test := node.test, ast.Compare):
+        return False
+    if not {item.value for item in (test.left, *test.comparators) if isinstance(item, ast.Constant)} & set(values):
+        return False
+    branches = (node.body, node.orelse) if isinstance(node, ast.IfExp) else (*node.body, *node.orelse)
+    return any(
+        isinstance(call, ast.Call) and _last_name(call.func) in names
+        for branch in branches
+        for call in ast.walk(branch)
+    )
+
+
+def _holds_f_string(value: ast.AST) -> bool:
+    """Return whether the text ``value`` assigns holds an f-string, outside call arguments and lambda bodies."""
+    pending = [value]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.JoinedStr):
+            return True
+        if isinstance(node, ast.Lambda):
+            continue
+        pending.extend([node.func] if isinstance(node, ast.Call) else ast.iter_child_nodes(node))
+    return False
+
+
+def _searches_name(loop: ast.While) -> bool:
+    """Return whether ``loop`` tests a name that it builds itself as text (``name-search``)."""
+    built: set[str] = set()
+    pending: list[ast.AST] = [loop.test, *loop.body]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda):
+            continue
+        pending.extend(ast.iter_child_nodes(node))
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.NamedExpr) and _holds_f_string(node.value):
+            targets = [node.target]
+        elif isinstance(node, ast.Assign) and _holds_f_string(node.value):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value is not None and _holds_f_string(node.value):
+            targets = [node.target]
+        elif isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Add):
+            text = isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+            targets = [node.target] if text or _holds_f_string(node.value) else []
+        built.update(target.id for target in targets if isinstance(target, ast.Name))
+    return any(isinstance(node, ast.Name) and node.id in built for node in ast.walk(loop.test))
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -436,6 +572,19 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return False
         case "key":
             return _key_read(node) in options["keys"]
+        case "branch":
+            return _branch_calls(node, options["values"], options["names"])
+        case "literal":
+            texts = [
+                part.value
+                for part in (node.values if isinstance(node, ast.JoinedStr) else [node])
+                if isinstance(part, ast.Constant) and isinstance(part.value, str)
+            ]
+            return any(spelling in text for text in texts for spelling in options["contains"])
+        case "display":
+            return _hand_display(node, options["brackets"])
+        case "name-search":
+            return isinstance(node, ast.While) and _searches_name(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node)) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -449,6 +598,10 @@ NODE_TYPES = {
     "number": (ast.Constant, ast.BinOp),
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
     "key": (ast.Subscript, ast.Call),
+    "literal": (ast.Constant, ast.JoinedStr),
+    "display": (ast.JoinedStr, ast.BinOp),
+    "branch": (ast.If, ast.IfExp),
+    "name-search": (ast.While,),
 }
 
 
@@ -475,7 +628,12 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
         if not any(signatures.values()):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        f_string_parts: set[int] = set()
         for node in ast.walk(tree):
+            if isinstance(node, ast.JoinedStr):
+                f_string_parts.update(id(part) for part in node.values if isinstance(part, ast.Constant))
+            elif id(node) in f_string_parts:
+                continue
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)

@@ -1,4 +1,4 @@
-"""Static scan of regex syntax: which patterns every engine runs alike, and the conjunction of patterns.
+"""Static scan of regex syntax: which patterns every engine runs alike, which need Python's ``re``, and conjunctions.
 
 The scan follows the Rust grammar and never reads the installed pydantic-core or the running Python, so the
 decisions made from it do not depend on the environment that generates. A leaf: the parser's keyword table
@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from functools import cache
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from typing_extensions import final
 
@@ -18,17 +18,22 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 __all__ = [
+    "EngineRow",
     "PatternConjunction",
     "conjoin_patterns",
     "has_lookaround",
     "is_portable_pattern",
     "literal_pattern_value",
     "lookahead_patterns",
+    "needs_python_engine",
     "pairwise_patterns",
     "pattern_admits",
     "pattern_implies",
     "scan_regex_syntax",
 ]
+
+EngineRow: TypeAlias = Literal["model", "adapter"]
+"""What selects the ``python-re`` engine of a pattern: the config of a model, or a schema validator's adapter."""
 
 _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 
@@ -103,9 +108,31 @@ def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
     return (rejected, minimum_python)
 
 
+def needs_python_engine(pattern: str, *, row: EngineRow, target_python: tuple[int, int] | None = None) -> bool:
+    """Return whether pydantic needs Python's ``re`` (the ``python-re`` engine) for a pattern, decided statically.
+
+    A lookaround always does. Row ``adapter`` (a schema validator's adapter, 0.87.0): so does a pattern in which the
+    scan finds syntax Rust rejects, or which it cannot read (a verbose pattern). Row ``model`` (the config of a model,
+    or of the models that use a type alias, 0.84.0): so does syntax Rust rejects that Python's ``re`` reads at
+    ``target_python``, the target of the string type the pattern constrains; without one (None) only a lookaround
+    counts, and a verbose pattern keeps the default engine. The rows disagree on a verbose pattern and on syntax newer
+    than the target Python (#5636).
+    """
+    if has_lookaround(pattern):
+        return True
+    if row == "adapter":
+        return (scan := scan_regex_syntax(pattern)) is None or scan[0]
+    return (
+        target_python is not None
+        and (scan := scan_regex_syntax(pattern)) is not None
+        and scan[0]
+        and target_python >= scan[1]
+    )
+
+
 def is_portable_pattern(pattern: str) -> bool:
-    """Return whether a pattern runs on the default regex engine of every supported pydantic."""
-    return not has_lookaround(pattern) and (scan := scan_regex_syntax(pattern)) is not None and not scan[0]
+    """Return whether a pattern runs on the default regex engine of every supported pydantic (row ``adapter``)."""
+    return not needs_python_engine(pattern, row="adapter")
 
 
 _REGEX_META_CHARACTERS: Final = frozenset(r"\.^$*+?{}[]|()")

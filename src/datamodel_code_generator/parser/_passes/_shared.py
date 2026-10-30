@@ -37,6 +37,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     ConstraintsBase,
     DataModel,
+    _effective_field_owners,
     _find_base_classes,
     _ModelKeys,
     _path_identity_keys,
@@ -62,7 +63,7 @@ from datamodel_code_generator.python_literal import (
     rewrite_runtime_expressions,
     rewrite_runtime_imports,
 )
-from datamodel_code_generator.reference import ModelType, _source_path
+from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
@@ -74,10 +75,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
+    from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
+    from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -393,19 +396,6 @@ def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
     return f"{from_}.{import_}", short_name
 
 
-def _relative_import(
-    current_module: str, target_full_name: str, short_name: str, *, use_exact: bool
-) -> tuple[str, str]:
-    """Return the module and name ``current_module`` imports a model by; ``use_exact`` imports it from its module.
-
-    A model of an ancestor package keeps the package import.
-    """
-    full_path = relative(current_module, target_full_name)
-    if not use_exact or is_ancestor_package_reference(current_module, target_full_name):
-        return full_path
-    return exact_import(*full_path, short_name)
-
-
 def _join_module(from_: str, name: str) -> str:
     """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
     return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
@@ -661,6 +651,18 @@ def replace_model_in_list(
     models[idx] = replacement
 
 
+ImportPathRow: TypeAlias = Literal["reference", "legacy-collapse-import-path"]
+"""How a module imports a model of another module (``reference_import_target``).
+
+* ``reference``: the import a module writes for the models its own types name (``change_from_import``).
+* ``legacy-collapse-import-path``: the import of a model that a type inlined into the module names (collapsed root
+  types, dict keys typed by root types), as these wrote it since 0.25.9 (#2043): the module path alone, without the
+  ``_`` of a hyphenated module, the import from an ``_internal`` module or from a module named like its class, or the
+  leading dot of a package ``__init__``; a model of the module itself imports nothing and keeps the expression it was
+  copied with, and every other one writes its binding even where it is the class name.
+"""
+
+
 @final
 @record
 class ReferenceImportTarget:
@@ -674,10 +676,16 @@ class ReferenceImportTarget:
     from_: str
     import_: str
     written_from: str
+    row: ImportPathRow = "reference"
+
+    @property
+    def same_module(self) -> bool:
+        """Return whether the model is one of the module itself, which the module names without an import."""
+        return not (self.from_ and self.import_)
 
     def expression(self, name: str, binding: str) -> str | None:
         """Return what the module writes for the model ``name`` under the binding, or None for the class name."""
-        if not (self.from_ and self.import_) or binding == name:
+        if self.same_module or (binding == name and self.row == "reference"):
             return None
         return binding if name == self.import_ else f"{binding}.{name}"
 
@@ -692,9 +700,13 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
     treat_dot_as_module: bool | None,
+    row: ImportPathRow = "reference",
 ) -> ReferenceImportTarget:
-    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``."""
-    if base_class:
+    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
+
+    ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
+    """
+    if base_class and row == "reference":
         left, right = relative(current_module_name, target_full_name)
         from_ = (
             left if is_ancestor_package_reference(current_module_name, target_full_name) else _join_module(left, right)
@@ -702,7 +714,11 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         import_ = name
         full_path = from_, import_
     else:
-        from_, import_ = full_path = _relative_import(current_module_name, target_full_name, name, use_exact=use_exact)
+        from_, import_ = full_path = relative(current_module_name, target_full_name)
+        if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
+            from_, import_ = full_path = exact_import(from_, import_, name)
+        if row == "legacy-collapse-import-path":
+            return ReferenceImportTarget(full_path, from_, import_, from_, row)
         import_ = import_.replace("-", "_")
         current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
         if (  # pragma: no cover
@@ -736,8 +752,12 @@ def register_reference_import(  # noqa: PLR0913
     producer: ImportProducer,
     treat_dot_as_module: bool | None,
     import_ledger: ModuleImportLedger,
+    row: ImportPathRow = "reference",
 ) -> str | None:
-    """Import a reference from another module and return its expression when it is not the class name."""
+    """Import a reference from another module and return its expression when it is not the class name.
+
+    Under row ``legacy-collapse-import-path`` a model of the module itself imports nothing.
+    """
     name = reference.short_name
     target = reference_import_target(
         name,
@@ -748,7 +768,10 @@ def register_reference_import(  # noqa: PLR0913
         internal_modules=internal_modules,
         base_class=base_class,
         treat_dot_as_module=treat_dot_as_module,
+        row=row,
     )
+    if row == "legacy-collapse-import-path" and target.same_module:
+        return None
     alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
     import_ledger.append(
         imports,
@@ -763,19 +786,40 @@ def register_reference_import(  # noqa: PLR0913
     return target.expression(name, alias)
 
 
-def redirect_collapsed_reuse_users(
-    host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel
-) -> list[DataType]:
-    """Redirect every user of a duplicate that collapsed reuse removes to the kept model, remembering the duplicate.
+def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataModel) -> None:
+    """Give each child of a merged model its bases once each, told apart by module and type hint or by reference."""
+    for child in model.reference.iter_data_model_children():
+        bases = child.base_classes
+        host._graph_builder.set_base_classes(  # noqa: SLF001
+            child,
+            {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
+            if base_dedup == "by-type-hint"
+            else {id(base.reference): base for base in bases}.values(),
+        )
 
-    A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
-    the tags of the kept model.
+
+def merge_duplicate(
+    host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel, row: ShapeRow, *, keeps_duplicate_tags: bool
+) -> list[DataType]:
+    """Hand every user of a duplicate that leaves the output to the equal canonical model, and retire the duplicate.
+
+    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``).
+    With ``keeps_duplicate_tags``, for a duplicate that reuse removes instead of making it a subclass, a discriminated
+    union that named the duplicate keeps mapping it to the tags of its own schema, which are compared with the tags of
+    the canonical model. The children of the duplicate take their bases once each, told apart as the user of ``row``
+    tells them (``ShapeRow.base_dedup``; None keeps them as redirected). The caller drops the duplicate from its
+    module's models. Return the redirected users.
     """
-    users = host._graph_builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)  # noqa: SLF001
-    collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
-    for user in users:
-        collapsed_users.setdefault(id(user), (user, duplicate.reference))
-    host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    builder = host._graph_builder  # noqa: SLF001
+    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
+    if keeps_duplicate_tags:
+        collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
+        for user in users:
+            collapsed_users.setdefault(id(user), (user, duplicate.reference))
+        host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    if (base_dedup := row.base_dedup) is not None:
+        _distinct_bases(host, base_dedup, duplicate)
+    builder.retire_model(duplicate)
     return users
 
 
@@ -871,6 +915,20 @@ def apply_inherited_field_default(
     field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
 
 
+def placeholder_identity(placeholder: DataModelFieldBase) -> FieldIdentity:
+    """Return the name, original name and aliases the copy that replaces ``placeholder`` takes (its own lists)."""
+    return {
+        "name": placeholder.name,
+        "original_name": placeholder.original_name,
+        "alias": placeholder.alias,
+        "validation_aliases": (
+            list(placeholder.validation_aliases) if placeholder.validation_aliases is not None else None
+        ),
+        "serialization_alias": placeholder.serialization_alias,
+        "use_serialization_alias": placeholder.use_serialization_alias,
+    }
+
+
 def _inherited_placeholder_name(field: DataModelFieldBase) -> str | None:
     """Return the name of the inherited property that a placeholder field without a type of its own names, or None."""
     data_type = field.data_type
@@ -930,14 +988,7 @@ def override_required_field(
                 )
             ) is None:
                 copied_original_field = host._copy_model_field(original_field)  # noqa: SLF001
-                copied_original_field.name = model_field.name
-                copied_original_field.original_name = model_field.original_name
-                copied_original_field.alias = model_field.alias
-                copied_original_field.validation_aliases = (
-                    list(model_field.validation_aliases) if model_field.validation_aliases is not None else None
-                )
-                copied_original_field.serialization_alias = model_field.serialization_alias
-                copied_original_field.use_serialization_alias = model_field.use_serialization_alias
+                builder.set_field_identity(copied_original_field, placeholder_identity(model_field))
                 copied_original_field.required = True
             default_source = original_field
             if (
@@ -978,6 +1029,20 @@ class ConstructorConflicts(NamedTuple):
     inherited: tuple[tuple[DataModelFieldBase, DataModel], ...]
 
 
+def takes_positional_place(facts: AssignmentFacts, field: DataModelFieldBase, declaring_model: DataModel) -> bool:
+    """Return whether ``field`` takes a positional place in the constructor of a model that has it.
+
+    It does when it takes part in the constructor and neither the field nor ``declaring_model``, the class that
+    declares it, makes it keyword-only.
+    """
+    kw_only = field.constructor_keyword_only
+    return (
+        facts.participates_in_constructor
+        and kw_only is not True
+        and (kw_only is not None or not declaring_model.has_keyword_only_definition())
+    )
+
+
 def get_constructor_ordering_conflicts(
     model: DataModel,
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
@@ -993,11 +1058,7 @@ def get_constructor_ordering_conflicts(
     ordering_conflicts: set[str] = set()
     inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
-        facts = model._field_assignment_facts(field)  # noqa: SLF001
-        if not facts.participates_in_constructor:
-            continue
-        kw_only = field.constructor_keyword_only
-        if kw_only is True or (kw_only is None and declaring_model.has_keyword_only_definition()):
+        if not takes_positional_place(facts := model._field_assignment_facts(field), field, declaring_model):  # noqa: SLF001
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
@@ -1258,6 +1319,35 @@ def require_update_action(
     )
 
 
+class ReuseSubclassHost(GraphBuilderHost, RecursionFactsHost, Protocol):
+    """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
+
+
+def removes_reuse_duplicate(host: DeduplicationHost, duplicate: DataModel, *, inherits: bool) -> bool:
+    """Return whether reuse removes a duplicate instead of making it an empty subclass of the canonical model.
+
+    An Enum is removed, every duplicate is under ``--collapse-reuse-models``, and so is every duplicate where the
+    output's models cannot inherit the canonical model (``inherits``: tree-scope reuse reads the output's capability).
+    """
+    return isinstance(duplicate, Enum) or not inherits or host.collapse_reuse_models
+
+
+def subclass_duplicate(
+    host: ReuseSubclassHost, duplicate: DataModel, canonical: DataModel, models: list[DataModel], users: list[DataModel]
+) -> DataModel | None:
+    """Replace a duplicate in ``models`` and in the store by an empty subclass of the equal canonical model.
+
+    The subclass keeps the duplicate's name; the users that ``users`` own name it. Return the subclass when the
+    canonical model needs a reference update action, which the caller adds once with ``require_update_action``.
+    """
+    builder = host._graph_builder  # noqa: SLF001
+    inherited = duplicate.create_reuse_model(canonical.reference)
+    builder.redirect_model_reference_users(duplicate, users, inherited.reference)
+    replace_model_in_list(models, duplicate, inherited)
+    builder.replace_model(duplicate, inherited)
+    return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
+
+
 DiscriminatorValue: TypeAlias = str | int | bool
 
 
@@ -1438,13 +1528,15 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     init: bool,
     internal_modules: set[ModulePath],
     producer: ImportProducer,
+    row: ImportPathRow = "reference",
 ) -> None:
     """Write how a data type names its reference in the current module.
 
     A model the module emits is written by its class name; any other is imported, and written by the expression
-    the import gives when that is not the class name.
+    the import gives when that is not the class name. Under row ``legacy-collapse-import-path`` a model of the module
+    itself keeps the expression the data type has.
     """
-    data_type.alias = (
+    expression = (
         None
         if same_module
         else register_reference_import(
@@ -1459,8 +1551,11 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             producer=producer,
             treat_dot_as_module=host.treat_dot_as_module,
             import_ledger=host._import_ledger,  # noqa: SLF001
+            row=row,
         )
     )
+    if expression is not None or row == "reference":
+        data_type.alias = expression
 
 
 def set_reference_expressions(  # noqa: PLR0913
@@ -1478,20 +1573,54 @@ def set_reference_expressions(  # noqa: PLR0913
     A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``);
     without ``members`` every one is. ``naming`` gives the module names of ``model`` and of the models named.
     """
+    import_references(
+        host,
+        model,
+        data_types,
+        ctx.imports,
+        ctx.scoped_model_resolver,
+        naming.model_path_to_module_name,
+        init=ctx.is_init,
+        internal_modules=naming.internal_modules,
+        members=members,
+        producer=producer,
+    )
+
+
+def import_references(  # noqa: PLR0913, PLR0917
+    host: ReferenceExpressionHost,
+    model: DataModel,
+    data_types: Iterable[DataType],
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    model_path_to_module_name: Mapping[str, str],
+    *,
+    init: bool,
+    internal_modules: set[ModulePath],
+    members: KeyedModels | None,
+    producer: ImportProducer,
+    row: ImportPathRow = "reference",
+) -> None:
+    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``imports``.
+
+    ``set_reference_expressions`` with the module's imports, resolver and module names given one by one, under
+    ``row`` (``ImportPathRow``).
+    """
     for data_type in data_types:
         if (reference := data_type.reference) is None:
             continue
         set_reference_expression(
             host,
             data_type,
-            _get_model_module_name(model, naming.model_path_to_module_name),
-            _get_data_type_target_full_name(data_type, reference, naming.model_path_to_module_name),
-            ctx.imports,
-            ctx.scoped_model_resolver,
+            _get_model_module_name(model, model_path_to_module_name),
+            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+            imports,
+            scoped_model_resolver,
             same_module=members is not None and members.key_of(reference) in members.models,
-            init=ctx.is_init,
-            internal_modules=naming.internal_modules,
+            init=init,
+            internal_modules=internal_modules,
             producer=producer,
+            row=row,
         )
 
 
@@ -1567,41 +1696,6 @@ def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataMode
         for base_model in _find_base_classes(derived_model):
             derived_models[keys.of(base_model)].append(derived_model)
     return derived_models
-
-
-def _register_data_type_import(  # ruff: ignore[too-many-arguments]
-    data_type: DataType,
-    model: DataModel,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
-    *,
-    ledger: ModuleImportLedger,
-    producer: ImportProducer,
-) -> None:
-    if (reference := data_type.reference) is None:
-        return
-    from_, import_ = full_path = _relative_import(
-        _get_model_module_name(model, model_path_to_module_name),
-        _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-        reference.short_name,
-        use_exact=imports.use_exact,
-    )
-    if not (from_ and import_):
-        return
-
-    alias = ledger.add_name(imports, scoped_model_resolver, full_path, import_)
-    data_type.alias = alias.name if reference.short_name == import_ else f"{alias.name}.{reference.short_name}"
-    ledger.append(
-        imports,
-        Import(
-            from_=from_,
-            import_=import_,
-            alias=alias.name,
-            reference_path=reference.path,
-        ),
-        producer,
-    )
 
 
 class RenamedTypesHost(Protocol):
@@ -1716,26 +1810,25 @@ def get_inherited_constructor_info(
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()
     inherited_stripped_none_names: set[str] = set()
-    effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {}
-    for inherited_model in reversed(inherited_models):
-        for field in inherited_model.fields:
-            if not (field_name := field.name):
-                continue
-            has_default: bool | None = None
-            if supports_inherited_override:
+    inherited_defaults: dict[int, bool] = {}
+    if supports_inherited_override:
+        for inherited_model in reversed(inherited_models):
+            for field in inherited_model.fields:
+                if not (field_name := field.name):
+                    continue
                 facts = model._field_assignment_facts(field)  # noqa: SLF001
                 has_default, has_value_default = facts.default_info
+                inherited_defaults[id(field)] = has_default
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
                     required_assignment_names.add(field_name)
                     if facts.place_assigned:
                         inherited_stripped_none_names.discard(field_name)
                     else:
                         inherited_stripped_none_names.add(field_name)
-            effective_fields[field_name] = field, inherited_model, has_default
-    for field in model.fields:
-        if field.name:
-            effective_fields[field.name] = field, model, None
-
+    effective_fields = {
+        name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
+        for name, (owner, field) in _effective_field_owners(model, inherited_models).items()
+    }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
     return _InheritedConstructorInfo(
         frozenset(required_assignment_names),
@@ -1891,12 +1984,12 @@ def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bo
     return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
 
 
-SPECIAL_PATH_FORMAT: str = "#-datamodel-code-generator-#-{}-#-special-#"
+SPECIAL_PATH_FORMAT: str = _SPECIAL_PATH_FORMAT
 
 
 def get_special_path(keyword: str, path: list[str]) -> list[str]:
     """Create a special path marker for internal reference tracking."""
-    return [*path, SPECIAL_PATH_FORMAT.format(keyword)]
+    return _special_path(keyword, path)
 
 
 def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPositions, index: int) -> list[DataType]:

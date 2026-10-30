@@ -55,6 +55,12 @@ from datamodel_code_generator._constraint_applicability import (
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
 )
+from datamodel_code_generator._graph_links import (
+    add_child,
+    clear_children,
+    data_type_children,
+    drop_child_and_detached,
+)
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
 from datamodel_code_generator._records import record
@@ -83,6 +89,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
+    from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
     from datamodel_code_generator.types import DataType
@@ -168,6 +175,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_default",
     "set_field_extra",
     "set_field_extras",
+    "set_field_identity",
     "set_type_discriminator",
     "set_type_expressions",
     "update_model_reference",
@@ -1169,7 +1177,7 @@ class GenerationStore:  # noqa: PLR0904
             for base_class in model.base_classes:
                 _detach_data_type_tree(base_class)
         for reference in references:
-            reference.children.clear()
+            clear_children(reference)
             reference.source = None
         self._facts = GenerationFacts()
         self._model_ids_by_object.clear()
@@ -1791,6 +1799,14 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
+    def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out."""
+        for attribute, value in identity.items():
+            setattr(field_, attribute, value)
+        bump_field(field_)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_default() instead.", category=None)
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
@@ -2136,7 +2152,7 @@ class GenerationStore:  # noqa: PLR0904
         Their sites are redirected from ``old_reference``. When the model of ``old_reference`` is ``merged`` into the
         equal model of ``new_reference``, each user records the null of the schema it names (``_record_named_null``).
         """
-        children = [child for child in old_reference.children[:] if hasattr(child, "replace_reference")]
+        children = data_type_children(old_reference)
         self._state_sites_at("redirect_reference_users", children, via=old_reference)
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         if merged:
@@ -2149,9 +2165,8 @@ class GenerationStore:  # noqa: PLR0904
         """Return whether a model of another module uses ``model``, by a name that module already wrote."""
         module = model.module_name
         return any(
-            hasattr(child, "replace_reference")
-            and getattr(self._cache_owners_for_data_type(child)[1], "module_name", module) != module
-            for child in model.reference.children
+            getattr(self._cache_owners_for_data_type(child)[1], "module_name", module) != module
+            for child in data_type_children(model.reference)
         )
 
     @deprecated("Use GenerationStore.builder().redirect_model_reference_users() instead.", category=None)
@@ -2168,9 +2183,7 @@ class GenerationStore:  # noqa: PLR0904
         """
         model_ids = {id(candidate) for candidate in models}
         cache_owners = []
-        for child in model.reference.children[:]:
-            if not hasattr(child, "replace_reference"):
-                continue
+        for child in data_type_children(model.reference):
             cache_owners_for_child = self._cache_owners_for_data_type(child)
             owner_models = cache_owners_for_child[1]
             if isinstance(owner_models, tuple):
@@ -2181,8 +2194,8 @@ class GenerationStore:  # noqa: PLR0904
                 continue
             cache_owners.append(cache_owners_for_child)
             self._state_sites_at("redirect_model_reference_users", (child,), via=model.reference)
-            self._record_named_null((child,))  # ty: ignore[invalid-argument-type]
-            child.replace_reference(new_reference)  # ty: ignore[call-non-callable]
+            self._record_named_null((child,))
+            child.replace_reference(new_reference)
             self._note_changed_data_types((child,))
         self._invalidate_owner_caches(cache_owners)
         self._invalidate()
@@ -2193,7 +2206,7 @@ class GenerationStore:  # noqa: PLR0904
         self._state_sites_at("collapse_root_data_type", (data_type,), via=data_type.reference)
         with self._root_collapse_internal_mutation(), self._builder.defer_refresh():
             if data_type.reference:
-                self._prune_reference_children(data_type.reference, excluded_child=data_type, require_parent=True)
+                drop_child_and_detached(data_type.reference, data_type)
             self._builder.replace_data_type_ref(data_type, inner_reference)
 
     @deprecated("Use GenerationStore.builder().detach_model_data_type_refs() instead.", category=None)
@@ -2231,7 +2244,7 @@ class GenerationStore:  # noqa: PLR0904
         else:
             data_type.reference = new_reference
             if new_reference:
-                new_reference.children.append(data_type)
+                add_child(new_reference, data_type)
 
     @staticmethod
     def _record_named_null(data_types: Iterable[DataType]) -> None:
@@ -2243,19 +2256,6 @@ class GenerationStore:  # noqa: PLR0904
         """
         for data_type in data_types:
             data_type._update_type_null(named=data_type.names_nullable_model)  # noqa: SLF001
-
-    @staticmethod
-    def _prune_reference_children(
-        reference: Reference,
-        *,
-        excluded_child: object | None = None,
-        require_parent: bool = False,
-    ) -> None:
-        reference.children = [
-            child
-            for child in reference.children
-            if child is not excluded_child and (not require_parent or getattr(child, "parent", None))
-        ]
 
     def _state_model_sites(self, operation: str, *models: object) -> None:
         """State that the new sites of ``models`` take the provenance of ``operation`` (`SITE_EFFECTS`)."""
@@ -2592,6 +2592,10 @@ class GraphBuilder:
     def set_field_extras(self, field_: DataModelFieldBase, extras: dict[str, Any]) -> None:
         """Give a field a new extras dict."""
         self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
+
+    def set_field_identity(self, field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+        """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
+        self._store.set_field_identity(field_, identity)  # ty: ignore[deprecated]
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""

@@ -118,6 +118,7 @@ else:
 
 if TYPE_CHECKING:
     import tempfile
+    from types import FunctionType
 
     from datamodel_code_generator._format_types import (
         DEFAULT_FORMATTERS,
@@ -128,7 +129,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
     from datamodel_code_generator._project_config import load_pyproject_config
-    from datamodel_code_generator._publication import PublicationAnchor, StagedFile
+    from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._types import (
         AsyncAPIParserConfigDict,
@@ -226,7 +227,6 @@ if TYPE_CHECKING:
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
     _ParserSource: TypeAlias = str | Path | list[Path] | ParseResult | dict[str, Any]
     _PythonTypeExpressions: TypeAlias = Mapping[str, PythonTypeExpr]
-    _StagedArtifact: TypeAlias = tuple[Path, Path, Path, Path, PublicationAnchor]
     _PreparedGenerationInput: TypeAlias = tuple[
         GenerateConfig,
         _GenerationInput,
@@ -334,13 +334,35 @@ DEFAULT_MAX_VARIABLE_LENGTH: int = 100
 
 _pysnooper_default_state_set: bool = False
 _LAYER_MODULE_PREFIX = "datamodel_code_generator.parser._passes."
+_CONCERN_MODULE_PREFIX = "datamodel_code_generator.parser._"
+_CONCERN_HOST_PARAMETER = "parser"
+
+
+def _traces_module_function(module_name: str, function: FunctionType) -> bool:
+    """Return whether ``snooper_to_methods`` traces a function of an imported module.
+
+    It traces every function of a pass layer module (``parser/_passes/<layer>.py``) and the functions of the parser's
+    concern modules (``parser/_<concern>.py``) that take the parser as their first parameter, named ``parser``: the
+    methods those modules took over, while the module helpers they took over stay untraced as before.
+    """
+    if module_name.startswith(_LAYER_MODULE_PREFIX):
+        return not module_name.rpartition(".")[2].startswith("_")
+    code = function.__code__
+    return (
+        module_name.startswith(_CONCERN_MODULE_PREFIX)
+        and "." not in module_name.removeprefix(_CONCERN_MODULE_PREFIX)
+        and code.co_argcount > 0
+        and code.co_varnames[0] == _CONCERN_HOST_PARAMETER
+    )
 
 
 def snooper_to_methods() -> Callable[..., Any]:
     """Class decorator to add pysnooper tracing to all methods.
 
-    It also traces the functions of the pass layer modules (``parser/_passes/<layer>.py``) the pipeline of ``Parser``
-    calls through their modules, once each.
+    It also traces, once each, the module functions ``_traces_module_function`` selects: those of the pass layer
+    modules, which the pipeline of ``Parser`` calls through their modules, and the methods a concern module of the
+    parser took over, which the parser and the module itself call through the module. A module is covered when it is
+    imported before the class is decorated.
     """
 
     def inner(cls: type[T]) -> type[T]:
@@ -362,10 +384,14 @@ def snooper_to_methods() -> Callable[..., Any]:
             snooper_method = pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
             setattr(cls, name, snooper_method)
         for module_name, module in [*sys.modules.items()]:
-            if not module_name.startswith(_LAYER_MODULE_PREFIX) or module_name.rpartition(".")[2].startswith("_"):
+            if not module_name.startswith(_CONCERN_MODULE_PREFIX):
                 continue
             for name, function in inspect.getmembers(module, predicate=inspect.isfunction):
-                if function.__module__ == module_name and not hasattr(function, "__wrapped__"):
+                if (
+                    function.__module__ == module_name
+                    and not hasattr(function, "__wrapped__")
+                    and _traces_module_function(module_name, function)
+                ):
                     setattr(module, name, pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(function))
         return cls
 
@@ -1785,10 +1811,10 @@ def generate(
         return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
 
-    atomic_remote_update = (
-        config.update_lock
-        and not config.remote_lock_resolved
-        and (config.output is not None or config.emit_model_metadata is not None)
+    from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
+
+    atomic_remote_update = owns_lock_update(config) and (
+        config.output is not None or config.emit_model_metadata is not None
     )
     if config.output is not None and _uses_legacy_process_state(config):
         with PROCESS_STATE_LOCK:
@@ -1833,19 +1859,17 @@ def _prepare_atomic_generation_remote_lock(
     input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
 ) -> tuple[GenerateConfig, Path, RemoteReferenceLock]:
     """Prepare the existing atomic update policy without resolving the original config."""
+    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    lockfile = config.lockfile.expanduser() if config.lockfile is not None else caller_cwd / "datamodel-codegen.lock"
-    if not lockfile.is_absolute():
-        lockfile = caller_cwd / lockfile
-    canonical_lockfile = lockfile.resolve(strict=False)
+    canonical_lockfile = remote_lock_plan(config, caller_cwd, "resolved").canonical_path
     _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
 
 
-def _generate_with_atomic_remote_update(  # noqa: PLR0914
+def _generate_with_atomic_remote_update(
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,
@@ -1855,12 +1879,11 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
     """Generate into private staging and publish output, metadata, and update lock together."""
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
-        publication_anchor,
         publish_staged_files,
         release_all,
-        stage_artifact,
-        staged_artifact_files,
+        stage_outputs,
     )
+    from datamodel_code_generator.remote_lock import _open_lock_staging, _staged_lock  # noqa: PLC0415
 
     config, canonical_lockfile, remote_lock = _prepare_atomic_generation_remote_lock(input_, config, caller_cwd)
     contexts: list[tempfile.TemporaryDirectory[str]] = []
@@ -1868,52 +1891,29 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0914
     lock_anchor: PublicationAnchor | None = None
     lock_staging: StagingDirectory | None = None
     try:
-        staged_updates: dict[str, Path] = {}
-        staged_artifacts: list[_StagedArtifact] = []
-        if (output := config.output) is not None:
-            resolved_output_root = output.expanduser().resolve(strict=False)
-            resolved_output_parent = output.parent.expanduser().resolve(strict=False)
-            is_directory = output.is_dir()
-            staged_output, output_anchor = stage_artifact(
-                output,
-                "output",
-                resolved_output_root if is_directory else resolved_output_parent,
-                contexts,
-                anchors,
-                make_directory=is_directory,
-            )
-            staged_updates["output"] = staged_output
-            staged_artifacts.append((
-                staged_output,
-                output,
-                resolved_output_root,
-                resolved_output_parent,
-                output_anchor,
-            ))
-        if (metadata := config.emit_model_metadata) is not None:
-            resolved_metadata_parent = metadata.parent.expanduser().resolve(strict=False)
-            staged_metadata, metadata_anchor = stage_artifact(
-                metadata, "model-metadata.json", resolved_metadata_parent, contexts, anchors
-            )
-            staged_updates["emit_model_metadata"] = staged_metadata
-            staged_artifacts.append((
-                staged_metadata,
-                metadata,
-                resolved_metadata_parent,
-                resolved_metadata_parent,
-                metadata_anchor,
-            ))
-        lock_anchor = publication_anchor(canonical_lockfile.parent)
-        lock_staging = StagingDirectory.create(lock_anchor, prefix=".datamodel-codegen-lock-")
-        staged_config = config.model_copy(update=staged_updates)
-        staged_config._logical_output = config.output  # noqa: SLF001
-        staged_config._logical_model_metadata = config.emit_model_metadata  # noqa: SLF001
+        output, metadata = config.output, config.emit_model_metadata
+        staging = stage_outputs(
+            output,
+            metadata,
+            (
+                None if output is None else output.expanduser().resolve(strict=False),
+                None if output is None else output.parent.expanduser().resolve(strict=False),
+                None if metadata is None else metadata.parent.expanduser().resolve(strict=False),
+            ),
+            contexts,
+            anchors,
+            make_directory=True,
+        )
+        lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
+        staged_config = config.model_copy(update=staging.updates)
+        staged_config._logical_output = output  # noqa: SLF001
+        staged_config._logical_model_metadata = metadata  # noqa: SLF001
         staged_config.resolve_remote_lock(remote_lock)
         generated = _run_generation(input_, staged_config, caller_cwd, use_output_cwd=use_output_cwd)
-        publication_files = [file for artifact in staged_artifacts for file in staged_artifact_files(*artifact)]
-        staged_lock = cast("StagedFile", remote_lock.stage(lock_staging))
-        publication_files.append(staged_lock._replace(anchor=lock_anchor))
-        publish_staged_files(publication_files)
+        publish_staged_files([
+            *staging.files("legacy-api-skips-missing-metadata"),
+            _staged_lock(remote_lock, lock_staging, lock_anchor),
+        ])
         remote_lock.mark_committed()
     except BaseException:
         with contextlib.suppress(OSError):
@@ -2072,23 +2072,21 @@ def _resolve_generation_remote_lock(
             getattr(remote_lock, "path", None),
         )
     else:
-        default_lockfile = caller_cwd / "datamodel-codegen.lock"
-        lockfile = config.lockfile.expanduser() if config.lockfile is not None else default_lockfile
-        if not lockfile.is_absolute():
-            lockfile = (caller_cwd / lockfile).resolve()
-        use_remote_lock = config.update_lock or config.locked or lockfile.is_file()
+        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+
+        plan = remote_lock_plan(config, caller_cwd, "legacy-api-lockfile-as-written")
         _validate_generation_path_conflicts(
             input_,
             config.output,
             config.emit_model_metadata,
-            lockfile if use_remote_lock else None,
+            plan.canonical_path if plan.active else None,
         )
-        if use_remote_lock:
+        if plan.active:
             config = config.model_copy()
             from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
             remote_lock = RemoteReferenceLock.open(
-                lockfile,
+                plan.canonical_path,
                 update=config.update_lock,
                 locked=config.locked,
             )

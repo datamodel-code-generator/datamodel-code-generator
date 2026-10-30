@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-import json
 from typing import Literal
 
 from typing_extensions import TypedDict
 
-JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
+from datamodel_code_generator._json_output import (
+    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established model_metadata export.
+    dump_json,
+)
+
 MODEL_METADATA_SCHEMA_RESOURCE = "model_metadata.schema.json"
 
 
@@ -46,7 +49,7 @@ _EMPTY_MODEL_METADATA: ModelMetadata = {"version": 1, "models": []}
 def dump_model_metadata(metadata: ModelMetadata | None) -> str:
     """Serialize model metadata as pretty JSON."""
     payload = metadata if metadata is not None else _EMPTY_MODEL_METADATA
-    return json.dumps(payload, indent=2, ensure_ascii=False)
+    return dump_json(payload, "ordered")
 
 
 def model_metadata_json_schema() -> str:

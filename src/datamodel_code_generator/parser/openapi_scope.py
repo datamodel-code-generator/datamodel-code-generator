@@ -14,6 +14,7 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
 from datamodel_code_generator._records import record
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -722,8 +723,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: parameter name/in required"
                 raise SchemaParseError(msg, path=parameter.path)
             name, location = key
-            if location == "header":
-                key = name.lower(), location
+            key = parameter_key(location, name)[1], location
             if key in seen:
                 msg = "API_INVALID_OBJECT: duplicate parameter identity"
                 raise SchemaParseError(msg, path=parameter_path)

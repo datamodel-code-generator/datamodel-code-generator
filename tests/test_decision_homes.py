@@ -42,6 +42,17 @@ ALLOWED = """
 
 [allow."adapter.py"."Adapter.read_again"]
 "sample.read-flag" = { home = "sample", count = 1, audit = "X-1" }
+
+[allow."other.py"."spell"]
+"sample.spelling" = { home = "sample", count = 2, audit = "X-10" }
+
+[allow."other.py"."displays"]
+"sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
+
+[allow."other.py"."fold"]
+"sample.fold" = { home = "sample", count = 2, audit = "X-12" }
+[allow."other.py"."search"]
+"sample.name-search" = { home = "sample", count = 3, audit = "X-13" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

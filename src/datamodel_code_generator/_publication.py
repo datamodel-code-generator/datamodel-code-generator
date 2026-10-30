@@ -16,7 +16,7 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 from secrets import token_hex
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 _unlink = os.unlink
 _replace = os.replace
 _rmdir = os.rmdir
+
+MissingMetadata = Literal["fail", "legacy-api-skips-missing-metadata"]
 
 
 class PublicationAnchor(NamedTuple):
@@ -193,17 +195,98 @@ def stage_artifact(  # noqa: PLR0913
     return staged, anchor
 
 
-def staged_artifact_files(
-    staged: Path, target: Path, root: Path, parent: Path, anchor: PublicationAnchor | None
-) -> Iterator[StagedFile]:
-    """Pair a staged file, or each file of a staged directory, with its target and its concrete destination."""
-    if staged.is_file():
-        yield StagedFile(staged, target, parent / target.name, anchor)
-        return
-    for staged_file in sorted(staged.rglob("*")):
-        if staged_file.is_file():
-            relative_path = staged_file.relative_to(staged)
-            yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
+class StagedArtifact(NamedTuple):
+    """A generated artifact redirected to private staging, and the concrete root and parent it publishes into."""
+
+    staged: Path
+    target: Path
+    root: Path
+    parent: Path
+    anchor: PublicationAnchor
+
+    def files(self) -> Iterator[StagedFile]:
+        """Pair the staged file, or each file of the staged directory, with its target and its concrete destination.
+
+        A file publishes to ``parent / target.name``, a directory's files below ``root``; nothing staged pairs nothing.
+        """
+        staged, target, root, parent, anchor = self
+        if staged.is_file():
+            yield StagedFile(staged, target, parent / target.name, anchor)
+            return
+        for staged_file in sorted(staged.rglob("*")):
+            if staged_file.is_file():
+                relative_path = staged_file.relative_to(staged)
+                yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
+
+
+class StagedOutputs(NamedTuple):
+    """The output and the model metadata of one generation, each redirected to private staging or absent."""
+
+    output: StagedArtifact | None
+    metadata: StagedArtifact | None
+
+    @property
+    def updates(self) -> dict[str, Path]:
+        """Return the generation options that write into the staging: ``output`` and ``emit_model_metadata``."""
+        return {
+            option: artifact.staged
+            for option, artifact in (("output", self.output), ("emit_model_metadata", self.metadata))
+            if artifact is not None
+        }
+
+    def files(self, missing_metadata: MissingMetadata) -> Iterator[StagedFile]:
+        """Pair every staged file with its target, the output's before the metadata's.
+
+        The output pairs through ``StagedArtifact.files`` (a missing staged output pairs nothing). The metadata pairs
+        by row: ``fail`` (the command line) pairs the staged file without looking, so a missing one fails the
+        publication; ``legacy-api-skips-missing-metadata`` (``generate()``, fix #5620) pairs it like the output, so a
+        missing one pairs nothing and the other files publish.
+        """
+        if self.output is not None:
+            yield from self.output.files()
+        if (metadata := self.metadata) is None:
+            return
+        if missing_metadata == "fail":
+            yield StagedFile(metadata.staged, metadata.target, metadata.parent / metadata.target.name, metadata.anchor)
+        else:
+            yield from metadata.files()
+
+
+def stage_outputs(  # noqa: PLR0913
+    output: Path | None,
+    metadata: Path | None,
+    roots: tuple[Path | None, Path | None, Path | None],
+    contexts: list[tempfile.TemporaryDirectory[str]],
+    anchors: list[PublicationAnchor],
+    *,
+    make_directory: bool,
+) -> StagedOutputs:
+    """Redirect a generation's output and model metadata to private staging, anchored where each is published.
+
+    ``roots`` are the concrete output root, output parent and metadata parent, resolved when the caller planned the
+    run. An output that is an existing directory is anchored at its root and, with ``make_directory`` (#5617), staged as
+    an empty directory; any other output and the metadata are anchored at their parent. Every staging directory and
+    anchor joins ``contexts`` and ``anchors`` as soon as it exists, for the caller to release.
+    """
+    output_root, output_parent, metadata_parent = roots
+    staged_output = staged_metadata = None
+    if output is not None:
+        root, parent = cast("Path", output_root), cast("Path", output_parent)
+        is_directory = output.is_dir()
+        staged, anchor = stage_artifact(
+            output,
+            "output",
+            root if is_directory else parent,
+            contexts,
+            anchors,
+            make_directory=make_directory and is_directory,
+        )
+        staged_output = StagedArtifact(staged, output, root, parent, anchor)
+    if metadata is not None:
+        parent = cast("Path", metadata_parent)
+        staged, anchor = stage_artifact(metadata, "model-metadata.json", parent, contexts, anchors)
+        staged_metadata = StagedArtifact(staged, metadata, parent, parent, anchor)
+    return StagedOutputs(staged_output, staged_metadata)
 
 
 class StagingDirectory:

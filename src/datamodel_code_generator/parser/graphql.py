@@ -185,19 +185,17 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             field_name = self.model_resolver.get_valid_field_name(
                 field_name, excludes=excludes, model_type=self.field_name_model_type
             )
-        return self.data_model_field_type(
+        return self._build_field(
+            "typename",
+            self._graphql_data_type(literals=[name]),
             name=field_name,
-            data_type=self._graphql_data_type(literals=[name]),
-            default=name,
-            use_annotated=self.use_annotated,
-            required=False,
             alias="__typename",
-            serialization_alias=self.get_serialization_alias("__typename", field_name, name),
+            source_name="__typename",
+            class_name=name,
+            default=name,
+            required=False,
             use_one_literal_as_default=True,
-            use_default_kwarg=self.use_default_kwarg,
             has_default=True,
-            use_serialization_alias=self.use_serialization_alias,
-            **self._data_model_field_common_kwargs(),
         )
 
     def _graphql_data_type(self, **kwargs: Any) -> DataType:
@@ -248,13 +246,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         data_model_type = self._create_data_model(
             model_type=self.data_model_root_type,
             reference=self.references[enum_object.name],
-            fields=[
-                self.data_model_field_type(
-                    required=True,
-                    data_type=data_type,
-                    **self._data_model_field_common_kwargs(),
-                )
-            ],
+            fields=[self._build_field("bare", data_type, required=True)],
             custom_base_class=self._resolve_base_class(enum_object.name),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
@@ -277,19 +269,17 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             exclude_field_names.add(field_name)
 
             enum_fields.append(
-                self.data_model_field_type(
-                    name=field_name,
-                    data_type=self.data_type_manager.get_data_type(
+                self._build_field(
+                    "graphql-enum-member",
+                    self.data_type_manager.get_data_type(
                         Types.string,
                     ),
+                    name=field_name,
                     default=default,
                     required=True,
-                    strip_default_none=self.strip_default_none,
-                    order_constructor_fields_by_written_defaults=self.order_constructor_fields_by_written_defaults,
                     has_default=True,
                     use_field_description=value.description is not None,
                     original_name=None,
-                    **self._data_model_field_common_kwargs(),
                 )
             )
 
@@ -374,30 +364,20 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         if field.description is not None:  # pragma: no cover
             extras["description"] = field.description
 
-        single_alias, validation_aliases = self._split_field_alias(alias)
-        return self.data_model_field_type(
+        return self._build_field(
+            "legacy-graphql-field",
+            final_data_type,
             name=field_name,
+            alias=alias,
+            source_name=original_field_name,
+            class_name=class_name,
             default=effective_default,
-            data_type=final_data_type,
             required=required,
             nullable=null_facts.admits_null,
             extras=extras,
-            alias=single_alias,
-            validation_aliases=validation_aliases,
-            serialization_alias=self.get_serialization_alias(original_field_name, field_name, class_name),
-            strip_default_none=self.strip_default_none,
-            order_constructor_fields_by_written_defaults=self.order_constructor_fields_by_written_defaults,
-            use_annotated=self.use_annotated,
-            use_serialize_as_any=self.use_serialize_as_any,
-            use_field_description=self.use_field_description,
-            use_field_description_example=self.use_field_description_example,
-            use_inline_field_description=self.use_inline_field_description,
-            use_default_kwarg=self.use_default_kwarg,
             original_name=field_name,
             has_default=effective_has_default,
-            use_serialization_alias=self.use_serialization_alias,
             use_default_with_required=use_default_with_required,
-            **self._data_model_field_common_kwargs(),
         )
 
     def parse_object_like(
@@ -470,11 +450,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         types = union_object.types
         plan = assemble_union((MEMBER,) * len(types), _GRAPHQL_UNION)
         fields = [
-            self.data_model_field_type(
-                name=self.references[types[index].name].name,
-                data_type=DataType(),
-                **self._data_model_field_common_kwargs(),
-            )
+            self._build_field("bare", DataType(), name=self.references[types[index].name].name)
             for index in plan.members
         ]
         data_model_type = self.data_model_union_type(
@@ -574,16 +550,17 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                         ),
                         None,
                     )
-                    field.name = (
-                        inherited.name
+                    self._take_field_aliases(
+                        field,
+                        cast("str", inherited.name)
                         if inherited
                         else self.model_resolver.get_valid_field_name(
                             wire_name, excludes=excludes, model_type=self.field_name_model_type
-                        )
-                    )
-                    field.alias = wire_name
-                    field.serialization_alias = self.get_serialization_alias(
-                        wire_name, cast("str", field.name), obj.name
+                        ),
+                        wire_name,
+                        source_name=wire_name,
+                        class_name=obj.name,
+                        row="rename",
                     )
                     excludes.add(cast("str", field.name))
                     fields[field.name] = field
@@ -609,17 +586,19 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 None,
             )
             typename_field = source.fields[-1]
-            typename_field.name = (
-                inherited_typename.name
+            self._take_field_aliases(
+                typename_field,
+                cast("str", inherited_typename.name)
                 if inherited_typename
                 else self.model_resolver.get_valid_field_name(
                     "typename__",
                     excludes=_non_typename_names((*source.fields, *inherited_fields.values())),
                     model_type=self.field_name_model_type,
-                )
-            )
-            typename_field.serialization_alias = self.get_serialization_alias(
-                "__typename", cast("str", typename_field.name), obj.name
+                ),
+                "__typename",
+                source_name="__typename",
+                class_name=obj.name,
+                row="rename",
             )
 
         visited: set[graphql.GraphQLObjectType | graphql.GraphQLInterfaceType] = set()

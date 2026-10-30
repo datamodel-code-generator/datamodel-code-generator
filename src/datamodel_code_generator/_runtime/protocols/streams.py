@@ -31,11 +31,11 @@ from ..client.errors import (
     is_transport,
 )
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
-from ..client.operations import NO_CONTENT
+from ..client.operations import codec_condition
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import json_value
+from ..model_codecs.media import NO_CONTENT, json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     HELPER_ERRORS,
@@ -846,8 +846,7 @@ class _Events(Generic[T]):
         try:
             return codec.decode(frame.body)
         except codec.errors as error:
-            condition: Literal["value", "malformed"] = "malformed" if codec.malformed(error) else "value"
-            raise self._stamped(self._decode_error(frame.body, condition, cause=error)) from None
+            raise self._stamped(self._decode_error(frame.body, codec_condition(codec, error), cause=error)) from None
 
     def _decode_error(
         self,

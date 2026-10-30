@@ -72,32 +72,32 @@ NullSite: TypeAlias = Literal[
 * ``ref-nullable-only``: a ``$ref`` beside only ``nullable: true`` (``JsonSchemaParser._parse_ref_nullable_only_item``).
 * ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._parse_constrained_type_union``,
   ``JsonSchemaParser.parse_array_fields``).
-* ``object-map``: the dict of an object map (``JsonSchemaParser._object_map_admits_null``).
+* ``object-map``: the dict of an object map (``parser/_object_maps.py:object_map_admits_null``).
 * ``all-of-map``, ``all-of-value``: the map or the value an ``allOf`` merges its parts into
-  (``JsonSchemaParser._merge_all_of_root_schema``, ``JsonSchemaParser._all_of_root_value_schema``).
+  (``parser/_all_of_values.py``: ``merge_all_of_root_schema``, ``all_of_root_value_schema``).
 * ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
   override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
-  ``parser/jsonschema.py:_dump_parts_admit_null`` answers).
+  ``parser/_schema_reading.py:_dump_parts_admit_null`` answers).
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
-* ``array-field``: the field of an array (``JsonSchemaParser._resolve_array_field_required_nullable``).
+* ``array-field``: the field of an array (``parser/_value_keywords.py:resolve_array_field_required_nullable``).
 * ``enum``: a null in the ``enum`` of an Enum class (``JsonSchemaParser.parse_enum``, ``_enum_entries_skip_null``).
 * ``enum-literal``: a null among the values of an enum written as a ``Literal``
   (``JsonSchemaParser._literal_values_type``).
 * ``combined-branch``: an ``anyOf`` or ``oneOf`` member that is ``nullable``
   (``JsonSchemaParser._add_nullable_combined_schema_branches``).
 * ``inherited-child``: a property that overrides an inherited one, which drops the null of the inherited type unless
-  it admits null itself (``JsonSchemaParser._merge_inherited_type_shape_dict``,
-  ``JsonSchemaParser._mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's
-  own ``type`` and ``nullable``, ``parser/jsonschema.py:_dump_drops_inherited_null``).
+  it admits null itself (``parser/_inherited_schemas.py``: ``merge_inherited_type_shape_dict``,
+  ``mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's own ``type`` and
+  ``nullable``, ``_dump_drops_inherited_null``).
 * ``inherited-types``: the null among the JSON types an inherited schema accepts, beside the types it collects
-  (``JsonSchemaParser._get_inherited_schema_types``).
+  (``parser/_inherited_schemas.py:get_inherited_schema_types``).
 * ``enforced-value``: the null a value schema enforces, beside its types
   (``JsonSchemaParser._enforced_value_keywords``).
 * ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
   without a const; the parent's and the branches' ``type`` are read as written, without the mark of
-  ``legacy-nullable-as-type-list`` (``JsonSchemaParser._extract_const_enum_from_combined``).
+  ``legacy-nullable-as-type-list`` (``parser/_value_keywords.py:extract_const_enum_from_combined``).
 * ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
   whether that value is null (``parser/jsonschema.py:_single_value_enum_as_const``,
   ``JsonSchemaParser._reads_enum_as_const``).

@@ -25,16 +25,19 @@ from datamodel_code_generator._openapi_wire_plan import (
     property_members,
 )
 from datamodel_code_generator._runtime.client.media import most_specific
+from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
 from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import (
     ERROR_STATUSES,
     SUCCESS_STATUSES,
     essence,
     media_kind,
+    media_range,
     normalize_media_type,
     normalized,
     status_key,
 )
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
     LOCATIONS,
     BuiltinType,
@@ -53,7 +56,6 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
 from datamodel_code_generator._target_operations import (
-    BODYLESS_STATUSES,
     CLIENT,
     PlanError,
     alias,
@@ -65,6 +67,7 @@ from datamodel_code_generator._target_operations import (
     local,
     placeholder_problems,
     resolve_settings,
+    response_bodyless,
     type_names,
 )
 from datamodel_code_generator._target_types import present, takes_null
@@ -102,7 +105,6 @@ if TYPE_CHECKING:
 _problem: Final = CLIENT.problem
 Role: TypeAlias = Literal["success", "error"]
 
-_SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
 _UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
@@ -462,15 +464,14 @@ class Planner:
         """Reject ownership shared by the key contract and an effective request header or security scheme."""
         metadata = setting.runtime.idempotency
         assert metadata is not None
-        owners = {item.wire_name.lower() for item in parameters if item.location == "header"}
+        owners = {parameter_key(item.location, item.wire_name) for item in parameters}
         if security is not None:
             owners.update(
-                requirement.scheme.wire_name.lower()
+                parameter_key(requirement.scheme.location, requirement.scheme.wire_name)
                 for alternative in security.alternatives
                 for requirement in alternative
-                if requirement.scheme.location == "header"
             )
-        if metadata.header_name.lower() in owners:
+        if parameter_key("header", metadata.header_name) in owners:
             index = self.config.operations.index(setting)
             message = (
                 f"The idempotency header {metadata.header_name!r} of {label(operation)} already has a request owner"
@@ -668,8 +669,8 @@ class Planner:
         media_type = self._declared(operation, declaration)
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
-        essence = media_type.partition(";")[0]
-        if (reason := _unsupported(kind, essence, use, request=request)) is not None:
+        bare = essence(media_type)
+        if (reason := _unsupported(kind, bare, use, request=request)) is not None:
             message = f"The {media_type} media of {label(operation)} {reason}"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
         if kind == "multipart" and not request and (encoding := _encoded(declaration)) is not None:
@@ -688,7 +689,7 @@ class Planner:
         extra: PartSpec | None = None
         parts: tuple[PartPlan, ...] = ()
         additional_part: PartPlan | None = None
-        if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
+        if reason is None and bare == _FORM_DATA and use is not None and use.schema is not None:
             if request:
                 members, extra, parts, additional_part = self._sent(use, media_of=media_of, styles_of=styles_of)
             else:
@@ -1002,7 +1003,7 @@ class Planner:
             headers=tuple(headers),
             success=_success(status, success_statuses),
             error=_error(status),
-            bodyless=operation.method == "head" or exact in BODYLESS_STATUSES,
+            bodyless=response_bodyless(CLIENT, operation, exact),
         )
 
     def check_statuses(
@@ -1053,7 +1054,7 @@ class Planner:
             else self.request.batch.documents[0].id
         )
         source = self.documents[document]
-        base = self.config.server_base_url or (source if urlsplit(source).scheme in _SCHEMES else "")
+        base = self.config.server_base_url or (source if urlsplit(source).scheme in HTTP_SCHEMES else "")
         resolved: list[ServerSpec] = []
         for url, variables in entries:
             spec = ServerSpec(
@@ -1148,11 +1149,6 @@ def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
 def reachable(concrete: str, media: tuple[str, ...]) -> tuple[str, ...]:
     """Return the media type of one response a concrete type dispatches to: itself, then type/*, then */*."""
     return tuple(found for found in (most_specific(concrete, media),) if found is not None)
-
-
-def media_range(media_type: str) -> bool:
-    """Return whether a media type is a range such as image/* or */*."""
-    return "*" in essence(media_type)
 
 
 def _unsupported(kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:

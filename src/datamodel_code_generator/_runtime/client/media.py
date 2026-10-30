@@ -7,28 +7,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..model_codecs import media
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import charset, essence
+from ..model_codecs.media import charset
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
 def most_specific(received: str, declared: Iterable[str]) -> str | None:
-    """Return the declared media type a concrete one falls under: itself, without parameters, type/*, then */*."""
-    declared = tuple(declared)
-    if received in declared:
-        return received
-    bare = essence(received)
-    return next(
-        (
-            media
-            for candidate in (bare, f"{bare.partition('/')[0]}/*", "*/*")
-            for media in declared
-            if essence(media) == candidate
-        ),
-        None,
-    )
+    """Return the declared media type a concrete one falls under: itself, without parameters, type/*, then */*.
+
+    The first declaration of the most specific of these wins, in declared order (row `declared` until #5596).
+    """
+    return media.most_specific(received, declared, order="declared")
 
 
 def with_charset(media_type: str, declared: str) -> str:

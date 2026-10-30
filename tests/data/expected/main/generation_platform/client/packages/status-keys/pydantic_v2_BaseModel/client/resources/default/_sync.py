@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from functools import cached_property
+from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -40,6 +41,7 @@ class DefaultResource:
     def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SupResponse:
         """
@@ -49,6 +51,7 @@ class DefaultResource:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         ).data
 
     def range_only(
@@ -76,6 +79,7 @@ class DefaultWithResponse:
     def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SupResponse]:
         """
@@ -85,6 +89,7 @@ class DefaultWithResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     def range_only(
@@ -112,6 +117,7 @@ class DefaultWithRawResponse:
     def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """
@@ -121,6 +127,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     def range_only(
@@ -148,6 +155,7 @@ class DefaultWithStreamingResponse:
     def sup(
         self,
         *,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """
@@ -157,6 +165,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_0,
             (),
             options=options,
+            response_media_type=response_media_type,
         )
 
     def range_only(

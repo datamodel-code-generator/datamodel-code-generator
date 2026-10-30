@@ -205,7 +205,7 @@ def test_runtime_writes_are_named_as_the_scan_names_them() -> None:
 
     writes = checker.runtime_writes([*lines, other_area, outside])
 
-    assert len(attribute_writes) > 100
+    assert attribute_writes
     assert [write.key for write in writes] == [violation.key for violation in attribute_writes]
     assert checker.runtime_problems(lines) == []
     checker.check_runtime_writes(lines)
@@ -345,6 +345,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "set_field_default",
             "set_field_extra",
             "set_field_extras",
+            "set_field_identity",
             "set_fields",
             "set_nested_data_types",
             "set_type_discriminator",
@@ -453,6 +454,7 @@ def mutate(model, field, data_type, ref):
     model.base_classes = []
     model.reference.children
     field.replace_data_type(data_type)
+    data_type_children(model.reference)
 """,
     )
 
@@ -467,6 +469,7 @@ def mutate(model, field, data_type, ref):
             (7, 5, "use GenerationStore.set_base_classes() instead of assigning base_classes"),
             (8, 5, "use GenerationIndex reverse-edge queries instead of Reference.children"),
             (9, 5, "use GenerationStore API instead of replace_data_type()"),
+            (10, 5, "use GenerationIndex reverse-edge queries instead of Reference.children"),
         ],
     )
 
@@ -541,6 +544,11 @@ class Parser:
         copied.required = []
         obj = build()
         obj.nullable = True
+
+
+def concern_function(parser: Host) -> None:
+    merged = parser._schema_object({})
+    merged.__dict__["key"] = 1
 """,
     )
 

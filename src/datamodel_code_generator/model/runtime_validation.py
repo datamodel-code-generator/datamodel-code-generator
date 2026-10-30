@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator._regex_syntax import is_portable_pattern
+from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
 
 if TYPE_CHECKING:
@@ -74,8 +74,9 @@ class PatternPropertiesRule:
         """Return the positions in ``data_types`` whose patterns need the ``python-re`` engine of an adapter.
 
         A pattern of a type the rule names is checked by the adapter the helper builds for it, which has no model
-        config; a pattern that is not portable (``is_portable_pattern``) selects the engine there, as a model does.
-        A type alias has no config either, so the string patterns of the aliases a type names count as its own.
+        config; the adapter row of ``needs_python_engine`` selects the engine there (a model's row keeps the default
+        engine for a verbose pattern and for syntax newer than its target Python). A type alias has no config either,
+        so the string patterns of the aliases a type names count as its own.
         """
         return tuple(
             index for index, data_type in enumerate(self.data_types) if _needs_python_regex_engine(data_type, set())
@@ -83,13 +84,15 @@ class PatternPropertiesRule:
 
 
 def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
-    """Return whether a pattern of ``data_type``, or a string pattern of an alias it names, is not portable.
+    """Return whether a pattern of ``data_type``, or a string pattern of an alias it names, needs ``python-re``.
 
     An alias keeps string patterns on a target that predates compiled patterns; a later target compiles every
     pattern that needs Python's engine.
     """
     for nested in data_type.all_data_types:
-        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str) and not is_portable_pattern(pattern):
+        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str) and needs_python_engine(
+            pattern, row="adapter"
+        ):
             return True
         if (
             (reference := nested.reference) is None
@@ -104,7 +107,7 @@ def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
         if any(
             (
                 isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str)
-                and not is_portable_pattern(pattern)
+                and needs_python_engine(pattern, row="adapter")
             )
             or _needs_python_regex_engine(alias_field.data_type, visited)
             for alias_field in alias.fields

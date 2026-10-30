@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-import keyword
 import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+from datamodel_code_generator._python_syntax import list_display, tuple_display
+from datamodel_code_generator._target_unicode import is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -21,10 +23,6 @@ class PythonTypeExpr:
         return self
 
 
-def _is_python_identifier(value: str) -> bool:
-    return value.isidentifier() and not keyword.iskeyword(value)
-
-
 @dataclass(frozen=True, slots=True)
 class PythonTypeName(PythonTypeExpr):
     """One unqualified Python name."""
@@ -32,7 +30,7 @@ class PythonTypeName(PythonTypeExpr):
     value: str
 
     def __post_init__(self) -> None:
-        if self.value != "None" and not _is_python_identifier(self.value):
+        if self.value != "None" and not is_python_name(self.value, rule="host"):
             msg = f"Python type name must be one identifier: {self.value!r}"
             raise ValueError(msg)
 
@@ -44,7 +42,7 @@ class PythonTypeQualifiedName(PythonTypeExpr):
     parts: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.parts or not all(map(_is_python_identifier, self.parts)):
+        if not self.parts or not all(is_python_name(part, rule="host") for part in self.parts):
             msg = f"Python qualified type name must contain identifiers: {self.parts!r}"
             raise ValueError(msg)
 
@@ -60,8 +58,8 @@ class PythonTypeRuntimeSymbol(PythonTypeExpr):
         module_parts = self.module.split(".") if self.module else ()
         if (
             not self.qualname_parts
-            or not all(map(_is_python_identifier, self.qualname_parts))
-            or not all(map(_is_python_identifier, module_parts))
+            or not all(is_python_name(part, rule="host") for part in self.qualname_parts)
+            or not all(is_python_name(part, rule="host") for part in module_parts)
         ):
             msg = f"Invalid runtime Python type identity: {self.module!r}, {self.qualname_parts!r}"
             raise ValueError(msg)
@@ -75,7 +73,7 @@ class PythonTypeMember(PythonTypeExpr):
     name: str
 
     def __post_init__(self) -> None:
-        if not _is_python_identifier(self.name):
+        if not is_python_name(self.name, rule="host"):
             msg = f"Python type member must be one identifier: {self.name!r}"
             raise ValueError(msg)
 
@@ -89,7 +87,7 @@ class PythonTypeBoundName(PythonTypeExpr):
     import_name: str
 
     def __post_init__(self) -> None:
-        if not _is_python_identifier(self.value) or not self.import_name:
+        if not is_python_name(self.value, rule="host") or not self.import_name:
             msg = f"Invalid bound Python type name: {self.value!r}, {self.import_from!r}, {self.import_name!r}"
             raise ValueError(msg)
 
@@ -267,10 +265,9 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
         case PythonTypeUnion():
             return " | ".join(map(render_python_type_expr, expression.items))
         case PythonTypeParameterList():
-            return f"[{', '.join(map(render_python_type_expr, expression.items))}]"
+            return list_display(map(render_python_type_expr, expression.items))
         case PythonTypeTuple():
-            items = ", ".join(map(render_python_type_expr, expression.items))
-            return f"({items}{',' if len(expression.items) == 1 else ''})"
+            return tuple_display(map(render_python_type_expr, expression.items))
         case PythonTypeStarred():
             value = render_python_type_expr(expression.value)
             return f"*({value})" if isinstance(expression.value, PythonTypeUnion) else f"*{value}"
