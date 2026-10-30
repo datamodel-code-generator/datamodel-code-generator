@@ -676,8 +676,6 @@ def _mark_copied_nullable(
     return branch
 
 
-
-
 def _external_ref_mapping_key(file_part: str, base_path: Path) -> str:
     """Return the key of a file in ``--external-ref-mapping``: a URL as written, else the absolute resolved path."""
     return file_part if is_url(file_part) else str((base_path / file_part).resolve())
