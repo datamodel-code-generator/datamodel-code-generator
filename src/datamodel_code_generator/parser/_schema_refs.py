@@ -13,12 +13,10 @@ methods that tests call or that other parts of the parser call stay on the parse
 counts; ``_warn_unsatisfiable``, ``_warn_untaken_patterns``,
 ``_warn_intersection`` and ``_conjoined_pattern``, frames a warning names; ``_uses_builtin_false_ref_facts`` and
 ``_walk_schema_objects``, which read names of ``parser/jsonschema.py``; the extension hook ``_document_self_context``;
-the context managers ``_home_context``, ``_ref_document_context``, ``_schema_location_context``,
+and the context managers ``_home_context``, ``_ref_document_context``, ``_schema_location_context``,
 ``_dynamic_target_ref``, ``_dynamic_scope_context`` and ``_ref_file_context``, which ``--debug`` traces as parser
-methods; and the methods that read a loaded document by JSON pointer or walk it as a document
-(``_read_ref_value``, ``_ref_schema_exists``, ``_ref_reading``, ``_dynamic_ref_edges``,
-``_enclosing_unanchored_resource_ref``, ``_recursive_ref_target``, ``_document_recursive_anchors``,
-``_parse_dynamic_specialization``, ``_ref_cycle_document``), whose pointer walk ``parser/jsonschema.py`` holds.
+methods. They read a loaded document by JSON pointer with the walk of ``parser/_schema_reading.py``, which the
+document reading (``parser/_schema_documents.py``) shares.
 """
 
 from __future__ import annotations
@@ -26,6 +24,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 from copy import deepcopy
 from functools import partial
+from itertools import chain
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, TypeVar, cast
 from urllib.parse import unquote, urljoin
 
@@ -51,8 +50,15 @@ from datamodel_code_generator.parser._schema_graph import (
 from datamodel_code_generator.parser._schema_object import JSONReference, JsonSchemaObject, _locate, get_ref_type
 from datamodel_code_generator.parser._schema_reading import (
     _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
+    _MISSING_JSON_POINTER,
+    _fragment_value,
+    _get_model_by_decoded_path,
     _intersect_dumps,
+    _is_plain_name_fragment,
+    _ref_edge_child_entries,
     _without_contains_keywords,
+    get_model_by_path,
+    split_json_pointer,
 )
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation, is_url
@@ -146,11 +152,6 @@ def _ref_path_parts(file_part: str) -> list[str]:
     return file_part.split("/") if file_part else []
 
 
-def _is_plain_name_fragment(ref: str) -> bool:
-    """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
-    return ref.startswith("#") and ref[1:2] not in {"", "/"}
-
-
 def _nearest_recursive_anchor(anchors: Iterable[str], current_ref: str) -> str:
     """Return the longest $recursiveAnchor reference enclosing a location reference, or the document root."""
     nearest = "#"
@@ -198,10 +199,29 @@ class _DynamicTarget:
     instead of ``ref`` (``_schema_location_context``)."""
 
 
+def _pointer_ref(parts: Sequence[str]) -> str:
+    """Return the local reference of a JSON pointer given as decoded parts."""
+    return "#" + join_pointer(parts)
+
+
+def _unanchored_resource_ref(raw: dict[str, Any], parts: Sequence[str]) -> str | None:
+    """Return the nearest schema along a pointer that declares an $id resource, when it has no $recursiveAnchor.
+
+    A $recursiveRef initially resolves to the root of its schema resource, and stays there without one.
+    """
+    for index in range(len(parts), 0, -1):
+        match _get_model_by_decoded_path(raw, list(parts[:index]), or_missing=True):
+            case {"$id": str() as identifier} as schema if not identifier.startswith("#"):
+                return None if schema.get("$recursiveAnchor") is True else _pointer_ref(parts[:index])
+    return None
+
+
 class SchemaRefsHost(Protocol):
     """The options, caches and hooks of the parser that the reference reading reads."""
 
     SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
+    _named_entry_maps: ClassVar[frozenset[str]]
+    raw_obj: dict[str, YamlValue]
     _circular_ref_cache: dict[str, bool]
     _draining_dynamic_specializations: bool
     _dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]]
@@ -237,6 +257,10 @@ class SchemaRefsHost(Protocol):
         """The resolver of references and class names."""
 
     @property
+    def schema_paths(self) -> list[tuple[str, list[str]]]:
+        """Get schema paths for definitions and defs."""
+
+    @property
     def _graph(self) -> SchemaGraphBuilder:
         """Return the schema graph of the parse."""
 
@@ -257,6 +281,9 @@ class SchemaRefsHost(Protocol):
     def _add_ref(self, ref: str) -> Reference:
         """Return the Reference at the key of a reference's edge, named after the edge's spelling if it is new."""
 
+    def _analysis_ref_target(self, document: str, file_part: str, ref: str) -> str | None:
+        """Resolve a $ref met while analyzing $dynamicRef reachability, without loading its target."""
+
     def _anchor_ref_path(self, root_key: tuple[str, ...], path: list[str]) -> str:
         """Return the local ref path for an anchor under the current root."""
 
@@ -269,8 +296,11 @@ class SchemaRefsHost(Protocol):
     def _current_dynamic_scope(self) -> dict[str, str]:
         """Return the $dynamicAnchor bindings that schemas entered from the model being parsed see."""
 
-    def _dynamic_ref_edges(self, resolved_ref: str) -> _DynamicEdges:
-        """Return the node at a reference key, the anchors its $dynamicRef resolve to and what it references."""
+    def _declares_recursive_anchor(self) -> bool:
+        """Return whether the document being parsed has registered a `$recursiveAnchor` so far."""
+
+    def _derived_ref(self, value: str, source: SchemaLocation | None, keyword: str, ref: str) -> str:
+        """Return ``value``, a reference the parser derives from the JSON object at ``source`` of a loaded document."""
 
     def _dynamic_scope_context(
         self,
@@ -287,12 +317,12 @@ class SchemaRefsHost(Protocol):
     def _dynamic_target_ref(self, target: _DynamicTarget) -> AbstractContextManager[str]:
         """Yield the reference to a target of rule DS that resolves from the current document."""
 
-    def _enclosing_unanchored_resource_ref(self) -> str | None:
-        """Return the nearest $id resource enclosing the schema being parsed, when it has no $recursiveAnchor."""
-
     @classmethod
     def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
         """Return array length constraints derived from boolean items."""
+
+    def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
+        """Get the body of a reference from URL or remote file."""
 
     def _get_ref_raw_schema(self, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
         """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
@@ -300,8 +330,21 @@ class SchemaRefsHost(Protocol):
     def _home_context(self, document: str) -> AbstractContextManager[None]:
         """Resolve references as a loaded document resolves its own: from its location, its root `$id` and `$self`."""
 
+    def _inherited_ref_context(self, resolved_ref: str) -> AbstractContextManager[None]:
+        """Resolve nested references relative to the inherited schema's own file and schema resource."""
+
     def _is_ref_circular(self, resolved_ref: str) -> bool:
         """Check if a resolved $ref target contains a circular reference (cached)."""
+
+    def _iter_referencing_schemas(self, schema: object, pointer: str) -> Iterator[tuple[str, dict[str, Any]]]:
+        """Visit the raw subschemas that the parser follows, with their JSON pointers."""
+
+    def _iter_schema_definition_entries(
+        self,
+        definitions: dict[str, YamlValue],
+        base_path: list[str],
+    ) -> Iterator[tuple[str, YamlValue, list[str]]]:
+        """Yield the name, value and path of each definition, descending into namespaces of definitions."""
 
     def _iter_schema_resource_children(
         self, schema: dict[str, Any]
@@ -344,20 +387,25 @@ class SchemaRefsHost(Protocol):
     def _outside_home(self, ref: str) -> bool:
         """Return whether a reference with an edge is read outside the document that holds it, the one parsed now."""
 
-    def _parse_dynamic_specialization(self, specialization: _DynamicSpecialization) -> None:
-        """Parse a referenced schema again under the $dynamicAnchor bindings of its dynamic scope."""
+    def _parse_schema_obj(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+    ) -> None:
+        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
 
-    def _read_ref_value(self, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
-        """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
+    def _prepared_ref_document(self, file_part: str) -> tuple[str, dict[str, Any]]:
+        """Return the document a resolved reference points into and its prepared schema, loading it once."""
 
-    def _recursive_ref_target(self, defining_ref: str, path: tuple[str | int, ...]) -> str | None:
-        """Return the location a $recursiveRef in a schema dumped from another document names there."""
-
-    def _ref_cycle_document(self, ref_to_check: str) -> Generator[object, None, None]:
-        """Yield the value ref_to_check names, resolving references relative to its document until closed."""
+    def _read_as_schema(self, raw: YamlValue) -> YamlValue:
+        """Return a value of a loaded document that a reference names, with the references it holds as a schema."""
 
     def _ref_document_context(self, file_part: str) -> AbstractContextManager[tuple[str, dict[str, Any]]]:
         """Enter the resolution context of the document that a resolved reference points into."""
+
+    def _ref_file_context(self, file_part: str) -> AbstractContextManager[None]:
+        """Resolve references relative to the file or URL a reference key names, or to the current one without it."""
 
     def _ref_key(self, ref: str, *, embedded: bool = True) -> RefKey:
         """Return what a reference resolves to: the key of its edge, the same at every site and in every context."""
@@ -421,7 +469,15 @@ class SchemaRefsHost(Protocol):
 
 
 def get_ref_raw_schema(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
-    return parser._read_ref_value(resolved_ref)  # noqa: SLF001
+    return read_ref_value(parser, resolved_ref)
+
+
+def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
+    """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
+    file_part, _, fragment = resolved_ref.partition("#")
+    return parser._read_as_schema(  # noqa: SLF001
+        _fragment_value(parser._get_ref_body(file_part) if file_part else parser.raw_obj, fragment)  # noqa: SLF001
+    )
 
 
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
@@ -434,6 +490,18 @@ def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
         return raw
     document = DocumentId(parser._schema_resource_document([location.document]))  # noqa: SLF001
     return graph.read_as_schema(raw, location, document, parser._ref_reading("object"))  # noqa: SLF001
+
+
+def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefReading:
+    """Return how ``SchemaGraphBuilder.with_ref_edges`` reads a document (``root``) or a schema (``object``)."""
+    return RefReading(partial(_ref_edge_child_entries, named_entry_maps=parser._named_entry_maps), "object", root)  # noqa: SLF001
+
+
+def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
+    """Return whether a resolved JSON pointer identifies a source schema."""
+    file_part, _, fragment = resolved_ref.partition("#")
+    raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
+    return _fragment_value(raw_doc, fragment, or_missing=True) is not _MISSING_JSON_POINTER
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
@@ -452,7 +520,7 @@ def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:
 
     The value is read as ``_load_ref_schema_object`` reads it, without validating it.
     """
-    node = parser._graph.node(parser._read_ref_value(resolved_ref))  # noqa: SLF001
+    node = parser._graph.node(read_ref_value(parser, resolved_ref))  # noqa: SLF001
     return resolved_ref if node is None else node
 
 
@@ -586,6 +654,17 @@ def build_anchor_indexes(parser: SchemaRefsHost, obj: JsonSchemaObject, path: li
         parser._dynamic_anchor_index.setdefault(root_key, {}).setdefault(obj.dynamicAnchor, ref_path)  # noqa: SLF001
 
 
+def enclosing_unanchored_resource_ref(parser: SchemaRefsHost) -> str | None:
+    """Return the nearest $id resource enclosing the schema being parsed, when it has no $recursiveAnchor."""
+    if (
+        not parser._has_embedded_schema_resources  # noqa: SLF001
+        or (cached := parser._schema_resource_cache.get(parser._current_dynamic_document())) is None  # noqa: SLF001
+    ):
+        return None
+    raw = cached[1]
+    return _unanchored_resource_ref(raw, split_json_pointer(raw, parser._dynamic_scope_pointer))  # noqa: SLF001
+
+
 def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: list[str]) -> str | None:
     """Resolve $recursiveRef to an equivalent $ref.
 
@@ -597,7 +676,7 @@ def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: 
     """
     if item.recursiveRef != "#":  # pragma: no cover
         return None
-    if (resource := parser._enclosing_unanchored_resource_ref()) is not None:  # noqa: SLF001
+    if (resource := enclosing_unanchored_resource_ref(parser)) is not None:
         return resource
     root_key = tuple(parser.model_resolver.current_root)
     current_ref = parser._anchor_ref_path(root_key, path)  # noqa: SLF001
@@ -716,13 +795,41 @@ def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[s
     }
 
 
+def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdges:
+    """Return the node at a reference key, the anchors its $dynamicRef initially resolve to and what it references.
+
+    The schema is read from the prepared tree of its document; a key whose value the graph does not locate is its
+    own node, and the first key that reaches a node gives the node its analysis.
+    """
+    if (node := parser._dynamic_ref_nodes.get(resolved_ref)) is not None:  # noqa: SLF001
+        return parser._dynamic_ref_graph[node]  # noqa: SLF001
+    file_part, _, fragment = resolved_ref.partition("#")
+    document, raw = parser._prepared_ref_document(file_part)  # noqa: SLF001
+    schema = _fragment_value(raw, fragment, or_missing=True)
+    located = parser._graph.node(schema)  # noqa: SLF001
+    node = parser._dynamic_ref_nodes[resolved_ref] = resolved_ref if located is None else located  # noqa: SLF001
+    anchors: set[str] = set()
+    targets: list[str] = []
+    for pointer, subschema in parser._iter_referencing_schemas(schema, fragment):  # noqa: SLF001
+        match subschema:
+            case {"$ref": str() as ref}:
+                if (target := parser._analysis_ref_target(document, file_part, ref)) is not None:  # noqa: SLF001
+                    targets.append(target)
+            case {"$dynamicRef": str() as dynamic_ref} if location := parser._lexical_dynamic_anchor(  # noqa: SLF001
+                document, pointer, dynamic_ref
+            ):
+                anchors.add(dynamic_ref[1:])
+                targets.append(parser._location_ref(location))  # noqa: SLF001
+    return parser._dynamic_ref_graph.setdefault(node, _DynamicEdges(node, frozenset(anchors), tuple(targets)))  # noqa: SLF001
+
+
 def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset[str]:
     """Return the $dynamicAnchor names that $dynamicRef reachable from a referenced schema resolve to.
 
     Results are memoized per schema graph node and computed per strongly connected component of the reference
     graph, so each schema is analyzed once however many references, under whichever key, reach it.
     """
-    start = parser._dynamic_ref_edges(resolved_ref)  # noqa: SLF001
+    start = dynamic_ref_edges(parser, resolved_ref)
     if (cached := parser._dynamic_anchor_usage.get(start.node)) is not None:  # noqa: SLF001
         return cached
     successors: dict[_TargetNode, set[_TargetNode]] = {start.node: set()}
@@ -730,7 +837,7 @@ def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset
     while work:
         node, targets = work[-1]
         for target in targets:
-            if (successor := parser._dynamic_ref_edges(target).node) in parser._dynamic_anchor_usage:  # noqa: SLF001
+            if (successor := dynamic_ref_edges(parser, target).node) in parser._dynamic_anchor_usage:  # noqa: SLF001
                 continue
             successors[node].add(successor)
             if successor not in successors:
@@ -832,7 +939,7 @@ def dynamic_specialization_reference(parser: SchemaRefsHost, ref: str, resolved_
     """
     if not (bindings := parser._dynamic_target_bindings(resolved_ref)):  # noqa: SLF001
         return None
-    key = (parser._dynamic_ref_edges(resolved_ref).node, frozenset(bindings.items()))  # noqa: SLF001
+    key = (dynamic_ref_edges(parser, resolved_ref).node, frozenset(bindings.items()))
     if (reference := parser._dynamic_specializations.get(key)) is not None:  # noqa: SLF001
         return reference
     shared = parser._add_ref(ref)  # noqa: SLF001
@@ -855,9 +962,18 @@ def parse_dynamic_specializations(parser: SchemaRefsHost) -> None:
     parser._draining_dynamic_specializations = True  # noqa: SLF001
     try:
         while parser._pending_dynamic_specializations:  # noqa: SLF001
-            parser._parse_dynamic_specialization(parser._pending_dynamic_specializations.popleft())  # noqa: SLF001
+            parse_dynamic_specialization(parser, parser._pending_dynamic_specializations.popleft())  # noqa: SLF001
     finally:
         parser._draining_dynamic_specializations = False  # noqa: SLF001
+
+
+def parse_dynamic_specialization(parser: SchemaRefsHost, specialization: _DynamicSpecialization) -> None:
+    """Parse a referenced schema again under the $dynamicAnchor bindings of its dynamic scope."""
+    file_part, _, fragment = specialization.target.partition("#")
+    with parser._ref_document_context(file_part) as (_, raw):  # noqa: SLF001
+        obj = parser._validate_schema_object(_fragment_value(raw, fragment), list(specialization.path))  # noqa: SLF001
+        with parser._dynamic_scope_context(specialization.path, specialization.bindings, fragment):  # noqa: SLF001
+            parser._parse_schema_obj(specialization.reference.name, obj, list(specialization.path))  # noqa: SLF001
 
 
 def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: list[str]) -> _DynamicTarget | None:
@@ -1047,6 +1163,27 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
     return _locate(merged_obj, obj.schema_location)
 
 
+def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[str | int, ...]) -> str | None:
+    """Return the location a $recursiveRef in a schema dumped from another document names there.
+
+    It resolves as it does when that document is parsed, see _resolve_recursive_ref. The outermost
+    $recursiveAnchor of the dynamic scope extends an anchored target, so the reference is left to it
+    when the document the schema is merged into declares $recursiveAnchor.
+    """
+    file_part, _, pointer = defining_ref.partition("#")
+    _, document = parser._prepared_ref_document(file_part)  # noqa: SLF001
+    parts = [*split_json_pointer(document, pointer), *map(str, path)]
+    if (target := _unanchored_resource_ref(document, parts)) is None:
+        anchors = document_recursive_anchors(parser, document)
+        current_ref = _pointer_ref(parts)
+        target = _nearest_recursive_anchor(anchors, current_ref)
+        if (target != "#" or "#" in anchors) and parser._declares_recursive_anchor():  # noqa: SLF001
+            return None
+    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+        location = parser._schema_location(parser.model_resolver.resolve_ref(target))  # noqa: SLF001
+    return parser._derived_ref(location, SchemaLocation(file_part, tuple(parts)), "$recursiveRef", target)  # noqa: SLF001
+
+
 def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_ref: str) -> None:
     """Rewrite in place each $recursiveRef of a schema dumped from another document that has a fixed target there.
 
@@ -1058,7 +1195,7 @@ def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_
         node, path = stack.pop()
         match node:
             case {"$recursiveRef": "#"} if "$ref" not in node and (
-                target := parser._recursive_ref_target(defining_ref, path)  # noqa: SLF001
+                target := recursive_ref_target(parser, defining_ref, path)
             ):
                 del node["$recursiveRef"]
                 node["$ref"] = target
@@ -1068,6 +1205,24 @@ def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_
 def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:
     """Return whether the document being parsed has registered a `$recursiveAnchor` so far."""
     return bool(parser._recursive_anchor_index.get(tuple(parser.model_resolver.current_root)))  # noqa: SLF001
+
+
+def document_recursive_anchors(parser: SchemaRefsHost, raw: dict[str, Any]) -> list[str]:
+    """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
+    anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
+    for schema_path, split_schema_path in parser.schema_paths:
+        if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
+            entries = chain(
+                ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
+                parser._iter_schema_definition_entries(definitions, [schema_path]),  # noqa: SLF001
+            )
+            anchors.extend(
+                parser._anchor_ref_path((), path)  # noqa: SLF001
+                for _, model, path in entries
+                if isinstance(model, dict) and model.get("$recursiveAnchor") is True
+            )
+            break
+    return anchors
 
 
 def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
@@ -1083,6 +1238,14 @@ def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
         result = True
     parser._circular_ref_cache[resolved_ref] = result  # noqa: SLF001
     return result
+
+
+def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[object, None, None]:
+    """Yield the value ref_to_check names, resolving references relative to its document until closed."""
+    file_part, _, fragment = ref_to_check.partition("#")
+    with parser._ref_file_context(file_part):  # noqa: SLF001
+        raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
+        yield get_model_by_path(raw_doc, [p for p in fragment.split("/") if p]) if fragment else raw_doc
 
 
 def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:
@@ -1131,7 +1294,7 @@ def push_ref_cycle_frame(
     Returns whether that schema is a boolean, number or null, which has no keywords to walk.
     """
     visited.add(ref_to_check)
-    document = parser._ref_cycle_document(ref_to_check)  # noqa: SLF001
+    document = ref_cycle_document(parser, ref_to_check)
     raw_obj = next(document)
     frames.append((document, [raw_obj] if isinstance(raw_obj, (dict, list)) else []))
     return not isinstance(raw_obj, (dict, list, str))

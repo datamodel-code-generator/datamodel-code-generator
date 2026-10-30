@@ -28,7 +28,7 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_?merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py", "parser/_schema_documents.py"]
 exclude = [
     "parser/_all_of_values.py:AllOfValuesHost",
     "parser/_inherited_schemas.py:InheritedSchemasHost",
@@ -67,7 +67,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py", "parser/_schema_documents.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 

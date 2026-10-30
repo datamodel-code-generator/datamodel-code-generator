@@ -17,7 +17,7 @@ from datamodel_code_generator._json_pointer import (
 )
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
-from datamodel_code_generator.parser.jsonschema import split_json_pointer
+from datamodel_code_generator.parser._schema_reading import split_json_pointer
 from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
