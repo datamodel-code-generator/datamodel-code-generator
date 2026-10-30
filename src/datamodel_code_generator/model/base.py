@@ -3943,17 +3943,46 @@ def linearize_data_models(
     return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
+_ClassVarRow: TypeAlias = Literal["declared", "no-place"]
+"""How a class variable counts among the fields a model has with its bases.
+
+* ``declared``: like any other declaration, so one overrides an inherited field of its name.
+* ``no-place``: not at all, as msgspec leaves class variables out of a struct's fields: a field named like an inherited
+  class variable comes after the inherited fields (`parser/_passes/render_prep.py:fix_tag_opt_out_field_ordering`).
+"""
+
+
+def _named_field(field: DataModelFieldBase) -> str | None:
+    return field.name or None
+
+
+def _named_instance_field(field: DataModelFieldBase) -> str | None:
+    return None if field.is_class_var else field.name or None
+
+
+def _fields_of(model: DataModel) -> list[DataModelFieldBase]:
+    return model.fields
+
+
+def _effective_field_owners(
+    model: DataModel, ancestors: Sequence[DataModel], *, class_vars: _ClassVarRow = "declared"
+) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
+    """Return the field each name of ``model`` resolves to with its bases, and the model that declares it.
+
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`). A
+    name keeps the place where the farthest of them declares it and takes the nearest declaration, the model's own
+    last (`_mro.resolve_members`); unnamed fields are left out. ``class_vars`` names how a class variable counts.
+    """
+    return _mro.resolve_members(
+        (model, *ancestors), _fields_of, _named_field if class_vars == "declared" else _named_instance_field
+    )
+
+
 def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
     """Return constructor-visible fields after C3 inheritance and overrides."""
     if not model.base_classes:
         return tuple(field for field in model.fields if field.name is not None)
-
-    effective_fields: dict[str, DataModelFieldBase] = {}
-    for inherited_model in reversed(linearize_data_models([model])):
-        for field in inherited_model.fields:
-            if field.name is not None:
-                effective_fields[field.name] = field
-    return tuple(effective_fields.values())
+    return tuple(field for _, field in _effective_field_owners(model, linearize_data_models([model])[1:]).values())
 
 
 def get_inherited_fields(models: list[DataModel]) -> dict[str, DataModelFieldBase]:

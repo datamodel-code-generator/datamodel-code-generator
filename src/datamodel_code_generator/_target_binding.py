@@ -31,7 +31,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
 )
-from datamodel_code_generator._mro import linearize
+from datamodel_code_generator._mro import linearize, resolve_members
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
@@ -2921,14 +2921,13 @@ class _Models:
             )
             if order is None or any(owner in unknown for owner in order):
                 continue
-            fields: dict[str, tuple[DataModel, DataModelFieldBase]] = {}
-            for owner in order if functional else reversed(order):
-                owner_model = models[owner]
-                for field in owner_model.fields:
-                    key = _wire_name(field) if functional else self.slots[id(field)].name
-                    fields[key] = owner_model, field
+            fields = resolve_members(
+                order[::-1] if functional else order,
+                lambda owner: models[owner].fields,
+                _wire_name if functional else lambda field: self.slots[id(field)].name,
+            )
             members = self.variant_exclusions(
-                model, symbol, [self.member(symbol, owner, field) for owner, field in fields.values()]
+                model, symbol, [self.member(symbol, models[owner], field) for owner, field in fields.values()]
             )
             self.members[symbol.id] = members
             bindings.extend(members)
