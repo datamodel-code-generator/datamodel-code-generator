@@ -49,7 +49,6 @@ __all__ = [
 ]
 
 _TOP_LEVEL_FUTURE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from __future__ import ")
-_TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 
 class StdoutParseConfig(Protocol):
