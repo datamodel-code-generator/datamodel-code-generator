@@ -10367,8 +10367,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             None,
                         )
                     if parent_field is not None:
-                        field.name = parent_field.name
-                        field.alias = field_name if field.name != field_name else None
+                        alias = field_name if parent_field.name != field_name else None
+                        self._graph_builder.set_field_identity(field, {"name": parent_field.name, "alias": alias})
                     continue
                 inherited_field = inherited_fields.get(field_name) if field_name is not None else None
                 if (

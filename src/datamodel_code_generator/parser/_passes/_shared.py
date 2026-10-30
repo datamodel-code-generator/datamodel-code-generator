@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
@@ -893,16 +894,18 @@ def apply_inherited_field_default(
     field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
 
 
-def take_placeholder_identity(field: DataModelFieldBase, placeholder: DataModelFieldBase) -> None:
-    """Give the copy that replaces ``placeholder`` its name, original name and aliases (its own list of them)."""
-    field.name = placeholder.name
-    field.original_name = placeholder.original_name
-    field.alias = placeholder.alias
-    field.validation_aliases = (
-        list(placeholder.validation_aliases) if placeholder.validation_aliases is not None else None
-    )
-    field.serialization_alias = placeholder.serialization_alias
-    field.use_serialization_alias = placeholder.use_serialization_alias
+def placeholder_identity(placeholder: DataModelFieldBase) -> FieldIdentity:
+    """Return the name, original name and aliases the copy that replaces ``placeholder`` takes (its own lists)."""
+    return {
+        "name": placeholder.name,
+        "original_name": placeholder.original_name,
+        "alias": placeholder.alias,
+        "validation_aliases": (
+            list(placeholder.validation_aliases) if placeholder.validation_aliases is not None else None
+        ),
+        "serialization_alias": placeholder.serialization_alias,
+        "use_serialization_alias": placeholder.use_serialization_alias,
+    }
 
 
 def _inherited_placeholder_name(field: DataModelFieldBase) -> str | None:
@@ -964,7 +967,7 @@ def override_required_field(
                 )
             ) is None:
                 copied_original_field = host._copy_model_field(original_field)  # noqa: SLF001
-                take_placeholder_identity(copied_original_field, model_field)
+                builder.set_field_identity(copied_original_field, placeholder_identity(model_field))
                 copied_original_field.required = True
             default_source = original_field
             if (

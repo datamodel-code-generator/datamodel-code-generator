@@ -195,14 +195,6 @@ use_default_with_required = 1
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
 alias = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."take_placeholder_identity"]
-alias = 1
-name = 1
-original_name = 1
-serialization_alias = 1
-use_serialization_alias = 1
-validation_aliases = 1
-
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
 _additional_imports = 1
 file_path = 1
@@ -242,33 +234,18 @@ alias = 1
 import_ = 1
 kwargs = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser._take_field_aliases"]
-alias = 1
-name = 1
-original_name = 1
-serialization_alias = 1
-use_serialization_alias = 1
-validation_aliases = 1
-
 ["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
 is_optional = 1
 nullable = 2
 type_has_null = 2
 
-["src/datamodel_code_generator/parser/base.py"."_copy_data_model_field"]
-default = 1
-extras = 1
-validation_aliases = 1
-
 ["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
-alias = 1
 constraints = 1
 'data_types[...]' = 1
 default = 1
 'extras.update()' = 1
 has_default = 1
-name = 1
 read_only = 1
 required = 2
 use_default_with_required = 1
@@ -312,8 +289,6 @@ use_default_with_required = 1
 data_types = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_common_part"]
-alias = 1
-name = 1
 required = 2
 target_python_version = 1
 use_default_with_required = 1

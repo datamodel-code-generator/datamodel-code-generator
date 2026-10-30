@@ -24,6 +24,7 @@ __all__ = [
     "FIELD_ROWS_WITHOUT_VALIDATION_ALIASES",
     "FieldAliasRow",
     "FieldFacts",
+    "FieldIdentity",
     "FieldRow",
 ]
 
@@ -67,6 +68,22 @@ FieldAliasRow: TypeAlias = Literal["required-copy", "final-class", "rename"]
 * ``rename``: a field renamed to keep its wire name (GraphQL typename slots): also the serialization alias of the new
   name; it keeps its validation aliases.
 """
+
+
+class FieldIdentity(TypedDict, total=False):
+    """The names and aliases a field takes, the attributes ``GenerationStore.set_field_identity`` writes.
+
+    A field takes exactly the keys given and keeps the others: a copy takes all of them from the placeholder it
+    replaces when it is made (``parser/base.py:_copy_data_model_field``), a field built earlier takes those its
+    ``FieldAliasRow`` names through the store.
+    """
+
+    name: str | None
+    original_name: str | None
+    alias: str | None
+    validation_aliases: list[str] | None
+    serialization_alias: str | None
+    use_serialization_alias: bool
 
 
 class FieldFacts(TypedDict, total=False):
