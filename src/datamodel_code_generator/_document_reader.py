@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator import SchemaParseError
+from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._json_pointer import is_array_index
 
 if TYPE_CHECKING:
@@ -22,14 +22,27 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._source import YamlValue
 
-__all__ = ["MISSING", "MemberRow", "as_mapping", "descend", "document_statuses", "member", "string_key", "string_keys"]
+__all__ = [
+    "MISSING",
+    "ArrayIndexOutOfRangeError",
+    "MemberRow",
+    "as_mapping",
+    "descend",
+    "document_statuses",
+    "member",
+    "string_key",
+    "string_keys",
+]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
 
-MemberRow: TypeAlias = Literal["canonical", "legacy-int-tokens", "legacy-decimal-tokens", "legacy-objects-only"]
+MemberRow: TypeAlias = Literal[
+    "canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens", "legacy-objects-only"
+]
 """How a reader reads one token's member of a loaded value (``member``)."""
 _ENDS_WALK: Final[MappingProxyType[MemberRow, tuple[type[Exception], ...]]] = MappingProxyType({
     "canonical": (LookupError, TypeError),
+    "refusing": (KeyError,),
     "legacy-int-tokens": (LookupError, TypeError, ValueError),
     "legacy-decimal-tokens": (LookupError,),
     "legacy-objects-only": (LookupError,),
@@ -37,16 +50,39 @@ _ENDS_WALK: Final[MappingProxyType[MemberRow, tuple[type[Exception], ...]]] = Ma
 """The errors of each row that mean the value has no such member; any other error propagates."""
 
 
+class ArrayIndexOutOfRangeError(Error):
+    """A syntactically valid JSON Pointer array index beyond a list's length (row ``refusing``)."""
+
+
+def _array_item(value: list[YamlValue], token: str) -> YamlValue:
+    """Return a list's item by an RFC 6901 array index; any other token is an error (row ``refusing``)."""
+    if not is_array_index(token):
+        msg = f"Invalid JSON pointer array index {token!r}: expected a non-negative integer."
+        raise Error(msg)
+    try:
+        index = int(token)
+    except ValueError as exc:
+        msg = f"Invalid JSON pointer array index {token!r}: integer string is too long to parse."
+        raise Error(msg) from exc
+    if index >= len(value):
+        msg = f"JSON pointer array index {index} is out of range (array length {len(value)})."
+        raise ArrayIndexOutOfRangeError(msg)
+    return value[index]
+
+
 def as_mapping(value: object) -> dict[str, YamlValue]:
     """Return a loaded value that is a mapping, or an empty mapping for any other value."""
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
-def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
+def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:  # noqa: PLR0911
     """Return one token's member of a loaded value; raise one of the row's ``_ENDS_WALK`` errors when it has none.
 
     ``canonical``: a list item by an RFC 6901 array index; a mapping member by its integer YAML key when the token is
-    such an index and the key exists, else by the token. The other rows keep the readers' earlier grammars:
+    such an index and the key exists, else by the token. ``refusing`` (the parser's ``$ref`` targets) reads a mapping
+    member by the token and a list item by an RFC 6901 array index; a token that is no index, or that is too long,
+    is an ``Error``, an index past the end an ``ArrayIndexOutOfRangeError``, and any other value a
+    ``NotImplementedError``. The other rows keep the readers' earlier grammars:
     ``legacy-int-tokens`` (target binding) reads an item of any non-mapping by whatever ``int()`` accepts (``-1``,
     ``01``, ``1_0``, a character of a string), a mapping as ``canonical``; ``legacy-decimal-tokens`` (served document)
     reads a list item by any decimal token below the length (``01``, non-ASCII digits), a mapping member by the token
@@ -63,6 +99,13 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
                 if index and int(token) in mapping
                 else mapping[token]
             )
+        case "refusing":
+            if isinstance(value, dict):
+                return value[token]
+            if isinstance(value, list):
+                return _array_item(value, token)
+            msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
+            raise NotImplementedError(msg)
         case "legacy-int-tokens":
             if not isinstance(value, dict):
                 return cast("list[YamlValue]", value)[int(token)]

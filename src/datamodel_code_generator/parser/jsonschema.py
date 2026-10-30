@@ -72,10 +72,11 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,
     writes_beside_literal,
 )
+from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
-from datamodel_code_generator._json_pointer import escape_token, is_array_index, join_pointer, unescape_token
+from datamodel_code_generator._json_pointer import escape_token, join_pointer, unescape_token
 from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     REF_PRE_PASS_FIELDS,
@@ -1119,38 +1120,6 @@ def unescape_json_pointer_segment(segment: str) -> str:
 _MISSING_JSON_POINTER = Sentinel("_MISSING_JSON_POINTER")
 
 
-class _JSONPointerArrayIndexOutOfRangeError(Error):
-    """Identify a syntactically valid JSON pointer index beyond an array's bounds."""
-
-
-def _resolve_json_pointer_array_index(sequence: list[YamlValue], segment: object) -> YamlValue:
-    """Resolve a JSON-pointer segment against a list per the RFC 6901 array-index grammar."""
-    text = str(segment)
-    if not is_array_index(text):
-        msg = f"Invalid JSON pointer array index {text!r}: expected a non-negative integer."
-        raise Error(msg)
-    try:
-        index = int(text)
-    except ValueError as exc:
-        msg = f"Invalid JSON pointer array index {text!r}: integer string is too long to parse."
-        raise Error(msg) from exc
-    if index >= len(sequence):
-        msg = f"JSON pointer array index {index} is out of range (array length {len(sequence)})."
-        raise _JSONPointerArrayIndexOutOfRangeError(msg)
-    return sequence[index]
-
-
-def _resolve_json_pointer_array_index_or_missing(
-    sequence: list[YamlValue],
-    segment: object,
-) -> YamlValue | object:
-    """Resolve an array index while marking only an unavailable valid index as missing."""
-    try:
-        return _resolve_json_pointer_array_index(sequence, segment)
-    except _JSONPointerArrayIndexOutOfRangeError:
-        return _MISSING_JSON_POINTER
-
-
 def get_model_by_path(schema: dict[str, YamlValue] | list[YamlValue], keys: list[str] | list[int]) -> YamlValue:
     """Retrieve a model from schema by traversing raw JSON Pointer keys."""
     return _get_model_by_decoded_path(
@@ -1163,7 +1132,8 @@ def _get_model_by_decoded_path(
 ) -> Any:
     """Retrieve a model after JSON Pointer tokens have already been decoded.
 
-    A key a dict lacks reads as ``{}`` and an index a list lacks raises; under ``or_missing`` both are the sentinel.
+    Each key's member is read by row ``refusing`` (``_document_reader.member``). A key a dict lacks reads as ``{}``
+    and an index a list lacks raises; under ``or_missing`` both are the sentinel.
     """
     if not keys:
         if isinstance(schema, dict):
@@ -1172,17 +1142,14 @@ def _get_model_by_decoded_path(
         raise NotImplementedError(msg)  # pragma: no cover
     current: YamlValue = schema
     for index, key in enumerate(keys):
-        if isinstance(current, dict):
-            value = current.get(str(key), _MISSING_JSON_POINTER if or_missing else {})
-        elif isinstance(current, list):
-            value = (
-                _resolve_json_pointer_array_index_or_missing(current, key)
-                if or_missing
-                else _resolve_json_pointer_array_index(current, key)
-            )
-        else:
-            msg = f"Cannot traverse non-container schema. schema={current}, key={key}"
-            raise NotImplementedError(msg)
+        try:
+            value = member(current, str(key), "refusing")
+        except KeyError:
+            value = _MISSING_JSON_POINTER if or_missing else {}
+        except ArrayIndexOutOfRangeError:
+            if not or_missing:
+                raise
+            value = _MISSING_JSON_POINTER
         if value is _MISSING_JSON_POINTER or index == len(keys) - 1:
             return value
         if not isinstance(value, (dict, list)):
@@ -1199,12 +1166,6 @@ def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False) -
         if fragment
         else document
     )
-
-
-def _reserved_value(tree: dict[str, YamlValue], key: str) -> YamlValue | object:
-    """Return the value a reserved reference key names in a document tree, as parsing it reads that value."""
-    object_paths = _split_json_pointer(tree, key.split("#", 1)[-1])[0]
-    return _get_model_by_decoded_path(tree, object_paths, or_missing=True) if object_paths else tree
 
 
 def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> list[str]:
@@ -1252,11 +1213,12 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
         parts.append(part)
         reference_parts.append(raw_parts[index])
         if isinstance(current, list):  # pragma: no branch
-            if (resolved := _resolve_json_pointer_array_index_or_missing(current, part)) is _MISSING_JSON_POINTER:
+            try:
+                current = member(current, part, "refusing")
+            except ArrayIndexOutOfRangeError:
                 parts.extend(unescape_json_pointer_segment(part) for part in raw_parts[index + 1 :])
                 reference_parts.extend(raw_parts[index + 1 :])
                 return parts, reference_parts
-            current = cast("YamlValue", resolved)
         index += 1
     return parts, reference_parts
 
@@ -6076,8 +6038,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for component in strongly_connected_components(graph):
             members = {nodes[index] for index in component}
             anchors: set[str] = set()
-            for member in members:
-                edges = self._dynamic_ref_graph[member]
+            for node in members:
+                edges = self._dynamic_ref_graph[node]
                 anchors |= edges.anchors
                 anchors.update(
                     *(
@@ -14660,9 +14622,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _lenient_pointer_exists(self, document: str, reference: str) -> bool:
         """Return whether a local JSON pointer reference names a location in a lenient document."""
-        raw = self._lenient_documents[document]
-        return not (parts := split_json_pointer(raw, reference.partition("#")[2])) or (
-            _get_model_by_decoded_path(raw, parts, or_missing=True) is not _MISSING_JSON_POINTER
+        fragment = reference.partition("#")[2]
+        return (
+            _fragment_value(self._lenient_documents[document], fragment, or_missing=True) is not _MISSING_JSON_POINTER
         )
 
     def _loads_document(self, absolute: str) -> bool:
@@ -15610,7 +15572,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         graph = cast("SchemaGraphBuilder", self._schema_graph)
         for key in sorted(self.reserved_refs.get(tuple(path_parts)) or ()):
             if not loaded(key):
-                yield ReservedTarget(document=document, key=key, node=graph.node(_reserved_value(tree, key)))
+                value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True)
+                yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
     def _reserved_ref_loaded(self, key: str) -> bool:
         """Return whether the model of a reserved key is loaded, adding its reference when it has none."""
