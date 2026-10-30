@@ -7,6 +7,8 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._python_syntax import list_display, tuple_display
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
@@ -267,10 +269,9 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
         case PythonTypeUnion():
             return " | ".join(map(render_python_type_expr, expression.items))
         case PythonTypeParameterList():
-            return f"[{', '.join(map(render_python_type_expr, expression.items))}]"
+            return list_display(map(render_python_type_expr, expression.items))
         case PythonTypeTuple():
-            items = ", ".join(map(render_python_type_expr, expression.items))
-            return f"({items}{',' if len(expression.items) == 1 else ''})"
+            return tuple_display(map(render_python_type_expr, expression.items))
         case PythonTypeStarred():
             value = render_python_type_expr(expression.value)
             return f"*({value})" if isinstance(expression.value, PythonTypeUnion) else f"*{value}"

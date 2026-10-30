@@ -31,6 +31,7 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
+from datamodel_code_generator._python_syntax import call_text, list_display, tuple_display
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -51,7 +52,6 @@ from datamodel_code_generator._target_operations import described, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
-    display,
     field_plan,
     parameter_plan,
     runtime_sources,
@@ -308,7 +308,7 @@ class Module(TargetModule):
         )
         found: list[str] = []
         if field:
-            found.append(f"{metadata}({', '.join(f'{key}={self.argument(keywords[key])}' for key in field)})")
+            found.append(call_text(metadata, (f"{key}={self.argument(keywords[key])}" for key in field)))
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
@@ -935,7 +935,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
             repr(label),
-            display(repr(argument.name) for argument in spec.arguments),
+            tuple_display(repr(argument.name) for argument in spec.arguments),
             asynchronous,
         )
         parameters = [
@@ -1000,7 +1000,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authorize=authorize,
             authenticate=authenticate,
             parameters=tuple(parameters),
-            requirements=display(_requirement(item) for item in requirements),
+            requirements=tuple_display(_requirement(item) for item in requirements),
             credentials="{" + ", ".join(f"{scheme!r}: {names[scheme]}" for scheme in scopes) + "}",
             challenge=repr(challenge),
         )
@@ -1249,7 +1249,7 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
             entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
         if null:
             entries.append("null=True")
-    return f"{module.local('_runtime.server.responses', 'Declared')}({', '.join(entries)})"
+    return call_text(module.local("_runtime.server.responses", "Declared"), entries)
 
 
 def _body_status(spec: OperationSpec, status: str) -> bool:
@@ -1283,7 +1283,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         base, metadata = module.parts(field.type)
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
-    declaration = f"{module.name('fastapi', field.api)}({', '.join(keywords)})"
+    declaration = call_text(module.name("fastapi", field.api), keywords)
     return Parameter(name, f"{module.name('typing', 'Annotated')}[{', '.join((*parts, declaration))}]", default)
 
 
@@ -1317,7 +1317,7 @@ def _adapter(module: Module, value: TypeView) -> str:
 def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     if isinstance(value, LiteralScalar):
         return module.argument(value)
-    return f"[{', '.join(module.argument(item) for item in value.items if isinstance(item, LiteralScalar))}]"
+    return list_display(module.argument(item) for item in value.items if isinstance(item, LiteralScalar))
 
 
 def _default_value(module: Module, default: ParameterDefault) -> str | None:
@@ -1338,7 +1338,7 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
             if isinstance(literal, LiteralScalar):
                 return f"{enum}({module.argument(literal)})"
             items = (item for item in literal.items if isinstance(item, LiteralScalar))
-            return f"[{', '.join(f'{enum}({module.argument(item)})' for item in items)}]"
+            return list_display(f"{enum}({module.argument(item)})" for item in items)
         case _:
             pass
     return None
@@ -1370,8 +1370,8 @@ def _parameter_arguments(module: Module, adapters: list[Argument]) -> str:
             entries.append(f"adapter={_adapter(module, parameter.type)}")
         if (value := _default_value(module, parameter.default)) is not None:
             entries.append(f"default={value}")
-        arguments.append(f"{module.local('_runtime.server.requests', 'ParameterArgument')}({', '.join(entries)})")
-    return display(arguments)
+        arguments.append(call_text(module.local("_runtime.server.requests", "ParameterArgument"), entries))
+    return tuple_display(arguments)
 
 
 def _json_part(module: Module, part: JsonPartSpec) -> str:
@@ -1394,9 +1394,9 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
-            entries.append(f"fields={display(field_plan(module.local, plan) for plan in fields)}")
+            entries.append(f"fields={tuple_display(field_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
-            entries.append(f"json_parts={display(_json_part(module, part) for part in parts)}")
+            entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
         if (additional := item.additional) is not None:
             plan = (
                 _json_part(module, additional)
@@ -1407,9 +1407,9 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (checked := item.checked) is not None:
             entries.append(f"checked={module.name('pydantic', 'TypeAdapter')}(dict[str, {module.annotation(checked)}])")
         if encoded := item.encoded:
-            entries.append(f"encoded={display(parameter_plan(module.local, plan) for plan in encoded)}")
-        media.append(f"{module.local('_runtime.server.requests', 'BodyMedia')}({', '.join(entries)})")
-    return display(media)
+            entries.append(f"encoded={tuple_display(parameter_plan(module.local, plan) for plan in encoded)}")
+        media.append(call_text(module.local("_runtime.server.requests", "BodyMedia"), entries))
+    return tuple_display(media)
 
 
 def _registration(module: Module, spec: OperationSpec) -> Registration:
@@ -1430,7 +1430,7 @@ def _registration(module: Module, spec: OperationSpec) -> Registration:
     if contract.explicit_operation_id and isinstance(operation_id := fact(contract, "operationId"), str):
         keywords.append(Keyword("operation_id", repr(operation_id)))
     if found := tags(contract):
-        keywords.append(Keyword("tags", f"[{', '.join(repr(tag) for tag in found)}]"))
+        keywords.append(Keyword("tags", list_display(map(repr, found))))
     keywords.extend(
         Keyword(name, repr(value))
         for name in ("summary", "description")
@@ -1569,7 +1569,7 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
 
 
 def _requirement(requirement: Requirement) -> str:
-    return display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
+    return tuple_display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
 
 
 def _request_kind(media: MediaSpec) -> str:

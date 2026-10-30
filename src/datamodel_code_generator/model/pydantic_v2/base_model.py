@@ -23,6 +23,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
@@ -1004,9 +1005,11 @@ class DataModelField(_PydanticBaseDataModelField):
         else:
             serialization_alias, serialization_items = unique_validation_aliases[0], ("validation_aliases",)
         args.pop("alias", "validation-aliases", _VALIDATION_ALIASES)
-        aliases_repr = ", ".join(repr(a) for a in unique_validation_aliases)
         args.put(
-            "validation_alias", _RawRepr(f"AliasChoices({aliases_repr})"), _VALIDATION_ALIASES, ("validation_aliases",)
+            "validation_alias",
+            _RawRepr(call_text("AliasChoices", map(repr, unique_validation_aliases))),
+            _VALIDATION_ALIASES,
+            ("validation_aliases",),
         )
         if (
             self.use_serialization_alias

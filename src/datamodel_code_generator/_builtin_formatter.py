@@ -21,6 +21,7 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
@@ -796,7 +797,7 @@ def _format_constrained_call(call: ast.Call, indent: str, line_length: int, sour
     if not arguments:
         return f"{call_name}()"
 
-    inline_call = f"{call_name}({', '.join(arguments)})"
+    inline_call = call_text(call_name, arguments)
     if len(f"{indent}{inline_call}") <= line_length:
         return inline_call
     return _block(f"{call_name}(", _item_lines(arguments, indent, "," if len(arguments) > 1 else ""), indent, ")")

@@ -56,3 +56,16 @@ def read_keys(schema, config):
 def spell(direction):
     """Spell the segment in a string literal and in an f-string, and write other text."""
     return "seg-" + direction, f"seg-{direction}", f"{direction}-other", "other"
+
+
+def displays(head, items):
+    """Join items inside a call, a tuple and a list, and write a subscript and other joins."""
+    return (
+        f"{head}({', '.join(items)})",
+        "(" + ", ".join(items) + ("," if len(items) == 1 else "") + ")",
+        f"[{', '.join(items)}]",
+        f"{head}[{', '.join(items)}]",
+        f"Union[{', '.join(items)}]",
+        f"({'; '.join(items)})",
+        ", ".join(items),
+    )

@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Prot
 
 from typing_extensions import override
 
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -679,7 +680,7 @@ def _field_argument_text(argument: Kwarg) -> str:
 
 def field_call_text(call: CallPlan) -> str:
     """Write a ``field(...)`` call of a stdlib dataclass or msgspec: its arguments in order, the factory as code."""
-    return f"field({', '.join(_field_argument_text(argument) for argument in call.kwargs)})"
+    return call_text("field", map(_field_argument_text, call.kwargs))
 
 
 class _PlanSource(Protocol):

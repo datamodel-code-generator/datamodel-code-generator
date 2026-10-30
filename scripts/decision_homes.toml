@@ -536,6 +536,18 @@ names = ["is_array_index"]
 what = "reads a list item by the JSON Pointer index grammar itself; pick a row of _document_reader.member"
 audit = "C01"
 
+[homes.Hx-python-syntax]
+decision = "how generated Python spells a call, a tuple display and a list display from the texts of their items: the separator and the comma a lone tuple item needs"
+core = ["_python_syntax.py"]
+adapters = []
+
+[homes.Hx-python-syntax.signatures.hand-display]
+kind = "display"
+brackets = ["(", "["]
+exclude = ["_runtime/", "__main__.py:_format_toml_value"]
+what = "joins expression texts into a call, tuple or list display itself; call _python_syntax.py (a TOML array is not Python)"
+audit = "C13"
+
 [homes.Hx-rw-variant]
 decision = "the path of a model's read (request) or write (response) variant: how the parser builds it from its base path and how a reader takes its base path and direction back"
 core = ["reference.py:_rw_variant_path", "reference.py:_rw_variant_of"]

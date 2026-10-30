@@ -1,2 +1,3 @@
 other.py:7:7: decision sample (the sample decision) has its home in core.py; writes the limit itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in <module>)
 other.py:30:46: decision sample (the sample decision) has its home in core.py; tests a type list for null. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
+other.py:66:8: decision sample (the sample decision) has its home in core.py; joins the items of a display itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in displays)

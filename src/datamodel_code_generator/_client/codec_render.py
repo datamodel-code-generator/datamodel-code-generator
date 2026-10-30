@@ -17,9 +17,9 @@ from datamodel_code_generator._client.codec_plan import (
     Values,
 )
 from datamodel_code_generator._client.facade import statement
+from datamodel_code_generator._python_syntax import call_text, tuple_display
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_render import call, display
 from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class _Renderer:
 
     def call(self, name: str, *values: str, **keywords: str) -> str:
         self.records.add(name)
-        return call(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
+        return call_text(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
 
     def shape(self, shape: Shape) -> str:
         if isinstance(shape, Class):
@@ -98,12 +98,12 @@ class _Renderer:
         if isinstance(shape, Items):
             return self.call("Items", self.shape(shape.item), *((repr(shape.kind),) if shape.kind != "list" else ()))
         if isinstance(shape, Fixed):
-            return self.call("Fixed", display(self.shape(item) for item in shape.items))
+            return self.call("Fixed", tuple_display(self.shape(item) for item in shape.items))
         if isinstance(shape, Values):
             return self.call("Values", self.shape(shape.value))
         if isinstance(shape, Choice):
-            kinds = display(f"({kind!r}, {self.shape(item)})" for kind, item in shape.kinds)
-            tags = display(f"({tag!r}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
+            kinds = tuple_display(f"({kind!r}, {self.shape(item)})" for kind, item in shape.kinds)
+            tags = tuple_display(f"({tag!r}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
             return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
@@ -113,7 +113,7 @@ class _Renderer:
         if runtime.mapped and self.plan.uses:
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
-                fields = display(
+                fields = tuple_display(
                     self.call(
                         "Field",
                         repr(field.wire),
@@ -138,7 +138,9 @@ class _Renderer:
                 arguments = (*arguments, EXTRAS)
             final = self.module.name("typing", "Final")
             entries.append(
-                Codec(f"codec_{index}", f"{final}[{codec}[{static}]]", call(codec, arguments), _description(use.use))
+                Codec(
+                    f"codec_{index}", f"{final}[{codec}[{static}]]", call_text(codec, arguments), _description(use.use)
+                )
             )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
         names = sorted({runtime.codec, *self.records})

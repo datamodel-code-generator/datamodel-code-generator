@@ -18,6 +18,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._mro import resolve_members
+from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -216,7 +217,7 @@ class _StructConversion:
 
 def _meta_call_text(call: CallPlan) -> str:
     """Write a ``Meta(...)`` call: its arguments sorted by their text."""
-    return f"Meta({', '.join(sorted(f'{k.name}={represent_python_value(k.value)}' for k in call.kwargs))})"
+    return call_text("Meta", sorted(f"{k.name}={represent_python_value(k.value)}" for k in call.kwargs))
 
 
 class _MetaAnnotatedType(DataType):

@@ -25,6 +25,9 @@ them, ``what`` words the message):
   a raw read of a loaded document is invisible to them).
 * ``literal``: a string literal, or an f-string with a literal part, that holds one of ``contains`` (the spelling of a
   value that only its home may write); an f-string is one hit at its own position.
+* ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
+  of ``brackets`` (``(`` a call or tuple display, ``[`` a list display): Python source spelled by hand; a ``[`` right
+  after a name, a value or a closing bracket opens a subscript and does not count.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -84,7 +87,17 @@ DOCS_PATH = Path("docs/architecture.md")
 CONFIG_PATH = Path("scripts/decision_homes.toml")
 COMPILED_TEMPLATE_DIRECTORY = store.COMPILED_TEMPLATE_DIRECTORY
 ALLOWLIST_MARKER = "# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ===="
-SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set", "key", "literal"})
+SIGNATURE_KINDS = frozenset({
+    "name",
+    "call",
+    "function",
+    "compare-in",
+    "number",
+    "keyword-set",
+    "key",
+    "literal",
+    "display",
+})
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
@@ -100,6 +113,7 @@ STRING_OPTIONS = frozenset({
     "receivers",
     "keys",
     "contains",
+    "brackets",
 })
 INTEGER_OPTIONS = frozenset({"powers", "literals"})
 REQUIRED_STRINGS = {
@@ -108,6 +122,7 @@ REQUIRED_STRINGS = {
     "keyword-set": "keywords",
     "key": "keys",
     "literal": "contains",
+    "display": "brackets",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
@@ -401,6 +416,49 @@ def _key_read(node: ast.AST) -> str | None:
     return None
 
 
+def _string_parts(node: ast.AST) -> list[ast.AST]:
+    """Return the parts of an f-string or a ``+`` chain in order: string constants and the values between them."""
+    match node:
+        case ast.JoinedStr(values=values):
+            return [part.value if isinstance(part, ast.FormattedValue) else part for part in values]
+        case ast.BinOp(left=left, op=ast.Add(), right=right):
+            return [*_string_parts(left), *_string_parts(right)]
+    return [node]
+
+
+def _is_comma_join(node: ast.AST) -> bool:
+    match node:
+        case ast.Call(func=ast.Attribute(value=ast.Constant(value=", "), attr="join")):
+            return True
+    return False
+
+
+def _opens_display(parts: list[ast.AST], index: int, brackets: Iterable[str]) -> bool:
+    """Return whether the part before ``parts[index]`` ends with an opening bracket of a display or a call."""
+    match parts[index - 1] if index else None:
+        case ast.Constant(value=str() as text) if text and text[-1] in brackets:
+            before = text[:-1]
+            subscript = (bool(before) and (before[-1].isidentifier() or before[-1] in ")]")) or (
+                not before and index > 1
+            )
+            return text[-1] != "[" or not subscript
+    return False
+
+
+def _hand_display(node: ast.AST, brackets: Iterable[str]) -> bool:
+    """Return whether ``node`` joins expression texts with ``", "`` right inside a bracket it opens itself.
+
+    A ``+`` chain counts at the operation whose right operand is the join, so a chain is one hit.
+    """
+    if isinstance(node, ast.BinOp):
+        if not (isinstance(node.op, ast.Add) and _is_comma_join(node.right)):
+            return False
+        parts = [*_string_parts(node.left), node.right]
+        return _opens_display(parts, len(parts) - 1, brackets)
+    parts = _string_parts(node)
+    return any(_is_comma_join(part) and _opens_display(parts, index, brackets) for index, part in enumerate(parts))
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -461,6 +519,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
                 if isinstance(part, ast.Constant) and isinstance(part.value, str)
             ]
             return any(spelling in text for text in texts for spelling in options["contains"])
+        case "display":
+            return _hand_display(node, options["brackets"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node)) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -475,6 +535,7 @@ NODE_TYPES = {
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
     "key": (ast.Subscript, ast.Call),
     "literal": (ast.Constant, ast.JoinedStr),
+    "display": (ast.JoinedStr, ast.BinOp),
 }
 
 
