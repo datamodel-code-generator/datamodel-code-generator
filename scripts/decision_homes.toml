@@ -199,8 +199,14 @@ what = "predicts the children a site types for the request/response split; ask t
 audit = "D-X-02"
 
 [homes.Hx-field-build]
-decision = "how a parser builds a field it writes: the field class's constructor, the configured field options each kind of field takes, the alias, validation aliases and serialization alias"
-core = ["parser/base.py:Parser._build_field", "parser/_field_rows.py"]
+decision = "how a parser builds a field it writes: the field class's constructor, the configured field options each kind of field takes, the alias, validation aliases and serialization alias, and the name and aliases a field built earlier takes from the placeholder it replaces or for a new name"
+core = [
+    "parser/base.py:Parser._build_field",
+    "parser/base.py:Parser._field_aliases",
+    "parser/base.py:Parser._take_field_aliases",
+    "parser/_field_rows.py",
+    "parser/_passes/_shared.py:take_placeholder_identity",
+]
 
 [homes.Hx-field-build.signatures.field-construction]
 kind = "call"
@@ -208,6 +214,22 @@ names = ["data_model_field_type", "_data_model_field_constructor"]
 paths = ["parser/"]
 what = "builds a field outside Parser._build_field; pass its facts to Parser._build_field with the row of its kind"
 audit = "PF-1"
+
+[homes.Hx-field-build.signatures.field-alias-write]
+kind = "name"
+ctx = "store"
+names = ["serialization_alias", "use_serialization_alias", "validation_aliases"]
+paths = ["parser/"]
+exclude = ["parser/base.py:_copy_data_model_field", "parser/base.py:Parser.__init__"]
+what = "writes a field's aliases; a copy takes its placeholder's with take_placeholder_identity, a field built earlier takes them for a new name with Parser._take_field_aliases"
+audit = "PF2-1"
+
+[homes.Hx-field-build.signatures.field-alias-derivation]
+kind = "call"
+names = ["_split_field_alias", "get_serialization_alias"]
+paths = ["parser/"]
+what = "derives a field's aliases itself; call Parser._field_aliases, or Parser._take_field_aliases for a field built earlier"
+audit = "PF2-2"
 
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"

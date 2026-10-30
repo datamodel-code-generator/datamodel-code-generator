@@ -8628,16 +8628,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if inherited_field is not None and inherited_field.name and inherited_field.name not in excludes:
             field_name = inherited_field.name
         if inherited_field is not None:
-            single_alias, validation_aliases = self._split_field_alias(alias)
-            serialization_alias = self.get_serialization_alias(required_field_name, field_name, class_name)
             copied_field = self._copy_model_field(inherited_field)
-            copied_field.name = field_name
+            self._take_field_aliases(
+                copied_field,
+                field_name,
+                alias,
+                source_name=required_field_name,
+                class_name=class_name,
+                row="required-copy",
+            )
             copied_field.required = True
-            copied_field.original_name = required_field_name
-            copied_field.alias = single_alias
-            copied_field.validation_aliases = validation_aliases
-            copied_field.serialization_alias = serialization_alias
-            copied_field.use_serialization_alias = self.use_serialization_alias
             self._prepare_required_inherited_field(copied_field, inherited_field)
             self._apply_inherited_field_default(copied_field, inherited_field, class_name=class_name)
             return copied_field

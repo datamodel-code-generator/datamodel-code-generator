@@ -187,19 +187,21 @@ has_default = 1
 use_default_with_required = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."override_required_field"]
-alias = 1
 'fields.pop()' = 1
 'fields.reverse()' = 1
-name = 1
-original_name = 1
 required = 1
-serialization_alias = 1
 use_default_with_required = 1
-use_serialization_alias = 1
-validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
 alias = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."take_placeholder_identity"]
+alias = 1
+name = 1
+original_name = 1
+serialization_alias = 1
+use_serialization_alias = 1
+validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
 _additional_imports = 1
@@ -231,10 +233,6 @@ results = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_final_class_field_aliases"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-alias = 1
-name = 1
-serialization_alias = 1
-validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_data_type"]
 alias = 1
@@ -243,6 +241,14 @@ alias = 1
 alias = 1
 import_ = 1
 kwargs = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser._take_field_aliases"]
+alias = 1
+name = 1
+original_name = 1
+serialization_alias = 1
+use_serialization_alias = 1
+validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
 is_optional = 1
@@ -256,20 +262,16 @@ validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
-alias = 3
+alias = 1
 constraints = 1
 'data_types[...]' = 1
 default = 1
 'extras.update()' = 1
 has_default = 1
-name = 3
-original_name = 2
+name = 1
 read_only = 1
 required = 2
-serialization_alias = 2
 use_default_with_required = 1
-use_serialization_alias = 2
-validation_aliases = 2
 write_only = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_merge_data_type_modifiers"]
@@ -285,11 +287,6 @@ kwargs = 1
 'kwargs[...]' = 1
 tuple_item_count = 1
 
-["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser._resolve_typename_collisions.resolve"]
-alias = 1
-name = 2
-serialization_alias = 2
-
 ["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
 data_types = 1
 import_ = 1
@@ -298,13 +295,7 @@ is_optional = 1
 type = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_missing_required_field"]
-alias = 1
-name = 1
-original_name = 1
 required = 1
-serialization_alias = 1
-use_serialization_alias = 1
-validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._collect_inherited_fields_for_request_response"]
 required = 1

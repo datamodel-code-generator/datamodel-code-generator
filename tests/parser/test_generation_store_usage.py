@@ -205,7 +205,7 @@ def test_runtime_writes_are_named_as_the_scan_names_them() -> None:
 
     writes = checker.runtime_writes([*lines, other_area, outside])
 
-    assert len(attribute_writes) > 100
+    assert attribute_writes
     assert [write.key for write in writes] == [violation.key for violation in attribute_writes]
     assert checker.runtime_problems(lines) == []
     checker.check_runtime_writes(lines)

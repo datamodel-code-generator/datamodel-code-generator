@@ -177,6 +177,7 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     register_runtime_expression,
     relative,
+    take_placeholder_identity,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -235,7 +236,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
-    from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
+    from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
@@ -546,7 +547,7 @@ def _apply_inherited_field_nullability(
             copied_field.type_has_null = inherited_field.type_has_null
 
 
-def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
+def _copy_resolved_inherited_field(  # noqa: PLR0913
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,
@@ -587,16 +588,9 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
                 data_type=copied_data_type,
                 register_references=False,
             )
-            copied_field.name = field.name
+            take_placeholder_identity(copied_field, field)
             copied_field.required = False if force_optional else inherited_field.required or field.required
             _apply_inherited_field_nullability(field, inherited_field, copied_field, current_type)
-            copied_field.original_name = field.original_name
-            copied_field.alias = field.alias
-            copied_field.validation_aliases = (
-                list(field.validation_aliases) if field.validation_aliases is not None else None
-            )
-            copied_field.serialization_alias = field.serialization_alias
-            copied_field.use_serialization_alias = field.use_serialization_alias
             if partial_merge_mode != AllOfMergeMode.NoMerge:
                 copied_field.constraints = _overlay_constraints(
                     inherited_field.constraints, field.constraints, class_from="first-given"
@@ -612,14 +606,8 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
                     copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, str():
             copied_field = _copy_data_model_field(inherited_field, register_references=register_references)
+            take_placeholder_identity(copied_field, field)
             copied_field.required = field.required
-            copied_field.original_name = field.original_name
-            copied_field.alias = field.alias
-            copied_field.validation_aliases = (
-                list(field.validation_aliases) if field.validation_aliases is not None else None
-            )
-            copied_field.serialization_alias = field.serialization_alias
-            copied_field.use_serialization_alias = field.use_serialization_alias
             if inherited_field.name and (
                 inherited_field.name == field.name
                 or reserved_names is None
@@ -627,8 +615,6 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
             ):
                 copied_field.name = inherited_field.name
                 copied_field.alias = inherited_field.alias if field.alias is None else field.alias
-            else:
-                copied_field.name = field.name
         case _:
             return None
 
@@ -914,14 +900,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             options = {key: value for key, value in options.items() if key not in left_out}
         aliases: dict[str, Any] = {}
         if "alias" in facts:
-            aliases["alias"], validation_aliases = self._split_field_alias(facts.pop("alias"))
+            aliases["alias"], validation_aliases, aliases["serialization_alias"] = self._field_aliases(
+                facts.pop("alias"), name=facts.get("name"), source_name=source_name, class_name=class_name
+            )
             if row not in FIELD_ROWS_WITHOUT_VALIDATION_ALIASES:
                 aliases["validation_aliases"] = validation_aliases
-            aliases["serialization_alias"] = (
-                self.get_serialization_alias(source_name, name, class_name)
-                if source_name is not None and (name := facts.get("name")) is not None
-                else None
-            )
         constructor = (
             _get_model_field_constructor(self.data_model_field_type)
             if row in FIELD_ROWS_BUILT_WITHOUT_VALIDATION
@@ -932,6 +915,61 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             **{**options, **aliases, **facts},
             **self._data_model_field_common_kwargs(),
         )
+
+    def _field_aliases(
+        self,
+        alias: str | list[str] | None,
+        *,
+        name: str | None,
+        source_name: str | None,
+        class_name: str | None,
+    ) -> tuple[str | None, list[str] | None, str | None]:
+        """Return the alias, validation aliases and serialization alias of a field ``name`` read from ``source_name``.
+
+        ``alias`` (the output alias or the list of validation aliases) splits into the first two; the third is the
+        ``--serialization-aliases`` entry of ``class_name``, looked up only for a field with both names.
+        """
+        single_alias, validation_aliases = self._split_field_alias(alias)
+        return (
+            single_alias,
+            validation_aliases,
+            self.get_serialization_alias(source_name, name, class_name)
+            if source_name is not None and name is not None
+            else None,
+        )
+
+    def _take_field_aliases(  # noqa: PLR0913
+        self,
+        field: DataModelFieldBase,
+        name: str,
+        alias: str | list[str] | None,
+        *,
+        source_name: str,
+        class_name: str,
+        row: FieldAliasRow,
+    ) -> None:
+        """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
+        field.name = name
+        field.alias, validation_aliases, serialization_alias = self._field_aliases(
+            alias, name=name, source_name=source_name, class_name=class_name
+        )
+        if row == "required-copy":
+            field.original_name = source_name
+            field.use_serialization_alias = self.use_serialization_alias
+        if row != "rename":
+            field.validation_aliases = validation_aliases
+        if row != "final-class" or (
+            self.serialization_aliases
+            and (
+                field.serialization_alias is None
+                or not self.serialization_aliases.keys().isdisjoint((
+                    class_field_key(class_name, source_name),
+                    class_field_key(class_name, name),
+                ))
+            )
+            and serialization_alias is not None
+        ):
+            field.serialization_alias = serialization_alias
 
     @classmethod
     def _get_config_class(cls) -> type[ParserConfig]:
@@ -1479,34 +1517,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not scoped_aliases:
             return
         reserved_names = {field.name for field in fields if field.original_name not in scoped_aliases and field.name}
-        resolved_aliases: dict[str, tuple[str, str | None, list[str] | None]] = {}
+        resolved_aliases: dict[str, tuple[str, str | list[str] | None]] = {}
         for field in fields:
             if (original_name := field.original_name) is None or original_name not in scoped_aliases:
                 continue
             if original_name not in resolved_aliases:
-                field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
+                resolved_aliases[original_name] = self.model_resolver.get_valid_field_name_and_alias(
                     original_name,
                     excludes=reserved_names,
                     model_type=self.field_name_model_type,
                     class_name=class_name,
                 )
-                field_alias, validation_aliases = self._split_field_alias(alias)
-                resolved_aliases[original_name] = field_name, field_alias, validation_aliases
-                reserved_names.add(field_name)
-            field.name, field.alias, field.validation_aliases = resolved_aliases[original_name]
-            if (
-                self.serialization_aliases
-                and (
-                    field.serialization_alias is None
-                    or not self.serialization_aliases.keys().isdisjoint((
-                        class_field_key(class_name, original_name),
-                        class_field_key(class_name, field.name),
-                    ))
-                )
-                and (serialization_alias := self.get_serialization_alias(original_name, field.name, class_name))
-                is not None
-            ):
-                field.serialization_alias = serialization_alias
+                reserved_names.add(resolved_aliases[original_name][0])
+            self._take_field_aliases(
+                field,
+                *resolved_aliases[original_name],
+                source_name=original_name,
+                class_name=class_name,
+                row="final-class",
+            )
             field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_name
 
     @staticmethod

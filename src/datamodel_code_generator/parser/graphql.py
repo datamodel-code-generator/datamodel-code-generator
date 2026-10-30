@@ -550,16 +550,17 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                         ),
                         None,
                     )
-                    field.name = (
-                        inherited.name
+                    self._take_field_aliases(
+                        field,
+                        cast("str", inherited.name)
                         if inherited
                         else self.model_resolver.get_valid_field_name(
                             wire_name, excludes=excludes, model_type=self.field_name_model_type
-                        )
-                    )
-                    field.alias = wire_name
-                    field.serialization_alias = self.get_serialization_alias(
-                        wire_name, cast("str", field.name), obj.name
+                        ),
+                        wire_name,
+                        source_name=wire_name,
+                        class_name=obj.name,
+                        row="rename",
                     )
                     excludes.add(cast("str", field.name))
                     fields[field.name] = field
@@ -585,17 +586,19 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 None,
             )
             typename_field = source.fields[-1]
-            typename_field.name = (
-                inherited_typename.name
+            self._take_field_aliases(
+                typename_field,
+                cast("str", inherited_typename.name)
                 if inherited_typename
                 else self.model_resolver.get_valid_field_name(
                     "typename__",
                     excludes=_non_typename_names((*source.fields, *inherited_fields.values())),
                     model_type=self.field_name_model_type,
-                )
-            )
-            typename_field.serialization_alias = self.get_serialization_alias(
-                "__typename", cast("str", typename_field.name), obj.name
+                ),
+                "__typename",
+                source_name="__typename",
+                class_name=obj.name,
+                row="rename",
             )
 
         visited: set[graphql.GraphQLObjectType | graphql.GraphQLInterfaceType] = set()
