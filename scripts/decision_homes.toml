@@ -1220,6 +1220,49 @@ paths = ["_runtime/protocols/"]
 what = "looks for a read value that makes a path segment a dot segment itself; call protocols/writes.py:refuse_dotted"
 audit = "C27-B2"
 
+[homes.Hx-body-bytes]
+decision = "the bytes the client runtime moves a body in and keeps of one: the 64 KiB slice a body is read, sent, compressed and iterated in, the 64 KiB an error keeps of a received body, and how a body written to a path becomes the file or leaves none, the stream a failed write left ended"
+core = [
+    "_runtime/client/content.py",
+    "_runtime/client/errors.py",
+    "_runtime/client/compression.py:_fed",
+    "_runtime/client/raw.py:_created",
+    "_runtime/client/raw.py:_committed",
+    "_runtime/client/raw.py:_discarded",
+    "_runtime/client/raw.py:_Raw._write_failed",
+]
+adapters = []
+
+[homes.Hx-body-bytes.signatures.chunk-slices]
+kind = "call"
+names = ["range"]
+mentions = ["CHUNK"]
+paths = ["_runtime/"]
+what = "slices bytes into CHUNK pieces itself; call client/content.py:pieces (or client/compression.py:_fed to feed a compressor)"
+audit = "C24-B9"
+
+[homes.Hx-body-bytes.signatures.byte-size]
+kind = "number"
+literals = [65536]
+powers = [16]
+paths = ["_runtime/"]
+what = "writes 64 KiB itself; read client/content.py:CHUNK (a read or a slice) or client/errors.py:MAX_ERROR_BODY_BYTES (what an error keeps of a body)"
+audit = "C24-B8"
+
+[homes.Hx-body-bytes.signatures.download-commit]
+kind = "call"
+names = ["_commit"]
+paths = ["_runtime/"]
+what = "gives a body written to a path its name itself; call client/raw.py:_committed, and _discarded when it fails"
+audit = "C24-B10"
+
+[homes.Hx-body-bytes.signatures.failed-write]
+kind = "compare-eq"
+values = ["streaming"]
+paths = ["_runtime/"]
+what = "ends the stream a failed write left behind itself; call client/raw.py:_Raw._write_failed"
+audit = "C24-B11"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.

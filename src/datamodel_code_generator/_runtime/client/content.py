@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from abc import abstractmethod
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Callable, Generator, Iterator
     from typing import Protocol
 
     class SyncContent(Protocol):
@@ -80,6 +80,12 @@ if TYPE_CHECKING:
 
 
 CHUNK: Final = 64 * 1024
+
+
+def pieces(data: bytes) -> Generator[bytes, None, None]:
+    """Yield bytes in slices of at most CHUNK bytes, none for no bytes."""
+    for start in range(0, len(data), CHUNK):
+        yield data[start : start + CHUNK]
 
 
 @dataclass(frozen=True, slots=True)

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
+from ..client.content import CHUNK
 from ..client.errors import (
     APIConnectionError,
     APIStatusError,
@@ -79,7 +80,6 @@ C = TypeVar("C")
 V = TypeVar("V")
 R = TypeVar("R")
 
-_READ: Final = 65536
 _STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "bound", "expires_at"})
 _GATEWAY_STATUSES: Final = frozenset({502, 504})
 _BOUND_FIELDS: Final = 3
@@ -272,7 +272,7 @@ class _Content:
         parts: list[bytes] = []
         got = 0
         while got < length:
-            data = cast("object", file.read(min(length - got, _READ)))
+            data = cast("object", file.read(min(length - got, CHUNK)))
             if not isinstance(data, bytes) or len(data) > length - got:
                 raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
             if not data:
