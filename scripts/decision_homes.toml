@@ -28,7 +28,7 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_merge"
-paths = ["parser/jsonschema.py", "parser/openapi.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py"]
 what = "a function that merges schema keywords itself; call parser/_intersection.py:intersect_keywords"
 audit = "D-L1-18"
 
@@ -48,7 +48,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/openapi.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
