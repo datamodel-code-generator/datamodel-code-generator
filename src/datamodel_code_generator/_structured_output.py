@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 from pydantic import VERSION, ConfigDict, Field, TypeAdapter
 
 from datamodel_code_generator import _StructuredOutputUnavailableError
-from datamodel_code_generator._json_output import dump_json, schema_document
+from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, schema_document
 from datamodel_code_generator.prompt import PromptPayload, _Envelope, _Payload
 
 try:
@@ -512,9 +512,7 @@ def batch_job_json(job: BatchJobPayload) -> dict[str, Any]:
 def generation_output_json(
     files: list[GeneratedFilePayload], *, output: str | None, target: GeneratedTargetPayload | None = None
 ) -> str:
-    return _dump_payload(
-        GenerationPayload(version=1, format="json", kind="generation", output=output, files=files, target=target)
-    )
+    return _dump_payload(GenerationPayload(**OUTPUT_HEAD, kind="generation", output=output, files=files, target=target))
 
 
 def command_output_json(
@@ -528,8 +526,7 @@ def command_output_json(
     payload_class = _COMMAND_OUTPUT_PAYLOADS[kind]
     extras = {"config": config or {}, "arguments": arguments or [], "items": items or []}
     payload = payload_class.model_validate({
-        "version": 1,
-        "format": "json",
+        **OUTPUT_HEAD,
         "kind": kind,
         "content": content,
         **{name: value for name, value in extras.items() if name in payload_class.model_fields},
@@ -547,8 +544,7 @@ def check_output_json(
 ) -> str:
     return _dump_payload(
         CheckOutputPayload(
-            version=1,
-            format="json",
+            **OUTPUT_HEAD,
             kind=kind,
             success=success,
             content=content,

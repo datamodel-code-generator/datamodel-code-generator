@@ -7,7 +7,7 @@ import textwrap
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator._json_output import dump_json
+from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json
 from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text, values_arguments
 from datamodel_code_generator._recommend._signals import Signals
@@ -422,8 +422,7 @@ def recommendation_payload(recommendation: Recommendation, *, content: str, argu
     signals = recommendation.signals or _NO_SIGNALS
     config = recommendation.config_values
     payload = RecommendOptionsPayload(
-        version=1,
-        format="json",
+        **OUTPUT_HEAD,
         kind="recommend-options",
         mode=recommendation.mode,
         rules_revision=recommendation.rules_revision,
