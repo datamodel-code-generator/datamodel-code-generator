@@ -77,7 +77,7 @@ NullSite: TypeAlias = Literal[
   (``JsonSchemaParser._merge_all_of_root_schema``, ``JsonSchemaParser._all_of_root_value_schema``).
 * ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
   override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
-  ``parser/jsonschema.py:_dump_parts_admit_null`` answers).
+  ``parser/_schema_reading.py:_dump_parts_admit_null`` answers).
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
