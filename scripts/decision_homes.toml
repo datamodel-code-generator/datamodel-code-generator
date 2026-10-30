@@ -28,10 +28,13 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_?merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py"]
 exclude = [
+    "parser/_all_of_values.py:AllOfValuesHost",
     "parser/_lightweight_types.py:LightweightTypesHost",
     "parser/_object_maps.py:ObjectMapsHost",
+    "parser/jsonschema.py:JsonSchemaParser._merge_all_of_object",
+    "parser/jsonschema.py:JsonSchemaParser._merge_all_of_root_schema",
     "parser/jsonschema.py:JsonSchemaParser._merge_conditional_properties",
     "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas",
     "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas_for_allof",
@@ -56,7 +59,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
@@ -2073,6 +2076,34 @@ fix = "#5637"
 [allow."src/datamodel_code_generator/model/msgspec.py"."DataModelField._annotated_union_data_type"]
 "H10.union-construction" = { home = "H10", count = 1, audit = "D-PP-15" }
 
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."all_of_enum_site_schema"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."all_of_reference_value_schema"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_object"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_value_children"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_root_value_nodes"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merge_all_of_value_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."merged_enum_fails"]
+"F-keep-enum-member-values.option-read" = { home = "F-keep-enum-member-values", count = 1, audit = "D-L1-26" }
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-17" }
+
+[allow."src/datamodel_code_generator/parser/_all_of_values.py"."reference_site_value"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
 
@@ -2133,12 +2164,6 @@ fix = "#5637"
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_enum_site_schema"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_reference_value_schema"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_version_specific_features"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
 
@@ -2154,22 +2179,7 @@ fix = "#5637"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_view"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_object"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_schema"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_validation_keywords"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_children"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_nodes"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_value_schema"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_definition_ref"]
@@ -2191,10 +2201,6 @@ fix = "#5637"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_value_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_enum_fails"]
-"F-keep-enum-member-values.option-read" = { home = "F-keep-enum-member-values", count = 1, audit = "D-L1-26" }
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-17" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_model_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
 
@@ -2209,9 +2215,6 @@ fix = "#5637"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reads_enum_as_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
-"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_combined_schema"]
 "F-keep-field-defaults-off-branch-roots.option-read" = { home = "F-keep-field-defaults-off-branch-roots", count = 2, audit = "D-L1-30" }

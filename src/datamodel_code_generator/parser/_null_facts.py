@@ -74,7 +74,7 @@ NullSite: TypeAlias = Literal[
   ``JsonSchemaParser.parse_array_fields``).
 * ``object-map``: the dict of an object map (``parser/_object_maps.py:object_map_admits_null``).
 * ``all-of-map``, ``all-of-value``: the map or the value an ``allOf`` merges its parts into
-  (``JsonSchemaParser._merge_all_of_root_schema``, ``JsonSchemaParser._all_of_root_value_schema``).
+  (``parser/_all_of_values.py``: ``merge_all_of_root_schema``, ``all_of_root_value_schema``).
 * ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
   override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
   ``parser/_schema_reading.py:_dump_parts_admit_null`` answers).

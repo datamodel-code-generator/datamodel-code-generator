@@ -23,6 +23,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_multiple_of,
 )
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
+from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
 from datamodel_code_generator.types import ANY, DataType, UnionIntFloat
 
 if TYPE_CHECKING:
@@ -42,11 +43,6 @@ __all__ = [
     "unvisited_ref_target",
 ]
 
-_NUMERIC_TYPE_DOMAINS = {
-    "integer": frozenset({"integer"}),
-    "number": frozenset({"integer", "number"}),
-    "null": frozenset({"null"}),
-}
 _ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
 """The end of an allOf member's location, which a warning about the site leaves out."""
 
@@ -114,16 +110,6 @@ class LightweightTypesHost(Protocol):
 
     def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
         """Load the schema object a reference names."""
-
-
-def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
-    """Expand number to its numeric subtypes within the numeric/null domain."""
-    if isinstance(schema_type, str):
-        return _NUMERIC_TYPE_DOMAINS.get(schema_type)
-    types = frozenset(schema_type)
-    if not types.issubset(_NUMERIC_TYPE_DOMAINS):
-        return None
-    return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
 
 
 def merge_primitive_schemas(parser: LightweightTypesHost, items: list[JsonSchemaObject]) -> JsonSchemaObject:

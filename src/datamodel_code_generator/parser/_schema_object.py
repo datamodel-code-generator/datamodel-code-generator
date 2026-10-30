@@ -735,3 +735,8 @@ EXCLUDE_FIELD_KEYS = (set(JsonSchemaObject.get_fields()) - DEFAULT_FIELD_KEYS - 
     _READ_AS_CONST_KEY,
     JsonSchemaObject.__extra_key__,
 }
+
+
+def _named_path(location: SchemaLocation | None, path: list[str]) -> list[str]:
+    """Return the path a message names: the schema location, or the parse path when the location is unknown."""
+    return path if location is None else [str(location)]
