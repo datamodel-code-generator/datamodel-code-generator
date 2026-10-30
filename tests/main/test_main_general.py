@@ -4580,6 +4580,45 @@ def test_all_exports_scope_children_jsonschema_hyphenated_package(output_dir: Pa
     )
 
 
+def test_reference_import_target_normalizes_hyphenated_module_names() -> None:
+    """Emit valid relative imports when a module path part contains a hyphen.
+
+    Regression test: a target module such as ``pkgout2.my-dir.b`` produced
+    ``from .my-dir import b``, which is not valid Python. The import module
+    name must be normalized to match the on-disk module name (hyphens become
+    underscores).
+    """
+
+    from datamodel_code_generator.parser._passes._shared import reference_import_target
+
+    target = reference_import_target(
+        "b",
+        "pkgout2.a",
+        "pkgout2.my-dir.b",
+        use_exact=True,
+        init=False,
+        internal_modules=set(),
+        base_class=False,
+        treat_dot_as_module=None,
+    )
+    assert target.from_ == ".my_dir"
+    assert target.import_ == "b"
+    assert target.full_path == (".my_dir", "b")
+
+    same_level = reference_import_target(
+        "b",
+        "pkgout2.my-dir.a",
+        "pkgout2.my-dir.b",
+        use_exact=True,
+        init=False,
+        internal_modules=set(),
+        base_class=False,
+        treat_dot_as_module=None,
+    )
+    assert same_level.from_ == "."
+    assert same_level.import_ == "b"
+
+
 def test_check_respects_pyproject_toml_settings(tmp_path: Path) -> None:
     """Test --check uses pyproject.toml formatter settings from output path.
 
