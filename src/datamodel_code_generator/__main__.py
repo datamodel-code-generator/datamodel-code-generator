@@ -166,6 +166,9 @@ if TYPE_CHECKING:
         StagedFile as _StagedFile,
     )
     from datamodel_code_generator._publication import (
+        StagedOutputs as _StagedOutputs,
+    )
+    from datamodel_code_generator._publication import (
         StagingDirectory as _StagingDirectory,
     )
     from datamodel_code_generator._structured_output import (
@@ -376,20 +379,18 @@ class BatchPlan(NamedTuple):
 
 
 class _StagedJobPlan(NamedTuple):
-    """One batch job with its generated artifacts redirected to staging."""
+    """One batch job with its generated artifacts redirected to staging, a check or target job with none."""
 
     plan: JobPlan
     config: Config
-    output: Path | None
-    staged_output: Path | None
-    resolved_output_root: Path | None
-    model_metadata: Path | None
-    staged_model_metadata: Path | None
-    resolved_model_metadata_root: Path | None
-    output_anchor: _PublicationAnchor | None
-    model_metadata_anchor: _PublicationAnchor | None
+    staging: _StagedOutputs | None
     staging_contexts: tuple[tempfile.TemporaryDirectory[str], ...]
     targets: list[Any] | None = None
+
+    @property
+    def output(self) -> Path | None:
+        """Return the output that the job publishes from its staging."""
+        return None if self.staging is None or self.staging.output is None else self.staging.output.target
 
 
 def _lock_parent(pyproject_path: Path | None) -> Path:
@@ -1940,54 +1941,24 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
 
     if plan.config.check or _selected_target(plan.config) is not None:
-        return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
+        return _StagedJobPlan(plan, plan.config, None, ())
 
-    output = plan.config.output
-    from datamodel_code_generator._publication import stage_artifact  # noqa: PLC0415
+    from datamodel_code_generator._publication import stage_outputs  # noqa: PLC0415
 
     contexts: list[tempfile.TemporaryDirectory[str]] = []
     anchors: list[_PublicationAnchor] = []
     try:
-        staged_output: Path | None = None
-        output_anchor: _PublicationAnchor | None = None
-        updates: dict[str, Path] = {}
-        if output is not None:
-            staged_output, output_anchor = stage_artifact(
-                output,
-                "output",
-                cast("Path", plan.resolved_output_root if output.is_dir() else plan.resolved_output_parent),
-                contexts,
-                anchors,
-            )
-            updates["output"] = staged_output
-        model_metadata = plan.config.emit_model_metadata
-        staged_model_metadata: Path | None = None
-        model_metadata_anchor: _PublicationAnchor | None = None
-        if model_metadata is not None:
-            staged_model_metadata, model_metadata_anchor = stage_artifact(
-                model_metadata,
-                "model-metadata.json",
-                cast("Path", plan.resolved_model_metadata_parent),
-                contexts,
-                anchors,
-            )
-            updates["emit_model_metadata"] = staged_model_metadata
-
-        staged_config = plan.config.model_copy(update=updates)
-        staged_config._logical_model_metadata = model_metadata  # noqa: SLF001
-        return _StagedJobPlan(
-            plan,
-            staged_config,
-            output,
-            staged_output,
-            plan.resolved_output_root,
-            model_metadata,
-            staged_model_metadata,
-            plan.resolved_model_metadata_root,
-            output_anchor,
-            model_metadata_anchor,
-            tuple(contexts),
+        staging = stage_outputs(
+            plan.config.output,
+            plan.config.emit_model_metadata,
+            (plan.resolved_output_root, plan.resolved_output_parent, plan.resolved_model_metadata_parent),
+            contexts,
+            anchors,
+            make_directory=False,
         )
+        staged_config = plan.config.model_copy(update=staging.updates)
+        staged_config._logical_model_metadata = plan.config.emit_model_metadata  # noqa: SLF001
+        return _StagedJobPlan(plan, staged_config, staging, tuple(contexts))
     except OSError as exc:
         from datamodel_code_generator._publication import release_all  # noqa: PLC0415
 
@@ -2032,9 +2003,11 @@ def _cleanup_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> tuple[O
         release_all((
             *(context for staged_plan in staged_plans for context in staged_plan.staging_contexts),
             *(
-                anchor
+                artifact.anchor
                 for staged_plan in staged_plans
-                for anchor in (staged_plan.output_anchor, staged_plan.model_metadata_anchor)
+                if staged_plan.staging is not None
+                for artifact in staged_plan.staging
+                if artifact is not None
             ),
         ))
     )
@@ -2056,23 +2029,7 @@ def _cleanup_job_transaction(
 
 def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
     """Return staged files paired with their final targets without removing directory extras."""
-    from datamodel_code_generator._publication import StagedFile, staged_artifact_files  # noqa: PLC0415
-
-    if staged_plan.staged_output is not None and staged_plan.output is not None:
-        yield from staged_artifact_files(
-            staged_plan.staged_output,
-            staged_plan.output,
-            cast("Path", staged_plan.resolved_output_root),
-            cast("Path", staged_plan.plan.resolved_output_parent),
-            staged_plan.output_anchor,
-        )
-    if staged_plan.staged_model_metadata is not None and staged_plan.model_metadata is not None:
-        yield StagedFile(
-            staged_plan.staged_model_metadata,
-            staged_plan.model_metadata,
-            cast("Path", staged_plan.plan.resolved_model_metadata_parent) / staged_plan.model_metadata.name,
-            staged_plan.model_metadata_anchor,
-        )
+    return iter(()) if staged_plan.staging is None else staged_plan.staging.files("fail")
 
 
 def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:
@@ -2102,13 +2059,14 @@ def _publish_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
 def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
     """Reject generated files whose concrete paths escape their preflighted output roots."""
     for staged_plan in staged_plans:
+        metadata = None if staged_plan.staging is None else staged_plan.staging.metadata
         for file in _staged_files(staged_plan):
             concrete_target = file.target.expanduser().resolve(strict=False)
             artifact_root = cast(
                 "Path",
-                staged_plan.resolved_model_metadata_root
-                if file.staged_file == staged_plan.staged_model_metadata
-                else staged_plan.resolved_output_root,
+                staged_plan.plan.resolved_model_metadata_root
+                if metadata is not None and file.staged_file == metadata.staged
+                else staged_plan.plan.resolved_output_root,
             )
             if concrete_target != artifact_root and artifact_root not in concrete_target.parents:
                 msg = (
@@ -2255,7 +2213,7 @@ def _run_staged_job(
         _batch_pyproject_context=staged_plan.plan.pyproject_context,
         _batch_pyproject_path=staged_plan.plan.pyproject_path,
         _batch_original_output=staged_plan.output,
-        _batch_output_is_staged=staged_plan.staged_output is not None,
+        _batch_output_is_staged=staged_plan.output is not None,
         _batch_targets=staged_plan.targets,
         _batch_job=staged_plan.plan.name,
         _remote_locks=remote_locks,
@@ -2373,7 +2331,7 @@ def _run_single_remote_transaction(  # noqa: PLR0913, PLR0917
                 if config.output is not None or config.emit_model_metadata is not None:
                     staged_plans = _stage_job_plans((_single_job_plan(config, pyproject_path),))
                 run_config, original_output, output_is_staged = (
-                    (staged_plans[0].config, staged_plans[0].output, staged_plans[0].staged_output is not None)
+                    (staged_plans[0].config, staged_plans[0].output, staged_plans[0].output is not None)
                     if staged_plans
                     else (config, None, False)
                 )
