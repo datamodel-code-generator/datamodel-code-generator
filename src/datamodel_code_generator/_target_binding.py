@@ -1190,8 +1190,7 @@ class _Binder:
         return _Reference(
             self.symbols[id(model)],
             model.IS_ALIAS,
-            self.serialize_as_any
-            and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
+            self.serialize_as_any and any(child.fields for child in model.reference.iter_data_model_children()),
         )
 
     @staticmethod

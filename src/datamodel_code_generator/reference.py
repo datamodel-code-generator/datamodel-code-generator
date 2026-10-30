@@ -40,6 +40,7 @@ from typing_extensions import TypeIs, override
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
+from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._records import record
@@ -65,7 +66,6 @@ if TYPE_CHECKING:
     import inflect
 
     from datamodel_code_generator.model import base as model_base
-    from datamodel_code_generator.types import DataType
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
@@ -141,13 +141,6 @@ def get_inferred_module_name(
     return ".".join(parts[:-1])
 
 
-def _is_data_type(value: object) -> TypeIs[DataType]:
-    """Check if value is a DataType instance."""
-    from datamodel_code_generator.types import DataType as DataType_  # noqa: PLC0415
-
-    return isinstance(value, DataType_)
-
-
 def _is_data_model(value: object) -> TypeIs[model_base.DataModel]:
     """Check if value is a DataModel instance."""
     from datamodel_code_generator.model.base import DataModel as DataModel_  # noqa: PLC0415
@@ -159,10 +152,9 @@ def _is_data_model(value: object) -> TypeIs[model_base.DataModel]:
 class ReferenceChild(Protocol):
     """Protocol for objects that can be stored in Reference.children.
 
-    This is a minimal protocol - actual usage checks isinstance for DataType
-    or DataModel to access specific methods like replace_reference or class_name.
-    Using a property makes the type covariant, allowing both DataModel (Reference)
-    and DataType (Reference | None) to satisfy this protocol.
+    This is a minimal protocol: `_graph_links.py` tells a DataType child by its replace_reference method, and
+    `Reference.iter_data_model_children` checks isinstance for DataModel. Using a property makes the type covariant,
+    allowing both DataModel (Reference) and DataType (Reference | None) to satisfy this protocol.
     """
 
     @property
@@ -288,9 +280,8 @@ class Reference(_BaseModel):
 
     def replace_children_references(self, new_reference: Reference) -> None:
         """Replace all DataType children's reference with new_reference."""
-        for child in self.children[:]:
-            if _is_data_type(child):
-                child.replace_reference(new_reference)
+        for child in data_type_children(self):
+            child.replace_reference(new_reference)
 
     def iter_data_model_children(self) -> Iterator[Any]:
         """Yield all DataModel children."""

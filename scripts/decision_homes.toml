@@ -404,6 +404,19 @@ decision = "model identity, holders and shared nodes of the generation graph"
 core = ["parser/_graph_ids.py", "parser/generation.py"]
 adapters = []
 
+[homes.Hx-reference-children]
+decision = "which data types and models name a Reference (its back links, Reference.children): how a child is added, dropped and told apart, and which children the store redirects"
+core = ["_graph_links.py", "reference.py:Reference.iter_data_model_children"]
+adapters = []
+
+[homes.Hx-reference-children.signatures.children-access]
+kind = "name"
+names = ["children"]
+ctx = "any"
+receivers = ["reference", "old_reference", "new_reference"]
+what = "reads or writes Reference.children itself; call _graph_links.py (add_child, drop_child, data_type_children) or Reference.iter_data_model_children"
+audit = "C11-K01"
+
 [homes.H23]
 decision = "whether a type's rendered hint, or the annotation a field writes around it, includes None"
 core = ["model/_decisions/nullability.py"]

@@ -74,6 +74,8 @@ REFERENCE_METHODS = frozenset(
         "set_reference_path",
     },
 )
+CHILDREN_READER = "data_type_children"
+CHILDREN_READ_MESSAGE = "use GenerationIndex reverse-edge queries instead of Reference.children"
 SEQUENCE_OWNERS = frozenset({"base_classes", "fields"})
 SEQUENCE_MUTATORS = frozenset({"append", "clear", "extend", "insert", "pop", "remove", "reverse", "sort"})
 CONTAINER_MUTATORS = frozenset({
@@ -776,9 +778,11 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
-        """Check mutating method calls and ``setattr`` with a literal name."""
+        """Check mutating method calls, ``setattr`` with a literal name and reads of the data-type children."""
         if isinstance(node.func, ast.Attribute):
             self._check_method_call(node, node.func.attr, node.func.value)
+        if _attribute_chain(node.func)[-1:] == (CHILDREN_READER,) and self._checks_fact_writes:
+            self._add(node, "children (read)", CHILDREN_READ_MESSAGE)
         if ".".join(_attribute_chain(node.func)) in self.setattr_functions and len(node.args) > 1:
             match node.args[1]:
                 case ast.Constant(value=str() as attribute):
@@ -792,7 +796,7 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
     def visit_Attribute(self, node: ast.Attribute) -> None:
         """Check direct ``Reference.children`` reads."""
         if node.attr == "children" and isinstance(node.ctx, ast.Load) and self._checks_fact_writes:
-            self._add(node, "children (read)", "use GenerationIndex reverse-edge queries instead of Reference.children")
+            self._add(node, "children (read)", CHILDREN_READ_MESSAGE)
         self.generic_visit(node)
 
     def _check_method_call(self, node: ast.Call, method: str, owner: ast.expr) -> None:

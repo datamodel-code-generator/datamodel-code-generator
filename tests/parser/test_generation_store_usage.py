@@ -454,6 +454,7 @@ def mutate(model, field, data_type, ref):
     model.base_classes = []
     model.reference.children
     field.replace_data_type(data_type)
+    data_type_children(model.reference)
 """,
     )
 
@@ -468,6 +469,7 @@ def mutate(model, field, data_type, ref):
             (7, 5, "use GenerationStore.set_base_classes() instead of assigning base_classes"),
             (8, 5, "use GenerationIndex reverse-edge queries instead of Reference.children"),
             (9, 5, "use GenerationStore API instead of replace_data_type()"),
+            (10, 5, "use GenerationIndex reverse-edge queries instead of Reference.children"),
         ],
     )
 
