@@ -22,13 +22,19 @@ adapters = [
     "parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings",
     "parser/jsonschema.py:JsonSchemaParser._merge_properties_with_parent_constraints",
     "parser/jsonschema.py:_intersect_dumps",
-    "parser/jsonschema.py:JsonSchemaParser._intersect_constraint",
+    "parser/_lightweight_types.py:_intersect_constraint",
 ]
 
 [homes.H03.signatures.merge-function]
 kind = "function"
-pattern = "^_merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py"]
+pattern = "^_?merge"
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py", "parser/_lightweight_types.py"]
+exclude = [
+    "parser/_lightweight_types.py:LightweightTypesHost",
+    "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas",
+    "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas_for_allof",
+    "parser/jsonschema.py:JsonSchemaParser._merge_schema_constraints",
+]
 what = "a function that merges schema keywords itself; call parser/_intersection.py:intersect_keywords"
 audit = "D-L1-18"
 
@@ -48,7 +54,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py", "parser/_lightweight_types.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
@@ -2016,6 +2022,15 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
 
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_primitive_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_primitive_schemas_for_allof"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_schema_constraints"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
 [allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
 "H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
 
@@ -2113,17 +2128,8 @@ fix = "#5579"
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-15" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas_for_allof"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_ref_with_schema"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_schema_constraints"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_value_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
