@@ -542,6 +542,11 @@ class Parser:
         copied.required = []
         obj = build()
         obj.nullable = True
+
+
+def concern_function(parser: Host) -> None:
+    merged = parser._schema_object({})
+    merged.__dict__["key"] = 1
 """,
     )
 

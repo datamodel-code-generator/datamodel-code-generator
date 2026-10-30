@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import enum as _enum
 from functools import cached_property, lru_cache
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union, cast
 
 from pydantic import (
     ConfigDict,
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from pydantic_core import CoreSchema
     from typing_extensions import Self, TypeIs
 
+    from datamodel_code_generator.parser._schema_graph import SchemaNodeId
     from datamodel_code_generator.reference import SchemaLocation
 
 __all__ = [
@@ -740,3 +741,8 @@ EXCLUDE_FIELD_KEYS = (set(JsonSchemaObject.get_fields()) - DEFAULT_FIELD_KEYS - 
 def _named_path(location: SchemaLocation | None, path: list[str]) -> list[str]:
     """Return the path a message names: the schema location, or the parse path when the location is unknown."""
     return path if location is None else [str(location)]
+
+
+def _schema_node(schema: JsonSchemaObject, resolved_ref: str) -> SchemaNodeId | str:
+    """Return the schema graph node a loaded schema object stands for, or its key when it has no location."""
+    return resolved_ref if (location := schema.schema_location) is None else cast("SchemaNodeId", location)

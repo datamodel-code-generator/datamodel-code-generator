@@ -4,7 +4,7 @@ The order of an item is the item, then the C3 merge of the orders of its parents
 caller names its rule (``C3Rule``):
 
 * ``first-head``: the order the generator gives models and their raw schemas (`model/base.py:linearize_data_models`,
-  `parser/jsonschema.py:JsonSchemaParser._linearize_inherited_schema_refs`). Where no head is free the merge takes
+  `parser/_inherited_schemas.py:linearize_inherited_schema_refs`). Where no head is free the merge takes
   the first one, and a walk that meets an item it is still linearizing takes it there without its parents, so every
   input has an order.
 * ``python``: Python's method resolution order, or None where Python refuses a class: an inheritance cycle or parents
