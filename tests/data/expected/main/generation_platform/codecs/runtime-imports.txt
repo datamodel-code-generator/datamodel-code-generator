@@ -65,7 +65,7 @@ protocols/webhook_events.py: ..client.errors, ..client.operations, ..model_codec
 protocols/webhook_keys.py: ..client.errors, .records, __future__, re, typing
 protocols/webhooks.py: ..client.timing, ..model_codecs.unset, __future__, dataclasses, datetime, typing, typing_extensions
 protocols/websocket.py: ..client.errors, ..client.logical, ..client.operations, ..client.raw, ..client.responses, ..client.timing, .client, .errors, .options, .records, .references, __future__, anyio, base64, collections.abc, contextlib, dataclasses, functools, httpcore2, httpx2, httpx2.websockets, os, socket, threading, time, types, typing, typing_extensions, wsproto.connection, wsproto.events, wsproto.utilities
-protocols/writes.py: ..client.operations, ..client.paths, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
+protocols/writes.py: ..client.operations, ..client.paths, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .records, .values, __future__, abc, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
 server/application.py: __future__, annotationlib, collections.abc, dataclasses, fastapi, fastapi.encoders, fastapi.exceptions, fastapi.params, fastapi.routing, inspect, pathlib, starlette.concurrency, starlette.requests, starlette.responses, starlette.routing, starlette.types, sys, typing, typing_extensions, urllib.parse
 server/errors.py: __future__, fastapi.exceptions, pydantic, typing

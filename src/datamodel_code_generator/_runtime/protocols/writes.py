@@ -21,12 +21,28 @@ from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch, written
 
 if TYPE_CHECKING:
+    from abc import abstractmethod
     from collections.abc import Callable, Iterable, Mapping, Sequence
+    from typing import Protocol
 
     from ..client.operations import OperationPlan
     from ..model_codecs.media import JSONValue
     from .errors import Refuse
     from .records import RequestTarget, Selector
+
+    class DottedPaths(Protocol):
+        """An operation a helper writes read values into, with the path segments they are written to."""
+
+        @property
+        @abstractmethod
+        def call(self) -> OperationPlan[Any]:
+            """Return the operation whose parameters encode the values."""
+
+        @property
+        @abstractmethod
+        def dotted(self) -> ReadPaths:
+            """Return the path segments a read value is written to, as `read_paths` gives them."""
+
 
 __all__ = (
     "PatchedMedia",
@@ -310,12 +326,27 @@ def targeted_writes(
     return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
-def dotted_write(targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> Selector | None:
-    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
-    return dotted_path(targeted.call.parameters, targeted.dotted, written)
+def dotted_write(
+    targeted: DottedPaths, written: tuple[JSONValue, ...], callers: Callable[[], Mapping[str, str]] = dict
+) -> Selector | None:
+    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None.
+
+    `targeted` is a targeted operation or a helper's plan; the caller's own path arguments keep the texts `callers`
+    gives.
+    """
+    return dotted_path(targeted.call.parameters, targeted.dotted, written, callers)
 
 
-def refuse_dotted(targeted: Targeted[Any], written: tuple[JSONValue, ...], refuse: Refuse) -> None:
-    """Refuse a read value that makes a path segment a dot segment once encoded, as a value a server gave."""
-    if (read := dotted_write(targeted, written)) is not None:
+def refuse_dotted(
+    targeted: DottedPaths,
+    written: tuple[JSONValue, ...],
+    refuse: Refuse,
+    callers: Callable[[], Mapping[str, str]] = dict,
+) -> None:
+    """Refuse a read value that makes a path segment a dot segment once encoded, as a value a server gave.
+
+    `targeted` is a targeted operation or a helper's plan; the caller's own path arguments keep the texts `callers`
+    gives.
+    """
+    if (read := dotted_write(targeted, written, callers)) is not None:
         raise refuse(read, "value")

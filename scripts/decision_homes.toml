@@ -1056,6 +1056,29 @@ paths = ["_client/"]
 what = "spells the options keyword or class of a helper kind itself; read client/naming.py:HELPER_KINDS and runtime protocols/options.py:_KIND_OPTIONS"
 audit = "C26-7"
 
+[homes.Hx-binding-values]
+decision = "the values a protocol helper's bindings write into a later request: each selector's value read from a response that must give it, and a read value that makes a path segment a dot segment once encoded refused as a value the server gave"
+core = [
+    "_runtime/protocols/pagination.py:required_values",
+    "_runtime/protocols/writes.py:dotted_write",
+    "_runtime/protocols/writes.py:refuse_dotted",
+]
+adapters = []
+
+[homes.Hx-binding-values.signatures.binding-read]
+kind = "call"
+names = ["bound_values"]
+paths = ["_runtime/protocols/"]
+what = "reads the values bindings write itself; call protocols/pagination.py:required_values (or targeted_values)"
+audit = "C27-B1"
+
+[homes.Hx-binding-values.signatures.dot-segment-refusal]
+kind = "call"
+names = ["dotted_path"]
+paths = ["_runtime/protocols/"]
+what = "looks for a read value that makes a path segment a dot segment itself; call protocols/writes.py:refuse_dotted"
+audit = "C27-B2"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.
