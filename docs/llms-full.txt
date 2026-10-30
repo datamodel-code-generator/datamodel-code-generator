@@ -69127,8 +69127,8 @@ right one.
   keys from the object itself and takes its keys from `propertyNames`, the object models of the validators join the
   other types of a type array, and a pattern checks every declared key whose schema does not imply its own
   (`_pattern_checks_declared_key`); without it the 0.86.0 field, the object models without the other types and the
-  0.86.0 proof of a pattern that checks a declared key (`_pattern_rejects_declared_value`) are kept. The builder's
-  key and null rules reach the field under `--use-single-dict-for-object-maps`.
+  0.86.0 proof of a pattern that checks a declared key (`parser/_schema_validators.py:pattern_rejects_declared_value`)
+  are kept. The builder's key and null rules reach the field under `--use-single-dict-for-object-maps`.
 - **[#4835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4835)** (keys outside the
   patterns): `parse_pattern_properties` took no `additionalProperties`, so an open pattern map typed only the keys of
   its patterns and rejected every other key, although the schema types them by `additionalProperties`. The builder
