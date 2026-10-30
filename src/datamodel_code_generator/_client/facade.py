@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client._compiled_templates import facade as facade_template
+from datamodel_code_generator._python_syntax import set_display
 from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ def statement(module: str, names: Iterable[str]) -> str:
 
 def name_set(values: Iterable[str]) -> str:
     """Return the set literal of names, in the order given."""
-    return f"{{{', '.join(map(repr, values))}}}"
+    return set_display(map(repr, values))
 
 
 def facade_module(  # noqa: PLR0913

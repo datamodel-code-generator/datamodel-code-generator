@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
-from datamodel_code_generator._python_syntax import call_text, list_display, tuple_display
+from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
 from datamodel_code_generator._target_unicode import is_dotted_python_name
 
 if TYPE_CHECKING:
@@ -312,13 +312,11 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
     """
     match value:
         case dict():
-            return "{" + ", ".join(f"{render(key)}: {render(item)}" for key, item in value.items()) + "}"
+            return dict_display((render(key), render(item)) for key, item in value.items())
         case list():
             return list_display(map(render, value))
         case tuple():
             return tuple_display(map(render, value))
-        case set() if not value:
-            return "set()"
         case set():
             from operator import itemgetter  # noqa: PLC0415
 
@@ -328,7 +326,7 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
                 for text in (render(item),)
             ]
             rows.sort(key=itemgetter(0, 1))
-            return "{" + ", ".join(text for _, _, text in rows) + "}"
+            return set_display(text for _, _, text in rows)
     return None
 
 

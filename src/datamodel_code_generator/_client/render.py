@@ -43,7 +43,7 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._python_syntax import call_text, tuple_display
+from datamodel_code_generator._python_syntax import call_text, set_display, tuple_display
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range, status_key
 from datamodel_code_generator._target_contract import UnionType
@@ -1845,7 +1845,7 @@ class _Types(_Typing):
         decoders = module.local(_CODECS, "ResponseHeaders")
         absent = unset if missing else module.name("typing_extensions", "Never")
         annotation = f"{module.name('typing', 'Final')}[{decoders}[{module.union(*every)}, {absent}]]"
-        keys = ", ".join(repr(response.status) for response in spec.responses)
+        statuses = set_display(repr(response.status) for response in spec.responses)
         info = module.local("responses", "ResponseInfo")
         literal = module.name("typing", "Literal")
         overloads = (
@@ -1858,7 +1858,7 @@ class _Types(_Typing):
             annotation=annotation,
             decoders=decoders,
             operation_id=repr(spec.operation_id),
-            statuses=f"frozenset({{{keys}}})",
+            statuses=f"frozenset({statuses})",
             entries=tuple_display(entries),
             function=f"decode_{spec.name}_header",
             info=info,
@@ -2179,7 +2179,7 @@ class _Registry(_Typing):
             ("", tuple_display(errors)),
         ]
         if spec.success_statuses:
-            entries.append(("success_statuses=", f"frozenset({{{', '.join(map(str, spec.success_statuses))}}})"))
+            entries.append(("success_statuses=", f"frozenset({set_display(map(str, spec.success_statuses))})"))
         if spec.head:
             entries.append(("head=", "True"))
         return _call(module.local(_RUNTIME, "ResponseDecoder"), entries)

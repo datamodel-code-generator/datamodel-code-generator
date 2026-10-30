@@ -19,7 +19,7 @@ from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, dict_display
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
@@ -284,10 +284,8 @@ class _Webhooks:
         if first.name is None:
             return module.union(*types), self.decoder(module, first)
         pointer = spec.helper.tree["event_schema"]["discriminator"]["pointer"]
-        mapping = ", ".join(f"{event.name!r}: {self.decoder(module, event)}" for event in spec.events)
-        return module.union(*types), call_text(
-            module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), f"{{{mapping}}}")
-        )
+        mapping = dict_display((repr(event.name), self.decoder(module, event)) for event in spec.events)
+        return module.union(*types), call_text(module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), mapping))
 
     @staticmethod
     def plan(module: TargetModule, spec: WebhookSpec, event: str, decoder: str) -> tuple[str | None, Plan]:
