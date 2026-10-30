@@ -52,9 +52,9 @@ from datamodel_code_generator import (
     cached_path_exists,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator._constraint_applicability import (
-    overridden_declared_constraints,
-    resplit_overridden_constraints,
-    untaken_minimums,
+    overridden_declared_constraints,  # noqa: F401  # Preserve the established parser.base export.
+    resplit_overridden_constraints,  # noqa: F401  # Preserve the established parser.base export.
+    untaken_minimums,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
@@ -69,7 +69,9 @@ from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
 )
-from datamodel_code_generator._requirements import REQUIREMENTS
+from datamodel_code_generator._requirements import (
+    REQUIREMENTS,  # noqa: F401  # Preserve the established parser.base export.
+)
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -95,7 +97,6 @@ from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
     DefaultValueType,
     StrictTypes,
-    _pydantic_version_key,
 )
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -106,7 +107,7 @@ from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFact
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     BaseClassDataType,  # noqa: F401  # Preserve the established parser.base export.
-    ConstraintsBase,
+    ConstraintsBase,  # noqa: F401  # Preserve the established parser.base export.
     DataModel,
     DataModelFieldBase,
     _bind_builtin_names,
@@ -121,7 +122,7 @@ from datamodel_code_generator.model.enum import escape_characters as _enum_escap
 from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
-from datamodel_code_generator.parser import _inheritance_check
+from datamodel_code_generator.parser import _inheritance_check, _type_overrides
 from datamodel_code_generator.parser._field_copies import (
     _copy_data_model_field,
     _copy_resolved_inherited_field,
@@ -161,7 +162,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
-    _TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    _TYPE_DEPENDENT_CONSTRAINTS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     DiscriminatorValue,
     _assign_module_name,
     _data_types_beside_fields,
@@ -180,7 +181,7 @@ from datamodel_code_generator.parser._passes._shared import (
     apply_inherited_field_default,
     enum_discriminator_literal,
     enum_discriminator_members,
-    enum_site_override_import,
+    enum_site_override_import,  # noqa: F401  # Preserve the established parser.base export.
     field_name_model_type_of,
     normalize_default_value_constraints,
     placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
@@ -564,29 +565,6 @@ def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_cod
             stacklevel=1,
         )
         return body
-
-
-_QUALIFIED_PYTHON_TYPE_IMPORT_ALIASES = {
-    "pydantic.main.BaseModel": Import.from_full_path("pydantic.BaseModel"),
-}
-
-
-def _parse_override_annotation(value: str) -> PythonTypeExpr | None:
-    """Return the annotation a ``--type-overrides`` value spells, or None when it is no annotation."""
-    from datamodel_code_generator._python_type_annotation_codec import (  # noqa: PLC0415
-        parse_python_type_annotation,
-    )
-
-    return parse_python_type_annotation(value)
-
-
-def _qualified_python_type_import(qualified_name: str) -> Import:
-    return _QUALIFIED_PYTHON_TYPE_IMPORT_ALIASES.get(qualified_name) or Import.from_full_path(qualified_name)
-
-
-def _override_path(override_import: Import) -> str:
-    """Return the path a ``--type-overrides`` value spells, which its import splits at the last dot."""
-    return f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
 
 
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
@@ -1207,37 +1185,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         A standard-library type that the target lacks is an error, as for ``x-python-type``.
         """
-        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            PythonTypeUnavailableError,
-            get_qualified_python_type_import_path,
-        )
-
-        try:
-            return get_qualified_python_type_import_path(path, self.target_python_version.version_key)
-        except PythonTypeUnavailableError as exc:
-            raise Error(str(exc)) from exc
+        return _type_overrides.get_target_python_type_path(self, path)
 
     def _get_emitted_python_type_path(self, path: str) -> str:
         """Return a user-named type path for the target, rejecting a type the target lacks only once output imports it.
 
         A type that an override replaces or that no model uses emits no import, so it is left alone.
         """
-        try:
-            return self._get_target_python_type_path(path)
-        except Error as exc:
-            import_ = Import.from_full_path(path)
-            self._unavailable_imports[import_.from_, import_.import_] = str(exc)
-            return path
+        return _type_overrides.get_emitted_python_type_path(self, path)
 
     def _reject_unavailable_imports(self, contexts: Sequence[ModuleContext]) -> None:
         """Reject output that imports a type the target lacks, after overrides, unused models and import remapping.
 
         The first such type in schema order is reported, so the message does not depend on set iteration order.
         """
-        all_imports = (self.imports, *(ctx.imports for ctx in contexts))
-        for (from_, name), message in self._unavailable_imports.items():
-            if any(name in imports.get(from_, ()) for imports in all_imports):
-                raise Error(message)
+        _type_overrides.reject_unavailable_imports(self, contexts)
 
     def _split_field_alias(  # noqa: PLR6301
         self,
@@ -1610,30 +1572,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _resolve_type_import(self, type_name: str) -> Import | None:
         """Resolve a type through target-stable metadata, never host imports."""
-        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            PythonTypeUnavailableError,
-            get_python_type_import_path,
-        )
-
-        try:
-            import_path = get_python_type_import_path(type_name, self.target_python_version.version_key)
-        except PythonTypeUnavailableError as exc:
-            raise Error(str(exc)) from exc
-        if import_path:
-            return Import.from_full_path(import_path)
-        return None
+        return _type_overrides.resolve_type_import(self, type_name)
 
     def _is_target_python_builtin_type(self, type_name: str) -> bool:
         """Recognize builtins against the target version, never the host runtime."""
-        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            is_python_builtin_type_name,
-        )
-
-        return is_python_builtin_type_name(type_name, self.target_python_version.version_key)
+        return _type_overrides.is_target_python_builtin_type(self, type_name)
 
     def _resolve_qualified_type_import(self, qualified_name: str) -> Import:
         """Resolve known stdlib paths against the target without host imports."""
-        return _qualified_python_type_import(self._get_target_python_type_path(qualified_name))
+        return _type_overrides.resolve_qualified_type_import(self, qualified_name)
 
     def _resolve_type_import_from_defs(  # noqa: PLR6301
         self,
@@ -1649,79 +1596,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Keep the IR through internal stages: rendering and reparsing here would
         incorrectly make the host AST/tokenizer an authority for target syntax.
         """
-        # Binding is exclusive to x-python-type. Import it only after that
-        # extension is present so ordinary schema generation keeps its fast path.
-        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-            PythonTypeBoundName,
-            PythonTypeExpr,
-            PythonTypeName,
-            PythonTypeQualifiedName,
-            PythonTypeRuntimeSymbol,
-            read_literal_enum_members,
-            rewrite_python_type_expr,
-        )
-        from datamodel_code_generator._python_type_binding import (  # noqa: PLC0415
-            BoundPythonType,
-            python_type_import_key,
-            python_type_import_name,
-        )
-
-        imports: dict[Import, None] = {}
-        bound_imports: dict[tuple[str | None, str], Import] = {}
-        resolved_name_imports: dict[str, Import | PythonTypeExpr | None] = {}
-        resolving_names: set[str] | None = None
-
-        def bind_import(import_: Import) -> tuple[Import, str]:
-            key = python_type_import_key(import_)
-            if (bound_import := bound_imports.get(key)) is not None:
-                return bound_import, python_type_import_name(bound_import)
-
-            name = python_type_import_name(import_)
-            bound_imports[key] = import_
-            imports.setdefault(import_, None)
-            return import_, name
-
-        def bind_leaf(item: PythonTypeExpr) -> PythonTypeExpr:
-            nonlocal resolving_names
-            match item:
-                case PythonTypeQualifiedName():
-                    import_, name = bind_import(self._resolve_qualified_type_import(".".join(item.parts)))
-                    return PythonTypeBoundName(name, import_.from_, import_.import_)
-                case PythonTypeRuntimeSymbol(module=module) if module:
-                    import_, _ = bind_import(Import(import_=module))
-                    return PythonTypeRuntimeSymbol(import_.alias, item.qualname_parts) if import_.alias else item
-                case PythonTypeName(value=name):
-                    if name not in resolved_name_imports:
-                        try:
-                            is_builtin = self._is_target_python_builtin_type(name)
-                            import_ = None if is_builtin else self._resolve_type_import(name)
-                        except Error:
-                            if not (import_ := self._resolve_type_import_from_defs(name)):
-                                raise
-                            resolved_name_imports[name] = import_
-                        else:
-                            resolved_name_imports[name] = (
-                                None if is_builtin else import_ or self._resolve_type_import_from_defs(name)
-                            )
-                    if isinstance(resolved := resolved_name_imports[name], PythonTypeExpr):
-                        if resolving_names is None:
-                            resolving_names = set()
-                        if name in resolving_names:
-                            msg = f"Cyclic x-python-import type expression involving {name!r}"
-                            raise Error(msg)
-                        resolving_names.add(name)
-                        try:
-                            return rewrite_python_type_expr(read_literal_enum_members(resolved), bind_leaf)
-                        finally:
-                            resolving_names.remove(name)
-                    if resolved:
-                        import_, bound_name = bind_import(resolved)
-                        return PythonTypeBoundName(bound_name, import_.from_, import_.import_)
-            return item
-
-        return BoundPythonType(
-            rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports)
-        )
+        return _type_overrides.bind_python_type(self, expression)
 
     def _override_annotation(self, override_import: Import, *, is_optional: bool = False) -> DataType | None:
         """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class.
@@ -1730,18 +1605,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ``x-python-type`` writes it, with the imports of its names and the keywords that type takes. A value with
         brackets that is no annotation is an error, as it has no import to write either.
         """
-        path = _override_path(override_import)
-        if "[" not in path:
-            return None
-        if (expression := _parse_override_annotation(path)) is None:
-            msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
-            raise Error(msg)
-        from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-
-        bound_type = self._bind_python_type(expression)
-        return self.data_type(
-            type=render_python_type_expr(bound_type.expression), python_type=bound_type, is_optional=is_optional
-        )
+        return _type_overrides.override_annotation(self, override_import, is_optional=is_optional)
 
     def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
         """Apply override to entire field's data_type, keeping type-dependent constraints that the new type takes.
@@ -1753,50 +1617,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         as ``pydantic.conint``; a known class takes none, so they are left out, and so are those of the nested types the
         override replaces. An output model that writes ``Field()`` arguments warns about the ones it leaves out.
         """
-        if (
-            data_type := self._override_annotation(override_import, is_optional=field.data_type.is_optional)
-        ) is not None:
-            self._record_overridden_constraints(field, keeps_top_kwargs=False)
-            self._decide_overridden_constraints(
-                field,
-                partial(self.data_type_manager.constraint_keywords, data_type, self.target_python_version.version_key),
-            )
-            self._graph_builder.replace_field_type(field, data_type)
-            return
-        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            is_known_python_type_path,
-        )
-
-        data_type = _copy_data_type(field.data_type)
-        data_type.import_ = override_import
-        data_type.alias = override_import.import_
-        path = _override_path(override_import)
-        if data_type.kwargs and is_known_python_type_path(path, self.target_python_version.version_key):
-            data_type.kwargs = None
-        self._record_overridden_constraints(field, keeps_top_kwargs=data_type.kwargs is not None)
-        self._decide_overridden_constraints(
-            field,
-            partial(self.data_type_manager.type_constraint_keywords, path, self.target_python_version.version_key),
-        )
-        self._graph_builder.replace_field_type(field, data_type)
-        self._graph_builder.detach_data_type_ref(field.data_type)
-        self._graph_builder.set_nested_data_types(field.data_type, [])
+        _type_overrides.apply_override_to_field(self, field, override_import)
 
     def _record_overridden_constraints(self, field: DataModelFieldBase, *, keeps_top_kwargs: bool) -> None:
         """Remember how many ``con*`` arguments the override of a field drops, to warn about them.
 
         The ``con*`` call of the field's own type stays where ``keeps_top_kwargs``; those of its nested types leave.
         """
-        if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS and (
-            dropped := [
-                name
-                for nested in field.data_type.all_data_types
-                if nested is not field.data_type or not keeps_top_kwargs
-                for name in nested.kwargs or ()
-                if name != "strict"
-            ]
-        ):
-            field.record_overridden_constraints(field.data_type.type_hint, len(dropped))
+        _type_overrides.record_overridden_constraints(self, field, keeps_top_kwargs=keeps_top_kwargs)
 
     def _decide_overridden_constraints(
         self, field: DataModelFieldBase, keywords: Callable[..., frozenset[str]]
@@ -1810,36 +1638,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         leaves out to warn about them. The untaken constraints of the members, items and values that collapsing inlines
         into the field leave with the type the override replaces.
         """
-        type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
-        constraints = field.constraints
-        is_model = isinstance(constraints, ConstraintsBase)
-        values = {
-            key: value
-            for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
-            if value is not None
-        }
-        declared = (
-            overridden_declared_constraints(
-                values, type_dependent=type_dependent, untaken=field.pop_untaken_constraints()
-            )
-            if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
-            else {}
-        )
-        if not type_dependent and not declared:
-            return
-        values, untaken = resplit_overridden_constraints(
-            values,
-            type_dependent=type_dependent,
-            declared=declared,
-            taken=keywords(),
-            declared_taken=keywords(number_values=True, target_model_version=self.target_pydantic_version),
-        )
-        self._mark_untaken_constraints(
-            field, untaken, lambda minimum: keywords(number_values=True, target_model_version=minimum)
-        )
-        self._graph_builder.set_field_constraints(
-            field, type(constraints).model_validate(values) if is_model else values
-        )
+        _type_overrides.decide_overridden_constraints(self, field, keywords)
 
     def _mark_untaken_constraints(
         self,
@@ -1851,50 +1650,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         ``keywords_for`` returns the number keywords the field's type takes for an explicit target model version.
         """
-        if not untaken:
-            return
-        field.record_untaken_constraints(
-            untaken,
-            untaken_minimums(
-                untaken,
-                (
-                    (minimum, keywords_for(minimum))
-                    for minimum in sorted(
-                        {
-                            REQUIREMENTS[construct].minimum
-                            for construct, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()
-                        },
-                        key=_pydantic_version_key,
-                    )
-                ),
-            ),
-        )
+        _type_overrides.mark_untaken_constraints(self, field, untaken, keywords_for)
 
     def _apply_override_to_data_type(self, data_type: DataType) -> bool:
         """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first."""
-        overridden = False
-        if (reference := data_type.reference) and (
-            override_import := self._base_stand_in_imports.get(model_key_of(reference))
-            or self._model_type_override_imports.get(reference.name)
-            or enum_site_override_import(self, reference)
-        ):
-            if (annotation := self._override_annotation(override_import)) is None:
-                self._graph_builder.override_type_import(data_type, override_import)
-                data_type.alias = override_import.binding_name
-                self._graph_builder.detach_data_type_ref(data_type)
-            else:
-                self._graph_builder.name_reference(data_type, annotation.type_hint)
-                self._graph_builder.detach_data_type_ref(data_type)
-                self._graph_builder.set_type_expressions(
-                    data_type, type_=annotation.type, python_type=annotation.python_type
-                )
-            overridden = True
-        # Handle nested types (List[CustomType], Optional[CustomType], etc.)
-        for nested in data_type.data_types:
-            overridden = self._apply_override_to_data_type(nested) or overridden
-        if data_type.dict_key:
-            overridden = self._apply_override_to_data_type(data_type.dict_key) or overridden
-        return overridden
+        return _type_overrides.apply_override_to_data_type(self, data_type)
 
     @property
     def _result_modules_postprocessor(self) -> Callable[..., dict[tuple[str, ...], Result]]:
