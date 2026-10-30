@@ -438,9 +438,15 @@ what = "escapes or unescapes a JSON Pointer token itself; call _json_pointer.py 
 audit = "C01"
 
 [homes.Hx-pointer-members]
-decision = "which member of a loaded document one JSON Pointer token names (list index grammar, integer YAML keys)"
-core = ["_document_reader.py:member", "_document_reader.py:descend"]
+decision = "which member of a loaded document one JSON Pointer token names (list index grammar, integer YAML keys, the tokens that are errors and not misses)"
+core = ["_document_reader.py:member", "_document_reader.py:descend", "_document_reader.py:_array_item"]
 adapters = []
+
+[homes.Hx-pointer-members.signatures.index-grammar]
+kind = "call"
+names = ["is_array_index"]
+what = "reads a list item by the JSON Pointer index grammar itself; pick a row of _document_reader.member"
+audit = "C01"
 
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
