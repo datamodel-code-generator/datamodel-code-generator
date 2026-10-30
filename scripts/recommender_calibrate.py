@@ -664,6 +664,7 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
     from datamodel_code_generator.base_config import BaseGenerateConfig  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.preset import (  # ruff: ignore[import-outside-top-level]
         PresetContext,
+        _pyproject_values,  # ruff: ignore[import-private-name]
         resolve_preset_config_updates,
     )
 
@@ -675,7 +676,7 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
     resolved = resolve_preset_config_updates(
         settings.preset, context=context, use_annotated=False, explicit_fields=set()
     )
-    preset = {item.field_name: item.pyproject_value for item in resolved.items}
+    preset = _pyproject_values(resolved.items)
     fields = BaseGenerateConfig.model_fields
     return {
         name: preset[name]
