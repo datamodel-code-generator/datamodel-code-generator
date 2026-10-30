@@ -15,17 +15,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._option_names import option_flag, toml_value
+from datamodel_code_generator._option_names import configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
     OptionValue,
     decide,
     load_rules,
     option_arguments,
+    values_arguments,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
@@ -279,8 +280,7 @@ def _analyse(request: RecommendRequest) -> _Input:
 
 
 def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
-    arguments = [argument for name, value in values.items() for argument in option_arguments(name, value) or ()]
-    return Option(decision, dict(values), arguments)
+    return Option(decision, dict(values), values_arguments(values))
 
 
 def _avoided(decision: Decision) -> Option:
@@ -317,7 +317,7 @@ def _plan(
     config = request.config
     preset_values = {} if configured else _preset_values(preset, request)
     baseline = {
-        name: preset_values[name] if name in preset_values else toml_value(getattr(config, name))
+        name: preset_values[name] if name in preset_values else configured_value(config, name)
         for decision in decisions
         for name in decision.values
     }
@@ -388,7 +388,7 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
         for decision in decisions
         if not decision.contested and decision.rule.optional is None
         for name, value in decision.values.items()
-        if name in request.explicit_fields and (configured := toml_value(getattr(config, name))) != value
+        if name in request.explicit_fields and (configured := configured_value(config, name)) != value
     ]
 
 
@@ -472,11 +472,16 @@ def _vocabulary_document(analysed: _Input, trial_input: TrialInput) -> Mapping[s
     return None
 
 
+def _merged_values(options: Iterable[Option]) -> dict[str, OptionValue]:
+    """Return the config values options set, in order: a later option's value of a field replaces an earlier one."""
+    return {name: value for option in options for name, value in option.values.items()}
+
+
 def _applied(options: Sequence[Option]) -> dict[str, Any]:
     """Return the config values of options, validated into the types generation takes."""
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
 
-    values = {name: value for option in options for name, value in option.values.items()}
+    values = _merged_values(options)
     validated = BaseGenerateConfig.model_validate(values)
     return {name: getattr(validated, name) for name in values}
 
@@ -612,7 +617,7 @@ def _trial_candidates(
                 **_applied(candidate.options),
             }),
             recommendation.preset if candidate.on_preset or configured else None,
-            {name: value for option in candidate.options for name, value in option.values.items()},
+            _merged_values(candidate.options),
             selectable=candidate.selectable,
         )
         for candidate in candidates
@@ -735,8 +740,7 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
 def _set_command(request: RecommendRequest, recommendation: Recommendation, command_values: dict[str, Any]) -> None:
     """Set the command and the pyproject.toml keys that carry the recommendation."""
     additions: dict[str, Any] = {} if request.config.preset is not None else {"preset": recommendation.preset}
-    for option in recommendation.recommendations:
-        additions.update(option.values)
+    additions.update(_merged_values(recommendation.recommendations))
     if request.has_project_config and not request.preset_on_command_line:
         recommendation.command_values = command_values
         recommendation.config_values = additions

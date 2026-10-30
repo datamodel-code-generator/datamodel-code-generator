@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from datamodel_code_generator import _option_names
 from datamodel_code_generator._name_words import pascal_words
-from datamodel_code_generator._option_names import toml_value
+from datamodel_code_generator._option_names import configured_value
 from datamodel_code_generator._recommend._signals import (
     SignalName,
     normalize_name,
@@ -186,6 +186,13 @@ def option_arguments(field: str, value: OptionValue) -> list[str] | None:
     return _option_names.option_arguments(field, value, negative=_negative_option)
 
 
+def values_arguments(values: Mapping[str, OptionValue]) -> list[str]:
+    """Return the CLI arguments that set config fields to values, leaving out the values no option can express."""
+    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+
+    return _option_names.values_arguments(values.items(), negative=_negative_option)
+
+
 def _rule_values(rule: Rule) -> dict[str, OptionValue]:
     """Return a rule's values as pyproject.toml spells them, validated through the model of where they go.
 
@@ -199,7 +206,7 @@ def _rule_values(rule: Rule) -> dict[str, OptionValue]:
     from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
 
     validated = GenerateConfig.model_validate(rule.set)
-    return {name: toml_value(getattr(validated, name)) for name in rule.set}
+    return {name: configured_value(validated, name) for name in rule.set}
 
 
 @cache

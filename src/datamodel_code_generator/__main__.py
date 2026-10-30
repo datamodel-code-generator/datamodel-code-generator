@@ -128,7 +128,7 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
-from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag
+from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -1474,11 +1474,7 @@ def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
     """Return the CLI arguments for configuration values keyed by field name, as an argument list."""
     from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
 
-    return [
-        str(argument)
-        for key, value in sorted(config.items())
-        for argument in option_arguments(key, value, negative=_negative_option) or ()
-    ]
+    return [str(argument) for argument in values_arguments(sorted(config.items()), negative=_negative_option)]
 
 
 def _recommend_lock_observer(config: Config, pyproject_path: Path | None) -> Any:
