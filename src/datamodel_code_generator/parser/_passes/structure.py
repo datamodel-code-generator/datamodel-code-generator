@@ -23,7 +23,6 @@ from datamodel_code_generator.model.base import (
     get_resolve_reference_action_capabilities,
     remember_nested_factory_order_before_nullability,
 )
-from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE, skips_root_model
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
@@ -36,9 +35,10 @@ from datamodel_code_generator.parser._passes._shared import (
     TargetPythonVersionHost,
     _parsed_rule_data_types,
     _sort_models_by_class_body_references,
-    redirect_collapsed_reuse_users,
-    replace_model_in_list,
+    merge_duplicate,
+    removes_reuse_duplicate,
     require_update_action,
+    subclass_duplicate,
     without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import Forwarder, _ModuleNames
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ShapeRow
+    from datamodel_code_generator.parser._model_shapes import ModelShapes
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
         ForwarderMap,
@@ -256,18 +256,6 @@ def get_module_directory(module: tuple[str, ...]) -> tuple[str, ...]:
     return module[:-1]
 
 
-def _distinct_bases(parser: StructureHost, row: ShapeRow, model: DataModel) -> None:
-    """Give each child of a merged model its bases once each, told apart as the user of the row tells them."""
-    for child in model.reference.iter_data_model_children():
-        bases = child.base_classes
-        parser._graph_builder.set_base_classes(  # noqa: SLF001
-            child,
-            {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
-            if row.base_dedup == "by-type-hint"
-            else {id(base.reference): base for base in bases}.values(),
-        )
-
-
 def renders_as_duplicate(
     parser: StructureHost, model: DataModel, original_model: DataModel, shapes: ModelShapes[DataModel, Reference]
 ) -> bool:
@@ -294,7 +282,7 @@ def _drop_root_model_bases(parser: StructureHost, model: DataModel) -> None:
 
 
 def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_reference: Reference) -> None:
-    """Redirect the users of a duplicated root model to the reference its root names, and detach its own types.
+    """Redirect the users of a duplicated root model to the reference its root names, detach its types and retire it.
 
     A root model whose root names the model itself has no other model to redirect them to: the models that inherit
     it drop it from their bases, as they drop every other root model, and the fields that use it keep naming it,
@@ -305,6 +293,7 @@ def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_ref
     if root_reference is model.reference:
         parser._self_named_root_models.append(model)  # noqa: SLF001
         _drop_root_model_bases(parser, model)
+    parser._graph_builder.retire_model(model)  # noqa: SLF001
 
 
 def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> None:  # noqa: PLR0912
@@ -352,10 +341,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         model_class_names[class_name] = model
     for model, duplicate_models in model_to_duplicate_models.items():
         for duplicate_model in duplicate_models:
-            parser._graph_builder.redirect_reference_users(  # noqa: SLF001
-                duplicate_model.reference, model.reference, merged=True
-            )
-            _distinct_bases(parser, shapes.row, duplicate_model)
+            merge_duplicate(parser, duplicate_model, model, shapes.row, keeps_duplicate_tags=False)
             models_to_remove.add(duplicate_model)
 
     if parser.reuse_model and parser.collapse_reuse_models:
@@ -392,15 +378,11 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 break
 
             for canonical, duplicate in duplicates:
-                redirect_collapsed_reuse_users(parser, duplicate, canonical)
-                _distinct_bases(parser, shapes.row, duplicate)
+                merge_duplicate(parser, duplicate, canonical, shapes.row, keeps_duplicate_tags=True)
                 models_to_remove.add(duplicate)
 
-    # Batch removal: O(n) instead of O(n²)
     if models_to_remove:
         models[:] = [m for m in models if m not in models_to_remove]
-        for model in models_to_remove:
-            parser._graph_builder.retire_model(model)  # noqa: SLF001
 
 
 def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataModel]) -> None:
@@ -503,11 +485,8 @@ def replace_typed_map_value_duplicates(
     for duplicate in duplicates:
         duplicate_module, duplicate_model, _, canonical = duplicate
         if groups.yields_to(duplicate_model, canonical):
-            parser._graph_builder.redirect_reference_users(  # noqa: SLF001
-                duplicate_model.reference, canonical.reference, merged=True
-            )
+            merge_duplicate(parser, duplicate_model, canonical, TREE_SCOPE, keeps_duplicate_tags=False)
             module_lists[duplicate_module].remove(duplicate_model)
-            parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
         else:
             remaining.append(duplicate)
     return remaining
@@ -542,7 +521,6 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
     shared_module = parser.shared_module_name
 
     shared_models: list[DataModel] = []
-    canonical_to_shared_ref: dict[DataModel, Reference] = {}
     canonical_models_seen: set[DataModel] = set()
 
     # Process in order of first appearance in duplicates to ensure stable ordering
@@ -551,11 +529,9 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
             continue
         canonical_models_seen.add(canonical)
         parser._graph_builder.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))  # noqa: SLF001
-        canonical_to_shared_ref[canonical] = canonical.reference
         shared_models.append(canonical)
 
-    supports_inheritance = parser.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
-    require_update = parser._recursion_facts["require_update"]  # noqa: SLF001
+    inherits = parser.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
     updated_models: list[DataModel] = []
 
     module_models_sets: dict[tuple[str, ...], set[DataModel]] = {
@@ -564,27 +540,24 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
     models_to_remove: dict[tuple[str, ...], set[DataModel]] = defaultdict(set)
 
     for duplicate_module, duplicate_model, _, canonical_model in duplicates:
-        shared_ref = canonical_to_shared_ref[canonical_model]
         if duplicate_model not in module_models_sets.get(duplicate_module, ()):  # pragma: no cover
             msg = f"Duplicate model {duplicate_model.name} not found in module {duplicate_module}"
             raise RuntimeError(msg)
 
         models = next(listed for module, listed in module_models if module == duplicate_module)
-        if isinstance(duplicate_model, Enum) or not supports_inheritance or parser.collapse_reuse_models:
-            redirect_collapsed_reuse_users(parser, duplicate_model, canonical_model)
+        if removes_reuse_duplicate(parser, duplicate_model, inherits=inherits):
+            merge_duplicate(parser, duplicate_model, canonical_model, TREE_SCOPE, keeps_duplicate_tags=True)
             models_to_remove[duplicate_module].add(duplicate_model)
-            parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
-        else:
-            inherited_model = duplicate_model.create_reuse_model(shared_ref)
-            parser._graph_builder.redirect_model_reference_users(  # noqa: SLF001
+        elif (
+            updated := subclass_duplicate(
+                parser,
                 duplicate_model,
+                canonical_model,
+                models,
                 reference_models if reference_models is not None else models,
-                inherited_model.reference,
             )
-            if model_key_of(shared_ref) in require_update:
-                updated_models.append(inherited_model)
-            replace_model_in_list(models, duplicate_model, inherited_model)
-            parser._graph_builder.replace_model(duplicate_model, inherited_model)  # noqa: SLF001
+        ) is not None:
+            updated_models.append(updated)
 
     for canonical in canonical_models_seen:
         for module, models_set in module_models_sets.items():

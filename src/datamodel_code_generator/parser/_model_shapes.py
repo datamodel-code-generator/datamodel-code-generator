@@ -91,6 +91,7 @@ class ShapeRow:
     root_models: RootModels
     key_cache: KeyCache
     base_dedup: BaseDedup | None
+    """How the user tells apart the bases of the children of a model it merges, or None to keep them as redirected."""
 
 
 SAME_NAME: ShapeRow = ShapeRow(
