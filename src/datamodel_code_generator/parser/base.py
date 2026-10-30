@@ -122,7 +122,7 @@ from datamodel_code_generator.model.enum import escape_characters as _enum_escap
 from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
-from datamodel_code_generator.parser import _inheritance_check, _init_exports, _type_overrides
+from datamodel_code_generator.parser import _inheritance_check, _init_exports, _stdout_repair, _type_overrides
 from datamodel_code_generator.parser._field_copies import (
     _copy_data_model_field,
     _copy_resolved_inherited_field,
@@ -147,7 +147,7 @@ from datamodel_code_generator.parser._model_shapes import (
     ModelShapes,
     ReuseGroups,
     ShapeRow,
-    stdout_fingerprint,
+    stdout_fingerprint,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._passes import _shared, _state, settle, structure
 from datamodel_code_generator.parser._passes import modules as _modules
@@ -160,7 +160,9 @@ from datamodel_code_generator.parser._passes._keys import (
     _MODEL_MODULE_PREFIX,
     _RAW_SCHEMA_DEFAULT_KEY,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
+from datamodel_code_generator.parser._passes._name_allocation import (
+    scheme_resolver,  # noqa: F401  # Preserve the established parser.base export.
+)
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     DiscriminatorValue,
@@ -212,6 +214,10 @@ from datamodel_code_generator.parser._pipeline import (
     release_parse_caller,
 )
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
+from datamodel_code_generator.parser._stdout_repair import (
+    _TOP_LEVEL_FUTURE_IMPORT_PATTERN,
+    _TOP_LEVEL_RELATIVE_IMPORT_PATTERN,
+)
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
@@ -221,7 +227,7 @@ from datamodel_code_generator.reference import (
     ModelType,
     Reference,
     location_of,
-    split_module_name,
+    split_module_name,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.types import (
     NONE,  # noqa: F401  # Preserve the established parser.base export.
@@ -272,9 +278,6 @@ ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 
 _CLASS_NAME_SEPARATOR_PATTERN: Final = re.compile(r"[^A-Za-z0-9]+")
 
-
-_TOP_LEVEL_FUTURE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from __future__ import ")
-_TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
 _DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
@@ -2015,29 +2018,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _find_invalid_inferred_modules(self, sorted_data_models: SortedDataModels) -> set[ModulePath]:
         """Return non-canonical module paths created by automatic dotted-name inference."""
-        invalid_modules: set[ModulePath] = set()
-        for model in sorted_data_models.values():
-            original_name = model.reference.original_name
-            if model.file_path is not None or "." not in original_name:
-                continue
-            module = tuple(model.module_path)
-            if (
-                module
-                and split_module_name(
-                    original_name,
-                    treat_dot_as_module=None,
-                    strict_dotted_module_names=True,
-                    target_python_version=self.target_python_version,
-                )
-                is None
-            ):
-                invalid_modules.add(module)
-        return invalid_modules
+        return _stdout_repair.find_invalid_inferred_modules(self, sorted_data_models)
 
     @staticmethod
     def _stdout_model_fingerprint(model: DataModel) -> HashableComparable:
         """Return the final rendered definition without using the pre-processing dedup cache."""
-        return stdout_fingerprint(model.render(class_name=model.class_name), model.imports)
+        return _stdout_repair.stdout_model_fingerprint(model)
 
     @staticmethod
     def _find_shadowed_stdout_models(
@@ -2126,32 +2112,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _get_source_data_fingerprint(self) -> bytes | None:
         """Hash parsed root and reference data without allocating one serialized copy."""
-        from contextlib import suppress  # noqa: PLC0415
-        from hashlib import sha256  # noqa: PLC0415
-        from pickle import Pickler  # noqa: PLC0415, S403
-
-        digest = sha256()
-
-        class DigestWriter:
-            __slots__ = ()
-
-            @staticmethod
-            def write(data: bytes, /) -> int:
-                digest.update(data)
-                return len(data)
-
-        source_data = (
-            getattr(self, "raw_obj", None),
-            sorted(getattr(self, "remote_object_cache", {}).items()),
-            sorted((getattr(self, "_python_type_expressions", None) or {}).items()),
-        )
-        # Parsed YAML may contain mixed or non-JSON scalar mapping keys. Pickle preserves
-        # their types and streams directly into the digest; unsupported extension objects
-        # simply disable the optional retry so a completed legacy result is never lost.
-        with suppress(Exception):
-            Pickler(DigestWriter(), protocol=5).dump(source_data)
-            return digest.digest()
-        return None
+        return _stdout_repair.get_source_data_fingerprint(self)
 
     def _inspect_invalid_dotted_stdout(
         self,
@@ -2161,67 +2122,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         results: dict[ModulePath, Result],
     ) -> None:
         """Record a narrow repair plan after every module transformation has completed."""
-        if not (self.repair_invalid_dotted_stdout or self.forced_invalid_dotted_stdout_repair_modules):
-            return
-        invalid_modules = (
-            set()
-            if self.forced_invalid_dotted_stdout_repair_modules
-            else self._find_invalid_inferred_modules(sorted_data_models)
-        )
-        if self.repair_invalid_dotted_stdout and not invalid_modules:
-            return
-
-        defect_models = Parser._find_stdout_defect_models(
-            contexts,
-            results,
-            self.imports,
-            with_import=config.with_import,
-            treat_dot_as_module=self.treat_dot_as_module,
-        )
-        live_models = [model for ctx in contexts for model in ctx.models]
-        if (
-            getattr(self, "openapi_include_info_version", False)
-            and getattr(self, "openapi_info_version", None) is not None
-            and any(
-                _normalize_result_module_path(module, treat_dot_as_module=self.treat_dot_as_module)
-                > _normalize_result_module_path(("__init__.py",), treat_dot_as_module=self.treat_dot_as_module)
-                and _TOP_LEVEL_FUTURE_IMPORT_PATTERN.search(result.body)
-                for module, result in results.items()
-            )
-        ):
-            defect_models.update(live_models)
-        self.stdout_result_usable = not defect_models
-        if self.forced_invalid_dotted_stdout_repair_modules:
-            self.generated_model_inventory = self._model_inventory(live_models)
-            self.source_data_fingerprint = self._get_source_data_fingerprint()
-            return
-        if not defect_models or config.module_split_mode is not None:
-            return
-
-        repair_modules: set[ModulePath] = set()
-        for model in defect_models:
-            module = tuple(model.module_path)
-            matching_module: ModulePath = ()
-            for invalid_module in invalid_modules:
-                if len(invalid_module) > len(matching_module) and module[: len(invalid_module)] == invalid_module:
-                    matching_module = invalid_module
-            if matching_module:
-                repair_modules.add(matching_module)
-
-        if not repair_modules or any(model.file_path is not None for model in live_models):
-            return
-        if (source_fingerprint := self._get_source_data_fingerprint()) is None:
-            return
-        # The retry flattens every stdout model. Pass every non-canonical inferred
-        # module so canonical modules reserve their existing names before any of them.
-        self.invalid_dotted_stdout_repair_modules = tuple(sorted(invalid_modules))
-        self.generated_model_inventory = self._model_inventory(live_models)
-        self.source_data_fingerprint = source_fingerprint
+        _stdout_repair.inspect_invalid_dotted_stdout(self, contexts, sorted_data_models, config, results)
 
     def _model_inventory(self, models: list[DataModel]) -> tuple[str, ...]:
         """Return the paths of the models other than typed map values, which a retry with untyped values omits."""
-        groups = self._reuse_groups
-        return tuple(sorted(model.path for model in models if not groups.is_typed_map_value(model)))
+        return _stdout_repair.model_inventory(self, models)
 
     def _flatten_invalid_modules(
         self,
@@ -2229,43 +2134,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         affected_models: list[DataModel],
     ) -> bool:
         """Flatten selected inferred modules while preserving all unaffected names."""
-        resolver = self.model_resolver
-        affected_model_ids = {id(model) for model in affected_models}
-        unavailable_names = resolver.exclude_names | {
-            model.class_name for model in live_models if id(model) not in affected_model_ids
-        }
-        unavailable_names.update(import_.alias or import_.import_ for model in live_models for import_ in model.imports)
-        scoped_resolver = scheme_resolver(
-            "flattened-module",
-            exclude_names=unavailable_names,
-            duplicate_name_suffix_map=resolver.duplicate_name_suffix_map,
-            target_python_version=self.target_python_version,
-        )
-        new_names: dict[DataModel, str] = {}
-        for index, model in enumerate(affected_models):
-            new_names[model] = scoped_resolver.add(
-                [str(index)],
-                model.class_name,
-                class_name=True,
-                model_type="enum" if isinstance(model, Enum) else "model",
-                preserve_class_name=True,
-            ).name
-
-        generation_index = self.generation_store.index
-        models_to_clear = set(affected_models)
-        for model in affected_models:
-            models_to_clear.update(
-                owner_model
-                for fact in generation_index.data_type_facts_for_reference(model.reference)
-                if (owner_model := generation_index.owner_model_for_data_type(fact.data_type)) is not None
-            )
-
-        for model, new_name in new_names.items():
-            self._graph_builder.rename_model(model, reference_name=new_name, clear_duplicate_name=True)
-        resolver.refresh_reference_names()
-        for model in models_to_clear:
-            forget_model_memos(model, MemoTable.DEDUP_KEYS)
-        return True
+        return _stdout_repair.flatten_invalid_modules(self, live_models, affected_models)
 
     def _apply_forced_invalid_dotted_stdout_repair(
         self,
@@ -2273,24 +2142,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module_split_mode: ModuleSplitMode | None,
     ) -> bool:
         """Apply the repair roots proven necessary by a completed legacy pass."""
-        if module_split_mode is not None or not (affected_modules := self.forced_invalid_dotted_stdout_repair_modules):
-            return False
-        live_models = [model for _, models in module_models for model in models]
-        originally_affected_models = [
-            model
-            for model in live_models
-            if any(tuple(model.module_path)[: len(module)] == module for module in affected_modules)
-        ]
-        if not originally_affected_models or any(model.file_path is not None for model in live_models):
-            return False  # pragma: no cover - first-pass inventory and source checks make this a safety fallback.
-        originally_affected_ids = {id(model) for model in originally_affected_models}
-        # Preserve existing root/canonical names first, then assign conflict-free flat
-        # names to the invalid roots that made the completed legacy output unusable.
-        unaffected_models = [model for model in live_models if id(model) not in originally_affected_ids]
-        flatten_order = [model for model in unaffected_models if not model.module_path]
-        flatten_order.extend(model for model in unaffected_models if model.module_path)
-        flatten_order.extend(originally_affected_models)
-        return self._flatten_invalid_modules(live_models, flatten_order)
+        return _stdout_repair.apply_forced_invalid_dotted_stdout_repair(self, module_models, module_split_mode)
 
     def _build_module_structure(
         self,
