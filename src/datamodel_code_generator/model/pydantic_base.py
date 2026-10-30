@@ -15,7 +15,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
     UNDEFINED,
@@ -575,7 +575,9 @@ class DataModelField(DataModelFieldBase):
 
     def _call_arguments(self, call: CallPlan) -> tuple[str, ...]:
         """Return the arguments of ``call`` as written: positional, default factory, then the rest sorted."""
-        arguments = sorted(f"{argument.name}={represent_python_value(argument.value)}" for argument in call.kwargs)
+        arguments = sorted(
+            keyword_argument(argument.name, represent_python_value(argument.value)) for argument in call.kwargs
+        )
         if call.factory is not None:
             arguments = [f"default_factory={call.factory.value}", *arguments]
         match call.positional:

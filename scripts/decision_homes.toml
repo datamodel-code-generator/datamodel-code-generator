@@ -701,7 +701,7 @@ what = "reads a list item by the JSON Pointer index grammar itself; pick a row o
 audit = "C01"
 
 [homes.Hx-python-syntax]
-decision = "how generated Python spells a call and a tuple, list, set or dict display from the texts of their items: the separator, the comma a lone tuple item needs, the set() of a set without items and the colon of a dict entry"
+decision = "how generated Python spells a call, a keyword argument and a tuple, list, set or dict display from the texts of their items: the separator, the comma a lone tuple item needs, the set() of a set without items, the colon of a dict entry and the equals sign of a keyword argument"
 core = ["_python_syntax.py"]
 adapters = []
 
@@ -710,6 +710,18 @@ kind = "display"
 brackets = ["(", "[", "{"]
 exclude = ["_runtime/", "__main__.py:_format_toml_value"]
 what = "joins expression texts into a call or a tuple, list, set or dict display itself; call _python_syntax.py (a TOML array is not Python)"
+audit = "C13"
+
+[homes.Hx-python-syntax.signatures.hand-keyword]
+kind = "keyword"
+exclude = [
+    "_runtime/",
+    "__main__.py:_redact_command_args",
+    "__main__.py:_format_cli_mapping",
+    "_recommend/_trial.py:rank",
+    "_source.py:<module>",
+]
+what = "spells a keyword argument whose keyword is data itself; call _python_syntax.keyword_argument (a command-line option and a pattern are not Python)"
 audit = "C13"
 
 [homes.Hx-rw-variant]

@@ -6,10 +6,12 @@ Generates Python TypedDict classes for use with type checkers.
 from __future__ import annotations
 
 from dataclasses import replace
+from itertools import starmap
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
+from datamodel_code_generator._python_syntax import keyword_argument
 from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -178,7 +180,7 @@ class TypedDict(DataModel):
             self._set_typed_dict_kwargs(typed_dict_kwargs)
 
     def _set_typed_dict_kwargs(self, typed_dict_kwargs: dict[str, str]) -> None:
-        kwargs_str = ", ".join(f"{k}={v}" for k, v in typed_dict_kwargs.items())
+        kwargs_str = ", ".join(starmap(keyword_argument, typed_dict_kwargs.items()))
         self._set_internal_template_data("typed_dict_kwargs", typed_dict_kwargs)
         self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
 

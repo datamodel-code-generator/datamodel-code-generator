@@ -50,6 +50,9 @@ ALLOWED = """
 [allow."other.py"."displays"]
 "sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
 
+[allow."other.py"."keywords"]
+"sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }
+
 [allow."other.py"."fold"]
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 [allow."other.py"."search"]

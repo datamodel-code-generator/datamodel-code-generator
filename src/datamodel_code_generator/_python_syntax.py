@@ -1,9 +1,10 @@
-"""How generated Python spells a call and a tuple, list, set or dict display from the texts of their items.
+"""How generated Python spells a call, a keyword argument and a tuple, list, set or dict display from item texts.
 
-Every writer of generated code that joins a variable number of expression texts into one of these goes through this
-leaf, so the separator, the comma a lone tuple item needs, the `set()` of a set without items and the colon of a dict
-entry are written once. A value becomes its text first (``python_literal.represent_python_value`` or a target's own
-writer); type subscripts are the type renderers' own.
+Every writer of generated code that joins a variable number of expression texts into one of these, or passes a value
+text under a keyword its data names, goes through this leaf, so the separator, the comma a lone tuple item needs, the
+`set()` of a set without items, the colon of a dict entry and the equals sign of a keyword argument are written
+once. A value becomes its text first (``python_literal.represent_python_value`` or a target's own writer); type
+subscripts are the type renderers' own, and a keyword written in a call's source text is that text's own.
 """
 
 from __future__ import annotations
@@ -17,6 +18,11 @@ if TYPE_CHECKING:
 def call_text(head: str, arguments: Iterable[str], /) -> str:
     """Return the call of ``head`` with its argument texts, each spelled with its keyword where it has one."""
     return f"{head}({', '.join(arguments)})"
+
+
+def keyword_argument(name: str, value: str, /) -> str:
+    """Return the keyword argument that passes the expression text ``value`` as ``name``."""
+    return f"{name}={value}"
 
 
 def tuple_display(items: Iterable[str], /) -> str:

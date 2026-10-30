@@ -44,7 +44,7 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._python_syntax import call_text, set_display, tuple_display
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, set_display, tuple_display
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
@@ -1199,7 +1199,9 @@ class _Resources(_Typing):
         """Return the settings keywords of the root's core creation, the helper keywords as its `HelperSettings`."""
         arguments = [Keyword(item.name, item.name) for item in keywords if item.name not in _HELPER_SETTINGS]
         if helpers := [
-            f"{_HELPER_SETTINGS[item.name]}={item.name}" for item in keywords if item.name in _HELPER_SETTINGS
+            keyword_argument(_HELPER_SETTINGS[item.name], item.name)
+            for item in keywords
+            if item.name in _HELPER_SETTINGS
         ]:
             arguments.append(Keyword("protocols", call_text("HelperSettings", helpers)))
         return tuple(arguments)
@@ -1375,7 +1377,7 @@ class _Resources(_Typing):
             module = modules[spec.resource]
             overloads, implementation = self.branches(module, spec, asynchronous=False, view="plain")
             required = [item for item in implementation.parameters if item.default == "required"]
-            keywords = [f"{item.name}={_example(item, spec)}" for item in required]
+            keywords = [keyword_argument(item.name, _example(item, spec)) for item in required]
             if spec.body is not None and spec.body.required and all(item.name != "body" for item in required):
                 keywords.append("body=...")
             yield (
@@ -1397,7 +1399,9 @@ class _Resources(_Typing):
         """
         module = self.resource_module(next(item for item in self.plan.resources if item.namespace == spec.resource), "")
         arguments = self.call_shape(module, spec, asynchronous=False, body=body).arguments
-        return tuple(f"{item.name}={_example(item, spec)}" for item in arguments if item.default == "required")
+        return tuple(
+            keyword_argument(item.name, _example(item, spec)) for item in arguments if item.default == "required"
+        )
 
     def call_shape(  # noqa: PLR0913
         self,
@@ -3170,7 +3174,9 @@ class ClientRenderer:
         server = spec.servers[0].default_url
         names = {item.scheme.name: item.name for item in self.plan.credentials}
         alternative = spec.security.alternatives[0] if spec.security is not None and spec.security.alternatives else ()
-        secured = [f"{names[item.scheme.name]}={_CREDENTIAL_VALUES[item.scheme.kind]}" for item in alternative]
+        secured = [
+            keyword_argument(names[item.scheme.name], _CREDENTIAL_VALUES[item.scheme.kind]) for item in alternative
+        ]
         arguments = ", ".join((f"base_url={json.dumps(server)}", *secured))
         if helper is None:
             invocation = call_text(f"client.{spec.resource}.{spec.name}", keywords[index])

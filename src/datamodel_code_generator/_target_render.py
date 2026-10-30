@@ -6,7 +6,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final
 
-from datamodel_code_generator._python_syntax import call_text, tuple_display
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
 
@@ -89,7 +89,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
         return repr(value)
 
     entries = [
-        f"{item.name}={spelled(item.name, value)}"
+        keyword_argument(item.name, spelled(item.name, value))
         for item in fields(plan)
         if (value := getattr(plan, item.name)) != item.default
     ]

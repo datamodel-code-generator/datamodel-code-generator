@@ -21,7 +21,7 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
@@ -619,7 +619,7 @@ def _inline_source_segment(source: str, node: ast.AST) -> str:
 def _format_call_argument(keyword: ast.keyword, source: str) -> str:
     if keyword.arg is None:
         return f"**{_source_segment(source, keyword.value)}"
-    return f"{keyword.arg}={_inline_source_segment(source, keyword.value)}"
+    return keyword_argument(keyword.arg, _inline_source_segment(source, keyword.value))
 
 
 def _format_nested_literal(
@@ -760,7 +760,7 @@ def _format_call_argument_for_block(
             )
         case ast.Call() as value:
             formatted_value = _format_call(value, indent, line_length, source, wrap_string_literal=wrap_string_literal)
-    return argument if formatted_value is None else f"{keyword.arg}={formatted_value}"
+    return argument if formatted_value is None else keyword_argument(keyword.arg, formatted_value)
 
 
 def _format_call(  # noqa: PLR0913

@@ -16,7 +16,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -201,7 +201,7 @@ def _build_nested_dataclass_default_factory(
                 return None
             used_field_names.add(field_name)
         required_names.discard(field_name)
-        arguments.append(f"{field_name}={represent_python_value(value)}")
+        arguments.append(keyword_argument(field_name, represent_python_value(value)))
     if required_names:
         return None
     if has_nested_mapping_default and _has_recursive_nested_mapping_default(source):

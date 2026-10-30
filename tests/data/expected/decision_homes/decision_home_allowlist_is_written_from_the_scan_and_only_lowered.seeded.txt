@@ -26,6 +26,9 @@
 [allow."other.py"."fold"]
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 
+[allow."other.py"."keywords"]
+"sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }
+
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
@@ -17,7 +18,7 @@ from datamodel_code_generator._client.codec_plan import (
     Values,
 )
 from datamodel_code_generator._client.facade import statement
-from datamodel_code_generator._python_syntax import call_text, tuple_display
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_templates import templated
@@ -90,7 +91,7 @@ class _Renderer:
 
     def call(self, name: str, *values: str, **keywords: str) -> str:
         self.records.add(name)
-        return call_text(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
+        return call_text(name, (*values, *starmap(keyword_argument, keywords.items())))
 
     def shape(self, shape: Shape) -> str:
         if isinstance(shape, Class):
