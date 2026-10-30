@@ -24,3 +24,8 @@ def read_key_in_core(schema):
 def spell_in_core(direction):
     """Spell the segment in the core."""
     return f"seg-{direction}"
+
+
+def fold_in_core(location, name):
+    """Fold a name by a tested value in the core."""
+    return name.lower() if location == "upper" else name

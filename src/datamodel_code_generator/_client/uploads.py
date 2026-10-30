@@ -15,11 +15,11 @@ from datamodel_code_generator._client.pagination import (
     _label,
     _overlaps,
     _Pages,
-    _parameter_key,
     _problem,
     _target_key,
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -56,7 +56,7 @@ class UploadSpec:
 def _parameter(spec: OperationSpec, target: Mapping[str, Any]) -> ParameterSpec:
     """Return the parameter of an operation that a parameter target names."""
     key = _target_key(target)
-    return next(item for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key)
+    return next(item for item in spec.parameters if parameter_key(item.location, item.wire_name) == key)
 
 
 class _Uploads:

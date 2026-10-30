@@ -15,6 +15,7 @@ from datamodel_code_generator._runtime.client.security import (
     SecurityScheme,
     UnavailableSecurityScheme,
 )
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
     LiteralMapping,
     LiteralScalar,
@@ -248,10 +249,7 @@ class SecurityPlanner:
                 except ValueError:
                     self.problem(operation, f"requires valid scope tokens for scheme {name!r}")
                     continue
-                position = (
-                    scheme.location,
-                    scheme.wire_name.lower() if scheme.location == "header" else scheme.wire_name,
-                )
+                position = parameter_key(scheme.location, scheme.wire_name)
                 if position in owners:
                     self.problem(
                         operation, f"has overlapping {scheme.location} ownership in one AND alternative", conflict=True

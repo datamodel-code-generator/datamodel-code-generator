@@ -887,6 +887,20 @@ paths = ["_runtime/"]
 what = "turns a body's decode failure into the response failure itself; call ResponseDecoder._decoded"
 audit = "C23-K36"
 
+[homes.Hx-parameter-key]
+decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime"
+core = ["_runtime/model_codecs/parameters.py:parameter_key"]
+adapters = []
+
+[homes.Hx-parameter-key.signatures.header-fold]
+kind = "branch"
+values = ["header"]
+names = ["lower"]
+# The cache names the header a declared header or cookie parameter travels in (Vary), not a parameter's identity.
+exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
+what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
+audit = "C20-8"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.

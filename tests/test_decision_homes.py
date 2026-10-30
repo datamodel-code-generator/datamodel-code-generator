@@ -48,6 +48,9 @@ ALLOWED = """
 
 [allow."other.py"."displays"]
 "sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
+
+[allow."other.py"."fold"]
+"sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

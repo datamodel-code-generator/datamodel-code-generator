@@ -84,6 +84,15 @@ class ParameterPlan:
             raise ValueError(msg)
 
 
+def parameter_key(location: str, name: str) -> tuple[str, str]:
+    """Return what identifies a parameter of a request: its location and name, a header's name in lower case.
+
+    Header field names are case-insensitive (RFC 9110), so two header parameters, targets or credentials that differ
+    only in case name the same field.
+    """
+    return location, name.lower() if location == "header" else name
+
+
 def builtin_content(location: ParameterLocation, media_type: str) -> bool:
     """Return whether a builtin codec carries parameter content of this media type in this location."""
     match media_kind(media_type):

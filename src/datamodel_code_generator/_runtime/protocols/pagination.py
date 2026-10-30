@@ -19,6 +19,7 @@ from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
 from .options import HelperLimits, PaginationOptions, checked_options, layered, new_session, patched_extra
@@ -455,8 +456,8 @@ def _started(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan) -> tuple[fro
     """Return the header, by its lowercase name, or the query name of a count's position a first request reads."""
     if not isinstance(rule, CountPlan) or not isinstance(target := rule.write, ParameterTarget):
         return frozenset(), frozenset()
-    location, name = target.location, target.name
-    return frozenset({name.lower()} if location == "header" else ()), frozenset({name} if location == "query" else ())
+    location, key = parameter_key(target.location, target.name)
+    return frozenset({key} if location == "header" else ()), frozenset({key} if location == "query" else ())
 
 
 def _data_error(
