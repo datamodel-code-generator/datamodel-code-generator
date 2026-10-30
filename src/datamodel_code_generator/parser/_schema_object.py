@@ -48,9 +48,12 @@ __all__ = [
     "READ_UNEVALUATED_PROPERTIES_CONTEXT",
     "Discriminator",
     "JSONReference",
+    "JsonSchemaLiteral",
     "JsonSchemaObject",
     "get_ref_type",
 ]
+
+JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
 
 _MODELED_POSITIONS = frozenset(schema_positions("modeled"))
 """The subschema keywords ``JsonSchemaObject`` holds as fields."""

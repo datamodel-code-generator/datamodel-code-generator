@@ -118,6 +118,7 @@ else:
 
 if TYPE_CHECKING:
     import tempfile
+    from types import FunctionType
 
     from datamodel_code_generator._format_types import (
         DEFAULT_FORMATTERS,
@@ -333,13 +334,35 @@ DEFAULT_MAX_VARIABLE_LENGTH: int = 100
 
 _pysnooper_default_state_set: bool = False
 _LAYER_MODULE_PREFIX = "datamodel_code_generator.parser._passes."
+_CONCERN_MODULE_PREFIX = "datamodel_code_generator.parser._"
+_CONCERN_HOST_PARAMETER = "parser"
+
+
+def _traces_module_function(module_name: str, function: FunctionType) -> bool:
+    """Return whether ``snooper_to_methods`` traces a function of an imported module.
+
+    It traces every function of a pass layer module (``parser/_passes/<layer>.py``) and the functions of the parser's
+    concern modules (``parser/_<concern>.py``) that take the parser as their first parameter, named ``parser``: the
+    methods those modules took over, while the module helpers they took over stay untraced as before.
+    """
+    if module_name.startswith(_LAYER_MODULE_PREFIX):
+        return not module_name.rpartition(".")[2].startswith("_")
+    code = function.__code__
+    return (
+        module_name.startswith(_CONCERN_MODULE_PREFIX)
+        and "." not in module_name.removeprefix(_CONCERN_MODULE_PREFIX)
+        and code.co_argcount > 0
+        and code.co_varnames[0] == _CONCERN_HOST_PARAMETER
+    )
 
 
 def snooper_to_methods() -> Callable[..., Any]:
     """Class decorator to add pysnooper tracing to all methods.
 
-    It also traces the functions of the pass layer modules (``parser/_passes/<layer>.py``) the pipeline of ``Parser``
-    calls through their modules, once each.
+    It also traces, once each, the module functions ``_traces_module_function`` selects: those of the pass layer
+    modules, which the pipeline of ``Parser`` calls through their modules, and the methods a concern module of the
+    parser took over, which the parser and the module itself call through the module. A module is covered when it is
+    imported before the class is decorated.
     """
 
     def inner(cls: type[T]) -> type[T]:
@@ -361,10 +384,14 @@ def snooper_to_methods() -> Callable[..., Any]:
             snooper_method = pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
             setattr(cls, name, snooper_method)
         for module_name, module in [*sys.modules.items()]:
-            if not module_name.startswith(_LAYER_MODULE_PREFIX) or module_name.rpartition(".")[2].startswith("_"):
+            if not module_name.startswith(_CONCERN_MODULE_PREFIX):
                 continue
             for name, function in inspect.getmembers(module, predicate=inspect.isfunction):
-                if function.__module__ == module_name and not hasattr(function, "__wrapped__"):
+                if (
+                    function.__module__ == module_name
+                    and not hasattr(function, "__wrapped__")
+                    and _traces_module_function(module_name, function)
+                ):
                     setattr(module, name, pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(function))
         return cls
 
