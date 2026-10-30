@@ -626,13 +626,6 @@ decision = "the operation plan both targets read: groups, names, arguments, defa
 core = ["_target_operations.py"]
 adapters = ["_client/plan.py:Planner.resolved", "_fastapi/plan.py:Planner.selected"]
 
-[homes.T-operation.signatures.status-number]
-kind = "number"
-literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
-paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
-what = "decides a status class or a bodyless status; read ResponseSpec of the operation plan"
-audit = "C-11"
-
 [homes.T-operation.signatures.twin-planner]
 kind = "function"
 pattern = "^_?(tag_namespaces|groups|group_name|group_key|operation_names|named|alias|selected|resolved|check_statuses|declaring|registration|primary_decision|success_media|default_media|normalized|essence|media_range|reachable|form_read|form_plan|part_media|sent|received|json_members|typed_members|planned|requirements|scheme)$"
@@ -679,6 +672,59 @@ default = "C-01"
 "_fastapi/plan.py:_scheme" = "C-12"
 "_fastapi/render.py:_scheme" = "C-12"
 "_fastapi/render.py:_registration" = "C-13"
+
+[homes.Hx-http]
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes and keys, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
+core = ["_runtime/model_codecs/media.py"]
+adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
+
+[homes.Hx-http.signatures.media-essence]
+kind = "call"
+names = ["partition"]
+strings = [";"]
+what = "cuts the parameters off a media type itself; call model_codecs/media.py:essence"
+audit = "C19-M02"
+
+[homes.Hx-http.signatures.media-range]
+kind = "compare-in"
+values = ["*"]
+paths = ["_client/", "_fastapi/", "_runtime/", "_openapi_wire_plan.py", "_target_binding.py", "_target_operations.py"]
+what = "tests whether a media type is a range itself; call model_codecs/media.py:media_range"
+audit = "C19-M01"
+
+[homes.Hx-http.signatures.media-precedence]
+kind = "keyword-set"
+keywords = ["*/*"]
+min = 1
+what = "ranks declared media types for a received one itself; call model_codecs/media.py:most_specific"
+audit = "C19-M06"
+
+[homes.Hx-http.signatures.bodyless-status]
+kind = "number"
+literals = [205]
+what = "lists the statuses that carry no content; read model_codecs/media.py:BODYLESS_STATUSES or call bodyless"
+audit = "C19-M12"
+
+[homes.Hx-http.signatures.bodyless-key]
+kind = "keyword-set"
+keywords = ["204", "205", "304"]
+min = 2
+what = "lists the status keys that carry no content; call _target_operations.py:response_bodyless"
+audit = "C19-M13"
+
+[homes.Hx-http.signatures.status-number]
+kind = "number"
+literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
+paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
+what = "decides a status class or a bodyless status; read the ranges of model_codecs/media.py or call _target_operations.py:response_bodyless"
+audit = "C-11"
+
+[homes.Hx-http.signatures.runtime-status-number]
+kind = "number"
+literals = [300, 399, 599]
+paths = ["_runtime/"]
+what = "bounds a status class in the runtime itself; read the ranges of model_codecs/media.py"
+audit = "C19-M11"
 
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
@@ -1358,9 +1404,6 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_literal_kind"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
 
-[allow."src/datamodel_code_generator/_client/config.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_client/model_facts.py"."ModelFacts.json_types"]
 "H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
@@ -1402,13 +1445,10 @@ fix = "#5579"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_success"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."_variables"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
-
-[allow."src/datamodel_code_generator/_client/plan.py"."media_range"]
-"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
 [allow."src/datamodel_code_generator/_client/plan.py"."reachable"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
@@ -1423,16 +1463,13 @@ fix = "#5579"
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.cache"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
-
-[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.statuses.status"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.stream"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
@@ -1455,9 +1492,6 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/_client/streams.py"."_discriminated"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
-[allow."src/datamodel_code_generator/_client/streams.py"."_essence"]
-"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
-
 [allow."src/datamodel_code_generator/_client/streams.py"."_events"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
@@ -1470,11 +1504,8 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_fastapi/config.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 3, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.by_name"]
@@ -1528,7 +1559,7 @@ fix = "#5579"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_registration"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_requirements"]
@@ -1542,6 +1573,9 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."default_media"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_body_status"]
+"Hx-http.bodyless-key" = { home = "Hx-http", count = 1, audit = "C19-G9" }
 
 [allow."src/datamodel_code_generator/_fastapi/render.py"."_keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }

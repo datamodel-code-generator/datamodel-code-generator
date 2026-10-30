@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import normalized
+from ..model_codecs.media import media_range, normalized
 from .media import most_specific, with_charset
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ class PartPlan:
         A named media type is sent normalized, with the charset of the declared type it falls within when it names none.
         """
         if named is None:
-            return next((media for media in self.content_types if "*" not in media.partition(";")[0]), None)
+            return next((media for media in self.content_types if not media_range(media)), None)
         if (wanted := normalized(named)) is None or (declared := most_specific(wanted, self.content_types)) is None:
             raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
         return with_charset(wanted, declared)

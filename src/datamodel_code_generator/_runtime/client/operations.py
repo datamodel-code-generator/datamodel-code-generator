@@ -11,14 +11,16 @@ from typing_extensions import TypeIs, TypeVar
 from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
     ERROR_STATUSES,
+    NO_CONTENT,
     SUCCESS_STATUSES,
+    bodyless,
     charset,
     decode_form,
     encode_form,
-    essence,
     finite,
     form_encode,
     json_value,
+    media_range,
     normalized,
     percent_decode,
     split_form,
@@ -62,8 +64,6 @@ FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
 
-NO_CONTENT: Final = 204
-BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
 _PAIR: Final = 2
 PARSE_ERRORS: Final = (CodecError,)
 
@@ -362,7 +362,7 @@ class RequestBody:
         A concrete media type is sent as it is named, with the declared charset when it names none; a call never names
         a media range such as image/*.
         """
-        if media_type is not None and "*" in essence(media_type):
+        if media_type is not None and media_range(media_type):
             raise ConfigurationError(field_path=("media_type",), reason="undeclared", operation_id=operation_id)
         found = self.select(operation_id, media_type)
         concrete = None if media_type is None else normalized(media_type)
@@ -593,8 +593,6 @@ def _grouped(branches: tuple[Branch[T], ...]) -> dict[str, tuple[Branch[T], ...]
 
 def _matching(received: str, branches: Sequence[Branch[T]]) -> Branch[T] | None:
     """Return the branch of a received media type: exact type, then parameters ignored, then type/*, then */*."""
-    if found := next((branch for branch in branches if branch.media_type == received), None):
-        return found
     if (winner := most_specific(received, (item.media_type for item in branches if item.media_type))) is None:
         return None
     return next(branch for branch in branches if branch.media_type == winner)
@@ -657,7 +655,7 @@ class ResponseDecoder(Generic[T_co]):
             for branch in group
             if branch.media_type is None or branch is winner
         )
-        if wanted is None or "*" in essence(wanted) or all(branch.media_type is None for branch in success):
+        if wanted is None or media_range(wanted) or all(branch.media_type is None for branch in success):
             raise ConfigurationError(
                 field_path=("response_media_type",), reason="undeclared", operation_id=operation_id
             )
@@ -733,7 +731,7 @@ class ResponseDecoder(Generic[T_co]):
         return _unexpected(info, body, truncated=truncated, problem=problem)
 
     def _bodyless(self, status: int) -> bool:
-        return self._head or status in BODYLESS_STATUSES
+        return bodyless(status, head=self._head)
 
     def _branch(self, info: ResponseInfo, body: bytes) -> Branch[T_co]:
         if (key := status_key(info.status_code, self._keys)) is None:

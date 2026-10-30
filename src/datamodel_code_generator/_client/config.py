@@ -11,7 +11,7 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.naming import namespace_problem, token
 from datamodel_code_generator._runtime.client.options import is_base_url
-from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type, normalized
+from datamodel_code_generator._runtime.model_codecs.media import REDIRECT_STATUSES, normalize_media_type, normalized
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
@@ -34,8 +34,6 @@ RecordT = TypeVar("RecordT")
 OPTION_PREFIX: Final = "client"
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
 _RETRY_SAFETIES: Final = frozenset({"method_default", "idempotent", "never"})
-_MIN_REDIRECT: Final = 300
-_MAX_REDIRECT: Final = 399
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -272,7 +270,7 @@ def _runtime_problems(runtime: RuntimeOperationMetadata, at: str) -> Iterator[Di
     statuses = runtime.success_statuses
     if not (
         _tuple_of(statuses, int)
-        and all(type(status) is int and _MIN_REDIRECT <= status <= _MAX_REDIRECT for status in statuses)
+        and all(type(status) is int and status in REDIRECT_STATUSES for status in statuses)
         and len(set(statuses)) == len(statuses)
     ):
         yield _diagnostic(

@@ -32,7 +32,7 @@ from datamodel_code_generator._client.naming import (
     helper_classes,
     pascal_parts,
 )
-from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
+from datamodel_code_generator._client.plan import member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
     Capabilities,
@@ -44,7 +44,7 @@ from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._runtime.client.security import SecurityScheme
-from datamodel_code_generator._runtime.model_codecs.media import media_kind
+from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range, status_key
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
@@ -871,7 +871,7 @@ def _no_content(operation: OperationSpec) -> bool:
     A 204 selects its own declaration, else its range's, else the default one, as a call's response does.
     """
     responses = {item.status: item for item in operation.responses if item.success}
-    selected = next((responses[key] for key in ("204", "2XX", "default") if key in responses), None)
+    selected = None if (key := status_key(NO_CONTENT, responses)) is None else responses[key]
     return selected is not None and (selected.bodyless or not selected.media)
 
 

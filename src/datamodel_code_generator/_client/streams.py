@@ -24,6 +24,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
 from datamodel_code_generator._client.plan import schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.protocol_plan import HelperPlanner
+from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
@@ -101,23 +102,18 @@ def _errors(helper: Helper) -> Iterator[tuple[str, str, SchemaRef]]:
         yield f"{helper.at}.error_events[{key!r}]", key, reference
 
 
-def _essence(media: str) -> str:
-    """Return a media type's type and subtype in lowercase, without its parameters."""
-    return media.partition(";")[0].strip().lower()
-
-
 def stream_only(spec: OperationSpec) -> bool:
     """Return whether every success body of an operation is an event stream or NDJSON, which a stream helper reads."""
-    return bool(media := success_media(spec.responses)) and all(_essence(item) in _STREAMED for item in media)
+    return bool(media := success_media(spec.responses)) and all(essence(item) in _STREAMED for item in media)
 
 
-def _stream_response(spec: OperationSpec, essence: str) -> ResponseSpec | None:
+def _stream_response(spec: OperationSpec, bare: str) -> ResponseSpec | None:
     """Return the first success response of an operation that declares a media type, whatever its parameters."""
     return next(
         (
             response
             for response in spec.responses
-            if response.success and any(_essence(item.media_type) == essence for item in response.media)
+            if response.success and any(essence(item.media_type) == bare for item in response.media)
         ),
         None,
     )
@@ -126,7 +122,7 @@ def _stream_response(spec: OperationSpec, essence: str) -> ResponseSpec | None:
 def _media_problem(helper: Helper) -> str | None:
     """Return why a helper's media type does not fit its kind, an event stream for SSE and JSON lines for NDJSON."""
     media, accepted = helper.tree["media"], _MEDIA[helper.kind]
-    if _essence(media) in accepted:
+    if essence(media) in accepted:
         return None
     expected = accepted[0] if len(accepted) == 1 else f"one of {_listed(list(accepted))}"
     return f"The media type {media!r} of {helper.name!r} is not {expected}"
@@ -185,18 +181,18 @@ class _Streams(HelperPlanner):
         tree = helper.tree
         at, name, label = helper.at, helper.name, _LABELS[helper.kind]
         reopen = next((self.spec(link.ref) for link in helper.links[1:]), None)
-        essence = _essence(tree["media"])
+        bare = essence(tree["media"])
         problems: list[Diagnostic] = []
         response = reopened = None
         if (message := _media_problem(helper)) is not None:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.media", message, spec))
         else:
-            if (response := _stream_response(spec, essence)) is None:
-                message = f"{_label(spec)} declares no {essence} success response for the {label} helper {name!r}"
+            if (response := _stream_response(spec, bare)) is None:
+                message = f"{_label(spec)} declares no {bare} success response for the {label} helper {name!r}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
-            if reopen is not None and (reopened := _stream_response(reopen, essence)) is None:
+            if reopen is not None and (reopened := _stream_response(reopen, bare)) is None:
                 message = (
-                    f"{_label(reopen)} declares no {essence} success response for the {label} helper {name!r} to "
+                    f"{_label(reopen)} declares no {bare} success response for the {label} helper {name!r} to "
                     "reopen its stream with"
                 )
                 where = f"{at}.resume.reopen_operation"
@@ -206,7 +202,7 @@ class _Streams(HelperPlanner):
         locations = self.locations(helper, spec, references, problems)
         if problems or response is None:
             return None, problems
-        media = next(item.media_type for item in response.media if _essence(item.media_type) == essence)
+        media = next(item.media_type for item in response.media if essence(item.media_type) == bare)
         bound = {
             where: self.bind(spec, place, "response", media, response.status) for where, place in locations.items()
         }
@@ -219,7 +215,7 @@ class _Streams(HelperPlanner):
             reopen_response=reopened,
             reopen_media=None
             if reopened is None
-            else next(item.media_type for item in reopened.media if _essence(item.media_type) == essence),
+            else next(item.media_type for item in reopened.media if essence(item.media_type) == bare),
             events=tuple((key, bound[where]) for where, key, _ in _events(helper)),
             errors=tuple((key, bound[where]) for where, key, _ in _errors(helper)),
         ), problems
