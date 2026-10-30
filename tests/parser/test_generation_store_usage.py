@@ -345,6 +345,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "set_field_default",
             "set_field_extra",
             "set_field_extras",
+            "set_field_identity",
             "set_fields",
             "set_nested_data_types",
             "set_type_discriminator",

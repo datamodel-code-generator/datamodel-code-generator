@@ -205,7 +205,7 @@ core = [
     "parser/base.py:Parser._field_aliases",
     "parser/base.py:Parser._take_field_aliases",
     "parser/_field_rows.py",
-    "parser/_passes/_shared.py:take_placeholder_identity",
+    "parser/_passes/_shared.py:placeholder_identity",
 ]
 
 [homes.Hx-field-build.signatures.field-construction]
@@ -220,9 +220,17 @@ kind = "name"
 ctx = "store"
 names = ["serialization_alias", "use_serialization_alias", "validation_aliases"]
 paths = ["parser/"]
-exclude = ["parser/base.py:_copy_data_model_field", "parser/base.py:Parser.__init__"]
-what = "writes a field's aliases; a copy takes its placeholder's with take_placeholder_identity, a field built earlier takes them for a new name with Parser._take_field_aliases"
+exclude = ["parser/base.py:Parser.__init__"]
+what = "writes a field's aliases; a copy is made with its placeholder's (placeholder_identity), a field built earlier takes them for a new name with Parser._take_field_aliases"
 audit = "PF2-1"
+
+[homes.Hx-field-build.signatures.field-identity-literal]
+kind = "keyword-set"
+keywords = ["original_name", "validation_aliases", "serialization_alias", "use_serialization_alias"]
+min = 2
+paths = ["parser/"]
+what = "lists the aliases a field takes by hand; a copy takes its placeholder's from placeholder_identity, a field built earlier takes them for a new name with Parser._take_field_aliases"
+audit = "PF3-1"
 
 [homes.Hx-field-build.signatures.field-alias-derivation]
 kind = "call"

@@ -175,9 +175,9 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     field_name_model_type_of,
     normalize_default_value_constraints,
+    placeholder_identity,
     register_runtime_expression,
     relative,
-    take_placeholder_identity,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -236,7 +236,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
-    from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldRow
+    from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldIdentity, FieldRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
@@ -428,24 +428,22 @@ def _copy_data_model_field(
     *,
     data_type: DataType | None = None,
     register_references: bool = True,
+    identity: FieldIdentity | None = None,
 ) -> DataModelFieldBase:
-    """Copy a field and its mutable state without copying model references."""
+    """Copy a field and its mutable state without copying model references, under the names ``identity`` gives."""
     copied_data_type = data_type or _copy_data_type(
         field.data_type,
         register_references=register_references,
     )
-    copied_field = field.model_copy(
-        update={
-            "data_type": copied_data_type,
-            "parent": None,
-        }
-    )
-    copied_field.extras = deepcopy(field.extras)
+    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None, "extras": deepcopy(field.extras)}
     if field.validation_aliases is not None:
-        copied_field.validation_aliases = list(field.validation_aliases)
+        update["validation_aliases"] = list(field.validation_aliases)
     match field.default:
         case dict() | list() | set():
-            copied_field.default = deepcopy(field.default)
+            update["default"] = deepcopy(field.default)
+    if identity is not None:
+        update.update(identity)
+    copied_field = field.model_copy(update=update)
     copied_data_type.parent = copied_field
     return copied_field
 
@@ -587,8 +585,8 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 metadata_source,
                 data_type=copied_data_type,
                 register_references=False,
+                identity=placeholder_identity(field),
             )
-            take_placeholder_identity(copied_field, field)
             copied_field.required = False if force_optional else inherited_field.required or field.required
             _apply_inherited_field_nullability(field, inherited_field, copied_field, current_type)
             if partial_merge_mode != AllOfMergeMode.NoMerge:
@@ -605,16 +603,18 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 if _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                     copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, str():
-            copied_field = _copy_data_model_field(inherited_field, register_references=register_references)
-            take_placeholder_identity(copied_field, field)
-            copied_field.required = field.required
+            identity = placeholder_identity(field)
             if inherited_field.name and (
                 inherited_field.name == field.name
                 or reserved_names is None
                 or inherited_field.name not in reserved_names
             ):
-                copied_field.name = inherited_field.name
-                copied_field.alias = inherited_field.alias if field.alias is None else field.alias
+                identity["name"] = inherited_field.name
+                identity["alias"] = inherited_field.alias if field.alias is None else field.alias
+            copied_field = _copy_data_model_field(
+                inherited_field, register_references=register_references, identity=identity
+            )
+            copied_field.required = field.required
         case _:
             return None
 
@@ -949,15 +949,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         row: FieldAliasRow,
     ) -> None:
         """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
-        field.name = name
-        field.alias, validation_aliases, serialization_alias = self._field_aliases(
+        single_alias, validation_aliases, serialization_alias = self._field_aliases(
             alias, name=name, source_name=source_name, class_name=class_name
         )
+        identity: FieldIdentity = {"name": name, "alias": single_alias}
         if row == "required-copy":
-            field.original_name = source_name
-            field.use_serialization_alias = self.use_serialization_alias
+            identity["original_name"] = source_name
+            identity["use_serialization_alias"] = self.use_serialization_alias
         if row != "rename":
-            field.validation_aliases = validation_aliases
+            identity["validation_aliases"] = validation_aliases
         if row != "final-class" or (
             self.serialization_aliases
             and (
@@ -969,7 +969,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             and serialization_alias is not None
         ):
-            field.serialization_alias = serialization_alias
+            identity["serialization_alias"] = serialization_alias
+        self._graph_builder.set_field_identity(field, identity)
 
     @classmethod
     def _get_config_class(cls) -> type[ParserConfig]:

@@ -418,7 +418,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_NAMES,),
         Phase.MODULES,
         FreezePoint.B1,
-        store_ops=("rename_field",),
+        store_ops=("rename_field", "set_field_identity"),
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -445,7 +445,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
         FreezePoint.B1,
-        store_ops=("rename_field",),
+        store_ops=("rename_field", "set_field_identity"),
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -454,10 +454,17 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
         FreezePoint.B1,
+        store_ops=("set_field_identity",),
         access=Access.CONTAINER,
     ),
     AttributeFact(
-        "DataModelFieldBase", "serialization_alias", FactKind.FACT, (Fact.FIELD_ALIASES,), Phase.MODULES, FreezePoint.B1
+        "DataModelFieldBase",
+        "serialization_alias",
+        FactKind.FACT,
+        (Fact.FIELD_ALIASES,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_identity",),
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -589,7 +596,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact("DataModelFieldBase", "const", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.MODULES, FreezePoint.B1),
     AttributeFact(
-        "DataModelFieldBase", "original_name", FactKind.FACT, (Fact.FIELD_NAMES,), Phase.MODULES, FreezePoint.B1
+        "DataModelFieldBase",
+        "original_name",
+        FactKind.FACT,
+        (Fact.FIELD_NAMES,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_identity",),
     ),
     AttributeFact("DataModelFieldBase", "use_default_kwarg", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModelFieldBase", "use_missing_sentinel", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
@@ -606,7 +619,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataModelFieldBase", "write_only", FactKind.FACT, (Fact.METADATA,), Phase.MODULES, FreezePoint.B1),
     AttributeFact("DataModelFieldBase", "use_frozen_field", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
-        "DataModelFieldBase", "use_serialization_alias", FactKind.PRESENTATION, (), Phase.MODULES, FreezePoint.B1
+        "DataModelFieldBase",
+        "use_serialization_alias",
+        FactKind.PRESENTATION,
+        (),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_identity",),
     ),
     AttributeFact(
         "DataModelFieldBase",

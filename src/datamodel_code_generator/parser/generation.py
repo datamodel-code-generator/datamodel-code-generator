@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
+    from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
     from datamodel_code_generator.types import DataType
@@ -168,6 +169,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_default",
     "set_field_extra",
     "set_field_extras",
+    "set_field_identity",
     "set_type_discriminator",
     "set_type_expressions",
     "update_model_reference",
@@ -1791,6 +1793,14 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
+    def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out."""
+        for attribute, value in identity.items():
+            setattr(field_, attribute, value)
+        bump_field(field_)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_default() instead.", category=None)
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
@@ -2592,6 +2602,10 @@ class GraphBuilder:
     def set_field_extras(self, field_: DataModelFieldBase, extras: dict[str, Any]) -> None:
         """Give a field a new extras dict."""
         self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
+
+    def set_field_identity(self, field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+        """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
+        self._store.set_field_identity(field_, identity)  # ty: ignore[deprecated]
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""

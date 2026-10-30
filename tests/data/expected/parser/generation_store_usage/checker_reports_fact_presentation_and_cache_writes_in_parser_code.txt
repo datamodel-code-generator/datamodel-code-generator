@@ -1,7 +1,7 @@
 6 write required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 7 write default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
-8 write alias: use GenerationStore.name_reference() or rename_field() instead of writing alias
-9 write name: use GenerationStore.rename_field() or rename_model() instead of writing name
+8 write alias: use GenerationStore.name_reference() or rename_field() or set_field_identity() instead of writing alias
+9 write name: use GenerationStore.rename_field() or rename_model() or set_field_identity() instead of writing name
 9 write type: use GenerationStore.set_type_expressions() instead of writing type
 10 write decorators: decorators changes RenderFact.MODULE_CODE outside GenerationStore operations
 11 write nullable: use GenerationStore.apply_literal_default() instead of writing nullable
