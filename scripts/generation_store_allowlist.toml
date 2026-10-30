@@ -250,6 +250,17 @@ data_types = 1
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
 use_union_operator = 1
 
+["src/datamodel_code_generator/parser/_rw_split.py"."collect_inherited_fields_for_request_response"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/_rw_split.py"."get_raw_inherited_fields"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/_rw_split.py"."prepare_required_inherited_field"]
+'__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
+
 ["src/datamodel_code_generator/parser/_value_keywords.py"."mark_type_dependent_constraints"]
 '__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
 
@@ -277,14 +288,6 @@ is_list = 1
 is_optional = 1
 type = 1
 
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._collect_inherited_fields_for_request_response"]
-required = 1
-use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_raw_inherited_fields"]
-required = 1
-use_default_with_required = 1
-
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_root_value"]
 data_types = 1
 
@@ -292,9 +295,6 @@ data_types = 1
 required = 2
 target_python_version = 1
 use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._prepare_required_inherited_field"]
-'__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
 
 ["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
