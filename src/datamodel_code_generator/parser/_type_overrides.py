@@ -477,7 +477,7 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
     ):
         if (annotation := parser._override_annotation(override_import)) is None:  # noqa: SLF001
             parser._graph_builder.override_type_import(data_type, override_import)  # noqa: SLF001
-            data_type.alias = override_import.binding_name
+            parser._graph_builder.name_reference(data_type, override_import.binding_name)  # noqa: SLF001
             parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
         else:
             parser._graph_builder.name_reference(data_type, annotation.type_hint)  # noqa: SLF001

@@ -1914,10 +1914,10 @@ class GenerationStore:  # noqa: PLR0904
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().name_reference() instead.", category=None)
-    def name_reference(data_type: DataType, alias: str) -> None:
+    def name_reference(data_type: DataType, alias: str | None) -> None:
         """Write the expression a reference type names its model by, such as a quoted forward reference or an import.
 
-        Every holder of the type sees it.
+        None names the model by its class name. Every holder of the type sees it.
         """
         data_type.alias = alias
         bump_node(data_type)
@@ -2480,7 +2480,7 @@ class GraphBuilder:
         """Make a data type name ``import_``, which every holder of the type sees."""
         self._store.override_type_import(data_type, import_)  # ty: ignore[deprecated]
 
-    def name_reference(self, data_type: DataType, alias: str) -> None:
+    def name_reference(self, data_type: DataType, alias: str | None) -> None:
         """Write the expression a reference type names its model by through ``GenerationStore.name_reference``."""
         self._store.name_reference(data_type, alias)  # ty: ignore[deprecated]
 

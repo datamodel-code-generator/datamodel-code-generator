@@ -577,8 +577,15 @@ core = [
     "parser/_passes/_shared.py:reference_import_target",
     "parser/_passes/_shared.py:register_reference_import",
     "parser/_passes/_shared.py:set_reference_expression",
+    "parser/_passes/_shared.py:import_references",
 ]
-adapters = []
+adapters = ["parser/_passes/_shared.py:set_reference_expressions"]
+
+[homes.H26.signatures.reference-target-name]
+kind = "call"
+names = ["_get_data_type_target_full_name"]
+what = "finds the model a data type names in another module to write how the type names it; call import_references or set_reference_expressions (parser/_passes/_shared.py)"
+audit = "C04-G3"
 
 [homes.H26.signatures.model-import-path]
 kind = "call"
