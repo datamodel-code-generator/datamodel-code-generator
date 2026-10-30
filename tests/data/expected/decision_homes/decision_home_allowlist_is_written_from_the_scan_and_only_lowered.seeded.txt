@@ -5,6 +5,7 @@
 
 [allow."other.py"."<module>"]
 "sample.keyword-table" = { home = "sample", count = 2, audit = "X-8" }
+"sample.label-table" = { home = "sample", count = 1, audit = "X-14" }
 "sample.limit" = { home = "sample", count = 3, audit = "X-7" }
 
 [allow."other.py"."Other.method"]

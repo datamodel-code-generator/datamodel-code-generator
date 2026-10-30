@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (
     _dot_literals,
     _fits,
@@ -40,7 +41,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId, TypeView
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
-_KINDS: Final = {"polling": "polling", "sse": "SSE", "ndjson": "NDJSON", "resumable_upload": "upload"}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -314,15 +314,16 @@ class _Polls:
                 yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         if (request := spec.body) is None or not body:
             return
+        kind = HELPER_KINDS[helper.kind].label
         if "body" in locations and any(media.kind != "json" for media in request.media):
             message = (
-                f"The {_KINDS[helper.kind]} helper {helper.name!r} writes a request body of {label} other than JSON, "
+                f"The {kind} helper {helper.name!r} writes a request body of {label} other than JSON, "
                 "which is not supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
         elif "body" in locations and request.default is None:
             message = (
-                f"The {_KINDS[helper.kind]} helper {helper.name!r} writes a request body of {label}, which has no "
+                f"The {kind} helper {helper.name!r} writes a request body of {label}, which has no "
                 "default media type; set the operation's request_media_type"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)

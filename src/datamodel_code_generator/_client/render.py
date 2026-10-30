@@ -27,6 +27,7 @@ from datamodel_code_generator._client.codec_render import render_model_bindings
 from datamodel_code_generator._client.facade import Attribute, Lazy, Subclass, facade_module, name_set, statement
 from datamodel_code_generator._client.naming import (
     CLIENT_KEYWORDS,
+    HELPER_KINDS,
     TYPE_EXPORTS,
     VIEW_KEYWORDS,
     helper_classes,
@@ -46,6 +47,7 @@ from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._python_syntax import call_text, set_display, tuple_display
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range, status_key
+from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
@@ -2265,17 +2267,7 @@ _HELPER_SETTINGS: Final = {
     "cache_stores": "cache_stores",
     "allowed_origins": "allowed_origins",
 }
-_HELPER_KINDS: Final = {
-    "pagination": "pagination helper",
-    "polling": "polling helper",
-    "resumable_upload": "upload helper",
-    "sse": "SSE helper",
-    "ndjson": "NDJSON helper",
-    "websocket": "WebSocket helper",
-    "cache": "cache helper",
-}
 _STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
-_STREAM_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 _HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
     False: ("first_page", "iterate_pages", "following_page", "resume_pages"),
     True: ("afirst_page", "aiterate_pages", "afollowing_page", "aresume_pages"),
@@ -2285,6 +2277,16 @@ _UPLOADS: Final = "_runtime.protocols.uploads"
 _STREAMS: Final = "_runtime.protocols.streams"
 _CACHE: Final = "_runtime.protocols.cache"
 _DEFAULT_STATUSES: Final = [200]
+
+
+def _helper_noun(kind: str) -> str:
+    """Return what the docstrings of a package call one helper of a kind: the kind's label, then `helper`."""
+    return f"{HELPER_KINDS[kind].label} helper"
+
+
+def _helper_options(kind: str) -> tuple[str, str]:
+    """Return the keyword a helper kind's methods take its options by, and the runtime class of those options."""
+    return HELPER_KINDS[kind].options, _KIND_OPTIONS[kind].__name__
 
 
 class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
@@ -2593,7 +2595,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 nodes.setdefault(parts[:-1], {})[parts[-1]] = (f"{prefix}{class_name}", ".".join(parts))
                 if parts == tuple(helper.name.split(".")):
                     named[helper.name] = f"{prefix}{class_name}"
-                    kinds[f"{prefix}{class_name}"] = _HELPER_KINDS[helper.kind]
+                    kinds[f"{prefix}{class_name}"] = _helper_noun(helper.kind)
                 else:
                     nodes.setdefault(parts, {})
         leaves = {named[spec.helper.name]: spec for spec in self.helpers}
@@ -2647,7 +2649,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     @staticmethod
     def what(spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec | StreamSpec | SocketSpec) -> str:
         """Return the docstring of a helper's class: its name, kind, and its operation's route."""
-        return f"The {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {_route(spec.operation)}."
+        return f"The {spec.helper.name} {_helper_noun(spec.helper.kind)} of {_route(spec.operation)}."
 
     def leaf(  # noqa: PLR0913
         self,
@@ -2681,7 +2683,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def methods(self, module: TargetModule, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[Function]:
         """Return a pagination helper's page, iterate, next_page, and resume methods."""
-        options = ("pagination_options", "PaginationOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
         runtime = "_runtime.protocols.pagination"
         item, page = module.hint(spec.item), self.response(module, spec.operation)
@@ -2729,7 +2731,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
         The resume method is never a coroutine.
         """
-        options = ("poll_options", "PollOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
         base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
         returns = handle or f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
@@ -2763,7 +2765,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def fetch(self, module: TargetModule, index: int, spec: CacheSpec, *, asynchronous: bool) -> Function:
         """Return a cache helper's fetch method."""
-        options = ("cache_options", "CacheOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, body=False)
         plan = f"{module.name('.', '_plans')}.PLAN_{index}"
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, spec.operation)}]"
@@ -2845,7 +2847,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     ) -> list[Function]:
         """Return an upload helper's start and resume methods, which return the handle that appends its chunks."""
         size = None if spec.size is None else spec.size.python_name
-        options = ("upload_options", "UploadOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, skip=size)
         prefix = "Async" if asynchronous else ""
         handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
@@ -2964,7 +2966,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         The resume method takes a checkpoint and the open method's options; a reopen of the helper's own operation also
         takes the open method's arguments and body, which it sends again.
         """
-        options = ("stream_options", "StreamOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
         handle = module.local(_STREAMS, "AsyncEventStream" if asynchronous else "EventStream")
         plan = f"{module.name('.', '_plans')}.STREAM_{index}"
@@ -3037,7 +3039,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def socket_method(self, module: TargetModule, index: int, spec: SocketSpec, *, asynchronous: bool) -> Function:
         """Return a WebSocket helper's connect method, which takes its operation's parameters and is never awaited."""
-        options = ("ws_options", "WSOptions")
+        options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, body=False)
         runtime = "_runtime.protocols.websocket"
         session = module.local(runtime, "AsyncWebSocketSession" if asynchronous else "WebSocketSession")
@@ -3264,7 +3266,7 @@ class ClientRenderer:
     @cached_property
     def stream_label(self) -> str:
         """Return the kinds of the package's stream helpers, as their documentation names them."""
-        return " or ".join(dict.fromkeys(_STREAM_LABELS[spec.helper.kind] for spec in self.streams))
+        return " or ".join(dict.fromkeys(HELPER_KINDS[spec.helper.kind].label for spec in self.streams))
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:
         """Return the modules of the package's protocol helpers, none without helpers."""

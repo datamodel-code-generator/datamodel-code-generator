@@ -52,6 +52,14 @@ keywords = ["a", "b", "c", "d"]
 what = "lists the keywords itself"
 audit = "X-8"
 
+[homes.sample.signatures.label-table]
+kind = "keyword-set"
+keywords = ["Label"]
+min = 1
+dict_values = true
+what = "maps names to their labels itself"
+audit = "X-14"
+
 [homes.sample.signatures.read-key]
 kind = "key"
 keys = ["type", "items"]

@@ -1034,6 +1034,28 @@ exclude = ["_runtime/client/oauth.py:_transport"]
 what = "turns the failure of an application's credential callable or callback into an error itself; call client/auth.py:provider_failure"
 audit = "C25-K1"
 
+[homes.Hx-helper-kinds]
+decision = "what the client generator calls each helper kind: the label its documentation and messages give the kind, the keyword the kind's methods take its options by, and the runtime class of those options"
+core = ["_client/naming.py", "_runtime/protocols/options.py"]
+adapters = []
+
+[homes.Hx-helper-kinds.signatures.kind-label]
+kind = "keyword-set"
+keywords = ["SSE", "NDJSON", "SSE helper", "NDJSON helper"]
+min = 1
+dict_values = true
+paths = ["_client/"]
+what = "names a helper kind itself; read client/naming.py:HELPER_KINDS"
+audit = "C26-6"
+
+[homes.Hx-helper-kinds.signatures.options-keyword]
+kind = "keyword-set"
+keywords = ["pagination_options", "poll_options", "stream_options", "upload_options", "cache_options", "ws_options"]
+min = 1
+paths = ["_client/"]
+what = "spells the options keyword or class of a helper kind itself; read client/naming.py:HELPER_KINDS and runtime protocols/options.py:_KIND_OPTIONS"
+audit = "C26-7"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.

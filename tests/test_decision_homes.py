@@ -33,6 +33,7 @@ ALLOWED = """
 [allow."other.py"."<module>"]
 "sample.limit" = { home = "sample", count = 3, audit = "X-7" }
 "sample.keyword-table" = { home = "sample", count = 2, audit = "X-8" }
+"sample.label-table" = { home = "sample", count = 1, audit = "X-14" }
 
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }

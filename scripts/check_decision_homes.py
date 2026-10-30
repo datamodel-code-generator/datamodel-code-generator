@@ -19,7 +19,8 @@ them, ``what`` words the message):
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
-* ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``.
+* ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``; a
+  dict holds its keys, and its values too with ``dict_values = true`` (a table that maps names to the spellings).
 * ``key``: a subscript ``x["k"]`` that is read (not assigned or deleted) or a call ``x.get("k")`` / ``x.pop("k")`` /
   ``x.setdefault("k", ...)`` whose string key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so
   a raw read of a loaded document is invisible to them).
@@ -406,8 +407,8 @@ def _string_arguments(nodes: Iterable[ast.AST]) -> Iterator[str]:
             yield node.value
 
 
-def _string_elements(node: ast.AST) -> Iterator[str]:
-    items = node.keys if isinstance(node, ast.Dict) else getattr(node, "elts", ())
+def _string_elements(node: ast.AST, *, values: bool = False) -> Iterator[str]:
+    items = [*node.keys, *(node.values if values else ())] if isinstance(node, ast.Dict) else getattr(node, "elts", ())
     for item in items:
         if isinstance(item, ast.Constant) and isinstance(item.value, str):
             yield item.value
@@ -586,7 +587,7 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
         case "name-search":
             return isinstance(node, ast.While) and _searches_name(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
-        set(_string_elements(node)) & set(options["keywords"])
+        set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
 
 

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (  # pyright: ignore[reportPrivateUsage]
     _label,
     _listed,
@@ -52,7 +53,6 @@ _MEDIA: Final = {
     ),
 }
 _STREAMED: Final = frozenset(media for kinds in _MEDIA.values() for media in kinds)
-_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 _TARGETS: Final = {"body": "the request body", "querystring": "a querystring"}
 
 
@@ -179,7 +179,7 @@ class _Streams(HelperPlanner):
         its stream with.
         """
         tree = helper.tree
-        at, name, label = helper.at, helper.name, _LABELS[helper.kind]
+        at, name, label = helper.at, helper.name, HELPER_KINDS[helper.kind].label
         reopen = next((self.spec(link.ref) for link in helper.links[1:]), None)
         bare = essence(tree["media"])
         problems: list[Diagnostic] = []
@@ -246,7 +246,7 @@ def stream_uses(
     if protocols is None:
         return (), (), {}
     streams = _Streams(protocols, plan, request)
-    specs, problems = streams.each(_LABELS, streams.helper)
+    specs, problems = streams.each(_MEDIA, streams.helper)
     uses = {use.id: use for spec in specs for use in spec.uses}
     return specs, tuple(uses.values()), problems
 
