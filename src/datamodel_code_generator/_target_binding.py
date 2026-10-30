@@ -573,10 +573,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         return members
 
     def _copy_model_field(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, field: DataModelFieldBase, *, register_references: bool = True
+        self, field: DataModelFieldBase, **options: Any
     ) -> DataModelFieldBase:
         """Record the field a copy of a field is of, as inherited fields and read or write variants copy."""
-        copied = super()._copy_model_field(field, register_references=register_references)
+        copied = super()._copy_model_field(field, **options)
         self.copies[id(copied)] = (copied, field)
         return copied
 

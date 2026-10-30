@@ -176,20 +176,10 @@ use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inli
 
 ["src/datamodel_code_generator/parser/_field_copies.py"."_apply_inherited_field_nullability"]
 is_optional = 1
-nullable = 2
-type_has_null = 2
 
 ["src/datamodel_code_generator/parser/_field_copies.py"."_copy_resolved_inherited_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
-constraints = 1
 'data_types[...]' = 1
-default = 1
-'extras.update()' = 1
-has_default = 1
-read_only = 1
-required = 2
-use_default_with_required = 1
-write_only = 1
 
 ["src/datamodel_code_generator/parser/_field_copies.py"."_merge_data_type_modifiers"]
 is_dict = 1
@@ -203,9 +193,6 @@ is_tuple = 1
 kwargs = 1
 'kwargs[...]' = 1
 tuple_item_count = 1
-
-["src/datamodel_code_generator/parser/_inherited_schemas.py"."build_missing_required_field"]
-required = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
 '_additional_imports[...]' = 1
@@ -222,7 +209,6 @@ use_default_with_required = 1
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."override_required_field"]
 'fields.pop()' = 1
 'fields.reverse()' = 1
-required = 1
 use_default_with_required = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]

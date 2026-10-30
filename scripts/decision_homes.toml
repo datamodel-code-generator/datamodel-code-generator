@@ -296,6 +296,20 @@ mentions = ["literals", "enum_member_literals"]
 what = "copies the lists of a DataType node itself; call types.py:_copied_node, or _copy_data_type for a tree"
 audit = "C05-B08"
 
+[homes.Hx-field-copy]
+decision = "how a field is copied: what a copy owns (its data type tree, extras, validation aliases and mutable default) and the names, aliases and other values it is made with"
+core = ["parser/_field_copies.py:_copy_data_model_field"]
+adapters = []
+
+[homes.Hx-field-copy.signatures.copy-finished-by-hand]
+kind = "name"
+ctx = "store"
+names = ["required", "nullable", "type_has_null", "constraints", "extras", "read_only", "write_only", "default", "has_default"]
+receivers = ["copied", "copied_field", "copied_original_field"]
+paths = ["parser/"]
+what = "writes a value on a field copy after it is made; give it to _copy_data_model_field (or the _copy_model_field hook) as a FieldCopyFacts value"
+audit = "C07-B27"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
