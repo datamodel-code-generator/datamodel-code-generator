@@ -2176,10 +2176,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     minimal=effective == AllExportsCollisionStrategy.MinimalPrefix,
                     target_python_version=target_python_version,
                 )
-                if new_name in reserved:
+                if new_name in used:
+                    # A prefixed name can equal an export of another module, which used to
+                    # overwrite that export and drop it from __all__.
                     msg = (
-                        f"Cannot resolve collision: '{new_name}' conflicts with __init__.py model. "
-                        "Please rename one of the models."
+                        f"Cannot resolve collision: '{new_name}' is already exported "
+                        "or conflicts with a model in __init__.py. Please rename one of the models."
                     )
                     raise Error(msg)
                 result[new_name] = [item]

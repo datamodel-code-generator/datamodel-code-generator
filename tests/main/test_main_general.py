@@ -4445,6 +4445,36 @@ def test_all_exports_recursive_prefix_collision_with_local_model(
     )
 
 
+@pytest.mark.parametrize(
+    "strategy",
+    ["minimal-prefix", "full-prefix"],
+    ids=["minimal_prefix", "full_prefix"],
+)
+def test_all_exports_recursive_prefix_collision_with_another_export(
+    output_dir: Path, strategy: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A prefixed name must not take over another module's export and drop it.
+
+    ``foo.Bar`` and ``baz.Bar`` collide, and the prefix for ``foo.Bar`` is
+    ``FooBar``, which is already exported from ``x.FooBar``. The package used to
+    export ``FooBar`` for ``foo.Bar`` and leave ``x.FooBar`` out of ``__all__``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "all_exports_export_name_collision.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--all-exports-scope",
+            "recursive",
+            "--all-exports-collision-strategy",
+            strategy,
+        ],
+        expected_exit=Exit.ERROR,
+        expected_stderr_contains="FooBar",
+        capsys=capsys,
+    )
+
+
 def test_all_exports_scope_recursive_jsonschema_multi_file(output_dir: Path) -> None:
     """Test --all-exports-scope=recursive with JSONSchema multi-file input."""
     run_main_and_assert(

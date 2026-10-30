@@ -1,0 +1,22 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Export Name Collision Test
+paths: {}
+components:
+  schemas:
+    foo.Bar:
+      type: object
+      properties:
+        a:
+          type: string
+    baz.Bar:
+      type: object
+      properties:
+        b:
+          type: integer
+    x.FooBar:
+      type: object
+      properties:
+        c:
+          type: boolean
