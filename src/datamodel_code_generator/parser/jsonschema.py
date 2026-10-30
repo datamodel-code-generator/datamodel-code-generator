@@ -15,7 +15,7 @@ from collections import (
     deque,
 )
 from contextlib import (
-    ExitStack,
+    ExitStack,  # noqa: F401  # Preserve the established parser.jsonschema export.
     contextmanager,
     nullcontext,
     suppress,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -26,7 +26,7 @@ from functools import cached_property, lru_cache, partial, reduce
 from itertools import chain, compress  # noqa: F401  # Preserve the established parser.jsonschema export.
 from operator import and_, is_not  # noqa: F401  # Preserve the established parser.jsonschema export.
 from pathlib import Path
-from string import digits
+from string import digits  # noqa: F401  # Preserve the established parser.jsonschema export.
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,7 +35,7 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
-    TypeAlias,
+    TypeAlias,  # noqa: F401  # Preserve the established parser.jsonschema export.
     TypeVar,
     Union,  # noqa: F401  # Preserve the established parser.jsonschema export.
     cast,
@@ -134,7 +134,7 @@ from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
-from datamodel_code_generator.model import DataModel, DataModelFieldBase
+from datamodel_code_generator.model import DataModel, DataModelFieldBase  # noqa: TC001  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -190,6 +190,7 @@ from datamodel_code_generator.parser import (
     _inherited_schemas,
     _lightweight_types,
     _object_maps,
+    _rw_split,
     _schema_validators,
     _union_tags,
     _value_keywords,
@@ -217,7 +218,7 @@ from datamodel_code_generator.parser._intersection import (
     declared_types,
     inherited_override_row,  # noqa: F401  # Preserve the established parser.jsonschema export.
     inherited_positional_tail,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    inherits_keyword,
+    inherits_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_constraint,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_enum_values,
     intersect_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -240,7 +241,6 @@ from datamodel_code_generator.parser._null_facts import (
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED
-from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
     Default,
@@ -315,7 +315,6 @@ from datamodel_code_generator.parser._value_keywords import (
 )
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     SPECIAL_PATH_FORMAT,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -340,12 +339,10 @@ from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
     SCHEMA_LOCATION_KEY,
-    SPECIAL_PATH_MARKER,
+    SPECIAL_PATH_MARKER,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ModelType,
     Reference,
     SchemaLocation,
-    _rw_variant_of,
-    _rw_variant_path,
     get_inferred_module_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_url,
     location_of,
@@ -372,6 +369,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.parser._rw_split import _Site
 
 JsonSchemaConstraintKey = Literal[
     "minimum",
@@ -452,16 +450,6 @@ _JSON_SCHEMA_VERSION = _VersionSource(
 _ValidatedT = TypeVar("_ValidatedT")
 
 
-_Site: TypeAlias = "SchemaSite[JsonSchemaObject]"
-
-
-def _has_map_keywords(obj: JsonSchemaObject) -> bool:
-    """Return whether a schema has keywords that type the keys or values of an object map."""
-    return bool(
-        obj.patternProperties or obj.propertyNames is not None or isinstance(obj.additionalProperties, JsonSchemaObject)
-    )
-
-
 def _then_parse_refs(build: Callable[[JsonSchemaParser, _Site], object]) -> Callable[[JsonSchemaParser, _Site], None]:
     """Return the build of a definition row: ``build``, then the references of the site's schema."""
 
@@ -494,45 +482,6 @@ def _mark_copied_nullable(
 def _external_ref_mapping_key(file_part: str, base_path: Path) -> str:
     """Return the key of a file in ``--external-ref-mapping``: a URL as written, else the absolute resolved path."""
     return file_part if is_url(file_part) else str((base_path / file_part).resolve())
-
-
-def _rw_flag_facts(flags: Iterable[tuple[bool, bool]]) -> tuple[bool, bool, bool, bool]:
-    """Return the read/write facts of ``(readOnly, writeOnly)`` pairs.
-
-    Whether any pair is read-only, any write-only, any not read-only and any not write-only.
-    """
-    pairs = set(flags)
-    return (
-        any(read_only for read_only, _ in pairs),
-        any(write_only for _, write_only in pairs),
-        any(not read_only for read_only, _ in pairs),
-        any(not write_only for _, write_only in pairs),
-    )
-
-
-def _rw_facts_need_variant(facts: tuple[bool, bool, bool, bool], suffix: Literal["Request", "Response"]) -> bool:
-    """Return whether fields of these read/write facts need the Request or Response variant.
-
-    A variant drops the read-only (Request) or write-only (Response) fields, so it needs such a field and another one.
-    """
-    has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
-    return has_read_only and has_non_read_only if suffix == "Request" else has_write_only and has_non_write_only
-
-
-def _get_rw_model_variant_source_path(
-    base_reference: Reference,
-    suffix: Literal["Request", "Response"],
-) -> str:
-    """Return the legacy logical source path for a generated variant.
-
-    A model built from a member of a document root joins its path to the document with ``/`` (``doc.json/p#...``); its
-    source path names the location in that document (``doc.json#/p#...``), as those of the members of other schemas do.
-    """
-    path = base_reference.path
-    if (location := location_of(base_reference)) is not None and path.startswith(prefix := f"{location.document}/"):
-        path = f"{location.document}#/{path.removeprefix(prefix)}"
-    source_prefix, separator, source_name = path.rpartition("/")
-    return f"{source_prefix}{separator}{source_name}{suffix}"
 
 
 _REF_PRE_PASS_KEYWORDS = frozenset(REF_PRE_PASS_POSITIONS)
@@ -1590,129 +1539,28 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _value_keywords.get_const_data_type(self, const, obj)
 
-    def _resolve_field_flag(self, obj: JsonSchemaObject, flag: Literal["readOnly", "writeOnly"]) -> bool:
-        """Resolve a field flag (readOnly/writeOnly) from direct value, $ref, and compositions.
-
-        Visits the $ref target, then the allOf, anyOf and oneOf members, depth first on an explicit stack; each schema
-        node a $ref names is read once, in the contexts of the $refs leading to it.
-        """
-        visited: set[_TargetNode] = set()
-        pending: list[tuple[JsonSchemaObject, tuple[str, ...]]] = [(obj, ())]
-        while pending:
-            schema, contexts = pending.pop()
-            if getattr(schema, flag) is True:
-                return True
-            pending.extend(
-                (sub, contexts)
-                for schemas in (schema.oneOf, schema.anyOf, schema.allOf)
-                for sub in reversed(schemas)
-                if isinstance(sub, JsonSchemaObject)
-            )
-            if not (self.read_only_write_only_model_type and schema.ref):
-                continue
-            with ExitStack() as scope:
-                for context in contexts:
-                    scope.enter_context(self._inherited_ref_context(context))
-                if (node := self._key_node(resolved_ref := self._ref_path(schema.ref))) in visited:
-                    continue
-                visited.add(node)
-                pending.append((self._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))
-        return False
-
     def _collect_inherited_fields_for_request_response(
         self,
         base_classes: list[Reference],
         active: frozenset[str] = frozenset(),
     ) -> list[DataModelFieldBase]:
         """Collect canonical inherited fields in declaration order with C3 winners."""
-        if not base_classes:
-            return []
-
-        winners: dict[str, DataModelFieldBase] = {}
-        unnamed_fields: list[DataModelFieldBase] = []
-        for resolved_ref in self._linearize_inherited_schema_refs(base_classes):
-            reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
-            own_names = self._raw_inherited_own_names_cache.get(resolved_ref)
-            raw_fields = self._get_raw_inherited_fields(reference, active)
-            if own_names is None:
-                own_names = self._raw_inherited_own_names_cache.get(resolved_ref, frozenset())
-            for field in raw_fields:
-                if (field_name := _field_source_name(field)) is None:
-                    unnamed_fields.append(field)
-                elif field_name in own_names:
-                    winners.setdefault(field_name, field)
-
-        result: list[DataModelFieldBase] = []
-        emitted_names: set[str] = set()
-        for field_name in self._get_inherited_property_order(base_classes):
-            if (field := winners.get(field_name)) is None:
-                continue
-            result.append(field)
-            emitted_names.add(field_name)
-        result.extend(field for name, field in winners.items() if name not in emitted_names)
-        result.extend(unnamed_fields)
-        if not self.force_optional_for_required_fields:
-            required_names = self._get_inherited_required_names(base_classes)
-            for field in result:
-                if _field_source_name(field) in required_names:
-                    field.required = True
-                    field.use_default_with_required = (
-                        self.apply_default_values_for_required_fields and field.has_default
-                    )
-        return result
+        return _rw_split.collect_inherited_fields_for_request_response(self, base_classes, active)
 
     def _unregister_temporary_field_references(
         self,
         fields: Iterable[DataModelFieldBase],
     ) -> None:
         """Keep temporary raw fields out of the live reverse-reference graph."""
-        for field in fields:
-            self._unregister_temporary_type(field.data_type)
-
-    def _unregister_temporary_type(self, data_type: DataType | None) -> None:  # noqa: PLR6301
-        """Keep a type built only to read facts from out of the live reverse-reference graph."""
-        for item in () if data_type is None else data_type.all_data_types:
-            item.unregister_reference()
+        return _rw_split.unregister_temporary_field_references(self, fields)
 
     def _temporary_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None) -> dict[str, Any]:
         """Return the constraint values ``obj`` writes beside ``data_type``, a type built only to read them."""
-        constraints = self._split_constraint_values(obj, data_type)[0]
-        self._unregister_temporary_type(data_type)
-        return constraints
-
-    def _copy_unregistered_fields(
-        self,
-        fields: Iterable[DataModelFieldBase],
-    ) -> list[DataModelFieldBase]:
-        """Copy fields for temporary inheritance work without registering reverse edges."""
-        return [self._copy_model_field(field, register_references=False) for field in fields]
+        return _rw_split.temporary_constraint_values(self, obj, data_type)
 
     def _clear_inherited_field_caches(self) -> None:
         """Release temporary inheritance state after parsing."""
-        for cached_fields in chain(
-            self._raw_inherited_fields_cache.values(),
-            self._request_response_fields.values(),
-        ):
-            self._unregister_temporary_field_references(cached_fields)
-            for field in cached_fields:
-                _detach_deferred_inherited_field_parents(field)
-        self._raw_inherited_fields_cache.clear()
-        self._raw_inherited_own_names_cache.clear()
-        self._request_response_fields.clear()
-        self._rw_model_field_facts_cache.clear()
-        self._rw_model_references_cache.clear()
-        self._rw_model_variant_requirement_cache.clear()
-        self._rw_model_variant_references.clear()
-        self._inherited_schema_cache.clear()
-        self._inherited_schema_ancestor_cache.clear()
-        self._inherited_schema_linearization_cache.clear()
-        self._inherited_required_cache.clear()
-        self._inherited_parent_property_cache.clear()
-        self._ref_target_dumps.clear()
-        self._unsatisfiable_schemas.clear()
-        self._untaken_pattern_schemas.clear()
-        if self.generate_schema_validators:
-            self._property_count_rule_cache.clear()
+        return _rw_split.clear_inherited_field_caches(self)
 
     def _merge_inherited_field_overrides(
         self,
@@ -1720,78 +1568,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase],
     ) -> list[DataModelFieldBase]:
         """Overlay declarations on inherited fields while resolving deferred partial types."""
-        deduplicated: dict[str, DataModelFieldBase] = {}
-        overridden_fields: dict[str, DataModelFieldBase] = {}
-        for field in chain(inherited_fields, fields):
-            if (key := _field_source_name(field)) is None:
-                continue
-            if inherited_field := deduplicated.get(key):
-                overridden_fields[key] = inherited_field
-            deduplicated[key] = field
-
-        reserved_names = {field.name for field in deduplicated.values() if field.name}
-        result: list[DataModelFieldBase] = []
-        for key, field in deduplicated.items():
-            inherited_field = overridden_fields.get(key)
-            if (
-                inherited_field is None
-                or (
-                    resolved_field := self._overlay_inherited_field(
-                        field, inherited_field, reserved_names, register_references=False
-                    )
-                )
-                is None
-            ):
-                result.append(field)
-                continue
-            if class_name := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
-                self._apply_inherited_field_default(resolved_field, inherited_field, class_name=class_name)
-            elif class_name := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
-                source = self._inherited_default_source(field, inherited_field)
-                self._apply_inherited_field_default(resolved_field, source, class_name=class_name)
-            result.append(resolved_field)
-        return result
-
-    def _overlay_inherited_field(
-        self,
-        field: DataModelFieldBase,
-        inherited_field: DataModelFieldBase,
-        reserved_names: set[str],
-        *,
-        register_references: bool = True,
-    ) -> DataModelFieldBase | None:
-        """Return the copy of ``inherited_field`` that the deferred override ``field`` resolves to, else None.
-
-        The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``) and
-        the required state of the override, without the inherited constructor default.
-        """
-        if (
-            resolved_field := self._copy_inherited_field(
-                field,
-                inherited_field,
-                force_optional=self.force_optional_for_required_fields,
-                partial_merge_mode=self.allof_merge_mode,
-                register_references=register_references,
-                reserved_names=reserved_names,
-            )
-        ) is not None:
-            self._prepare_required_inherited_field(resolved_field, inherited_field, overriding_field=field)
-        return resolved_field
-
-    def _inherited_default_source(
-        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase
-    ) -> DataModelFieldBase:
-        """Return the field whose default the override ``field`` of ``inherited_field`` takes.
-
-        The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
-        ``field`` declares none.
-        """
-        if inherits_keyword(self.allof_merge_mode.value, "default") and not (
-            _RAW_SCHEMA_DEFAULT_KEY in field.__dict__
-            and field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-        ):
-            return inherited_field
-        return field
+        return _rw_split.merge_inherited_field_overrides(self, inherited_fields, fields)
 
     def _prepare_required_inherited_field(
         self,
@@ -1801,15 +1578,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         overriding_field: DataModelFieldBase | None = None,
     ) -> None:
         """Remove inherited constructor defaults while retaining explicit child metadata."""
-        explicit_extras = (
-            overriding_field.__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, overriding_field.extras)
-            if overriding_field is not None
-            else ()
-        )
-        self.data_model_type.prepare_required_inherited_field(
-            field,
-            inherited_field,
-            explicit_extras=explicit_extras,
+        return _rw_split.prepare_required_inherited_field(
+            self, field, inherited_field, overriding_field=overriding_field
         )
 
     def _get_raw_inherited_fields(
@@ -1818,57 +1588,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         active: frozenset[str],
     ) -> list[DataModelFieldBase]:
         """Recursively materialize one raw schema's effective fields without live reverse edges."""
-        resolved_ref = reference.path
-        if (cached_fields := self._raw_inherited_fields_cache.get(resolved_ref)) is not None:
-            return self._copy_unregistered_fields(cached_fields)
-        if (cached_fields := self._request_response_fields.get(resolved_ref)) is not None:
-            if resolved_ref not in self._raw_inherited_own_names_cache and SPECIAL_PATH_MARKER not in resolved_ref:
-                schema = self._load_inherited_schema_object(resolved_ref)
-                self._raw_inherited_own_names_cache[resolved_ref] = self._get_inline_property_names(schema)
-            return self._copy_unregistered_fields(cached_fields)
-        if resolved_ref in active or SPECIAL_PATH_MARKER in resolved_ref:
-            return []
-
-        schema = self._load_inherited_schema_object(resolved_ref)
-        parent_refs = self._get_allof_parent_references(
-            schema,
-            defining_ref=resolved_ref,
-        )
-        parent_fields = self._collect_inherited_fields_for_request_response(
-            parent_refs,
-            active | {resolved_ref},
-        )
-        if isinstance(reference.source, DataModel):
-            own_fields = self._copy_unregistered_fields(reference.source.fields)
-        else:
-            own_fields = self._parse_inherited_schema_fields(
-                reference,
-                schema,
-                parent_refs,
-                parent_fields,
-            )
-        self._raw_inherited_own_names_cache[resolved_ref] = frozenset(
-            field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
-        )
-        result = self._merge_inherited_field_overrides(parent_fields, own_fields)
-
-        required_names = {
-            field_name
-            for field in parent_fields
-            if field.required and (field_name := _field_source_name(field)) is not None
-        }
-        required_names.update(self._get_inline_required_names(schema))
-        if not self.force_optional_for_required_fields:
-            for field in result:
-                if _field_source_name(field) in required_names:
-                    field.required = True
-                    field.use_default_with_required = (
-                        self.apply_default_values_for_required_fields and field.has_default
-                    )
-                self.data_model_type.finalize_required_inherited_field(field)
-
-        self._raw_inherited_fields_cache[resolved_ref] = tuple(result)
-        return self._copy_unregistered_fields(result)
+        return _rw_split.get_raw_inherited_fields(self, reference, active)
 
     @cached_property
     def _legacy_rw_variants(self) -> frozenset[str]:
@@ -1879,114 +1599,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         split. ``legacy-rw-unowned-parent-fields``: the inline models of an allOf parent's own fields are parsed at no
         owner path.
         """
-        if self.dedupe_request_response_variants:
-            return frozenset()
-        return frozenset({"legacy-rw-parsed-facts", "legacy-rw-unowned-parent-fields"})
-
-    def _collect_all_fields_for_request_response(
-        self,
-        fields: list[DataModelFieldBase],
-        base_classes: list[Reference] | None,
-    ) -> list[DataModelFieldBase]:
-        """Collect parent → child fields, with each child declaration overriding its parent.
-
-        The merge leaves out the root field of a root-model base, which types the base's value and is no property.
-        """
-        inherited_fields = self._collect_inherited_fields_for_request_response(base_classes or [])
-        if not inherited_fields:
-            return fields
-        return self._merge_inherited_field_overrides(inherited_fields, fields)
-
-    def _get_separate_model_fields(
-        self,
-        reference: Reference,
-        fields: list[DataModelFieldBase],
-        base_classes: list[Reference] | None,
-    ) -> list[DataModelFieldBase] | None:
-        """Collect Request/Response fields once when separate models are needed.
-
-        The model's own fields, the types it writes beside them and the schema facts of its allOf bases decide;
-        inherited fields are collected only for a model that may split. A stand-in never splits.
-        """
-        if self.read_only_write_only_model_type is None or self._is_base_stand_in(reference):
-            return None
-        if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
-            all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            return all_fields if self._splits_into_rw_model_variants(reference, all_fields, base_classes) else None
-        all_fields: list[DataModelFieldBase] | None = None
-        if (
-            self._rw_model_fields_split(fields)
-            or any(self._ref_schema_has_rw_model_facts(base.path) for base in base_classes or () if base.path)
-            or self._rw_model_writes_variant_beside_fields(reference.path)
-        ):
-            all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            if not self._splits_into_rw_model_variants(reference, all_fields, base_classes):
-                all_fields = None
-        return all_fields
-
-    def _rw_model_fields_split(self, fields: list[DataModelFieldBase]) -> bool:
-        """Return whether fields split their model: one is flagged or, under request-response, references variants."""
-        return any(field.read_only or field.write_only for field in fields) or (
-            self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
-            and self._fields_reference_rw_model_variant(fields, "Request")
-        )
-
-    def _splits_into_rw_model_variants(
-        self,
-        reference: Reference,
-        all_fields: list[DataModelFieldBase],
-        base_classes: list[Reference] | None,
-    ) -> bool:
-        """Return whether the model of ``reference`` with these effective fields splits into read/write variants.
-
-        Under request-response a model also splits where the types it writes beside its fields name a model with
-        variants, where the effective fields of an allOf ancestor split it, or where the references to one of its allOf
-        bases read variants, as those of a root model do: the variants replace the base's model, so nothing can inherit
-        from it, even where the model's own declarations take the flags of the inherited fields away.
-        """
-        if self._rw_model_fields_split(all_fields):
-            return True
-        if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
-            return False
-        return (
-            any(
-                self._rw_model_fields_split(
-                    self._get_raw_inherited_fields(
-                        self.model_resolver.add_ref(resolved_ref, resolved=True), frozenset()
-                    )
-                )
-                for resolved_ref in self._linearize_inherited_schema_refs(base_classes or [])
-            )
-            or self._rw_model_writes_variant_beside_fields(reference.path)
-            or any(self._ref_schema_generates_variant(base.path, "Request") for base in base_classes or ())
-        )
-
-    def _rw_model_writes_variant_beside_fields(self, reference_path: str) -> bool:
-        """Return whether a type the model at a key writes beside its fields names a model with variants.
-
-        Under request-response, the types its schema validator rules name and the type of additional properties that
-        TypedDict records as extra_items (``set_additional_properties``) name models as the fields do.
-        """
-        if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
-            return False
-        template_data = self.extra_template_data.get(reference_path, {})
-        data_types: list[DataType] = []
-        if _is_internal_schema_runtime_validation(rules := template_data.get("schema_runtime_validation")):
-            data_types.extend(rules.data_types)
-        if (source := self._output_model_context.additional_properties_type_source(template_data)) is not None:
-            data_types.append(cast("DataType", source))
-        return self._data_types_reference_rw_model_variant(data_types, "Request")
-
-    def _should_generate_base_model(self, *, generates_separate_models: bool = False) -> bool:
-        """Determine if Base model should be generated."""
-        return (
-            self.read_only_write_only_model_type in {None, ReadOnlyWriteOnlyModelType.All}
-            or not generates_separate_models
-        )
-
-    def _get_rw_model_field_facts(self, fields: Iterable[DataModelFieldBase]) -> tuple[bool, bool, bool, bool]:  # noqa: PLR6301
-        """Return the read/write facts of ``fields`` (``_rw_flag_facts``)."""
-        return _rw_flag_facts((field.read_only, field.write_only) for field in fields)
+        return _rw_split.legacy_rw_variants(self)
 
     def _get_ref_schema_rw_model_field_facts(
         self,
@@ -1998,68 +1611,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         declaration count as unflagged fields; nothing is parsed. Under ``legacy-rw-parsed-facts`` the facts of a
         temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
         """
-        if (cached := self._rw_model_field_facts_cache.get(resolved_ref)) is not None:
-            return cached
-        if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
-            return self._get_parsed_ref_schema_rw_model_field_facts(resolved_ref)
-        flags: dict[str, tuple[bool, bool]] = {}
-        reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
-        for ref in reversed(self._linearize_inherited_schema_refs([reference])):
-            self._join_rw_model_property_flags(ref, flags)
-        if not self.force_optional_for_required_fields:
-            for name in self._get_inherited_required_names([reference]):
-                flags.setdefault(name, (False, False))
-        result = _rw_flag_facts(flags.values())
-        self._rw_model_field_facts_cache[resolved_ref] = result
-        return result
-
-    def _get_parsed_ref_schema_rw_model_field_facts(
-        self,
-        resolved_ref: str,
-    ) -> tuple[bool, bool, bool, bool] | None:
-        """Return the read/write facts of the fields a temporary parse of the schema at ``resolved_ref`` gives.
-
-        The facts of 0.86.0, kept under ``legacy-rw-parsed-facts``: the parse registers the inline models it
-        meets. A key whose parse is already in progress, reached again through the models that parse builds, has no
-        facts, so the parse never re-enters itself; ``None`` also for a key that names no loadable schema.
-        """
-        if resolved_ref in self._rw_model_field_facts_in_progress:
-            return None
-        self._rw_model_field_facts_in_progress.add(resolved_ref)
-        try:
-            reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
-            fields = self._get_raw_inherited_fields(reference, frozenset())
-        except (Error, OSError):
-            return None
-        finally:
-            self._rw_model_field_facts_in_progress.discard(resolved_ref)
-        result = self._get_rw_model_field_facts(fields)
-        self._rw_model_field_facts_cache[resolved_ref] = result
-        return result
-
-    def _join_rw_model_property_flags(self, resolved_ref: str, flags: dict[str, tuple[bool, bool]]) -> None:
-        """Join the readOnly/writeOnly flags of the properties the schema at a key declares, by name, into ``flags``.
-
-        The properties of inline allOf members count as its own, as inherited fields collect them.
-        """
-        pending = [self._load_inherited_schema_object(resolved_ref)]
-        with self._inherited_ref_context(resolved_ref):
-            while pending:
-                schema = pending.pop()
-                for name, prop in (schema.properties or {}).items():
-                    read_only, write_only = flags.get(name, (False, False))
-                    if isinstance(prop, JsonSchemaObject):
-                        read_only |= self._resolve_field_flag(prop, "readOnly")
-                        write_only |= self._resolve_field_flag(prop, "writeOnly")
-                    flags[name] = read_only, write_only
-                pending.extend(sub for sub in schema.allOf if isinstance(sub, JsonSchemaObject) and not sub.ref)
-
-    def _ref_schema_has_rw_model_facts(self, resolved_ref: str) -> bool:
-        """Return whether inheriting the schema at ``resolved_ref`` can bring read/write facts into a model."""
-        if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-            return self._ref_schema_generates_variant(resolved_ref, "Request")
-        facts = self._get_ref_schema_rw_model_field_facts(resolved_ref)
-        return facts is not None and (facts[0] or facts[1])
+        return _rw_split.get_ref_schema_rw_model_field_facts(self, resolved_ref)
 
     def _ref_schema_generates_variant(
         self,
@@ -2067,57 +1619,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         suffix: Literal["Request", "Response"],
     ) -> bool:
         """Check whether a referenced schema generates the requested read/write variant."""
-        cache_key = resolved_ref, suffix
-        if (cached := self._rw_model_variant_requirement_cache.get(cache_key)) is not None:
-            return cached
-        if _rw_variant_of(resolved_ref):
-            return False
-        if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-            return self._request_response_ref_schema_generates_variant(resolved_ref)
-        if (facts := self._get_ref_schema_rw_model_field_facts(resolved_ref)) is None:
-            return False
-        result = _rw_facts_need_variant(facts, suffix)
-        self._rw_model_variant_requirement_cache[cache_key] = result
-        return result
+        return _rw_split.ref_schema_generates_variant(self, resolved_ref, suffix)
 
     def _request_response_ref_schema_generates_variant(
         self,
         resolved_ref: str,
     ) -> bool:
         """Resolve Request/Response variant reachability once per graph node."""
-        pending = [resolved_ref]
-        parent_by_ref: dict[str, str | None] = {resolved_ref: None}
-        matched_ref: str | None = None
-        while pending:
-            current_ref = pending.pop()
-            match self._rw_model_variant_requirement_cache.get((current_ref, "Request")):
-                case True:
-                    matched_ref = current_ref
-                    break
-                case False:
-                    continue
-            if _rw_variant_of(current_ref):
-                continue
-            has_direct_variant, nested_refs = self._get_rw_model_variant_graph_node(current_ref)
-            if has_direct_variant:
-                matched_ref = current_ref
-                break
-            for nested_ref in nested_refs:
-                if nested_ref not in parent_by_ref:
-                    parent_by_ref[nested_ref] = current_ref
-                    pending.append(nested_ref)
-
-        if matched_ref is None:
-            for evaluated_ref in parent_by_ref:
-                self._rw_model_variant_requirement_cache[evaluated_ref, "Request"] = False
-                self._rw_model_variant_requirement_cache[evaluated_ref, "Response"] = False
-            return False
-
-        while matched_ref is not None:
-            self._rw_model_variant_requirement_cache[matched_ref, "Request"] = True
-            self._rw_model_variant_requirement_cache[matched_ref, "Response"] = True
-            matched_ref = parent_by_ref[matched_ref]
-        return True
+        return _rw_split.request_response_ref_schema_generates_variant(self, resolved_ref)
 
     def _get_rw_model_variant_graph_node(self, resolved_ref: str) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys it references.
@@ -2126,46 +1635,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``legacy-rw-parsed-facts``, the 0.86.0 node: the facts of a temporary parse of the key also split it,
         and the models its parsed fields reference are edges too.
         """
-        if "legacy-rw-parsed-facts" not in self._legacy_rw_variants:
-            if SPECIAL_PATH_MARKER in resolved_ref:
-                return False, ()
-            return self._get_ref_schema_rw_model_reference_facts(resolved_ref)
-        facts = self._get_ref_schema_rw_model_field_facts(resolved_ref)
-        fields = self._raw_inherited_fields_cache.get(resolved_ref)
-        if fields is None:
-            fields = self._request_response_fields.get(resolved_ref, ())
-        nested_refs = {
-            reference.path: None
-            for field in fields
-            for data_type in field.data_type.all_data_types
-            if (reference := data_type.reference) is not None
-        }
-        has_inline_variant, raw_refs = self._get_ref_schema_rw_model_reference_facts(resolved_ref)
-        nested_refs.update(dict.fromkeys(raw_refs))
-        return (facts is not None and (facts[0] or facts[1])) or has_inline_variant, tuple(nested_refs)
-
-    def _fields_reference_rw_model_variant(
-        self,
-        fields: Iterable[DataModelFieldBase],
-        suffix: Literal["Request", "Response"],
-    ) -> bool:
-        """Return whether any nested field reference needs the requested variant."""
-        return self._data_types_reference_rw_model_variant((field.data_type for field in fields), suffix)
-
-    def _data_types_reference_rw_model_variant(
-        self,
-        data_types: Iterable[DataType],
-        suffix: Literal["Request", "Response"],
-    ) -> bool:
-        """Return whether any reference these types name, nested ones included, needs the requested variant."""
-        for data_type in data_types:
-            for nested_data_type in data_type.all_data_types:
-                if (reference := nested_data_type.reference) and self._ref_schema_generates_variant(
-                    reference.path,
-                    suffix,
-                ):
-                    return True
-        return False
+        return _rw_split.get_rw_model_variant_graph_node(self, resolved_ref)
 
     @cached_property
     def _writes_extra_items_type(self) -> bool:
@@ -2174,9 +1644,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         That type is the lightweight type of additionalProperties (``_build_lightweight_type``), which names models
         and generates none.
         """
-        return (
-            self.use_closed_typed_dict and self._output_model_context.requires_additional_properties_reference_classes
-        )
+        return _rw_split.writes_extra_items_type(self)
 
     def _get_ref_schema_rw_model_reference_facts(
         self,
@@ -2189,39 +1657,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         references of a node that needs variants are never read (under ``legacy-rw-parsed-facts`` it reads them all,
         as 0.86.0 did). A key that names no loadable schema has neither.
         """
-        if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
-            return cached
-        try:
-            root_schema = self._load_inherited_schema_object(resolved_ref)
-        except (Error, OSError):
-            return False, ()
-
-        has_inline_variant = False
-        references: dict[str, None] = {}
-        stack: list[_Site] = [SchemaSite("", root_schema, [resolved_ref])]
-        while stack:
-            for child in self._DEFINITION_TABLE.typed_children(self, stack.pop()):
-                match child.position:
-                    case "fields":
-                        if has_inline_variant or not self._schema_has_rw_model_fields(
-                            cast("JsonSchemaObject", child.schema), resolved_ref
-                        ):
-                            continue
-                        if "legacy-rw-parsed-facts" not in self._legacy_rw_variants:
-                            self._rw_model_references_cache[resolved_ref] = result = (True, ())
-                            return result
-                        has_inline_variant = True
-                    case "ref":
-                        if nested_ref := self._resolve_rw_model_reference(cast("str", child.reference), resolved_ref):
-                            references.setdefault(nested_ref, None)
-                    case "key":
-                        references.setdefault(cast("str", child.reference), None)
-                    case _:
-                        stack.append(
-                            SchemaSite("", cast("JsonSchemaObject", child.schema), [resolved_ref], parent=child.into)
-                        )
-        self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
-        return result
+        return _rw_split.get_ref_schema_rw_model_reference_facts(self, resolved_ref)
 
     def _typed_model_children(self, site: _Site) -> Iterator[TypedChild[JsonSchemaObject]]:  # noqa: PLR0912
         """Return what the model built from a schema types: the children and keys of the definition table's sites.
@@ -2250,10 +1686,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if into is None:
             is_key_model = schema is self._load_inherited_schema_object(defining_ref)
             schema, model_schema = map(
-                self._read_false_all_of_values, self._merged_ref_model_schemas(schema, defining_ref)
+                self._read_false_all_of_values, _rw_split.merged_ref_model_schemas(self, schema, defining_ref)
             )
             into = model_schema
-            builds_map = self._schema_builds_map_model(model_schema, defining_ref)
+            builds_map = _rw_split.schema_builds_map_model(self, model_schema, defining_ref)
             types_map = not (model_schema.properties or model_schema.allOf)
             extras: JsonSchemaObject | bool | None = schema.additionalProperties
             with self._inherited_ref_context(defining_ref):
@@ -2279,11 +1715,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         if data_type is None
                         else tuple(item.reference.path for item in data_type.all_data_types if item.reference)
                     )
-                    self._unregister_temporary_type(data_type)
+                    _rw_split.unregister_temporary_type(self, data_type)
                 yield from (TypedChild("key", reference=key) for key in keys)
         else:
             model_schema = schema
-            builds_map = self._schema_builds_map_model(into, defining_ref)
+            builds_map = _rw_split.schema_builds_map_model(self, into, defining_ref)
             types_map = False
             extras = schema.additionalProperties if builds_map else None
         yield TypedChild("fields", schema)
@@ -2307,102 +1743,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else (pattern_properties if types_map else schema.properties,)
         ):
             for item in (mapping or {}).values():
-                yield from self._typed_field_site(item, defining_ref)
+                yield from _rw_split.typed_field_site(self, item, defining_ref)
         if schema.is_array:
             with self._inherited_ref_context(defining_ref):
                 positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
             for item in positions.values():
-                yield from self._typed_field_site(item, defining_ref)
+                yield from _rw_split.typed_field_site(self, item, defining_ref)
         for item in (extras, *schema.oneOf, *schema.anyOf):
-            yield from self._typed_field_site(item, defining_ref)
+            yield from _rw_split.typed_field_site(self, item, defining_ref)
         yield from (
             TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
         )
         if self.generate_schema_validators:
             yield from (TypedChild("model", item) for item in self._iter_conditional_branches(schema))
 
-    def _typed_field_site(self, item: object, defining_ref: str) -> Iterable[TypedChild[JsonSchemaObject]]:
-        """Return what a field site of a schema types, as the row ``parse_item`` chooses for it declares.
-
-        Row ``legacy-rw-field-site-as-written``: the row is chosen from the site as written, its $ref merged with its
-        sibling keywords only where the site itself writes a customTypePath.
-        """
-        if not isinstance(item, JsonSchemaObject):
-            return ()
-        site = SchemaSite("", item, [defining_ref])
-        as_parsed = None
-        if item.custom_type_path and _merges_ref_siblings(item):
-            with self._inherited_ref_context(defining_ref):
-                as_parsed = replace(site, obj=self._merge_ref_with_schema(item))
-        return self._FIELD_TABLE.typed_children(self, site, as_parsed=as_parsed)
-
-    def _merged_ref_model_schemas(
-        self, schema: JsonSchemaObject, defining_ref: str
-    ) -> tuple[JsonSchemaObject, JsonSchemaObject]:
-        """Return the schema the walk reads for ``schema`` and the schema whose keywords decide what its keywords type.
-
-        A $ref with sibling keywords decides as ``_merged_ref_sibling_schemas`` says. An allOf whose members redeclare
-        a property with different schemas builds its model from the one object they merge into
-        (``_merge_all_of_object``), which keeps their additionalProperties, so the walk reads that object for both.
-        """
-        schema, model_schema = self._merged_ref_sibling_schemas(schema, defining_ref)
-        if schema is model_schema and schema.allOf:
-            with self._inherited_ref_context(defining_ref):
-                if merged := self._merge_all_of_object(schema):
-                    return merged, merged
-        return schema, model_schema
-
-    def _merged_ref_sibling_schemas(
-        self, schema: JsonSchemaObject, defining_ref: str
-    ) -> tuple[JsonSchemaObject, JsonSchemaObject]:
-        """Return the schema the walk reads for a $ref with sibling keywords and the schema that decides its keywords.
-
-        The model of a $ref with sibling keywords is built from the $ref merged with them, so where map keywords sit
-        beside a $ref outside allOf, that merged schema decides what they type. Where the target builds a map with map
-        keywords and the merged schema builds none (``_schema_builds_map_model``), the model types none of the target's
-        map keywords and never names the target's model, so the walk reads the merged schema in place of the reference
-        to the target. Any other schema decides for itself.
-        """
-        if not _merges_ref_siblings(schema):
-            return schema, schema
-        with self._inherited_ref_context(defining_ref):
-            if self._is_ref_circular(resolved_ref := self._ref_path(ref := self._lenient_ref(cast("str", schema.ref)))):
-                return schema, schema
-            target = self._schema_object(self._ref_target_dump(ref, resolved_ref)[0])
-            target_builds_map = _has_map_keywords(target) and self._schema_builds_map_model(target, defining_ref)
-            if not (target_builds_map or _has_map_keywords(schema)):
-                return schema, schema
-            merged = self._merge_ref_with_schema(schema)
-        if target_builds_map and not self._schema_builds_map_model(merged, defining_ref):
-            return merged, merged
-        return schema, merged
-
-    def _schema_builds_map_model(self, schema: JsonSchemaObject, defining_ref: str) -> bool:
-        """Return whether the model built from a schema is an object map, whose map keywords type its keys and values.
-
-        A schema with properties builds a model with fields. An allOf builds a map only where the schema has no
-        patternProperties or propertyNames and every item is an object map (``_is_all_of_mapping_item``), as
-        ``_merge_all_of_root_schema`` merges it; otherwise the allOf builds a model with fields or bases.
-        """
-        if schema.properties:
-            return False
-        if not schema.allOf:
-            return True
-        if schema.patternProperties or schema.propertyNames is not None:
-            return False
-        with self._inherited_ref_context(defining_ref):
-            return all(
-                isinstance(item, JsonSchemaObject)
-                and self._is_all_of_mapping_item(self._load_ref_schema_object(item.ref) if item.ref else item)
-                for item in schema.allOf
-            )
-
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""
-        with self._inherited_ref_context(defining_ref):
-            if self._resolve_external_ref_mapping(ref) is not None:
-                return None
-            return self._ref_path(ref)
+        return _rw_split.resolve_rw_model_reference(self, ref, defining_ref)
 
     def _get_rw_property_name_sources(
         self,
@@ -2411,40 +1768,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         defining_ref: str,
     ) -> tuple[tuple[str, ...], tuple[JsonSchemaObject, ...]]:
         """Mirror propertyNames key parsing without following ignored nested shapes."""
-        if not isinstance(property_names, JsonSchemaObject):
-            return (), ()
-        if _merges_ref_siblings(property_names):
-            with self._inherited_ref_context(defining_ref):
-                property_names = self._merge_ref_with_schema(property_names)
-        combined = tuple(
-            item
-            for item in chain(property_names.anyOf, property_names.oneOf, property_names.allOf)
-            if isinstance(item, JsonSchemaObject)
-        )
-        if combined:
-            return (), combined
-        return ((property_names.ref,), ()) if property_names.ref else ((), ())
-
-    def _schema_has_rw_model_fields(
-        self,
-        schema: JsonSchemaObject,
-        defining_ref: str,
-    ) -> bool:
-        """Resolve read/write flags on fields exactly as object parsing does."""
-        with self._inherited_ref_context(defining_ref):
-            return any(
-                isinstance(prop, JsonSchemaObject)
-                and (self._resolve_field_flag(prop, "readOnly") or self._resolve_field_flag(prop, "writeOnly"))
-                for prop in (schema.properties or {}).values()
-            )
+        return _rw_split.get_rw_property_name_sources(self, property_names=property_names, defining_ref=defining_ref)
 
     def _preload_property_refs_for_rw_models(self, obj: JsonSchemaObject) -> None:
         """Preload property refs needed for readOnly/writeOnly model splitting."""
-        if self.read_only_write_only_model_type is None or not obj.properties:
-            return
-        for prop in obj.properties.values():
-            if isinstance(prop, JsonSchemaObject) and prop.ref and self._resolve_external_ref_mapping(prop.ref) is None:
-                self._load_ref_schema_object(prop.ref)
+        return _rw_split.preload_property_refs_for_rw_models(self, obj)
 
     def _get_rw_model_variant_reference(
         self,
@@ -2454,43 +1782,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         loaded: bool = False,
     ) -> Reference:
         """Create a variant reference, reserving request/response paths for recursive uses."""
-        cache_key: tuple[str, str] | None = None
-        if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-            cache_key = base_reference.path, suffix
-            if (reference := self._rw_model_variant_references.get(cache_key)) is not None:
-                reference.loaded |= loaded
-                return reference
-
-        if self._ref_schema_exists(source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)):
-            self.model_resolver.add_ref(source_variant_ref, resolved=True)
-
-        class_name_suffix = self.model_resolver.class_name_suffix
-        base_name_without_index = base_reference.name.rstrip(digits)
-        numeric_index = base_reference.name.removeprefix(base_name_without_index)
-        variant_name = (
-            f"{base_name_without_index[: -len(class_name_suffix)]}{suffix}{class_name_suffix}{numeric_index}"
-            if class_name_suffix and base_name_without_index.endswith(class_name_suffix)
-            else f"{base_reference.name}{suffix}"
-        )
-        yielding = self.model_resolver.is_yielding(base_reference)
-        unique_name = self.model_resolver.get_class_name(
-            variant_name,
-            unique=True,
-            skip_affix=True,
-            preserve_name=True,
-            yields=yielding,
-        ).name
-        reference = self.model_resolver.add(
-            _rw_variant_path(base_reference.path, "request" if suffix == "Request" else "response"),
-            unique_name,
-            class_name=False,
-            unique=False,
-            loaded=loaded,
-            yields=yielding or None,
-        )
-        if cache_key is not None:
-            self._rw_model_variant_references[cache_key] = reference
-        return reference
+        return _rw_split.get_rw_model_variant_reference(self, base_reference, suffix, loaded=loaded)
 
     def _update_data_type_ref_for_variant(
         self,
@@ -2498,27 +1790,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         suffix: Literal["Request", "Response"],
     ) -> None:
         """Recursively update data type references to point to variant models."""
-        for nested_data_type in data_type.all_data_types:
-            if (reference := nested_data_type.reference) and self._ref_schema_generates_variant(reference.path, suffix):
-                base_reference = self.model_resolver.add_ref(reference.path, resolved=True)
-                variant_ref = self._get_rw_model_variant_reference(base_reference, suffix)
-                self._graph_builder.replace_data_type_ref(nested_data_type, variant_ref)
-
-    def _update_field_refs_for_variant(
-        self,
-        model_fields: list[DataModelFieldBase],
-        suffix: Literal["Request", "Response"],
-    ) -> list[DataModelFieldBase]:
-        """Update field references in model_fields to point to variant models.
-
-        For Request models, refs should point to Request variants.
-        For Response models, refs should point to Response variants.
-        """
-        if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
-            return model_fields
-        for field in model_fields:
-            self._update_data_type_ref_for_variant(field.data_type, suffix)
-        return model_fields
+        return _rw_split.update_data_type_ref_for_variant(self, data_type, suffix)
 
     def _update_variant_additional_properties_metadata(
         self,
@@ -2535,25 +1807,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return
         self._update_data_type_ref_for_variant(additional_type, suffix)
-        self._store_extra_items_type(metadata, additional_type, reference_classes_required=True)
-        self._unregister_temporary_type(additional_type)
-
-    def _store_extra_items_type(
-        self, metadata: dict[str, Any], data_type: DataType, *, reference_classes_required: bool, **kwargs: Any
-    ) -> None:
-        """Store the type TypedDict writes as extra_items, with the model classes it names where they are required."""
-        reference_classes = (
-            {item.reference.path for item in data_type.all_data_types if item.reference}
-            if reference_classes_required
-            else None
-        )
-        self._output_model_context.store_additional_properties_type(
-            metadata,
-            _make_referencing_type_expression(data_type) if reference_classes else data_type.type_hint,
-            reference_classes,
-            imports=tuple(data_type.all_imports),
-            **kwargs,
-        )
+        _rw_split.store_extra_items_type(self, metadata, additional_type, reference_classes_required=True)
+        _rw_split.unregister_temporary_type(self, additional_type)
 
     def _copy_schema_runtime_validation_for_variant(  # noqa: PLR0913
         self,
@@ -2646,141 +1901,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         source_fields: Sequence[DataModelFieldBase] = (),
     ) -> None:
         """Create a Request or Response model variant."""
-        if not model_fields and self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
-            return
-        reference, model_fields = self._prepare_rw_model_variant(
-            base_reference, suffix, model_fields, obj, source_fields=source_fields
+        return _rw_split.create_variant_model(
+            self, base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
         )
-        self._create_object_model(reference, obj, model_fields, model_type=data_model_type_class)
-
-    def _prepare_rw_model_variant(  # noqa: PLR0913
-        self,
-        base_reference: Reference,
-        suffix: Literal["Request", "Response"],
-        fields: Sequence[DataModelFieldBase],
-        obj: JsonSchemaObject,
-        *,
-        source_fields: Sequence[DataModelFieldBase],
-        is_root_model: bool = False,
-    ) -> tuple[Reference, list[DataModelFieldBase]]:
-        """Return the reference of the ``suffix`` variant of a model and copies of ``fields`` that name its variants.
-
-        The variant takes the schema object, the additional properties metadata and the runtime validation rules of
-        the model.
-        """
-        variant_fields = [self._copy_model_field(field) for field in fields]
-        reference = self._get_rw_model_variant_reference(base_reference, suffix, loaded=True)
-        self._update_field_refs_for_variant(variant_fields, suffix)
-        self._record_schema_object(reference, obj)
-        self._update_variant_additional_properties_metadata(reference.path, obj, suffix)
-        self._copy_schema_runtime_validation_for_variant(
-            base_reference.path,
-            reference.path,
-            variant_fields,
-            suffix,
-            obj=obj,
-            source_fields=source_fields,
-            is_root_model=is_root_model,
-        )
-        return reference, variant_fields
-
-    def _create_object_model(  # noqa: PLR0913
-        self,
-        reference: Reference,
-        obj: JsonSchemaObject,
-        fields: list[DataModelFieldBase],
-        *,
-        model_type: type[DataModel],
-        base_classes: list[Reference] | None = None,
-        nullable: bool | None = None,
-    ) -> DataModel:
-        """Create and register the model of an object schema, nullable as given or else where the schema admits null."""
-        model = self._create_data_model(
-            model_type=model_type,
-            reference=reference,
-            fields=fields,
-            base_classes=base_classes,
-            custom_base_class=self._resolve_base_class(reference.name, obj.custom_base_path),
-            custom_template_dir=self.custom_template_dir,
-            extra_template_data=self.extra_template_data,
-            path=self.current_source_path,
-            description=obj.description if self.use_schema_description else None,
-            nullable=self._object_nullable(obj) if nullable is None else nullable,
-            keyword_only=self.keyword_only,
-            treat_dot_as_module=self.treat_dot_as_module,
-            dataclass_arguments=self.dataclass_arguments,
-        )
-        self._graph_builder.register_model(model)
-        return model
-
-    def _register_object_model(  # noqa: PLR0913
-        self,
-        reference: Reference,
-        obj: JsonSchemaObject,
-        fields: list[DataModelFieldBase],
-        base_classes: list[Reference] | None,
-        *,
-        model_type: type[DataModel],
-        nullable: bool | None = None,
-    ) -> DataModel | None:
-        """Register the model of an object schema and the read/write variants its fields split it into.
-
-        Returns the model, or None where only its variants are written.
-        """
-        if (all_fields := self._get_separate_model_fields(reference, fields, base_classes)) is not None:
-            self._create_request_response_models(
-                reference=reference,
-                obj=obj,
-                all_fields=all_fields,
-                own_fields=fields,
-                data_model_type_class=model_type,
-            )
-        if not self._should_generate_base_model(generates_separate_models=all_fields is not None):
-            self._unregister_temporary_field_references(fields)
-            return None
-        return self._create_object_model(
-            reference, obj, fields, model_type=model_type, base_classes=base_classes, nullable=nullable
-        )
-
-    def _create_request_response_models(
-        self,
-        reference: Reference,
-        obj: JsonSchemaObject,
-        all_fields: list[DataModelFieldBase],
-        own_fields: list[DataModelFieldBase],
-        data_model_type_class: type[DataModel],
-    ) -> None:
-        """Generate Request and Response model variants."""
-        facts = self._get_rw_model_field_facts(all_fields)
-        variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = []
-        match self.read_only_write_only_model_type:
-            case ReadOnlyWriteOnlyModelType.RequestResponse:
-                if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
-                    self._rw_model_field_facts_cache[reference.path] = facts
-                self._rw_model_variant_requirement_cache[reference.path, "Request"] = True
-                self._rw_model_variant_requirement_cache[reference.path, "Response"] = True
-                self._request_response_fields[reference.path] = tuple(self._copy_unregistered_fields(all_fields))
-                self._raw_inherited_own_names_cache[reference.path] = frozenset(
-                    field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
-                )
-                variants.extend((
-                    ("Request", [field for field in all_fields if not field.read_only]),
-                    ("Response", [field for field in all_fields if not field.write_only]),
-                ))
-            case _:
-                if _rw_facts_need_variant(facts, "Request"):
-                    variants.append(("Request", [field for field in all_fields if not field.read_only]))
-                if _rw_facts_need_variant(facts, "Response"):
-                    variants.append(("Response", [field for field in all_fields if not field.write_only]))
-        for suffix, model_fields in variants:
-            self._create_variant_model(
-                reference,
-                suffix,
-                model_fields,
-                obj,
-                data_model_type_class,
-                source_fields=all_fields,
-            )
 
     def get_object_field(  # noqa: PLR0913
         self,
@@ -2842,8 +1965,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         _value_keywords.suppress_array_length_constraints(self, constraints, field)
         nullable = self._null_facts(field, "field", required=required, has_default=has_default).admits_null
         extras = self.get_field_extras(field)
-        read_only = self._resolve_field_flag(field, "readOnly")
-        write_only = self._resolve_field_flag(field, "writeOnly")
+        read_only = _rw_split.resolve_field_flag(self, field, "readOnly")
+        write_only = _rw_split.resolve_field_flag(self, field, "writeOnly")
         model_field = self._build_field(
             "property",
             field_type,
@@ -3283,7 +2406,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return
             if additional_props_type := self._extra_items_type(additional_properties):  # pragma: no branch
                 context = self._output_model_context
-                self._store_extra_items_type(
+                _rw_split.store_extra_items_type(
+                    self,
                     self.extra_template_data[path],
                     additional_props_type,
                     reference_classes_required=context.requires_additional_properties_reference_classes,
@@ -3329,7 +2453,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return
         data_type = self.get_ref_data_type(ref)
         reference.__dict__[_DERIVED_FROM_KEY] = data_type.reference
-        self._unregister_temporary_type(data_type)
+        _rw_split.unregister_temporary_type(self, data_type)
 
     def _set_schema_metadata(self, path: str, obj: JsonSchemaObject) -> None:
         """Set title, $id, additionalProperties and unevaluatedProperties in extra template data."""
@@ -4515,7 +3639,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if nested_type.reference:  # pragma: no cover
                     groups.ref_data_types.append(nested_type)
                 else:
-                    self._unregister_temporary_type(nested_type)
+                    _rw_split.unregister_temporary_type(self, nested_type)
                     groups.primitives.append(item)
             elif item.enum:  # pragma: no cover
                 groups.primitives.append(item)
@@ -5712,13 +4836,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         )
                     continue
                 if inherited_field is not None:
-                    resolved_field = self._overlay_inherited_field(field, inherited_field, reserved_names)
+                    resolved_field = _rw_split.overlay_inherited_field(self, field, inherited_field, reserved_names)
                     if resolved_field is None:  # pragma: no cover
                         continue
                     if self.model_resolver.default_value_overrides:
                         self._apply_inherited_field_default(
                             resolved_field,
-                            self._inherited_default_source(field, inherited_field),
+                            _rw_split.inherited_default_source(self, field, inherited_field),
                             class_name=name,
                         )
                     fields[index] = resolved_field
@@ -5770,8 +4894,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self.generate_schema_validators:
             self._add_schema_validators(reference.path, reference.name, obj, path, fields, base_classes)
 
-        self._register_object_model(
-            reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
+        _rw_split.register_object_model(
+            self, reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
         )
         return self.data_type(reference=reference)
 
@@ -5997,18 +5121,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
             and not self._is_base_stand_in(reference)
             and (
-                self._fields_reference_rw_model_variant(fields, "Request")
-                or self._rw_model_writes_variant_beside_fields(reference.path)
+                _rw_split.fields_reference_rw_model_variant(self, fields, "Request")
+                or _rw_split.rw_model_writes_variant_beside_fields(self, reference.path)
             )
         )
         if splits:
-            self._request_response_fields[reference.path] = tuple(self._copy_unregistered_fields(fields))
+            self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))
             if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
-                self._rw_model_field_facts_cache[reference.path] = self._get_rw_model_field_facts(fields)
+                self._rw_model_field_facts_cache[reference.path] = _rw_split.get_rw_model_field_facts(self, fields)
             variants: list[DataModel] = []
             for suffix in ("Request", "Response"):
-                variant_reference, variant_fields = self._prepare_rw_model_variant(
-                    reference, suffix, fields, obj, source_fields=fields, is_root_model=True
+                variant_reference, variant_fields = _rw_split.prepare_rw_model_variant(
+                    self, reference, suffix, fields, obj, source_fields=fields, is_root_model=True
                 )
                 self._rw_model_variant_requirement_cache[reference.path, suffix] = True
                 variant_root_model_type = self._get_runtime_validation_root_model_type(
@@ -6682,7 +5806,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 include_property_count=data_model_type_class is self.data_model_type,
             )
 
-        model = self._register_object_model(reference, obj, fields, None, model_type=data_model_type_class)
+        model = _rw_split.register_object_model(self, reference, obj, fields, None, model_type=data_model_type_class)
         if merged_copy and model is not None:
             self._merged_copies.add(model)
         return self.data_type(reference=reference)
