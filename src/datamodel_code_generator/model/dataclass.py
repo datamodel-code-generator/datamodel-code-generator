@@ -124,8 +124,7 @@ def _mapping_annotation(data_type: DataType) -> bool:
 
 def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass]:
     """Yield dataclass models that the mapping defaults of model's constructor fields materialize."""
-    effective_fields = model.fields if not model.base_classes else get_effective_fields(model)
-    for field in effective_fields:
+    for field in get_effective_fields(model):
         if (
             field_participates_in_constructor(field)
             and isinstance(field.default, dict)
@@ -173,12 +172,11 @@ def _build_nested_dataclass_default_factory(
     """Build one valid dataclass constructor factory candidate."""
     if not (data_type.reference and isinstance(source := data_type.reference.source, DataClass)):
         return None
-    effective_fields = source.fields if not source.base_classes else get_effective_fields(source)
     field_names: dict[str, str] = {}
     original_names: dict[str, str] | None = None
     required_names: set[str] = set()
     has_nested_mapping_default = False
-    for model_field in effective_fields:
+    for model_field in get_effective_fields(source):
         if model_field.name is None or not field_participates_in_constructor(model_field):
             continue
         field_names[model_field.name] = model_field.name

@@ -37,6 +37,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     ConstraintsBase,
     DataModel,
+    _effective_field_owners,
     _find_base_classes,
     _ModelKeys,
     _path_identity_keys,
@@ -74,6 +75,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
+    from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -998,6 +1000,20 @@ class ConstructorConflicts(NamedTuple):
     inherited: tuple[tuple[DataModelFieldBase, DataModel], ...]
 
 
+def takes_positional_place(facts: AssignmentFacts, field: DataModelFieldBase, declaring_model: DataModel) -> bool:
+    """Return whether ``field`` takes a positional place in the constructor of a model that has it.
+
+    It does when it takes part in the constructor and neither the field nor ``declaring_model``, the class that
+    declares it, makes it keyword-only.
+    """
+    kw_only = field.constructor_keyword_only
+    return (
+        facts.participates_in_constructor
+        and kw_only is not True
+        and (kw_only is not None or not declaring_model.has_keyword_only_definition())
+    )
+
+
 def get_constructor_ordering_conflicts(
     model: DataModel,
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
@@ -1013,11 +1029,7 @@ def get_constructor_ordering_conflicts(
     ordering_conflicts: set[str] = set()
     inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
-        facts = model._field_assignment_facts(field)  # noqa: SLF001
-        if not facts.participates_in_constructor:
-            continue
-        kw_only = field.constructor_keyword_only
-        if kw_only is True or (kw_only is None and declaring_model.has_keyword_only_definition()):
+        if not takes_positional_place(facts := model._field_assignment_facts(field), field, declaring_model):  # noqa: SLF001
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
@@ -1740,26 +1752,25 @@ def get_inherited_constructor_info(
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()
     inherited_stripped_none_names: set[str] = set()
-    effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {}
-    for inherited_model in reversed(inherited_models):
-        for field in inherited_model.fields:
-            if not (field_name := field.name):
-                continue
-            has_default: bool | None = None
-            if supports_inherited_override:
+    inherited_defaults: dict[int, bool] = {}
+    if supports_inherited_override:
+        for inherited_model in reversed(inherited_models):
+            for field in inherited_model.fields:
+                if not (field_name := field.name):
+                    continue
                 facts = model._field_assignment_facts(field)  # noqa: SLF001
                 has_default, has_value_default = facts.default_info
+                inherited_defaults[id(field)] = has_default
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
                     required_assignment_names.add(field_name)
                     if facts.place_assigned:
                         inherited_stripped_none_names.discard(field_name)
                     else:
                         inherited_stripped_none_names.add(field_name)
-            effective_fields[field_name] = field, inherited_model, has_default
-    for field in model.fields:
-        if field.name:
-            effective_fields[field.name] = field, model, None
-
+    effective_fields = {
+        name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
+        for name, (owner, field) in _effective_field_owners(model, inherited_models).items()
+    }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
     return _InheritedConstructorInfo(
         frozenset(required_assignment_names),

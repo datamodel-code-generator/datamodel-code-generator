@@ -10,12 +10,14 @@ from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
 from math import ceil, floor
+from operator import itemgetter
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -255,7 +257,7 @@ class _UnionLeaf(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator._model_keys import ModelKey
@@ -280,6 +282,10 @@ def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
 
 
 _FINAL_LAYOUT_VIEW = BaseLayoutView(_is_instance_field, _same_model, _is_never_opaque)
+
+
+def _user_struct_option_items(model: DataModel) -> Iterable[tuple[str, Any]]:
+    return _user_struct_options(model).items()
 
 
 def _user_struct_options(model: DataModel) -> dict[str, Any]:
@@ -543,11 +549,10 @@ class Struct(DataModel):
 
         msgspec makes a struct take each option from the first class in its method resolution order that sets it.
         """
-        inherited_options: dict[str, Any] = {}
-        for model in reversed(linearize_data_models([self])[1:]):
-            inherited_options.update(_user_struct_options(model))
         options = _user_struct_options(self)
-        for name, value in inherited_options.items():
+        for _, (name, value) in resolve_members(
+            linearize_data_models([self])[1:], _user_struct_option_items, itemgetter(0)
+        ).values():
             options.setdefault(name, value)
         return self.order_fields_for_construction(super().flatten_base_layouts(adopt_field))
 

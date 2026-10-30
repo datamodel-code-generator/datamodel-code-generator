@@ -25,6 +25,7 @@ from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     DataModel,
+    _effective_field_owners,
     _find_base_classes,
     _model_key_of_model,
     linearize_data_models,
@@ -60,6 +61,7 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     resolve_default_value_descriptor,
     set_reference_expressions,
+    takes_positional_place,
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
@@ -513,11 +515,9 @@ def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[Data
         ),
         key=lambda item: len(item[1]),
     ):
-        effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {
-            field.name: (field, declaring_model, None)
-            for declaring_model in (*reversed(ancestors), model)
-            for field in declaring_model.fields
-            if field.name and not field.is_class_var
+        effective_fields = {
+            name: (field, owner, None)
+            for name, (owner, field) in _effective_field_owners(model, ancestors, class_vars="no-place").items()
         }
         if get_constructor_ordering_conflicts(model, effective_fields, set()).own:
             model.enable_model_keyword_only()
@@ -682,10 +682,7 @@ def get_local_constructor_ordering_key(
 
     previous_key = (False, False, False, False)
     for field in model.fields:
-        if not facts[id(field)].participates_in_constructor:
-            continue
-        kw_only = field.constructor_keyword_only
-        if kw_only is True or (kw_only is None and model.has_keyword_only_definition()):
+        if not takes_positional_place(facts[id(field)], field, model):
             continue
         if (key := order_key(field)) < previous_key:
             return order_key
@@ -716,18 +713,9 @@ def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
 
 def has_required_assignment_after_default(model: DataModel) -> bool:
     """Return whether a positional field without a signature default follows one with a default."""
-    fields: dict[str, tuple[DataModelFieldBase, DataModel]] = {}
-    for declaring_model in (*reversed(linearize_data_models(_find_base_classes(model))), model):
-        fields.update((field.name, (field, declaring_model)) for field in declaring_model.fields if field.name)
     seen_default = False
-    for field, declaring_model in fields.values():
-        facts = model._field_assignment_facts(field)  # noqa: SLF001
-        kw_only = field.constructor_keyword_only
-        if (
-            not facts.participates_in_constructor
-            or kw_only is True
-            or (kw_only is None and declaring_model.has_keyword_only_definition())
-        ):
+    for owner, field in _effective_field_owners(model, linearize_data_models(_find_base_classes(model))).values():
+        if not takes_positional_place(facts := model._field_assignment_facts(field), field, owner):  # noqa: SLF001
             continue
         has_default = facts.has_default
         if seen_default and not has_default:

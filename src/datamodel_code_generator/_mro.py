@@ -10,6 +10,9 @@ caller names its rule (``C3Rule``):
 * ``python``: Python's method resolution order, or None where Python refuses a class: an inheritance cycle or parents
   whose orders conflict (`parser/base.py:Parser._check_model_inheritance`, the target bindings of
   `_target_binding.py`).
+
+``resolve_members`` reads the members of a class and its bases through such an order: the fields a model has with its
+bases (`model/base.py:_effective_field_owners`), the fields a target binds, the struct options msgspec takes.
 """
 
 from __future__ import annotations
@@ -17,10 +20,28 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, TypeVar, overload
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Hashable, Sequence
+    from collections.abc import Callable, Collection, Hashable, Iterable, Sequence
 
 _T = TypeVar("_T")
+_K = TypeVar("_K")
+_M = TypeVar("_M")
 C3Rule: TypeAlias = Literal["first-head", "python"]
+
+
+def resolve_members(
+    order: Sequence[_T], members_of: Callable[[_T], Iterable[_M]], key: Callable[[_M], _K | None]
+) -> dict[_K, tuple[_T, _M]]:
+    """Return the member each key resolves to and its owner, searching ``order``: a class, then its bases in order.
+
+    The first owner that declares a key gives its member, at the place where the last one declares it; a member whose
+    key is None is left out.
+    """
+    resolved: dict[_K, tuple[_T, _M]] = {}
+    for owner in reversed(order):
+        for member in members_of(owner):
+            if (member_key := key(member)) is not None:
+                resolved[member_key] = owner, member
+    return resolved
 
 
 def sort_descendants_first(

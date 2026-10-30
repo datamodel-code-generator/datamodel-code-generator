@@ -537,7 +537,9 @@ decision = "the method resolution order of generated models and the fields a mod
 core = ["_mro.py", "model/base.py:linearize_data_models"]
 adapters = [
     "model/base.py:DataModel.iter_all_fields",
+    "model/base.py:_effective_field_owners",
     "model/base.py:sort_data_models_for_mro",
+    "parser/_passes/_shared.py:takes_positional_place",
     "parser/_passes/settle.py:sort_base_classes_for_mro",
     "parser/jsonschema.py:JsonSchemaParser._linearize_inherited_schema_refs",
     "parser/jsonschema.py:JsonSchemaParser._sort_inherited_base_classes_for_mro",
@@ -548,6 +550,21 @@ kind = "function"
 pattern = "^_?(c3|linearize|parent_first|mro)|.*_for_mro$"
 exclude = ["_runtime/"]
 what = "computes a method resolution order itself; call _mro.py:linearize or c3_merge with its rule"
+audit = "M-04"
+
+[homes.H14.signatures.member-resolution]
+kind = "call"
+names = ["reversed"]
+mentions = ["linearize_data_models", "constructor_base_models", "linearize"]
+exclude = ["_runtime/"]
+what = "reads members through a method resolution order itself; call _mro.py:resolve_members (a model's fields: model/base.py:_effective_field_owners)"
+audit = "M-04"
+
+[homes.H14.signatures.positional-place]
+kind = "name"
+names = ["constructor_keyword_only"]
+exclude = ["_runtime/"]
+what = "decides itself whether a field takes a positional place in a constructor; call parser/_passes/_shared.py:takes_positional_place"
 audit = "M-04"
 
 [homes.H14.signatures.member-enumeration]
