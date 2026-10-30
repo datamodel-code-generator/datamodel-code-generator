@@ -16,7 +16,11 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from itertools import accumulate, chain, takewhile
+from itertools import (
+    accumulate,  # noqa: F401  # Preserve the established model.base export.
+    chain,
+    takewhile,
+)
 from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
@@ -42,7 +46,10 @@ from datamodel_code_generator._parse_memo import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
-from datamodel_code_generator._target_unicode import host_identifiers, host_parsable
+from datamodel_code_generator._target_unicode import (
+    host_identifiers,
+    host_parsable,  # noqa: F401  # Preserve the established model.base export.
+)
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -75,6 +82,11 @@ from datamodel_code_generator.model._render_plan import (
     Why,
     frozen_render_plan,
     visible_nested_factories,
+)
+from datamodel_code_generator.model._rendered_names import (
+    _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
+    _bind_builtin_names,
+    _bind_field_expressions,
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
@@ -2414,108 +2426,6 @@ def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a field participates in its model constructor."""
     return participates_in_constructor(
         "model", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
-    )
-
-
-def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) -> str:
-    """Write each name node parsed from ``rendered`` as its replacement, at the UTF-8 offsets ``ast`` gives."""
-    source = rendered.encode()
-    offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
-    spans = [
-        (
-            offsets[node.lineno - 1] + node.col_offset,
-            offsets[cast("int", node.end_lineno) - 1] + cast("int", node.end_col_offset),
-            alias,
-        )
-        for node, alias in replacements
-    ]
-    for start, end, alias in sorted(spans, reverse=True):
-        source = source[:start] + alias.encode() + source[end:]
-    return source.decode()
-
-
-def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects.
-
-    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length and a type
-    statement is parsed as an assignment of the same length (`host_parsable`), so the offsets it parses hold for the
-    rendered text.
-    """
-    replacements: list[tuple[ast.Name, str]] = []
-    host_source, restore_name = host_parsable(rendered)
-    for statement in ast.parse(host_source).body:
-        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
-            continue
-        for field in statement.body:
-            if not isinstance(field, ast.AnnAssign):
-                continue
-            expressions = (field.annotation,) if field.value is None else (field.annotation, field.value)
-            replacements.extend(
-                (node, alias)
-                for expression in expressions
-                for node in ast.walk(expression)
-                if isinstance(node, ast.Name)
-                and isinstance(node.ctx, ast.Load)
-                and (alias := bindings.get(restore_name(node.id))) is not None
-            )
-    return _rewrite_names(rendered, replacements)
-
-
-_NAME_SCOPES: Final = (
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.Lambda,
-    ast.ListComp,
-    ast.SetComp,
-    ast.DictComp,
-    ast.GeneratorExp,
-)
-
-
-def _local_names(scope: ast.AST) -> set[str]:
-    """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
-    arguments = getattr(scope, "args", None)
-    parameters = (
-        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
-        if isinstance(arguments, ast.arguments)
-        else ()
-    )
-    return {parameter.arg for parameter in parameters if parameter is not None} | {
-        node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
-    }
-
-
-def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
-    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
-    match tree:
-        case ast.Name(ctx=ast.Load()):
-            if tree.id not in bound:
-                yield tree
-        case ast.Attribute(value=ast.Name()):
-            return
-        case _:
-            if isinstance(tree, _NAME_SCOPES):
-                bound |= _local_names(tree)
-            for child in ast.iter_child_nodes(tree):
-                yield from _bare_loads(child, bound)
-
-
-def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:
-    """Return the names of ``names`` that ``rendered`` loads bare, the loads ``_bind_builtin_names`` rewrites."""
-    host_source, restore_name = host_parsable(rendered)
-    return {name for node in _bare_loads(ast.parse(host_source)) if (name := restore_name(node.id)) in names}
-
-
-def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
-    """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
-    host_source, restore_name = host_parsable(rendered)
-    return _rewrite_names(
-        rendered,
-        [
-            (node, alias)
-            for node in _bare_loads(ast.parse(host_source))
-            if (alias := bindings.get(restore_name(node.id))) is not None
-        ],
     )
 
 

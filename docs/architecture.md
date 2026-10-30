@@ -1525,6 +1525,10 @@ Every `DataModel` renders through a Jinja2 template. Built-in templates live in
 
 Imports are collected separately from rendering through `Import` and `Imports`. The import layer handles grouping,
 aliases, reference-bound imports, future imports, unused import removal, and `__all__` generation.
+A model's rendered text names its module's imports through the bindings the IMPORTS passes give them:
+`model/_rendered_names.py` rewrites the names a field annotation or default loads and every bare load of a
+builtin the module imports under an alias, and tells the pass that aliases such builtins which names a text loads
+bare.
 
 `CodeFormatter` then applies the configured formatter pipeline. The formatter layer supports the built-in formatter,
 black, isort, ruff check, ruff format, and user-supplied custom formatters.
