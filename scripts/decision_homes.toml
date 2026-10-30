@@ -291,6 +291,32 @@ decision = "the keys deduplication and reuse compare models by"
 core = ["parser/_model_shapes.py"]
 adapters = ["parser/_passes/structure.py:delete_duplicate_models"]
 
+[homes.Hx-duplicate-merge]
+decision = "what becomes of a duplicate that deduplication or reuse found: it leaves the output and every user names the equal canonical model, keeping the tags of its unions or not, its children taking their bases once; or it becomes an empty subclass of the canonical model in its place"
+core = [
+    "parser/_passes/_shared.py:merge_duplicate",
+    "parser/_passes/_shared.py:_distinct_bases",
+    "parser/_passes/_shared.py:removes_reuse_duplicate",
+    "parser/_passes/_shared.py:subclass_duplicate",
+]
+adapters = []
+
+[homes.Hx-duplicate-merge.signatures.merged-redirect]
+kind = "call"
+names = ["redirect_reference_users"]
+keywords = ["merged"]
+paths = ["parser/"]
+exclude = ["parser/generation.py"]
+what = "merges a duplicate into its canonical model itself; call parser/_passes/_shared.py:merge_duplicate"
+audit = "C08-U5"
+
+[homes.Hx-duplicate-merge.signatures.reuse-subclass]
+kind = "call"
+names = ["create_reuse_model"]
+paths = ["parser/"]
+what = "makes a duplicate an empty subclass itself; call parser/_passes/_shared.py:subclass_duplicate"
+audit = "C08-U4"
+
 [homes.H21]
 decision = "model identity, holders and shared nodes of the generation graph"
 core = ["parser/_graph_ids.py", "parser/generation.py"]

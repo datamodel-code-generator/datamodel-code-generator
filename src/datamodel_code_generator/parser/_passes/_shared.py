@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
-    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
+    from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -786,19 +786,40 @@ def register_reference_import(  # noqa: PLR0913
     return target.expression(name, alias)
 
 
-def redirect_collapsed_reuse_users(
-    host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel
-) -> list[DataType]:
-    """Redirect every user of a duplicate that collapsed reuse removes to the kept model, remembering the duplicate.
+def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataModel) -> None:
+    """Give each child of a merged model its bases once each, told apart by module and type hint or by reference."""
+    for child in model.reference.iter_data_model_children():
+        bases = child.base_classes
+        host._graph_builder.set_base_classes(  # noqa: SLF001
+            child,
+            {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
+            if base_dedup == "by-type-hint"
+            else {id(base.reference): base for base in bases}.values(),
+        )
 
-    A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
-    the tags of the kept model.
+
+def merge_duplicate(
+    host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel, row: ShapeRow, *, keeps_duplicate_tags: bool
+) -> list[DataType]:
+    """Hand every user of a duplicate that leaves the output to the equal canonical model, and retire the duplicate.
+
+    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``).
+    With ``keeps_duplicate_tags``, for a duplicate that reuse removes instead of making it a subclass, a discriminated
+    union that named the duplicate keeps mapping it to the tags of its own schema, which are compared with the tags of
+    the canonical model. The children of the duplicate take their bases once each, told apart as the user of ``row``
+    tells them (``ShapeRow.base_dedup``; None keeps them as redirected). The caller drops the duplicate from its
+    module's models. Return the redirected users.
     """
-    users = host._graph_builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)  # noqa: SLF001
-    collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
-    for user in users:
-        collapsed_users.setdefault(id(user), (user, duplicate.reference))
-    host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    builder = host._graph_builder  # noqa: SLF001
+    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
+    if keeps_duplicate_tags:
+        collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
+        for user in users:
+            collapsed_users.setdefault(id(user), (user, duplicate.reference))
+        host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    if (base_dedup := row.base_dedup) is not None:
+        _distinct_bases(host, base_dedup, duplicate)
+    builder.retire_model(duplicate)
     return users
 
 
@@ -1296,6 +1317,35 @@ def require_update_action(
         ),
         circular_roots=recursion_facts["circular_roots"],
     )
+
+
+class ReuseSubclassHost(GraphBuilderHost, RecursionFactsHost, Protocol):
+    """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
+
+
+def removes_reuse_duplicate(host: DeduplicationHost, duplicate: DataModel, *, inherits: bool) -> bool:
+    """Return whether reuse removes a duplicate instead of making it an empty subclass of the canonical model.
+
+    An Enum is removed, every duplicate is under ``--collapse-reuse-models``, and so is every duplicate where the
+    output's models cannot inherit the canonical model (``inherits``: tree-scope reuse reads the output's capability).
+    """
+    return isinstance(duplicate, Enum) or not inherits or host.collapse_reuse_models
+
+
+def subclass_duplicate(
+    host: ReuseSubclassHost, duplicate: DataModel, canonical: DataModel, models: list[DataModel], users: list[DataModel]
+) -> DataModel | None:
+    """Replace a duplicate in ``models`` and in the store by an empty subclass of the equal canonical model.
+
+    The subclass keeps the duplicate's name; the users that ``users`` own name it. Return the subclass when the
+    canonical model needs a reference update action, which the caller adds once with ``require_update_action``.
+    """
+    builder = host._graph_builder  # noqa: SLF001
+    inherited = duplicate.create_reuse_model(canonical.reference)
+    builder.redirect_model_reference_users(duplicate, users, inherited.reference)
+    replace_model_in_list(models, duplicate, inherited)
+    builder.replace_model(duplicate, inherited)
+    return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
 
 
 DiscriminatorValue: TypeAlias = str | int | bool

@@ -110,16 +110,18 @@ from datamodel_code_generator.parser._passes._shared import (
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
     import_references,
+    merge_duplicate,
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
-    redirect_collapsed_reuse_users,
     register_reference_import,
+    removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
     set_reference_expression,
     set_reference_expressions,
     site_display_name,
+    subclass_duplicate,
     without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
@@ -1032,7 +1034,6 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
     if not parser.reuse_model or parser.reuse_scope == ReuseScope.Tree:
         return
     duplicates = []
-    require_update = parser._recursion_facts["require_update"]  # noqa: SLF001
     updated_models: list[DataModel] = []
     reuse_candidates = (
         model
@@ -1049,7 +1050,6 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         cached_model, model = groups.canonical_pair(canonical_models.get(id(first_model), first_model), duplicate_model)
         if model is not duplicate_model:
             canonical_models[id(first_model)] = cached_model
-        cached_model_reference = cached_model.reference
         if (
             groups.is_typed_map_value(model)
             and not parser.collapse_reuse_models
@@ -1057,23 +1057,18 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         ):
             # A module written earlier names the value, as a field of a collapsed root model does, so it stays.
             continue
-        if isinstance(model, Enum) or parser.collapse_reuse_models:
+        if removes_reuse_duplicate(parser, model, inherits=True):
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            parser._graph_builder.redirect_model_reference_users(model, models, cached_model_reference)  # noqa: SLF001
+            parser._graph_builder.redirect_model_reference_users(model, models, cached_model.reference)  # noqa: SLF001
+            parser._graph_builder.retire_model(model)  # noqa: SLF001
             duplicates.append(model)
-        else:
-            inherited_model = model.create_reuse_model(cached_model_reference)
-            parser._graph_builder.redirect_model_reference_users(model, models, inherited_model.reference)  # noqa: SLF001
-            if model_key_of(cached_model_reference) in require_update:
-                updated_models.append(inherited_model)
-            replace_model_in_list(models, model, inherited_model)
-            parser._graph_builder.replace_model(model, inherited_model)  # noqa: SLF001
+        elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
+            updated_models.append(updated)
 
     for duplicate in duplicates:
         models.remove(duplicate)
-        parser._graph_builder.retire_model(duplicate)  # noqa: SLF001
     if updated_models:
         require_update_action(parser, updated_models, require_update_action_models)
 
@@ -1084,7 +1079,7 @@ def redirect_removed_reuse_users(parser: ReuseHost, duplicate: DataModel, canoni
     Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
     """
     users = parser._removed_reuse_users  # noqa: SLF001
-    for user in redirect_collapsed_reuse_users(parser, duplicate, canonical):
+    for user in merge_duplicate(parser, duplicate, canonical, REUSE_MODEL, keeps_duplicate_tags=True):
         users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
 
 
