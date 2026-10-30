@@ -38,6 +38,7 @@ zero-weight	ci_shards/zero-weight.txt
 [test_recipe_discovers_split_nodeids]
 	ci_shards/discovery.txt
 [test_recipe_round_trip_selects_disjoint_shards]
+18	ci_shards/round-trip.txt
 2	ci_shards/round-trip.txt
 3	ci_shards/round-trip.txt
 [test_test_part_option_partitions_one_node]
@@ -53,5 +54,6 @@ invalid-version	ci_shards/weights-invalid-version.txt	= ci_shards/weights-empty-
 missing-profile	ci_shards/weights-missing-profile.txt	= ci_shards/weights-empty-maps.txt
 record	ci_shards/weights-record.txt
 record-empty	ci_shards/weights-record-empty.txt
+record-median	ci_shards/weights-record-median.txt
 record-missing-provenance	ci_shards/weights-record-missing-provenance.txt	= ci_shards/missing-index.txt
 record-no-split	ci_shards/weights-record-no-split.txt

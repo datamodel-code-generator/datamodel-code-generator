@@ -1,10 +1,16 @@
 tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads
-tests/test_new.py
 tests/main/test_payload_validation.py::TestNew::test_async_method
 tests/main/test_payload_validation.py::test_async
+tests/test_new.py
 tests/main/test_payload_validation.py::test_new
 tests/main/test_payload_validation.py::TestNew::test_method
 {
+  "fast": {
+    "tests/main/test_payload_validation.py::TestNew::test_method": 1,
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads": 250,
+    "tests/main/test_payload_validation.py::test_new": 2,
+    "tests/test_new.py": 15
+  },
   "files": {
     "tests/test_new.py": 31
   },
@@ -20,4 +26,33 @@ tests/main/test_payload_validation.py::TestNew::test_method
   "slow": {
     "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema/a.json]": 1500
   }
+}
+{
+  "items": [
+    {
+      "nodeid": "tests/main/test_payload_validation.py::TestNew::test_async_method",
+      "weight": 584
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::TestNew::test_method",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_async",
+      "weight": 584
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads",
+      "weight": 1750
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_new",
+      "weight": 2
+    },
+    {
+      "nodeid": "tests/test_new.py",
+      "weight": 31
+    }
+  ],
+  "version": 1
 }

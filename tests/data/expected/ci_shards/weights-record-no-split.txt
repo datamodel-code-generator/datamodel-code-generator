@@ -5,6 +5,9 @@ tests/main/test_payload_validation.py::test_async
 tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads
 tests/main/test_payload_validation.py::test_new
 {
+  "fast": {
+    "tests/test_new.py": 500
+  },
   "files": {
     "tests/test_new.py": 500
   },
