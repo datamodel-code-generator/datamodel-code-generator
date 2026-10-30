@@ -275,6 +275,18 @@ powers = [63, 64]
 what = "writes the int64 range itself; add a representability row to _constraint_applicability.py"
 audit = "D-L1-21"
 
+[homes.Hx-regex-engine]
+decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
+core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]
+adapters = []
+
+[homes.Hx-regex-engine.signatures.syntax-scan]
+kind = "call"
+names = ["has_lookaround", "scan_regex_syntax"]
+exclude = ["_regex_syntax.py"]
+what = "decides a regex engine from the static scan itself; call _regex_syntax.py:needs_python_engine with the row of its output"
+audit = "C06"
+
 [homes.H08]
 decision = "which class an enum is written as, whether it is a Literal, and the kind of a literal value"
 core = ["model/_decisions/enum_kind.py"]
@@ -1513,6 +1525,10 @@ fix = "#5579"
 [legacy_rows."legacy-objects-only"]
 home = "Hx-pointer-members"
 fix = "#5579"
+
+[legacy_rows."legacy-dataclass-overwrites-engine"]
+home = "Hx-regex-engine"
+fix = "#5637"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 
