@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Final
 from datamodel_code_generator._json_schema import schema_positions
 from datamodel_code_generator.parser._intersection import intersect_keywords
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
-from datamodel_code_generator.parser._schema_object import JsonSchemaObject
+from datamodel_code_generator.parser._schema_object import JsonSchemaObject, _type_null_sources
 from datamodel_code_generator.types import UnionIntFloat
 
 if TYPE_CHECKING:
@@ -103,3 +103,37 @@ def _object_map_other_types(obj: JsonSchemaObject) -> list[str] | None:
         case list() as types if "object" in types and not set(types) <= {"object", "null"}:
             return types
     return None
+
+
+_ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset(schema_positions("modeled", "array"))
+
+
+def _enum_without_positions(obj: JsonSchemaObject, excluded: Collection[int]) -> JsonSchemaObject:
+    """Return a copy of an enum schema without the values at the ``excluded`` positions, with their x-enum entries.
+
+    Each entry stays with its value, matched as ``parse_enum`` matches them.
+    """
+    skip_null = _enum_entries_skip_null(obj)
+    entry_positions = (position for position, value in enumerate(obj.enum) if value is not None or not skip_null)
+    dropped = {index for index, position in enumerate(entry_positions) if position in excluded}
+    return obj.model_copy(
+        update={
+            "enum": [value for position, value in enumerate(obj.enum) if position not in excluded],
+            **{
+                field: [entry for index, entry in enumerate(entries) if index not in dropped]
+                for field in _ENUM_ENTRY_FIELDS
+                if (entries := getattr(obj, field))
+            },
+        }
+    )
+
+
+_ENUM_ENTRY_FIELDS = ("x_enum_varnames", "x_enum_names", "x_enum_descriptions")
+
+
+def _enum_entries_skip_null(obj: JsonSchemaObject) -> bool:
+    """Return whether the x-enum entries of a schema are matched to its enum values without null.
+
+    The class of a string or nullable enum leaves out the null the enum lists, and its entries skip it too.
+    """
+    return resolve_null_facts(_type_null_sources(obj), "enum").rule == "enum-null-as-nullable"

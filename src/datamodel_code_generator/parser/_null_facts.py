@@ -81,7 +81,7 @@ NullSite: TypeAlias = Literal[
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
-* ``array-field``: the field of an array (``JsonSchemaParser._resolve_array_field_required_nullable``).
+* ``array-field``: the field of an array (``parser/_value_keywords.py:resolve_array_field_required_nullable``).
 * ``enum``: a null in the ``enum`` of an Enum class (``JsonSchemaParser.parse_enum``, ``_enum_entries_skip_null``).
 * ``enum-literal``: a null among the values of an enum written as a ``Literal``
   (``JsonSchemaParser._literal_values_type``).
@@ -97,7 +97,7 @@ NullSite: TypeAlias = Literal[
   (``JsonSchemaParser._enforced_value_keywords``).
 * ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
   without a const; the parent's and the branches' ``type`` are read as written, without the mark of
-  ``legacy-nullable-as-type-list`` (``JsonSchemaParser._extract_const_enum_from_combined``).
+  ``legacy-nullable-as-type-list`` (``parser/_value_keywords.py:extract_const_enum_from_combined``).
 * ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
   whether that value is null (``parser/jsonschema.py:_single_value_enum_as_const``,
   ``JsonSchemaParser._reads_enum_as_const``).
