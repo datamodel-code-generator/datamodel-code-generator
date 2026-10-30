@@ -20,11 +20,11 @@ from datamodel_code_generator._client.pagination import (
     _overlaps,
     _page_use,
     _Pages,
-    _parameter_key,
     _problem,
     _target_key,
 )
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES, status_key
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
 
@@ -304,7 +304,7 @@ class _Polls:
             unwritten = (
                 location not in locations
                 if location == "querystring"
-                else _parameter_key(location, parameter.wire_name) not in written
+                else parameter_key(location, parameter.wire_name) not in written
             )
             if parameter.required and unwritten:
                 message = (

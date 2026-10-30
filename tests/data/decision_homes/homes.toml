@@ -70,6 +70,13 @@ brackets = ["(", "["]
 what = "joins the items of a display itself"
 audit = "X-11"
 
+[homes.sample.signatures.fold]
+kind = "branch"
+values = ["upper"]
+names = ["lower"]
+what = "folds a name by a tested value itself"
+audit = "X-12"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

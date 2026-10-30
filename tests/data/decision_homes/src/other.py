@@ -58,6 +58,16 @@ def spell(direction):
     return "seg-" + direction, f"seg-{direction}", f"{direction}-other", "other"
 
 
+def fold(location, name, other):
+    """Fold by a tested value in an expression and in a statement; other tests and branches do not count."""
+    key = name.lower() if location == "upper" else name
+    if location == "upper":
+        key = (location, name.lower())
+    kept = name.lower() if location == "lower" else name
+    same = name if location == "upper" else other
+    return key, kept, same
+
+
 def displays(head, items):
     """Join items inside a call, a tuple and a list, and write a subscript and other joins."""
     return (

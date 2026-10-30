@@ -28,6 +28,8 @@ them, ``what`` words the message):
 * ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
   of ``brackets`` (``(`` a call or tuple display, ``[`` a list display): Python source spelled by hand; a ``[`` right
   after a name, a value or a closing bracket opens a subscript and does not count.
+* ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
+  of whose branches calls a callee ending in one of ``names`` (a rule applied only where a value is that string).
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -97,6 +99,7 @@ SIGNATURE_KINDS = frozenset({
     "key",
     "literal",
     "display",
+    "branch",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -123,6 +126,7 @@ REQUIRED_STRINGS = {
     "key": "keys",
     "literal": "contains",
     "display": "brackets",
+    "branch": "values",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
@@ -325,6 +329,8 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
             msg = f"{owner}: ctx must be load, store or any"
             raise ConfigError(msg)
         _strings(options, REQUIRED_STRINGS[kind], owner, required=True)
+        if kind == "branch":
+            _strings(options, "names", owner, required=True)
     return Signature(
         id=f"{home}.{name}",
         home=home,
@@ -459,6 +465,20 @@ def _hand_display(node: ast.AST, brackets: Iterable[str]) -> bool:
     return any(_is_comma_join(part) and _opens_display(parts, index, brackets) for index, part in enumerate(parts))
 
 
+def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) -> bool:
+    """Return whether an ``if`` or a conditional expression tests for one of ``values`` and a branch calls ``names``."""
+    if not isinstance(node, ast.If | ast.IfExp) or not isinstance(test := node.test, ast.Compare):
+        return False
+    if not {item.value for item in (test.left, *test.comparators) if isinstance(item, ast.Constant)} & set(values):
+        return False
+    branches = (node.body, node.orelse) if isinstance(node, ast.IfExp) else (*node.body, *node.orelse)
+    return any(
+        isinstance(call, ast.Call) and _last_name(call.func) in names
+        for branch in branches
+        for call in ast.walk(branch)
+    )
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -512,6 +532,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return False
         case "key":
             return _key_read(node) in options["keys"]
+        case "branch":
+            return _branch_calls(node, options["values"], options["names"])
         case "literal":
             texts = [
                 part.value
@@ -536,6 +558,7 @@ NODE_TYPES = {
     "key": (ast.Subscript, ast.Call),
     "literal": (ast.Constant, ast.JoinedStr),
     "display": (ast.JoinedStr, ast.BinOp),
+    "branch": (ast.If, ast.IfExp),
 }
 
 

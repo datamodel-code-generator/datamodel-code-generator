@@ -29,6 +29,7 @@ from ..client.errors import (
 from ..client.operations import request_errors
 from ..client.retry import Delivery
 from ..model_codecs.media import SUCCESS_STATUSES
+from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
 from .options import HelperLimits, StepLock, UploadOptions, checked_options, layered, new_session
@@ -170,9 +171,7 @@ class UploadPlan(Generic[T, C]):
         children = (probed, appended, *(() if completed is None else (completed,)))
         headers, queries = set[str](), set[str]()
         if (size := self.size) is not None:
-            (headers if size.location == "header" else queries).add(
-                size.name.lower() if size.location == "header" else size.name
-            )
+            (headers if size.location == "header" else queries).add(parameter_key(size.location, size.name)[1])
         size_position = None if size is None else position(self.create, size.location, size.name)
         object.__setattr__(self, "size_position", size_position)
         object.__setattr__(self, "probed", probed)

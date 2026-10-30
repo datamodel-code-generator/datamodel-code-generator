@@ -9,6 +9,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import schema_uses
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import SourceLocation, fact
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
@@ -199,10 +200,8 @@ def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> 
         return None if name in querystrings else f"{_label(operation)} has no querystring {name!r}"
     if location == "query" and querystrings:
         return f"{_label(operation)} owns a querystring, which a querystring target writes"
-    present = any(
-        where == location and (item.lower() == name.lower() if location == "header" else item == name)
-        for where, item in declared
-    )
+    wanted = parameter_key(location, name)
+    present = any(where == location and parameter_key(location, item) == wanted for where, item in declared)
     return None if present else f"{_label(operation)} has no {location} parameter {name!r}"
 
 

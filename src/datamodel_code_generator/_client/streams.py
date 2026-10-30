@@ -17,7 +17,6 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _label,
     _listed,
     _Pages,
-    _parameter_key,
     _problem,
     _target_key,
 )
@@ -25,6 +24,7 @@ from datamodel_code_generator._client.plan import schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.protocol_plan import HelperPlanner
 from datamodel_code_generator._runtime.model_codecs.media import essence
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
@@ -335,7 +335,7 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
             yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, reopen)
             return
         key = _target_key(write)
-        if any(item.required and _parameter_key(item.location, item.wire_name) == key for item in reopen.parameters):
+        if any(item.required and parameter_key(item.location, item.wire_name) == key for item in reopen.parameters):
             message = f"The cursor of {name!r} can be cleared, which {place}, a required one, cannot omit"
             yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
             return

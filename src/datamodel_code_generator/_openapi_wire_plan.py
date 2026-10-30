@@ -21,6 +21,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     ValueShape,
     builtin_content,
     header_text,
+    parameter_key,
 )
 from datamodel_code_generator._target_contract import (
     LOCATIONS,
@@ -585,7 +586,7 @@ def _spread(plan: ParameterPlan) -> bool:
 
 def _claimed(plans: Sequence[ParameterPlan], location: str) -> list[str]:
     return [
-        name.lower() if location == "header" else name
+        parameter_key(location, name)[1]
         for plan in plans
         if plan.location == location
         for name in ([field.name for field in plan.fields] if _spread(plan) else [plan.name])
@@ -623,7 +624,7 @@ def parameter_collisions(
     for location in ("query", "header", "cookie"):
         claimed = [
             *_claimed(plans, location),
-            *{name.lower() if location == "header" else name for kind, name in auth if kind == location},
+            *{parameter_key(location, name)[1] for kind, name in auth if kind == location},
         ]
         absorbing = [
             plan for plan in plans if plan.location == location and plan.additional is not None and _spread(plan)

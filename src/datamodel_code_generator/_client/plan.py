@@ -36,6 +36,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalized,
     status_key,
 )
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
     LOCATIONS,
     BuiltinType,
@@ -463,15 +464,14 @@ class Planner:
         """Reject ownership shared by the key contract and an effective request header or security scheme."""
         metadata = setting.runtime.idempotency
         assert metadata is not None
-        owners = {item.wire_name.lower() for item in parameters if item.location == "header"}
+        owners = {parameter_key(item.location, item.wire_name) for item in parameters}
         if security is not None:
             owners.update(
-                requirement.scheme.wire_name.lower()
+                parameter_key(requirement.scheme.location, requirement.scheme.wire_name)
                 for alternative in security.alternatives
                 for requirement in alternative
-                if requirement.scheme.location == "header"
             )
-        if metadata.header_name.lower() in owners:
+        if parameter_key("header", metadata.header_name) in owners:
             index = self.config.operations.index(setting)
             message = (
                 f"The idempotency header {metadata.header_name!r} of {label(operation)} already has a request owner"
