@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import is_sequence
+from ..client.operations import codec_condition
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
@@ -90,10 +91,9 @@ class EventDecoder(Generic[T_co]):
         try:
             event: T_co | _Failed = codec.decode(raw_body)
         except codec.errors as error:
-            event = _Failed.MALFORMED if codec.malformed(error) else _Failed.VALUE
+            event = _Failed(codec_condition(codec, error))
         if isinstance(event, _Failed):
-            condition: Literal["malformed", "value"] = "malformed" if event is _Failed.MALFORMED else "value"
-            raise ProtocolDataError(reason=condition, helper_id=helper_id)
+            raise ProtocolDataError(reason=event.value, helper_id=helper_id)
         return event
 
 
