@@ -14,13 +14,12 @@ the newest one, and the target checks them again.
 
 from __future__ import annotations
 
-import keyword
 import re
 from copy import copy
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
-from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, target_pattern
+from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
@@ -59,8 +58,7 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
     """Return whether an explicit name is an identifier of the target: no keyword, no leading `__`, and in NFKC form."""
     return (
         isinstance(value, str)
-        and is_identifier(value, target_python_version)
-        and not keyword.iskeyword(value)
+        and is_python_name(value, target_python_version)
         and not value.startswith("__")
         and is_nfkc(value, target_python_version)
     )

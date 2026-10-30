@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from enum import Enum
 from functools import lru_cache
-from keyword import iskeyword
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
@@ -378,7 +377,9 @@ def _get_config_class() -> type[Config]:
             """Validate schema validator base class name."""
             if v is None:  # pragma: no cover
                 return v
-            if not v.isidentifier() or iskeyword(v):
+            from datamodel_code_generator._target_unicode import is_python_name  # noqa: PLC0415
+
+            if not is_python_name(v, rule="legacy-host-identifiers"):
                 msg = f"--schema-validator-base-class-name '{v}' is not a valid Python identifier"
                 raise Error(msg)
             return v

@@ -9,6 +9,8 @@ from functools import lru_cache
 from io import StringIO
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._target_unicode import is_python_name
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -179,12 +181,12 @@ def _parse_direct_target(
 @lru_cache(maxsize=128)
 def is_named_python_decorator(decorator: str, name: str) -> bool:
     """Match an exact unqualified target without parsing target expressions."""
-    if decorator[:1] != "@" or not name.isidentifier() or keyword.iskeyword(name):
+    if decorator[:1] != "@" or not is_python_name(name, rule="host"):
         return False
 
     body = decorator[1:].strip()
     if body.isidentifier():
-        return not keyword.iskeyword(body) and body == name
+        return body == name
     if _is_parenthesized_name(body, name):
         return True
     if not body or (tokens := _significant_tokens(body)) is None:

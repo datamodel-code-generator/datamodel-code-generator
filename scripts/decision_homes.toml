@@ -285,6 +285,20 @@ powers = [63, 64]
 what = "writes the int64 range itself; add a representability row to _constraint_applicability.py"
 audit = "D-L1-21"
 
+[homes.Hx-python-names]
+decision = "whether text is a name Python binds: an identifier by the target's, ASCII or the running interpreter's characters, and no keyword; alone or as a dotted path"
+core = ["_target_unicode.py:is_python_name", "_target_unicode.py:is_dotted_python_name"]
+adapters = []
+
+[homes.Hx-python-names.signatures.keyword-test]
+kind = "call"
+names = ["iskeyword"]
+# Left out: a NAME token of the running tokenizer (the decorator matcher reads tokens, not names), and the keyword
+# escape of the field-name resolver (how a name is made: a keyword takes a trailing underscore).
+exclude = ["_python_decorator.py:_parse_direct_target", "reference.py:FieldNameResolver.get_valid_name"]
+what = "tests whether text is a Python name itself; call _target_unicode.py:is_python_name (or is_dotted_python_name) with the row of its characters"
+audit = "C10-K03"
+
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
 core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]
@@ -1594,6 +1608,10 @@ fix = "#5579"
 [legacy_rows."legacy-dataclass-overwrites-engine"]
 home = "Hx-regex-engine"
 fix = "#5637"
+
+[legacy_rows."legacy-host-identifiers"]
+home = "Hx-python-names"
+fix = "#5656"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

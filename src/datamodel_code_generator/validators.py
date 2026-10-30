@@ -5,12 +5,12 @@ Provides types for defining custom field validators that can be added to generat
 
 from __future__ import annotations
 
-import keyword
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, field_validator
 
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_public_type_name
 
 
@@ -28,7 +28,7 @@ _VALIDATOR_MODE_VALUES = frozenset(mode.value for mode in ValidatorMode)
 
 def _validate_python_identifier(value: str) -> str:
     normalized_value = _normalize_string(value)
-    if not normalized_value.isidentifier() or keyword.iskeyword(normalized_value):
+    if not is_python_name(normalized_value, rule="legacy-host-identifiers"):
         msg = f"must be a valid Python identifier: {value!r}"
         raise ValueError(msg)
     return normalized_value

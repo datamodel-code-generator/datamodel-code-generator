@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import keyword
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
@@ -10,6 +9,7 @@ from urllib.parse import unquote
 
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
 from datamodel_code_generator._target_operations import group_tag
+from datamodel_code_generator._target_unicode import is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -148,7 +148,7 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
     position = 0
     for match in PATH_PLACEHOLDER.finditer(path):
         name = match.group(1)
-        if _plain(name) and names.count(name) == 1 and name not in taken:
+        if is_python_name(name, rule="ascii") and names.count(name) == 1 and name not in taken:
             slot = name
         else:
             while (slot := f"{_SLOT_PREFIX}{index}") in reserved:
@@ -159,10 +159,6 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
         position = match.end()
     parts.append(unquote(path[position:]))
     return RoutePath(path=path, route_path="".join(parts), placeholders=names, slots=tuple(slots))
-
-
-def _plain(name: str) -> bool:
-    return name.isascii() and name.isidentifier() and not keyword.iskeyword(name)
 
 
 def group_key(operation: OperationContract, *, single: bool) -> str:

@@ -46,6 +46,7 @@ from datamodel_code_generator._target_unicode import (
     is_identifier,
     is_nfkc,
     is_numeric,
+    is_python_name,
     nfkc,
     replace_non_word,
     upper,
@@ -114,11 +115,7 @@ def split_module_name(
 
     parts = name.split(".")
     for part in parts:
-        if (
-            not is_identifier(part, target_python_version)
-            or iskeyword(part)
-            or not is_nfkc(part, target_python_version)
-        ):
+        if not is_python_name(part, target_python_version) or not is_nfkc(part, target_python_version):
             return None
     return parts
 
@@ -503,9 +500,7 @@ class FieldNameResolver:
             names[name] = field
             if not final:
                 continue
-            invalid = explicit and (
-                not is_identifier(cast("str", field.name), target_python_version) or iskeyword(cast("str", field.name))
-            )
+            invalid = explicit and not is_python_name(cast("str", field.name), target_python_version)
             if (
                 explicit
                 and (conflicts_with_alias := cast("model_base.DataModel", field.parent).EXPLICIT_ALIAS_CONFLICT_CHECKER)
@@ -581,8 +576,7 @@ class FieldNameResolver:
         else:
             new_name = name
         while (
-            not is_identifier(new_name, target)
-            or iskeyword(new_name)
+            not is_python_name(new_name, target)
             or (excludes and new_name in excludes)
             or not self._validate_field_name(new_name)
         ):
@@ -2114,7 +2108,7 @@ class ModelResolver:  # noqa: PLR0904
     @classmethod
     def validate_name(cls, name: str, target_python_version: PythonVersion | None = None) -> bool:
         """Check if a name is a valid Python identifier in the target Python version."""
-        return is_identifier(name, target_python_version) and not iskeyword(name)
+        return is_python_name(name, target_python_version)
 
     def get_valid_field_name(
         self,

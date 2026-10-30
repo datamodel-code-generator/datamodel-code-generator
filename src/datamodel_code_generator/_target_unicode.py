@@ -14,12 +14,13 @@ rebuild them only for text holding a character some target changes or the target
 
 from __future__ import annotations
 
+import keyword
 import re
 import unicodedata
 from bisect import bisect_left, bisect_right
 from functools import cache, cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
 from datamodel_code_generator._format_types import PythonVersion, PythonVersionMin
 
@@ -29,13 +30,16 @@ if TYPE_CHECKING:
 __all__ = (
     "NEWEST_TARGET",
     "HostIdentifiers",
+    "NameRule",
     "capitalize",
     "casefold",
     "host_identifiers",
     "host_parsable",
+    "is_dotted_python_name",
     "is_identifier",
     "is_nfkc",
     "is_numeric",
+    "is_python_name",
     "is_upper",
     "lower",
     "nfc",
@@ -141,7 +145,7 @@ class _TargetUnicode:
     """The Unicode data of one target, each table built on first use."""
 
     def __init__(self, target: PythonVersion) -> None:
-        from datamodel_code_generator import _target_unicode_data as data  # noqa: PLC0415
+        import datamodel_code_generator._target_unicode_data as data  # noqa: PLC0415
 
         self._data = data
         self._index = data.TARGETS.index(target.value)
@@ -352,6 +356,29 @@ def _unicode(target: PythonVersion | None) -> _TargetUnicode:
 def is_identifier(value: str, target: PythonVersion | None) -> bool:
     """Return whether text is an identifier in the target, as `str.isidentifier()` on its interpreter."""
     return value.isidentifier() if value.isascii() else _unicode(target).identifier.fullmatch(value) is not None
+
+
+NameRule: TypeAlias = Literal["target", "ascii", "host", "legacy-host-identifiers"]
+"""Whose identifier characters `is_python_name` reads.
+
+`target` reads the target's (`is_identifier`), `ascii` only ASCII identifiers (Starlette's path placeholders, the
+field names the Pydantic resolver keeps as given), `host` the running interpreter's, for text its tokenizer or parser
+gave, and `legacy-host-identifiers` the running interpreter's where the names are checked or written for the target.
+"""
+
+
+def is_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
+    """Return whether text is a name Python binds: an identifier by the rule's characters, and no keyword."""
+    if rule == "target":
+        identifier = is_identifier(value, target)
+    else:
+        identifier = (rule != "ascii" or value.isascii()) and value.isidentifier()
+    return identifier and not keyword.iskeyword(value)
+
+
+def is_dotted_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
+    """Return whether text is Python names joined by dots, each by `is_python_name` with the rule."""
+    return all(is_python_name(part, target, rule=rule) for part in value.split("."))
 
 
 def replace_non_word(value: str, target: PythonVersion | None) -> str:

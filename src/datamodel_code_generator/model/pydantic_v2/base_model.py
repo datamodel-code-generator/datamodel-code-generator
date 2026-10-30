@@ -7,7 +7,6 @@ with support for Field() constraints and ConfigDict.
 from __future__ import annotations
 
 import json
-import keyword
 import re
 from abc import abstractmethod
 from collections import defaultdict
@@ -27,6 +26,7 @@ from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -454,7 +454,7 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
         if not isinstance(field_name, str):
             continue
         normalized_field_name = _normalize_string(field_name)
-        if not normalized_field_name.isidentifier() or keyword.iskeyword(normalized_field_name):
+        if not is_python_name(normalized_field_name, rule="legacy-host-identifiers"):
             continue
         normalized_value = _normalize_string(value) if isinstance(value, str) else value
         if normalized_field_name == _ALIAS_GENERATOR_TEMPLATE_DATA_KEY and (
@@ -1737,8 +1737,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             normalized_base_class_name
             if (
                 normalized_base_class_name is not None
-                and normalized_base_class_name.isidentifier()
-                and not keyword.iskeyword(normalized_base_class_name)
+                and is_python_name(normalized_base_class_name, rule="legacy-host-identifiers")
             )
             else cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
         )

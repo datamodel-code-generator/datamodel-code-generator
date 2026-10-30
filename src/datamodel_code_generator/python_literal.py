@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import keyword
 from dataclasses import dataclass
 from math import isfinite, isnan
 from typing import TYPE_CHECKING, Any, Protocol, cast
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._python_syntax import call_text, list_display, tuple_display
+from datamodel_code_generator._target_unicode import is_dotted_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -286,9 +286,7 @@ def _normalized_safe_public_type_name(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     normalized_value = _normalize_string(value)
-    if normalized_value and all(
-        part.isidentifier() and not keyword.iskeyword(part) for part in normalized_value.split(".")
-    ):
+    if is_dotted_python_name(normalized_value, rule="legacy-host-identifiers"):
         return normalized_value
     return None
 

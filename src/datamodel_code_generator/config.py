@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from keyword import iskeyword
 from pathlib import Path  # noqa: TC003 - used at runtime by Pydantic
 from threading import RLock
 from typing import TYPE_CHECKING, Annotated, Any
@@ -19,6 +18,7 @@ from datamodel_code_generator._format_types import (
     PythonVersionMin,
 )
 from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.base_config import BaseGenerateConfig, _validate_additional_import_paths
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -73,7 +73,7 @@ def validate_schema_validator_base_class_name(value: str | None) -> str | None:
     """Validate the generated shared schema validator base class name."""
     if value is None:
         return value
-    if not value.isidentifier() or iskeyword(value):
+    if not is_python_name(value, rule="legacy-host-identifiers"):
         msg = f"--schema-validator-base-class-name '{value}' is not a valid Python identifier"
         raise ValueError(msg)
     return value
