@@ -28,9 +28,10 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_?merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py", "parser/_lightweight_types.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py"]
 exclude = [
     "parser/_lightweight_types.py:LightweightTypesHost",
+    "parser/_object_maps.py:ObjectMapsHost",
     "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas",
     "parser/jsonschema.py:JsonSchemaParser._merge_primitive_schemas_for_allof",
     "parser/jsonschema.py:JsonSchemaParser._merge_schema_constraints",
@@ -54,7 +55,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/openapi.py", "parser/_lightweight_types.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
@@ -872,7 +873,7 @@ decision = "where --use-typed-map-values-beside-other-types is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
 adapters = [
     "parser/base.py:Parser.__init__",
-    "parser/jsonschema.py:JsonSchemaParser._typed_nullable_map_value_schema",
+    "parser/_object_maps.py:typed_nullable_map_value_schema",
 ]
 
 [homes.F-use-typed-map-values-beside-other-types.signatures.option-read]
@@ -1014,7 +1015,7 @@ audit = "D-L1-30"
 [homes.F-use-single-dict-for-object-maps]
 decision = "where --use-single-dict-for-object-maps is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
+adapters = ["parser/base.py:Parser.__init__", "parser/_object_maps.py:legacy_object_maps"]
 
 [homes.F-use-single-dict-for-object-maps.signatures.option-read]
 kind = "name"
@@ -1025,7 +1026,7 @@ audit = "D-L1-32"
 [homes.F-check-pattern-maps-strictly]
 decision = "where --check-pattern-maps-strictly is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
+adapters = ["parser/base.py:Parser.__init__", "parser/_object_maps.py:legacy_object_maps"]
 
 [homes.F-check-pattern-maps-strictly.signatures.option-read]
 kind = "name"
@@ -2031,6 +2032,9 @@ fix = "#5579"
 [allow."src/datamodel_code_generator/parser/_lightweight_types.py"."merge_schema_constraints"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
+[allow."src/datamodel_code_generator/parser/_object_maps.py"."_merge_additional_properties_all_of"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
 [allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
 "H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
 
@@ -2090,9 +2094,6 @@ fix = "#5579"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_written"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_additional_properties_all_of"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_object"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
