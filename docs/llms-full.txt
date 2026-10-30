@@ -69299,6 +69299,9 @@ Every `DataModel` renders through a Jinja2 template. Built-in templates live in
 
 Imports are collected separately from rendering through `Import` and `Imports`. The import layer handles grouping,
 aliases, reference-bound imports, future imports, unused import removal, and `__all__` generation.
+`model/_field_imports.py` decides the imports a field's type hint needs (`DataModelFieldBase.imports`): the imports of
+its data type with the typing names its hint writes, read through the field's own members so that subclass overrides
+apply; `DataModelFieldBase` keeps each of these methods as a delegator.
 A model's rendered text names its module's imports through the bindings the IMPORTS passes give them:
 `model/_rendered_names.py` rewrites the names a field annotation or default loads and every bare load of a
 builtin the module imports under an alias, and tells the pass that aliases such builtins which names a text loads
