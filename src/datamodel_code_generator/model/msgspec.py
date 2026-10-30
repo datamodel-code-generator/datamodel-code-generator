@@ -5,7 +5,6 @@ Generates Python models using msgspec.Struct for high-performance serialization.
 
 from __future__ import annotations
 
-import keyword
 from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
@@ -21,7 +20,7 @@ from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._target_unicode import is_identifier
+from datamodel_code_generator._target_unicode import is_identifier, is_python_name
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
@@ -583,7 +582,7 @@ class Struct(DataModel):
             if not isinstance(key, str):
                 continue
             normalized_key = _normalize_string(key)
-            if not normalized_key.isidentifier() or keyword.iskeyword(normalized_key):
+            if not is_python_name(normalized_key, rule="legacy-host-identifiers"):
                 continue
             base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
         base_class_kwargs.update(self._internal_template_data["base_class_kwargs"])

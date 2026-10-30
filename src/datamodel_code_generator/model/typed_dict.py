@@ -5,13 +5,12 @@ Generates Python TypedDict classes for use with type checkers.
 
 from __future__ import annotations
 
-import keyword
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
-from datamodel_code_generator._target_unicode import is_identifier
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._render_plan import FieldRenderPlan, RuleId, Why
@@ -55,7 +54,7 @@ escape_characters = str.maketrans({"\\": r"\\", **_QUOTE_AND_CONTROL_ESCAPES})
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:
     if (name := _field_source_name(field)) is None:  # pragma: no cover
         return False
-    return is_identifier(name, field.data_type.python_version) and not keyword.iskeyword(name)
+    return is_python_name(name, field.data_type.python_version)
 
 
 class TypedDict(DataModel):
