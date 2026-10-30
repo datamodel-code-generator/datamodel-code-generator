@@ -28,7 +28,7 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_?merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py"]
 exclude = [
     "parser/_lightweight_types.py:LightweightTypesHost",
     "parser/_object_maps.py:ObjectMapsHost",
@@ -55,7 +55,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
