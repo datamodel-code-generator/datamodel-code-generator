@@ -338,12 +338,12 @@ reference = "--input tests/data/openapi/not_real_string.json --input-file-type o
 
 ["src/datamodel_code_generator/types.py"."DataTypeManager.copy_data_type"]
 data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
-enum_member_literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
-literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+
+["src/datamodel_code_generator/types.py"."_copied_node"]
+enum_member_literals = 1
+kwargs = 1
+literals = 1
 
 ["src/datamodel_code_generator/types.py"."_copy_data_type"]
 data_types = 1
 dict_key = 1
-enum_member_literals = 1
-kwargs = 1
-literals = 1
