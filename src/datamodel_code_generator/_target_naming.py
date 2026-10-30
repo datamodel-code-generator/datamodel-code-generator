@@ -19,6 +19,7 @@ from copy import copy
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
@@ -131,14 +132,9 @@ class NameScope:
 
         A field takes `name_1`, `name_2`; a class `Name1`, `Name2`, or `NameSuffix`, `NameSuffix1` with a suffix.
         """
-        delimiter = "" if camel else "_"
-        candidate, count = name, 0
-        while candidate in self:
-            count += 1
-            if camel and suffix:
-                candidate = f"{name}{suffix}{count - 1 if count > 1 else ''}"
-            else:
-                candidate = f"{name}{delimiter}{count}"
+        candidate, _ = first_free(
+            name, self.__contains__, "joined" if camel else "underscore", suffix=suffix if camel else None
+        )
         self._taken.add(self._key(candidate))
         return candidate
 

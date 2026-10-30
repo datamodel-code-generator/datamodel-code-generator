@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
@@ -281,11 +282,7 @@ _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
 def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     """Reserve and return the first ``<name>_aliased`` name, with a suffix when taken."""
-    alias = f"{name}_aliased"
-    suffix = 1
-    while alias in reserved_names:
-        alias = f"{name}_aliased_{suffix}"
-        suffix += 1
+    alias, _ = first_free(f"{name}_aliased", reserved_names.__contains__, "underscore")
     reserved_names.add(alias)
     return alias
 

@@ -299,6 +299,20 @@ exclude = ["_python_decorator.py:_parse_direct_target", "reference.py:FieldNameR
 what = "tests whether text is a Python name itself; call _target_unicode.py:is_python_name (or is_dotted_python_name) with the row of its characters"
 audit = "C10-K03"
 
+[homes.Hx-free-names]
+decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
+core = ["_free_names.py"]
+adapters = []
+
+[homes.Hx-free-names.signatures.name-search]
+kind = "name-search"
+# Left out: the field-name resolver makes a name valid, and its numbered candidates follow the name before
+# --capitalise-enum-members or the class-name casing changes it, with an ASCII fallback that restarts the numbers
+# (C09 design, H: issue draft).
+exclude = ["reference.py:FieldNameResolver.get_valid_name"]
+what = "searches for the first name its scope does not hold; call _free_names.py:first_free with the row of the feature's numbering"
+audit = "C09-N1"
+
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
 core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias
 from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
 from datamodel_code_generator._url_redaction import redact_reference
 
@@ -403,10 +404,7 @@ class SourceDocument:
         name = _NAME.sub("_", name)
         items = self.extra.setdefault(kind, {})
         root = as_mapping(as_mapping(self.documents[0].get("components")).get(kind))
-        unique, count = name, 1
-        while unique in items or unique in root:
-            count += 1
-            unique = f"{name}_{count}"
+        unique, _ = first_free(name, lambda name: name in items or name in root, "underscore-from-2")
         self.bundled[key] = bundled = "#" + join_pointer(("components", kind, unique))
         items[unique] = None
         items[unique] = self.copy(node, target, resource, tokens, role)

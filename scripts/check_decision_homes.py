@@ -30,6 +30,9 @@ them, ``what`` words the message):
   after a name, a value or a closing bracket opens a subscript and does not count.
 * ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
   of whose branches calls a callee ending in one of ``names`` (a rule applied only where a value is that string).
+* ``name-search``: a ``while`` loop whose test reads a name that the loop builds itself (its test or body, not a
+  function inside it, assigns the name an f-string or a value holding one, or adds a string to it with ``+=``): a
+  search for the first name a scope does not hold.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -100,6 +103,7 @@ SIGNATURE_KINDS = frozenset({
     "literal",
     "display",
     "branch",
+    "name-search",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -479,6 +483,31 @@ def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) ->
     )
 
 
+def _holds_f_string(value: ast.AST) -> bool:
+    return any(isinstance(part, ast.JoinedStr) for part in ast.walk(value))
+
+
+def _searches_name(loop: ast.While) -> bool:
+    """Return whether ``loop`` tests a name that it builds itself as text (``name-search``)."""
+    built: set[str] = set()
+    pending: list[ast.AST] = [loop.test, *loop.body]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda):
+            continue
+        pending.extend(ast.iter_child_nodes(node))
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.NamedExpr) and _holds_f_string(node.value):
+            targets = [node.target]
+        elif isinstance(node, ast.Assign) and _holds_f_string(node.value):
+            targets = node.targets
+        elif isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Add):
+            text = isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+            targets = [node.target] if text or _holds_f_string(node.value) else []
+        built.update(target.id for target in targets if isinstance(target, ast.Name))
+    return any(isinstance(node, ast.Name) and node.id in built for node in ast.walk(loop.test))
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -543,6 +572,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return any(spelling in text for text in texts for spelling in options["contains"])
         case "display":
             return _hand_display(node, options["brackets"])
+        case "name-search":
+            return isinstance(node, ast.While) and _searches_name(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node)) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -559,6 +590,7 @@ NODE_TYPES = {
     "literal": (ast.Constant, ast.JoinedStr),
     "display": (ast.JoinedStr, ast.BinOp),
     "branch": (ast.If, ast.IfExp),
+    "name-search": (ast.While,),
 }
 
 

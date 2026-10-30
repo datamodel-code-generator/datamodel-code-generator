@@ -79,3 +79,18 @@ def displays(head, items):
         f"({'; '.join(items)})",
         ", ".join(items),
     )
+
+
+def search(name, taken, words):
+    """Search for free names with an f-string and with a padded string; a loop writing a message does not count."""
+    candidate, count = name, 0
+    while candidate in taken:
+        count += 1
+        candidate = f"{name}_{count}"
+    padded = name
+    while padded in taken:
+        padded += "_"
+    message = ""
+    while words:
+        message = f"{words.pop()} left"
+    return candidate, padded, message

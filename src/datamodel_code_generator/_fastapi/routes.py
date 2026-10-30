@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 from urllib.parse import unquote
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
 from datamodel_code_generator._target_operations import group_tag
 from datamodel_code_generator._target_unicode import is_python_name
@@ -151,9 +152,7 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
         if is_python_name(name, rule="ascii") and names.count(name) == 1 and name not in taken:
             slot = name
         else:
-            while (slot := f"{_SLOT_PREFIX}{index}") in reserved:
-                index += 1
-            index += 1
+            slot, index = first_free(_SLOT_PREFIX, reserved.__contains__, "joined-from-0", start=index + 1)
             slots.append(PathSlot(wire_name=name, slot=slot))
         parts.extend((unquote(path[position : match.start()]), f"{{{slot}}}"))
         position = match.end()

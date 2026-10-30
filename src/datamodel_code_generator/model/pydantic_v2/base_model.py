@@ -21,6 +21,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -2080,12 +2081,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         )
         if reserved_names:
             class_names.update(reserved_names)
-        candidate = f"{base_class_name}{suffix}"
-        number = 2
-        while candidate in class_names:
-            candidate = f"{base_class_name}{suffix}{number}"
-            number += 1
-        return candidate
+        return first_free(f"{base_class_name}{suffix}", class_names.__contains__, "joined-from-2")[0]
 
     @classmethod
     def _render_property_count_validation_helpers(
