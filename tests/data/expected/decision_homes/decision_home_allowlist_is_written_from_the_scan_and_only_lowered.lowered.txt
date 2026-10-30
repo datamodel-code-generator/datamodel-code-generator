@@ -20,13 +20,16 @@
 "sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
 
 [allow."other.py"."displays"]
-"sample.hand-display" = { home = "sample", count = 2, audit = "X-11" }
+"sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
 
 [allow."other.py"."fold"]
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
+
+[allow."other.py"."package_files"]
+"sample.init-test" = { home = "sample", count = 1, audit = "X-14" }
 
 [allow."other.py"."read_keys"]
 "sample.read-key" = { home = "sample", count = 4, audit = "X-9" }

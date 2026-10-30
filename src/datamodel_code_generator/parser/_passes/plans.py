@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 from datamodel_code_generator import ReuseScope
+from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -23,7 +24,6 @@ from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
     RecursionFactsHost,
     ReuseOptionsHost,
-    _module_name_from_module_path,
     override_required_field,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts
@@ -307,7 +307,7 @@ def root_dict_key_references(model: DataModel) -> list[Reference]:
 def record_emitting_modules(parser: PlansHost, run: StructuredRun[Any]) -> None:
     """Record the module that writes each model, for ``--collapse-root-models-name-strategy``."""
     parser._emitting_module_lists = (  # noqa: SLF001
-        [(_module_name_from_module_path(module_), models) for module_, models in run.module_models]
+        [(dotted_module(module_), models) for module_, models in run.module_models]
         if parser.collapse_root_models and parser.collapse_root_models_name_strategy is not None
         else []
     )

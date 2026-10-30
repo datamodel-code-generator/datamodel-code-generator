@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
@@ -30,9 +31,9 @@ _ALLOW: Final = KnownBackendValue(LiteralScalar(kind="str", value="allow"))
 
 def artifact_module(artifact: ModelArtifactAddress) -> str:
     """Return the dotted module path of a model artifact below its model package."""
-    *parents, name = artifact.relative_path
-    modules = () if artifact.result_key == "single" else (*parents, name.removesuffix(".py"))
-    return ".".join((artifact.model_package, *modules)).removesuffix(".__init__")
+    if artifact.result_key == "single":
+        return artifact.model_package.removesuffix(".__init__")
+    return dotted_module(artifact.relative_path, artifact.model_package)
 
 
 def extras_symbols(

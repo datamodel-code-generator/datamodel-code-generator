@@ -90,6 +90,12 @@ kind = "name-search"
 what = "searches for a free name itself"
 audit = "X-13"
 
+[homes.sample.signatures.init-test]
+kind = "compare-eq"
+values = ["__init__.py"]
+what = "tests for a package's file itself"
+audit = "X-14"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

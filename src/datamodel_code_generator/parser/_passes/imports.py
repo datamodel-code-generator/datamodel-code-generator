@@ -20,6 +20,7 @@ from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._module_paths import dotted_module, module_parts
 from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
@@ -52,7 +53,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _iter_import_bindings,
-    _module_name_from_module_path,
     _named_data_types,
     _normalize_result_module_path,
     _string_or_identifier_pattern,
@@ -388,7 +388,7 @@ def _released_name_imports(  # noqa: PLR0914
         for released_name, model in models:
             resolver.add([model.path], released_name)
         ctx = contexts_by_module[module]
-        module_name = _module_name_from_module_path(module)
+        module_name = dotted_module(module)
         imported: dict[tuple[ModulePath, str, str], None] = {}
         for data_type in (data_type for _, model in models for data_type in _named_data_types(model)):
             if (
@@ -399,7 +399,7 @@ def _released_name_imports(  # noqa: PLR0914
             ):
                 continue
             released_module, released_name = released_placement.get(final, final)
-            released_module_name = _module_name_from_module_path(released_module)
+            released_module_name = dotted_module(released_module)
             target = reference_import_target(
                 released_name,
                 module_name,
@@ -934,11 +934,7 @@ def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextVi
         return
     used: list[tuple[PydanticConstruct, str]] = []
     for ctx in contexts:
-        prefix = (
-            f"{module_name}."
-            if len(contexts) > 1 and (module_name := _module_name_from_module_path(ctx.module))
-            else ""
-        )
+        prefix = f"{module_name}." if len(contexts) > 1 and (module_name := dotted_module(ctx.module)) else ""
         for model in ctx.models:
             owner = f"{prefix}{model.class_name}"
             used.extend(
@@ -1234,11 +1230,9 @@ def _package_submodule_names(
     for ctx in contexts:
         if not (ctx.models or ctx.is_init or ctx.module_key in forwarder_modules):
             continue
-        *packages, file_name = _written_module_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
-        if file_name != "__init__.py":
-            packages.append(file_name.removesuffix(".py"))
+        packages = module_parts(_written_module_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
         for depth in range(len(packages)):
-            names.setdefault(tuple(packages[:depth]), set()).add(packages[depth])
+            names.setdefault(packages[:depth], set()).add(packages[depth])
     return names
 
 

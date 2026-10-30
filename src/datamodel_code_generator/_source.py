@@ -13,6 +13,8 @@ from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, TextIO, TypeAlias
 
+from datamodel_code_generator._module_paths import is_package_init
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
@@ -106,7 +108,7 @@ class DirectoryInputFilter:
                 if source_path.suffix == ".py" and (source_path == path or source_path.is_file()):
                     source_data = source_path.read_bytes()
                     text = source_data.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
-                    if self._is_generated(text) or (source_path.name == "__init__.py" and not text.strip()):
+                    if self._is_generated(text) or (is_package_init(source_path.name) and not text.strip()):
                         continue
                     if source_path == path:
                         data = source_data

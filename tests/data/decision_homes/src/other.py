@@ -107,3 +107,13 @@ def search(name, taken, words, refresh):
 
 
 LABELS = {"one": "Label", "two": "Other"}
+
+
+def package_files(paths, name):
+    """Test file names for a package's file on either side; a membership test and another name do not count."""
+    return (
+        [path for path in paths if path[-1] == "__init__.py"],
+        "__init__.py" != name,
+        name in {"__init__.py"},
+        name == "module.py",
+    )

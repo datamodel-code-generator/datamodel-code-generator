@@ -20,6 +20,9 @@ from typing_extensions import Protocol, final, override
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._module_paths import (
+    dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
@@ -1356,16 +1359,6 @@ def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Ref
     if isinstance(model_path_to_module_name, _ModuleNames):
         return model_path_to_module_name.of(reference)
     return model_path_to_module_name.get(reference.path)
-
-
-def _module_name_from_module_path(module: ModulePath) -> str:
-    if module == ("__init__.py",):
-        return ""
-
-    parts = [*module]
-    if parts and parts[-1].endswith(".py"):  # pragma: no branch - Module paths are Python files.
-        parts[-1] = parts[-1][:-3]
-    return ".".join(parts[:-1] if parts[-1:] == ["__init__"] else parts)
 
 
 @final

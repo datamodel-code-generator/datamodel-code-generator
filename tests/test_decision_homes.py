@@ -54,6 +54,8 @@ ALLOWED = """
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 [allow."other.py"."search"]
 "sample.name-search" = { home = "sample", count = 3, audit = "X-13" }
+[allow."other.py"."package_files"]
+"sample.init-test" = { home = "sample", count = 2, audit = "X-14" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

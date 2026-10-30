@@ -352,6 +352,34 @@ contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
 what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
 audit = "C18-N2"
 
+[homes.Hx-module-paths]
+decision = "which module a written Python file holds: its path without the file's .py and without a package's __init__, and whether a file is a package's __init__.py"
+core = ["_module_paths.py"]
+adapters = []
+
+[homes.Hx-module-paths.signatures.module-file-stem]
+kind = "call"
+names = ["removesuffix", "endswith", "replace"]
+strings = [".py"]
+# Left out: the files on disk beside a written module (a dependency-free leaf the writers and the publication journal
+# share), an --input-model value that names a file, and a result path told apart from a package directory.
+exclude = [
+    "_shadowed_modules.py:warn_shadowed_modules",
+    "input_model.py:_is_path_input_model_module",
+    "parser/base.py:Parser.__postprocess_result_modules",
+]
+what = "takes .py off the file name of a module itself; call _module_paths.py:module_parts (or dotted_module)"
+audit = "C09-N6"
+
+[homes.Hx-module-paths.signatures.package-init-test]
+kind = "compare-eq"
+values = ["__init__.py", "__init__"]
+# Left out: the files on disk beside a written module (as above), and the file stems a server target refuses because
+# its file system folds them onto a package's __init__ or a Windows device name.
+exclude = ["_shadowed_modules.py:warn_shadowed_modules", "_fastapi/plan.py:_file_stem_conflict"]
+what = "tests whether a file is a package's __init__.py itself; call _module_paths.py:is_package_init (module_parts drops it)"
+audit = "C09-N6"
+
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
 core = ["_regex_syntax.py:needs_python_engine", "_regex_syntax.py:is_portable_pattern"]
@@ -2436,6 +2464,7 @@ fix = "#5656"
 
 [allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
 "H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
+"Hx-module-paths.module-file-stem" = { home = "Hx-module-paths", count = 1, audit = "C09-N6" }
 
 [allow."src/datamodel_code_generator/parser/_passes/imports.py"."tuple_unique_items_warning"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }

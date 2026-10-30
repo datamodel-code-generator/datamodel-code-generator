@@ -26,6 +26,7 @@ from typing_extensions import Sentinel
 
 from datamodel_code_generator import Error, generate, is_asyncapi, is_openapi
 from datamodel_code_generator._graph import stable_toposort
+from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
 from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config
 from datamodel_code_generator.enums import DataModelType, InputFileType
 
@@ -41,20 +42,6 @@ _MISSING_MODULE = Sentinel("_MISSING_MODULE")
 def _evict_dynamic_models_cache_entries(count: int) -> None:
     for _ in range(count):
         del _dynamic_models_cache[next(iter(_dynamic_models_cache))]
-
-
-def _is_init_file(path_tuple: tuple[str, ...]) -> bool:
-    """Check if path tuple represents an __init__.py file."""
-    return PurePath(path_tuple[-1]).stem == "__init__"
-
-
-def _path_to_module_name(package_name: str, path_tuple: tuple[str, ...]) -> str:
-    """Convert path tuple to module name."""
-    parts = [package_name, *path_tuple[:-1]]
-    stem = PurePath(path_tuple[-1]).stem
-    if stem != "__init__":
-        parts.append(stem)
-    return ".".join(parts)
 
 
 def _execute_single_module(
@@ -108,16 +95,6 @@ def _run_module_code(code: str, namespace: dict[str, Any], *, include_private_mo
     return models
 
 
-def _path_to_relative_module_path(path_tuple: tuple[str, ...]) -> tuple[str, ...] | None:
-    """Convert a generated Python file path to its path relative to the package."""
-    filepath = PurePath(path_tuple[-1])
-    if filepath.suffix != ".py":
-        return None
-    if filepath.stem == "__init__":
-        return path_tuple[:-1]
-    return (*path_tuple[:-1], filepath.stem)
-
-
 def _get_relative_import_paths(
     path_tuple: tuple[str, ...],
     code: str,
@@ -156,8 +133,8 @@ def _build_module_edges(modules: dict[tuple[str, ...], str]) -> dict[tuple[str, 
     """
     module_paths: dict[tuple[str, ...], tuple[str, ...]] = {}
     for path in modules:
-        if (module_path := _path_to_relative_module_path(path)) is not None:
-            module_paths[module_path] = path
+        if PurePath(path[-1]).suffix == ".py":
+            module_paths[module_parts(path)] = path
 
     edges: dict[tuple[str, ...], set[tuple[str, ...]]] = {path: set() for path in modules}
     for path, code in modules.items():
@@ -187,17 +164,19 @@ def _execute_multi_module(
 
     try:
         nodes = list(modules.keys())
-        nodes.sort(key=lambda p: (_is_init_file(p), p))
+        nodes.sort(key=lambda p: (is_package_init(p[-1]), p))
         node_index = {node: i for i, node in enumerate(nodes)}
         edges = _build_module_edges(modules)
         sorted_paths = stable_toposort(nodes, edges, key=node_index.__getitem__)
 
         for path_tuple in sorted_paths:
-            generated_module_name = _path_to_module_name(package_name, path_tuple)
+            generated_module_name = dotted_module(path_tuple, package_name)
             module = types.ModuleType(generated_module_name)
             module.__dict__["__builtins__"] = builtins.__dict__
             module.__package__ = (
-                generated_module_name if _is_init_file(path_tuple) else ".".join(generated_module_name.split(".")[:-1])
+                generated_module_name
+                if is_package_init(path_tuple[-1])
+                else ".".join(generated_module_name.split(".")[:-1])
             )
             register_module(generated_module_name, module)
             all_namespaces[generated_module_name] = module.__dict__
@@ -209,7 +188,7 @@ def _execute_multi_module(
             register_module(package_name, pkg)
 
         for path_tuple in sorted_paths:
-            generated_module_name = _path_to_module_name(package_name, path_tuple)
+            generated_module_name = dotted_module(path_tuple, package_name)
             exec(modules[path_tuple], all_namespaces[generated_module_name])  # noqa: S102
 
         models: dict[str, type] = {}
