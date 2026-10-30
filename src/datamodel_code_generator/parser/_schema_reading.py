@@ -7,13 +7,13 @@ module. None of them reads the parser. ``parser/jsonschema.py`` imports them too
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._json_schema import schema_positions
 from datamodel_code_generator.parser._intersection import intersect_keywords
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject, _type_null_sources
-from datamodel_code_generator.types import UnionIntFloat
+from datamodel_code_generator.types import DataType, UnionIntFloat
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping, Sequence
@@ -137,3 +137,34 @@ def _enum_entries_skip_null(obj: JsonSchemaObject) -> bool:
     The class of a string or nullable enum leaves out the null the enum lists, and its entries skip it too.
     """
     return resolve_null_facts(_type_null_sources(obj), "enum").rule == "enum-null-as-nullable"
+
+
+_LIGHTWEIGHT_MAX_DEPTH: Final = 3
+_LIGHTWEIGHT_MAX_UNION_ELEMENTS: Final = 5
+
+
+class _AllOfItemGroups(NamedTuple):
+    """The allOf members of one schema by the part of its lightweight type each one gives."""
+
+    refs: list[JsonSchemaObject]
+    ref_data_types: list[DataType]
+    primitives: list[JsonSchemaObject]
+    constraint_only: list[JsonSchemaObject]
+    objects: list[JsonSchemaObject]
+
+
+_NUMERIC_TYPE_DOMAINS = {
+    "integer": frozenset({"integer"}),
+    "number": frozenset({"integer", "number"}),
+    "null": frozenset({"null"}),
+}
+
+
+def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
+    """Expand number to its numeric subtypes within the numeric/null domain."""
+    if isinstance(schema_type, str):
+        return _NUMERIC_TYPE_DOMAINS.get(schema_type)
+    types = frozenset(schema_type)
+    if not types.issubset(_NUMERIC_TYPE_DOMAINS):
+        return None
+    return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
