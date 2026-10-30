@@ -1001,6 +1001,39 @@ exclude = ["_runtime/protocols/verification.py"]
 what = "splits the name off a query field or a Cookie pair itself; call client/urls.py:query_field or client/positions.py:cookie_name"
 audit = "C24-B30"
 
+[homes.Hx-credential-text]
+decision = "the text of a credential the client places and the error a failing credential source raises: the credentials of the Basic scheme (a basic scheme's and an OAuth client's), the octets a cookie value sent as it is may hold (a cookie credential's and a cookie parameter's), and what the failure of an application's credential callable or callback becomes"
+core = [
+    "_runtime/client/auth.py:basic_credentials",
+    "_runtime/client/auth.py:provider_failure",
+    "_runtime/model_codecs/parameters.py:cookie_octets",
+]
+adapters = []
+
+[homes.Hx-credential-text.signatures.basic-credentials]
+kind = "call"
+names = ["b64encode"]
+paths = ["_runtime/client/"]
+what = "writes the credentials of the Basic scheme itself; call client/auth.py:basic_credentials"
+audit = "C25-K2"
+
+[homes.Hx-credential-text.signatures.cookie-octets]
+kind = "name"
+names = ["_COOKIE_OCTETS", "_COOKIE_UNSAFE", "_COOKIE_VALUE"]
+paths = ["_runtime/"]
+what = "checks the octets of a cookie value itself; call model_codecs/parameters.py:cookie_octets"
+audit = "C25-K3"
+
+[homes.Hx-credential-text.signatures.provider-failure]
+kind = "call"
+names = ["AuthError"]
+keywords = ["cause"]
+paths = ["_runtime/"]
+# A token request that fails in transport keeps the native error as its cause, not an application's.
+exclude = ["_runtime/client/oauth.py:_transport"]
+what = "turns the failure of an application's credential callable or callback into an error itself; call client/auth.py:provider_failure"
+audit = "C25-K1"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.

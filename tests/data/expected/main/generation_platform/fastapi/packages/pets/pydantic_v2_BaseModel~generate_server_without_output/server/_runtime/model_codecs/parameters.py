@@ -228,6 +228,14 @@ def header_text(text: str) -> bool:
     return not _NOT_HEADER_TEXT.search(text) and text == text.strip(OWS)
 
 
+def cookie_octets(text: str) -> bool:
+    """Return whether a text is a cookie value sent as it is, unquoted cookie octets as RFC 6265 writes them.
+
+    It holds visible ASCII only, without `"`, `,`, `;`, or a backslash.
+    """
+    return _COOKIE_OCTETS.fullmatch(text) is not None
+
+
 def _header_text(text: str, *, item: bool) -> str:
     if not header_text(text) or (item and "," in text):
         msg = "A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter"
@@ -251,7 +259,7 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     pairs = [(plan.name if key is None else key, text) for key, text in entries]
     if plan.style == "form" and plan.shape != "scalar":
         return [(quote(key, safe=""), quote(text, safe="")) for key, text in pairs]
-    if not all(TOKEN.fullmatch(key) and _COOKIE_OCTETS.fullmatch(text) for key, text in pairs):
+    if not all(TOKEN.fullmatch(key) and cookie_octets(text) for key, text in pairs):
         msg = "A cookie name must be a token and its value unquoted cookie octets"
         raise ParameterEncodingError(msg)
     return list(pairs)

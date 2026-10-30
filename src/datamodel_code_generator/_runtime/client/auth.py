@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 import httpx2
 
 from ..model_codecs.media import TCHARS
-from ..model_codecs.parameters import header_text
+from ..model_codecs.parameters import cookie_octets, header_text
 from .errors import ConfigurationError, SDKError
 from .positions import cookie_name
 from .security import Credentials
@@ -62,7 +62,6 @@ _UNAUTHORIZED: Final = 401
 _CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
 _CHALLENGE: Final = re.compile(rf"({TCHARS})(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
 _INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
-_COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
 
 
 class AuthError(SDKError):
@@ -135,16 +134,31 @@ class SchemeCredentials(Credentials):
         )
 
 
+def provider_failure(error: Exception) -> Exception:
+    """Return the error raised for an application's credential callable or callback that failed.
+
+    It is the callable's own SDK error, or else a `provider_failed` error that keeps the failure as its cause.
+    """
+    if isinstance(error, SDKError):
+        return error
+    return AuthError(reason="provider_failed", cause=error)
+
+
+def basic_credentials(user: str, password: str) -> str:
+    """Return the credentials of the Basic scheme for a user and a password, as RFC 7617 writes them in UTF-8."""
+    return "Basic " + base64.b64encode(f"{user}:{password}".encode()).decode("ascii")
+
+
 def _called(value: object) -> object:
     """Return a credential's value for this request, calling a callable credential."""
     if not callable(value):
         return value
     try:
         return value()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise AuthError(reason="provider_failed", cause=error) from None
+    except Exception as error:
+        if (failure := provider_failure(error)) is error:
+            raise
+        raise failure from None
 
 
 def _pair(value: object) -> tuple[str, str] | None:
@@ -162,7 +176,7 @@ def _text(scheme: SecurityScheme, value: object) -> str:
     if scheme.kind == "basic":
         if (pair := _pair(value)) is None:
             raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
-        return "Basic " + base64.b64encode(f"{pair[0]}:{pair[1]}".encode()).decode("ascii")
+        return basic_credentials(*pair)
     if not isinstance(value, str):
         raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
     return f"Bearer {value}" if scheme.kind == "bearer" else value
@@ -180,7 +194,7 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
             request.url = request.url.copy_set_param(name, text)
             return
         case "cookie":
-            unsafe = _COOKIE_UNSAFE.search(text) is not None or not text.isascii()
+            unsafe = not cookie_octets(text)
         case _:
             unsafe = not header_text(text)
     if unsafe:

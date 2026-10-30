@@ -7,7 +7,6 @@ to its `on_token_refreshed` callback.
 
 from __future__ import annotations
 
-import base64
 import inspect
 import threading
 import weakref
@@ -21,8 +20,16 @@ import httpx2
 from typing_extensions import TypeIs
 
 from ..model_codecs.media import SUCCESS_STATUSES
-from .auth import OAUTH_ERROR_CODES, AuthError, OAuthErrorCode, SchemeAuth, TokenSource
-from .errors import ConfigurationError, SDKError
+from .auth import (
+    OAUTH_ERROR_CODES,
+    AuthError,
+    OAuthErrorCode,
+    SchemeAuth,
+    TokenSource,
+    basic_credentials,
+    provider_failure,
+)
+from .errors import ConfigurationError
 from .security import SecurityScheme
 from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
@@ -112,13 +119,6 @@ def _url(value: object) -> str:
     return value
 
 
-def _failed(error: Exception) -> Exception:
-    """Return the error of an application callable that failed: its own SDK error, or a provider failure."""
-    if isinstance(error, SDKError):
-        return error
-    return AuthError(reason="provider_failed", cause=error)
-
-
 def _secret(value: Secret | None) -> str | None:
     """Return the client secret for one token request, calling a callable secret."""
     if not callable(value):
@@ -126,7 +126,7 @@ def _secret(value: Secret | None) -> str | None:
     try:
         secret = value()
     except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise _failed(error) from None
+        raise provider_failure(error) from None
     return _string(secret)
 
 
@@ -228,7 +228,7 @@ class _Provider(TokenSource):
         try:
             return callback(tokens)
         except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-            raise _failed(error) from None
+            raise provider_failure(error) from None
 
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
@@ -237,8 +237,7 @@ class _Provider(TokenSource):
         secret = _secret(self._secret)
         match self._method:
             case "client_secret_basic":
-                pair = f"{quote_plus(self._client_id)}:{quote_plus(secret or '')}"
-                headers["Authorization"] = f"Basic {base64.b64encode(pair.encode()).decode('ascii')}"
+                headers["Authorization"] = basic_credentials(quote_plus(self._client_id), quote_plus(secret or ""))
             case "client_secret_post":
                 form.extend((("client_id", self._client_id), ("client_secret", secret or "")))
             case _:
@@ -327,7 +326,7 @@ class _Provider(TokenSource):
                 try:
                     await result
                 except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-                    raise _failed(error) from None
+                    raise provider_failure(error) from None
             return tokens.access_token
 
     def _auth(self) -> SchemeAuth:
