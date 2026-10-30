@@ -484,7 +484,16 @@ def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) ->
 
 
 def _holds_f_string(value: ast.AST) -> bool:
-    return any(isinstance(part, ast.JoinedStr) for part in ast.walk(value))
+    """Return whether the text ``value`` assigns holds an f-string, outside call arguments and lambda bodies."""
+    pending = [value]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.JoinedStr):
+            return True
+        if isinstance(node, ast.Lambda):
+            continue
+        pending.extend([node.func] if isinstance(node, ast.Call) else ast.iter_child_nodes(node))
+    return False
 
 
 def _searches_name(loop: ast.While) -> bool:
@@ -501,6 +510,8 @@ def _searches_name(loop: ast.While) -> bool:
             targets = [node.target]
         elif isinstance(node, ast.Assign) and _holds_f_string(node.value):
             targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value is not None and _holds_f_string(node.value):
+            targets = [node.target]
         elif isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Add):
             text = isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
             targets = [node.target] if text or _holds_f_string(node.value) else []

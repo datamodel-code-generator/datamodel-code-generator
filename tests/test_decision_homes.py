@@ -52,7 +52,7 @@ ALLOWED = """
 [allow."other.py"."fold"]
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 [allow."other.py"."search"]
-"sample.name-search" = { home = "sample", count = 2, audit = "X-13" }
+"sample.name-search" = { home = "sample", count = 3, audit = "X-13" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
