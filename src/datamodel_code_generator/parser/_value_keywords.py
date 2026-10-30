@@ -618,6 +618,7 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     if obj.is_array:
         return bool(obj.minItems is not None or obj.maxItems is not None or parser._get_array_items_constraints(obj))  # noqa: SLF001
 
+    schema_type: str | None = None
     match obj.type:
         case str() as schema_type:
             pass
