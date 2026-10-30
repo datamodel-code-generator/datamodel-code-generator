@@ -63,6 +63,7 @@ T_co = TypeVar("T_co", covariant=True)
 FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
+CodecCondition: TypeAlias = Literal["malformed", "value"]
 
 _PAIR: Final = 2
 PARSE_ERRORS: Final = (CodecError,)
@@ -116,6 +117,11 @@ class InboundModelCodec(Protocol[T_co]):
     def malformed(self, error: Exception) -> bool:
         """Return whether a failure of the codec's backend is received bytes that are not JSON."""
         ...
+
+
+def codec_condition(codec: InboundModelCodec[object], error: Exception) -> CodecCondition:
+    """Return what a failure of a codec's backend says of received data: bytes that are not JSON, or a refused value."""
+    return "malformed" if codec.malformed(error) else "value"
 
 
 def request_errors(codec: OutboundModelCodec | None) -> tuple[type[Exception], ...]:
@@ -454,6 +460,20 @@ class BodyFramingError(InvalidBodyError):
     reason = "invalid_framing"
 
 
+def coded(codec: InboundModelCodec[T], read: Callable[[], T], *, syntax: bool = True) -> T:
+    """Return what `read` gets through a model codec, raising a failure of the codec's backend as the body's error.
+
+    The failure is the body's syntax error when it is received bytes that are not JSON, else a value the model refuses;
+    `syntax=False` reads every failure as a refused value, since a checked binary body has no syntax.
+    """
+    try:
+        return read()
+    except codec.errors as error:
+        if syntax and codec_condition(codec, error) == "malformed":
+            raise InvalidBodyError(error) from None
+        raise BodyValueError(error) from None
+
+
 def _parsed(parse: Callable[[bytes], T], body: bytes) -> T:
     """Return what a body parses to, raising a parse failure as the body's decode failure."""
     try:
@@ -501,13 +521,10 @@ class _Model(Generic[T_co]):
         self.read = read
 
     def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
-        codec = self.codec
-        try:
-            return codec.decode(body) if self.read is None else codec.text(self.read(body, info))
-        except codec.errors as error:
-            if codec.malformed(error):
-                raise InvalidBodyError(error) from None
-            raise BodyValueError(error) from None
+        codec, read = self.codec, self.read
+        if read is None:
+            return coded(codec, partial(codec.decode, body))
+        return coded(codec, lambda: codec.text(read(body, info)))
 
     def paged(self, body: bytes, info: ResponseInfo) -> tuple[T_co, JSONValue]:
         """Decode a helper response and keep the parsed JSON its selectors read."""
@@ -524,11 +541,7 @@ class _Checked:
         self.codec = codec
 
     def __call__(self, body: bytes, _: ResponseInfo) -> bytes:
-        codec = self.codec
-        try:
-            codec.text(body)
-        except codec.errors as error:
-            raise BodyValueError(error) from None
+        coded(self.codec, partial(self.codec.text, body), syntax=False)
         return body
 
 
@@ -694,7 +707,7 @@ class ResponseDecoder(Generic[T_co]):
         A problem that stopped reading an error body, such as a broken content coding, is kept as its decode error.
         """
         if self.success(info.status_code):
-            return self._decoded(info, body, self._branch(info, body))
+            return self._decoded(info, body, self._branch(info, body).decode)
         raise self.failure(info, body, truncated=truncated, problem=problem)
 
     def decode_page(
@@ -710,11 +723,7 @@ class ResponseDecoder(Generic[T_co]):
         Any other response raises its typed failure, as `decode` does.
         """
         if self.success(info.status_code):
-            branch = self._branch(info, body)
-            try:
-                return branch.page(body, info)
-            except InvalidBodyError as error:
-                raise error.failure(info, body) from None
+            return self._decoded(info, body, self._branch(info, body).page)
         raise self.failure(info, body, truncated=truncated, problem=problem)
 
     def failure(
@@ -746,9 +755,10 @@ class ResponseDecoder(Generic[T_co]):
         return branch
 
     @staticmethod
-    def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T]) -> T:
+    def _decoded(info: ResponseInfo, body: bytes, read: Callable[[bytes, ResponseInfo], T]) -> T:
+        """Return what a branch reads from a complete body, raising the body's decode failure as the response's."""
         try:
-            return branch.decode(body, info)
+            return read(body, info)
         except InvalidBodyError as error:
             raise error.failure(info, body) from None
 

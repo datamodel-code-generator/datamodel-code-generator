@@ -848,6 +848,30 @@ paths = ["_runtime/"]
 what = "bounds a status class in the runtime itself; read the ranges of model_codecs/media.py"
 audit = "C19-M11"
 
+[homes.Hx-codec-failure]
+decision = "what a received model codec's failure says of the data (bytes that are not JSON, or a value the model refuses), the body error each condition becomes, and the response failure a body error becomes"
+core = [
+    "_runtime/client/operations.py:codec_condition",
+    "_runtime/client/operations.py:coded",
+    "_runtime/client/operations.py:ResponseDecoder._decoded",
+]
+
+[homes.Hx-codec-failure.signatures.codec-condition]
+kind = "call"
+names = ["malformed"]
+paths = ["_runtime/"]
+what = "classifies a codec failure itself; call client/operations.py:codec_condition (or coded for a body)"
+audit = "C23-K01"
+
+[homes.Hx-codec-failure.signatures.body-failure]
+kind = "call"
+names = ["failure"]
+mentions = ["body"]
+without = ["truncated"]
+paths = ["_runtime/"]
+what = "turns a body's decode failure into the response failure itself; call ResponseDecoder._decoded"
+audit = "C23-K36"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.
