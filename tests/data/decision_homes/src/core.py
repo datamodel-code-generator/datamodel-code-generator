@@ -19,3 +19,8 @@ def _merge_in_core(value):
 def read_key_in_core(schema):
     """Read a key of a raw object in the core."""
     return schema["type"], schema.get("items")
+
+
+def spell_in_core(direction):
+    """Spell the segment in the core."""
+    return f"seg-{direction}"

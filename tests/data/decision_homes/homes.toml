@@ -58,6 +58,12 @@ keys = ["type", "items"]
 what = "reads a key of a raw document"
 audit = "X-9"
 
+[homes.sample.signatures.spelling]
+kind = "literal"
+contains = ["seg-"]
+what = "spells the segment itself"
+audit = "X-10"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

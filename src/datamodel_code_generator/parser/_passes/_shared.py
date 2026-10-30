@@ -63,7 +63,7 @@ from datamodel_code_generator.python_literal import (
     rewrite_runtime_expressions,
     rewrite_runtime_imports,
 )
-from datamodel_code_generator.reference import ModelType, _source_path
+from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
@@ -1984,12 +1984,12 @@ def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bo
     return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
 
 
-SPECIAL_PATH_FORMAT: str = "#-datamodel-code-generator-#-{}-#-special-#"
+SPECIAL_PATH_FORMAT: str = _SPECIAL_PATH_FORMAT
 
 
 def get_special_path(keyword: str, path: list[str]) -> list[str]:
     """Create a special path marker for internal reference tracking."""
-    return [*path, SPECIAL_PATH_FORMAT.format(keyword)]
+    return _special_path(keyword, path)
 
 
 def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPositions, index: int) -> list[DataType]:
