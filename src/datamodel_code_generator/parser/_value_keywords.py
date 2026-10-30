@@ -618,7 +618,6 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     if obj.is_array:
         return bool(obj.minItems is not None or obj.maxItems is not None or parser._get_array_items_constraints(obj))  # noqa: SLF001
 
-    schema_type: str | None = None
     match obj.type:
         case str() as schema_type:
             pass
@@ -629,13 +628,15 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
         case _:
             return False
 
-    match schema_type:
-        case "integer" | "number":
-            constraint_fields = NUMBER_KEYWORD_ORDER
-        case "string":
-            constraint_fields = STRING_KEYWORD_ORDER
-        case _:
-            return False
+    constraint_fields = (
+        NUMBER_KEYWORD_ORDER
+        if schema_type in {"integer", "number"}
+        else STRING_KEYWORD_ORDER
+        if schema_type == "string"
+        else None
+    )
+    if constraint_fields is None:
+        return False
     return any(field in obj.model_fields_set for field in constraint_fields)
 
 
