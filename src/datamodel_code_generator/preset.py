@@ -43,6 +43,7 @@ from datamodel_code_generator.enums import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from collections.abc import Set as AbstractSet
 
     from typing_extensions import Unpack
@@ -239,6 +240,11 @@ class ResolvedPresetConfig:
         if self.force_field_constraints:
             updates["field_constraints"] = True
         return updates
+
+
+def _pyproject_values(items: Iterable[PresetConfigItem]) -> dict[str, bool | str | list[str]]:
+    """Return the values of preset config items keyed by field name, as pyproject.toml spells them, in item order."""
+    return {item.field_name: item.pyproject_value for item in items}
 
 
 class PresetConfig(BaseGenerateConfig):
@@ -1185,8 +1191,7 @@ def _copyable_config_data(info: PresetInfo) -> dict[str, TomlValue]:
         "output_model_type": _COPYABLE_OUTPUT_MODEL_TYPE.value,
         "target_python_version": info.target_python_version.value,
     }
-    for item in _resolve_preset_info(info, context):
-        config_data[item.field_name] = cast("TomlValue", item.pyproject_value)
+    config_data.update(cast("dict[str, TomlValue]", _pyproject_values(_resolve_preset_info(info, context))))
     return dict(sorted(config_data.items()))
 
 

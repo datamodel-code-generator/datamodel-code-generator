@@ -1226,6 +1226,17 @@ names = ["_negative_option", "_option_actions"]
 what = "looks up the --no- option of a config field outside the core"
 audit = "C14-B9"
 
+[homes.Hx-preset-values]
+decision = "the values that preset config items set, keyed by field name, as pyproject.toml spells them"
+core = ["preset.py:_pyproject_values"]
+adapters = ["preset.py:PresetConfigItem"]
+
+[homes.Hx-preset-values.signatures.item-pyproject-read]
+kind = "name"
+names = ["pyproject_value"]
+what = "spells preset items as pyproject values itself; call preset.py:_pyproject_values"
+audit = "C28-R4"
+
 [homes.Hx-remote-lock-plan]
 decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"
 core = ["_lock_plan.py"]
