@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
+from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
@@ -184,7 +185,12 @@ def merge_schema_constraints(
         base_dict["pattern"] = parser._conjoined_pattern(  # noqa: SLF001
             patterns,
             _ALL_OF_MEMBER_SUFFIX.sub(
-                "", next((str(item.schema_location) for item in items if item.schema_location), "allOf")
+                "",
+                named_location(
+                    next((item.schema_location for item in items if item.schema_location), None),
+                    "allOf",
+                    row="legacy-unredacted-locations",
+                ),
             ),
         )
     if (

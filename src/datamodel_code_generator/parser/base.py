@@ -85,7 +85,7 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._target_unicode import title
 from datamodel_code_generator._template_data import copy_extra_template_data
-from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator._user_keys import (
     ConstructionKeys,
     class_field_key,
@@ -2483,12 +2483,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         A model without a location (GraphQL input, or a schema object a custom parser built) keeps its reference path.
         """
         title = model.extra_template_data.get("title")
-        if (location := location_of(model.reference)) is None:
-            source_ref = redact_reference(identity)
-            source_path = _source_path_from_reference_path(source_ref)
-        else:
-            source_ref = redact_reference(str(location))
-            source_path = list(location.tokens)
+        location = location_of(model.reference)
+        source_ref = named_location(location, identity)
+        source_path = _source_path_from_reference_path(source_ref) if location is None else list(location.tokens)
         return {
             "class_name": model.class_name,
             "name": model.name,

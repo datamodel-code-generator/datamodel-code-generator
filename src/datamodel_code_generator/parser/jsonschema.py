@@ -154,7 +154,7 @@ from datamodel_code_generator._source import (
     load_data,  # noqa: F401  # Preserve the established parser.jsonschema export.
     load_data_from_path,
 )
-from datamodel_code_generator._url_redaction import redact_path, redact_reference, redact_url
+from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
 from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -1040,7 +1040,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unsatisfiable warning names the ``keywords`` and the values stay as written (None).
         """
         if not any(met):
-            self._warn_unsatisfiable(str(obj.schema_location or "schema"), keywords, _LITERAL_PARTS)
+            self._warn_unsatisfiable(
+                named_location(obj.schema_location, "schema", row="legacy-unredacted-locations"),
+                keywords,
+                _LITERAL_PARTS,
+            )
             return None
         return None if all(kept) else kept
 
@@ -3365,7 +3369,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             literal_values = reduce(intersect_enum_values, literal_sets[1:], list(literal_sets[0]))
             if not literal_values:
                 self._warn_unsatisfiable(
-                    str(sources[-1].schema_location or "allOf"),
+                    named_location(sources[-1].schema_location, "allOf", row="legacy-unredacted-locations"),
                     tuple(
                         keyword
                         for keyword in ("enum", "const")
@@ -3446,7 +3450,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         row = {keyword: value for dump in dumps for keyword, value in dump.items()}
         unsatisfiable = _intersect_dumps(dumps, row).unsatisfiable
         if "legacy-all-of-site-form" not in self._legacy_intersection:
-            self._warn_unsatisfiable(str(obj.schema_location or "allOf"), unsatisfiable, _ALL_OF_PARTS)
+            self._warn_unsatisfiable(
+                named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations"),
+                unsatisfiable,
+                _ALL_OF_PARTS,
+            )
         return None if unsatisfiable else parts
 
     def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
@@ -5074,7 +5082,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if other_keys is None
                 else "gives the keys of its patterns and the other keys different value schemas"
             )
-        where = str(location) if (location := obj.schema_location) is not None else name
+        where = named_location(obj.schema_location, name, row="legacy-unredacted-locations")
         if not reasons or where in self._inexact_object_maps:
             return
         self._inexact_object_maps.add(where)
@@ -6002,7 +6010,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self, obj, parts
             ):
                 value_obj = inline_value = _all_of_values.intersect_all_of_value_parts(
-                    self, parts, _all_of_values.all_of_value_row(self, obj), str(obj.schema_location or "allOf")
+                    self,
+                    parts,
+                    _all_of_values.all_of_value_row(self, obj),
+                    named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations"),
                 )
                 if not (inline_value.enum or "const" in inline_value.extras):
                     constraint_obj = inline_value
@@ -6292,7 +6303,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return excluded
         if _REPORTED_VALUE_CONFLICT_KEY in obj.__dict__:
             return set()
-        if (location := redact_reference(str(obj.schema_location))) not in self._unsatisfiable_const_locations:
+        if (location := named_location(obj.schema_location, "None")) not in self._unsatisfiable_const_locations:
             self._unsatisfiable_const_locations.add(location)
             warn(
                 f"The schema at {location} admits no value: its const {const!r} is none of its enum values. It is "
@@ -6325,7 +6336,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference,
             _ConstNarrowing(
                 const=const,
-                location=redact_reference(str(obj.schema_location)),
+                location=named_location(obj.schema_location, "None"),
                 as_member=self._output_model_context.literal_holds_enum_members
                 and self._enum_class_has_value_base(obj),
             ),

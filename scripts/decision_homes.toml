@@ -1555,6 +1555,20 @@ exclude = ["_client/render.py:ClientRenderer.readme", "_fastapi/source_document.
 what = "dumps indented JSON itself; call _json_output.py:dump_json (or schema_document) with the style of its output"
 audit = "C15-B1"
 
+[homes.Hx-message-location]
+decision = "how a message, a warning or the model metadata names a schema object: its location (`document#pointer`) with the document URL redacted, or the caller's text without one"
+core = ["_url_redaction.py:named_location", "parser/_schema_object.py:_named_path"]
+adapters = []
+
+[homes.Hx-message-location.signatures.location-text]
+kind = "call"
+names = ["str"]
+mentions = ["schema_location", "location"]
+paths = ["parser/"]
+exclude = ["parser/mcp.py:_tool_validation_error"]
+what = "writes the text of a schema location itself; call _url_redaction.py:named_location (the `loc` of a pydantic error is no schema location)"
+audit = "C16"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"
@@ -1902,6 +1916,10 @@ fix = "#5637"
 [legacy_rows."legacy-host-identifiers"]
 home = "Hx-python-names"
 fix = "#5656"
+
+[legacy_rows."legacy-unredacted-locations"]
+home = "Hx-message-location"
+fix = "#5577"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

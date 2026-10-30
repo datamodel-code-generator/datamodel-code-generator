@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
+from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
 from datamodel_code_generator.parser.base import get_special_path
@@ -815,7 +816,8 @@ def object_map_key_type(  # noqa: PLR0913
                 pattern
                 if schema.pattern is None
                 else parser._conjoined_pattern(  # noqa: SLF001
-                    (schema.pattern, pattern), str(property_names.schema_location or "propertyNames")
+                    (schema.pattern, pattern),
+                    named_location(property_names.schema_location, "propertyNames", row="legacy-unredacted-locations"),
                 )
             )
         if schema.ref:

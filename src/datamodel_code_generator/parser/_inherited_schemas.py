@@ -21,7 +21,7 @@ from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
 from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS, MODELED_SCHEMA_MAPS, schema_positions
 from datamodel_code_generator._mro import linearize, sort_descendants_first
-from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
@@ -1071,7 +1071,9 @@ def resolve_inherited_parent_property(
             schema = parser._intersect_ref_siblings_schema(  # noqa: SLF001
                 referenced_schema.model_dump(exclude_unset=True, by_alias=True),
                 schema.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True),
-                str(schema.schema_location or redact_reference(resolved_ref)),
+                named_location(
+                    schema.schema_location, redact_reference(resolved_ref), row="legacy-unredacted-locations"
+                ),
                 siblings_are_parts=parser._ref_siblings_are_parts_of(schema),  # noqa: SLF001
             )
         else:
@@ -1476,7 +1478,7 @@ def merge_properties_with_parent_constraints(  # noqa: PLR0912
             parent_prop,
             effective_child,
             parent_ref,
-            str(child_prop.schema_location or f"property {prop_name!r}"),
+            named_location(child_prop.schema_location, f"property {prop_name!r}", row="legacy-unredacted-locations"),
         )
         merged_properties[prop_name] = merged_property
         merged_changed = merged_changed or merged_property is not effective_child
