@@ -18,6 +18,7 @@ from datamodel_code_generator._avro_detection import NAMED_TYPES, PRIMITIVE_TYPE
 from datamodel_code_generator._avro_detection import (
     is_avro_schema_data as _is_avro_schema_data,
 )
+from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.imports import Import
@@ -81,10 +82,6 @@ class _Name(NamedTuple):
     fullname: str
     namespace: str | None
     name: str
-
-
-def _to_class_title(name: str) -> str:
-    return f"{name[:1].upper()}{name[1:]}"
 
 
 def _is_valid_name(name: str) -> bool:
@@ -234,9 +231,9 @@ class _AvroSchemaConverter:
             for fullname in sorted(fullnames):
                 name_info = self.names[fullname]
                 name = (
-                    _to_class_title(local)
+                    first_upper(local)
                     if len(fullnames) == 1
-                    else f"{_namespace_name(name_info.namespace, _to_class_title)}{_to_class_title(local)}"
+                    else f"{_namespace_name(name_info.namespace, first_upper)}{first_upper(local)}"
                 )
                 candidate = _unique_name(name, used_names)
                 self.definition_names[fullname] = candidate

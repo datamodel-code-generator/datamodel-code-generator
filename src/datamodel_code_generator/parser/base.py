@@ -61,6 +61,7 @@ from datamodel_code_generator._internal_utils import get_most_of_parent as _get_
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
+from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
@@ -273,9 +274,6 @@ pydantic_floors_recorded = _state.pydantic_floors_recorded
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 
 
-_CLASS_NAME_SEPARATOR_PATTERN: Final = re.compile(r"[^A-Za-z0-9]+")
-
-
 _TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 
@@ -427,8 +425,7 @@ _NO_RECURSION: Final = RecursionFacts(require_update=frozenset(), circular_roots
 
 def title_to_class_name(title: str) -> str:
     """Convert a schema title to a valid Python class name."""
-    classname = _CLASS_NAME_SEPARATOR_PATTERN.sub(" ", title)
-    return "".join(x for x in classname.title() if not x.isspace())
+    return pascal_words(title, title=str.title)
 
 
 class Result(BaseModel):
