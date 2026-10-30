@@ -1913,14 +1913,8 @@ jobs:
         run: python scripts/ci_coverage.py prepare .tox/coverage-input --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       - name: Combine and report coverage
         id: coverage
-        run: |
-          .tox/coverage/bin/coverage combine
-          .tox/coverage/bin/coverage xml -o .tox/coverage.xml
-          .tox/coverage/bin/diff-cover --compare-branch "${DIFF_AGAINST:-origin/main}" .tox/coverage.xml
-          .tox/coverage/bin/coverage report --fail-under=100 --skip-covered --show-missing
+        run: .tox/coverage/bin/python scripts/ci_coverage.py report .tox --compare-branch "${DIFF_AGAINST:-origin/main}"
         continue-on-error: true
-        env:
-          COVERAGE_FILE: .tox/.coverage
       - name: Show uncovered lines on failure
         if: steps.coverage.outcome == 'failure'
         run: |
