@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, TypeAlias
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._module_paths import is_package_init, module_parts
+from datamodel_code_generator._module_paths import is_package_init, module_parts, written_names
 from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope
 from datamodel_code_generator.imports import Import, Imports
 
@@ -118,12 +118,12 @@ def collect_exports_for_init(
 ) -> list[tuple[str, tuple[str, ...], str]]:
     """Collect exports for __init__.py based on scope."""
     exports: list[tuple[str, tuple[str, ...], str]] = []
-    normalized_module = tuple(part.replace("-", "_") for part in module)
+    normalized_module = written_names(module)
     base = normalized_module[:-1] if is_package_init(normalized_module[-1]) else normalized_module
     base_len = len(base)
 
     for proc_module, _, proc_models, _, _, _ in processed_models:
-        normalized_proc_module = tuple(part.replace("-", "_") for part in proc_module)
+        normalized_proc_module = written_names(proc_module)
         if not proc_models or normalized_proc_module == normalized_module:
             continue
         prefix = module_parts(normalized_proc_module)

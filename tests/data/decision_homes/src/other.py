@@ -129,3 +129,20 @@ def package_files(paths, name):
         name in {"__init__.py"},
         name == "module.py",
     )
+
+
+def split_names(path, name):
+    """Split the names of a path in a comprehension, a loop and a joined text; one name or another separator does not."""
+    parts = [part for item in path for part in item.split(".")]
+    flat = []
+    for item in path:
+        flat.extend(item.split("."))
+    return (
+        parts,
+        flat,
+        ".".join(path).split("."),
+        name.split("."),
+        [part for part in name.split(".")],
+        [part for item in path for part in item.split("/")],
+        "/".join(path).split("."),
+    )

@@ -19,6 +19,9 @@ them, ``what`` words the message):
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``compare-eq``: ``y == "x"`` or ``y != "x"`` (the string on either side) for a string ``x`` in ``values``.
+* ``split-each``: the names of a sequence split one by one at a separator ``s`` in ``strings``: a comprehension that
+  iterates ``y.split(s)`` for a ``y`` an earlier ``for`` clause of it binds, a ``for`` loop that calls ``y.split(s)``
+  on its own target, or ``s.join(...).split(s)``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
 * ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``; a
   dict holds its keys, and its values too with ``dict_values = true`` (a table that maps names to the spellings).
@@ -102,6 +105,7 @@ SIGNATURE_KINDS = frozenset({
     "function",
     "compare-in",
     "compare-eq",
+    "split-each",
     "number",
     "keyword-set",
     "key",
@@ -133,6 +137,7 @@ REQUIRED_STRINGS = {
     "name": "names",
     "compare-in": "values",
     "compare-eq": "values",
+    "split-each": "strings",
     "keyword-set": "keywords",
     "key": "keys",
     "literal": "contains",
@@ -503,6 +508,42 @@ def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) ->
     )
 
 
+def _split_receiver(node: ast.AST, separators: Iterable[str]) -> ast.AST | None:
+    """Return ``y`` of a call ``y.split(s)`` for a separator ``s`` of ``separators``, or None for any other node."""
+    match node:
+        case ast.Call(func=ast.Attribute(value=receiver, attr="split"), args=[ast.Constant(value=str() as separator)]):
+            return receiver if separator in separators else None
+    return None
+
+
+def _bound_names(targets: Iterable[ast.AST]) -> set[str]:
+    return {name.id for target in targets for name in ast.walk(target) if isinstance(name, ast.Name)}
+
+
+def _splits_each(node: ast.AST, separators: Iterable[str]) -> bool:
+    """Return whether ``node`` splits the names of a sequence one by one at one of ``separators`` (``split-each``)."""
+    match node:
+        case ast.ListComp() | ast.SetComp() | ast.GeneratorExp() | ast.DictComp():
+            generators = node.generators
+            return any(
+                isinstance(receiver := _split_receiver(clause.iter, separators), ast.Name)
+                and receiver.id in _bound_names(earlier.target for earlier in generators[:index])
+                for index, clause in enumerate(generators)
+            )
+        case ast.For():
+            targets = _bound_names([node.target])
+            return any(
+                isinstance(receiver := _split_receiver(call, separators), ast.Name) and receiver.id in targets
+                for statement in node.body
+                for call in ast.walk(statement)
+            )
+        case ast.Call():
+            match _split_receiver(node, separators):
+                case ast.Call(func=ast.Attribute(value=ast.Constant(value=str() as joiner), attr="join")):
+                    return joiner in separators
+    return False
+
+
 def _holds_f_string(value: ast.AST) -> bool:
     """Return whether the text ``value`` assigns holds an f-string, outside call arguments and lambda bodies."""
     pending = [value]
@@ -591,6 +632,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
                     for side in (node.left, *node.comparators)
                 )
             )
+        case "split-each":
+            return _splits_each(node, options["strings"])
         case "number":
             match node:
                 case ast.Constant(value=int() as value) if not isinstance(value, bool):
@@ -628,6 +671,7 @@ NODE_TYPES = {
     "function": (ast.FunctionDef, ast.AsyncFunctionDef),
     "compare-in": (ast.Compare,),
     "compare-eq": (ast.Compare,),
+    "split-each": (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp, ast.For, ast.Call),
     "number": (ast.Constant, ast.BinOp),
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
     "key": (ast.Subscript, ast.Call),

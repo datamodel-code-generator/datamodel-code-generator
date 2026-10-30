@@ -379,7 +379,7 @@ what = "splits a text into its ASCII words itself; call _name_words.py:pascal_wo
 audit = "C18-N2"
 
 [homes.Hx-module-paths]
-decision = "which module a written Python file holds: its path without the file's .py and without a package's __init__, and whether a file is a package's __init__.py"
+decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), and which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py"
 core = ["_module_paths.py"]
 adapters = []
 
@@ -405,6 +405,39 @@ values = ["__init__.py", "__init__"]
 exclude = ["_shadowed_modules.py:warn_shadowed_modules", "_fastapi/plan.py:_file_stem_conflict"]
 what = "tests whether a file is a package's __init__.py itself; call _module_paths.py:is_package_init (module_parts drops it)"
 audit = "C09-N6"
+
+[homes.Hx-module-paths.signatures.name-hyphen]
+kind = "call"
+names = ["replace"]
+strings = ["-"]
+# Left out: option and config keys spelled with _ or - (the command line, pyproject and batch configs, the target CLI
+# and the option names of API errors), and the alias generators' snake case.
+exclude = [
+    "__main__.py",
+    "_alias_generators.py",
+    "_api_types.py:_error_message",
+    "_cli_config.py",
+    "_option_names.py",
+    "_project_config.py",
+    "_target_cli.py:_implied_option",
+]
+what = "writes a module's name with _ for - itself; call _module_paths.py:written_name (or written_names, normalized_path, written_path)"
+audit = "C09-N7"
+
+[homes.Hx-module-paths.signatures.stem-dots]
+kind = "call"
+names = ["rfind"]
+strings = ["."]
+what = "writes the dots of a module file's name as _ itself; call _module_paths.py:normalized_path (or written_path)"
+audit = "C09-N7"
+
+[homes.Hx-module-paths.signatures.dotted-packages]
+kind = "split-each"
+strings = ["."]
+# Left out: the client's resource namespaces, dotted names of operations that the client plans by itself.
+exclude = ["_client/plan.py:Planner.named", "_client/plan.py:Planner.resources"]
+what = "splits the dotted names of a module path into packages itself; call _module_paths.py:package_path (or expanded_path, written_path)"
+audit = "C09-N7"
 
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"

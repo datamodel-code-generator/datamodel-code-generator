@@ -20,7 +20,13 @@ from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._module_paths import dotted_module, module_parts
+from datamodel_code_generator._module_paths import (
+    dotted_module,
+    expanded_path,
+    module_parts,
+    normalized_path,
+    written_path,
+)
 from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
@@ -54,7 +60,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_discriminator_data_types,
     _iter_import_bindings,
     _named_data_types,
-    _normalize_result_module_path,
     _string_or_identifier_pattern,
     _unique_items_tuple,
     get_special_path,
@@ -326,12 +331,6 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: 
     for model in models:
         if not isinstance(model, TypeAliasBase):
             model.set_field_name_bindings(bindings)
-
-
-def _expand_export_module_path(module: ModulePath) -> ModulePath:
-    """Expand dotted module components while preserving the Python file suffix."""
-    parts = ".".join(module).split(".")
-    return (*parts[:-2], f"{parts[-2]}.{parts[-1]}")
 
 
 def _forward_defined_models(contexts: Iterable[ModuleContextView], forwarder_map: ForwarderMap) -> ForwarderMap:
@@ -1210,12 +1209,6 @@ def alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], state: _Fin
         _alias_builtin_shadowing_module_imports(parser, ctx)
 
 
-def _written_module_path(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
-    """Return the path that the output writes a module at, as ``render_modules`` normalizes and expands it."""
-    path = _normalize_result_module_path(module, treat_dot_as_module=treat_dot_as_module)
-    return _expand_export_module_path(path) if treat_dot_as_module else path
-
-
 def _package_submodule_names(
     contexts: Iterable[ModuleContextView],
     forwarder_modules: Collection[ModulePath],
@@ -1230,7 +1223,7 @@ def _package_submodule_names(
     for ctx in contexts:
         if not (ctx.models or ctx.is_init or ctx.module_key in forwarder_modules):
             continue
-        packages = module_parts(_written_module_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        packages = module_parts(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
         for depth in range(len(packages)):
             names.setdefault(packages[:depth], set()).add(packages[depth])
     return names
@@ -1277,9 +1270,7 @@ def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _Finali
     )
     for ctx in state.contexts:
         if ctx.is_init and (
-            names := submodule_names.get(
-                _written_module_path(ctx.module, treat_dot_as_module=parser.treat_dot_as_module)[:-1]
-            )
+            names := submodule_names.get(written_path(ctx.module, treat_dot_as_module=parser.treat_dot_as_module)[:-1])
         ):
             _alias_builtins_hidden_by_submodules(parser, ctx, names)
 
@@ -1422,9 +1413,9 @@ def render_modules(  # noqa: PLR0913
     if (
         parser.treat_dot_as_module
         and config.all_exports_scope is not None
-        and any(_expand_export_module_path(ctx.module) != ctx.module for ctx in contexts)
+        and any(expanded_path(ctx.module) != ctx.module for ctx in contexts)
     ):
-        contexts = [ctx._replace(module=_expand_export_module_path(ctx.module)) for ctx in contexts]
+        contexts = [ctx._replace(module=expanded_path(ctx.module)) for ctx in contexts]
 
     for ctx in contexts:
         result = parser._generate_module_output(  # noqa: SLF001
@@ -1450,7 +1441,7 @@ def render_modules(  # noqa: PLR0913
         return single_result.body
 
     results = {
-        _normalize_result_module_path(module, treat_dot_as_module=parser.treat_dot_as_module): result
+        normalized_path(module, treat_dot_as_module=parser.treat_dot_as_module): result
         for module, result in results.items()
     }
     if parser.treat_dot_as_module:
