@@ -25,6 +25,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     property_members,
 )
 from datamodel_code_generator._runtime.client.media import most_specific
+from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
 from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import (
     ERROR_STATUSES,
@@ -104,7 +105,6 @@ if TYPE_CHECKING:
 _problem: Final = CLIENT.problem
 Role: TypeAlias = Literal["success", "error"]
 
-_SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
 _UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
@@ -1054,7 +1054,7 @@ class Planner:
             else self.request.batch.documents[0].id
         )
         source = self.documents[document]
-        base = self.config.server_base_url or (source if urlsplit(source).scheme in _SCHEMES else "")
+        base = self.config.server_base_url or (source if urlsplit(source).scheme in HTTP_SCHEMES else "")
         resolved: list[ServerSpec] = []
         for url, variables in entries:
             spec = ServerSpec(

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
 from typing import TYPE_CHECKING, cast
-from urllib.parse import unquote_plus, urlsplit
+from urllib.parse import urlsplit
 
 import httpx2
 
@@ -31,7 +31,7 @@ from ..client.raw import AsyncRawResponse, RawResponse, ReceivedBody, refuse, re
 from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
-from ..client.urls import absolute_target, request_origin, strip_query
+from ..client.urls import absolute_target, query_field, request_origin, strip_query
 from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
@@ -164,7 +164,7 @@ class CacheRequest:
         authenticated = (
             any(values for _, values in headers)
             or sent.url != built.url
-            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+            or any(query_field(pair)[0] in queries for pair in urlsplit(url).query.split("&") if pair)
         )
         return CacheIdentity(url, headers, authenticated, authorized)
 

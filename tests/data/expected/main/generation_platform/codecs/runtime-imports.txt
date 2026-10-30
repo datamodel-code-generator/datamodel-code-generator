@@ -1,7 +1,7 @@
 __init__.py: -
 client/__init__.py: -
 client/arguments.py: __future__, collections.abc, typing
-client/auth.py: ..model_codecs.media, ..model_codecs.parameters, .client, .errors, .security, .urls, __future__, base64, collections.abc, httpx2, re, typing
+client/auth.py: ..model_codecs.media, ..model_codecs.parameters, .client, .errors, .positions, .security, .urls, __future__, base64, collections.abc, httpx2, re, typing
 client/bodies.py: .content, .errors, .logical, __future__, collections.abc, inspect, io, os, pathlib, typing, typing_extensions
 client/body_sources.py: .bodies, .content, .errors, .logical, __future__, collections.abc, typing
 client/client.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .content, .errors, .logical, .native, .operations, .options, .paths, .positions, .raw, .responses, .retry, .timing, .urls, __future__, collections.abc, contextlib, dataclasses, functools, httpx2, typing, typing_extensions, urllib.parse, uuid
@@ -25,7 +25,7 @@ client/responses.py: __future__, collections.abc, dataclasses, typing, typing_ex
 client/retry.py: ..model_codecs.unset, .errors, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, enum, math, re, typing
 client/security.py: .client, .urls, __future__, collections.abc, dataclasses, httpx2, typing
 client/timing.py: ..model_codecs.unset, .errors, __future__, anyio, collections.abc, dataclasses, math, secrets, sys, time, typing
-client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
+client/urls.py: .options, __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
 model_codecs/__init__.py: -
 model_codecs/errors.py: __future__
 model_codecs/media.py: .errors, __future__, codecs, collections.abc, dataclasses, decimal, json, math, re, typing, typing_extensions, urllib.parse

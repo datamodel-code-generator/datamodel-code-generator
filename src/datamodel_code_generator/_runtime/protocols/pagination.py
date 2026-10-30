@@ -779,10 +779,12 @@ class _Walk(Generic[T, P]):
             case ParameterTarget(location="query", name=name):
                 from urllib.parse import unquote_plus, urlsplit  # noqa: PLC0415 - Only a first query is inspected.
 
+                from ..client.urls import query_field  # noqa: PLC0415 - Only a first query is inspected.
+
                 values = tuple(
-                    unquote_plus(parts[2])
-                    for pair in urlsplit(url).query.split("&")
-                    if unquote_plus((parts := pair.partition("="))[0]) == name
+                    unquote_plus(value)
+                    for key, value in map(query_field, urlsplit(url).query.split("&"))
+                    if key == name
                 )
             case ParameterTarget(location="header", name=name):
                 values = headers.get_all(name)
