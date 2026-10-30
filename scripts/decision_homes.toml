@@ -768,6 +768,25 @@ contains = ["read-write-"]
 what = "spells the read/write variant keyword itself; call reference.py:_rw_variant_path or _rw_variant_of"
 audit = "C03-R1"
 
+[homes.Hx-special-path]
+decision = "the token of a model the generator makes at a path (a special path): how it is spelled and built, and whether a path, or a token of one, holds one"
+core = ["reference.py:_special_path", "reference.py:_is_special_path", "reference.py:_special_token_pattern"]
+adapters = []
+
+[homes.Hx-special-path.signatures.marker-test]
+kind = "compare-in"
+names = ["SPECIAL_PATH_MARKER"]
+what = "tests a path for a special token itself; call reference.py:_is_special_path"
+audit = "C03-G2"
+
+[homes.Hx-special-path.signatures.token-spelling]
+kind = "literal"
+contains = ["#-datamodel-code-generator-#", "-#-special-#"]
+# Left out: the module level of reference.py, which defines the marker and the format beside the functions that read them.
+exclude = ["reference.py:<module>"]
+what = "spells a special token itself; call reference.py:_special_path, _is_special_path or _special_token_pattern"
+audit = "C03-G2"
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]

@@ -295,7 +295,8 @@ SINGULAR_NAME_SUFFIX: str = "Item"
 ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
-_SPECIAL_PATH_FORMAT: Final = f"{SPECIAL_PATH_MARKER}{{}}-#-special-#"
+_SPECIAL_PATH_SUFFIX: Final = "-#-special-#"
+_SPECIAL_PATH_FORMAT: Final = f"{SPECIAL_PATH_MARKER}{{}}{_SPECIAL_PATH_SUFFIX}"
 """The path token of a model that the generator makes at a path (``parser.base.SPECIAL_PATH_FORMAT``)."""
 _RW_DIRECTIONS: Final[tuple[_RwDirection, ...]] = ("request", "response")
 
@@ -337,6 +338,22 @@ def location_of(reference: Reference) -> SchemaLocation | None:
 def _special_path(keyword: str, path: list[str]) -> list[str]:
     """Return ``path`` followed by the token of the model that the generator makes there for ``keyword``."""
     return [*path, _SPECIAL_PATH_FORMAT.format(keyword)]
+
+
+def _is_special_path(path: str) -> bool:
+    """Return whether a path, or a token of one, holds a token that ``_special_path`` makes.
+
+    The path names a model the generator makes, or a place below one: no document holds a schema there.
+    """
+    return SPECIAL_PATH_MARKER in path
+
+
+def _special_token_pattern(keyword: str) -> Pattern[str]:
+    """Return the pattern of a token that ``_special_path`` makes for a keyword the pattern ``keyword`` matches.
+
+    Group 1 is the keyword.
+    """
+    return re.compile(f"{re.escape(SPECIAL_PATH_MARKER)}({keyword}){re.escape(_SPECIAL_PATH_SUFFIX)}")
 
 
 def _rw_variant_path(base: str, direction: _RwDirection) -> list[str]:
@@ -1480,7 +1497,7 @@ class ModelResolver:  # noqa: PLR0904
                 and (anchor_ref := self.ids.get(file_part, {}).get(f"#{fragment}"))
             ):
                 return anchor_ref
-        if ID_PATTERN.match(joined_path) and SPECIAL_PATH_MARKER not in joined_path:
+        if ID_PATTERN.match(joined_path) and not _is_special_path(joined_path):
             id_scope = self._current_root_id
             scoped_ids = self.ids[id_scope]
             ref: str | None = scoped_ids.get(joined_path)

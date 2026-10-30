@@ -21,6 +21,7 @@ from datamodel_code_generator._json_schema import (
     ITEM_POSITIONS,
     NAMED_SCHEMA_MAPS,
 )
+from datamodel_code_generator.reference import _special_token_pattern
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -64,7 +65,7 @@ _GENERIC_NUMBER: Final = re.compile(
     r"(OneOf|AnyOf|AllOf|Inner|Case|Value|Item|Object|Model|Type|Variant|Option|Member|Alternative)\d+", re.IGNORECASE
 )
 _STATUS_CODE: Final = re.compile(r"(?<![0-9])[1-5][0-9][0-9](?![0-9])")
-_SPECIAL: Final = re.compile(r"#-datamodel-code-generator-#-(\w+?)-#-special-#")
+_SPECIAL: Final = _special_token_pattern(r"\w+?")
 _UNNAMED_KINDS: Final = frozenset({"object", "enum"})
 _UNION_VARIANT: Final = re.compile(r"(?:^|/)(oneOf|anyOf)/(\d+)(/allOf)?$")
 _ROOT_REF: Final = re.compile(r"^(?:.*?\.(?:json|ya?ml))?#?/?")

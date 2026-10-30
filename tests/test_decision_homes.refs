@@ -31,6 +31,7 @@
 [test_decision_home_signature_paths_outside_planned_places_must_exist]
 	decision_homes/decision_home_signature_paths_outside_planned_places_must_exist.txt
 [test_decision_home_table_rejects_malformed_entries]
+compare-in-without-values-or-names	decision_homes/decision_home_table_rejects_malformed_entries[compare-in-without-values-or-names].txt
 dict-values-not-a-boolean	decision_homes/decision_home_table_rejects_malformed_entries[dict-values-not-a-boolean].txt
 entry-not-a-table	decision_homes/decision_home_table_rejects_malformed_entries[entry-not-a-table].txt
 key-without-keys	decision_homes/decision_home_table_rejects_malformed_entries[key-without-keys].txt

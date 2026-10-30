@@ -22,6 +22,7 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
     Reference,
+    _is_special_path,
 )
 
 
@@ -88,7 +89,7 @@ class ApiModelResolver(ModelResolver):
         if original not in spellings:
             spellings.append(original)
         if (
-            SPECIAL_PATH_MARKER not in original
+            not _is_special_path(original)
             and (raw := self.loaded_documents.get(resolved.partition("#")[0])) is not None
         ):
             check_pointer_interpretation(raw, original, resolved)
@@ -116,11 +117,11 @@ class ApiModelResolver(ModelResolver):
                 continue
             document, _, prefix = part.partition("#")
             document = "/".join((*path[:index], document)) if document else "/".join(path[:index])
-            if SPECIAL_PATH_MARKER in part:
+            if _is_special_path(part):
                 return canonical_ref(document + "#" + "/".join((prefix, *path[index + 1 :])))
             tokens = list(pointer_tokens("#" + prefix) or ())
             for offset, token in enumerate(path[index + 1 :], start=index + 1):
-                if SPECIAL_PATH_MARKER in token:
+                if _is_special_path(token):
                     return document + "#" + pointer_fragment(tokens) + "/" + "/".join(path[offset:])
                 tokens.append(token)
             return document + "#" + pointer_fragment(tokens)

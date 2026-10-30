@@ -17,7 +17,8 @@ them, ``what`` words the message):
   ``**`` is skipped when ``without`` is set), whose positional arguments name one of ``mentions`` (when given) and hold
   one of ``strings`` as a string literal (when given).
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
-* ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
+* ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``, or ``x in y`` for a name ``x``
+  (its last name, as ``module.x``) in ``names``: ``values``, ``names`` or both.
 * ``compare-eq``: ``y == "x"`` or ``y != "x"`` (the string on either side) for a string ``x`` in ``values``.
 * ``split-each``: the names of a sequence split one by one at a separator ``s`` in ``strings``: a comprehension that
   iterates ``y.split(s)`` for a ``y`` an earlier ``for`` clause of it binds, a ``for`` loop that calls ``y.split(s)``
@@ -347,7 +348,7 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
         if kind == "name" and options["ctx"] not in {*CONTEXTS, "any"}:
             msg = f"{owner}: ctx must be load, store or any"
             raise ConfigError(msg)
-        _strings(options, REQUIRED_STRINGS[kind], owner, required=True)
+        _strings(options, REQUIRED_STRINGS[kind], owner, required=kind != "compare-in" or not options.get("names"))
         if kind == "branch":
             _strings(options, "names", owner, required=True)
     return Signature(
@@ -619,8 +620,10 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return (
                 isinstance(node, ast.Compare)
                 and isinstance(node.ops[0], ast.In | ast.NotIn)  # codespell:ignore
-                and isinstance(node.left, ast.Constant)
-                and node.left.value in options["values"]
+                and (
+                    (isinstance(node.left, ast.Constant) and node.left.value in options.get("values", ()))
+                    or _last_name(node.left) in options.get("names", ())
+                )
             )
         case "compare-eq":
             return (

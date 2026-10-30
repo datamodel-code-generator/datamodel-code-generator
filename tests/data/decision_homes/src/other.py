@@ -146,3 +146,8 @@ def split_names(path, name):
         [part for item in path for part in item.split("/")],
         "/".join(path).split("."),
     )
+
+
+def marked(path, consts):
+    """Test a path for the marker by its name or through a module; another name, a reversed test or == do not count."""
+    return MARKER in path, consts.MARKER not in path, OTHER in path, path in MARKER, MARKER == path
