@@ -250,6 +250,7 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             "referenced_holders_api.txt",
             id="referenced-holders-api-scope",
         ),
+        pytest.param("integer_definition_keys.yaml", [], "integer_definition_keys.txt", id="integer-definition-keys"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -261,7 +262,7 @@ def test_recommend_options_for_schemas(
     Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
-    once.
+    once. A definition under an integer key is named by its text.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))
@@ -276,6 +277,50 @@ def test_recommend_options_quotes_arguments(tmp_path: Path, capsys: pytest.Captu
         "quoted_input_json.txt",
         inputs={"schema's.yaml": INPUT_PATH / "titled_variants.yaml"},
     )
+
+
+@pytest.mark.parametrize(
+    ("source", "args", "expected_stderr"),
+    [
+        pytest.param(
+            "integer_component_schema.yaml",
+            [],
+            "Error at schema path '#/components/schemas/1': component name 1 is not a string\n",
+            id="component",
+        ),
+        pytest.param(
+            "integer_path.yaml",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path '#/paths/1': path 1 is not a string\n",
+            id="path",
+        ),
+        pytest.param(
+            "integer_webhook.yaml",
+            ["--openapi-scopes", "webhooks"],
+            "Error at schema path '#/webhooks/1': webhook name 1 is not a string\n",
+            id="webhook",
+        ),
+        pytest.param(
+            "integer_asyncapi_component.yaml",
+            [],
+            "Error at schema path '#/components/schemas/1': name 1 is not a string\n",
+            id="asyncapi-component",
+        ),
+    ],
+)
+def test_recommend_options_rejects_keys_that_are_no_strings(
+    source: str, args: list[str], expected_stderr: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """End in the error generation gives for a component, path or webhook name that is no string."""
+    shutil.copy(DATA_PATH / "malformed" / source, tmp_path / source)
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", source, *args, "--recommend-options"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr=expected_stderr,
+            use_builtin_default_formatter=False,
+        )
 
 
 def test_recommend_options_rejects_unknown_modes(capsys: pytest.CaptureFixture[str]) -> None:

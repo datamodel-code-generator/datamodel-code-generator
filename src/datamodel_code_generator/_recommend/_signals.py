@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
-from datamodel_code_generator._document_reader import as_mapping, descend
+from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
 SignalName: TypeAlias = Literal[
@@ -236,11 +236,23 @@ def _uses_definitions(kind: SchemaKind) -> bool:
 
 
 def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]:
-    """Return the named schemas of a document: $defs and definitions, or components/schemas."""
+    """Return the named schemas of a document: $defs and definitions, or components/schemas.
+
+    A definition is named by the text of its key, as JSON Schema generation names it; the name of an OpenAPI or AsyncAPI
+    component must be a string, and generation ends in an error at a key that is not.
+    """
     if _uses_definitions(kind):
-        return {key: value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()}
-    components = as_mapping(document.get("components"))
-    return {key: _unwrap(value) for key, value in as_mapping(components.get("schemas")).items()}
+        return {
+            str(key): value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()
+        }
+    schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
+    string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
+    return {key: _unwrap(value) for key, value in schemas.items()}
+
+
+def _key_path(pointer: str) -> Callable[[object], list[str]]:
+    """Return how an error locates a key of the map at a pointer."""
+    return lambda key: [pointer, str(key)]
 
 
 def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[tuple[str, ...], str]:
@@ -260,10 +272,13 @@ def _path_items(
 ) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
-    A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read.
+    A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
+    key that is no string is an error, as it is in generation.
     """
     for section in sections:
+        kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
+            string_key(path, kind, error_path)
             if section == "webhooks" or path_selected(path, include_paths):
                 yield path, as_mapping(_dereferenced(document, item))
 
@@ -471,8 +486,8 @@ class _Walker:
         if isinstance(node, dict):
             key = tuple(
                 (name, self.shape(value))
-                for name, value in sorted(node.items())
-                if name not in _SHAPE_IGNORED_KEYWORDS and not name.startswith("x-")
+                for name, value in sorted(node.items(), key=lambda item: str(item[0]))
+                if (text := str(name)) not in _SHAPE_IGNORED_KEYWORDS and not text.startswith("x-")
             )
         elif isinstance(node, list):
             key = ("l", *(self.shape(value) for value in node))
