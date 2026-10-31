@@ -423,7 +423,7 @@ what = "ends a schema parse itself; parse inside parser/jsonschema.py:JsonSchema
 audit = "C18-13"
 
 [homes.Hx-module-paths]
-decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), and which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py"
+decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py, the dotted name a model has across modules (its module's dotted name and its class name, the class name alone in the root module), and whether a module lies below a package or within it"
 core = ["_module_paths.py"]
 adapters = []
 
@@ -482,6 +482,28 @@ strings = ["."]
 exclude = ["_client/plan.py:Planner.named", "_client/plan.py:Planner.resources"]
 what = "splits the dotted names of a module path into packages itself; call _module_paths.py:package_path (or expanded_path, written_path)"
 audit = "C09-N7"
+
+[homes.Hx-module-paths.signatures.dotted-model-name]
+kind = "dotted-join"
+strings = ["."]
+# Left out: the dotted paths of Python symbols that an import, a runtime symbol of a type expression or a type override
+# names, the package name of a server found on disk, and Avro full names (a namespace and a name, by the Avro rules).
+exclude = [
+    "_api_generation.py:_Planner.other_server",
+    "_python_type_annotation.py:_runtime_symbol_name",
+    "_target_binding.py:_bound",
+    "parser/_type_overrides.py:_override_path",
+    "parser/avro.py:_AvroSchemaConverter._make_name",
+]
+what = "joins a model's class name to the dotted name of its module itself; call _module_paths.py:dotted_name"
+audit = "C09-N8"
+
+[homes.Hx-module-paths.signatures.module-ancestry]
+kind = "prefix-slice"
+# Left out: a schema path below a definitions container of the current document (a schema location, not a module).
+exclude = ["parser/jsonschema.py:JsonSchemaParser._is_named_schema_definition_path"]
+what = "tests whether a module path starts with a package's itself; call _module_paths.py:is_below (or is_within)"
+audit = "C09-N10"
 
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"

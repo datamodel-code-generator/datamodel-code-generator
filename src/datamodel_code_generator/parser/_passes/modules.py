@@ -24,6 +24,7 @@ from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCo
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -1674,7 +1675,7 @@ def import_collapsed_inner_models(  # noqa: PLR0913, PLR0917
             parser,
             data_type,
             holder_module_name,
-            f"{inner_module_name}.{reference.short_name}" if inner_module_name else reference.short_name,
+            dotted_name(inner_module_name, reference.short_name),
             imports,
             scoped_model_resolver,
             same_module=inner_module_name == holder_module_name,

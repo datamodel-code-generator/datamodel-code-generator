@@ -133,6 +133,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -4725,7 +4726,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 model_type=self.field_name_model_type,
                 class_name=class_name,
             )
-            modular_name = f"{module_name}.{field_name}" if module_name else field_name
+            modular_name = dotted_name(module_name, field_name)
 
             exclude_field_names.add(field_name)
 

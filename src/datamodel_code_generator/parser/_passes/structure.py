@@ -18,7 +18,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._module_paths import package_path
+from datamodel_code_generator._module_paths import is_below, package_path
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
 from datamodel_code_generator.model.base import (
     DataModel,
@@ -684,11 +684,6 @@ def rename_and_relocate_scc_models(
     return module_class_mappings
 
 
-def _is_below(path: tuple[str, ...], package: tuple[str, ...]) -> bool:
-    """Return whether the module at ``path`` lies below ``package``, whose ``__init__`` module Python runs first."""
-    return len(path) > len(package) and path[: len(package)] == package
-
-
 def _failing_cycles(
     nodes: set[tuple[tuple[str, ...], int]],
     imports: dict[tuple[tuple[str, ...], int], set[tuple[tuple[str, ...], int]]],
@@ -706,7 +701,7 @@ def _failing_cycles(
         if len(component) == 1:
             continue
         top = min(component, key=lambda node: len(node[0]))
-        if top[1] < 0 and top not in entered and all(node == top or _is_below(node[0], top[0]) for node in component):
+        if top[1] < 0 and top not in entered and all(node == top or is_below(node[0], top[0]) for node in component):
             yield from _failing_cycles(component, imports, packages, entered | {top})
         else:
             yield component

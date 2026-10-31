@@ -64,6 +64,7 @@ from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
     expanded_path,
+    is_below,
     is_package_init,
     normalized_path,
     written_names,
@@ -181,6 +182,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _has_root_field_constraints,
     _hidden_type_names,
     _iter_import_bindings,
+    _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
@@ -1787,13 +1789,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         package = (*original_module, "__init__") if is_init else original_module
         imports = Imports()
         for source, name, bound_name in sorted(names, key=operator.itemgetter(2)):
-            if len(source) < len(package) and package[: len(source)] == source:
+            if is_below(package, source):
                 from_ = "." * (len(package) - len(source))
             else:
                 left, right = relative(
                     original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
                 )
-                from_ = f"{left}{right}" if left.endswith(".") else f"{left}.{right}"
+                from_ = _join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"

@@ -22,6 +22,7 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
+    dotted_name,
     expanded_path,
     module_parts,
     normalized_path,
@@ -398,11 +399,10 @@ def _released_name_imports(  # noqa: PLR0914
             ):
                 continue
             released_module, released_name = released_placement.get(final, final)
-            released_module_name = dotted_module(released_module)
             target = reference_import_target(
                 released_name,
                 module_name,
-                f"{released_module_name}.{released_name}" if released_module_name else released_name,
+                dotted_name(dotted_module(released_module), released_name),
                 use_exact=ctx.imports.use_exact,
                 init=ctx.is_init,
                 internal_modules=forwarder.released_internal_modules,

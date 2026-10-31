@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator._module_paths import normalized_path
+from datamodel_code_generator._module_paths import is_within, normalized_path
 from datamodel_code_generator._parse_memo import MemoTable
 from datamodel_code_generator.model.base import forget_model_memos
 from datamodel_code_generator.model.enum import Enum
@@ -244,7 +244,7 @@ def inspect_invalid_dotted_stdout(
         module = tuple(model.module_path)
         matching_module: ModulePath = ()
         for invalid_module in invalid_modules:
-            if len(invalid_module) > len(matching_module) and module[: len(invalid_module)] == invalid_module:
+            if len(invalid_module) > len(matching_module) and is_within(module, invalid_module):
                 matching_module = invalid_module
         if matching_module:
             repair_modules.add(matching_module)
@@ -323,7 +323,7 @@ def apply_forced_invalid_dotted_stdout_repair(
     originally_affected_models = [
         model
         for model in live_models
-        if any(tuple(model.module_path)[: len(module)] == module for module in affected_modules)
+        if any(is_within(tuple(model.module_path), module) for module in affected_modules)
     ]
     if not originally_affected_models or any(model.file_path is not None for model in live_models):
         return False  # pragma: no cover - first-pass inventory and source checks make this a safety fallback.

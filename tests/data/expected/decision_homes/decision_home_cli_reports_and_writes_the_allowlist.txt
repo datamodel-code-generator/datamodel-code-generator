@@ -51,6 +51,10 @@ other.py:184:8: decision sample (the sample decision) has its home in core.py; r
 other.py:185:8: decision sample (the sample decision) has its home in core.py; reads a value as a mapping itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in guarded_reads)
 other.py:186:8: decision sample (the sample decision) has its home in core.py; reads a value as a mapping itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in guarded_reads)
 other.py:192:8: decision sample (the sample decision) has its home in core.py; reads a value as a mapping itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in guarded_reads)
+other.py:199:8: decision sample (the sample decision) has its home in core.py; joins a name below its module itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in dotted)
+other.py:200:8: decision sample (the sample decision) has its home in core.py; joins a name below its module itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in dotted)
+other.py:212:8: decision sample (the sample decision) has its home in core.py; tests whether a path starts with another itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in prefixes)
+other.py:213:8: decision sample (the sample decision) has its home in core.py; tests whether a path starts with another itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in prefixes)
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
@@ -73,12 +77,14 @@ other.py: _merge_values: sample.merge-function
 other.py: _merge_values._merge_inner: sample.merge-function
 other.py: climb: sample.ancestor-walk
 other.py: displays: sample.hand-display
+other.py: dotted: sample.dotted-join
 other.py: fold: sample.fold
 other.py: guarded_reads: sample.mapping-guard
 other.py: keywords: sample.hand-keyword
 other.py: marked: sample.marker-test
 other.py: other_helper: sample.keyword-table
 other.py: package_files: sample.init-test
+other.py: prefixes: sample.prefix-slice
 other.py: read_keys: sample.read-key
 other.py: search: sample.name-search
 other.py: spell: sample.spelling
