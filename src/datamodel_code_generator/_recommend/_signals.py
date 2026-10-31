@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
-from datamodel_code_generator._document_reader import descend
+from datamodel_code_generator._document_reader import as_mapping, descend
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
@@ -215,10 +215,6 @@ def _dereferenced(document: Mapping[str, Any], node: object) -> object:
     return _resolve_local(document, node["$ref"]) if isinstance(node, dict) and "$ref" in node else node
 
 
-def _items(value: object) -> Iterable[tuple[str, Any]]:
-    return value.items() if isinstance(value, dict) else ()
-
-
 def _unwrap(node: object) -> object:
     """Return the schema of an AsyncAPI multi-format schema object, or the schema itself."""
     if isinstance(node, dict) and ("schemaFormat" in node or node.keys() == {"schema"}):
@@ -234,12 +230,9 @@ def _uses_definitions(kind: SchemaKind) -> bool:
 def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]:
     """Return the named schemas of a document: $defs and definitions, or components/schemas."""
     if _uses_definitions(kind):
-        return {key: value for keyword in DEFINITION_KEYS for key, value in _items(document.get(keyword))}
-    components = document.get("components")
-    return {
-        key: _unwrap(value)
-        for key, value in _items(components.get("schemas") if isinstance(components, dict) else None)
-    }
+        return {key: value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()}
+    components = as_mapping(document.get("components"))
+    return {key: _unwrap(value) for key, value in as_mapping(components.get("schemas")).items()}
 
 
 def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[str, str]:
@@ -249,9 +242,8 @@ def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[str, st
 
 def _media_schemas(key: str, container: object) -> Iterator[tuple[str, object]]:
     """Yield the media type schemas of a request body or response."""
-    content = container.get("content") if isinstance(container, dict) else None
-    for media_type, media in _items(content):
-        yield f"{key} {media_type}", media.get("schema") if isinstance(media, dict) else None
+    for media_type, media in as_mapping(as_mapping(container).get("content")).items():
+        yield f"{key} {media_type}", as_mapping(media).get("schema")
 
 
 def _operation_schemas(
@@ -261,15 +253,13 @@ def _operation_schemas(
     api = "api" in scopes
     for section in ("paths", "webhooks"):
         items = document.get(section) if api or section in scopes else None
-        for path, item in _items(items):
+        for path, item in as_mapping(items).items():
             if section == "webhooks" or path_selected(path, include_paths):
-                for method, operation in _items(item):
+                for method, operation in as_mapping(item).items():
                     yield from _operation_parts(f"{path} {method}", operation)
-    components = document.get("components")
-    bodies = (
-        components.get("requestBodies") if isinstance(components, dict) and (api or "requestbodies" in scopes) else None
-    )
-    for name, body in _items(bodies):
+    components = as_mapping(document.get("components"))
+    bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
+    for name, body in as_mapping(bodies).items():
         yield from _media_schemas(name, body)
 
 
@@ -281,11 +271,11 @@ def _legacy_body_operations(
     Local path item references resolve as generation resolves them; remote ones are not read.
     """
     for section in () if "api" in scopes else ("paths", "webhooks"):
-        for path, item in _items(document.get(section) if section in scopes else None):
+        for path, item in as_mapping(document.get(section) if section in scopes else None).items():
             if section == "webhooks" or path_selected(path, include_paths):
                 yield from (
                     operation
-                    for method, operation in _items(_dereferenced(document, item))
+                    for method, operation in as_mapping(_dereferenced(document, item)).items()
                     if method in OPERATION_METHODS and isinstance(operation, dict)
                 )
 
@@ -311,7 +301,7 @@ def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str],
     return sum(
         _is_inline_object_body(schema)
         for operation in _legacy_body_operations(document, scopes, include_paths)
-        for holder in (operation.get("requestBody"), *dict(_items(operation.get("responses"))).values())
+        for holder in (operation.get("requestBody"), *as_mapping(operation.get("responses")).values())
         for _, schema in _media_schemas("", _dereferenced(document, holder))
     )
 
@@ -325,7 +315,7 @@ def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]
     if not isinstance(operation, dict) or key.rpartition(" ")[2] not in OPERATION_METHODS:
         return
     yield from _media_schemas(f"{key} request", operation.get("requestBody"))
-    for status, response in _items(operation.get("responses")):
+    for status, response in as_mapping(operation.get("responses")).items():
         yield from _media_schemas(f"{key} {status}", response)
     fields = {
         name: parameter.get("schema")
@@ -337,38 +327,40 @@ def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]
 
 def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]]:
     """Yield the payload and header schemas of AsyncAPI messages in components and channels."""
-    components = document.get("components")
-    components = components if isinstance(components, dict) else {}
-    messages = list(_items(components.get("messages")))
-    for name, channel in [*_items(document.get("channels")), *_items(components.get("channels"))]:
+    components = as_mapping(document.get("components"))
+    messages: list[tuple[str, object]] = list(as_mapping(components.get("messages")).items())
+    for name, channel in [
+        *as_mapping(document.get("channels")).items(),
+        *as_mapping(components.get("channels")).items(),
+    ]:
         messages.extend(
             (f"{name} {operation}", _operation_message(channel, operation)) for operation in ("publish", "subscribe")
         )
-        messages.extend((f"{name} {key}", message) for key, message in _items(_get(channel, "messages")))
+        messages.extend(
+            (f"{name} {key}", message) for key, message in as_mapping(as_mapping(channel).get("messages")).items()
+        )
     for name, message in messages:
-        variants = _get(message, "oneOf")
+        variants = as_mapping(message).get("oneOf")
         for index, variant in enumerate(variants if isinstance(variants, list) else [message]):
             for part in ("payload", "headers"):
-                yield f"{name} {index} {part}", _unwrap(_get(variant, part))
-
-
-def _get(node: object, key: str) -> object:
-    return node.get(key) if isinstance(node, dict) else None
+                yield f"{name} {index} {part}", _unwrap(as_mapping(variant).get(part))
 
 
 def _operation_message(channel: object, operation: str) -> object:
-    return _get(_get(channel, operation), "message")
+    return as_mapping(as_mapping(channel).get(operation)).get("message")
 
 
 def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
     """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
     if kind == "openapi":
         return sum(
-            method in OPERATION_METHODS for _, item in _items(document.get("paths")) for method, _ in _items(item)
+            method in OPERATION_METHODS
+            for item in as_mapping(document.get("paths")).values()
+            for method in as_mapping(item)
         )
-    return len(dict(_items(document.get("operations")))) + sum(
-        isinstance(_get(channel, operation), dict)
-        for _, channel in _items(document.get("channels"))
+    return len(as_mapping(document.get("operations"))) + sum(
+        isinstance(as_mapping(channel).get(operation), dict)
+        for channel in as_mapping(document.get("channels")).values()
         for operation in ("publish", "subscribe")
     )
 
@@ -541,8 +533,7 @@ class _Walker:
     def walk_children(self, node: Mapping[str, Any], *, parent: str, name: str, depth: int, component: str) -> None:
         """Walk the subschemas of one schema object."""
         for keyword in _SCHEMA_MAP_KEYWORDS:
-            members = node.get(keyword)
-            for member_name, member in members.items() if isinstance(members, dict) else ():
+            for member_name, member in as_mapping(node.get(keyword)).items():
                 self.walk(
                     member,
                     parent=parent,
@@ -616,10 +607,9 @@ class _Walker:
     @staticmethod
     def tags(branch: Mapping[str, Any]) -> dict[str, tuple[str, object]]:
         """Return the literal tag properties declared directly on one schema."""
-        properties = branch.get("properties")
         return {
             name: literal
-            for name, value in (properties.items() if isinstance(properties, dict) else ())
+            for name, value in as_mapping(branch.get("properties")).items()
             if (literal := _single_literal(value)) is not None
         }
 

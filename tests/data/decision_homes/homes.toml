@@ -119,6 +119,12 @@ names = ["exists", "is_dir"]
 what = "walks up a path's parents itself"
 audit = "X-18"
 
+[homes.sample.signatures.mapping-guard]
+kind = "mapping-guard"
+names = ["dict"]
+what = "reads a value as a mapping itself"
+audit = "X-19"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

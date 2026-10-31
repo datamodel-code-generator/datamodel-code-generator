@@ -43,6 +43,9 @@ them, ``what`` words the message):
   search for the first name a scope does not hold.
 * ``ancestor-walk``: a ``while`` loop whose test calls a method in ``names`` on a name whose ``.parent`` the loop
   reads (its test or body, not a function inside it): a walk up a path's parents to the first that exists.
+* ``mapping-guard``: a conditional expression ``v if isinstance(v, C) else e`` (its test may ``and`` more conditions)
+  for a class ``C`` in ``names``, whose value is ``v`` itself or a call of a method of ``v`` and whose fallback ``e``
+  is ``None`` or an empty ``{}``, ``()`` or ``[]``: a value read as a mapping, or its members, only when it is one.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -118,6 +121,7 @@ SIGNATURE_KINDS = frozenset({
     "branch",
     "name-search",
     "ancestor-walk",
+    "mapping-guard",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -148,6 +152,7 @@ REQUIRED_STRINGS = {
     "display": "brackets",
     "branch": "values",
     "ancestor-walk": "names",
+    "mapping-guard": "names",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
@@ -611,6 +616,33 @@ def _walks_ancestors(loop: ast.While, methods: Iterable[str]) -> bool:
     return False
 
 
+def _is_empty(node: ast.AST) -> bool:
+    """Return whether ``node`` is ``None`` or an empty ``{}``, ``()`` or ``[]``."""
+    match node:
+        case ast.Constant(value=None) | ast.Dict(keys=[]) | ast.Tuple(elts=[]) | ast.List(elts=[]):
+            return True
+    return False
+
+
+def _guarded_read(node: ast.IfExp, classes: Iterable[str]) -> bool:
+    """Return whether ``node`` reads a value, or calls one of its methods, only when it is a ``classes`` instance.
+
+    Its fallback is ``None`` or an empty display (``mapping-guard``).
+    """
+    test = node.test
+    guarded: set[str] = set()
+    for check in test.values if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.And) else [test]:
+        match check:
+            case ast.Call(func=callee, args=[value, kind]) if (
+                _last_name(callee) == "isinstance" and _last_name(kind) in classes
+            ):
+                guarded.add(ast.unparse(value.target if isinstance(value, ast.NamedExpr) else value))
+    read = node.body
+    if isinstance(read, ast.Call) and isinstance(read.func, ast.Attribute):
+        read = read.func.value
+    return _is_empty(node.orelse) and ast.unparse(read) in guarded
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -695,6 +727,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return isinstance(node, ast.While) and _searches_name(node)
         case "ancestor-walk":
             return isinstance(node, ast.While) and _walks_ancestors(node, options["names"])
+        case "mapping-guard":
+            return isinstance(node, ast.IfExp) and _guarded_read(node, options["names"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -716,6 +750,7 @@ NODE_TYPES = {
     "branch": (ast.If, ast.IfExp),
     "name-search": (ast.While,),
     "ancestor-walk": (ast.While,),
+    "mapping-guard": (ast.IfExp,),
 }
 
 
