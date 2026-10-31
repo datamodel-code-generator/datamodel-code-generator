@@ -8,7 +8,7 @@ client/client.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.pa
 client/codecs.py: ..model_codecs.media, ..model_codecs.parameter_reads, ..model_codecs.parameters, ..model_codecs.unset, .errors, .operations, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
 client/compression.py: .content, __future__, collections.abc, typing, zlib
 client/content.py: __future__, abc, collections.abc, dataclasses, typing
-client/errors.py: .responses, __future__, typing, typing_extensions
+client/errors.py: .responses, __future__, collections.abc, typing, typing_extensions
 client/logical.py: .errors, .options, .retry, .timing, __future__, anyio, asyncio, collections.abc, functools, typing
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .body_sources, .content, .errors, .logical, .media, .parts, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions

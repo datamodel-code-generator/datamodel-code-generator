@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 import httpx2
 from typing_extensions import TypeVar
 
-from ..client.errors import SDKError, add_secondary
+from ..client.errors import SDKError, acalled, add_secondary, called
 from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
@@ -499,22 +499,12 @@ def _checked(valid: bool) -> None:  # noqa: FBT001
 
 def _run(run: Callable[[], object]) -> object:
     """Run a store method, raising its failure as a store failure that keeps the cause."""
-    try:
-        return run()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_error(error) from None
+    return called(run, _store_error)
 
 
 async def _arun(run: Callable[[], Awaitable[object]]) -> object:
     """Await a store method, raising its failure as a store failure that keeps the cause."""
-    try:
-        return await run()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_error(error) from None
+    return await acalled(run, _store_error)
 
 
 def fetch(
