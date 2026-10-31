@@ -76,13 +76,35 @@ def runtime_record(
     else a runtime record by its own constructor, a tuple item by item, and any other value by its repr. The class is
     named from the module of the package's runtime copy that defines it.
     """
-    entries = [
-        keyword_argument(item.name, _record_value(local, value) if spelled is None else spelled(item.name, value))
+    arguments = _record_arguments(local, record, spelled)
+    return call_text(_record_class(local, record), (keyword_argument(item.keyword, item.value) for item in arguments))
+
+
+def record_plan(
+    local: Callable[[str, str], str],
+    name: str,
+    annotation: str,
+    record: DataclassInstance,
+    spelled: Callable[[str, Any], str] | None = None,
+) -> Plan:
+    """Return the module-level plan constant `name` holding a runtime record, its constructor as `runtime_record`'s."""
+    arguments = _record_arguments(local, record, spelled)
+    return Plan(name, annotation, _record_class(local, record), arguments)
+
+
+def _record_arguments(
+    local: Callable[[str, str], str], record: DataclassInstance, spelled: Callable[[str, Any], str] | None
+) -> tuple[Keyword, ...]:
+    return tuple(
+        Keyword(item.name, _record_value(local, value) if spelled is None else spelled(item.name, value))
         for item in fields(record)
         if item.init and (value := getattr(record, item.name)) != item.default
-    ]
+    )
+
+
+def _record_class(local: Callable[[str, str], str], record: DataclassInstance) -> str:
     kind = type(record)
-    return call_text(local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__), entries)
+    return local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__)
 
 
 def _record_value(local: Callable[[str, str], str], value: object) -> str:
