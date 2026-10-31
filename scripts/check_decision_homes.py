@@ -41,6 +41,8 @@ them, ``what`` words the message):
 * ``name-search``: a ``while`` loop whose test reads a name that the loop builds itself (its test or body, not a
   function inside it, assigns the name an f-string or a value holding one, or adds a string to it with ``+=``): a
   search for the first name a scope does not hold.
+* ``ancestor-walk``: a ``while`` loop whose test calls a method in ``names`` on a name whose ``.parent`` the loop
+  reads (its test or body, not a function inside it): a walk up a path's parents to the first that exists.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -115,6 +117,7 @@ SIGNATURE_KINDS = frozenset({
     "keyword",
     "branch",
     "name-search",
+    "ancestor-walk",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -144,6 +147,7 @@ REQUIRED_STRINGS = {
     "literal": "contains",
     "display": "brackets",
     "branch": "values",
+    "ancestor-walk": "names",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
@@ -581,6 +585,32 @@ def _searches_name(loop: ast.While) -> bool:
     return any(isinstance(node, ast.Name) and node.id in built for node in ast.walk(loop.test))
 
 
+def _walks_ancestors(loop: ast.While, methods: Iterable[str]) -> bool:
+    """Return whether ``loop`` tests a name with one of ``methods`` and reads its ``.parent`` (``ancestor-walk``)."""
+    tested = {
+        node.func.value.id
+        for node in ast.walk(loop.test)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in methods
+        and isinstance(node.func.value, ast.Name)
+    }
+    pending: list[ast.AST] = [loop.test, *loop.body]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda):
+            continue
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr == "parent"
+            and isinstance(node.value, ast.Name)
+            and node.value.id in tested
+        ):
+            return True
+        pending.extend(ast.iter_child_nodes(node))
+    return False
+
+
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
     options = signature.options
     match signature.kind:
@@ -663,6 +693,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return _hand_keyword(node)
         case "name-search":
             return isinstance(node, ast.While) and _searches_name(node)
+        case "ancestor-walk":
+            return isinstance(node, ast.While) and _walks_ancestors(node, options["names"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -683,6 +715,7 @@ NODE_TYPES = {
     "keyword": (ast.JoinedStr,),
     "branch": (ast.If, ast.IfExp),
     "name-search": (ast.While,),
+    "ancestor-walk": (ast.While,),
 }
 
 

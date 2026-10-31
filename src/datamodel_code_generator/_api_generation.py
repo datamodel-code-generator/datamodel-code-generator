@@ -371,14 +371,9 @@ def _staging(stack: ExitStack, destination: Path, cwd: Path, around: Path | None
 
     Models inside the target package are then staged beside the package, so a render writes nothing into it.
     """
-    full = cwd / destination.expanduser()
-    location = Path(os.path.abspath(full))  # noqa: PTH100
-    if around is not None and (outer := (cwd / around.expanduser()).resolve()) in full.resolve().parents:
-        location = outer
-    parent = location.parent
-    while not parent.exists():
-        parent = parent.parent
-    return Path(stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)))
+    from datamodel_code_generator._publication import staging_directory_for  # noqa: PLC0415
+
+    return Path(stack.enter_context(staging_directory_for(destination, cwd=cwd, around=around)))
 
 
 def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArtifact, ...]:

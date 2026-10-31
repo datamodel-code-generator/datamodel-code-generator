@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
 from datamodel_code_generator._json_output import dump_json
+from datamodel_code_generator._paths import existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -201,13 +202,11 @@ def _staged_lock(
 
 def _nearest_existing_directory(path: Path) -> Path:
     """Return an existing ancestor without creating target lock directories."""
-    while not path.is_dir():
-        parent = path.parent
-        if parent == path:
-            msg = f"Unable to find an existing directory for remote lock: {path}"
-            raise RemoteLockError(msg)
-        path = parent
-    return path
+    return existing_ancestor(path, error=_missing_lock_directory)
+
+
+def _missing_lock_directory(root: Path) -> RemoteLockError:
+    return RemoteLockError(f"Unable to find an existing directory for remote lock: {root}")
 
 
 @dataclass(slots=True)
