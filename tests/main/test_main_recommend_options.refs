@@ -72,22 +72,10 @@ unicode-profile	main/main_recommend_options/recommend_options_for_projects[unico
 asyncapi	main/main_recommend_options/recommend_options_for_schemas[asyncapi].stdout.txt
 asyncapi-v3	main/main_recommend_options/recommend_options_for_schemas[asyncapi-v3].stdout.txt
 blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
-blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout@builtin-python3.11.txt
 draft-07-pattern-map	main/main_recommend_options/recommend_options_for_schemas[draft-07-pattern-map].stdout.txt
 enums-read-as-their-const	main/main_recommend_options/recommend_options_for_schemas[enums-read-as-their-const].stdout.txt
 explicit-options	main/main_recommend_options/recommend_options_for_schemas[explicit-options].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
-integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
 json	main/main_recommend_options/recommend_options_for_schemas[json].stdout.txt
 jsonschema	main/main_recommend_options/recommend_options_for_schemas[jsonschema].stdout.txt
 jsonschema-contested-option-set	main/main_recommend_options/recommend_options_for_schemas[jsonschema-contested-option-set].stdout.txt
@@ -100,29 +88,11 @@ paths-bodies-object-map	main/main_recommend_options/recommend_options_for_schema
 paths-bodies-referenced-path-item	main/main_recommend_options/recommend_options_for_schemas[paths-bodies-referenced-path-item].stdout.txt
 paths-scope	main/main_recommend_options/recommend_options_for_schemas[paths-scope].stdout.txt
 paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
-paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout@builtin-python3.10.txt
 pattern-properties	main/main_recommend_options/recommend_options_for_schemas[pattern-properties].stdout.txt
 preset-value	main/main_recommend_options/recommend_options_for_schemas[preset-value].stdout.txt
 redundant-constraints	main/main_recommend_options/recommend_options_for_schemas[redundant-constraints].stdout.txt
 referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
-referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout@builtin-python3.10.txt
 referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
-referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout@builtin-python3.15.txt
 root-name-taken	main/main_recommend_options/recommend_options_for_schemas[root-name-taken].stdout.txt
 swagger	main/main_recommend_options/recommend_options_for_schemas[swagger].stdout.txt
 swagger-definitions	main/main_recommend_options/recommend_options_for_schemas[swagger-definitions].stdout.txt
@@ -148,12 +118,6 @@ text	main/main_recommend_options/recommend_options_in_prompt[text].txt
 	main/main_recommend_options/recommend_options_quotes_arguments.stdout.txt
 [test_recommend_options_reads_each_container_once]
 	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.12	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.13	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.14	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
-	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt	@formatter=builtin,python=3.15	= main/main_recommend_options/recommend_options_reads_each_container_once.stdout@builtin-python3.15.txt
 [test_recommend_options_rejects_candidates_that_fail]
 	main/main_recommend_options/recommend_options_rejects_candidates_that_fail.stdout.txt
 [test_recommend_options_small_schema_default]
