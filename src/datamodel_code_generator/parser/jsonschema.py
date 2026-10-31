@@ -54,7 +54,11 @@ from urllib.parse import (
     urljoin,  # noqa: F401  # Preserve the established parser.jsonschema export.
     urlparse,
 )
-from warnings import catch_warnings, simplefilter, warn
+from warnings import (
+    catch_warnings,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    simplefilter,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    warn,
+)
 
 from pydantic import (
     ConfigDict,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -159,6 +163,7 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
 from datamodel_code_generator._user_keys import template_data_keys
+from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
@@ -1418,8 +1423,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and self._writes_extra_items_type
                 and isinstance(extra_items := self._model_additional_properties(model_schema), JsonSchemaObject)
             ):
-                with self._inherited_ref_context(defining_ref), catch_warnings():
-                    simplefilter("ignore")
+                with self._inherited_ref_context(defining_ref), quiet():
                     data_type = self._extra_items_type(extra_items, reads_false_all_of=False)
                     keys = (
                         ()
@@ -2699,14 +2703,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _warn_unsatisfiable(self, where: str, keywords: tuple[str, ...], *parts: str) -> None:
         """Warn once per parse for each schema whose parts have no value in common for some keywords."""
-        if keywords and (where, keywords) not in self._unsatisfiable_schemas:
-            self._unsatisfiable_schemas.add((where, keywords))
+        if keywords and first_report(self._unsatisfiable_schemas, (where, keywords)):
             warn_unsatisfiable(where, keywords, *parts)
 
     def _warn_untaken_patterns(self, where: str, pattern: str, untaken: tuple[str, ...]) -> None:
         """Warn once per parse for each schema whose written pattern leaves out patterns of its parts."""
-        if untaken and (where, (pattern, *untaken)) not in self._untaken_pattern_schemas:
-            self._untaken_pattern_schemas.add((where, (pattern, *untaken)))
+        if untaken and first_report(self._untaken_pattern_schemas, (where, (pattern, *untaken))):
             warn_untaken_patterns(where, pattern, untaken)
 
     def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
@@ -5137,15 +5139,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 else "gives the keys of its patterns and the other keys different value schemas"
             )
         where = named_location(obj.schema_location, name, row="legacy-unredacted-locations")
-        if not reasons or where in self._inexact_object_maps:
-            return
-        self._inexact_object_maps.add(where)
-        warn(
-            f"{where}: one dict type cannot express this object, since it {' and '.join(reasons)}; the generated "
-            "dict accepts or rejects some objects that the schema does not. Pydantic output with "
-            "--generate-schema-validators checks it exactly.",
-            stacklevel=2,
-        )
+        if reasons and first_report(self._inexact_object_maps, where):
+            warn(
+                f"{where}: one dict type cannot express this object, since it {' and '.join(reasons)}; the generated "
+                "dict accepts or rejects some objects that the schema does not. Pydantic output with "
+                "--generate-schema-validators checks it exactly.",
+                stacklevel=2,
+            )
 
     def _parse_combined_property_names_key_type(
         self, name: str, property_names: JsonSchemaObject, path: list[str]
@@ -6336,8 +6336,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return excluded
         if _REPORTED_VALUE_CONFLICT_KEY in obj.__dict__:
             return set()
-        if (location := named_location(obj.schema_location, "None")) not in self._unsatisfiable_const_locations:
-            self._unsatisfiable_const_locations.add(location)
+        location = named_location(obj.schema_location, "None")
+        if first_report(self._unsatisfiable_const_locations, location):
             warn(
                 f"The schema at {location} admits no value: its const {const!r} is none of its enum values. It is "
                 "generated as written.",

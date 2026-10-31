@@ -12,13 +12,13 @@ then ordered by fewer added options and the option spelling; other ties keep the
 from __future__ import annotations
 
 import io
-import warnings
 from contextlib import redirect_stderr
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator import Error, _collect_model_metadata, enable_parsed_source_cache
 from datamodel_code_generator._recommend._metrics import name_metrics, name_records, name_stability
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.parser.base import dropped_constraints_recorded
 from datamodel_code_generator.remote_lock import RemoteLockError
 
@@ -120,8 +120,7 @@ def _run_candidate(  # noqa: PLR0913
     remote_text_cache: DefaultPutDict[str, str],
 ) -> tuple[CandidateOutcome, InputFileType | None]:
     try:
-        with warnings.catch_warnings(), redirect_stderr(io.StringIO()):
-            warnings.simplefilter("ignore")
+        with quiet(), redirect_stderr(io.StringIO()):
             with dropped_constraints_recorded() as dropped:
                 metadata, identities, input_file_type = _collect_model_metadata(
                     input_, config, remote_text_cache=remote_text_cache

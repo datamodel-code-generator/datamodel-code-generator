@@ -2546,6 +2546,44 @@ strings = [
 what = "defines a reason that more than one backend writes itself; import it from model/_render_plan.py"
 audit = "C16-B15"
 
+[homes.Hx-quiet-warnings]
+decision = "how a block runs with the generator's own warnings ignored (a retry parse, a recommendation trial, a probe of a type: the run the user sees reports them): the warning filters saved, one category (every warning by default) ignored while the block runs, and the filters restored after it"
+core = ["_warning_control.py:quiet"]
+adapters = []
+
+[homes.Hx-quiet-warnings.signatures.saved-filters]
+kind = "call"
+names = ["catch_warnings"]
+what = "saves and changes the warning filters for a block itself; run the block inside _warning_control.py:quiet"
+audit = "C16-B7"
+
+[homes.Hx-report-once]
+decision = "whether a warning about a schema is shown: once per parse for each key it reports (the schema's location, with the keywords or patterns it names), recorded in that warning's set of the parser"
+core = ["_warning_control.py:first_report"]
+adapters = []
+
+[homes.Hx-report-once.signatures.reported-location]
+kind = "call"
+names = ["add"]
+mentions = ["where", "location"]
+paths = ["parser/"]
+exclude = ["parser/xmlschema.py:_XMLSchemaConverter._included_schemas"]
+what = "records itself that a warning about a schema location was shown; test and record it with _warning_control.py:first_report (the locations of included XML Schema files are no warning keys)"
+audit = "C16-B8"
+
+[homes.Hx-tracer-frames]
+decision = "which frames a warning's `stacklevel` and the caller of `Parser.parse()` skip: the wrappers that `--debug` (pysnooper) puts around the functions it traces"
+core = ["_warning_control.py:is_tracer_frame"]
+adapters = []
+
+[homes.Hx-tracer-frames.signatures.frame-module]
+kind = "call"
+names = ["get"]
+strings = ["__name__"]
+paths = ["parser/"]
+what = "tests the module a frame runs in itself; call _warning_control.py:is_tracer_frame"
+audit = "C16-B9"
+
 [homes.Hx-context-scope]
 decision = "how a block runs with context variables set: each set to its value in order before the block, and reset by its token in reverse order after it, also when the block raises"
 core = ["_context_scope.py:context_values"]
