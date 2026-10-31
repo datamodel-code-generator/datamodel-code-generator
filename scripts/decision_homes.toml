@@ -2629,6 +2629,33 @@ min = 2
 what = "writes the version and models of the model metadata payload itself; call model_metadata.py:model_metadata_payload"
 audit = "C15-B22"
 
+[homes.Hx-registry-listing]
+decision = "how a registry of the command line (deprecations, experimental features) is listed: its entries as JSON, a text table (with each entry's wrapped note where the registry's page asks) or a Markdown page, the format a --list option names, the JSON items of its payload, and the release-note sections of a version"
+core = ["_registry_render.py"]
+adapters = ["__main__.py:_print_registry"]
+
+[homes.Hx-registry-listing.signatures.listing-format]
+kind = "compare-eq"
+values = ["json", "markdown"]
+paths = ["deprecations.py", "experimental.py"]
+what = "picks the listing format of a registry itself; call _registry_render.py:_render_registry with the registry's page"
+audit = "C15-B15"
+
+[homes.Hx-registry-listing.signatures.release-heading]
+kind = "literal"
+contains = ["## "]
+paths = ["deprecations.py", "experimental.py"]
+what = "writes a release-note section or a Markdown heading of a registry itself; call _registry_render.py:_render_release_notes or _render_registry_markdown"
+audit = "C15-B16"
+
+[homes.Hx-registry-listing.signatures.listing-items]
+kind = "call"
+names = ["render_deprecations", "render_experimental_features"]
+strings = ["json"]
+paths = ["__main__.py"]
+what = "reads the JSON entries of a registry listing itself; call __main__.py:_print_registry"
+audit = "C15-B18"
+
 [homes.Hx-json-schema-outputs]
 decision = "the JSON Schemas --output-format-json-schema prints: their names (the option's choices, metavar and the prompt's list), the function that writes each, and where the command line prints it (row argv, parsed or main)"
 core = ["_json_output.py"]
