@@ -120,6 +120,7 @@ from datamodel_code_generator.model.msgspec import DataModelField as MsgspecFiel
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
 from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES
+from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_FIELD, IMPORT_SERIALIZE_AS_ANY
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
@@ -236,8 +237,6 @@ _SEQUENCES: Final = cast(
     "dict[type, Literal['list', 'tuple', 'set', 'frozenset']]",
     {kind: kind.__name__ for kind in (list, tuple, set, frozenset)},
 )
-_SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
-_PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
 _SLOT: Final = "\x00"
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
@@ -1522,8 +1521,8 @@ class _Projector:
                 self.inlined.discard(symbol)
         result: TypeView = GeneratedSymbolType(symbol)
         if serialize_as_any and binding.serialize_as_any:
-            spelled = subscript_text(self.hints.slot(_SERIALIZE_AS_ANY), (self.hints.slot(symbol),)), ()
-            result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,), hint=self.hints.hint(spelled))
+            spelled = subscript_text(self.hints.slot(IMPORT_SERIALIZE_AS_ANY), (self.hints.slot(symbol),)), ()
+            result = GenericType(ImportedType(IMPORT_SERIALIZE_AS_ANY), (result,), hint=self.hints.hint(spelled))
         return result
 
     def _atomic(self, data_type: DataType) -> TypeView | None:
@@ -1607,8 +1606,8 @@ class _Projector:
                 discriminator=discriminator,
             )
             annotation = wrapped.annotation
-            hint = ModelHint(HintText(annotation.parts, (*annotation.imports, _PYDANTIC_FIELD)), hints.of(union).static)
-            hints.fixed[_PYDANTIC_FIELD] = None
+            hint = ModelHint(HintText(annotation.parts, (*annotation.imports, IMPORT_FIELD)), hints.of(union).static)
+            hints.fixed[IMPORT_FIELD] = None
             schema = union.discriminator if isinstance(union, UnionType) else None
             return UnionType(parts, preserve_order, schema, hint, discriminator), inferred_optional
         return union, inferred_optional
