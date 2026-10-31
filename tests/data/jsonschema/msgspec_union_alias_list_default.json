@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "aliased_spec": {
+      "anyOf": [
+        {"$ref": "#/$defs/ItemList"},
+        {"$ref": "#/$defs/Item"}
+      ],
+      "default": [{"id": 1}]
+    },
+    "chained_spec": {
+      "anyOf": [
+        {"$ref": "#/$defs/ListAlias"},
+        {"$ref": "#/$defs/Item"}
+      ],
+      "default": [{"id": 2}]
+    }
+  },
+  "$defs": {
+    "Item": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
+    "ItemList": {"type": "array", "items": {"$ref": "#/$defs/Item"}},
+    "ListAlias": {"$ref": "#/$defs/ItemList"}
+  }
+}

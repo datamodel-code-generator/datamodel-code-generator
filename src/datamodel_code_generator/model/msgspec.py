@@ -1644,7 +1644,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 )
             ):
                 if self.data_type.is_union:
-                    if not isinstance(self.default, (dict, list)):
+                    if not isinstance(self.default, (dict, list)) or (
+                        isinstance(self.default, list) and not self._union_member_holds_list(data_type)
+                    ):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
@@ -1652,6 +1654,34 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                     self._PARSE_METHOD, self.default, data_type, self.data_type if self.data_type.is_list else None
                 )
         return None
+
+    @staticmethod
+    def _union_member_holds_list(data_type: DataType) -> bool:
+        """Return whether a union member can hold a list default, following type aliases.
+
+        With ``--use-type-alias`` a member like ``ItemList = list[Item]`` is a reference whose
+        ``is_list`` is False, so the alias target decides whether the member stays eligible.
+        An alias target that only wraps one data type (``list[Item]``) writes its child's hint,
+        and the child is where the container lives.
+        """
+        seen: set[int] = set()
+        while True:
+            while (
+                not data_type.is_list
+                and data_type.reference is None
+                and data_type.type is None
+                and len(data_type.data_types) == 1
+                and id(data_type) not in seen
+            ):
+                seen.add(id(data_type))
+                data_type = data_type.data_types[0]
+            if data_type.is_list:
+                return True
+            source = data_type.reference.source if data_type.reference else None
+            if not isinstance(source, TypeAliasBase) or not source.fields or id(source) in seen:
+                return False
+            seen.add(id(source))
+            data_type = source.fields[0].data_type
 
     def _type_alias_needs_struct_conversion(self, source: TypeAliasBase) -> bool:
         """Follow alias targets without changing direct defaults or empty factories."""
