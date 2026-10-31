@@ -1872,6 +1872,7 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
+    from datamodel_code_generator._paths import concrete_parent  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
         publish_staged_files,
@@ -1892,8 +1893,8 @@ def _generate_with_atomic_remote_update(
             metadata,
             (
                 None if output is None else output.expanduser().resolve(strict=False),
-                None if output is None else output.parent.expanduser().resolve(strict=False),
-                None if metadata is None else metadata.parent.expanduser().resolve(strict=False),
+                None if output is None else concrete_parent(output),
+                None if metadata is None else concrete_parent(metadata),
             ),
             contexts,
             anchors,
@@ -2006,6 +2007,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     if not isinstance(input_, Path) or not input_.is_dir():
         return config
 
+    from datamodel_code_generator._paths import concrete  # noqa: PLC0415
     from datamodel_code_generator._source import DirectoryInputFilter  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -2016,7 +2018,11 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     for target, is_directory in ((output, output is not None and not output.suffix), (metadata, False)):
         if target is None:
             continue
-        paths = (target.resolve(),) if is_directory else (target.parent.resolve() / target.name, target.resolve())
+        paths = (
+            (target.resolve(),)
+            if is_directory
+            else (concrete(target, tilde="legacy-metadata-tilde-as-written"), target.resolve())
+        )
         for resolved in paths:
             if not resolved.is_relative_to(input_root):
                 continue

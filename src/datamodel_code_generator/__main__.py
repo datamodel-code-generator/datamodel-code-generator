@@ -707,9 +707,9 @@ def _get_job_config(  # noqa: PLR0913
 
 def _resolved_artifact_paths(path: Path | None) -> tuple[Path | None, Path | None]:
     """Resolve an artifact path and its parent, the root and anchor its staged publication binds to."""
-    if path is None:
-        return None, None
-    return path.expanduser().resolve(strict=False), path.expanduser().parent.resolve(strict=False)
+    from datamodel_code_generator._paths import concrete_parent  # noqa: PLC0415
+
+    return (None, None) if path is None else (path.expanduser().resolve(strict=False), concrete_parent(path))
 
 
 def _paths_overlap(first: Path, second: Path) -> bool:

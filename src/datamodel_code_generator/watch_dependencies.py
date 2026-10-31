@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._paths import existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ def _path_variants(path: Path) -> frozenset[Path]:
     """Keep lexical and resolved locations so symlink retargeting remains observable."""
     lexical_path = _lexical_path(path)
     try:
-        parent_resolved_path = lexical_path.parent.resolve(strict=False) / lexical_path.name
+        parent_resolved_path = concrete(lexical_path)
         resolved_path = lexical_path.resolve(strict=False)
     except (OSError, ValueError):
         return frozenset({lexical_path})
