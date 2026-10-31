@@ -1,16 +1,34 @@
-"""Back links of the generation graph: the children of a `Reference`, readable and writable by every layer.
+"""Back links of the generation graph: the children of a `Reference` and the holders of a node, for every layer.
 
 A data type that names a reference, and a model whose base names one, is a child of that reference
 (``Reference.children``), in the order the children were added. A data type is the child that names its reference
-through ``replace_reference``; every other child is a model, which ``Reference.iter_data_model_children`` yields. This
-module adds, drops and reads children without importing `reference`, `types` or `model`, which import it.
+through ``replace_reference``; every other child is a model, which ``Reference.iter_data_model_children`` yields.
+
+A data type node is held through its ``parent``: by the data type it is a member of, or by the field whose type it is,
+which its model holds. A field is the holder with ``invalidate_semantic_caches``; a model has no ``parent``. A base
+class node has no ``parent``: the models that list it in their ``base_classes`` hold it.
+
+This module adds, drops and reads children and walks the holders without importing `reference`, `types` or `model`,
+which import it.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-__all__ = ["add_child", "clear_children", "data_type_children", "drop_child", "drop_child_and_detached"]
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+__all__ = [
+    "add_child",
+    "base_owners",
+    "chain_root",
+    "clear_children",
+    "data_type_children",
+    "drop_child",
+    "drop_child_and_detached",
+    "nearest_field",
+]
 
 
 def add_child(reference: Any, child: object) -> None:
@@ -36,3 +54,26 @@ def clear_children(reference: Any) -> None:
 def data_type_children(reference: Any) -> list[Any]:
     """Return the data types that name ``reference``, in the order they were added, as a list of their own."""
     return [child for child in reference.children if hasattr(child, "replace_reference")]
+
+
+def nearest_field(node: object) -> Any | None:
+    """Return the field that holds ``node`` through the data types above it, or None when no field holds it."""
+    current = node
+    while (parent := getattr(current, "parent", None)) is not None:
+        if hasattr(parent, "invalidate_semantic_caches"):
+            return parent
+        current = parent
+    return None
+
+
+def chain_root(node: object) -> Any:
+    """Return the outermost holder of ``node``: the model of its field, else the top of its chain (``node`` itself)."""
+    current = node
+    while (parent := getattr(current, "parent", None)) is not None:
+        current = parent
+    return current
+
+
+def base_owners(node: object, models: Iterable[Any]) -> tuple[Any, ...]:
+    """Return the models of ``models`` that list ``node`` among their base classes, in their order."""
+    return tuple(model for model in models if any(base_class is node for base_class in model.base_classes))

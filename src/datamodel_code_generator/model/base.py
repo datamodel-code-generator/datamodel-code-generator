@@ -34,8 +34,11 @@ from typing_extensions import Self, deprecated, final, override
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
-from datamodel_code_generator._graph_links import add_child, data_type_children
-from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
+from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
+from datamodel_code_generator._internal_utils import (
+    get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
+    to_hashable,
+)
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import (
     MemoTable,
@@ -2851,23 +2854,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
         for child in data_type_children(self.reference):
-            owner_model = get_most_of_parent(child, DataModel)
-            if isinstance(owner_model, DataModel):
+            field = nearest_field(child)
+            if isinstance(owner_model := chain_root(child), DataModel):
                 if owner_model not in models:
                     continue
                 owner_models = (owner_model,)
             else:
-                owner_models = tuple(
-                    model for model in models if any(base_class is child for base_class in model.base_classes)
-                )
+                owner_models = base_owners(child, models)
             if not owner_models:
                 continue
             child.replace_reference(new_ref)
-            current: DataType | DataModelFieldBase = child
-            while isinstance(parent := current.parent, DataType):
-                current = parent
-            if isinstance(parent, DataModelFieldBase):
-                parent.invalidate_semantic_caches(invalidate_parent=False)
+            if field is not None:
+                field.invalidate_semantic_caches(invalidate_parent=False)
             for owner_model in owner_models:
                 owner_model.invalidate_render_caches()
 

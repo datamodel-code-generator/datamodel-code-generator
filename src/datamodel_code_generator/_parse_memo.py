@@ -32,6 +32,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
+from datamodel_code_generator._graph_links import nearest_field
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Hashable, Iterable
 
@@ -158,12 +160,8 @@ class ParseMemo:
             if (fields := readers.get(key)) is not None:
                 for field in tuple(fields.values()):
                     self.bump_field(field)
-        current = node
-        while (parent := getattr(current, "parent", None)) is not None:
-            if hasattr(parent, "invalidate_semantic_caches"):
-                self.bump_field(parent)
-                return
-            current = parent
+        if (field := nearest_field(node)) is not None:
+            self.bump_field(field)
 
     def revision(self, field: Any) -> tuple[int, int]:
         """Return the revisions of a field and of its model's own attributes."""

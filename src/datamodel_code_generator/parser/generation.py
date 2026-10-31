@@ -57,9 +57,12 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._graph_links import (
     add_child,
+    base_owners,
+    chain_root,
     clear_children,
     data_type_children,
     drop_child_and_detached,
+    nearest_field,
 )
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
@@ -2299,21 +2302,15 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate()
 
     def _cache_owners_for_data_type(self, data_type: object) -> CacheOwners:
-        current: Any = data_type
-        owner_field: DataModelFieldBase | None = None
-        while (parent := getattr(current, "parent", None)) is not None:
-            current = parent
-            if owner_field is None and hasattr(current, "invalidate_semantic_caches"):
-                owner_field = current
+        owner_field: DataModelFieldBase | None = nearest_field(data_type)
+        current = chain_root(data_type)
         owner_model = current if hasattr(current, "invalidate_render_caches") else None
         if owner_model is not None:
             return owner_field, owner_model
         if not self.models:
             return owner_field, None
         if self._dirty and self._defer_refresh_depth:
-            return owner_field, tuple(
-                model for model in self.models if any(base_class is current for base_class in model.base_classes)
-            )
+            return owner_field, base_owners(current, self.models)
         facts = self.current_facts()
         match facts.base_owner_model_ids_by_object.get(id(current)):
             case None:
