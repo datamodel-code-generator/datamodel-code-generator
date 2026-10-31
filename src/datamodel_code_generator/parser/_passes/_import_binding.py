@@ -4,7 +4,7 @@ The rule of the import (``reference_import_target``, under an ``ImportPathRow``)
 module's import ledger (``register_reference_import``), the module that imports the generated base class
 (``_generic_base_class_module``) and the writes of the expression a data type names its model by
 (``set_reference_expression``, ``set_reference_expressions``, ``import_references``), through the generation store.
-The import path text is ``_shared.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
+The import path text is ``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
 """
 
 from __future__ import annotations
@@ -13,18 +13,17 @@ from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol, final
 
-from datamodel_code_generator._module_paths import written_name
+from datamodel_code_generator._module_paths import (
+    exact_import,
+    is_ancestor_package_reference,
+    join_module,
+    relative,
+    written_name,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model.base import BaseClassDataType
-from datamodel_code_generator.parser._passes._shared import (
-    _get_data_type_target_full_name,
-    _get_model_module_name,
-    _join_module,
-    exact_import,
-    is_ancestor_package_reference,
-    relative,
-)
+from datamodel_code_generator.parser._passes._shared import _get_data_type_target_full_name, _get_model_module_name
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping
@@ -98,7 +97,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     if base_class and row == "reference":
         left, right = relative(current_module_name, target_full_name)
         from_ = (
-            left if is_ancestor_package_reference(current_module_name, target_full_name) else _join_module(left, right)
+            left if is_ancestor_package_reference(current_module_name, target_full_name) else join_module(left, right)
         )
         import_ = name
         full_path = from_, import_
@@ -121,7 +120,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
 
         if from_ and not use_exact and (ref_module in internal_modules or is_module_class_collision):
-            from_ = _join_module(from_, import_)
+            from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
@@ -178,7 +177,7 @@ def register_reference_import(  # noqa: PLR0913
 def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
     """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
     from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
-    return _join_module(from_, base_module[-1].replace(".py", ""))
+    return join_module(from_, base_module[-1].replace(".py", ""))
 
 
 class ReferenceExpressionHost(Protocol):

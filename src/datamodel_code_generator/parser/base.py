@@ -67,7 +67,9 @@ from datamodel_code_generator._module_paths import (
     expanded_path,
     is_below,
     is_package_init,
+    join_module,
     normalized_path,
+    relative,
     written_names,
 )
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
@@ -185,7 +187,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _forward_enum_member_literals,
     _has_root_field_constraints,
     _hidden_type_names,
-    _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
@@ -199,7 +200,6 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
     register_runtime_expression,
-    relative,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -1797,7 +1797,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 left, right = relative(
                     original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
                 )
-                from_ = _join_module(left, right)
+                from_ = join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"

@@ -24,7 +24,11 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
-from datamodel_code_generator._module_paths import dotted_name, is_below
+from datamodel_code_generator._module_paths import (
+    dotted_name,
+    exact_import,  # noqa: F401  # Preserve the established _shared name.
+    is_ancestor_package_reference,  # noqa: F401  # Preserve the established _shared name.
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
@@ -172,91 +176,6 @@ def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
     ):
         return None
     return data_type
-
-
-def relative(
-    current_module: str,
-    reference: str,
-    *,
-    reference_is_module: bool = False,
-    current_is_init: bool = False,
-) -> tuple[str, str]:
-    """Return the module and name that ``current_module`` imports ``reference`` by, relative to it.
-
-    ``reference`` is a ``module.Class`` path, or a module path with ``reference_is_module``; ``current_is_init`` makes
-    ``current_module`` a package ``__init__``.
-    """
-    if current_is_init:
-        current_module_path = [*current_module.split("."), "__init__"] if current_module else ["__init__"]
-    else:
-        current_module_path = current_module.split(".") if current_module else []
-
-    if reference_is_module:
-        reference_path = reference.split(".") if reference else []
-        name = reference_path[-1] if reference_path else ""
-    else:
-        *reference_path, name = reference.split(".")
-
-    if current_module_path == reference_path:
-        return "", ""
-
-    i = 0
-    for x, y in zip(current_module_path, reference_path, strict=False):
-        if x != y:
-            break
-        i += 1
-
-    left = "." * (len(current_module_path) - i)
-    right = ".".join(reference_path[i:])
-
-    if not left:
-        left = "."
-    if not right:
-        right = name
-    elif "." in right:
-        extra, right = right.rsplit(".", 1)
-        left += extra
-
-    return left, right
-
-
-def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
-    """Check if reference is in an ancestor package (__init__.py).
-
-    When the reference's module path is an ancestor (prefix) of the current module,
-    the reference is in an ancestor package's __init__.py file.
-
-    Args:
-        current_module: The current module path (e.g., "v0.mammal.canine")
-        reference: The full reference path (e.g., "v0.Animal")
-
-    Returns:
-        True if the reference is in an ancestor package, False otherwise.
-
-    Examples:
-        - current="v0.animal", ref="v0.Animal" -> True (immediate parent)
-        - current="v0.mammal.canine", ref="v0.Animal" -> True (grandparent)
-        - current="v0.animal", ref="v0.animal.Dog" -> False (same or child)
-        - current="pets", ref="Animal" -> True (root package is immediate parent)
-        - current="v0.mammal.canine", ref="Animal" -> True (root package is an ancestor)
-    """
-    *reference_path, _ = reference.split(".")
-    return is_below(tuple(current_module.split(".")) if current_module else (), tuple(reference_path))
-
-
-def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
-    """Create exact import path to avoid relative import issues."""
-    if from_ == len(from_) * ".":
-        # Prevents "from . import foo" becoming "from ..foo import Foo"
-        # or "from .. import foo" becoming "from ...foo import Foo"
-        # when our imported module has the same parent
-        return f"{from_}{import_}", short_name
-    return f"{from_}.{import_}", short_name
-
-
-def _join_module(from_: str, name: str) -> str:
-    """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
-    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
 
 
 def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
