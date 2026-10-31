@@ -620,18 +620,22 @@ def _is_empty(node: ast.AST) -> bool:
     return False
 
 
+def _conjuncts(test: ast.expr) -> list[ast.expr]:
+    """Return the operands of ``test`` as a conjunction, those of a nested ``and`` included."""
+    if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.And):
+        return [operand for value in test.values for operand in _conjuncts(value)]
+    return [test]
+
+
 def _guarded_read(node: ast.IfExp, classes: Iterable[str]) -> bool:
     """Return whether ``node`` reads a value, or calls one of its methods, only when it is a ``classes`` instance.
 
     Its fallback is ``None`` or an empty display (``mapping-guard``).
     """
-    test = node.test
     guarded: set[str] = set()
-    for check in test.values if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.And) else [test]:
+    for check in _conjuncts(node.test):
         match check:
-            case ast.Call(func=callee, args=[value, kind]) if (
-                _last_name(callee) == "isinstance" and _last_name(kind) in classes
-            ):
+            case ast.Call(func=ast.Name(id="isinstance"), args=[value, kind]) if _last_name(kind) in classes:
                 guarded.add(ast.unparse(value.target if isinstance(value, ast.NamedExpr) else value))
     read = node.body
     if isinstance(read, ast.Call) and isinstance(read.func, ast.Attribute):
