@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
-from datamodel_code_generator._target_unicode import is_dotted_python_name
+from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -275,31 +275,31 @@ def _normalize_string(value: str) -> str:
     return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
 
 
-def _normalized_safe_public_type_name(value: object) -> str | None:
-    """Return a normalized bare or dotted public type name when safe.
+def _normalized_safe_python_name(value: object, *, dotted: bool = False) -> str | None:
+    """Return untrusted data as a plain string when it is a Python name, or Python names joined by dots with ``dotted``.
 
-    Built-in scalar and TypedDict template settings accept simple names such as
-    ``str`` and ``datetime.date``.  More expressive type syntax belongs to the
-    parser-owned boundary above; accepting it here would require parsing source
-    at runtime and would make this public extension point an execution sink.
+    Only a ``str`` counts, read without its subclass's overrides, and its names follow the running interpreter's
+    Unicode (row ``legacy-host-identifiers``). Template keys, option names and the simple type names of built-in
+    templates (``str``, ``datetime.date``) take this form; more expressive type syntax belongs to the parser-owned
+    boundary above, since accepting it here would parse source at runtime and make this public extension point an
+    execution sink.
     """
     if not isinstance(value, str):
         return None
     normalized_value = _normalize_string(value)
-    if is_dotted_python_name(normalized_value, rule="legacy-host-identifiers"):
-        return normalized_value
-    return None
+    is_name = is_dotted_python_name if dotted else is_python_name
+    return normalized_value if is_name(normalized_value, rule="legacy-host-identifiers") else None
 
 
 def is_safe_public_type_name(value: object) -> bool:
     """Return whether public data is a bare or dotted Python identifier."""
-    return _normalized_safe_public_type_name(value) is not None
+    return _normalized_safe_python_name(value, dotted=True) is not None
 
 
 def represent_untrusted_public_type_name(value: Any) -> str:
     """Render a public type name without admitting executable source syntax."""
     if isinstance(value, str):
-        if normalized_value := _normalized_safe_public_type_name(value):
+        if normalized_value := _normalized_safe_python_name(value, dotted=True):
             return normalized_value
         return represent_untrusted_python_value(_normalize_string(value))
     return represent_untrusted_python_value(value)

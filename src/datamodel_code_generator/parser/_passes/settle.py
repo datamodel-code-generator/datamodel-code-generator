@@ -16,7 +16,7 @@ from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.model.base import DataModel, sort_data_models_for_mro
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import ReuseGroups
@@ -162,7 +162,7 @@ MAX_RECURSION_COUNT: int = sys.getrecursionlimit()
 def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
     """Return how a message names the model at a reference path: its schema location, or the path without one."""
     location = None if (model := models.get(path)) is None else location_of(model.reference)
-    return redact_reference(path if location is None else str(location))
+    return named_location(location, path)
 
 
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915

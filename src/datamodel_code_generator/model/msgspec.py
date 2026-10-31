@@ -20,7 +20,7 @@ from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._target_unicode import is_identifier, is_python_name
+from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
@@ -78,7 +78,7 @@ from datamodel_code_generator.model.imports import (
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.model.types import DataTypeManager as _DataTypeManager
 from datamodel_code_generator.python_literal import (
-    _normalize_string,
+    _normalized_safe_python_name,
     represent_python_value,
     represent_untrusted_python_value,
 )
@@ -579,12 +579,8 @@ class Struct(DataModel):
         template_data = super()._builtin_template_data()
         base_class_kwargs: dict[str, str] = {}
         for key, value in _user_struct_options(self).items():
-            if not isinstance(key, str):
-                continue
-            normalized_key = _normalize_string(key)
-            if not is_python_name(normalized_key, rule="legacy-host-identifiers"):
-                continue
-            base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
+            if (normalized_key := _normalized_safe_python_name(key)) is not None:
+                base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
         base_class_kwargs.update(self._internal_template_data["base_class_kwargs"])
         return {**template_data, "base_class_kwargs": base_class_kwargs}
 

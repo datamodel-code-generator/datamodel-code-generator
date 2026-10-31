@@ -35,7 +35,7 @@ from datamodel_code_generator._json_pointer import escape_token, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import strongly_connected_components
-from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_graph import (
     DocumentId,
@@ -1141,7 +1141,7 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
         parser,
         ref_dict,
         current_dict,
-        where or str(obj.schema_location or redact_reference(obj.ref)),
+        where or named_location(obj.schema_location, redact_reference(obj.ref), row="legacy-unredacted-locations"),
         siblings_are_parts=parser._ref_siblings_are_parts_of(obj),  # noqa: SLF001
     )
     merged.pop("$ref", None)
