@@ -8,6 +8,7 @@ flags itself, so the slots of each kind are listed once and a slot is added in o
 
 from __future__ import annotations
 
+from functools import cache
 from operator import attrgetter
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, final
@@ -23,11 +24,13 @@ __all__ = [
     "GENERIC_CONTAINERS",
     "ITEM_CONTAINERS",
     "MAPPINGS",
+    "SEQUENCES",
     "SETS",
     "UNHASHABLE_CONTAINERS",
     "WRITTEN_CONTAINERS",
     "ContainerKind",
     "ContainerSlot",
+    "LegacyKindRow",
 ]
 
 ContainerSlot: TypeAlias = Literal["frozen_set", "set", "sequence", "list", "mapping", "dict", "tuple"]
@@ -61,6 +64,35 @@ CONTAINER_CLASSES: Final[Mapping[tuple[str | None, str], ContainerSlot]] = Mappi
 module for a builtin): a set under ``--use-generic-container-types`` is a frozen set, and a list or dict an abstract
 ``Sequence`` or ``Mapping``, so each class reads as the slot that writes it there."""
 
+LegacyKindRow: TypeAlias = Literal[
+    "legacy-abstract-containers-as-unions",
+    "legacy-frozen-set-not-an-array",
+    "legacy-all-of-items-not-in-frozen-sets",
+    "legacy-unique-tuple-inside-sequence",
+    "legacy-collapse-beside-lists-and-dicts",
+]
+"""A decision that keeps the slots it read before its kind was named, which ``ContainerKind.without`` leaves out.
+
+- `legacy-abstract-containers-as-unions`: the keywords a field's type consumes or enforces itself read a ``Sequence``
+  or ``Mapping`` through to its members, like a union.
+- `legacy-frozen-set-not-an-array`: the uniqueItems checks of ``--generate-schema-validators`` do not read a frozen
+  set as an array.
+- `legacy-all-of-items-not-in-frozen-sets`: an allOf root types the items of the array it holds in any array but a
+  frozen set.
+- `legacy-unique-tuple-inside-sequence`: the tuple of a uniqueItems array is looked up inside a ``Sequence`` too.
+- `legacy-collapse-beside-lists-and-dicts`: under ``--field-constraints``, collapse keeps a constrained root model
+  beside a list, a dict or a union only.
+"""
+
+_LEFT_OUT: Final[Mapping[LegacyKindRow, frozenset[ContainerSlot]]] = MappingProxyType({
+    "legacy-abstract-containers-as-unions": frozenset(("sequence", "mapping")),
+    "legacy-frozen-set-not-an-array": frozenset(("frozen_set",)),
+    "legacy-all-of-items-not-in-frozen-sets": frozenset(("frozen_set",)),
+    "legacy-unique-tuple-inside-sequence": frozenset(("sequence",)),
+    "legacy-collapse-beside-lists-and-dicts": frozenset(("frozen_set", "set", "sequence", "mapping", "tuple")),
+})
+"""The slots each legacy row leaves out of the kind its decision names."""
+
 
 @final
 class ContainerKind:
@@ -78,6 +110,16 @@ class ContainerKind:
         """Return whether the flags of ``node`` put it in a container of this kind."""
         return any(self._flags_of(node))
 
+    def without(self, row: LegacyKindRow) -> ContainerKind:
+        """Return this kind without the slots that the legacy ``row`` leaves out."""
+        return _kind_without(self.slots, row)
+
+
+@cache
+def _kind_without(slots: frozenset[ContainerSlot], row: LegacyKindRow) -> ContainerKind:
+    """Return the kind of ``slots`` but those ``row`` leaves out, in the order of ``CONTAINER_FLAGS``."""
+    return ContainerKind(*(slot for slot in CONTAINER_FLAGS if slot in slots and slot not in _LEFT_OUT[row]))
+
 
 MAPPINGS: Final = ContainerKind("mapping", "dict")
 """A dict or a ``Mapping``: values under keys, which a type hint writes after the key type."""
@@ -94,3 +136,6 @@ UNHASHABLE_CONTAINERS: Final = ContainerKind("set", "sequence", "list", "mapping
 do."""
 SETS: Final = ContainerKind("frozen_set", "set")
 """A set or a frozen set, whose items must hash."""
+SEQUENCES: Final = ContainerKind("sequence", "list")
+"""A list or a ``Sequence``: items in order, duplicates kept, as a root model's sequence interface reads them (a set has
+no order; a tuple is a form of its own)."""
