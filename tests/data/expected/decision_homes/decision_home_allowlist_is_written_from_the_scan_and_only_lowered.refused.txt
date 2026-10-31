@@ -1,3 +1,3 @@
 ('other.py', 'Other.method', 'sample.null-test')
-('other.py', 'package_files', 'sample.init-test')
+('other.py', 'subscripts', 'sample.hand-subscript')
 unchanged: True

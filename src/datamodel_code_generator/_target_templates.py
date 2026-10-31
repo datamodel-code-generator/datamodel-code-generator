@@ -144,3 +144,8 @@ class TemplateOverlay:
 def builtin_role(_name: str, compiled: Callable[..., str]) -> Callable[..., str]:
     """Return the compiled builtin renderer of a role, for a target without a template directory."""
     return compiled
+
+
+def roles(templates: TemplateOverlay | None) -> Role:
+    """Return the roles a target renders through: its template directory's overrides, or the builtins without one."""
+    return builtin_role if templates is None else templates.role

@@ -217,3 +217,24 @@ def prefixes(path, package, other):
         path[: len(package)] < package,
         path[:-1] == package,
     )
+
+
+def subscripts(item, module, other):
+    """Write subscripts of listed types around a value, also after a constant argument, in a chain and after a call that
+    names the type; a constant or closed subscript, another type, an index and a type held in a variable do not count.
+    """
+    return (
+        f"Optional[{item}]",
+        f"typing.Optional[list[int], {item}]",
+        f"dict[str, {item}] | None",
+        "Optional[" + item + ", " + other + "]",
+        f"{module.name('typing', 'Final')}[{item}]",
+        f"{module.name('typing', 'Final')}[int] | {other}",
+        f"Optional[int] | {item}",
+        f"MyOptional[{item}]",
+        f"items[{item}]",
+        f"{module.name('typing', 'Any')}[{item}]",
+        f"{module.name('typing', 'Final')}({item})",
+        f"{other}[{item}]",
+        "Optional[" + "int]",
+    )

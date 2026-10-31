@@ -849,6 +849,55 @@ exclude = ["_runtime/", "__main__.py:_format_toml_value"]
 what = "joins expression texts into a call, a subscript or a tuple, list, set or dict display itself; call _python_syntax.py (a TOML array is not Python)"
 audit = "C13"
 
+[homes.Hx-python-syntax.signatures.hand-subscript]
+kind = "subscript"
+names = [
+    "AbstractAsyncContextManager",
+    "AbstractContextManager",
+    "AbstractSet",
+    "Annotated",
+    "AsyncGenerator",
+    "AsyncIterable",
+    "AsyncIterator",
+    "Awaitable",
+    "Callable",
+    "ClassVar",
+    "DefaultDict",
+    "Dict",
+    "Final",
+    "FrozenSet",
+    "Generator",
+    "Iterable",
+    "Iterator",
+    "List",
+    "Literal",
+    "Mapping",
+    "MutableMapping",
+    "MutableSequence",
+    "NotRequired",
+    "Optional",
+    "ReadOnly",
+    "Required",
+    "RootModel",
+    "Sequence",
+    "SerializeAsAny",
+    "Set",
+    "Tuple",
+    "Type",
+    "Union",
+    "Unpack",
+    "defaultdict",
+    "dict",
+    "frozenset",
+    "list",
+    "set",
+    "tuple",
+    "type",
+]
+exclude = ["_runtime/"]
+what = "writes a type subscript itself; call _python_syntax.subscript_text"
+audit = "C22"
+
 [homes.Hx-python-syntax.signatures.hand-keyword]
 kind = "keyword"
 exclude = [
@@ -1512,6 +1561,24 @@ strings = [
 paths = ["_client/", "_fastapi/"]
 what = "spells the constructor of a runtime record by hand; build the record and call _target_render.py:runtime_record"
 audit = "C26-9"
+
+[homes.Hx-target-files]
+decision = "how a target turns its output into files: the roles it renders its modules through (a template directory's overrides, or the builtins without one) and the copies of the runtime modules it declares, which the coordinator heads and encodes without formatting"
+core = ["_target_templates.py:roles", "_target_render.py:runtime_files"]
+adapters = []
+
+[homes.Hx-target-files.signatures.role-pick]
+kind = "name"
+names = ["builtin_role"]
+what = "picks the roles of a target itself; call _target_templates.py:roles"
+audit = "C22-G2"
+
+[homes.Hx-target-files.signatures.runtime-copy]
+kind = "call"
+names = ["RenderedFile"]
+keywords = ["verbatim"]
+what = "wraps a runtime copy as a file itself; call _target_render.py:runtime_files"
+audit = "C22-G2"
 
 [homes.Hx-binding-values]
 decision = "the values a protocol helper's bindings write into a later request: each selector's value read from a response that must give it, and a read value that makes a path segment a dot segment once encoded refused as a value the server gave"
