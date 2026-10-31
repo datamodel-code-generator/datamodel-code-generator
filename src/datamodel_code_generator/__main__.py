@@ -121,6 +121,7 @@ from datamodel_code_generator._cli_config import (
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
+from datamodel_code_generator._paths import concrete_parent, resolved
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -476,7 +477,7 @@ def _validate_remote_lock_artifacts(
             ("model metadata", config.emit_model_metadata),
         ):
             if path is not None:
-                artifacts.append((name, kind, path.expanduser().resolve(strict=False)))
+                artifacts.append((name, kind, resolved(path)))
     for (name, _, _), plan in planned_entries:
         if not plan.active:
             continue
@@ -707,9 +708,7 @@ def _get_job_config(  # noqa: PLR0913
 
 def _resolved_artifact_paths(path: Path | None) -> tuple[Path | None, Path | None]:
     """Resolve an artifact path and its parent, the root and anchor its staged publication binds to."""
-    from datamodel_code_generator._paths import concrete_parent  # noqa: PLC0415
-
-    return (None, None) if path is None else (path.expanduser().resolve(strict=False), concrete_parent(path))
+    return (None, None) if path is None else (resolved(path), concrete_parent(path))
 
 
 def _paths_overlap(first: Path, second: Path) -> bool:
@@ -744,10 +743,10 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
             msg = f"Job '{plan.name}' input does not exist: {config.input}"
             raise Error(msg)
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
-        inputs.append((plan.name, config.input.expanduser().resolve()))
+        inputs.append((plan.name, resolved(config.input)))
         artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
         if (target := _target_output(config)) is not None:
-            artifacts.append((plan.name, target[0], target[1].expanduser().resolve(strict=False)))
+            artifacts.append((plan.name, target[0], resolved(target[1])))
         if plan.resolved_model_metadata_root is not None:
             artifacts.append((plan.name, "model metadata", plan.resolved_model_metadata_root))
 
@@ -2049,7 +2048,7 @@ def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
     for staged_plan in staged_plans:
         metadata = None if staged_plan.staging is None else staged_plan.staging.metadata
         for file in _staged_files(staged_plan):
-            concrete_target = file.target.expanduser().resolve(strict=False)
+            concrete_target = resolved(file.target)
             artifact_root = cast(
                 "Path",
                 staged_plan.plan.resolved_model_metadata_root

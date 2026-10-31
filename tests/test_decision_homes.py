@@ -73,6 +73,8 @@ ALLOWED = """
 "sample.prefix-slice" = { home = "sample", count = 2, audit = "X-21" }
 [allow."other.py"."subscripts"]
 "sample.hand-subscript" = { home = "sample", count = 6, audit = "X-22" }
+[allow."other.py"."forms"]
+"sample.expanded-resolve" = { home = "sample", count = 2, audit = "X-23" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

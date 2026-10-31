@@ -517,14 +517,6 @@ class _StructuredOutputUnavailableError(Error):
     """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
 
 
-def _normalized_absolute_path(path: Path, *, resolve_aliases: bool = False) -> Path:
-    """Return a normalized absolute path, resolving aliases only when needed."""
-    expanded_path = path.expanduser()
-    if resolve_aliases:
-        return expanded_path.resolve(strict=False)
-    return Path(os.path.abspath(expanded_path))  # noqa: PTH100
-
-
 def _validate_generation_path_conflicts(  # noqa: PLR0912
     input_: _GenerationInput,
     output: Path | None,
@@ -534,13 +526,10 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
     if output is None and model_metadata is None and lockfile is None:
         return
 
+    from datamodel_code_generator._paths import lexical, resolved  # noqa: PLC0415
+
     targets = [
-        (
-            label,
-            path,
-            _normalized_absolute_path(path),
-            _normalized_absolute_path(path, resolve_aliases=True),
-        )
+        (label, path, lexical(path), resolved(path))
         for label, path in (
             ("Output", output),
             ("Model metadata", model_metadata),
@@ -585,8 +574,8 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
             return
 
     for input_path in input_paths:
-        absolute_input = _normalized_absolute_path(input_path)
-        resolved_input = _normalized_absolute_path(input_path, resolve_aliases=True)
+        absolute_input = lexical(input_path)
+        resolved_input = resolved(input_path)
         input_is_directory = absolute_input.is_dir() or resolved_input.is_dir()
         for label, _, target, resolved_target in targets:
             if input_is_directory:
@@ -1873,7 +1862,7 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
-    from datamodel_code_generator._paths import concrete_parent  # noqa: PLC0415
+    from datamodel_code_generator._paths import concrete_parent, resolved  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
         publish_staged_files,
@@ -1893,7 +1882,7 @@ def _generate_with_atomic_remote_update(
             output,
             metadata,
             (
-                None if output is None else output.expanduser().resolve(strict=False),
+                None if output is None else resolved(output),
                 None if output is None else concrete_parent(output),
                 None if metadata is None else concrete_parent(metadata),
             ),
@@ -2117,15 +2106,15 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         )
         raise Error(msg)  # pragma: no cover
 
+    from datamodel_code_generator._paths import resolved  # noqa: PLC0415
+
     match input_:
         case Path() as input_path if not input_path.is_absolute():
-            input_ = (caller_cwd / input_path.expanduser()).resolve()
+            input_ = resolved(input_path, caller_cwd)
         case [Path(), *_] as input_paths if input_file_type != InputFileType.MCPTools:
             input_paths = cast("list[Path]", input_paths)
             if any(not path.is_absolute() for path in input_paths):
-                input_ = [
-                    path if path.is_absolute() else (caller_cwd / path.expanduser()).resolve() for path in input_paths
-                ]
+                input_ = [path if path.is_absolute() else resolved(path, caller_cwd) for path in input_paths]
 
     remote_lock_resolved = config.remote_lock_resolved
     config = _resolve_generation_remote_lock(input_, config, caller_cwd)

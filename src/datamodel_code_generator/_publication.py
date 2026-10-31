@@ -18,7 +18,7 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
-from datamodel_code_generator._paths import concrete, existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, resolved
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -172,10 +172,8 @@ def staging_directory_for(
     output is staged beside the output instead, so a render writes nothing into it. The directory is made in the
     deepest existing parent, by row ``legacy-staging-parent-may-be-a-file`` of ``existing_ancestor``.
     """
-    base = Path() if cwd is None else cwd
-    full = base / target.expanduser()
-    location = Path(os.path.abspath(full))  # noqa: PTH100
-    if around is not None and (outer := (base / around.expanduser()).resolve()) in full.resolve().parents:
+    location = lexical(target, cwd)
+    if around is not None and (outer := resolved(around, cwd)) in resolved(target, cwd).parents:
         location = outer
     parent = existing_ancestor(
         location.parent, test="legacy-staging-parent-may-be-a-file", at_root="legacy-unbounded-ancestor-walk"

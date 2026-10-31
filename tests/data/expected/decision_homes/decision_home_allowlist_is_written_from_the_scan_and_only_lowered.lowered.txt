@@ -31,6 +31,9 @@
 [allow."other.py"."fold"]
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 
+[allow."other.py"."forms"]
+"sample.expanded-resolve" = { home = "sample", count = 2, audit = "X-23" }
+
 [allow."other.py"."guarded_reads"]
 "sample.mapping-guard" = { home = "sample", count = 6, audit = "X-19" }
 

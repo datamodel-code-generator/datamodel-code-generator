@@ -2478,6 +2478,23 @@ exclude = ["_target_cli.py:_stage_implementations"]
 what = "resolves the parent of a path itself; call _paths.py:concrete or _paths.py:concrete_parent"
 audit = "C17-2"
 
+[homes.Hx-path-forms]
+decision = "the lexical and the resolved form of a spelled path: ~ expanded and a relative spelling joined to the caller's directory or the working directory, then its dot components folded as written (lexical, symlinks kept) or its symlinks resolved (resolved)"
+core = ["_paths.py:lexical", "_paths.py:resolved"]
+
+[homes.Hx-path-forms.signatures.lexical-form]
+kind = "call"
+names = ["abspath"]
+what = "spells the lexical form of a path itself; call _paths.py:lexical"
+audit = "C17-1"
+
+[homes.Hx-path-forms.signatures.resolved-form]
+kind = "name"
+names = ["resolve"]
+receiver_calls = ["expanduser"]
+what = "spells the resolved form of a path itself; call _paths.py:resolved"
+audit = "C17-4"
+
 [homes.Hx-json-output]
 decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with, also for a document whose array is written item by item"
 core = ["_json_output.py:dump_json", "_json_output.py:schema_document", "_json_output.py:write_streamed_json"]
