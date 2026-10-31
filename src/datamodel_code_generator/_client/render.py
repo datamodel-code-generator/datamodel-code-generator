@@ -2157,7 +2157,7 @@ class _Registry(_Typing):
 
         `null` marks the media of an optional body that sends None as JSON null; any other leaves None out.
         """
-        kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
+        kind = media.kind
         entries: list[tuple[str, str]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
         if null:
             entries.append(("null=", "True"))

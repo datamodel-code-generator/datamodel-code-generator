@@ -16,7 +16,7 @@ from datamodel_code_generator._client.codec_plan import (
     Values,
 )
 from datamodel_code_generator._client.naming import numbered
-from datamodel_code_generator._openapi_codec_plan import EXTRAS
+from datamodel_code_generator._openapi_codec_plan import EXTRAS, codec_module
 from datamodel_code_generator._python_syntax import (
     call_text,
     from_import,
@@ -160,7 +160,7 @@ class _Renderer:
             )
             accessors.append(UseAccessors(use.use, name))
         names = sorted({runtime.codec, *self.records})
-        imports = [from_import(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
+        imports = [from_import(f"..{codec_module(runtime.module)}", names)] if self.plan.uses else []
         if self.plan.extras:
             imports.append(from_import(f"..{EXTRAS.module}", [EXTRAS.serializer]))
         source = templated(

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
-from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -67,7 +67,7 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none
+from datamodel_code_generator._target_types import admits_none, type_identity
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
@@ -100,16 +100,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
 _METADATA: Final = frozenset({"Field", "StringConstraints"})
-_CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "list"): "is_list",
-    (None, "set"): "is_set",
-    (None, "frozenset"): "is_frozen_set",
-    (None, "dict"): "is_dict",
-    ("collections.abc", "Sequence"): "is_sequence",
-    ("typing", "Sequence"): "is_sequence",
-    ("collections.abc", "Mapping"): "is_mapping",
-    ("typing", "Mapping"): "is_mapping",
-}
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
@@ -294,9 +284,7 @@ class Module(TargetModule):
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
-        base = value.base
-        identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
-        flag = _CONTAINERS[(None, base.name) if isinstance(base, BuiltinType) else identity]
+        flag = CONTAINER_FLAGS[CONTAINER_CLASSES[type_identity(value.base)]]
         if flag in MAPPINGS.flags:
             return self.container(flag, arguments[-1], key=arguments[0])
         return self.container(flag, arguments[0])
@@ -1396,7 +1384,7 @@ def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
     for item in body.media:
-        entries = [f"media_type={item.media_type!r}", f"kind={_request_kind(item)!r}"]
+        entries = [f"media_type={item.media_type!r}", f"kind={item.kind!r}"]
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
@@ -1578,7 +1566,3 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
 
 def _requirement(requirement: Requirement) -> str:
     return tuple_display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
-
-
-def _request_kind(media: MediaSpec) -> str:
-    return media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"

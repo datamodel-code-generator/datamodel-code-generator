@@ -6,8 +6,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
 from datamodel_code_generator._client.model_facts import _FALSE, _name
+from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, MAPPINGS
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
+from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._openapi_codec_plan import codec_file, extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._runtime.model_codecs.media import JSONKind
@@ -22,12 +24,13 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
-from datamodel_code_generator._target_types import is_none
+from datamodel_code_generator._target_types import container_slot, is_none
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
 
     from datamodel_code_generator._client.model_facts import ModelFacts
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._openapi_wire_plan import CodecReason, WirePlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -43,17 +46,13 @@ CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
 ]
 Shape: TypeAlias = "Class | Items | Fixed | Values | Choice | None"
-_SEQUENCES: Final = {
-    "list": "list",
-    "typing.List": "list",
-    "typing.Sequence": "list",
-    "collections.abc.Sequence": "list",
+_ITEM_KINDS: Final[dict[ContainerSlot, str]] = {
+    "frozen_set": "frozenset",
     "set": "set",
-    "frozenset": "frozenset",
-    "tuple": "tuple",
+    "sequence": "list",
+    "list": "list",
 }
 _PAIR: Final = 2
-_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping"})
 _LEAVES: Final = frozenset({
     "bytes",
     "datetime.datetime",
@@ -76,8 +75,11 @@ _PLAIN: Final = frozenset({
 })
 _ALL_KINDS: Final[tuple[JSONKind, ...]] = get_args(JSONKind)
 _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
-    **dict.fromkeys(_MAPPINGS | {"dict"}, ("object",)),
-    **dict.fromkeys(_SEQUENCES, ("array",)),
+    **{
+        dotted_name(*key): ("object",) if slot in MAPPINGS.slots else ("array",)
+        for key, slot in CONTAINER_CLASSES.items()
+    },
+    **dict.fromkeys(("typing.List", "tuple"), ("array",)),
     "bool": ("boolean",),
     "int": ("number",),
     "float": ("number",),
@@ -100,7 +102,7 @@ class CodecRuntime:
     @property
     def modules(self) -> tuple[str, ...]:
         """Return the runtime modules a package of the backend copies for its codec."""
-        return tuple(f"model_codecs/{name}.py" for name in (*self.imports, self.module))
+        return tuple(map(codec_file, (*self.imports, self.module)))
 
 
 CODEC_RUNTIMES: Final[dict[CodecBackend, CodecRuntime]] = {
@@ -282,16 +284,16 @@ class _Planner:
         if isinstance(value, GenericType):
             if value.tuple_form == "fixed":
                 return Fixed(tuple(self.shape(item, schema) for item in value.arguments))
-            name = _name(value.base)
-            if name in _MAPPINGS and len(value.arguments) == _PAIR:
+            slot = container_slot(value)
+            if slot in MAPPINGS.slots and len(value.arguments) == _PAIR:
                 key, item = value.arguments
                 if _name(key) not in {"str", "object", "typing.Any", "typing_extensions.Any"}:
                     self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
                 nested = self.shape(item, schema)
                 return None if nested is None else Values(nested)
-            if name in _SEQUENCES and len(value.arguments) == 1:
+            if (kind := _ITEM_KINDS.get(slot)) is not None and len(value.arguments) == 1:
                 item = self.shape(value.arguments[0], schema)
-                return None if item is None and _SEQUENCES[name] == "list" else Items(item, _SEQUENCES[name])
+                return None if item is None and kind == "list" else Items(item, kind)
             return None
         if isinstance(value, LiteralType):
             enums = [item for item in value.values if isinstance(item, GeneratedEnumMember)]
@@ -330,7 +332,7 @@ class _Planner:
                 return tuple(kind for kind, native in (("string", "str"), ("number", "int")) if native in kinds)
             return ("object",)
         if isinstance(value, GenericType):
-            return ("object",) if _name(value.base) in _MAPPINGS else ("array",)
+            return ("object",) if container_slot(value) in MAPPINGS.slots else ("array",)
         if isinstance(value, LiteralType):
             native = _literal_kind(value)
             return ("string",) if native == "str" else ("number",) if native == "int" else ()

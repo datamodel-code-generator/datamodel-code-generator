@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
     from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
+    from .positions import SecurityAlternatives
     from .responses import ResponseInfo
     from .retry import IdempotencyPlan
 
@@ -46,14 +47,6 @@ if TYPE_CHECKING:
 
         def encode(self, value: object, sent: str) -> tuple[object, str | None]:
             """Return a form-data body and the media type it is sent in."""
-            ...
-
-    class SecurityAlternatives(Protocol):
-        """An operation's declared security: its OR alternatives of AND requirements."""
-
-        @property
-        def alternatives(self) -> tuple[tuple[object, ...], ...]:
-            """Return the alternatives in their order; an empty one is anonymous."""
             ...
 
 
