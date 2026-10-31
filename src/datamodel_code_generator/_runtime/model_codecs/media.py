@@ -67,6 +67,7 @@ __all__ = (
     "split_form",
     "status_key",
     "typed",
+    "unquoted",
 )
 
 JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
@@ -82,8 +83,9 @@ TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
 QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
 LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
-"""Row `legacy-lenient-quoted-string`: any character but a double quote or a backslash, and any escaped one but a line
-feed, between double quotes, as a cache helper reads Cache-Control."""
+"""A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
+quote or a backslash, and any escaped one but a line feed, between double quotes. Row `legacy-lenient-quoted-string`: a
+cache helper reads Cache-Control with it too."""
 STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)
@@ -102,6 +104,7 @@ _MEDIA_ERRORS: Final = (
 _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
+_ESCAPED: Final = re.compile(r"\\(.)")
 _FORM_SAFE: Final = "*-._"
 _SCALARS: Final = frozenset({bool, int, float, str, type(None)})
 
@@ -258,6 +261,11 @@ def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[st
         parameters.append((parameter["name"].lower(), parameter["value"]))
         position = parameter.end()
     return essence["type"].lower(), essence["subtype"].lower(), parameters
+
+
+def unquoted(value: str) -> str:
+    """Return the text of a parameter value: a quoted string without its quotes and escapes, a token as written."""
+    return _ESCAPED.sub(r"\1", value[1:-1]) if value.startswith('"') else value
 
 
 def normalize_media_type(value: str) -> str:

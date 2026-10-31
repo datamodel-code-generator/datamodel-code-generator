@@ -16,7 +16,7 @@ from decimal import Decimal
 from functools import cached_property
 from math import isfinite
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult, unquote, urljoin
 
 from typing_extensions import override
@@ -142,11 +142,9 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import DataType, Types, reference_names_nullable
 
-BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
     "property", "required_only", "additional_properties", "root_value", "discriminator_synthetic"
 ]
-Projection: TypeAlias = Literal["value", "item_stream_array"]
 
 _BACKENDS: Final[dict[type[DataModel], BackendName]] = {
     pydantic_v2.BaseModel: "pydantic",
@@ -249,8 +247,16 @@ _ALONE: Final[dict[str, object]] = {
 }
 
 
-class _UnsupportedError(Exception):
+class _UnprojectedError(Exception):
+    """A type no generated module can spell, with the reason its projection reports."""
+
+    reason: ClassVar[TypeProjectionReason]
+
+
+class _UnsupportedError(_UnprojectedError):
     """A type expression that the contract values cannot represent."""
+
+    reason: ClassVar[TypeProjectionReason] = "BND_TYPE_EXPRESSION_UNSUPPORTED"
 
 
 class _LiteralCycleError(_UnsupportedError):
@@ -785,6 +791,16 @@ class _SchemaRecord:
 
 def _media_kind(media: str) -> MediaKind | None:
     return None if (found := normalized(media)) is None else media_kind(found)
+
+
+def _multipart(media: str) -> bool:
+    """Return whether a declared media type is a multipart one, malformed or JSON-suffixed included."""
+    return media.strip().lower().startswith("multipart/")
+
+
+def _resolver_key(resolver: ModelResolver, location: SchemaLocation) -> str:
+    """Return the key the parser files the reference of a schema location under."""
+    return resolver.join_path((location.document, "#", *location.tokens))
 
 
 def _default(value: YamlValue) -> LiteralScalar | None:
@@ -1437,10 +1453,8 @@ class _Projector:
     def project(self, data_type: DataType) -> TypeProjection:
         try:
             return TypeProjection(self._imports(self._project(data_type)))
-        except _UnsupportedError:
-            return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
-        except _NotEmittedError:
-            return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+        except _UnprojectedError as error:
+            return TypeProjection(None, error.reason)
 
     def declaration(self, reference: Reference, *, nullable: bool = False) -> TypeProjection:
         """Project a schema's own model, which as a nullable value also takes None when an object model stands for it.
@@ -1459,10 +1473,8 @@ class _Projector:
                 hint = self.hints.composed(self.hints.hint_type.model_construct(), base=value, is_optional=True)
                 value = UnionType((value, NoneType()), preserve_order=False, hint=hint)
             return TypeProjection(self._imports(value))
-        except _UnsupportedError:
-            return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
-        except _NotEmittedError:
-            return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+        except _UnprojectedError as error:
+            return TypeProjection(None, error.reason)
 
     def _project(self, data_type: DataType) -> TypeView:
         if not self.inline and (known := self.projected.get(id(data_type))) is not None:
@@ -1731,8 +1743,10 @@ class _Projector:
         return value
 
 
-class _NotEmittedError(Exception):
+class _NotEmittedError(_UnprojectedError):
     """A reference whose model the emitted modules do not contain."""
+
+    reason: ClassVar[TypeProjectionReason] = "BND_SYMBOL_NOT_EMITTED"
 
 
 def _argument_import(value: TypeArgument, resolve: Callable[[Import], Import]) -> TypeArgument:
@@ -2296,11 +2310,7 @@ class _Reader(_SchemaLocations):
         text = parameter or role in _HEADER_ROLES
         form = found[0] if kind in _FORMS and len(found := self.choices(declaration)) == 1 else None
         declared = form or declaration
-        parts = (
-            self.parts(declared, locate)
-            if media is not None and media.strip().lower().startswith("multipart/")
-            else None
-        )
+        parts = self.parts(declared, locate) if media is not None and _multipart(media) else None
         item = declaration.tokens[-1] == "itemSchema"
         body = kind is not None and parts is None and not (text or item)
         whole = self.whole(declaration)[1] if parameter or body else {}
@@ -2676,13 +2686,13 @@ class _Models:
         parser = self.parser
         projector = self.binder.projector(direction, inline=inline)
         resolved, _ = self.schemas.resolve(declaration)
-        key = parser.model_resolver.join_path((resolved.document, "#", *resolved.tokens))
+        key = _resolver_key(parser.model_resolver, resolved)
         if resolved != declaration and (reference := parser.model_resolver.references.get(key)) is not None:
             return projector.declaration(reference)
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
             data_type = parser._build_lightweight_type(parser.free_schemas[declaration])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         projected = (
-            projector.project(data_type) if data_type is not None else TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+            projector.project(data_type) if data_type is not None else TypeProjection(None, _NotEmittedError.reason)
         )
         for item in data_type.all_data_types if data_type is not None else ():
             item.unregister_reference()
@@ -3000,7 +3010,7 @@ class _SchemaUses(_Models):
         parser = self.parser
         engine = parser.acquisitions.get((declaration, projection))
         if engine is None and projection == "value":
-            engine = parser.model_resolver.join_path((declaration.document, "#", *declaration.tokens))
+            engine = _resolver_key(parser.model_resolver, declaration)
         reference = parser.model_resolver.references.get(engine) if engine is not None else None
         data_type = binder.declaration_types.get(declaration) if projection == "value" else None
         projector = binder.projector(direction, inline=inline)
@@ -3370,7 +3380,7 @@ class _Contracts(_SchemaUses):
         otherwise carries text read by the model, and any other body whose whole value they type as raw bytes in part
         carries them as text, which is refused.
         """
-        multipart = media.strip().lower().startswith("multipart/")
+        multipart = _multipart(media)
         record = self.record(schema)
         kind = _media_kind(media)
         for use in uses:
@@ -3825,11 +3835,14 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
+        BackendName,
         BackendValue,
         DefaultKind,
         FrozenLiteral,
         LeafStep,
+        Projection,
         TypeArgument,
+        TypeProjectionReason,
         TypeUseRole,
         TypeView,
     )
@@ -3839,4 +3852,4 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
-    from datamodel_code_generator.reference import Reference, _RwDirection
+    from datamodel_code_generator.reference import ModelResolver, Reference, _RwDirection

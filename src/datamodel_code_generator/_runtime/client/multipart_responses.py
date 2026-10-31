@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Final, Generic, cast
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError, MalformedError
-from ..model_codecs.media import charset, essence, json_value, media_kind, typed
+from ..model_codecs.media import LENIENT_QUOTED, charset, essence, json_value, media_kind, typed, unquoted
 from .operations import BodyFramingError, BodyValueError, Branch, InvalidBodyError, coded, read_branch
 from .responses import HeadersView
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 
-_PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
+_PARAMETERS: Final = rf";\s*([^\s;=]+)\s*=\s*(?:({LENIENT_QUOTED})|([^\s;]*))"
 _BROKEN: Final = "A multipart body must hold its boundary and parts with headers, each part ending at the next boundary"
 
 
@@ -133,7 +133,7 @@ def _parameter(value: str, name: str) -> str | None:
     """Return a parameter of a header value: a token, or a quoted string with its escapes removed."""
     for found in re.finditer(_PARAMETERS, value):
         if found[1].lower() == name:
-            return found[3] if found[2] is None else re.sub(r"\\(.)", r"\1", found[2])
+            return found[3] if found[2] is None else unquoted(found[2])
     return None
 
 
