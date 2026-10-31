@@ -23,6 +23,7 @@ __all__ = [
     "FIELD_ROWS_BUILT_WITHOUT_VALIDATION",
     "FIELD_ROWS_WITHOUT_VALIDATION_ALIASES",
     "FieldAliasRow",
+    "FieldCopyFacts",
     "FieldFacts",
     "FieldIdentity",
     "FieldRow",
@@ -84,6 +85,25 @@ class FieldIdentity(TypedDict, total=False):
     validation_aliases: list[str] | None
     serialization_alias: str | None
     use_serialization_alias: bool
+
+
+class FieldCopyFacts(TypedDict, total=False):
+    """The values a copy of a field is made with besides its names and aliases (``FieldIdentity``).
+
+    A copy takes them when it is made (``parser/_field_copies.py:_copy_data_model_field``) and keeps the source's other
+    values; a copy given ``extras`` or ``default`` owns those instead of a copy of the source's.
+    """
+
+    required: bool
+    nullable: bool | None
+    type_has_null: bool | None
+    constraints: Any
+    extras: dict[str, Any]
+    read_only: bool
+    write_only: bool
+    default: Any
+    has_default: bool
+    use_default_with_required: bool
 
 
 class FieldFacts(TypedDict, total=False):

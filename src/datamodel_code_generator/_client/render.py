@@ -33,7 +33,7 @@ from datamodel_code_generator._client.naming import (
     helper_classes,
     pascal_parts,
 )
-from datamodel_code_generator._client.plan import member_parts, reachable, success_media
+from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
     Capabilities,
@@ -46,7 +46,8 @@ from datamodel_code_generator._client.streams import StreamSpec, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._python_syntax import call_text, set_display, tuple_display
 from datamodel_code_generator._runtime.client.security import SecurityScheme
-from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range, status_key
+from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
+from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
@@ -871,9 +872,9 @@ def _no_content(operation: OperationSpec) -> bool:
 
     A 204 selects its own declaration, else its range's, else the default one, as a call's response does.
     """
-    responses = {item.status: item for item in operation.responses if item.success}
-    selected = None if (key := status_key(NO_CONTENT, responses)) is None else responses[key]
-    return selected is not None and (selected.bodyless or not selected.media)
+    return (selected := success_response(operation, NO_CONTENT)) is not None and (
+        selected.bodyless or not selected.media
+    )
 
 
 def _named(spec: OperationSpec, key: str) -> dict[str, str]:
@@ -2276,7 +2277,6 @@ _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _STREAMS: Final = "_runtime.protocols.streams"
 _CACHE: Final = "_runtime.protocols.cache"
-_DEFAULT_STATUSES: Final = [200]
 
 
 def _helper_noun(kind: str) -> str:
@@ -2369,7 +2369,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ("authenticated=", repr(tree["authenticated"])),
             ("fingerprint=", repr(self.fingerprints[helper.name])),
         ]
-        if (statuses := list(tree["statuses"])) != _DEFAULT_STATUSES:
+        if (statuses := tuple(tree["statuses"])) != CACHED_STATUSES:
             entries.append(("statuses=", f"frozenset({tuple_display(map(repr, statuses))})"))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
             entries.append(("vary_allowlist=", f"frozenset({tuple_display(map(repr, names))})"))

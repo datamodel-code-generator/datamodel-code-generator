@@ -32,6 +32,7 @@ from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, query_field, request_origin, strip_query
+from ..model_codecs.media import NOT_MODIFIED, SWITCHING_PROTOCOLS
 from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
@@ -48,9 +49,6 @@ if TYPE_CHECKING:
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .options import HelperSettings
-
-_NOT_MODIFIED = 304
-_SWITCHING = 101
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -564,7 +562,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             redirected = call.redirects_followed > 0
             return (
                 not_modified(info, redirected, response.request)
-                if info.status_code == _NOT_MODIFIED
+                if info.status_code == NOT_MODIFIED
                 else modified(
                     decode_response(decoder, info, received, call.operation_id),
                     received.content,
@@ -628,7 +626,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         try:
             result = await self._run(call, UNSET, prepare, receive)
 
-            if result.info.status_code != _SWITCHING:
+            if result.info.status_code != SWITCHING_PROTOCOLS:
                 await refuse(result)
             accept(result.info)
             call.handoff()

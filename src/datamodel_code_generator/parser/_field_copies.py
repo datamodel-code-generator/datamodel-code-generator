@@ -1,11 +1,12 @@
 """How the parser copies a field: the plain copy, and the copy that resolves a deferred inherited field.
 
 ``_copy_data_model_field`` copies a field with its own data type and mutable state, leaving the models its references
-name in place. ``_copy_resolved_inherited_field`` replaces the placeholder that a partial override of an inherited
-property leaves (the deferred keys of ``parser/_passes/_keys.py``) with a copy of the inherited field that keeps the
-override's type modifiers, nullability and metadata. ``Parser`` reaches both through its overridable
-``_copy_model_field`` and ``_copy_inherited_field``, and ``parser/base.py`` keeps importing the names other modules
-import from it.
+name in place, and makes the copy with the names, aliases and other values its caller gives (``FieldIdentity``,
+``FieldCopyFacts``), so no copy is finished by hand. ``_copy_resolved_inherited_field`` replaces the placeholder that
+a partial override of an inherited property leaves (the deferred keys of ``parser/_passes/_keys.py``) with a copy of
+the inherited field that keeps the override's type modifiers, nullability and metadata. ``Parser`` reaches both
+through its overridable ``_copy_model_field`` and ``_copy_inherited_field``, and ``parser/base.py`` keeps importing
+the names other modules import from it.
 """
 
 from __future__ import annotations
@@ -26,8 +27,10 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.types import NONE, DataType, _copy_data_type, build_union, union_members
 
 if TYPE_CHECKING:
+    from typing_extensions import Unpack
+
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._field_rows import FieldIdentity
+    from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._null_facts import NullRule
 
 
@@ -37,18 +40,27 @@ def _copy_data_model_field(
     data_type: DataType | None = None,
     register_references: bool = True,
     identity: FieldIdentity | None = None,
+    **facts: Unpack[FieldCopyFacts],
 ) -> DataModelFieldBase:
-    """Copy a field and its mutable state without copying model references, under the names ``identity`` gives."""
+    """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``.
+
+    The copy owns its extras, validation aliases and mutable default: copies of the source's, or the ones ``facts``
+    gives. It takes every value ``identity`` and ``facts`` give when it is made, so no caller writes them on it later.
+    """
     copied_data_type = data_type or _copy_data_type(
         field.data_type,
         register_references=register_references,
     )
-    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None, "extras": deepcopy(field.extras)}
+    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
+    if "extras" not in facts:
+        update["extras"] = deepcopy(field.extras)
     if field.validation_aliases is not None:
         update["validation_aliases"] = list(field.validation_aliases)
-    match field.default:
-        case dict() | list() | set():
-            update["default"] = deepcopy(field.default)
+    if "default" not in facts:
+        match field.default:
+            case dict() | list() | set():
+                update["default"] = deepcopy(field.default)
+    update.update(facts)
     if identity is not None:
         update.update(identity)
     copied_field = field.model_copy(update=update)
@@ -133,24 +145,29 @@ def _merge_data_type_modifiers(
         new_type.kwargs[name] = deepcopy(value)
 
 
-def _apply_inherited_field_nullability(
+def _inherited_field_nullability(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
+    current_type: DataType | _InheritedTypeModifiers,
+    *,
+    required: bool,
+) -> FieldCopyFacts:
+    """Return the null facts of the copy that resolves ``field``: the inherited ones, unless its override drops null."""
+    nullable, type_has_null = inherited_field.nullable, inherited_field.type_has_null
+    match current_type:
+        case _InheritedTypeModifiers(excludes_null=True):
+            nullable, type_has_null = (False if required or field.nullable is False else None), False
+    return {"nullable": nullable, "type_has_null": type_has_null}
+
+
+def _apply_inherited_field_nullability(
     copied_field: DataModelFieldBase,
     current_type: DataType | _InheritedTypeModifiers,
 ) -> None:
-    """Keep omission optionality separate from the schema's null intersection."""
+    """Keep omission optionality separate from the schema's null intersection: an optional copy's type admits None."""
     if not copied_field.required and current_type.is_optional:
         copied_field.data_type.is_optional = True
         GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
-
-    match current_type:
-        case _InheritedTypeModifiers(excludes_null=True):
-            copied_field.nullable = False if copied_field.required or field.nullable is False else None
-            copied_field.type_has_null = False
-        case _:
-            copied_field.nullable = inherited_field.nullable
-            copied_field.type_has_null = inherited_field.type_has_null
 
 
 def _copy_resolved_inherited_field(  # noqa: PLR0913
@@ -189,27 +206,34 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                     current_type,
                     preserve_inherited_kwargs=partial_merge_mode == AllOfMergeMode.NoMerge,
                 )
+            required = False if force_optional else inherited_field.required or field.required
+            facts: FieldCopyFacts = {
+                "required": required,
+                **_inherited_field_nullability(field, inherited_field, current_type, required=required),
+            }
+            if partial_merge_mode != AllOfMergeMode.NoMerge:
+                facts["constraints"] = _overlay_constraints(
+                    inherited_field.constraints, field.constraints, class_from="first-given"
+                )
+                merged_extras = deepcopy(metadata_source.extras)
+                merged_extras.update(deepcopy(field.extras))
+                facts["extras"] = merged_extras
+                facts["read_only"] = inherited_field.read_only or field.read_only
+                facts["write_only"] = inherited_field.write_only or field.write_only
+            if takes_default := (has_default := bool(field.has_default)) or partial_merge_mode != AllOfMergeMode.All:
+                facts["default"] = deepcopy(field.default) if has_default else field.default
+                facts["has_default"] = has_default
+                facts["use_default_with_required"] = has_default and field.use_default_with_required
             copied_field = _copy_data_model_field(
                 metadata_source,
                 data_type=copied_data_type,
                 register_references=False,
                 identity=placeholder_identity(field),
+                **facts,
             )
-            copied_field.required = False if force_optional else inherited_field.required or field.required
-            _apply_inherited_field_nullability(field, inherited_field, copied_field, current_type)
-            if partial_merge_mode != AllOfMergeMode.NoMerge:
-                copied_field.constraints = _overlay_constraints(
-                    inherited_field.constraints, field.constraints, class_from="first-given"
-                )
-                copied_field.extras.update(deepcopy(field.extras))
-                copied_field.read_only = inherited_field.read_only or field.read_only
-                copied_field.write_only = inherited_field.write_only or field.write_only
-            if (has_default := bool(field.has_default)) or partial_merge_mode != AllOfMergeMode.All:
-                copied_field.default = deepcopy(field.default) if has_default else field.default
-                copied_field.has_default = has_default
-                copied_field.use_default_with_required = has_default and field.use_default_with_required
-                if _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
-                    copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
+            _apply_inherited_field_nullability(copied_field, current_type)
+            if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
+                copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, str():
             identity = placeholder_identity(field)
             if inherited_field.name and (
@@ -220,9 +244,8 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 identity["name"] = inherited_field.name
                 identity["alias"] = inherited_field.alias if field.alias is None else field.alias
             copied_field = _copy_data_model_field(
-                inherited_field, register_references=register_references, identity=identity
+                inherited_field, register_references=register_references, identity=identity, required=field.required
             )
-            copied_field.required = field.required
         case _:
             return None
 

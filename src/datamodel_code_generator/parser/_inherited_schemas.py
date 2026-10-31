@@ -69,7 +69,13 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldRow
+    from datamodel_code_generator.parser._field_rows import (
+        FieldAliasRow,
+        FieldCopyFacts,
+        FieldFacts,
+        FieldIdentity,
+        FieldRow,
+    )
     from datamodel_code_generator.parser._intersection import KeywordIntersection
     from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
     from datamodel_code_generator.parser._schema_graph import _TargetNode
@@ -304,8 +310,16 @@ class InheritedSchemasHost(Protocol):
     ) -> list[DataModelFieldBase]:
         """Collect canonical inherited fields in declaration order with C3 winners."""
 
-    def _copy_model_field(self, field: DataModelFieldBase) -> DataModelFieldBase:
-        """Copy a field and its mutable state without copying model references."""
+    def _copy_model_field(
+        self,
+        field: DataModelFieldBase,
+        *,
+        data_type: DataType | None = None,
+        register_references: bool = True,
+        identity: FieldIdentity | None = None,
+        **facts: Unpack[FieldCopyFacts],
+    ) -> DataModelFieldBase:
+        """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``."""
 
     def _drop_incompatible_inherited_constraints(
         self,
@@ -1899,7 +1913,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     if inherited_field is not None and inherited_field.name and inherited_field.name not in excludes:
         field_name = inherited_field.name
     if inherited_field is not None:
-        copied_field = parser._copy_model_field(inherited_field)  # noqa: SLF001
+        copied_field = parser._copy_model_field(inherited_field, required=True)  # noqa: SLF001
         parser._take_field_aliases(  # noqa: SLF001
             copied_field,
             field_name,
@@ -1908,7 +1922,6 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
             class_name=class_name,
             row="required-copy",
         )
-        copied_field.required = True
         parser._prepare_required_inherited_field(copied_field, inherited_field)  # noqa: SLF001
         parser._apply_inherited_field_default(copied_field, inherited_field, class_name=class_name)  # noqa: SLF001
         return copied_field

@@ -9,7 +9,7 @@ from collections.abc import Callable, Container, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
-from typing import Final, Literal, TypeAlias, cast
+from typing import Final, Literal, TypeAlias, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from typing_extensions import Self, TypeAliasType
@@ -19,10 +19,13 @@ from .errors import MalformedError, ParameterEncodingError
 __all__ = (
     "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "NOT_MODIFIED",
     "NO_CONTENT",
+    "OK",
     "REDIRECT_STATUSES",
     "STATUSES",
     "SUCCESS_STATUSES",
+    "SWITCHING_PROTOCOLS",
     "TCHARS",
     "TOKEN",
     "FieldPlan",
@@ -34,6 +37,7 @@ __all__ = (
     "Unparsed",
     "bodyless",
     "charset",
+    "declaring",
     "decode_form",
     "decode_text",
     "encode_form",
@@ -52,6 +56,7 @@ __all__ = (
     "normalized",
     "percent_decode",
     "plain",
+    "range_key",
     "split_form",
     "status_key",
     "typed",
@@ -63,6 +68,7 @@ JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
 MediaOrder: TypeAlias = Literal["specific", "declared"]
+T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
@@ -70,8 +76,11 @@ STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)
 ERROR_STATUSES: Final = range(400, 600)
+SWITCHING_PROTOCOLS: Final = 101
+OK: Final = 200
 NO_CONTENT: Final = 204
-BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
+NOT_MODIFIED: Final = 304
+BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, NOT_MODIFIED})
 _MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{TCHARS})/(?P<subtype>{TCHARS})[ \t]*")
 _PARAMETER: Final = re.compile(
     rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|"
@@ -176,7 +185,17 @@ def plain(value: object, *, strict: bool = False) -> JSONValue:
 
 def status_key(status: int, keys: Container[str]) -> str | None:
     """Return the declared response key a status selects: exact, then its hundreds range, then default."""
-    return next((key for key in (str(status), f"{status // 100}XX", "default") if key in keys), None)
+    return next((key for key in (str(status), range_key(status), "default") if key in keys), None)
+
+
+def declaring(status: int, responses: Mapping[str, T]) -> T | None:
+    """Return the value of the declared response key a status selects in a table keyed by response keys, or None."""
+    return None if (key := status_key(status, responses)) is None else responses[key]
+
+
+def range_key(status: int) -> str:
+    """Return the key of the hundreds range a status falls in, such as 2XX for 204."""
+    return f"{status // 100}XX"
 
 
 def bodyless(status: int, *, head: bool = False, informational: bool = True) -> bool:

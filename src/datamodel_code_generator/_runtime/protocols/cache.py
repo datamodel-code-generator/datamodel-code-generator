@@ -21,10 +21,10 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.media import normalized
+from ..model_codecs.media import NOT_MODIFIED, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-from .caches import CacheEntry, CacheResult, CacheSource
+from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError, configuration_error, data_error
 from .options import CacheOptions, checked_options, layered
@@ -87,7 +87,6 @@ _DELTA: Final = re.compile(r"[0-9]+")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
 _MAX_TTL: Final = 300.0
-_NOT_MODIFIED: Final = 304
 
 
 @final
@@ -104,7 +103,7 @@ class CachePlan(Generic[T]):
     validator: Literal["etag", "last_modified", "both"]
     authenticated: bool
     fingerprint: str
-    statuses: frozenset[int] = frozenset({200})
+    statuses: frozenset[int] = frozenset(CACHED_STATUSES)
     vary_allowlist: frozenset[str] = frozenset()
 
 
@@ -454,7 +453,7 @@ class _Fetch(Generic[T]):
             data=response.data,
             source=received.source,
             response=response.info,
-            network_status=response.info.status_code if network else _NOT_MODIFIED,
+            network_status=response.info.status_code if network else NOT_MODIFIED,
         )
 
 

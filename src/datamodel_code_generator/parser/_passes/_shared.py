@@ -72,6 +72,8 @@ from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_m
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from typing_extensions import Unpack
+
     from datamodel_code_generator import ReuseScope
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
@@ -80,7 +82,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._field_rows import FieldIdentity
+    from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
@@ -612,8 +614,16 @@ class InheritedFieldHost(Protocol):
     ) -> DataModelFieldBase | None:
         """Copy a deferred inherited field, or return None when it is not deferred."""
 
-    def _copy_model_field(self, field: DataModelFieldBase) -> DataModelFieldBase:
-        """Copy a field with its data types."""
+    def _copy_model_field(
+        self,
+        field: DataModelFieldBase,
+        *,
+        data_type: DataType | None = None,
+        register_references: bool = True,
+        identity: FieldIdentity | None = None,
+        **facts: Unpack[FieldCopyFacts],
+    ) -> DataModelFieldBase:
+        """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``."""
 
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether a model uses the configured root model representation."""
@@ -990,9 +1000,9 @@ def override_required_field(
                     reserved_names=reserved_names,
                 )
             ) is None:
-                copied_original_field = host._copy_model_field(original_field)  # noqa: SLF001
-                builder.set_field_identity(copied_original_field, placeholder_identity(model_field))
-                copied_original_field.required = True
+                copied_original_field = host._copy_model_field(  # noqa: SLF001
+                    original_field, identity=placeholder_identity(model_field), required=True
+                )
             default_source = original_field
             if (
                 not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY))

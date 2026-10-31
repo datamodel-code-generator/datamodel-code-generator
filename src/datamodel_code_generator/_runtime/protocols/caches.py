@@ -5,20 +5,31 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from math import isfinite
-from typing import Generic, Literal, Protocol, TypeAlias
+from typing import Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
-from ..model_codecs.media import STATUSES
+from ..model_codecs.media import OK, STATUSES
 
-__all__ = ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheSource", "CacheStore", "string_tuple")
+__all__ = (
+    "CACHED_STATUSES",
+    "AsyncCacheStore",
+    "CacheEntry",
+    "CacheResult",
+    "CacheSource",
+    "CacheStore",
+    "string_tuple",
+)
 
 T_co = TypeVar("T_co", covariant=True, default=object)
 
 CacheSource: TypeAlias = Literal["network", "fresh_cache", "revalidated"]
 
 _SOURCES: tuple[CacheSource, ...] = ("network", "fresh_cache", "revalidated")
+
+CACHED_STATUSES: Final = (OK,)
+"""The statuses a cache helper stores when its definition names none."""
 
 
 def _kind(valid: bool, name: str) -> None:  # noqa: FBT001

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
+from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_documents import canonical_bytes
 
@@ -795,7 +796,7 @@ class _Validator:  # noqa: PLR0904
                 "operation": (self.operation, REQUIRED),
                 "validator": (self.choice(*_VALIDATOR_KINDS), REQUIRED),
                 "authenticated": (self.boolean, REQUIRED),
-                "statuses": (self.statuses, [200]),
+                "statuses": (self.statuses, list(CACHED_STATUSES)),
                 "vary_allowlist": (self.vary_names, []),
             },
             "a helper definition",

@@ -71,6 +71,8 @@ from datamodel_code_generator.types import DataType, _copy_data_type
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
+    from typing_extensions import Unpack
+
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.model._render_plan import (
@@ -81,6 +83,7 @@ if TYPE_CHECKING:
         RenderReady,
     )
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._passes._shared import _ConstructorFieldAdjustment, _InheritedConstructorInfo
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -150,8 +153,16 @@ class RenderPrepHost(
     def data_type_manager(self) -> DataTypeManager:
         """The data type manager of the output."""
 
-    def _copy_model_field(self, field: DataModelFieldBase) -> DataModelFieldBase:
-        """Copy a field with its data types."""
+    def _copy_model_field(
+        self,
+        field: DataModelFieldBase,
+        *,
+        data_type: DataType | None = None,
+        register_references: bool = True,
+        identity: FieldIdentity | None = None,
+        **facts: Unpack[FieldCopyFacts],
+    ) -> DataModelFieldBase:
+        """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``."""
 
     def _nested_model_default_factory_decision(
         self,

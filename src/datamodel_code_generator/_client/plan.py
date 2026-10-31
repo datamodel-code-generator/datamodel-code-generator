@@ -29,11 +29,13 @@ from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import (
     ERROR_STATUSES,
     SUCCESS_STATUSES,
+    declaring,
     essence,
     media_kind,
     media_range,
     normalize_media_type,
     normalized,
+    range_key,
     status_key,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
@@ -61,6 +63,7 @@ from datamodel_code_generator._target_operations import (
     declared_by,
     declared_media_type,
     derived_name,
+    exact_status,
     first_use,
     group_tag,
     json_null,
@@ -986,7 +989,7 @@ class Planner:
             for name, count in Counter(header.name.lower() for header in headers).items()
             if count > 1
         )
-        exact = int(status) if status.isdigit() else None
+        exact = exact_status(status)
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
@@ -1109,13 +1112,25 @@ def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralSc
 
 
 def _success(status: str, success_statuses: tuple[int, ...]) -> bool:
-    if status in {"default", "2XX"} or (status.isdigit() and int(status) in SUCCESS_STATUSES):
+    if status in {"default", "2XX"} or ((exact := exact_status(status)) is not None and exact in SUCCESS_STATUSES):
         return True
-    return any(status in {str(item), f"{item // 100}XX"} for item in success_statuses)
+    return any(status in {str(item), range_key(item)} for item in success_statuses)
 
 
 def _error(status: str) -> bool:
-    return status in {"default", "4XX", "5XX"} or (status.isdigit() and int(status) in ERROR_STATUSES)
+    return status in {"default", "4XX", "5XX"} or (
+        (exact := exact_status(status)) is not None and exact in ERROR_STATUSES
+    )
+
+
+def success_response(operation: OperationSpec, status: int) -> ResponseSpec | None:
+    """Return the success response a success status selects, by its exact key, its hundreds range, or default, or None.
+
+    A success status is a 2XX one or one the operation configures as a success.
+    """
+    if not (status in SUCCESS_STATUSES or status in operation.success_statuses):
+        return None
+    return declaring(status, {response.status: response for response in operation.responses if response.success})
 
 
 def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:

@@ -154,6 +154,16 @@ def described(operation: OperationContract) -> str:
     return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
 
 
+def exact_status(key: str) -> int | None:
+    """Return the status a declared response key names itself, or None for a range key, `default` or another key."""
+    return int(key) if key.isdigit() else None
+
+
+def range_start(key: str) -> int:
+    """Return the first status of a declared range key such as 2XX, read from its first character."""
+    return int(key[0]) * 100
+
+
 def response_bodyless(policy: TargetPolicy, operation: OperationContract, status: int | None) -> bool:
     """Return whether a response of an operation never carries content: by its method, then by its status.
 

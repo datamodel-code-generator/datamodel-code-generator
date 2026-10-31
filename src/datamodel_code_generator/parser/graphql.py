@@ -31,7 +31,6 @@ from datamodel_code_generator.parser._null_facts import NullMode, NullSources, r
 from datamodel_code_generator.parser.base import (
     DataType,
     Parser,
-    _copy_data_model_field,
 )
 from datamodel_code_generator.reference import ModelType, Reference
 from datamodel_code_generator.types import Types
@@ -574,7 +573,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                     and inherited.name in inherited_typename_names
                     and (inherited.name not in fields or fields[inherited.name].alias == "__typename")
                 ):
-                    field = _copy_data_model_field(inherited)
+                    field = self._copy_model_field(inherited)
                     self._graph_builder.insert_field(source, -1, field)
                     fields[field.name] = field
             inherited_typename = next(

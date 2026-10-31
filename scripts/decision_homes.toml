@@ -296,6 +296,20 @@ mentions = ["literals", "enum_member_literals"]
 what = "copies the lists of a DataType node itself; call types.py:_copied_node, or _copy_data_type for a tree"
 audit = "C05-B08"
 
+[homes.Hx-field-copy]
+decision = "how a field is copied: what a copy owns (its data type tree, extras, validation aliases and mutable default) and the names, aliases and other values it is made with"
+core = ["parser/_field_copies.py:_copy_data_model_field"]
+adapters = []
+
+[homes.Hx-field-copy.signatures.copy-finished-by-hand]
+kind = "name"
+ctx = "store"
+names = ["required", "nullable", "type_has_null", "constraints", "extras", "read_only", "write_only", "default", "has_default"]
+receivers = ["copied", "copied_field", "copied_original_field"]
+paths = ["parser/"]
+what = "writes a value on a field copy after it is made; give it to _copy_data_model_field (or the _copy_model_field hook) as a FieldCopyFacts value"
+audit = "C07-B27"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
@@ -963,8 +977,8 @@ what = "decides itself whether a body or response sends JSON null; call _target_
 audit = "C21-A6"
 
 [homes.Hx-http]
-decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes and keys, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
-core = ["_runtime/model_codecs/media.py"]
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
+core = ["_runtime/model_codecs/media.py", "_target_operations.py:exact_status", "_target_operations.py:range_start"]
 adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
 
 [homes.Hx-http.signatures.media-essence]
@@ -1005,14 +1019,21 @@ audit = "C19-M13"
 kind = "number"
 literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
 paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
-what = "decides a status class or a bodyless status; read the ranges of model_codecs/media.py or call _target_operations.py:response_bodyless"
+what = "writes a status or its class itself; read the named statuses and ranges of model_codecs/media.py or call its range_key, or call _target_operations.py:range_start or response_bodyless"
 audit = "C-11"
+
+[homes.Hx-http.signatures.status-key-digits]
+kind = "call"
+names = ["isdigit"]
+paths = ["_client/", "_fastapi/"]
+what = "reads the status a declared response key names itself; call _target_operations.py:exact_status"
+audit = "C19-K4"
 
 [homes.Hx-http.signatures.runtime-status-number]
 kind = "number"
-literals = [300, 399, 599]
+literals = [101, 200, 300, 304, 399, 599]
 paths = ["_runtime/"]
-what = "bounds a status class in the runtime itself; read the ranges of model_codecs/media.py"
+what = "bounds a status class or names a status in the runtime itself; read the ranges and named statuses of model_codecs/media.py"
 audit = "C19-M11"
 
 [homes.Hx-codec-failure]
@@ -1993,9 +2014,6 @@ fix = "#5577"
 [allow."src/datamodel_code_generator/_client/plan.py"."_essence"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
-[allow."src/datamodel_code_generator/_client/plan.py"."_success"]
-"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_client/plan.py"."_variables"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
 
@@ -2011,14 +2029,8 @@ fix = "#5577"
 [allow."src/datamodel_code_generator/_client/polling.py"."_Polls.result"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.cache"]
-"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.stream"]
 "H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
-
-[allow."src/datamodel_code_generator/_client/render.py"."<module>"]
-"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
@@ -2054,7 +2066,6 @@ fix = "#5577"
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."<module>"]
-"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.by_name"]
@@ -2108,7 +2119,6 @@ fix = "#5577"
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_registration"]
-"Hx-http.status-number" = { home = "Hx-http", count = 1, audit = "C-11" }
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_requirements"]
