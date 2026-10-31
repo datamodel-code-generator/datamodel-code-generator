@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Literal, TypeAlias
 
 from typing_extensions import final
@@ -27,15 +26,16 @@ class MediaType:
 
 def parse_media_type(value: str) -> MediaType:
     """Parse HTTP media syntax once for generation and shared wire decisions."""
-    from datamodel_code_generator._runtime.model_codecs.media import media_parts  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator._runtime.model_codecs.media import (  # ruff: ignore[import-outside-top-level]
+        media_parts,
+        unquoted,
+    )
 
     kind, subtype, parameters = media_parts(value, _ERRORS)
     return MediaType(
         kind,
         subtype,
-        tuple(
-            (name, re.sub(r"\\(.)", r"\1", text[1:-1]) if text.startswith('"') else text) for name, text in parameters
-        ),
+        tuple((name, unquoted(text)) for name, text in parameters),
     )
 
 

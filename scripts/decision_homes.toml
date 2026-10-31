@@ -1388,7 +1388,7 @@ what = "decides itself whether a body's model reads it (raw bytes the models lea
 audit = "C23-K23"
 
 [homes.Hx-http]
-decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, the ASCII digit run of a count, delay or timestamp a header writes, and the token and quoted-string of a header field (row legacy-lenient-quoted-string: a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed)"
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, the ASCII digit run of a count, delay or timestamp a header writes, the token and quoted-string of a header field, the quoted-string of a MIME header field as a multipart part's Content-Disposition is read (row legacy-lenient-quoted-string: a cache helper reads a Cache-Control quoted-string with it too: any character but a double quote or a backslash, and any escaped one but a line feed), and the text of a parameter value without its quotes and escapes"
 core = ["_runtime/model_codecs/media.py", "_target_operations.py:exact_status", "_target_operations.py:range_start"]
 adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
 
@@ -1467,6 +1467,22 @@ contains = ['\x5d-\x7e', '\]-~']
 paths = ["_runtime/"]
 what = "spells an HTTP quoted-string itself; read model_codecs/media.py:QUOTED"
 audit = "C27-B15"
+
+[homes.Hx-http.signatures.lenient-quoted-string]
+kind = "literal"
+contains = ['[^"\\]']
+paths = ["_runtime/"]
+# Left out: client/auth.py:_CHALLENGE_ITEMS, which splits challenges on commas outside quotes (an unterminated one too).
+exclude = ["_runtime/client/auth.py:<module>"]
+what = "spells a MIME header field's quoted-string itself; read model_codecs/media.py:LENIENT_QUOTED"
+audit = "C27-G3b"
+
+[homes.Hx-http.signatures.quoted-escape]
+kind = "literal"
+contains = ['\\(.)']
+paths = ["_runtime/", "parser/"]
+what = "removes the escapes of a quoted parameter value itself; call model_codecs/media.py:unquoted"
+audit = "C27-G3b"
 
 [homes.Hx-codec-failure]
 decision = "what a received model codec's failure says of the data (bytes that are not JSON, or a value the model refuses), the body error each condition becomes, and the response failure a body error becomes"
