@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast, get_args
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
+from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
 from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import DeprecationFormat, deprecation_message
@@ -1465,9 +1466,9 @@ _flag(
 )
 general_options.add_argument(
     "--output-format-json-schema",
-    choices=["config", "generate-prompt", "generation", "model-metadata", "recommend-options", "structured-output"],
+    choices=list(JSON_SCHEMA_NAMES),
     default=None,
-    metavar="{config,generate-prompt,generation,model-metadata,recommend-options,structured-output}",
+    metavar=f"{{{','.join(JSON_SCHEMA_NAMES)}}}",
     help="Output JSON Schema for the selected JSON output or JSON configuration format and exit.",
 )
 _flag(

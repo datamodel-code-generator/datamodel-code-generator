@@ -16,6 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from datamodel_code_generator._json_output import (
     JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established prompt export.
+    JSON_SCHEMA_NAMES,
+    OUTPUT_HEAD,
     dump_json,
     schema_document,
 )
@@ -138,9 +140,8 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
                 "not for `--watch`."
             ),
             (
-                "- `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, "
-                "`model-metadata`, `recommend-options`, or `structured-output`; use `config` for JSON configuration "
-                "schemas."
+                f"- `--output-format-json-schema` accepts {', '.join(f'`{name}`' for name in JSON_SCHEMA_NAMES[:-1])}, "
+                f"or `{JSON_SCHEMA_NAMES[-1]}`; use `config` for JSON configuration schemas."
             ),
             "- `--validation` is deprecated; use `--field-constraints` for generated Field constraints.",
         ),
@@ -420,8 +421,7 @@ def _generate_prompt_json(
 ) -> str:
     """Generate a machine-readable LLM consultation payload."""
     payload = PromptPayload(
-        version=1,
-        format="json",
+        **OUTPUT_HEAD,
         kind="prompt",
         question=question,
         current_options=_current_options_metadata(args, parser),

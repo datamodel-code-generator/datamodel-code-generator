@@ -48,7 +48,6 @@ from datamodel_code_generator.model._decisions.tag_value import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
-    BaseClassDataType,
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
@@ -93,7 +92,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _declares_unique_items,
     _derived_models,
-    _get_data_type_target_full_name,
     _get_enum_from_base,
     _get_model_module_name,
     _has_root_field_constraints,
@@ -115,7 +113,6 @@ from datamodel_code_generator.parser._passes._shared import (
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
-    register_reference_import,
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
@@ -2595,7 +2592,8 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     """Import into a module the models of other modules that its models reference, and name them by their imports.
 
     A stand-in is no member of its module: it takes no name there, and neither it nor a base that names it imports.
-    A root that names itself, which deduplication dropped from every module, has no module to import from.
+    A root that names itself, which deduplication dropped from every module, has no module to import from. A model
+    whose imports follow its written hints, which the new expressions changed, registers its imports again.
     """
     models = without_stand_ins(parser, module_members(parser, state.model_list))
     unimported = {
@@ -2613,36 +2611,24 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
         producer = ImportProducer("change-from-import", model)
         before_import = model.imports
         ledger.append(imports, before_import, producer)
-        current_module_name = _get_model_module_name(model, model_path_to_module_name)
-        # Some imports are derived from type hints, so aliases can affect them.
-        import_sensitive_alias_changed = False
-        for data_type in _named_data_types(model):
-            if (
-                (reference := data_type.reference) is None
-                or members.key_of(reference) in members.models
-                or model_key_of(reference) in unimported
-            ):
-                continue
-            if alias := register_reference_import(
-                reference,
-                current_module_name,
-                _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-                imports,
-                scoped_model_resolver,
-                init=state.is_init,
-                internal_modules=state.internal_modules,
-                base_class=isinstance(data_type, BaseClassDataType),
-                producer=producer,
-                treat_dot_as_module=parser.treat_dot_as_module,
-                import_ledger=parser._import_ledger,  # noqa: SLF001
-            ):
-                parser._graph_builder.name_reference(data_type, alias)  # noqa: SLF001
-                import_sensitive_alias_changed = True
-        if import_sensitive_alias_changed:  # pragma: no cover
-            after_import = model.imports
-            if before_import != after_import:
-                ledger.remove(imports, before_import, producer)
-                ledger.append(imports, after_import, producer)
+        if import_references(
+            parser,
+            model,
+            (
+                data_type
+                for data_type in _named_data_types(model)
+                if (reference := data_type.reference) is None or model_key_of(reference) not in unimported
+            ),
+            imports,
+            scoped_model_resolver,
+            model_path_to_module_name,
+            init=state.is_init,
+            internal_modules=state.internal_modules,
+            members=members,
+            producer=producer,
+        ) and before_import != (after_import := model.imports):
+            ledger.remove(imports, before_import, producer)
+            ledger.append(imports, after_import, producer)
 
 
 def process_each_module(

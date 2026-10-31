@@ -211,9 +211,6 @@ use_default_with_required = 1
 'fields.reverse()' = 1
 use_default_with_required = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
-alias = 1
-
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
 _additional_imports = 1
 file_path = 1
@@ -246,9 +243,6 @@ use_default_with_required = 1
 
 ["src/datamodel_code_generator/parser/_rw_split.py"."prepare_required_inherited_field"]
 '__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
-
-["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_data_type"]
-alias = 1
 
 ["src/datamodel_code_generator/parser/_type_overrides.py"."apply_override_to_field"]
 alias = 1

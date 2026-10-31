@@ -5,31 +5,21 @@ from __future__ import annotations
 
 import sys
 
-_JSON_SCHEMA_SOURCES = {
-    "config": ("datamodel_code_generator.json_config", "json_config_json_schema"),
-    "generate-prompt": ("datamodel_code_generator.prompt", "generate_prompt_json_schema"),
-    "generation": ("datamodel_code_generator._structured_output", "generation_output_json_schema"),
-    "model-metadata": ("datamodel_code_generator.model_metadata", "model_metadata_json_schema"),
-    "recommend-options": ("datamodel_code_generator._structured_output", "recommend_options_json_schema"),
-    "structured-output": ("datamodel_code_generator._structured_output", "structured_output_json_schema"),
-}
-_ARGV_JSON_SCHEMAS = frozenset({"config", "generation", "model-metadata", "structured-output"})
 
+def _json_schema_path(name: str) -> str | None:
+    """Return where the command line prints the JSON Schema of a name, None for no such name, loading only its table."""
+    from datamodel_code_generator._json_output import json_schema_path  # noqa: PLC0415
 
-def _json_schema_text(name: str) -> str:
-    """Return the JSON Schema --output-format-json-schema prints for a name, importing only the module that has it."""
-    from importlib import import_module  # noqa: PLC0415
-
-    module, function = _JSON_SCHEMA_SOURCES[name]
-    return getattr(import_module(module), function)()
+    return json_schema_path(name)
 
 
 def _print_json_schema(name: str) -> int:
     """Print a JSON Schema on a fast path and return the exit code, 2 where Pydantic lacks the JSON output support."""
     from datamodel_code_generator import _StructuredOutputUnavailableError  # noqa: PLC0415
+    from datamodel_code_generator._json_output import json_schema_text  # noqa: PLC0415
 
     try:
-        text = _json_schema_text(name)
+        text = json_schema_text(name)
     except _StructuredOutputUnavailableError as error:
         sys.stderr.write(f"{error}\n")
         return 2
@@ -51,11 +41,11 @@ match sys.argv:
         arg_parser.print_help()
         sys.exit(0)
     # Fast paths for one exact JSON Schema request (avoid importing the argument parser)
-    case [_, "--output-format-json-schema", schema_output_name] if schema_output_name in _ARGV_JSON_SCHEMAS:
+    case [_, "--output-format-json-schema", schema_output_name] if _json_schema_path(schema_output_name) == "argv":
         sys.exit(_print_json_schema(schema_output_name))
     case [_, schema_output_option] if (
         schema_output_option.startswith("--output-format-json-schema=")
-        and (schema_output_name := schema_output_option.partition("=")[2]) in _ARGV_JSON_SCHEMAS
+        and _json_schema_path(schema_output_name := schema_output_option.partition("=")[2]) == "argv"
     ):
         sys.exit(_print_json_schema(schema_output_name))
 
@@ -79,8 +69,9 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     vars(namespace).clear()
     namespace.no_color = False
     arg_parser.parse_args(namespace=namespace)
-    if namespace.output_format_json_schema not in {None, "recommend-options"}:
-        sys.exit(_print_json_schema(namespace.output_format_json_schema))
+    schema_output_name = namespace.output_format_json_schema
+    if schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
+        sys.exit(_print_json_schema(schema_output_name))
     if namespace.output_format_json_schema is None and namespace.generate_prompt is not None:
         from datamodel_code_generator.prompt import generate_prompt
 
@@ -128,6 +119,7 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
+from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, json_schema_text
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
@@ -2218,10 +2210,8 @@ def _run_staged_job(
 
 
 def _write_batch_json_spool(spool: Any) -> None:
-    """Write a batch JSON document from validated, line-delimited job payloads."""
-    from datamodel_code_generator._json_output import dump_json  # noqa: PLC0415
-
-    sys.stdout.write('{\n  "version": 1,\n  "format": "json",\n  "kind": "batch",\n  "jobs": [')
+    """Write a batch JSON document from validated, line-delimited job payloads, streaming its jobs array."""
+    sys.stdout.write(dump_json({**OUTPUT_HEAD, "kind": "batch", "jobs": []}, "ordered").removesuffix("]\n}"))
     for index, line in enumerate(spool):
         if index:
             sys.stdout.write(",")
@@ -2584,7 +2574,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         sys.exit(0)
 
     if namespace.output_format_json_schema is not None:
-        print(_json_schema_text(namespace.output_format_json_schema))  # noqa: T201
+        print(json_schema_text(namespace.output_format_json_schema))  # noqa: T201
         return Exit.OK
 
     if namespace.generate_pyproject_config:

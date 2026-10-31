@@ -1501,7 +1501,11 @@ class ReplacedRootsHost(Protocol):
 
 
 class ReferenceExpressionHost(Protocol):
-    """The option and the import ledger that writing how a data type names its reference reads."""
+    """The option, the import ledger and the builder that writing how a data type names its reference uses."""
+
+    @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The builder that writes the expression through the generation store."""
 
     @property
     def _import_ledger(self) -> ModuleImportLedger:
@@ -1547,8 +1551,8 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     internal_modules: set[ModulePath],
     producer: ImportProducer,
     row: ImportPathRow = "reference",
-) -> None:
-    """Write how a data type names its reference in the current module.
+) -> bool:
+    """Write how a data type names its reference in the current module, and return whether that changed it.
 
     A model the module emits is written by its class name; any other is imported, and written by the expression
     the import gives when that is not the class name. Under row ``legacy-collapse-import-path`` a model of the module
@@ -1572,8 +1576,10 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             row=row,
         )
     )
-    if expression is not None or row == "reference":
-        data_type.alias = expression
+    if (expression is None and row != "reference") or expression == data_type.alias:
+        return False
+    host._graph_builder.name_reference(data_type, expression)  # noqa: SLF001
+    return True
 
 
 def set_reference_expressions(  # noqa: PLR0913
@@ -1618,19 +1624,21 @@ def import_references(  # noqa: PLR0913, PLR0917
     members: KeyedModels | None,
     producer: ImportProducer,
     row: ImportPathRow = "reference",
-) -> None:
+) -> bool:
     """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``imports``.
 
     ``set_reference_expressions`` with the module's imports, resolver and module names given one by one, under
-    ``row`` (``ImportPathRow``).
+    ``row`` (``ImportPathRow``). Return whether an expression changed.
     """
+    changed = False
+    current_module_name = _get_model_module_name(model, model_path_to_module_name)
     for data_type in data_types:
         if (reference := data_type.reference) is None:
             continue
-        set_reference_expression(
+        changed |= set_reference_expression(
             host,
             data_type,
-            _get_model_module_name(model, model_path_to_module_name),
+            current_module_name,
             _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
             imports,
             scoped_model_resolver,
@@ -1640,6 +1648,7 @@ def import_references(  # noqa: PLR0913, PLR0917
             producer=producer,
             row=row,
         )
+    return changed
 
 
 def _declares_unique_items(field: DataModelFieldBase) -> bool:

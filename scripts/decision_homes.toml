@@ -577,8 +577,15 @@ core = [
     "parser/_passes/_shared.py:reference_import_target",
     "parser/_passes/_shared.py:register_reference_import",
     "parser/_passes/_shared.py:set_reference_expression",
+    "parser/_passes/_shared.py:import_references",
 ]
-adapters = []
+adapters = ["parser/_passes/_shared.py:set_reference_expressions"]
+
+[homes.H26.signatures.reference-target-name]
+kind = "call"
+names = ["_get_data_type_target_full_name"]
+what = "finds the model a data type names in another module to write how the type names it; call import_references or set_reference_expressions (parser/_passes/_shared.py)"
+audit = "C04-G3"
 
 [homes.H26.signatures.model-import-path]
 kind = "call"
@@ -1773,6 +1780,54 @@ keywords = ["indent"]
 exclude = ["_client/render.py:ClientRenderer.readme", "_fastapi/source_document.py:SourceDocument.text"]
 what = "dumps indented JSON itself; call _json_output.py:dump_json (or schema_document) with the style of its output"
 audit = "C15-B1"
+
+[homes.Hx-output-head]
+decision = "the keys every structured JSON output of the command line starts with, before its kind: version 1 and format json (the payload constructions and the head of the streamed batch document)"
+core = ["_json_output.py"]
+adapters = []
+
+[homes.Hx-output-head.signatures.head-arguments]
+kind = "call"
+keywords = ["version", "format"]
+what = "passes the version and format of a structured output itself; unpack _json_output.py:OUTPUT_HEAD"
+audit = "C15-B5"
+
+[homes.Hx-output-head.signatures.head-keys]
+kind = "keyword-set"
+keywords = ["version", "format"]
+min = 2
+what = "writes the version and format keys of a structured output itself; unpack _json_output.py:OUTPUT_HEAD"
+audit = "C15-B5"
+
+[homes.Hx-output-head.signatures.head-text]
+kind = "literal"
+contains = ['"format": "json"']
+what = "writes the JSON text of a structured output's head itself; dump _json_output.py:OUTPUT_HEAD with dump_json"
+audit = "C15-B5"
+
+[homes.Hx-json-schema-outputs]
+decision = "the JSON Schemas --output-format-json-schema prints: their names (the option's choices, metavar and the prompt's list), the function that writes each, and where the command line prints it (row argv, parsed or main)"
+core = ["_json_output.py"]
+adapters = []
+
+[homes.Hx-json-schema-outputs.signatures.schema-names]
+kind = "keyword-set"
+keywords = ["config", "generate-prompt", "generation", "model-metadata", "recommend-options", "structured-output"]
+min = 2
+what = "lists the names of --output-format-json-schema itself; read _json_output.py:JSON_SCHEMA_NAMES or json_schema_path"
+audit = "C15-B7"
+
+[homes.Hx-json-schema-outputs.signatures.schema-names-text]
+kind = "literal"
+contains = ["config,generate-prompt", "`config`, `generate-prompt`"]
+what = "writes the names of --output-format-json-schema in a text itself; join _json_output.py:JSON_SCHEMA_NAMES"
+audit = "C15-B7"
+
+[homes.Hx-json-schema-outputs.signatures.schema-name-test]
+kind = "compare-in"
+names = ["output_format_json_schema"]
+what = "decides by name where a JSON Schema of --output-format-json-schema is printed; read _json_output.py:json_schema_path"
+audit = "C15-B7"
 
 [homes.Hx-message-location]
 decision = "how a message, a warning or the model metadata names a schema object: its location (`document#pointer`) with the document URL redacted, or the caller's text without one"
