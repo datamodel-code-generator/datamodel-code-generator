@@ -13849,6 +13849,43 @@ def test_main_jsonschema_property_count_constraints(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "case"),
+    [
+        ("property_count_ref_sibling_draft7.json", "draft7-sibling"),
+        ("property_count_ref_target_draft7.json", "draft7-target"),
+        ("property_count_ref_sibling_draft202012.json", "draft202012-sibling"),
+    ],
+)
+def test_main_jsonschema_property_count_ref_sibling_dialect(output_file: Path, fixture_name: str, case: str) -> None:
+    """Ignore $ref sibling counts in Draft 7 while preserving targets and Draft 2020-12 siblings."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"property_count_ref_sibling_{case}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+    with _generated_model(output_file, f"property_count_ref_sibling_{case}", "Holder") as model:
+        if case == "draft7-sibling":
+            model.model_validate({"a": "x"})
+        elif case == "draft7-target":
+            _assert_model_json_invalid(model.model_validate, {"a": "x"}, "value_error")
+            model.model_validate({"a": "x", "b": "y"})
+        else:
+            _assert_model_json_invalid(model.model_validate, {"a": "x"}, "value_error")
+            model.model_validate({"a": "x", "b": "y"})
+
+
 def test_main_jsonschema_object_max_properties_zero(output_file: Path) -> None:
     """Test empty object schemas with maxProperties generate dict length constraints."""
     run_main_and_assert(
@@ -25193,6 +25230,55 @@ def test_main_jsonschema_generate_schema_validators_property_count(output_file: 
             ({"name": "x"}, "value_error"),
             ({"name": "x", "label": "y", "first": 1, "second": 2}, "value_error"),
         ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "expected_name", "valid_json", "invalid_json"),
+    [
+        pytest.param(
+            "schema_validators_property_count_root_ref_draft7.json",
+            "schema_validators_property_count_root_ref_draft7.py",
+            '{"a":"x"}',
+            "{}",
+            id="draft7",
+        ),
+        pytest.param(
+            "schema_validators_property_count_root_ref_2020.json",
+            "schema_validators_property_count_root_ref_2020.py",
+            '{"a":"x","extra":true}',
+            '{"a":"x"}',
+            id="2020-12",
+        ),
+    ],
+)
+def test_main_jsonschema_property_count_root_ref_allof_siblings(
+    output_file: Path, fixture_name: str, expected_name: str, valid_json: str, invalid_json: str
+) -> None:
+    """Keep root-ref target counts while applying only dialect-valid sibling allOf counts."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_name,
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_property_count_root_ref",
+        model_name="Model",
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type="value_error",
     )
 
 

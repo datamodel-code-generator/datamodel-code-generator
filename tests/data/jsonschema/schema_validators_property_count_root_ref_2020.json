@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "a": {"type": "string"}
+      }
+    }
+  },
+  "$ref": "#/$defs/A",
+  "allOf": [{"minProperties": 2}]
+}
