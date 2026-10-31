@@ -270,8 +270,7 @@ def _target_json(
     As in the model payload, a path is relative to the model output directory; a file outside it has an absolute path.
     The payload's target names the package, its runtime dependencies, and the next steps with paths of the same base.
     """
-    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
-
+    from datamodel_code_generator._api_generation import artifact_text  # noqa: PLC0415
     from datamodel_code_generator._structured_output import (  # noqa: PLC0415
         EntrypointPayload,
         GeneratedFilePayload,
@@ -281,22 +280,15 @@ def _target_json(
     )
 
     taken = _taken_over(project)
-    artifacts = [
-        (
-            artifact.path,
-            content,
-            encoding if artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"} else "utf-8",
-        )
+    artifacts = (
+        artifact
         for artifact in project.artifacts
-        if (artifact.kind in {"model", "target"} or artifact is taken) and (content := artifact.content) is not None
-    ]
+        if (artifact.kind in {"model", "target"} or artifact is taken) and artifact.content is not None
+    )
     base = _payload_base(project, models)
     files = [
-        GeneratedFilePayload(
-            path=shown(path, base).as_posix(),
-            content=TextIOWrapper(BytesIO(content), encoding=codec).read(),
-        )
-        for path, content, codec in sorted(artifacts, key=lambda artifact: artifact[0].parts)
+        GeneratedFilePayload(path=shown(artifact.path, base).as_posix(), content=artifact_text(artifact, encoding))
+        for artifact in sorted(artifacts, key=lambda artifact: artifact.path.parts)
     ]
     steps = project.next_steps
     entrypoint = implementation = None
@@ -356,6 +348,7 @@ def _compare_target(
         OutputComparisonOptions,
         _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
     )
+    from datamodel_code_generator._api_generation import file_encoding  # noqa: PLC0415
 
     nested = _nested(models, target)
     differences: list[ComparisonDifference] = []
@@ -388,7 +381,7 @@ def _compare_target(
                 staged.parent.mkdir(parents=True, exist_ok=True)
                 staged.write_bytes(artifact.content)
                 if is_directory and path.suffix != ".py":
-                    non_python.append((staged, path, encoding if artifact.kind == "model" else "utf-8"))
+                    non_python.append((staged, path, file_encoding(path, encoding, artifact.kind)))
             _stage_implementations(project, output if is_directory and baseline is None else None, staged_root)
             comparisons.append((
                 staged_root if is_directory else staged_root / output.name,

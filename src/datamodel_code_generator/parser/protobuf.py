@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import io
 import re
-import sys
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -23,7 +22,10 @@ from datamodel_code_generator._message_text import extra_requirement
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import _converted_float
-from datamodel_code_generator.util import record_watch_dependency
+from datamodel_code_generator.util import (
+    _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
+    record_watch_dependency,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -105,13 +107,6 @@ SCALAR_SCHEMAS: dict[int, dict[str, Any]] = {
     TYPE_BYTES: {"type": "string", "format": "binary"},
 }
 SCALAR_OR_ENUM_TYPES = frozenset({*SCALAR_SCHEMAS, TYPE_ENUM})
-
-
-def _watch_dependency_collection_is_active() -> bool:
-    """Check the optional watch collector without importing it on regular generation."""
-    return (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
-        watch_dependencies.collector_is_active()
-    )
 
 
 MAP_KEY_PYTHON_TYPES: dict[int, str] = {**dict.fromkeys(_INTEGER_TYPES, "int"), TYPE_BOOL: "bool", TYPE_STRING: "str"}
@@ -730,7 +725,7 @@ class ProtobufParser(JsonSchemaParser):
                 raise SchemaParseError(msg)
             with tempfile.NamedTemporaryFile(suffix=".pb", delete=False) as output_file:
                 output_path = Path(output_file.name)
-            collect_dependencies = _watch_dependency_collection_is_active()
+            collect_dependencies = _collecting_watch_dependencies() is not None
             persistent_include_paths: tuple[Path, ...] = ()
             try:
                 if collect_dependencies:

@@ -8,7 +8,7 @@ from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from io import BytesIO, TextIOWrapper
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 from urllib.parse import ParseResult
 
@@ -486,8 +486,20 @@ def _generate_models(
         )
 
 
-def _is_python(path: PurePosixPath) -> bool:
+def _is_python(path: PurePath) -> bool:
     return path.suffix in {".py", ".pyi"}
+
+
+def file_encoding(path: PurePath, encoding: str, kind: ArtifactKind | None = None) -> str:
+    """Return the encoding a generated file is written in: models and Python files in `encoding`, else UTF-8."""
+    return encoding if kind == "model" or _is_python(path) else "utf-8"
+
+
+def artifact_text(artifact: GeneratedArtifact, encoding: str) -> str:
+    """Read a rendered file as its written file reads, in the encoding it is written in."""
+    return TextIOWrapper(
+        BytesIO(artifact.content), encoding=file_encoding(artifact.path, encoding, artifact.kind)
+    ).read()
 
 
 def _normalized(text: str) -> str:
@@ -863,7 +875,7 @@ class _Planner:
 
     def encoding(self, path: PurePosixPath) -> str:
         """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
-        return self.effective.encoding if _is_python(path) else "utf-8"
+        return file_encoding(path, self.effective.encoding)
 
     def encoded(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
         """Encode formatted texts as their files hold them."""
