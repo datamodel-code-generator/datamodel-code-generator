@@ -17,7 +17,7 @@ client/native.py: .errors, .options, .responses, .retry, .timing, __future__, co
 client/oauth.py: ..model_codecs.media, .auth, .client, .errors, .security, .timing, .urls, __future__, asyncio, collections.abc, contextlib, dataclasses, datetime, functools, httpx2, inspect, threading, typing, typing_extensions, urllib.parse, weakref
 client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .media, .responses, .retry, __future__, collections.abc, dataclasses, functools, typing, typing_extensions
 client/options.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .timing, __future__, collections.abc, dataclasses, httpx2, math, types, typing, urllib.parse
-client/parts.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, .media, __future__, typing
+client/parts.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, .media, .operations, __future__, typing
 client/paths.py: __future__, collections.abc, re, typing
 client/positions.py: __future__, collections.abc, functools, typing
 client/raw.py: ..model_codecs.media, .content, .errors, .logical, .operations, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions

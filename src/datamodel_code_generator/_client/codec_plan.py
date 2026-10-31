@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
 from datamodel_code_generator._client.model_facts import _FALSE, _name
 from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
+from datamodel_code_generator._runtime.model_codecs.media import JSONKind
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -40,7 +41,6 @@ if TYPE_CHECKING:
 CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
 ]
-JSONKind: TypeAlias = Literal["object", "array", "string", "number", "boolean"]
 Shape: TypeAlias = "Class | Items | Fixed | Values | Choice | None"
 _SEQUENCES: Final = {
     "list": "list",
@@ -73,7 +73,7 @@ _PLAIN: Final = frozenset({
     "list",
     "dict",
 })
-_ALL_KINDS: Final[tuple[JSONKind, ...]] = ("object", "array", "string", "number", "boolean")
+_ALL_KINDS: Final[tuple[JSONKind, ...]] = get_args(JSONKind)
 _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
     **dict.fromkeys(_MAPPINGS | {"dict"}, ("object",)),
     **dict.fromkeys(_SEQUENCES, ("array",)),

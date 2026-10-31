@@ -15,13 +15,12 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from .media import json_bytes, json_value, plain
+from .media import JSONKind, json_bytes, json_value, plain
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 T = TypeVar("T")
-JSONKind: TypeAlias = Literal["object", "array", "string", "number", "boolean"]
 Shape: TypeAlias = "type | Items | Fixed | Values | Choice | None"
 _CONTAINERS: Final[dict[str, Callable[[Iterable[object]], object]]] = {
     "list": list,
