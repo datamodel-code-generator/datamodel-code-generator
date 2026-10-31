@@ -1842,8 +1842,8 @@ what = "walks up a path's parents itself; call _paths.py:existing_ancestor"
 audit = "C17-3"
 
 [homes.Hx-json-output]
-decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with"
-core = ["_json_output.py:dump_json", "_json_output.py:schema_document"]
+decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with, also for a document whose array is written item by item"
+core = ["_json_output.py:dump_json", "_json_output.py:schema_document", "_json_output.py:write_streamed_json"]
 adapters = []
 
 [homes.Hx-json-output.signatures.indented-dump]
@@ -1855,6 +1855,12 @@ keywords = ["indent"]
 exclude = ["_client/render.py:ClientRenderer.readme", "_fastapi/source_document.py:SourceDocument.text"]
 what = "dumps indented JSON itself; call _json_output.py:dump_json (or schema_document) with the style of its output"
 audit = "C15-B1"
+
+[homes.Hx-json-output.signatures.streamed-text]
+kind = "literal"
+contains = ["{\n  \"", "]\n}", "\n  ]"]
+what = "writes the JSON text around a streamed array itself; call _json_output.py:write_streamed_json with the document, its array's key and items"
+audit = "C15-B6"
 
 [homes.Hx-output-head]
 decision = "the keys every structured JSON output of the command line starts with, before its kind: version 1 and format json (the payload constructions and the head of the streamed batch document)"
@@ -1879,6 +1885,18 @@ kind = "literal"
 contains = ['"format": "json"']
 what = "writes the JSON text of a structured output's head itself; dump _json_output.py:OUTPUT_HEAD with dump_json"
 audit = "C15-B5"
+
+[homes.Hx-model-metadata-payload]
+decision = "the payload --emit-model-metadata writes: version 1, then the generated models (none for a run that collected no metadata)"
+core = ["model_metadata.py:model_metadata_payload"]
+adapters = []
+
+[homes.Hx-model-metadata-payload.signatures.metadata-keys]
+kind = "keyword-set"
+keywords = ["version", "models"]
+min = 2
+what = "writes the version and models of the model metadata payload itself; call model_metadata.py:model_metadata_payload"
+audit = "C15-B22"
 
 [homes.Hx-json-schema-outputs]
 decision = "the JSON Schemas --output-format-json-schema prints: their names (the option's choices, metavar and the prompt's list), the function that writes each, and where the command line prints it (row argv, parsed or main)"

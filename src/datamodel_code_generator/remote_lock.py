@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
-from datamodel_code_generator._json_output import dump_json
+from datamodel_code_generator._json_output import write_streamed_json
 from datamodel_code_generator._paths import existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
 
@@ -269,17 +269,7 @@ class RemoteReferenceLock:
     def _write_staged_content(self, file: TextIO) -> None:
         """Stream one deterministic lock document without retaining a second full payload."""
         entries = sorted(self._seen.values(), key=lambda entry: entry.request_sha256)
-        file.write('{\n  "resources": ')
-        if not entries:
-            file.write("[]")
-        else:
-            file.write("[\n")
-            for index, entry in enumerate(entries):
-                if index:
-                    file.write(",\n")
-                file.write(dump_json(asdict(entry), "sorted", depth=2))
-            file.write("\n  ]")
-        file.write(f',\n  "version": {_LOCK_VERSION}\n}}\n')
+        write_streamed_json(file.write, {"version": _LOCK_VERSION}, "resources", map(asdict, entries), "sorted")
 
     def stage(self, staging_directory: StagingDirectory | Path | None = None) -> StagedFile | Path | None:
         """Write the updated lock into a pre-existing private staging directory.
