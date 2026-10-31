@@ -27,6 +27,7 @@ Layer: TypeAlias = Literal[
     "name-words",
     "graph-links",
     "container-kinds",
+    "warning-control",
     "module-paths",
     "openapi-paths",
     "config",
@@ -151,6 +152,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the context variable scope is a leaf that the command line, the parser, the model package and the "
             "reference resolver import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "warning-control": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "how the generator's own warnings are shown is a leaf that the entry point, the recommender, the parser "
+            "and its passes import: import only the standard library and typing_extensions"
         ),
     ),
     "module-paths": (
@@ -1330,6 +1338,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "container-kinds"
         case ("_context_scope.py",):
             layer = "context-scope"
+        case ("_warning_control.py",):
+            layer = "warning-control"
         case ("_module_paths.py",):
             layer = "module-paths"
         case ("_openapi_paths.py",):

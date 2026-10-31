@@ -103,6 +103,7 @@ from datamodel_code_generator._user_keys import (
     mapped_base_class,
     model_level_type_override,
 )
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
     DefaultValueType,
@@ -2525,10 +2526,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _run_with_suppressed_warnings(self, callback: Callable[[], None]) -> None:  # noqa: PLR6301
         """Invoke one retry hook without repeating user-visible warnings."""
-        import warnings  # noqa: PLC0415
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with quiet():
             callback()
 
     def parse(  # noqa: PLR0913, PLR0917

@@ -15,10 +15,11 @@ import sys
 from typing import Final
 from warnings import warn_explicit
 
+from datamodel_code_generator._warning_control import is_tracer_frame
+
 __all__ = ["warn_as_module", "warn_as_parser_base"]
 
 _PARSER_BASE_MODULE: Final = "datamodel_code_generator.parser.base"
-_TRACER_MODULE_PREFIX: Final = "pysnooper"
 
 
 def warn_as_module(module: str, message: str, category: type[Warning], *, stacklevel: int) -> None:
@@ -32,7 +33,7 @@ def warn_as_module(module: str, message: str, category: type[Warning], *, stackl
     depth = 1
     for _ in range(stacklevel - 1):
         depth += 1
-        while sys._getframe(depth).f_globals.get("__name__", "").startswith(_TRACER_MODULE_PREFIX):  # noqa: SLF001
+        while is_tracer_frame(sys._getframe(depth)):  # noqa: SLF001
             depth += 1
     frame = sys._getframe(depth)  # noqa: SLF001
     warn_explicit(

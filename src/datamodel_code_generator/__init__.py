@@ -61,6 +61,7 @@ from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
 from datamodel_code_generator._url_redaction import redact_path, redact_url
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
@@ -2342,9 +2343,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry.
     """
     remote_text_cache, reference_cache, base_path = caches
-    with warnings.catch_warnings() if ignored_warnings is not None else contextlib.nullcontext():
-        if ignored_warnings is not None:
-            warnings.simplefilter("ignore", ignored_warnings)
+    with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
         data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
             _prepare_parser_common_options(
                 input_,
