@@ -727,7 +727,7 @@ audit = "C08-U12"
 
 [homes.H21]
 decision = "model identity, holders and shared nodes of the generation graph"
-core = ["parser/_graph_ids.py", "parser/generation.py"]
+core = ["_model_keys.py", "parser/_graph_ids.py", "parser/generation.py"]
 adapters = []
 
 [homes.Hx-reference-children]

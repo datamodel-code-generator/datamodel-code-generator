@@ -41,7 +41,7 @@ from datamodel_code_generator._internal_utils import (
     to_hashable,
 )
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of, names_by_path
 from datamodel_code_generator._parse_memo import (
     MemoTable,
     bump_deep,
@@ -3547,9 +3547,9 @@ def _reference_names_model(reference: Reference, model: DataModel) -> bool:
     to the model that shares the path of ``model`` since collapse replaced one by the other names it too
     (`_share_path_identity`).
     """
-    if reference.source is None:
+    if names_by_path(reference):
         return reference.path == model.path
-    return model_key_of(reference) in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
+    return model_key_of(reference) in _path_identity_keys(model)
 
 
 def sort_data_models_for_mro(

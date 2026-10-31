@@ -6,7 +6,10 @@ The keys of the fields and data type nodes the generation store records live her
 
 from __future__ import annotations
 
-from typing import Final, NewType
+from typing import TYPE_CHECKING, Final, NewType, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 MODEL_KEY_ATTRIBUTE: Final = "_model_key"
 FIELDLESS_SITE_KEY: Final = "_fieldless_site"
@@ -22,8 +25,40 @@ NodeKey = NewType("NodeKey", int)
 """The ``id`` of a data type node that the store records."""
 FieldKey = NewType("FieldKey", int)
 """The ``id`` of a field that holds a recorded node."""
+_ValueT = TypeVar("_ValueT")
+
+
+class _ReferenceView(Protocol):
+    """What `names_by_path` and `keyed_or_path` read of a `Reference`."""
+
+    @property
+    def path(self) -> str:
+        """The path of the model the reference names."""
+
+    @property
+    def source(self) -> object:
+        """The model the reference was built with, or None."""
 
 
 def model_key_of(reference: object) -> ModelKey:
     """Return the model key that ``reference`` took when it was built (`Reference.model_post_init`)."""
     return reference.__dict__[MODEL_KEY_ATTRIBUTE]
+
+
+def names_by_path(reference: _ReferenceView) -> bool:
+    """Return whether ``reference`` names the model at its path instead of the model of its key.
+
+    Row ``legacy-keyless-reference-by-path``: a reference that no model was built with (one built outside the
+    resolver, such as by a parser extension) names the model at its path, as every reference did when models were
+    told apart by path.
+    """
+    return reference.source is None
+
+
+def keyed_or_path(
+    reference: _ReferenceView, by_key: Mapping[ModelKey, _ValueT], by_path: Mapping[str, _ValueT]
+) -> _ValueT | None:
+    """Return the value kept for the model ``reference`` names, by its model key or, `names_by_path`, at its path."""
+    if names_by_path(reference):
+        return by_path.get(reference.path)
+    return by_key.get(model_key_of(reference))
