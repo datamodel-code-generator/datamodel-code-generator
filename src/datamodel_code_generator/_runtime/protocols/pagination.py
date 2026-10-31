@@ -19,7 +19,6 @@ from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
-from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
 from .options import HelperLimits, PaginationOptions, layered, new_session
@@ -294,20 +293,20 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
         sources = tuple(binding.written for binding in self.bindings)
         if isinstance(rule, (CursorPlan, CountPlan)):
             sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
-        continued, writes, headers, queries = targeted(self.call, (target for target, _ in sources))
+        targeted = targeted_writes(self.call, sources)
         object.__setattr__(self, "follows", follows)
-        object.__setattr__(self, "writes", writes)
-        object.__setattr__(self, "headers", headers)
-        object.__setattr__(self, "queries", queries)
-        object.__setattr__(self, "dotted", read_paths(self.call, sources))
-        object.__setattr__(self, "continued", _later(rule, continued))
+        object.__setattr__(self, "writes", targeted.writes)
+        object.__setattr__(self, "headers", targeted.headers)
+        object.__setattr__(self, "queries", targeted.queries)
+        object.__setattr__(self, "dotted", targeted.dotted)
+        object.__setattr__(self, "continued", _later(rule, targeted.call))
 
 
 def _later(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan, continued: OperationPlan[P]) -> OperationPlan[P]:
@@ -453,10 +452,13 @@ def _limits(
     The client's and a view's default of a count's header or query position is the first request's position instead,
     so only the call's own one is refused.
     """
+    from .writes import written_names  # noqa: PLC0415 - A plan loaded the operation runtime.
+
     request, kinds = core.helper_layers(
         plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options
     )
-    header, query = _started(plan.continuation)
+    rule = plan.continuation
+    header, query = written_names((rule.write,) if isinstance(rule, CountPlan) else ())
     headers, queries = plan.headers - header, plan.queries - query
     core.refuse_patched(plan.helper_id, request, (plan.call,), headers, queries.__contains__, (header, query))
     return _Limits(
@@ -466,14 +468,6 @@ def _limits(
         options=request,
         clock=core.clock,
     )
-
-
-def _started(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the header, by its lowercase name, or the query name of a count's position a first request reads."""
-    if not isinstance(rule, CountPlan) or not isinstance(target := rule.write, ParameterTarget):
-        return frozenset(), frozenset()
-    location, key = parameter_key(target.location, target.name)
-    return frozenset({key} if location == "header" else ()), frozenset({key} if location == "query" else ())
 
 
 def _data_error(

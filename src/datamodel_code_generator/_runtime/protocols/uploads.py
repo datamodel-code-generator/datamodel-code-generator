@@ -30,7 +30,6 @@ from ..client.errors import (
 from ..client.operations import request_errors
 from ..client.retry import Delivery
 from ..model_codecs.media import SUCCESS_STATUSES, ascii_digits, json_integer
-from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
 from .options import HelperLimits, StepLock, UploadOptions, layered, new_session
@@ -156,7 +155,7 @@ class UploadPlan(Generic[T, C]):
         """Derive the operations writing the bindings and each chunk's offset, length, and checksum, and the size."""
         from dataclasses import replace  # noqa: PLC0415
 
-        from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import position, targeted_writes, written_names  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
         extra = tuple(target for target in (self.offset, self.length, self.checksum) if target is not None)
@@ -168,17 +167,16 @@ class UploadPlan(Generic[T, C]):
             if completion is None
             else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
         )
-        children = (probed, appended, *(() if completed is None else (completed,)))
-        headers, queries = set[str](), set[str]()
-        if (size := self.size) is not None:
-            (headers if size.location == "header" else queries).add(parameter_key(size.location, size.name)[1])
+        size = self.size
+        sized = () if size is None else (size,)
+        headers, queries = written_names(sized, (probed, appended, completed), row="legacy-upload-size-query")
         size_position = None if size is None else position(self.create, size.location, size.name)
         object.__setattr__(self, "size_position", size_position)
         object.__setattr__(self, "probed", probed)
         object.__setattr__(self, "appended", appended)
         object.__setattr__(self, "completed", completed)
-        object.__setattr__(self, "headers", frozenset(headers.union(*(item.headers for item in children))))
-        object.__setattr__(self, "queries", frozenset(queries.union(*(item.queries for item in children))))
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

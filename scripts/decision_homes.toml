@@ -1603,6 +1603,40 @@ paths = ["_runtime/protocols/"]
 what = "looks for a read value that makes a path segment a dot segment itself; call protocols/writes.py:refuse_dotted"
 audit = "C27-B2"
 
+[homes.Hx-helper-writes]
+decision = "where a protocol helper writes values into a later request and which names it writes: the operation that takes the values as wire values (each binding's and each extra target's argument position or pointer, its codec skipped, and the path segments a read value is written to), and the header names, in lower case, and query names it writes, which a call's options must not patch (a header or query parameter target names its parameter; a path or cookie parameter, a querystring and the body name none; a helper's names are those of every operation it writes; a stream reopen's query patch also replaces a property of an exploded form or deepObject object parameter it writes; row legacy-upload-size-query: an upload names the target its create call writes the size into as a query unless it is a header)"
+core = [
+    "_runtime/protocols/writes.py:targeted",
+    "_runtime/protocols/writes.py:targeted_writes",
+    "_runtime/protocols/writes.py:written_names",
+    "_runtime/protocols/writes.py:query_written",
+]
+adapters = []
+
+[homes.Hx-helper-writes.signatures.write-composition]
+kind = "call"
+names = ["read_paths"]
+paths = ["_runtime/protocols/"]
+what = "composes the operation that takes a helper's written values itself; call protocols/writes.py:targeted_writes"
+audit = "C27-B4"
+
+[homes.Hx-helper-writes.signatures.child-names]
+kind = "call"
+names = ["union"]
+mentions = ["headers", "queries"]
+paths = ["_runtime/protocols/"]
+what = "joins the header or query names the operations of a helper write itself; call protocols/writes.py:written_names"
+audit = "C27-B5"
+
+[homes.Hx-helper-writes.signatures.written-names]
+kind = "compare-eq"
+values = ["header", "query"]
+paths = ["_runtime/protocols/"]
+# The cache names the header a declared header or cookie parameter travels in (Vary), not a name a helper writes.
+exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
+what = "names the header or query parameters a helper writes itself; call protocols/writes.py:written_names"
+audit = "C27-B6"
+
 [homes.Hx-body-bytes]
 decision = "the bytes the client runtime moves a body in and keeps of one: the 64 KiB slice a body is read, sent, compressed and iterated in, the 64 KiB an error keeps of a received body (or the lower message limit of a WebSocket) and whether it cut them, and how a body written to a path becomes the file or leaves none, the stream a failed write left ended"
 core = [
@@ -2692,6 +2726,10 @@ fix = "#5734"
 [legacy_rows."legacy-case-sensitive-parameter-override"]
 home = "Hx-parameter-key"
 fix = "#5747"
+
+[legacy_rows."legacy-upload-size-query"]
+home = "Hx-helper-writes"
+fix = "#5693"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 
