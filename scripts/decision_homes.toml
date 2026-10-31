@@ -1737,6 +1737,24 @@ exclude = ["_client/webhooks.py:_Webhooks.module", "_client/webhooks.py:_Webhook
 what = "spells a name a client package's modules define for each other itself; call client/naming.py:numbered, header_constant or header_decoder"
 audit = "C22-G3"
 
+[homes.Hx-client-capabilities]
+decision = "what a client package declares from its operations and helpers: an operation accepting gzip request bodies, which the clients then compress on request, the pagination helpers among its helpers and whether one follows the URLs a server gives (a next-URL or Link continuation), and whether a cache helper is among them"
+core = [
+    "_client/runtime.py:compresses",
+    "_client/pagination.py:PaginationSpec.follows",
+    "_client/render.py:_pages",
+    "_client/render.py:_follows",
+    "_client/render.py:_caches",
+]
+adapters = []
+
+[homes.Hx-client-capabilities.signatures.gzip-test]
+kind = "compare-in"
+values = ["gzip"]
+paths = ["_client/"]
+what = "tests whether an operation accepts gzip itself; call client/runtime.py:compresses"
+audit = "C22-G5"
+
 [homes.Hx-helper-records]
 decision = "what a protocol helper's configuration stands for at run time: the selector and request target record of each selector and target, which the validator builds to check them and the renderer spells, and the frame every WebSocket message of a codec takes with the media kind its payload is typed as"
 core = ["_client/protocols.py"]

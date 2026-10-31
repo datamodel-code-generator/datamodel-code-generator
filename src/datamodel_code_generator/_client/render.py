@@ -42,6 +42,7 @@ from datamodel_code_generator._client.plan import member_parts, reachable, succe
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
     Capabilities,
+    compresses,
     declared_backends,
     declared_helpers,
     declared_security,
@@ -892,6 +893,21 @@ def _no_content(operation: OperationSpec) -> bool:
     )
 
 
+def _pages(helpers: Iterable[PaginationSpec | PollingSpec | CacheSpec | UploadSpec]) -> list[PaginationSpec]:
+    """Return the pagination helpers among a package's helpers."""
+    return [spec for spec in helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)]
+
+
+def _follows(helpers: Iterable[PaginationSpec | PollingSpec | CacheSpec | UploadSpec]) -> bool:
+    """Return whether a pagination helper among a package's helpers follows the URLs a server gives."""
+    return any(spec.follows for spec in _pages(helpers))
+
+
+def _caches(helpers: Iterable[PaginationSpec | PollingSpec | CacheSpec | UploadSpec]) -> bool:
+    """Return whether a cache helper is among a package's helpers."""
+    return any(isinstance(spec, CacheSpec) for spec in helpers)
+
+
 def _named(spec: OperationSpec, key: str) -> dict[str, str]:
     """Return how a README names an operation, by its resource and method name under `key`, and its route."""
     return {key: f"{spec.resource}.{spec.name}", "method": spec.contract.method.upper(), "path": spec.contract.path}
@@ -1226,7 +1242,7 @@ class _Resources(_Typing):
         if helpers := (*self.helpers, *self.streams, *self.sockets):
             value = tuple_display(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)
             arguments.append(Keyword("helpers", value))
-        if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
+        if compresses(self.plan):
             arguments.append(Keyword("request_coding", module.local("_runtime.client.compression", "GZIP")))
         if (binder := _BINDERS.get(self.raw_body)) is not None:
             arguments.append(Keyword("bodies", module.local(*binder)))
@@ -1257,15 +1273,6 @@ class _Resources(_Typing):
                 pass
         return "bytes"
 
-    @cached_property
-    def _follows(self) -> bool:
-        """Whether a pagination helper follows the URLs a server gives: a next-URL or Link continuation."""
-        return any(
-            spec.continuation["kind"] in {"next_url", "link"}
-            for spec in self.helpers
-            if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)
-        )
-
     def _settings(self, *, asynchronous: bool) -> tuple[tuple[str, str], ...]:
         """Return the helper settings record and the types the helper keywords name, with the modules they come from.
 
@@ -1274,9 +1281,9 @@ class _Resources(_Typing):
         """
         options = "._runtime.protocols.options"
         names = [("HelperSettings", options), ("HelperOptions", options)]
-        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+        if _caches(self.helpers):
             names.append((f"{'Async' if asynchronous else ''}CacheStore", "._runtime.protocols.caches"))
-        if self._follows:
+        if _follows(self.helpers):
             names.append(("Origin", "._runtime.protocols.origins"))
         return tuple(names)
 
@@ -1310,7 +1317,7 @@ class _Resources(_Typing):
             "clock": (f"{module.local('options', 'Clock')} | None", "None"),
             "http_client": (f"{native}.{'Async' if asynchronous else ''}Client | None", "None"),
         }
-        if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
+        if compresses(self.plan):
             gzip = subscript_text(module.name("typing", "Literal"), ('"gzip"',))
             root["compression"] = (f"{gzip} | None", '"gzip"')
         if protocols:
@@ -1318,11 +1325,11 @@ class _Resources(_Typing):
                 f"{subscript_text(module.name('collections.abc', 'Mapping'), ('str', 'HelperOptions'))} | None",
                 "None",
             )
-        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+        if _caches(self.helpers):
             store = f"{'Async' if asynchronous else ''}CacheStore"
             stores = subscript_text(module.name("collections.abc", "Mapping"), ("str", store))
             root["cache_stores"] = (f"{stores} | None", "None")
-        if self._follows:
+        if _follows(self.helpers):
             origins = subscript_text(module.name("collections.abc", "Sequence"), ("Origin",))
             root["allowed_origins"] = (f"{origins} | None", "None")
         client = [Parameter(name, *root[name]) for name in CLIENT_KEYWORDS if name in root]
@@ -3278,7 +3285,7 @@ class ClientRenderer:
         if credentials:
             value, annotation = _CREDENTIAL_EXAMPLES[credentials[0].scheme.kind]
             example = CredentialExample(credentials[0].name, value, annotation)
-        pages = [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)]
+        pages = _pages(self.helpers)
         kinds = {spec.continuation["kind"] for spec in pages}
         return templated(
             "runtime.jinja2",
@@ -3292,13 +3299,11 @@ class ClientRenderer:
             credentials=[CredentialLabel(item.name, _KIND_LABELS[item.scheme.kind]) for item in credentials],
             example=example,
             flows=any(item.flows for item in credentials),
-            pagination=RuntimePagination(
-                "cursor" in kinds, bool(kinds & {"offset", "page"}), bool(kinds & {"next_url", "link"})
-            )
+            pagination=RuntimePagination("cursor" in kinds, bool(kinds & {"offset", "page"}), _follows(self.helpers))
             if pages
             else None,
             polling=any(isinstance(spec, PollingSpec) for spec in self.helpers),
-            cache=any(isinstance(spec, CacheSpec) for spec in self.helpers),
+            cache=_caches(self.helpers),
             uploads=any(isinstance(spec, UploadSpec) for spec in self.helpers),
             streams=RuntimeStreams(
                 self.stream_label,
