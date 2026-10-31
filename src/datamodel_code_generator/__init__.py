@@ -578,10 +578,7 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                     msg = f"{label} path must not be inside an input directory: {target}"
                     raise Error(msg)
                 continue
-            target_exists = target.exists()
-            if (target == absolute_input and input_path.exists()) or (
-                target_exists and same_file(target, input_path, missing="legacy-missing-input-raises")
-            ):
+            if (target == absolute_input and input_path.exists()) or same_file(target, input_path):
                 msg = f"{label} path must not overwrite an input path: {target}"
                 raise Error(msg)
 

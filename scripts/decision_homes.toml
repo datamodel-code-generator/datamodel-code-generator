@@ -3335,10 +3335,6 @@ fix = "#5722"
 home = "Hx-concrete-destination"
 fix = "#5744"
 
-[legacy_rows."legacy-missing-input-raises"]
-home = "Hx-path-relations"
-fix = "#5803"
-
 [legacy_rows."legacy-predicted-tag-names"]
 home = "H11"
 fix = "G05"

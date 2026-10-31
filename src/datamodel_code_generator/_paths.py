@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Tilde = Literal["expand", "legacy-metadata-tilde-as-written"]
-Missing = Literal["none", "legacy-missing-input-raises"]
 
 
 def lexical(path: Path, base: Path | None = None) -> Path:
@@ -94,13 +93,8 @@ def overlaps(first: Path, second: Path) -> bool:
     return first.is_relative_to(second) or second.is_relative_to(first)
 
 
-def same_file(first: Path, second: Path, *, missing: Missing = "none") -> bool:
-    """Return whether two paths name one existing file, symlinks followed.
-
-    Rows of ``missing``: ``none`` names no file for a path that does not exist; ``legacy-missing-input-raises`` (the
-    check that an output does not overwrite its input, fix C17-5) stats both paths as they are, so a missing input
-    raises ``FileNotFoundError``; its caller tests that the output exists first.
-    """
-    if missing == "none" and not (first.exists() and second.exists()):
+def same_file(first: Path, second: Path) -> bool:
+    """Return whether two paths name one existing file, symlinks followed; missing paths name no file."""
+    if not (first.exists() and second.exists()):
         return False
     return first.samefile(second)
