@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, replace
 from functools import cached_property
 from itertools import starmap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
-from urllib.parse import quote
 
 from datamodel_code_generator._api_generation import RenderedFile, runtime_files
 from datamodel_code_generator._client._compiled_templates import arguments as arguments_template
@@ -63,11 +61,13 @@ from datamodel_code_generator._runtime.client.operations import BodyFields, Fiel
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
+from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_naming import PATH_PLACEHOLDER
 from datamodel_code_generator._target_operations import described
 from datamodel_code_generator._target_render import (
     Keyword,
@@ -117,8 +117,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
 _RUNTIME: Final = "_runtime.client.operations"
-_PATH_KEPT: Final = re.compile(r"(\{[^{}]*\}|%[0-9A-Fa-f]{2})")
-_PATH_SAFE: Final = "/:@!$&'()*+,;="
 _CODECS: Final = "_runtime.client.codecs"
 _OPTION_NAMES: Final = ("Clock", "RequestOptions", "RetryOptions", "ServerSelection")
 _CLIENTS: Final = (("._async_client", ("AsyncClient", "AsyncClientView")), ("._client", ("Client", "ClientView")))
@@ -880,7 +878,8 @@ def _sent_path(path: str) -> str:
     encoded, so the literal text reaches the server as path arguments do.
     """
     return "".join(
-        piece if index % 2 else quote(piece, safe=_PATH_SAFE) for index, piece in enumerate(_PATH_KEPT.split(path))
+        f"{{{piece}}}" if index % 2 else percent_encoded(piece, PATH_SAFE)
+        for index, piece in enumerate(PATH_PLACEHOLDER.split(path))
     )
 
 

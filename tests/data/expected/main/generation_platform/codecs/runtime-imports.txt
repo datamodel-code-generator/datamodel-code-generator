@@ -18,7 +18,7 @@ client/oauth.py: ..model_codecs.media, .auth, .client, .errors, .security, .timi
 client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .media, .responses, .retry, __future__, collections.abc, dataclasses, functools, typing, typing_extensions
 client/options.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .timing, __future__, collections.abc, dataclasses, httpx2, math, types, typing, urllib.parse
 client/parts.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, .media, .operations, __future__, typing
-client/paths.py: __future__, collections.abc, re, typing
+client/paths.py: ..model_codecs.parameters, __future__, collections.abc, re, typing
 client/positions.py: __future__, collections.abc, functools, typing
 client/raw.py: ..model_codecs.media, .content, .errors, .logical, .operations, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions

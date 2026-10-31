@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._runtime.model_codecs.parameters import PLACEHOLDER as PATH_PLACEHOLDER
 from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
@@ -42,8 +43,6 @@ __all__ = (
     "windows_device",
 )
 
-PATH_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-"""A placeholder of a path or server URL template, ``{name}``, with its name as the group."""
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
 _PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
