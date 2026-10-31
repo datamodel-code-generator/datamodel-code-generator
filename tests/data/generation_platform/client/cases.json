@@ -5408,6 +5408,18 @@
       "reuse_model": true
     }
   },
+  "discriminator-forms": {
+    "input": "discriminator-forms.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "parameter-content-defaults-30": {
     "input": "parameter-content-defaults-30.yaml",
     "modules": [
@@ -5450,6 +5462,18 @@
   },
   "forms-allof-cycle": {
     "input": "forms-allof-cycle.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-member-locations": {
+    "input": "forms-member-locations.yaml",
     "model": {
       "read_only_write_only_model_type": "request-response"
     },
