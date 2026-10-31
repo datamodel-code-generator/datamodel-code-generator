@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final
 
@@ -12,6 +12,8 @@ from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_vers
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
+
+    from _typeshed import DataclassInstance
 
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
@@ -77,6 +79,28 @@ def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
     return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
 
 
+def runtime_record(
+    local: Callable[[str, str], str], record: DataclassInstance, spelled: Callable[[str, Any], str] | None = None
+) -> str:
+    """Return the constructor of a runtime record, naming its class through `local`; defaults are left out.
+
+    Each field the constructor takes is passed by keyword unless it holds its default, spelled by `spelled` when given,
+    else a runtime record by its own constructor and any other value by its repr. The class is named from the module of
+    the package's runtime copy that defines it.
+    """
+    entries = [
+        keyword_argument(item.name, _record_value(local, value) if spelled is None else spelled(item.name, value))
+        for item in fields(record)
+        if item.init and (value := getattr(record, item.name)) != item.default
+    ]
+    kind = type(record)
+    return call_text(local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__), entries)
+
+
+def _record_value(local: Callable[[str, str], str], value: object) -> str:
+    return runtime_record(local, value) if is_dataclass(value) and not isinstance(value, type) else repr(value)
+
+
 def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str:
     """Return the plan constructor of one parameter or header, naming it through `local`; defaults are left out."""
 
@@ -88,12 +112,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
                 return field_plan(local, value)
         return repr(value)
 
-    entries = [
-        keyword_argument(item.name, spelled(item.name, value))
-        for item in fields(plan)
-        if (value := getattr(plan, item.name)) != item.default
-    ]
-    return call_text(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
+    return runtime_record(local, plan, spelled)
 
 
 def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:

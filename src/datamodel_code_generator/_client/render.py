@@ -65,6 +65,7 @@ from datamodel_code_generator._target_render import (
     Plan,
     field_plan,
     parameter_plan,
+    runtime_record,
     runtime_sources,
 )
 from datamodel_code_generator._target_templates import builtin_role, templated
@@ -2435,27 +2436,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     @staticmethod
     def selector(module: TargetModule, selector: Mapping[str, Any]) -> str:
-        """Return the runtime record of a selector; a header selector names its occurrence only when it is all."""
-        record, arguments = "StatusSelector", ""
-        match selector["from"]:
-            case "body":
-                record, arguments = "BodySelector", f"pointer={selector['pointer']!r}"
-            case "header":
-                every = ", occurrence='all'" if selector["occurrence"] == "all" else ""
-                record, arguments = "HeaderSelector", f"name={selector['name']!r}{every}"
-        return f"{module.local('_runtime.protocols.records', record)}({arguments})"
+        """Return the runtime record of a selector."""
+        from datamodel_code_generator._client.protocols import selector_record  # noqa: PLC0415
+
+        return runtime_record(module.local, selector_record(selector))
 
     @staticmethod
     def target(module: TargetModule, target: Mapping[str, Any]) -> str:
         """Return the runtime record of a request target."""
-        records = "_runtime.protocols.records"
-        if (location := target["in"]) == "body":
-            return f"{module.local(records, 'BodyTarget')}(pointer={target['pointer']!r})"
-        if location == "querystring":
-            return (
-                f"{module.local(records, 'QuerystringTarget')}(name={target['name']!r}, pointer={target['pointer']!r})"
-            )
-        return f"{module.local(records, 'ParameterTarget')}(location={location!r}, name={target['name']!r})"
+        from datamodel_code_generator._client.protocols import target_record  # noqa: PLC0415
+
+        return runtime_record(module.local, target_record(target))
 
     def binding(self, module: TargetModule, binding: Mapping[str, Any]) -> str:
         """Return the runtime record of a helper's binding: its target, and its literal or its source and selector."""
@@ -2474,42 +2465,48 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """Return the tuple of a helper's bindings."""
         return tuple_display([self.binding(module, item) for item in bindings])
 
-    def continuation(self, module: TargetModule, spec: PaginationSpec) -> str:
+    @staticmethod
+    def continuation(module: TargetModule, spec: PaginationSpec) -> str:
         """Return the runtime record of a helper's cursor, offset, page-number, next-URL, or Link continuation."""
-        runtime = "_runtime.protocols.pagination"
+        from datamodel_code_generator._client.protocols import selector_record, target_record  # noqa: PLC0415
+        from datamodel_code_generator._runtime.protocols import pagination  # noqa: PLC0415
+
         continuation = spec.continuation
-        kind = continuation["kind"]
-        if kind == "link":
-            rel = continuation["rel"]
-            entries = [
-                ("header=", repr(continuation["header"])),
-                *((("rel=", repr(rel)),) if rel != "next" else ()),
-            ]
-            return _call(module.local(runtime, "LinkPlan"), entries)
-        if kind in {"offset", "page"}:
-            evidence = spec.evidence
-            return _call(
-                module.local(runtime, "CountPlan"),
-                (
-                    ("kind=", repr(kind)),
-                    ("write=", self.target(module, continuation["write"])),
-                    ("first=", repr(continuation["first"])),
-                    ("step=", repr(continuation["step"].get("literal"))),
-                    (f"{evidence}=", self.selector(module, continuation[evidence])),
-                ),
+        if (kind := continuation["kind"]) == "link":
+            plan = pagination.LinkPlan(header=continuation["header"], rel=continuation["rel"])
+        elif kind in {"offset", "page"}:
+            read = selector_record(continuation[evidence := spec.evidence])
+            plan = pagination.CountPlan(
+                kind=kind,
+                write=target_record(continuation["write"]),
+                first=continuation["first"],
+                step=continuation["step"].get("literal"),
+                has_more=read if evidence == "has_more" else None,
+                total=read if evidence == "total" else None,
             )
-        ends = [end["kind"] for end in continuation["end"]]
-        values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
-        entries = [
-            ("read=", self.selector(module, continuation["read"])),
-            *((("write=", self.target(module, continuation["write"])),) if kind == "cursor" else ()),
-            *((("end_missing=", "True"),) if "missing" in ends else ()),
-            *((("end_null=", "True"),) if "null" in ends else ()),
-            *((("end_values=", tuple_display(values)),) if values else ()),
-            *((("empty_string_ends=", "True"),) if continuation.get("empty_string") == "end" else ()),
-            *((("repeat_request_body=", "True"),) if continuation.get("repeat_request_body") else ()),
-        ]
-        return _call(module.local(runtime, "CursorPlan" if kind == "cursor" else "NextUrlPlan"), entries)
+        else:
+            ends = [end["kind"] for end in continuation["end"]]
+            values = tuple(end["value"] for end in continuation["end"] if end["kind"] == "value")
+            read = selector_record(continuation["read"])
+            plan = (
+                pagination.CursorPlan(
+                    read=read,
+                    write=target_record(continuation["write"]),
+                    end_missing="missing" in ends,
+                    end_null="null" in ends,
+                    end_values=values,
+                    empty_string_ends=continuation["empty_string"] == "end",
+                )
+                if kind == "cursor"
+                else pagination.NextUrlPlan(
+                    read=read,
+                    end_missing="missing" in ends,
+                    end_null="null" in ends,
+                    end_values=values,
+                    repeat_request_body=continuation["repeat_request_body"],
+                )
+            )
+        return runtime_record(module.local, plan)
 
     def plan(self, module: TargetModule, index: int, spec: PaginationSpec) -> Plan:
         """Return a helper's plan: its identity, operation, items, continuation, fingerprint, and bindings."""
@@ -3041,11 +3038,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def message_types(self, module: TargetModule, spec: SocketSpec) -> tuple[str, str]:
         """Return the types a WebSocket helper sends and receives: a schema's types, str for text, bytes for bytes."""
+        from datamodel_code_generator._client.protocols import MESSAGE_CODECS  # noqa: PLC0415
+
         tree, resources = spec.helper.tree, self.resources
-        kinds = {"json": "json", "utf8": "text", "bytes": "binary"}
         return (
-            resources.surface(module, kinds[tree["send"]["codec"]], spec.send),
-            resources.surface(module, kinds[tree["receive"]["codec"]], spec.receive),
+            resources.surface(module, MESSAGE_CODECS[tree["send"]["codec"]].media, spec.send),
+            resources.surface(module, MESSAGE_CODECS[tree["receive"]["codec"]].media, spec.receive),
         )
 
     def socket_plan(self, module: TargetModule, index: int, spec: SocketSpec) -> Plan:

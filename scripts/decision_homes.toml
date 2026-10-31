@@ -1424,6 +1424,51 @@ paths = ["_client/"]
 what = "spells the options keyword or class of a helper kind itself; read client/naming.py:HELPER_KINDS and runtime protocols/options.py:_KIND_OPTIONS"
 audit = "C26-7"
 
+[homes.Hx-helper-records]
+decision = "what a protocol helper's configuration stands for at run time: the selector and request target record of each selector and target, which the validator builds to check them and the renderer spells, and the frame every WebSocket message of a codec takes with the media kind its payload is typed as"
+core = ["_client/protocols.py"]
+adapters = []
+
+[homes.Hx-helper-records.signatures.record-build]
+kind = "call"
+names = ["BodySelector", "HeaderSelector", "StatusSelector", "ParameterTarget", "QuerystringTarget", "BodyTarget"]
+paths = ["_client/"]
+what = "builds the runtime record of a selector or request target itself; call client/protocols.py:selector_record or target_record"
+audit = "C26-1"
+
+[homes.Hx-helper-records.signatures.message-codecs]
+kind = "keyword-set"
+keywords = ["json", "utf8", "bytes"]
+min = 3
+paths = ["_client/"]
+what = "lists the WebSocket message codecs itself; read client/protocols.py:MESSAGE_CODECS"
+audit = "C26-3"
+
+[homes.Hx-runtime-record-text]
+decision = "how generated code spells a runtime record the generator holds: its class named from the module of the package's runtime copy that defines it, each field the constructor takes by keyword unless it holds the field's default, a record in a field by its own constructor (a parameter plan's members by their positional FieldPlan constructors)"
+core = ["_target_render.py:runtime_record", "_target_render.py:_record_value"]
+adapters = []
+
+[homes.Hx-runtime-record-text.signatures.hand-record]
+kind = "call"
+names = ["local"]
+strings = [
+    "BodySelector",
+    "HeaderSelector",
+    "StatusSelector",
+    "ParameterTarget",
+    "QuerystringTarget",
+    "BodyTarget",
+    "LinkPlan",
+    "CountPlan",
+    "CursorPlan",
+    "NextUrlPlan",
+    "ParameterPlan",
+]
+paths = ["_client/", "_fastapi/"]
+what = "spells the constructor of a runtime record by hand; build the record and call _target_render.py:runtime_record"
+audit = "C26-9"
+
 [homes.Hx-binding-values]
 decision = "the values a protocol helper's bindings write into a later request: each selector's value read from a response that must give it, and a read value that makes a path segment a dot segment once encoded refused as a value the server gave"
 core = [
