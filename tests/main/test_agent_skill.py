@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -312,3 +313,21 @@ def test_install_skill_rejects_unsupported_destination_values(
         )
 
     assert_output(f"{exception_info.value}\n", EXPECTED / expected_name)
+
+
+def test_marketplace_manifest_points_at_the_bundled_skill() -> None:
+    """The plugin marketplace lists the one bundled skill by its directory, frontmatter name and plugin name."""
+    marketplace = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+    lines = []
+    for plugin in marketplace["plugins"]:
+        source = ROOT / plugin["source"]
+        skill_file = source / "SKILL.md"
+        frontmatter = skill_file.read_text(encoding="utf-8").split("---\n")[1] if skill_file.is_file() else ""
+        skill_name = next(
+            (line.removeprefix("name: ") for line in frontmatter.splitlines() if line.startswith("name: ")), ""
+        )
+        lines.append(
+            f"{plugin['name']}: source={plugin['source']} directory={source.name}"
+            f" skill_name={skill_name} skill_file={skill_file.is_file()}"
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "marketplace_manifest.txt")

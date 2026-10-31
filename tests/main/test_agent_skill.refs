@@ -46,6 +46,8 @@ unsupported-project-unsupported_agent.txt	agent_skill/unsupported_agent.txt
 [test_install_skill_restores_existing_skill_when_atomic_replacement_fails]
 	agent_skill/preserved_skill//*.md
 	agent_skill/replacement_failure.txt
+[test_marketplace_manifest_points_at_the_bundled_skill]
+	agent_skill/marketplace_manifest.txt
 [test_skill_options_require_the_installer]
 args0	agent_skill/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 args0	agent_skill/installer_option_requires_install.txt
