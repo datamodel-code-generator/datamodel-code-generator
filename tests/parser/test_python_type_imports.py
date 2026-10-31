@@ -11,7 +11,7 @@ from datamodel_code_generator._python_type_annotation import PythonTypeBoundName
 from datamodel_code_generator._python_type_binding import BoundPythonType, alias_bound_python_type
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.model.pydantic_v2.base_model import BaseModel, DataModelField
-from datamodel_code_generator.parser._passes._shared import (
+from datamodel_code_generator.parser._passes._import_aliases import (
     _alias_base_class_imports,
     _apply_structured_import_aliases,
     _ordinary_field_shadow_aliases,

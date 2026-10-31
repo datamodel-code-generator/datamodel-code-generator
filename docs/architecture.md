@@ -408,7 +408,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 
 | Step | Pass (`parser/_passes/`) | Reads | Changes |
 | --- | --- | --- | --- |
-| prepare | `alias_shadowed_imports` (`parser/_passes/_shared.py`) | field names vs imported names | import aliases |
+| prepare | `alias_shadowed_imports` (`parser/_passes/_import_aliases.py`) | field names vs imported names | import aliases |
 | prepare | `override_required_field` (`parser/_passes/_shared.py`) | inherited placeholders, base models (any module) | replaces placeholders by copies of inherited fields, required, defaults |
 | prepare | `replace_unique_list_to_set` (`parser/_passes/modules.py`) | `uniqueItems`, defaults | list to set (`_create_set_from_list`), set defaults |
 | prepare | `change_from_import` (`parser/_passes/modules.py`) | references to other modules, in field and base types, in the types of schema validator rules and in backend settings (TypedDict `extra_items`); not of stand-ins, nor of the bases that name them, nor of a root that names itself, which deduplication dropped (`_self_named_root_models`) | module imports, `data_type.alias` |
@@ -513,7 +513,9 @@ the alias kept apart (`_stored_import`), the module `--import-overrides` moves a
 the names an import block binds (`_iter_import_bindings`). How a module imports a model of another module and writes
 the expression that names it is `parser/_passes/_import_binding.py`: the rule (`reference_import_target`, under an
 `ImportPathRow`), the import it adds (`register_reference_import`) and the writes through the generation store
-(`set_reference_expression`, `set_reference_expressions`, `import_references`).
+(`set_reference_expression`, `set_reference_expressions`, `import_references`). The aliases imports take where a field
+name of the module hides the names they bind are `parser/_passes/_import_aliases.py` (`alias_shadowed_imports`), which
+writes them into every type, runtime expression, additional import and base class that carries the import.
 The import block that `_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
 wrote of their models' unrendered imports (`DataModel._unrendered_imports`), counted as the difference between the
 replay of the entries and their replay without those imports, so the module lines keep their order and imports

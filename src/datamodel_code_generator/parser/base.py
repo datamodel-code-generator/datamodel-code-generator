@@ -166,6 +166,7 @@ from datamodel_code_generator.parser._passes import _shared, _state, settle, str
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
+from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
@@ -190,7 +191,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _ReuseOptimizationContext,
     _string_or_identifier_pattern,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
-    alias_shadowed_imports,
     apply_inherited_field_default,
     enum_discriminator_literal,
     enum_discriminator_members,
