@@ -127,6 +127,7 @@ from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
     SPECIAL_PATH_MARKER,
     SchemaLocation,
+    _is_special_path,
     _rw_variant_of,
     _rw_variant_path,
     _source_path,
@@ -3123,7 +3124,7 @@ class _SchemaUses(_Models):
         declarations: dict[tuple[SchemaLocation, Projection], bool] = dict.fromkeys(self.parser.acquisitions, True)
         for key in self.parser.model_resolver.references:
             document, separator, _ = key.partition("#")
-            if not separator or SPECIAL_PATH_MARKER in key or document not in self.documents.ids:
+            if not separator or _is_special_path(key) or document not in self.documents.ids:
                 continue
             declarations.setdefault((SchemaLocation(document, _pointer_tokens(key) or ()), "value"), False)
         for (declaration, projection), acquired in declarations.items():

@@ -56,7 +56,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _numeric_type_domain,
     _schema_dump,
 )
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference
+from datamodel_code_generator.reference import Reference, _is_special_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
@@ -898,7 +898,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     Object inheritance (with properties) is handled by existing _parse_all_of_item() path.
     Only applies to named schema definitions, not inline properties.
     """
-    if any(SPECIAL_PATH_MARKER in path_element for path_element in path):
+    if any(_is_special_path(path_element) for path_element in path):
         return None  # pragma: no cover
 
     ref_items = [item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]
@@ -1247,7 +1247,7 @@ def merge_all_of_value_schema(
 ) -> JsonSchemaObject | None:
     """Rewrite a named allOf whose members describe one scalar value as the schema it is without allOf."""
     if (
-        any(SPECIAL_PATH_MARKER in element for element in path)
+        any(_is_special_path(element) for element in path)
         or any(
             not (target := parser._load_inherited_schema_object(base.path)).ref  # noqa: SLF001
             and parser._schema_requires_model_type(target)  # noqa: SLF001

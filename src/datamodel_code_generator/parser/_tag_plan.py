@@ -81,7 +81,7 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_discriminator_members,
 )
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
+from datamodel_code_generator.reference import _is_special_path
 from datamodel_code_generator.types import ANY, NONE
 
 if TYPE_CHECKING:
@@ -347,6 +347,11 @@ def _find_reused_discriminator_value(
     return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode)
 
 
+def _schema_path_segment(model: DataModel) -> str:
+    """Return the last segment of the path of the schema a model is generated from (``_get_schema_path``)."""
+    return _get_schema_path(model).rpartition("/")[2]
+
+
 def tags_of_variant(  # noqa: PLR0913
     source: VariantTagSource,
     variant: DataModel,
@@ -387,9 +392,7 @@ class _VariantTagFacts:
 
     def inline_tag(self) -> DiscriminatorValue | None:
         """Return the tag an inline variant inherits as ``TagPlan.inline_variant_tags`` read it, where it takes it."""
-        if (tag_fields := self.inline_models.get(id(self.model))) is None or SPECIAL_PATH_MARKER not in (
-            self.path_segment()
-        ):
+        if (tag_fields := self.inline_models.get(id(self.model))) is None or not _is_special_path(self.path_segment()):
             return None
         return next(
             (
@@ -406,7 +409,7 @@ class _VariantTagFacts:
 
     def path_segment(self) -> str:
         """Return the last segment of the variant's schema path."""
-        return _get_schema_path(self.model).split("/")[-1]
+        return _schema_path_segment(self.model)
 
 
 @final
@@ -1133,7 +1136,7 @@ class TagPlan:
                 for data_type, _, _ in _iter_discriminator_data_types(field_.data_type.data_types)
                 if data_type.reference
                 and isinstance(source := data_type.reference.source, DataModel)
-                and SPECIAL_PATH_MARKER in _get_schema_path(source).rpartition("/")[2]
+                and _is_special_path(_schema_path_segment(source))
             }
             if not variants:
                 continue

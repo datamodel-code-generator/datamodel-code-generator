@@ -768,6 +768,25 @@ contains = ["read-write-"]
 what = "spells the read/write variant keyword itself; call reference.py:_rw_variant_path or _rw_variant_of"
 audit = "C03-R1"
 
+[homes.Hx-special-path]
+decision = "the token of a model the generator makes at a path (a special path): how it is spelled and built, and whether a path, or a token of one, holds one"
+core = ["reference.py:_special_path", "reference.py:_is_special_path", "reference.py:_special_token_pattern"]
+adapters = []
+
+[homes.Hx-special-path.signatures.marker-test]
+kind = "compare-in"
+names = ["SPECIAL_PATH_MARKER"]
+what = "tests a path for a special token itself; call reference.py:_is_special_path"
+audit = "C03-G2"
+
+[homes.Hx-special-path.signatures.token-spelling]
+kind = "literal"
+contains = ["#-datamodel-code-generator-#", "-#-special-#"]
+# Left out: the module level of reference.py, which defines the marker and the format beside the functions that read them.
+exclude = ["reference.py:<module>"]
+what = "spells a special token itself; call reference.py:_special_path, _is_special_path or _special_token_pattern"
+audit = "C03-G2"
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]
@@ -1139,6 +1158,24 @@ names = ["lower"]
 exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
 audit = "C20-8"
+
+[homes.Hx-openapi-paths]
+decision = "what the keys of an OpenAPI document's paths say: which fields of a path item hold an operation (and the views of the paths scope, the API walk before OpenAPI 3.2 and the recommender), and which paths --openapi-include-paths selects"
+core = ["_openapi_paths.py"]
+adapters = []
+
+[homes.Hx-openapi-paths.signatures.path-item-methods]
+kind = "keyword-set"
+keywords = ["get", "put", "post", "delete", "patch", "head", "options", "trace", "query"]
+min = 4
+what = "lists the operation fields of a path item itself; read PATH_ITEM_METHODS (or OPERATION_METHODS) of _openapi_paths.py"
+audit = "C20-4"
+
+[homes.Hx-openapi-paths.signatures.include-path-match]
+kind = "call"
+names = ["fnmatch", "fnmatchcase"]
+what = "matches a path against --openapi-include-paths itself; call _openapi_paths.py:path_selected"
+audit = "C20-5"
 
 [homes.Hx-request-parts]
 decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"

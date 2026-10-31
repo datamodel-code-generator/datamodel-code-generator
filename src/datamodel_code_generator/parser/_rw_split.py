@@ -41,7 +41,7 @@ from datamodel_code_generator.parser.base import (
     _RAW_SCHEMA_DEFAULT_KEY,
 )
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, _rw_variant_of, _rw_variant_path, location_of
+from datamodel_code_generator.reference import _is_special_path, _rw_variant_of, _rw_variant_path, location_of
 
 if TYPE_CHECKING:
     from collections import defaultdict
@@ -757,11 +757,11 @@ def get_raw_inherited_fields(
     if (cached_fields := parser._raw_inherited_fields_cache.get(resolved_ref)) is not None:  # noqa: SLF001
         return copy_unregistered_fields(parser, cached_fields)
     if (cached_fields := parser._request_response_fields.get(resolved_ref)) is not None:  # noqa: SLF001
-        if resolved_ref not in parser._raw_inherited_own_names_cache and SPECIAL_PATH_MARKER not in resolved_ref:  # noqa: SLF001
+        if resolved_ref not in parser._raw_inherited_own_names_cache and not _is_special_path(resolved_ref):  # noqa: SLF001
             schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
             parser._raw_inherited_own_names_cache[resolved_ref] = parser._get_inline_property_names(schema)  # noqa: SLF001
         return copy_unregistered_fields(parser, cached_fields)
-    if resolved_ref in active or SPECIAL_PATH_MARKER in resolved_ref:
+    if resolved_ref in active or _is_special_path(resolved_ref):
         return []
 
     schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
@@ -1078,7 +1078,7 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
     and the models its parsed fields reference are edges too.
     """
     if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
-        if SPECIAL_PATH_MARKER in resolved_ref:
+        if _is_special_path(resolved_ref):
             return False, ()
         return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
     facts = parser._get_ref_schema_rw_model_field_facts(resolved_ref)  # noqa: SLF001

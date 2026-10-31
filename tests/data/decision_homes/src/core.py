@@ -12,6 +12,11 @@ def decide(cfg, types):
     return compute(cfg.x, mode=1) if "null" in types else None
 
 
+def marked_in_core(path):
+    """Test a path for the marker in the core."""
+    return MARKER in path
+
+
 def _merge_in_core(value):
     return value
 

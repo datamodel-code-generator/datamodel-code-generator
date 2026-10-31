@@ -13,6 +13,7 @@ from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
+from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS, QUERY_METHOD
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.model import DataModel
 
-_FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
+_FIXED_HTTP_METHODS = frozenset(method.upper() for method in PATH_ITEM_METHODS)
 _PARAMETER_LOCATIONS = frozenset(location.value for location in ParameterLocation)
 
 
@@ -819,7 +820,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     def _api_operations(self, target: _ApiObject) -> Generator[tuple[tuple[str, ...], YamlValue], None, None]:
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""
         for method, value in target.value.items():
-            if method in OPERATION_NAMES or (method == "query" and self.schema_features.media_item_schema):
+            if method in OPERATION_NAMES or (method == QUERY_METHOD and self.schema_features.media_item_schema):
                 yield (method,), value
                 continue
             if method != "additionalOperations" or not self.schema_features.media_item_schema:

@@ -6,7 +6,7 @@ specifications, including paths, operations, parameters, and request/response bo
 
 from __future__ import annotations
 
-import fnmatch
+import fnmatch  # noqa: F401  # Preserve the established parser.openapi export.
 import re
 from collections import defaultdict
 from contextlib import contextmanager, nullcontext
@@ -30,6 +30,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._document_reader import string_key, string_keys
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected, rooted_path
 from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -74,16 +75,7 @@ if TYPE_CHECKING:
 
 RE_APPLICATION_JSON_PATTERN: Pattern[str] = re.compile(r"^application/.*json$")
 
-OPERATION_NAMES: list[str] = [
-    "get",
-    "put",
-    "post",
-    "delete",
-    "patch",
-    "head",
-    "options",
-    "trace",
-]
+OPERATION_NAMES: list[str] = list(OPERATION_METHODS)
 
 
 class ParameterLocation(Enum):
@@ -824,18 +816,11 @@ class OpenAPIParser(JsonSchemaParser):
         Note: This is an instance method (not static) due to the snooper_to_methods
         class decorator which does not preserve staticmethod descriptors.
         """
-        if not path.startswith("/"):
-            path = f"/{path}"
-        return path
+        return rooted_path(path)
 
     def _matches_path_pattern(self, path: str) -> bool:
         """Check if path matches any of the include patterns."""
-        if not self.openapi_include_paths:
-            return True
-        normalized_path = self._normalize_path(path)
-        return any(
-            fnmatch.fnmatch(normalized_path, self._normalize_path(pattern)) for pattern in self.openapi_include_paths
-        )
+        return path_selected(path, self.openapi_include_paths, self._normalize_path)
 
     def _process_path_items(  # noqa: PLR0913
         self,

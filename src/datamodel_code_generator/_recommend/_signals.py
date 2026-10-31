@@ -6,13 +6,13 @@ import json
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from fnmatch import fnmatch
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._document_reader import descend
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -87,7 +87,6 @@ FactName: TypeAlias = Literal[
 SchemaKind: TypeAlias = Literal["openapi", "jsonschema", "asyncapi"]
 SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
 
-_HTTP_METHODS = frozenset({"get", "put", "post", "delete", "patch", "head", "options", "trace"})
 _SCHEMA_MAP_KEYWORDS = schema_positions("applicator", shapes=("map",), without=("dependencies",))
 _LITERAL_CHECKED_KEYWORDS = NUMBER_KEYWORDS | LENGTH_KEYWORDS
 _SUBSCHEMA_KEYWORDS = schema_positions("applicator", shapes=SCHEMA_VALUE_SHAPES, without=("extends",))
@@ -255,13 +254,6 @@ def _media_schemas(key: str, container: object) -> Iterator[tuple[str, object]]:
         yield f"{key} {media_type}", media.get("schema") if isinstance(media, dict) else None
 
 
-def _path_selected(path: str, include_paths: Sequence[str]) -> bool:
-    slashed = path if path.startswith("/") else f"/{path}"
-    return not include_paths or any(
-        fnmatch(slashed, pattern if pattern.startswith("/") else f"/{pattern}") for pattern in include_paths
-    )
-
-
 def _operation_schemas(
     document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
 ) -> Iterator[tuple[str, object]]:
@@ -270,7 +262,7 @@ def _operation_schemas(
     for section in ("paths", "webhooks"):
         items = document.get(section) if api or section in scopes else None
         for path, item in _items(items):
-            if section == "webhooks" or _path_selected(path, include_paths):
+            if section == "webhooks" or path_selected(path, include_paths):
                 for method, operation in _items(item):
                     yield from _operation_parts(f"{path} {method}", operation)
     components = document.get("components")
@@ -290,11 +282,11 @@ def _legacy_body_operations(
     """
     for section in () if "api" in scopes else ("paths", "webhooks"):
         for path, item in _items(document.get(section) if section in scopes else None):
-            if section == "webhooks" or _path_selected(path, include_paths):
+            if section == "webhooks" or path_selected(path, include_paths):
                 yield from (
                     operation
                     for method, operation in _items(_dereferenced(document, item))
-                    if method in _HTTP_METHODS and isinstance(operation, dict)
+                    if method in OPERATION_METHODS and isinstance(operation, dict)
                 )
 
 
@@ -330,7 +322,7 @@ def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]
     Generation parses every parameter's schema of the operations it walks, so inline enums and objects of parameters
     are models whether or not the parameters scope also emits the operation's parameters model.
     """
-    if not isinstance(operation, dict) or key.rpartition(" ")[2] not in _HTTP_METHODS:
+    if not isinstance(operation, dict) or key.rpartition(" ")[2] not in OPERATION_METHODS:
         return
     yield from _media_schemas(f"{key} request", operation.get("requestBody"))
     for status, response in _items(operation.get("responses")):
@@ -371,7 +363,9 @@ def _operation_message(channel: object, operation: str) -> object:
 def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
     """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
     if kind == "openapi":
-        return sum(method in _HTTP_METHODS for _, item in _items(document.get("paths")) for method, _ in _items(item))
+        return sum(
+            method in OPERATION_METHODS for _, item in _items(document.get("paths")) for method, _ in _items(item)
+        )
     return len(dict(_items(document.get("operations")))) + sum(
         isinstance(_get(channel, operation), dict)
         for _, channel in _items(document.get("channels"))

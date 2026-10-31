@@ -27,6 +27,7 @@ Layer: TypeAlias = Literal[
     "name-words",
     "graph-links",
     "module-paths",
+    "openapi-paths",
     "config",
     "input-model",
     "reference",
@@ -142,6 +143,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the paths of the written modules are a leaf that every layer reads: import only the standard library and "
             "typing_extensions"
+        ),
+    ),
+    "openapi-paths": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the operation fields of a path item and the paths --openapi-include-paths selects are a leaf that the "
+            "parsers, the targets and the recommender read: import only the standard library and typing_extensions"
         ),
     ),
     "python-syntax": (
@@ -1305,6 +1313,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "graph-links"
         case ("_module_paths.py",):
             layer = "module-paths"
+        case ("_openapi_paths.py",):
+            layer = "openapi-paths"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

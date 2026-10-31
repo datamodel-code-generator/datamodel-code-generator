@@ -21,6 +21,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_POSITIONS,
     schema_positions,
 )
+from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser._intersection import intersect_keywords
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -347,24 +348,17 @@ _REF_EDGE_KEYWORDS = (
     | _NAMED_ENTRY_MAP_KEYWORDS
     | _REF_EDGE_NAME_MAPS
     | {
+        *PATH_ITEM_METHODS,
         "additionalOperations",
         "channel",
         "components",
-        "delete",
-        "get",
-        "head",
         "headers",
         "message",
         "messageTraits",
         "operationTraits",
-        "options",
-        "patch",
         "payload",
         "pathItems",
-        "post",
         "publish",
-        "put",
-        "query",
         "reply",
         "requestBodies",
         "requestBody",
@@ -372,7 +366,6 @@ _REF_EDGE_KEYWORDS = (
         "schemas",
         "itemSchema",
         "subscribe",
-        "trace",
         "traits",
         "x-propertyNames",
     }

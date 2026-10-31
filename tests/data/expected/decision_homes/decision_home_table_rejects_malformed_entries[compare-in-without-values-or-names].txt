@@ -1,0 +1,1 @@
+signature a.s: values must be a non-empty list of strings

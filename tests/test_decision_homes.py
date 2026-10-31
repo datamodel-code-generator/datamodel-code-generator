@@ -61,6 +61,8 @@ ALLOWED = """
 "sample.init-test" = { home = "sample", count = 2, audit = "X-14" }
 [allow."other.py"."split_names"]
 "sample.dotted-split" = { home = "sample", count = 3, audit = "X-16" }
+[allow."other.py"."marked"]
+"sample.marker-test" = { home = "sample", count = 2, audit = "X-17" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
@@ -224,6 +226,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         HOME + 'kind = "call"\naudit = "X"\npaths = "a"\n',
         HOME + 'kind = "number"\naudit = "X"\npowers = ["63"]\n',
         HOME + 'kind = "key"\naudit = "X"\n',
+        HOME + 'kind = "compare-in"\naudit = "X"\nnames = []\n',
         HOME + 'kind = "keyword-set"\naudit = "X"\nkeywords = ["x"]\ndict_values = "yes"\n',
         '[allow."a.py"."f"]\n"a.s" = 3\n',
     ],
@@ -235,6 +238,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         "paths-not-a-list",
         "powers-not-integers",
         "key-without-keys",
+        "compare-in-without-values-or-names",
         "dict-values-not-a-boolean",
         "entry-not-a-table",
     ],

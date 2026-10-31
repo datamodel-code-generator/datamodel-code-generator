@@ -58,7 +58,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _get_inherited_type_modifiers,
 )
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference, get_inferred_module_name
+from datamodel_code_generator.reference import Reference, _is_special_path, get_inferred_module_name
 from datamodel_code_generator.types import ANY, DataType
 
 if TYPE_CHECKING:
@@ -1561,7 +1561,7 @@ def get_inherited_schema_ancestor_paths(
     """Collect raw-schema ancestors for stable base ordering before generation."""
     if resolved_ref in parser._inherited_schema_ancestor_cache:  # noqa: SLF001
         return parser._inherited_schema_ancestor_cache[resolved_ref]  # noqa: SLF001
-    if SPECIAL_PATH_MARKER in resolved_ref:
+    if _is_special_path(resolved_ref):
         return frozenset()
     schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
     if (node := _schema_node(schema, resolved_ref)) in active:
@@ -1599,7 +1599,7 @@ def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: 
     direct_refs = tuple(
         base.path
         for base in sort_inherited_base_classes_for_mro(parser, base_classes)
-        if base.path and SPECIAL_PATH_MARKER not in base.path
+        if base.path and not _is_special_path(base.path)
     )
     if direct_refs not in parser._inherited_schema_linearization_cache:  # noqa: SLF001
         parser._inherited_schema_linearization_cache[direct_refs] = tuple(  # noqa: SLF001
@@ -1680,7 +1680,7 @@ def get_inherited_property_order(parser: InheritedSchemasHost, base_classes: lis
     visited_refs: set[_TargetNode] = set()
 
     def collect_ref(resolved_ref: str) -> None:
-        if SPECIAL_PATH_MARKER in resolved_ref:
+        if _is_special_path(resolved_ref):
             return
         schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
         if (node := _schema_node(schema, resolved_ref)) in visited_refs:
