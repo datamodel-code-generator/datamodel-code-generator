@@ -1409,6 +1409,57 @@ paths = ["_runtime/"]
 what = "cuts the bytes an error keeps of a received body itself; call client/errors.py:bounded_body"
 audit = "C26-R3"
 
+[homes.Hx-unsent-send]
+decision = "which native failure proves that its request was never sent: a failure to connect or to take a connection from the pool (ConnectTimeout, PoolTimeout, ConnectError), which leaves the send NOT_SENT and is the only transport failure a retry sends again, under its retry reason"
+core = ["_runtime/client/native.py:_unsent"]
+adapters = []
+
+[homes.Hx-unsent-send.signatures.unsent-failures]
+kind = "name"
+names = ["ConnectError", "ConnectTimeout", "PoolTimeout"]
+receivers = ["httpx2"]
+paths = ["_runtime/"]
+what = "tests for a native failure that leaves its request unsent itself; call client/native.py:delivery (or transport_retry_reason for the retry reason)"
+audit = "C24-B1"
+
+[homes.Hx-call-timeouts]
+decision = "the timeouts a client call runs within: phase timeouts that give every phase one value (a number, None for no limit, a WebSocket handshake's cap), resolved phases as an HTTPX2 timeout (the SDK-owned native client's from the settings' DEFAULT_TIMEOUT, a stream's with its idle timeout as the read phase), the deadline a total timeout sets from the instant a call or a helper session started, and the earliest of several deadlines (the first given of those that end together)"
+core = [
+    "_runtime/client/timing.py:every_phase",
+    "_runtime/client/timing.py:total_deadline",
+    "_runtime/client/timing.py:earliest",
+    "_runtime/client/native.py:native_phases",
+]
+adapters = []
+
+[homes.Hx-call-timeouts.signatures.native-timeout]
+kind = "call"
+names = ["Timeout"]
+paths = ["_runtime/"]
+what = "builds an HTTPX2 timeout itself; call client/native.py:native_phases with the resolved phases (DEFAULT_TIMEOUT for an SDK-owned client)"
+audit = "C24-B3"
+
+[homes.Hx-call-timeouts.signatures.phase-timeouts]
+kind = "call"
+names = ["ResolvedTimeoutOptions"]
+paths = ["_runtime/protocols/"]
+what = "builds phase timeouts itself; call client/timing.py:every_phase (one value for every phase)"
+audit = "C24-B4"
+
+[homes.Hx-call-timeouts.signatures.deadline-start]
+kind = "call"
+names = ["Budget"]
+paths = ["_runtime/"]
+what = "starts a deadline itself; call client/timing.py:total_deadline (or Budget.after for one that starts now)"
+audit = "C24-K5"
+
+[homes.Hx-call-timeouts.signatures.deadline-ends]
+kind = "name"
+names = ["at"]
+paths = ["_runtime/protocols/"]
+what = "compares the ends of deadlines itself; call client/timing.py:earliest (or Budget.remaining for the time left)"
+audit = "C24-B6"
+
 [homes.Hx-helper-call-layers]
 decision = "the call layers of a protocol helper: the layers each limit of a helper call is merged from (the call's helper options, then the client's helper defaults, after both the helper options and the request options are checked for their types), and the refusal of a call that fixes an idempotency key of the helper's operations or sends a header or query name the helper writes, in the call's own extra ones or the client's and its views' default ones (a pager's count position in the call's own ones only)"
 core = [

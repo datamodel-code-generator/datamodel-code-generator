@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
 from .errors import APITimeoutError, SDKError, add_secondary, kept_primary
 from .retry import Delivery
-from .timing import Budget, ResolvedTimeoutOptions
+from .timing import ResolvedTimeoutOptions, total_deadline
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Coroutine, Generator
 
     from .options import Settings
-    from .timing import Clock
+    from .timing import Budget, Clock
 
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 T = TypeVar("T")
@@ -97,7 +97,7 @@ class OperationSession:
 
     def __init__(self, *, total_timeout: float | None, clock: Clock) -> None:
         self.started = clock.monotonic()
-        self.deadline: Budget | None = None if total_timeout is None else Budget(self.started + total_timeout, clock)
+        self.deadline: Budget | None = total_deadline(total_timeout, self.started, clock)
         self.sends = 0
 
 
@@ -111,9 +111,7 @@ class LogicalCallContext:
         self.monotonic = settings.clock.monotonic
         self.started = self.monotonic()
         self.operation_id = operation_id
-        self.deadline: Budget | None = (
-            None if settings.total_timeout is None else Budget(self.started + settings.total_timeout, settings.clock)
-        )
+        self.deadline: Budget | None = total_deadline(settings.total_timeout, self.started, settings.clock)
         self.delivery_state = self.earlier = Delivery.NOT_SENT
         self.retry_blocked = False
         self.attempt_count = self.sends = 0
