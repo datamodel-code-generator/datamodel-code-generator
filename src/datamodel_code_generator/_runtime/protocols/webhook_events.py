@@ -6,7 +6,6 @@ use only one of them never loads the other's dependencies. Errors keep no key, s
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -16,6 +15,7 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import is_sequence
 from ..client.operations import codec_condition
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
@@ -64,7 +64,7 @@ class _Failed(Enum):
 def _parsed(raw_body: bytes, helper_id: str) -> JSONValue:
     """Return a body's JSON value, raising ProtocolDataError with no trace of the body when it does not parse."""
     try:
-        wire: JSONValue | _Failed = json.loads(raw_body)
+        wire: JSONValue | _Failed = json_value(raw_body)
     except (ValueError, UnicodeDecodeError, RecursionError):
         wire = _Failed.MALFORMED
     if isinstance(wire, _Failed):

@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.media import JSONValue, json_value
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
@@ -583,9 +583,7 @@ def _exact(plan: PaginationPlan[T, P], read: Selector, content: bytes, info: Res
 
     The parsed page holds the number as a float, which may have rounded it, so it is read once more as a Decimal.
     """
-    import json  # noqa: PLC0415 - Only a total spelled with a fraction or an exponent is read again.
-
-    number = cast("Decimal", _selected(plan, read, json.loads(content, parse_float=Decimal), info))
+    number = cast("Decimal", _selected(plan, read, json_value(content, floats="decimal"), info))
     return int(number) if number == number.to_integral_value() else None
 
 

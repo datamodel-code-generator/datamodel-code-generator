@@ -147,9 +147,26 @@ def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = Fal
         raise ValueError(_SURROGATES) from None
 
 
-def json_value(content: str | bytes) -> JSONValue:
-    """Parse ordinary JSON into its builtin values without model validation."""
-    return cast("JSONValue", json.loads(content))
+def json_value(
+    content: str | bytes,
+    *,
+    constants: Literal["accept", "refuse"] = "accept",
+    floats: Literal["float", "decimal"] = "float",
+) -> JSONValue:
+    """Parse ordinary JSON into its builtin values without model validation.
+
+    `constants="refuse"` raises ValueError for NaN and the infinities, which a saved value could not hold (`int` of
+    their names refuses them); `floats="decimal"` reads a number with a fraction or an exponent as the Decimal its
+    text spells, where a float may have rounded it.
+    """
+    return cast(
+        "JSONValue",
+        json.loads(
+            content,
+            parse_constant=int if constants == "refuse" else None,
+            parse_float=Decimal if floats == "decimal" else None,
+        ),
+    )
 
 
 class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
