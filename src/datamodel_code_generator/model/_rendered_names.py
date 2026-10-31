@@ -3,16 +3,16 @@
 ``DataModel.render`` writes a field annotation or default that names an import its module binds under another name
 through that name (``_bind_field_expressions``), and ``DataModel._render`` and the module rendering write every bare
 load of a builtin the module imports under an alias through the alias (``_bind_builtin_names``); the pass that aliases
-those builtins asks which of them a text loads bare (``_bare_loads_of``). Each parses the rendered text as the target
-writes it (``host_parsable``); the two binders rewrite name nodes at the offsets the parse gives. Nothing here reads
-a model.
+those builtins asks which of them a text loads bare (``_bare_loads_of``), and so does the pass that aliases the module
+imports named like a builtin, by its own row. Each parses the rendered text as the target writes it
+(``host_parsable``); the two binders rewrite name nodes at the offsets the parse gives. Nothing here reads a model.
 """
 
 from __future__ import annotations
 
 import ast
 from itertools import accumulate
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._target_unicode import host_parsable
 
@@ -103,10 +103,27 @@ def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[
                 yield from _bare_loads(child, bound)
 
 
-def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:
-    """Return the names of ``names`` that ``rendered`` loads bare, the loads ``_bind_builtin_names`` rewrites."""
+_BareLoadRule: TypeAlias = Literal["scoped", "legacy-flat-bare-loads"]
+"""Which names of a text `_bare_loads_of` counts.
+
+`scoped` the names it loads that no function, lambda or comprehension of it binds itself, the loads
+`_bind_builtin_names` rewrites; `legacy-flat-bare-loads` every name node, the stores and the names a function of a
+custom template binds included, as the check of module imports named like a builtin counts them since 0.87.0.
+"""
+
+
+def _flat_names(tree: ast.AST) -> Iterator[ast.Name]:
+    """Yield every name node of a tree that is not the module of an attribute (``name.X``), whatever its context."""
+    attribute_values = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+    yield from (node for node in ast.walk(tree) if isinstance(node, ast.Name) and id(node) not in attribute_values)
+
+
+def _bare_loads_of(rendered: str, names: Collection[str], *, rule: _BareLoadRule = "scoped") -> set[str]:
+    """Return the names of ``names`` that ``rendered`` loads bare by the row."""
     host_source, restore_name = host_parsable(rendered)
-    return {name for node in _bare_loads(ast.parse(host_source)) if (name := restore_name(node.id)) in names}
+    tree = ast.parse(host_source)
+    nodes = _bare_loads(tree) if rule == "scoped" else _flat_names(tree)
+    return {name for node in nodes if (name := restore_name(node.id)) in names}
 
 
 def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:

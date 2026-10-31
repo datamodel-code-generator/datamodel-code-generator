@@ -392,6 +392,26 @@ exclude = ["_target_naming.py:<module>"]
 what = "compares names case-folded without NFC; call _target_naming.py:fold_key with row nfc"
 audit = "C10-K02"
 
+[homes.Hx-target-builtins]
+decision = "which names the builtins namespace has, by the static table and never the running interpreter: its classes and None, the names an annotation writes bare, of the target (row target), of every supported target where a builtins.X path that some target has is told from an unknown one (row any-target), or of every supported target where the target's are meant (row legacy-builtins-of-any-target); with its functions and constants, the names a field hides"
+core = ["_python_target_names.py"]
+adapters = [
+    "parser/_passes/imports.py:_alias_builtin_shadowing_module_imports",
+    "parser/_passes/imports.py:_alias_builtins_hidden_by_submodules",
+]
+
+[homes.Hx-target-builtins.signatures.table-read]
+kind = "name"
+names = ["PYTHON_BUILTIN_TYPE_NAMES"]
+what = "reads the builtin table itself; call _python_target_names.py:is_builtin_type_name with the row of the feature"
+audit = "C10-K05"
+
+[homes.Hx-target-builtins.signatures.legacy-row]
+kind = "literal"
+contains = ["legacy-builtins-of-any-target"]
+what = "reads every target's builtins where the target's are meant; call _python_target_names.py:is_builtin_type_name with row target"
+audit = "C10-K05"
+
 [homes.Hx-free-names]
 decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
 core = ["_free_names.py"]
@@ -698,8 +718,9 @@ core = ["model/_decisions/assignment.py"]
 adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
-decision = "module imports, bindings and final names"
+decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node)"
 core = [
+    "model/_rendered_names.py",
     "parser/_imports_plan.py",
     "parser/_passes/_shared.py:ReferenceImportTarget",
     "parser/_passes/_shared.py:reference_import_target",
@@ -707,7 +728,16 @@ core = [
     "parser/_passes/_shared.py:set_reference_expression",
     "parser/_passes/_shared.py:import_references",
 ]
-adapters = ["parser/_passes/_shared.py:set_reference_expressions"]
+adapters = [
+    "parser/_passes/_shared.py:set_reference_expressions",
+    "parser/_passes/imports.py:_alias_builtin_shadowing_module_imports",
+]
+
+[homes.H26.signatures.flat-bare-loads-row]
+kind = "literal"
+contains = ["legacy-flat-bare-loads"]
+what = "counts every name node of a rendered text as a bare load; call model/_rendered_names.py:_bare_loads_of with row scoped"
+audit = "C10-K19"
 
 [homes.H26.signatures.reference-target-name]
 kind = "call"
@@ -2833,6 +2863,14 @@ fix = "#5656"
 [legacy_rows."legacy-fold-without-nfc"]
 home = "Hx-fold-key"
 fix = "#5748"
+
+[legacy_rows."legacy-builtins-of-any-target"]
+home = "Hx-target-builtins"
+fix = "#5772"
+
+[legacy_rows."legacy-flat-bare-loads"]
+home = "H26"
+fix = "keep"
 
 [legacy_rows."legacy-unredacted-locations"]
 home = "Hx-message-location"
