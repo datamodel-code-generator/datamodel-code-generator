@@ -1604,6 +1604,8 @@ openapi/openapi_discriminated_oneof_allof_cycle.json::components.schemas.ASchema
 openapi/openapi_discriminated_oneof_allof_cycle.json::components.schemas.BSchema	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/parameter_content.yaml::paths./items.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/parameter_field_policy.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/paths_non_path_keys.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/paths_non_path_keys.yaml::paths.x-internal.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/paths_ref_with_external_schema/openapi.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3405,6 +3407,8 @@ openapi/openapi_discriminated_oneof_allof_cycle.json::components.schemas.ASchema
 openapi/openapi_discriminated_oneof_allof_cycle.json::components.schemas.BSchema	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/parameter_content.yaml::paths./items.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/parameter_field_policy.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/paths_non_path_keys.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/paths_non_path_keys.yaml::paths.x-internal.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/paths_ref_with_external_schema/openapi.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
