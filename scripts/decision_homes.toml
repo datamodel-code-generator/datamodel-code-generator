@@ -911,14 +911,26 @@ what = "spells a keyword argument whose keyword is data itself; call _python_syn
 audit = "C13"
 
 [homes.Hx-rw-variant]
-decision = "the path of a model's read (request) or write (response) variant: how the parser builds it from its base path and how a reader takes its base path and direction back"
-core = ["reference.py:_rw_variant_path", "reference.py:_rw_variant_of"]
+decision = "a model's read (request) or write (response) variant: the path the parser builds from its base path and a reader takes its base path and direction back from, the direction its class-name suffix names, and which flag leaves a property out of it"
+core = [
+    "reference.py:_rw_variant_path",
+    "reference.py:_rw_variant_of",
+    "reference.py:_rw_direction",
+    "reference.py:_rw_variant_flag",
+]
 adapters = []
 
 [homes.Hx-rw-variant.signatures.variant-keyword]
 kind = "literal"
 contains = ["read-write-"]
 what = "spells the read/write variant keyword itself; call reference.py:_rw_variant_path or _rw_variant_of"
+audit = "C03-R1"
+
+[homes.Hx-rw-variant.signatures.direction-test]
+kind = "compare-eq"
+values = ["request", "response", "Request", "Response"]
+paths = ["parser/_rw_split.py", "parser/jsonschema.py", "_target_binding.py"]
+what = "tests the direction of a read or write variant itself; call reference.py:_rw_variant_flag (the flag that leaves a property out of it) or _rw_direction (the direction of a class-name suffix)"
 audit = "C03-R1"
 
 [homes.Hx-special-path]
