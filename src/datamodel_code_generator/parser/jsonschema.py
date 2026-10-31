@@ -28,7 +28,7 @@ from dataclasses import replace
 from functools import (
     cached_property,
     lru_cache,
-    partial,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    partial,
     reduce,
 )
 from itertools import chain, compress  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -551,6 +551,45 @@ def _get_ref_data_type_site(parser: JsonSchemaParser, site: _Site) -> DataType:
 def _parse_object_model_site(parser: JsonSchemaParser, site: _Site) -> DataType:
     """Parse the object schema of a site into its model."""
     return parser._parse_object_model(site.name, site.obj, site.path)  # noqa: SLF001
+
+
+def _parse_combined_root(parser: JsonSchemaParser, site: _Site, *, const_enum: bool = False) -> DataType:
+    """Parse the oneOf or anyOf schema of a site into a root model, and its properties into a model when it types none.
+
+    With ``const_enum`` (a definition) a oneOf or anyOf of consts is the Enum or Literal root model of the site's name.
+    """
+    obj, name, path = site.obj, site.name, site.path
+    if (
+        const_enum
+        and (
+            const_enum_type := parser._parse_combined_const_enum(  # noqa: SLF001
+                name, obj, obj.oneOf or obj.anyOf, path, literal_as_root=True
+            )
+        )
+        is not None
+    ):
+        return const_enum_type
+    data_type = parser.parse_root_type(name, obj, path)
+    if isinstance(data_type, EmptyDataType) and obj.properties:
+        parser.parse_object(name, obj, path)
+    return data_type
+
+
+def _field_union_row(
+    name: str, keyword: Literal["anyOf", "oneOf"]
+) -> Row[JsonSchemaParser, JsonSchemaObject, DataType]:
+    """Return the field row of a union keyword: its consts as one Enum or Literal, else the union of its members."""
+
+    def applies(parser: JsonSchemaParser, site: _Site) -> bool:  # noqa: ARG001
+        return bool(getattr(site.obj, keyword))
+
+    def build(parser: JsonSchemaParser, site: _Site) -> DataType:
+        if combined_const_enum := parser._parse_combined_item_const_enum(site, getattr(site.obj, keyword)):  # noqa: SLF001
+            return combined_const_enum
+        parse_members = parser.parse_any_of if keyword == "anyOf" else parser.parse_one_of
+        return build_union(parser.data_type, parse_members(site.name, site.obj, get_special_path(keyword, site.path)))
+
+    return Row(name, applies, build)
 
 
 def _parse_no_object_kind(parser: JsonSchemaParser, site: _Site) -> None:
@@ -5271,10 +5310,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         singular_name: bool = False,
         writes: bool = False,
+        literal_as_root: bool = False,
     ) -> DataType | None:
         """Return the Enum or Literal of a oneOf or anyOf of consts, else None.
 
-        The parent's field writes its constraints beside the values when ``writes``.
+        The parent's field writes its constraints beside the values when ``writes``; a definition's Literal is the root
+        model of its name (``literal_as_root``).
         """
         const_enum_data = _value_keywords.extract_const_enum_from_combined(self, combined_items, obj, writes=writes)
         if const_enum_data is None:
@@ -5282,6 +5323,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         synthetic_obj = _value_keywords.create_synthetic_enum_obj(self, obj, *const_enum_data)
         if self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
+            if literal_as_root:
+                return self.parse_root_type(name, synthetic_obj, enum_path)
             return self.parse_enum_as_literal(synthetic_obj)
         return self._parse_enum_class(name, synthetic_obj, enum_path, property_obj=obj, singular_name=singular_name)
 
@@ -5472,22 +5515,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ),
         )
 
-    def _field_any_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
-        return bool(site.obj.anyOf)
-
-    def _build_field_any_of(self, site: _Site) -> DataType:
-        if combined_const_enum := self._parse_combined_item_const_enum(site, site.obj.anyOf):
-            return combined_const_enum
-        return build_union(self.data_type, self.parse_any_of(site.name, site.obj, get_special_path("anyOf", site.path)))
-
-    def _field_one_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
-        return bool(site.obj.oneOf)
-
-    def _build_field_one_of(self, site: _Site) -> DataType:
-        if combined_const_enum := self._parse_combined_item_const_enum(site, site.obj.oneOf):
-            return combined_const_enum
-        return build_union(self.data_type, self.parse_one_of(site.name, site.obj, get_special_path("oneOf", site.path)))
-
     def _field_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.is_object or site.obj.patternProperties or site.obj.propertyNames is not None)
 
@@ -5537,8 +5564,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _schema_validator_object_applies,
                 _build_field_schema_validator_object,
             ),
-            Row("any-of", _field_any_of_applies, _build_field_any_of),
-            Row("one-of", _field_one_of_applies, _build_field_one_of),
+            _field_union_row("any-of", "anyOf"),
+            _field_union_row("one-of", "oneOf"),
             Row("all-of", _all_of_applies, _parse_all_of_field_item),
             Row("object", _field_object_applies, _parse_object_item),
             Row("enum", _field_enum_applies, _parse_enum_item),
@@ -7265,21 +7292,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with cast("AbstractContextManager[None]", site.scope):
             self._parse_schema_obj(site.name, site.obj, site.path)
 
-    def _parse_combined_definition(self, site: _Site) -> None:
-        obj, name, path = site.obj, site.name, site.path
-        combined_items = obj.oneOf or obj.anyOf
-        const_enum_data = _value_keywords.extract_const_enum_from_combined(self, combined_items, obj)
-        if const_enum_data is not None:
-            synthetic_obj = _value_keywords.create_synthetic_enum_obj(self, obj, *const_enum_data)
-            if not self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
-                self._parse_enum_class(name, synthetic_obj, path, property_obj=obj)
-            else:
-                self.parse_root_type(name, synthetic_obj, path)
-            return
-        data_type = self.parse_root_type(name, obj, path)
-        if isinstance(data_type, EmptyDataType) and obj.properties:
-            self.parse_object(name, obj, path)
-
     def _definition_root_self_reference_applies(self, site: _Site) -> bool:
         return bool(
             _merges_ref_siblings(site.obj)
@@ -7583,7 +7595,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _schema_validator_object_applies,
                 _then_parse_refs(_parse_object_model_site),
             ),
-            Row("one-of-any-of", _one_of_any_of_applies, _then_parse_refs(_parse_combined_definition)),
+            Row(
+                "one-of-any-of",
+                _one_of_any_of_applies,
+                _then_parse_refs(partial(_parse_combined_root, const_enum=True)),
+            ),
             *(Row(row.name, row.applies, _then_parse_refs(row.build)) for row in _OBJECT_KIND_ROWS),
             Row("enum", _definition_enum_applies, _then_parse_refs(_build_definition_enum)),
         ),

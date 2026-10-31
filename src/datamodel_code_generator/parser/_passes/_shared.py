@@ -64,7 +64,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import (
-    PythonRuntimeExpression,
+    _text_constructor_expression,
     rewrite_runtime_expressions,
     rewrite_runtime_imports,
 )
@@ -872,11 +872,7 @@ def normalize_default_value_constraints(
                 continue
             if kwargs is data_type.kwargs:
                 kwargs = kwargs.copy()
-            kwargs[key] = PythonRuntimeExpression.from_import_call(
-                descriptor.constructor_import,
-                repr(str(value)),
-                value=str(value),
-            )
+            kwargs[key] = _text_constructor_expression(descriptor.constructor_import, str(value))
         if kwargs is data_type.kwargs:
             continue
         host._graph_builder.set_type_expressions(  # noqa: SLF001

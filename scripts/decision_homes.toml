@@ -473,6 +473,18 @@ exclude = ["format.py:<module>"]
 what = "spells the datetime module's binding or its fromisoformat call itself; use imports.py:IMPORT_DATETIME_MODULE, python_literal.py:_datetime_expression or _isoformat_expression"
 audit = "C18-7b"
 
+[homes.Hx-text-constructors]
+decision = "how generated code builds a value from its text at run time: the call of the value's constructor on the string literal of the text, an expression whose value (str()) stays the text (Decimal defaults and constraints, compiled patterns)"
+core = ["python_literal.py:_text_constructor_expression"]
+adapters = []
+
+[homes.Hx-text-constructors.signatures.text-constructor-call]
+kind = "call"
+names = ["from_import_call"]
+keywords = ["value"]
+what = "builds a constructor call of a text that keeps the text as its value itself; call python_literal.py:_text_constructor_expression"
+audit = "C13-B44"
+
 [homes.Hx-source-safe-floats]
 decision = "whether a parsed non-finite float is held source-safe (written float('inf'), float('nan')) or as a plain float: each one of a parsed JSON value, and one of a converted schema exactly when the converter's caller writes Python source (row source_safe_non_finite: the parsers and AsyncAPI payloads that convert Protocol Buffers or XML Schema, not the convert_*_schema_data functions)"
 core = ["python_literal.py:_converted_float", "python_literal.py:_safe_non_finite_value"]
