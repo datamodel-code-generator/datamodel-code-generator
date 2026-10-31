@@ -69,7 +69,7 @@ def fold(location, name, other):
 
 
 def displays(head, items):
-    """Join items inside a call, a tuple and a list, and write a subscript and other joins."""
+    """Join items inside a call, a tuple, a list and two subscripts, and write other joins."""
     return (
         f"{head}({', '.join(items)})",
         "(" + ", ".join(items) + ("," if len(items) == 1 else "") + ")",

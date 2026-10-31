@@ -32,8 +32,8 @@ them, ``what`` words the message):
 * ``literal``: a string literal, or an f-string with a literal part, that holds one of ``contains`` (the spelling of a
   value that only its home may write); an f-string is one hit at its own position.
 * ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
-  of ``brackets`` (``(`` a call or tuple display, ``[`` a list display): Python source spelled by hand; a ``[`` right
-  after a name, a value or a closing bracket opens a subscript and does not count.
+  of ``brackets`` (``(`` a call or tuple display, ``[`` a subscript or list display, ``{`` a set or dict display):
+  Python source spelled by hand.
 * ``keyword``: an f-string that writes ``{name}={value}``, a value, the text ``=`` and another value: a keyword
   argument whose keyword is data, spelled by hand.
 * ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
@@ -469,14 +469,10 @@ def _is_comma_join(node: ast.AST) -> bool:
 
 
 def _opens_display(parts: list[ast.AST], index: int, brackets: Iterable[str]) -> bool:
-    """Return whether the part before ``parts[index]`` ends with an opening bracket of a display or a call."""
+    """Return whether the part before ``parts[index]`` ends with an opening bracket of a display, call or subscript."""
     match parts[index - 1] if index else None:
         case ast.Constant(value=str() as text) if text and text[-1] in brackets:
-            before = text[:-1]
-            subscript = (bool(before) and (before[-1].isidentifier() or before[-1] in ")]")) or (
-                not before and index > 1
-            )
-            return text[-1] != "[" or not subscript
+            return True
     return False
 
 

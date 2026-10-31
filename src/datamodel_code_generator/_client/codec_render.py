@@ -18,7 +18,7 @@ from datamodel_code_generator._client.codec_plan import (
     Values,
 )
 from datamodel_code_generator._client.facade import statement
-from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text, tuple_display
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_templates import templated
@@ -125,7 +125,7 @@ class _Renderer:
                     for field in model.fields
                 )
                 models.append(ModelEntry(name, self.call("Model", fields)))
-        annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]" if models else ""
+        annotation = subscript_text(self.module.name("typing", "Final"), ("dict[type, Model]",)) if models else ""
         registry = "MODELS" if models else "{}"
         accessors = []
         entries = []
@@ -140,7 +140,10 @@ class _Renderer:
             final = self.module.name("typing", "Final")
             entries.append(
                 Codec(
-                    f"codec_{index}", f"{final}[{codec}[{static}]]", call_text(codec, arguments), _description(use.use)
+                    f"codec_{index}",
+                    subscript_text(final, (subscript_text(codec, (static,)),)),
+                    call_text(codec, arguments),
+                    _description(use.use),
                 )
             )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))

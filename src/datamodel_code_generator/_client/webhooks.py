@@ -19,7 +19,7 @@ from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events
-from datamodel_code_generator._python_syntax import call_text, dict_display
+from datamodel_code_generator._python_syntax import call_text, dict_display, subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
@@ -293,7 +293,7 @@ class _Webhooks:
         helper = spec.helper
         signature = helper.tree["signature"]
         kind = signature["kind"]
-        key, arguments, entries = None, event, list[Keyword]()
+        key, arguments, entries = None, (event,), list[Keyword]()
         if kind == "none":
             plan = module.local(_EVENTS, "EventPlan")
         elif kind == "adapter":
@@ -306,7 +306,7 @@ class _Webhooks:
             algorithm = _algorithm(signature)
             key = module.local(algorithm.key_module, algorithm.key)
             plan = module.local("_runtime.protocols.verification", "WebhookPlan")
-            arguments = f"{event}, {key}"
+            arguments = (event, key)
             standard = kind == "standard_webhooks"
             entries = [
                 Keyword("kind", repr(kind)),
@@ -315,7 +315,7 @@ class _Webhooks:
                 Keyword("encoding", repr(signature.get("encoding", "base64" if standard else "hex"))),
                 Keyword("prefix", repr(signature.get("prefix", "v1," if standard else ""))),
             ]
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{arguments}]]"
+        annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, arguments),))
         values = (Keyword("helper_id", repr(helper.name)), *entries, Keyword("event", decoder))
         return key, Plan("_PLAN", annotation, plan, values)
 
@@ -354,18 +354,22 @@ class _Webhooks:
     def function(module: TargetModule, event: str, key: str | None, *, asynchronous: bool) -> Function:
         """Return the sync or asyncio verify function of a builtin helper, or of an adapter one without a key."""
         keys = module.local(_WEBHOOKS, "KeySet")
-        verifier = () if key is not None else (Parameter("verifier", f"{module.local(_WEBHOOKS, 'Verifier')}[K]"),)
+        verifier = (
+            ()
+            if key is not None
+            else (Parameter("verifier", subscript_text(module.local(_WEBHOOKS, "Verifier"), ("K",))),)
+        )
         positional = (
             Parameter("raw_body", "bytes"),
-            Parameter("headers", f"{module.name('collections.abc', 'Sequence')}[tuple[str, str]]"),
-            Parameter("keys", f"{keys}[{'K' if key is None else key}]"),
+            Parameter("headers", subscript_text(module.name("collections.abc", "Sequence"), ("tuple[str, str]",))),
+            Parameter("keys", subscript_text(keys, ("K" if key is None else key,))),
         )
         keywords = (
             *verifier,
             Parameter("now", module.name("datetime", "datetime")),
             Parameter("options", module.optional(module.local(_WEBHOOKS, "WebhookOptions")), "None"),
         )
-        returns = f"{module.local(_WEBHOOKS, 'VerifiedWebhook')}[{event}]"
+        returns = subscript_text(module.local(_WEBHOOKS, "VerifiedWebhook"), (event,))
         runtime, name = (
             ("_runtime.protocols.verification", "averify_webhook" if asynchronous else "verify_webhook")
             if key is not None

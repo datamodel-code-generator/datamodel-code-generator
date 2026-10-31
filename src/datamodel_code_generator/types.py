@@ -63,7 +63,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._graph_links import add_child, drop_child
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
@@ -533,7 +533,7 @@ def _remove_none_from_union(type_: str, *, use_union_operator: bool) -> str:  # 
     if use_union_operator:
         return UNION_OPERATOR_DELIMITER.join(parts)
 
-    return f"{UNION_PREFIX}{UNION_DELIMITER.join(parts)}]"
+    return subscript_text(UNION, parts)
 
 
 @lru_cache(maxsize=4096)
@@ -1435,9 +1435,9 @@ def _render_apply(expr: TypeApply) -> str:
     if (container := expr.container) is not None:
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
-            text = f"{container}[{key}, {text or ANY}]" if expr.key is not None or text else container
+            text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container
         else:
-            text = f"{container}[{text}]" if text else container
+            text = subscript_text(container, (text,)) if text else container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = repr(text) if '"' in text or "\\" in text else f'"{text}"'
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
@@ -1459,7 +1459,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
                 items: Iterable[str] = repeat((render_type_expr(expr.args[0]) or ANY) if expr.args else ANY, count)
             else:
                 items = (render_type_expr(item) or ANY for item in expr.args)
-            text = f"{tuple_type}[{', '.join(items) or '()'}]"
+            text = subscript_text(tuple_type, items)
         case "union":
             text, member_null = _render_union(node, expr.args, discriminated=not expr.base)
         case "single":
@@ -1470,7 +1470,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
                 if node.enum_member_literals
                 else [repr(literal) for literal in node.literals]
             )
-            text = f"{node._literal_name}[{', '.join(parts)}]"  # noqa: SLF001
+            text = subscript_text(node._literal_name, parts)  # noqa: SLF001
     return text, member_null
 
 

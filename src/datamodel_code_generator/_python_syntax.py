@@ -1,10 +1,11 @@
-"""How generated Python spells a call, a keyword argument and a tuple, list, set or dict display from item texts.
+"""How generated Python spells a call, a subscript, a keyword argument and a tuple, list, set or dict display.
 
 Every writer of generated code that joins a variable number of expression texts into one of these, or passes a value
-text under a keyword its data names, goes through this leaf, so the separator, the comma a lone tuple item needs, the
-`set()` of a set without items, the colon of a dict entry and the equals sign of a keyword argument are written
-once. A value becomes its text first (``python_literal.represent_python_value`` or a target's own writer); type
-subscripts are the type renderers' own, and a keyword written in a call's source text is that text's own.
+text under a keyword its data names, goes through this leaf, so the separator, the ``()`` of a subscript without
+arguments, the comma a lone tuple item needs, the `set()` of a set without items, the colon of a dict entry and the
+equals sign of a keyword argument are written once. A value becomes its text first
+(``python_literal.represent_python_value`` or a target's own writer), a type renderer decides which types a subscript
+holds, and a keyword written in a call's source text is that text's own.
 """
 
 from __future__ import annotations
@@ -18,6 +19,11 @@ if TYPE_CHECKING:
 def call_text(head: str, arguments: Iterable[str], /) -> str:
     """Return the call of ``head`` with its argument texts, each spelled with its keyword where it has one."""
     return f"{head}({', '.join(arguments)})"
+
+
+def subscript_text(head: str, arguments: Iterable[str], /) -> str:
+    """Return the subscript of ``head`` with its argument texts, or ``head[()]`` when they write none."""
+    return f"{head}[{', '.join(arguments) or '()'}]"
 
 
 def keyword_argument(name: str, value: str, /) -> str:
