@@ -551,6 +551,17 @@ receivers = ["reference", "old_reference", "new_reference"]
 what = "reads or writes Reference.children itself; call _graph_links.py (add_child, drop_child, data_type_children) or Reference.iter_data_model_children"
 audit = "C11-K01"
 
+[homes.Hx-node-holders]
+decision = "which field and model hold a data type node: its nearest holder that is a field, through the data types above it, its outermost holder (the field's model, or the top of a chain nothing holds), and the models of a list whose base classes hold a base class node"
+core = ["_graph_links.py"]
+adapters = []
+
+[homes.Hx-node-holders.signatures.field-holder-test]
+kind = "literal"
+contains = ["invalidate_semantic_caches"]
+what = "tells the field among the holders of a node itself; call _graph_links.py:nearest_field, or chain_root for the outermost holder"
+audit = "C11-K04"
+
 [homes.H23]
 decision = "whether a type's rendered hint, or the annotation a field writes around it, includes None"
 core = ["model/_decisions/nullability.py"]
