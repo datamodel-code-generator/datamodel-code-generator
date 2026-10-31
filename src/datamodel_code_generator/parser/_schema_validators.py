@@ -18,7 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
-from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, schema_positions
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
@@ -1043,7 +1043,7 @@ def data_type_may_accept_array(
     visited |= {data_type_id}
 
     match data_type:
-        case DataType(is_list=True) | DataType(is_set=True) | DataType(is_sequence=True) | DataType(is_tuple=True):
+        case DataType() if data_type in ARRAYS.without("legacy-frozen-set-not-an-array"):
             return True
         case DataType(reference=reference) if reference is not None and isinstance(reference.source, DataModel):
             source = reference.source
@@ -1093,7 +1093,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
                 return {(*path, *rule.path) for rule in runtime_validation.unique_items}
 
         match data_type:
-            case DataType(is_list=True) | DataType(is_set=True) | DataType(is_sequence=True):
+            case DataType() if data_type in ITEM_CONTAINERS.without("legacy-frozen-set-not-an-array"):
                 return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
                     data_type.data_types,
                     (*path, None),

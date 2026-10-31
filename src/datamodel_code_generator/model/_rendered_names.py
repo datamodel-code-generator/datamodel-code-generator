@@ -5,7 +5,9 @@ through that name (``_bind_field_expressions``), and ``DataModel._render`` and t
 load of a builtin the module imports under an alias through the alias (``_bind_builtin_names``); the pass that aliases
 those builtins asks which of them a text loads bare (``_bare_loads_of``), and so does the pass that aliases the module
 imports named like a builtin, by its own row. Each parses the rendered text as the target writes it
-(``host_parsable``); the two binders rewrite name nodes at the offsets the parse gives. Nothing here reads a model.
+(``host_parsable``, ``_parsed``); the two binders rewrite name nodes at the offsets the parse gives. A model's own
+fields are the annotated statements of the class body of its name (``_class_bodies``), and the names an expression
+names its name nodes (``_names_of``). Nothing here reads a model.
 """
 
 from __future__ import annotations
@@ -17,7 +19,40 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from datamodel_code_generator._target_unicode import host_parsable
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Mapping
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
+
+
+def _parsed(rendered: str) -> tuple[ast.Module, Callable[[str], str]]:
+    """Return the tree of ``rendered`` at its offsets, as the running interpreter parses it, and how to restore a name.
+
+    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length and a type
+    statement is parsed as an assignment of the same length (`host_parsable`).
+    """
+    host_source, restore_name = host_parsable(rendered)
+    return ast.parse(host_source), restore_name
+
+
+def _class_bodies(tree: ast.Module, restore_name: Callable[[str], str], class_name: str) -> Iterator[list[ast.stmt]]:
+    """Yield the body of each class statement of ``tree`` whose restored name is ``class_name``, in order."""
+    return (
+        statement.body
+        for statement in tree.body
+        if isinstance(statement, ast.ClassDef) and restore_name(statement.name) == class_name
+    )
+
+
+def _names_of(tree: ast.AST, *, loads_only: bool = False) -> Iterator[ast.Name]:
+    """Yield the name nodes of ``tree`` in ``ast.walk`` order: every one, or only those it loads."""
+    return (
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Name) and (not loads_only or isinstance(node.ctx, ast.Load))
+    )
+
+
+def _expression_names(expression: ast.AST, restore_name: Callable[[str], str]) -> set[str]:
+    """Return the restored names of every name node of ``expression``, whatever its context."""
+    return {restore_name(node.id) for node in _names_of(expression)}
 
 
 def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) -> str:
@@ -40,28 +75,21 @@ def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) 
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
     """Bind names in field annotations and defaults without changing template objects.
 
-    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length and a type
-    statement is parsed as an assignment of the same length (`host_parsable`), so the offsets it parses hold for the
-    rendered text.
+    The rendered text is parsed at its own offsets (`_parsed`), so the name nodes rewrite in place.
     """
-    replacements: list[tuple[ast.Name, str]] = []
-    host_source, restore_name = host_parsable(rendered)
-    for statement in ast.parse(host_source).body:
-        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
-            continue
-        for field in statement.body:
-            if not isinstance(field, ast.AnnAssign):
-                continue
-            expressions = (field.annotation,) if field.value is None else (field.annotation, field.value)
-            replacements.extend(
-                (node, alias)
-                for expression in expressions
-                for node in ast.walk(expression)
-                if isinstance(node, ast.Name)
-                and isinstance(node.ctx, ast.Load)
-                and (alias := bindings.get(restore_name(node.id))) is not None
-            )
-    return _rewrite_names(rendered, replacements)
+    tree, restore_name = _parsed(rendered)
+    return _rewrite_names(
+        rendered,
+        [
+            (node, alias)
+            for body in _class_bodies(tree, restore_name, class_name)
+            for field in body
+            if isinstance(field, ast.AnnAssign)
+            for expression in ((field.annotation,) if field.value is None else (field.annotation, field.value))
+            for node in _names_of(expression, loads_only=True)
+            if (alias := bindings.get(restore_name(node.id))) is not None
+        ],
+    )
 
 
 _NAME_SCOPES: Final = (
@@ -115,25 +143,20 @@ custom template binds included, as the check of module imports named like a buil
 def _flat_names(tree: ast.AST) -> Iterator[ast.Name]:
     """Yield every name node of a tree that is not the module of an attribute (``name.X``), whatever its context."""
     attribute_values = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
-    yield from (node for node in ast.walk(tree) if isinstance(node, ast.Name) and id(node) not in attribute_values)
+    yield from (node for node in _names_of(tree) if id(node) not in attribute_values)
 
 
 def _bare_loads_of(rendered: str, names: Collection[str], *, rule: _BareLoadRule = "scoped") -> set[str]:
     """Return the names of ``names`` that ``rendered`` loads bare by the row."""
-    host_source, restore_name = host_parsable(rendered)
-    tree = ast.parse(host_source)
+    tree, restore_name = _parsed(rendered)
     nodes = _bare_loads(tree) if rule == "scoped" else _flat_names(tree)
     return {name for node in nodes if (name := restore_name(node.id)) in names}
 
 
 def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
     """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
-    host_source, restore_name = host_parsable(rendered)
+    tree, restore_name = _parsed(rendered)
     return _rewrite_names(
         rendered,
-        [
-            (node, alias)
-            for node in _bare_loads(ast.parse(host_source))
-            if (alias := bindings.get(restore_name(node.id))) is not None
-        ],
+        [(node, alias) for node in _bare_loads(tree) if (alias := bindings.get(restore_name(node.id))) is not None],
     )

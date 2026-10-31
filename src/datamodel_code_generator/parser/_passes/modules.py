@@ -22,7 +22,7 @@ from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
-from datamodel_code_generator._container_kinds import MAPPINGS, UNHASHABLE_CONTAINERS
+from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS, UNHASHABLE_CONTAINERS
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
@@ -1199,7 +1199,10 @@ def collapse_site_facts(
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
         holder_has_container=field_constraints
         and constrained_root
-        and any(member.is_dict or member.is_union or member.is_list for member in model_field.data_type.all_data_types),
+        and any(
+            member.is_union or member in CONTAINERS.without("legacy-collapse-beside-lists-and-dicts")
+            for member in model_field.data_type.all_data_types
+        ),
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
         collapses_list_items=parser._collapses_list_item_root_models,  # noqa: SLF001
     )

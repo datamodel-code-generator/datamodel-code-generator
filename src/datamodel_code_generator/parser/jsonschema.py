@@ -114,7 +114,7 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
     writes_beside_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
-from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SEQUENCES
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
@@ -4457,14 +4457,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
 
         root_type = data_type
-        if not (root_type.is_list or root_type.is_sequence):
+        if root_type not in SEQUENCES:
             if len(root_type.data_types) != 1:
                 return None
             root_type = root_type.data_types[0]
             if root_type.is_optional:
                 return None
 
-        if root_type.is_list or root_type.is_sequence:
+        if root_type in SEQUENCES:
             return root_type
         return None
 
@@ -4545,13 +4545,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 else self._rw_model_variant_references[reference.path, variant].source,
             )
             if item_type is not None:
+                arrays = ARRAYS.without("legacy-all-of-items-not-in-frozen-sets")
                 array_owner = root_model
                 array_type = next(
-                    (
-                        data_type
-                        for data_type in root_model.fields[0].data_type.all_data_types
-                        if data_type.is_list or data_type.is_sequence or data_type.is_set or data_type.is_tuple
-                    ),
+                    (data_type for data_type in root_model.fields[0].data_type.all_data_types if data_type in arrays),
                     None,
                 )
                 if array_type is None:
@@ -4562,7 +4559,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         and (array_model := cast("DataModel | None", array_ref.source)) is not None
                         and (array_model.IS_ALIAS or array_model.IS_ROOT_MODEL)
                         for nested in array_model.fields[0].data_type.all_data_types
-                        if nested.is_list or nested.is_sequence or nested.is_set or nested.is_tuple
+                        if nested in arrays
                     )
                 array_type.data_types = [item_type]
                 self._graph_builder.note_changed_models(array_owner)

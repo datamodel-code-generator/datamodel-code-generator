@@ -19,6 +19,7 @@ from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -1660,7 +1661,7 @@ def _unique_items_tuple(data_type: DataType) -> DataType | None:
     """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
     if data_type.is_tuple:
         return data_type
-    if data_type.is_list or data_type.is_set or data_type.is_frozen_set:
+    if data_type in ITEM_CONTAINERS.without("legacy-unique-tuple-inside-sequence"):
         return None
     return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
 

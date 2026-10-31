@@ -297,21 +297,44 @@ what = "copies the lists of a DataType node itself; call types.py:_copied_node, 
 audit = "C05-B08"
 
 [homes.Hx-container-kinds]
-decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, the slot of each generic class a target's type view writes a container as, and the kinds of slot a decision treats alike (mappings, item containers, arrays, generic containers, any container, unhashable containers, sets)"
+decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, the slot of each generic class a target's type view writes a container as, and the kinds of slot a decision treats alike (mappings, item containers, sequences, arrays, generic containers, any container, unhashable containers, sets), each without the slots a legacy row leaves out (rows legacy-abstract-containers-as-unions, legacy-frozen-set-not-an-array, legacy-all-of-items-not-in-frozen-sets, legacy-unique-tuple-inside-sequence, legacy-collapse-beside-lists-and-dicts)"
 core = ["_container_kinds.py", "types.py:_container_name"]
-adapters = ["_target_types.py:container_slot"]
+adapters = [
+    "_target_types.py:container_slot",
+    "parser/_value_keywords.py:_carried_constraint_keywords",
+    "parser/_value_keywords.py:_enforcing_leaves",
+    "parser/_schema_validators.py:data_type_may_accept_array",
+    "parser/_schema_validators.py:get_executable_unique_items_paths",
+    "parser/jsonschema.py:JsonSchemaParser._parse_all_of_root_value",
+    "parser/_passes/_shared.py:_unique_items_tuple",
+    "parser/_passes/modules.py:collapse_site_facts",
+]
 
-[homes.Hx-container-kinds.signatures.mapping-flags]
+[homes.Hx-container-kinds.signatures.kind-flags]
 kind = "name"
-names = ["is_mapping"]
+names = ["is_mapping", "is_sequence", "is_frozen_set"]
 ctx = "load"
+# Left out: the generated runtime, whose is_sequence tests a value, not a type tree node.
 exclude = [
+    "_runtime/",
     "model/_field_imports.py:data_type_import_key",
     "parser/_field_copies.py:_get_inherited_type_modifiers",
     "parser/_field_copies.py:_merge_data_type_modifiers",
 ]
-what = "tests the flags of a mapping type itself; ask whether the type is in MAPPINGS or another kind of _container_kinds.py (a key, snapshot or merge of every flag is not this decision)"
+what = "tests the flags of a mapping, sequence or frozen set itself; ask whether the type is in MAPPINGS or another kind of _container_kinds.py (a key, snapshot or merge of every flag is not this decision)"
 audit = "C05-B03"
+
+[homes.Hx-container-kinds.signatures.legacy-row]
+kind = "literal"
+contains = [
+    "legacy-abstract-containers-as-unions",
+    "legacy-frozen-set-not-an-array",
+    "legacy-all-of-items-not-in-frozen-sets",
+    "legacy-unique-tuple-inside-sequence",
+    "legacy-collapse-beside-lists-and-dicts",
+]
+what = "asks a kind without the slots a legacy row leaves out; ask the kind itself once the row's issue is fixed"
+audit = "C05-G2b"
 
 [homes.Hx-container-kinds.signatures.container-classes]
 kind = "keyword-set"
@@ -779,7 +802,7 @@ core = ["model/_decisions/assignment.py"]
 adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
-decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node)"
+decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node); a rendered text is parsed at its own offsets on the running interpreter, a rendered model's fields are the annotated statements of the class of its name, and the names an expression names are its name nodes"
 core = [
     "imports.py:_import_key",
     "imports.py:_stored_import",
@@ -804,6 +827,20 @@ kind = "literal"
 contains = ["legacy-flat-bare-loads"]
 what = "counts every name node of a rendered text as a bare load; call model/_rendered_names.py:_bare_loads_of with row scoped"
 audit = "C10-K19"
+
+[homes.H26.signatures.rendered-parse]
+kind = "call"
+names = ["host_parsable"]
+what = "parses a rendered text itself; call model/_rendered_names.py:_parsed"
+audit = "C10-K17"
+
+[homes.H26.signatures.class-body]
+kind = "name"
+names = ["ClassDef"]
+receivers = ["ast"]
+paths = ["model/", "parser/"]
+what = "looks up the class statement of a rendered model itself; call model/_rendered_names.py:_class_bodies"
+audit = "C10-K20"
 
 [homes.H26.signatures.stored-alias-split]
 kind = "call"
@@ -3378,6 +3415,26 @@ fix = "#5772"
 [legacy_rows."legacy-flat-bare-loads"]
 home = "H26"
 fix = "keep"
+
+[legacy_rows."legacy-abstract-containers-as-unions"]
+home = "Hx-container-kinds"
+fix = "#5821"
+
+[legacy_rows."legacy-frozen-set-not-an-array"]
+home = "Hx-container-kinds"
+fix = "#5818"
+
+[legacy_rows."legacy-all-of-items-not-in-frozen-sets"]
+home = "Hx-container-kinds"
+fix = "#5817"
+
+[legacy_rows."legacy-unique-tuple-inside-sequence"]
+home = "Hx-container-kinds"
+fix = "#5820"
+
+[legacy_rows."legacy-collapse-beside-lists-and-dicts"]
+home = "Hx-container-kinds"
+fix = "#5819"
 
 [legacy_rows."legacy-unredacted-locations"]
 home = "Hx-message-location"

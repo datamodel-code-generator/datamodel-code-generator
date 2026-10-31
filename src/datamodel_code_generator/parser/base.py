@@ -56,6 +56,7 @@ from datamodel_code_generator._constraint_applicability import (
     resplit_overridden_constraints,  # noqa: F401  # Preserve the established parser.base export.
     untaken_minimums,  # noqa: F401  # Preserve the established parser.base export.
 )
+from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
@@ -1463,7 +1464,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         root_data_type: DataType,
         models_set: set[DataModel],
     ) -> Reference | None:
-        if not (root_reference := root_data_type.reference) or root_data_type.is_dict or root_data_type.is_list:
+        if not (root_reference := root_data_type.reference) or root_data_type in CONTAINERS:
             return None
         if root_reference.source not in models_set or (
             self.config.use_site_models_for_constrained_refs and _has_root_field_constraints(model.fields[0])
