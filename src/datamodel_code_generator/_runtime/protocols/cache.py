@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 import httpx2
 from typing_extensions import TypeVar
@@ -204,6 +204,7 @@ class _Fetch(Generic[T]):
         "credential_headers",
         "directives",
         "entry",
+        "headers",
         "identity",
         "implicit",
         "max_ttl",
@@ -240,7 +241,7 @@ class _Fetch(Generic[T]):
         self.settings, self.request = prepared.settings, prepared.request
         self.sending = self.request
         self.credential_headers = prepared.credential_headers
-        headers = HeadersView(request_fields(self.request))
+        headers = self.headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise configuration_error(plan.helper_id, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
@@ -267,7 +268,7 @@ class _Fetch(Generic[T]):
         self.base_key = json_digest({
             "method": self.request.method,
             "url": identity.url,
-            "accept": HeadersView(request_fields(self.request)).get("accept"),
+            "accept": self.headers.get("accept"),
             "credentials": identity.headers,
             "varied": sorted(self.implicit),
         })
@@ -283,7 +284,7 @@ class _Fetch(Generic[T]):
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
-        headers = HeadersView(request_fields(self.request))
+        headers = self.headers
         if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
             return None
         for header, stored in _VALIDATORS:
@@ -375,17 +376,19 @@ class _Fetch(Generic[T]):
         response = Response(data=stored_value(plan.call, merged, entry.body), info=merged)
         return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected, sent)
 
-    def stored(self, received: _Received[T]) -> dict[str, Any] | None:
-        """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
+    def stored(self, received: _Received[T]) -> CacheEntry | None:
+        """Return the entry a response becomes including its plain Vary values, or None to store nothing.
 
-        It is refused for a request sent as another identity than the one looked up, such as a rotated credential, a
-        renewed token, or a header an Auth's later round or a request hook added, an unlisted status, a redirect, a
-        Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the allowlist and the
-        credential headers the key covers or `*`, a revalidation whose Vary changed, and a response that is neither
-        fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key names, except
-        the credential headers, and its date and age are those of the response received, so a 304 without Age makes the
-        entry's age 0.
+        A fetch asking no-store stores nothing. A response is refused for a request sent as another identity than the
+        one looked up, such as a rotated credential, a renewed token, or a header an Auth's later round or a request
+        hook added, an unlisted status, a redirect, a Set-Cookie, an unsupported or malformed Cache-Control, no-store, a
+        Vary outside the allowlist and the credential headers the key covers or `*`, a revalidation whose Vary changed,
+        and a response that is neither fresh nor revalidatable. The entry varies on the response's Vary and on the
+        headers its base key names, except the credential headers, and its date and age are those of the response
+        received, so a 304 without Age makes the entry's age 0.
         """
+        if self.directives.no_store:
+            return None
         plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
         vary = _vary(headers)
@@ -411,19 +414,19 @@ class _Fetch(Generic[T]):
         age = _delta(origin.get("age")) if "age" in origin else 0
         initial = max(now - date, (_MAX_DELTA if age is None else age) + (now - self.requested_at), 0.0)
         names = tuple(sorted(self.implicit.union(vary) - self.credential_headers))
-        return {
-            "vary": names,
-            "vary_values": tuple(tuple(self.request.headers.get_list(name)) for name in names),
-            "status_code": received.response.info.status_code,
-            "headers": headers,
-            "body": received.body,
-            "request_time": _instant(self.requested_at),
-            "response_time": _instant(now),
-            "stored_at": _instant(now),
-            "freshness_seconds": freshness,
-            "initial_age_seconds": initial,
-            "schema_fingerprint": plan.fingerprint,
-        }
+        return CacheEntry(
+            vary=names,
+            vary_values=tuple(self.headers.get_all(name) for name in names),
+            status_code=received.response.info.status_code,
+            headers=headers,
+            body=received.body,
+            request_time=_instant(self.requested_at),
+            response_time=_instant(now),
+            stored_at=_instant(now),
+            freshness_seconds=freshness,
+            initial_age_seconds=initial,
+            schema_fingerprint=plan.fingerprint,
+        )
 
     def fits(self, received: _Received[T], vary: tuple[str, ...]) -> bool:
         """Return whether the identity, status, origin, cookies, and a revalidation's Vary let it be stored."""
@@ -540,10 +543,7 @@ def fetch(
             except SDKError as failure:
                 add_secondary(error, failure)
         raise
-    if state.directives.no_store:
-        return state.result(received)
-    if (fields := state.stored(received)) is not None:
-        entry = CacheEntry(**fields)
+    if (entry := state.stored(received)) is not None:
         _checked(_run(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
         _checked(_run(lambda: store.delete(key)) is None)
@@ -579,10 +579,7 @@ async def afetch(
             except SDKError as failure:
                 add_secondary(error, failure)
         raise
-    if state.directives.no_store:
-        return state.result(received)
-    if (fields := state.stored(received)) is not None:
-        entry = CacheEntry(**fields)
+    if (entry := state.stored(received)) is not None:
         _checked(await _arun(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
         _checked(await _arun(lambda: store.delete(key)) is None)
