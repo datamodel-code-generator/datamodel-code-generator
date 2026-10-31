@@ -41,7 +41,14 @@ from datamodel_code_generator.parser.base import (
     _RAW_SCHEMA_DEFAULT_KEY,
 )
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
-from datamodel_code_generator.reference import _is_special_path, _rw_variant_of, _rw_variant_path, location_of
+from datamodel_code_generator.reference import (
+    _is_special_path,
+    _rw_direction,
+    _rw_variant_flag,
+    _rw_variant_of,
+    _rw_variant_path,
+    location_of,
+)
 
 if TYPE_CHECKING:
     from collections import defaultdict
@@ -142,7 +149,18 @@ def _rw_facts_need_variant(facts: tuple[bool, bool, bool, bool], suffix: Literal
     A variant drops the read-only (Request) or write-only (Response) fields, so it needs such a field and another one.
     """
     has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
-    return has_read_only and has_non_read_only if suffix == "Request" else has_write_only and has_non_write_only
+    direction = _rw_direction(suffix)
+    return _rw_variant_flag(direction, has_read_only, has_write_only) and _rw_variant_flag(
+        direction, has_non_read_only, has_non_write_only
+    )
+
+
+def _rw_variant_fields(
+    fields: Iterable[DataModelFieldBase], suffix: Literal["Request", "Response"]
+) -> list[DataModelFieldBase]:
+    """Return the fields the Request or Response variant keeps: all but the read-only or the write-only ones."""
+    direction = _rw_direction(suffix)
+    return [field for field in fields if not _rw_variant_flag(direction, field.read_only, field.write_only)]
 
 
 def _get_rw_model_variant_source_path(
@@ -1348,7 +1366,7 @@ def get_rw_model_variant_reference(
         yields=yielding,
     ).name
     reference = parser.model_resolver.add(
-        _rw_variant_path(base_reference.path, "request" if suffix == "Request" else "response"),
+        _rw_variant_path(base_reference.path, _rw_direction(suffix)),
         unique_name,
         class_name=False,
         unique=False,
@@ -1535,26 +1553,20 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
 ) -> None:
     """Generate Request and Response model variants."""
     facts = get_rw_model_field_facts(parser, all_fields)
-    variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = []
-    match parser.read_only_write_only_model_type:
-        case ReadOnlyWriteOnlyModelType.RequestResponse:
-            if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
-                parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache[reference.path, "Request"] = True  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache[reference.path, "Response"] = True  # noqa: SLF001
-            parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
-            parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
-                field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
-            )
-            variants.extend((
-                ("Request", [field for field in all_fields if not field.read_only]),
-                ("Response", [field for field in all_fields if not field.write_only]),
-            ))
-        case _:
-            if _rw_facts_need_variant(facts, "Request"):
-                variants.append(("Request", [field for field in all_fields if not field.read_only]))
-            if _rw_facts_need_variant(facts, "Response"):
-                variants.append(("Response", [field for field in all_fields if not field.write_only]))
+    if request_response := parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
+        if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
+            parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
+        parser._rw_model_variant_requirement_cache[reference.path, "Request"] = True  # noqa: SLF001
+        parser._rw_model_variant_requirement_cache[reference.path, "Response"] = True  # noqa: SLF001
+        parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
+        parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
+            field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
+        )
+    variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = [
+        (suffix, _rw_variant_fields(all_fields, suffix))
+        for suffix in ("Request", "Response")
+        if request_response or _rw_facts_need_variant(facts, suffix)
+    ]
     for suffix, model_fields in variants:
         parser._create_variant_model(  # noqa: SLF001
             reference,

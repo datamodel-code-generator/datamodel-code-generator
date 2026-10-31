@@ -384,7 +384,20 @@ def _source_path(path: str) -> str:
     return variant[0] if (variant := _rw_variant_of(path)) else path
 
 
+def _rw_direction(suffix: Literal["Request", "Response"]) -> _RwDirection:
+    """Return the direction of the read or write variant whose class name ends in ``suffix``."""
+    return "request" if suffix == "Request" else "response"
+
+
 T = TypeVar("T")
+
+
+def _rw_variant_flag(direction: _RwDirection, read_only: T, write_only: T) -> T:
+    """Return, of a property's readOnly and writeOnly values, the one by which the variant in ``direction`` drops it.
+
+    A request variant leaves out the read-only properties, a response variant the write-only ones.
+    """
+    return read_only if direction == "request" else write_only
 
 
 @contextmanager

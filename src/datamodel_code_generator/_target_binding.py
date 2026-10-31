@@ -132,6 +132,7 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     SchemaLocation,
     _is_special_path,
+    _rw_variant_flag,
     _rw_variant_of,
     _rw_variant_path,
     _source_path,
@@ -2965,7 +2966,7 @@ class _Models:
         excluded: list[FieldUseBinding] = []
         for name, declaration in properties.items():
             node = self.schemas.resolve(declaration)[1]
-            if name in kept or not (node.read_only if direction == "request" else node.write_only):
+            if name in kept or not _rw_variant_flag(direction, node.read_only, node.write_only):
                 continue
             schema = self.documents.location(declaration, "schema")
             excluded.append(
@@ -2977,7 +2978,7 @@ class _Models:
                     None,
                     schema,
                     direction,
-                    "read_only" if direction == "request" else "write_only",
+                    _rw_variant_flag(direction, "read_only", "write_only"),
                 )
             )
         if not excluded:
