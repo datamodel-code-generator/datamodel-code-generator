@@ -15,11 +15,12 @@ from math import isfinite
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
-from datamodel_code_generator._client.naming import folded, helper_name_problem, token
+from datamodel_code_generator._client.naming import helper_name_problem, token
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_documents import canonical_bytes
+from datamodel_code_generator._target_naming import fold_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -419,11 +420,11 @@ class _Validator:  # noqa: PLR0904
             target = self.target_python_version
             if (problem := helper_name_problem(name, target)) is not None:
                 self.value(here, problem)
-            elif other := next((other for key, other in names if _collides(folded(name, target), key)), None):
+            elif other := next((other for key, other in names if _collides(fold_key(name, target), key)), None):
                 message = f"The helper names {other!r} and {name!r} collide"
                 self.problems.append(_diagnostic("E_NAME_COLLISION", here, message))
             else:
-                names.append((folded(name, target), name))
+                names.append((fold_key(name, target), name))
             if (helper := self.helper(name, body, here)) is not None:
                 helpers.append(helper)
         return tuple(helpers)

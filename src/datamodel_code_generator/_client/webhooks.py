@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module, statement
-from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
@@ -23,6 +22,7 @@ from datamodel_code_generator._python_syntax import call_text, dict_display, sub
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, schema_uses
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan
 from datamodel_code_generator._target_templates import templated
 
@@ -130,13 +130,13 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
     spellings: dict[str, str] = {}
     for helper in helpers:
         parts = helper.name.split(".")
-        if folded(parts[0], target_python_version) == "keys":
+        if fold_key(parts[0], target_python_version) == "keys":
             message = f"The webhook helper name {helper.name!r} is taken by the module of the webhook key types"
             yield helper, _problem("E_NAME_COLLISION", "target", helper.at, message)
             continue
         for index in range(1, len(parts)):
             package = ".".join(parts[:index])
-            if (spelled := spellings.setdefault(folded(package, target_python_version), package)) != package:
+            if (spelled := spellings.setdefault(fold_key(package, target_python_version), package)) != package:
                 message = (
                     f"The webhook helper name {helper.name!r} gives the package {package!r}, which differs from "
                     f"{spelled!r} only in case"
