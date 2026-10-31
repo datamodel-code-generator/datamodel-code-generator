@@ -21,6 +21,7 @@ from datamodel_code_generator._json_output import (
     dump_json,
     schema_document,
 )
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
@@ -140,8 +141,9 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
                 "not for `--watch`."
             ),
             (
-                f"- `--output-format-json-schema` accepts {', '.join(f'`{name}`' for name in JSON_SCHEMA_NAMES[:-1])}, "
-                f"or `{JSON_SCHEMA_NAMES[-1]}`; use `config` for JSON configuration schemas."
+                f"- `--output-format-json-schema` accepts "
+                f"{english_list((f'`{name}`' for name in JSON_SCHEMA_NAMES), 'or', 'serial')}; "
+                "use `config` for JSON configuration schemas."
             ),
             "- `--validation` is deprecated; use `--field-constraints` for generated Field constraints.",
         ),

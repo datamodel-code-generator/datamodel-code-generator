@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import helper_name_problem, token
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
@@ -186,11 +187,6 @@ def validate(
     return helpers, validator.problems
 
 
-def _choices(values: tuple[str, ...]) -> str:
-    quoted = [repr(value) for value in values]
-    return quoted[0] if len(quoted) == 1 else f"{', '.join(quoted[:-1])} or {quoted[-1]}"
-
-
 def _collides(name: str, other: str) -> bool:
     return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
 
@@ -235,7 +231,7 @@ class _Validator:  # noqa: PLR0904
         if key not in value:
             return self.value(f"{at}.{key}", f"{at} needs {key!r}")
         if not isinstance(tag := value[key], str) or tag not in variants:
-            return self.value(f"{at}.{key}", f"{at}.{key} must be {_choices(tuple(variants))}")
+            return self.value(f"{at}.{key}", f"{at}.{key} must be {english_list(map(repr, variants), 'or')}")
         return self.record(value, at, {key: (_keep, REQUIRED), **variants[tag]}, noun)
 
     def items(self, value: object, at: str, convert: Converter, *, nonempty: bool = False) -> object:
@@ -311,7 +307,7 @@ class _Validator:  # noqa: PLR0904
     def choice(self, *choices: str) -> Converter:
         def convert(value: object, at: str) -> object:
             valid = isinstance(value, str) and value in choices
-            return value if valid else self.value(at, f"{at} must be {_choices(choices)}")
+            return value if valid else self.value(at, f"{at} must be {english_list(map(repr, choices), 'or')}")
 
         return convert
 
@@ -438,7 +434,7 @@ class _Validator:  # noqa: PLR0904
             self.value(f"{at}.kind", f"{at} needs 'kind'")
             return None
         if not isinstance(kind := value["kind"], str) or kind not in KINDS:
-            self.value(f"{at}.kind", f"{at}.kind must be {_choices(KINDS)}")
+            self.value(f"{at}.kind", f"{at}.kind must be {english_list(map(repr, KINDS), 'or')}")
             return None
         self.schemas = []
         match kind:

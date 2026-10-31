@@ -18,6 +18,7 @@ from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._json_pointer import pointer_tokens
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
@@ -168,10 +169,6 @@ def _json_type(value: object) -> str:
     if isinstance(value, str):
         return "string"
     return "object" if isinstance(value, Mapping) else "array"
-
-
-def _listed(kinds: list[str]) -> str:
-    return kinds[0] if len(kinds) == 1 else f"{', '.join(kinds[:-1])}{',' if len(kinds) > 2 else ''} or {kinds[-1]}"  # noqa: PLR2004
 
 
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
@@ -525,7 +522,10 @@ class _Pages(HelperPlanner):
             yield types
             return
         if types is not None and (others := sorted(types - _URL_TYPES)):
-            message = f"The next URL of {name!r} reads {_listed(others)} values, where only string values fit"
+            message = (
+                f"The next URL of {name!r} reads {english_list(others, 'or', 'serial')} values, "
+                "where only string values fit"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
         yield from self.ends(helper, spec, types, "next URL")
 
@@ -573,7 +573,10 @@ class _Pages(HelperPlanner):
         if isinstance(types, Diagnostic):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
-            message = f"The {chosen} of {name!r} reads {_listed(others)} values, where only {expected} values fit"
+            message = (
+                f"The {chosen} of {name!r} reads {english_list(others, 'or', 'serial')} values, "
+                f"where only {expected} values fit"
+            )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
 
     def fits(  # noqa: PLR0913, PLR0917
@@ -604,7 +607,10 @@ class _Pages(HelperPlanner):
             kind for kind in types or () if (null or kind != "null") and not all(_fits(kind, item) for item in schemas)
         ):
             verb = "reads" if what == "cursor" else "gives"
-            message = f"The {what} of {helper.name!r} {verb} {_listed(refused)} values, which {place} does not accept"
+            message = (
+                f"The {what} of {helper.name!r} {verb} {english_list(refused, 'or', 'serial')} values, "
+                f"which {place} does not accept"
+            )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def values(

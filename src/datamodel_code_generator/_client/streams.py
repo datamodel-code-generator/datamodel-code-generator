@@ -16,7 +16,6 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (  # pyright: ignore[reportPrivateUsage]
     _label,
-    _listed,
     _Pages,
     _problem,
     _target_key,
@@ -24,6 +23,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
 from datamodel_code_generator._client.plan import schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
@@ -135,7 +135,7 @@ def _media_problem(helper: Helper) -> str | None:
     media, accepted = helper.tree["media"], _MEDIA[helper.kind]
     if essence(media) in accepted:
         return None
-    expected = accepted[0] if len(accepted) == 1 else f"one of {_listed(list(accepted))}"
+    expected = accepted[0] if len(accepted) == 1 else f"one of {english_list(accepted, 'or', 'serial')}"
     return f"The media type {media!r} of {helper.name!r} is not {expected}"
 
 
@@ -400,7 +400,7 @@ def _discriminated(helper: Helper, spec: StreamSpec, pages: _Pages) -> Iterator[
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
         elif types is not None and "string" not in types:
             message = (
-                f"The discriminator of {helper.name!r} reads {_listed(sorted(types))} values from {label!r}, where "
-                "only string values fit"
+                f"The discriminator of {helper.name!r} reads {english_list(sorted(types), 'or', 'serial')} values "
+                f"from {label!r}, where only string values fit"
             )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)

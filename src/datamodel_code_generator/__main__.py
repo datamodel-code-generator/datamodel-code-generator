@@ -1739,9 +1739,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
+    from datamodel_code_generator._message_text import english_list, for_count  # noqa: PLC0415
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _TARGET_SELECTORS,
-        _option_list,
         _selected_target,
         _target_options_error,
     )
@@ -1760,7 +1760,7 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         for selector, prefix in unselected
     ]
     if errors := [
-        f"{_option_list(flags)} {'requires' if len(flags) == 1 else 'require'} {selector}"
+        f"{english_list(flags, 'and')} {for_count(len(flags), 'requires', 'require')} {selector}"
         for selector, flags in given
         if flags
     ]:

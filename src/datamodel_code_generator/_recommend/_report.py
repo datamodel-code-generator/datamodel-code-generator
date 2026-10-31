@@ -8,6 +8,7 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json
+from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text, values_arguments
 from datamodel_code_generator._recommend._signals import Signals
@@ -106,13 +107,9 @@ def _value_text(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _count(count: int, noun: str) -> str:
-    return f"{count} {noun}{'' if count == 1 else 'es' if noun.endswith('s') else 's'}"
-
-
 def _changes_text(changes: NameChanges) -> str:
     return (
-        f"{changes.renamed} of {_count(changes.matched, 'class')} matched by schema location renamed "
+        f"{changes.renamed} of {counted(changes.matched, 'class')} matched by schema location renamed "
         f"({changes.renumbered} only renumbered), {changes.removed} removed, {changes.added} added"
         f"{', e.g.' if changes.examples else ''}"
     )
@@ -167,7 +164,7 @@ def _trial_footnotes(trial: Trial, *, stability: bool) -> list[str]:
         )
     if trial.remeasured:
         notes.append(
-            f"the last {_count(trial.remeasured, 'row')}: the selected configuration without or with one option, "
+            f"the last {counted(trial.remeasured, 'row')}: the selected configuration without or with one option, "
             "to measure each option on it; never selected"
         )
     notes.append("unconstrained: fields that dcg warns it generates without some of their constraints")
@@ -199,7 +196,7 @@ def _trial_lines(trial: Trial) -> list[str]:
     widths = [max(len(row[index]) for row in (headers, *rows) if index < len(row)) for index in range(len(headers))]
     lines = [
         "",
-        f"Trial  {_count(len(trial.outcomes), 'candidate')} generated in memory without formatting; nothing written",
+        f"Trial  {counted(len(trial.outcomes), 'candidate')} generated in memory without formatting; nothing written",
         _table_row(headers, widths),
     ]
     for outcome, row in zip(trial.outcomes, rows, strict=True):
@@ -257,7 +254,7 @@ def _start_lines(recommendation: Recommendation, signals: Signals) -> list[str]:
             for option in recommendation.covers
         ),
         "",
-        f"Add ({added} option{'' if added == 1 else 's'})" if added else "Add  nothing on top of the preset",
+        f"Add ({counted(added, 'option')})" if added else "Add  nothing on top of the preset",
         *(line for option in recommendation.recommendations for line in _option_lines(option, signals)),
     ]
 

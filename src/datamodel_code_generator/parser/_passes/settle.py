@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.model.base import DataModel, sort_data_models_for_mro
@@ -384,8 +385,7 @@ def warn_about_unmatched_model_name_keys(parser: SettleHost[Any]) -> None:
     ):
         listed = ", ".join(map(repr, unmatched_keys))
         warn_as_parser_base(
-            f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
-            f"matched no generated model: {listed}",
+            f"--model-name-map: {counted(len(unmatched_keys), 'key')} matched no generated model: {listed}",
             UserWarning,
             stacklevel=2,
         )

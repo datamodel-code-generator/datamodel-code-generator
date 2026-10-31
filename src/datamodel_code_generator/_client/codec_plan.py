@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
 from datamodel_code_generator._client.model_facts import _FALSE, _name
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
@@ -381,7 +382,7 @@ class _Planner:
         """
         if declared is None:
             self.report(
-                f"The union of {' and '.join(self.symbols[item].name for item in models)} "
+                f"The union of {english_list((self.symbols[item].name for item in models), 'and', 'each')} "
                 f"needs a declared discriminator for the {self.backend} converter"
             )
             return None, ()

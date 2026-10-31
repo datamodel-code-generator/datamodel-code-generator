@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
@@ -427,7 +428,7 @@ def _mode(request: RecommendRequest, analysed: _Input, previous: str | None) -> 
             estimates.append(_measure(document, analysed.kind, request.config).counts["estimated_models"])
         if sum(estimates) <= limit:
             return "full", None
-        inputs = "the input and --diff-against are" if len(estimates) > 1 else "the schema is"
+        inputs = for_count(len(estimates), "the schema is", "the input and --diff-against are")
         reason = f"{inputs} estimated at {sum(estimates)} models, more than the {limit} compared by default"
     return "quick", (
         f"Candidates were not compared: {reason}. Run --recommend-options full to generate each candidate "
@@ -721,7 +722,7 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
     if trial.dropped:
         recommendation.notes.append(
             f"The trial compares at most {_MAX_CANDIDATES} candidates, so {trial.dropped} "
-            f"{'was' if trial.dropped == 1 else 'were'} left out; the options they would measure show no trial result."
+            f"{for_count(trial.dropped, 'was', 'were')} left out; the options they would measure show no trial result."
         )
     if trial.selected is None:
         recommendation.notes.append(

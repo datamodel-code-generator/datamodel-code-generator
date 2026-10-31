@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeVar
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import SourceLocation, parameter_place, schema_uses
 from datamodel_code_generator._target_contract import label as _label
@@ -248,7 +249,7 @@ def helper_problems(
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
             message = (
-                f"The {helper.kind} helper {helper.name!r} reserves the argument{'s' if len(taken) > 1 else ''} "
+                f"The {helper.kind} helper {helper.name!r} reserves the {for_count(len(taken), 'argument')} "
                 f"{', '.join(map(repr, taken))} of "
                 f"{_label(spec.contract)}; rename them with the operation's parameter_names or body_field_names in "
                 "--client-operations"

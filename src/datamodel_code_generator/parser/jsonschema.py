@@ -137,6 +137,7 @@ from datamodel_code_generator._json_schema import (
     SINGLE_SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._mro import (
@@ -645,8 +646,9 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     lists = {key: noun for key, noun, *_ in shifts}
     _, _, kind, value, taken, own = shifts[0]
     return (
-        f"{class_name} keeps the shifted member {' and '.join(lists.values())} of 0.83.0: {' and '.join(lists)} "
-        f"{'give' if len(lists) > 1 else 'gives'} null an entry, but the entries are matched to the values without "
+        f"{class_name} keeps the shifted member {english_list(lists.values(), 'and', 'each')} of 0.83.0: "
+        f"{english_list(lists, 'and', 'each')} {for_count(len(lists), 'gives', 'give')} null an entry, but the entries "
+        "are matched to the values without "
         f"null, so {value!r} is {kind} {taken!r} instead of {own!r}. Leave the entry of null out of the list."
     )
 
@@ -5180,8 +5182,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         where = named_location(obj.schema_location, name, row="legacy-unredacted-locations")
         if reasons and first_report(self._inexact_object_maps, where):
             warn(
-                f"{where}: one dict type cannot express this object, since it {' and '.join(reasons)}; the generated "
-                "dict accepts or rejects some objects that the schema does not. Pydantic output with "
+                f"{where}: one dict type cannot express this object, since it "
+                f"{english_list(reasons, 'and', 'each')}; the generated dict accepts or rejects some objects that the "
+                "schema does not. Pydantic output with "
                 "--generate-schema-validators checks it exactly.",
                 stacklevel=2,
             )
