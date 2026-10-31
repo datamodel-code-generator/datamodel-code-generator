@@ -330,4 +330,4 @@ def test_marketplace_manifest_points_at_the_bundled_skill() -> None:
             f"{plugin['name']}: source={plugin['source']} directory={source.name}"
             f" skill_name={skill_name} skill_file={skill_file.is_file()}"
         )
-    assert_output("\n".join(lines) + "\n", EXPECTED / "marketplace_manifest.txt")
+    assert_output("\n".join(lines) + "\n")

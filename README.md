@@ -661,7 +661,7 @@ datamodel-codegen --install-skill claude-code
 For a personal install, add `--skill-scope user`. Existing skills are preserved
 unless you explicitly add `--overwrite-skill`.
 
-To install without the Python package, for example in Claude Code, run `claude plugin marketplace add datamodel-code-generator/datamodel-code-generator`. See [Install from the repository](docs/coding-agent-skill.md#install-from-the-repository) for other agents.
+To install without the Python package, for example in Claude Code, run `claude plugin marketplace add datamodel-code-generator/datamodel-code-generator` and then `claude plugin install datamodel-code-generator@datamodel-code-generator`. See [Install from the repository](docs/coding-agent-skill.md#install-from-the-repository) for other agents.
 
 Check your agent's current documentation for exact search paths.
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from io import BytesIO, TextIOWrapper
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_types import (
@@ -70,6 +70,22 @@ class RenderedFile:
     kind: str
     text: str
     verbatim: bool = False
+
+
+_RUNTIME: Final = Path(__file__).parent / "_runtime"
+
+
+def runtime_files(modules: Iterable[str]) -> Iterator[RenderedFile]:
+    """Yield the copies of the declared runtime modules and their packages' initializers, in ascending path order.
+
+    A target declares every module its capabilities need; the copy never follows the modules' imports. The coordinator
+    heads and encodes a copy without formatting it.
+    """
+    declared = set(modules)
+    packages = {(PurePosixPath(module).parent / "__init__.py").as_posix() for module in declared}
+    for path in sorted({"__init__.py", *packages, *declared}):
+        text = (_RUNTIME / path).read_text(encoding="utf-8")
+        yield RenderedFile(path=PurePosixPath("_runtime", path), kind="runtime", text=text, verbatim=True)
 
 
 def implementation_text(path: PurePosixPath) -> str:
