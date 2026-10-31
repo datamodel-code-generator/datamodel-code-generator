@@ -8,8 +8,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from datamodel_code_generator import reference
+from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator.http import join_url
 from datamodel_code_generator.reference import (
+    EnumFieldNameResolver,
     ModelResolver,
     get_relative_path,
     get_singular_name,
@@ -700,3 +703,40 @@ def test_resolve_ref_local_fragment_without_current_root_falls_back_to_url() -> 
     result = resolver.resolve_ref("#/definitions/Foo")
 
     assert result == "https://example.com/schemas/main.json#/definitions/Foo"
+
+
+def test_enum_field_name_resolver_without_target_reads_the_oldest_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A host interpreter's extra builtin attributes must not change generated names (Issue #5852).
+
+    ``_BUILTIN_TYPE_ATTRIBUTES`` is captured from the running interpreter at import time, so the
+    no-target path produced different member names on 3.13 and 3.14 (``float.from_number`` exists
+    only from 3.14). The attribute table is extended here rather than skipped on 3.13, so the
+    assertion holds on every interpreter instead of only on the ones that happen to have it.
+    """
+    monkeypatch.setattr(
+        reference,
+        "_BUILTIN_TYPE_ATTRIBUTES",
+        reference._BUILTIN_TYPE_ATTRIBUTES | {"from_number"},
+    )
+
+    without_target = EnumFieldNameResolver(use_subclass_enum=True).get_valid_name("from_number")
+    oldest_target = EnumFieldNameResolver(
+        use_subclass_enum=True, target_python_version=PythonVersion.PY_310
+    ).get_valid_name("from_number")
+
+    assert without_target == oldest_target == "from_number"
+
+
+def test_enum_field_name_resolver_target_keeps_later_builtin_attributes() -> None:
+    """The version-aware path must keep the difference the no-target fix must not flatten."""
+    oldest_target = EnumFieldNameResolver(
+        use_subclass_enum=True, target_python_version=PythonVersion.PY_310
+    ).get_valid_name("from_number")
+    newest_target = EnumFieldNameResolver(
+        use_subclass_enum=True, target_python_version=PythonVersion.PY_314
+    ).get_valid_name("from_number")
+
+    assert oldest_target == "from_number"
+    assert newest_target == "from_number_"
