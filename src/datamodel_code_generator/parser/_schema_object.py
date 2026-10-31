@@ -24,7 +24,7 @@ from pydantic_core import core_schema
 from typing_extensions import override
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._json_schema import schema_positions
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, schema_positions
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, keep_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
@@ -329,8 +329,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         "x_enum_descriptions",
         "x_enum_field_as_literal",
         "read_as_const",
-        "definitions",
-        "$defs",
+        *DEFINITION_KEYS,
         "default",
         "readOnly",
         "writeOnly",

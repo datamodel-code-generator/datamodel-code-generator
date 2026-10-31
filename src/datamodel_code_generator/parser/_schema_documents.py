@@ -34,7 +34,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._json_pointer import escape_token
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, SCHEMA_SHAPES
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -930,7 +930,7 @@ def iter_definition_namespace_entries(
     *,
     include_direct_children: bool,
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
-    for schema_key in ("definitions", "$defs"):
+    for schema_key in NAMESPACE_DEFINITION_KEYS:
         if isinstance(definitions := raw.get(schema_key), dict):
             yield from parser._iter_schema_definition_entries(definitions, [*path, schema_key])  # noqa: SLF001
 

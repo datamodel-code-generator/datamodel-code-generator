@@ -122,7 +122,7 @@ from datamodel_code_generator._json_pointer import (
     unescape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._json_schema import (
-    DEFINITION_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    DEFINITION_KEYS,
     REF_PRE_PASS_FIELDS,
     REF_PRE_PASS_POSITIONS,
     SCHEMA_MAP_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -5732,7 +5732,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return
         if (
-            not obj.extras.keys() <= {"$schema", "$defs", "definitions", "title"}
+            not obj.extras.keys() <= {"$schema", *DEFINITION_KEYS, "title"}
             or not isinstance(item := obj.items, JsonSchemaObject)
             or item.type != "object"
             or not item.model_fields_set <= {"type", "patternProperties"}
@@ -7741,7 +7741,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _schema_object_raw_key_sets(
         schema_object_type: type[JsonSchemaObject],
     ) -> tuple[frozenset[str], frozenset[str]]:
-        keys = {"definitions", "$defs"}
+        keys = set(DEFINITION_KEYS)
         for name, field in schema_object_type.get_fields().items():
             keys.add(name)
             if alias := getattr(field, "alias", None):

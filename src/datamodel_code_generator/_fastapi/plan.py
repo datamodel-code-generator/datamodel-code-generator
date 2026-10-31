@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
     EXPORTED_NAMES,
@@ -28,7 +27,6 @@ from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     body_kind,
     content_types,
-    declared_media,
     form_extras,
     form_members,
     form_styled,
@@ -67,19 +65,26 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_naming import NameScope, windows_device
 from datamodel_code_generator._target_operations import (
     SERVER,
-    PlanError,
+    UNSPELLABLE,
+    Refusal,
     alias,
     argument_names,
+    binding_problem,
     declared_by,
+    declared_in,
+    declared_media_type,
     derived_name,
     first_use,
+    json_null,
     local,
+    native_type,
     placeholder_problems,
+    raise_planned,
     resolve_settings,
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present, takes_null
+from datamodel_code_generator._target_types import present
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
@@ -89,7 +94,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import OperationSelector
+    from datamodel_code_generator._api_types import Diagnostic, OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_wire_plan import FormMember, LexicalKinds, WirePlan
@@ -640,8 +645,7 @@ class Planner:  # noqa: PLR0904
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
-        if self.problems:
-            raise PlanError(self.problems)
+        raise_planned(self.problems)
 
     def selected(self, option: str, values: Mapping[OperationSelector, SettingT]) -> dict[str, SettingT]:
         """Resolve the operation selectors of one per-operation setting to operation keys."""
@@ -669,7 +673,7 @@ class Planner:  # noqa: PLR0904
         python_names = self.target_names.claim(
             NameScope(),
             [
-                (base, scheme.declaration.declaration.location.document == self.request.batch.documents[0].id, ())
+                (base, declared_in(scheme.declaration.declaration, self.request.batch.documents[0].id), ())
                 for scheme, base in zip(schemes, bases, strict=True)
             ],
         )
@@ -889,31 +893,13 @@ class Planner:  # noqa: PLR0904
             and self.types.unspellable(use.type)
         ):
             self.unspelled.add(use.id)
-            self.problems.append(
-                Diagnostic(
-                    code="BND_TYPE_EXPRESSION_UNSUPPORTED",
-                    severity="error",
-                    stage="binding",
-                    message="The use's final type has no expression a generated module can import",
-                    source_pointer=use.id.use_site.pointer,
-                )
-            )
+            self.problems.append(binding_problem(UNSPELLABLE.code, UNSPELLABLE.message, use.id.use_site))
         return use
 
     def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
         """Return a request use, reporting a schema the model generator gave no type."""
-        if use is not None and use.schema is not None and (use.state != "bound" or use.type is None):
-            self.problems.append(
-                Diagnostic(
-                    code="BND_MODEL_SCOPE_REQUIRED"
-                    if use.state == "not_generated"
-                    else use.reason or "MC_BINDING_MISSING",
-                    severity="error",
-                    stage="binding",
-                    message="The use has no generated native type",
-                    source_pointer=use.id.use_site.pointer,
-                )
-            )
+        if use is not None and use.schema is not None and isinstance(refusal := native_type(use), Refusal):
+            self.problems.append(binding_problem(refusal.code, refusal.message, use.id.use_site))
         return use
 
     def parameter(
@@ -1187,10 +1173,7 @@ class Planner:  # noqa: PLR0904
 
         A key that is no media type, or whose text is not ASCII header text, is reported, as the client reports it.
         """
-        media_type, problem = declared_media(declaration.name or "")
-        if problem is not None:
-            message = f"The media type {declaration.name!r} of {label(operation)} {problem}"
-            self.problems.append(_problem("F_MEDIA_UNSUPPORTED", message, declaration.use_site))
+        media_type = declared_media_type(SERVER, operation, declaration, self.problems)
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
         return MediaSpec(
@@ -1379,11 +1362,7 @@ class Planner:  # noqa: PLR0904
 
     def json_null(self, media: MediaSpec | None) -> bool:
         """Return whether a media is JSON of a type that accepts null, so its response sends None as `null`."""
-        return (
-            media is not None
-            and media.kind == "json"
-            and takes_null(None if media.use is None else media.use.type, self.symbols, self.members)
-        )
+        return media is not None and json_null(media.kind, media.use, self.symbols, self.members)
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
         """Choose the primary response and decide whether FastAPI's response_model sends bare values.

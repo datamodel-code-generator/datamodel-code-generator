@@ -29,6 +29,9 @@
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
 
+[allow."other.py"."package_files"]
+"sample.init-test" = { home = "sample", count = 2, audit = "X-14" }
+
 [allow."other.py"."read_keys"]
 "sample.read-key" = { home = "sample", count = 4, audit = "X-9" }
 

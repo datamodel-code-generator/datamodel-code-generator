@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, TypeAlias
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._module_paths import is_package_init, module_parts
 from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope
 from datamodel_code_generator.imports import Import, Imports
 
@@ -118,15 +119,14 @@ def collect_exports_for_init(
     """Collect exports for __init__.py based on scope."""
     exports: list[tuple[str, tuple[str, ...], str]] = []
     normalized_module = tuple(part.replace("-", "_") for part in module)
-    base = normalized_module[:-1] if normalized_module[-1] == "__init__.py" else normalized_module
+    base = normalized_module[:-1] if is_package_init(normalized_module[-1]) else normalized_module
     base_len = len(base)
 
     for proc_module, _, proc_models, _, _, _ in processed_models:
         normalized_proc_module = tuple(part.replace("-", "_") for part in proc_module)
         if not proc_models or normalized_proc_module == normalized_module:
             continue
-        last = normalized_proc_module[-1]
-        prefix = normalized_proc_module[:-1] if last == "__init__.py" else (*normalized_proc_module[:-1], last[:-3])
+        prefix = module_parts(normalized_proc_module)
         if prefix[:base_len] != base or (depth := len(prefix) - base_len) < 1:
             continue
         if scope == AllExportsScope.Children and depth != 1:

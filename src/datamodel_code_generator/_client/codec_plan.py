@@ -19,6 +19,7 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     UnionType,
 )
+from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
 from datamodel_code_generator._target_types import is_none
 
 if TYPE_CHECKING:
@@ -425,20 +426,14 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
         if use.id not in uses or use.id.direction == "neutral" or use.schema is None:
             continue
         planner.source = use.id.use_site
-        if use.state != "bound" or use.type is None:
-            planner.report(
-                "The use has no generated native type",
-                code="BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING",
-            )
+        if isinstance(value := native_type(use), Refusal):
+            planner.report(value.message, code=value.code)
             continue
-        if names.unspellable(use.type):
-            planner.report(
-                "The use's final type has no expression a generated module can import",
-                code="BND_TYPE_EXPRESSION_UNSUPPORTED",
-            )
+        if names.unspellable(value):
+            planner.report(UNSPELLABLE.message, code=UNSPELLABLE.code)
             continue
-        shape = planner.shape(use.type, use.schema) if CODEC_RUNTIMES[backend].mapped else None
-        planned.append(CodecUse(use.id, use.type, shape, not extras.isdisjoint(named_symbols(use.type))))
+        shape = planner.shape(value, use.schema) if CODEC_RUNTIMES[backend].mapped else None
+        planned.append(CodecUse(use.id, value, shape, not extras.isdisjoint(named_symbols(value))))
     return ClientCodecs(
         tuple(planned),
         tuple(planner.models[key] for key in sorted(planner.models)),

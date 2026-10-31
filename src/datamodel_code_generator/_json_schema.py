@@ -2,7 +2,9 @@
 
 ``SCHEMA_POSITIONS`` is the one table of the keywords that hold subschemas: the shape of each value and the roles the
 keyword plays. Every walker reads it, by shape or through a view of its roles (``schema_positions``); a walker that
-visits another set or order than a role gives keeps it as a named view here.
+visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
+``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
+data.
 """
 
 from __future__ import annotations
@@ -107,6 +109,18 @@ def schema_positions(
 
 SCHEMA_MAP_KEYS: frozenset[str] = frozenset(schema_positions(shapes=("map",)))
 SCHEMA_VALUE_KEYS: frozenset[str] = frozenset(schema_positions(shapes=SCHEMA_VALUE_SHAPES))
+COMBINATOR_POSITIONS: Final = schema_positions("in-place", shapes=("sequence",))
+"""``allOf``, ``anyOf`` and ``oneOf``: the lists of subschemas that apply to the instance itself, in table order."""
+NAMED_SCHEMA_MAPS: Final = schema_positions(shapes=("map",), without=("dependencies",))
+"""The maps whose every value is a subschema under a name; a value of ``dependencies`` may be a list of names."""
+MODELED_SCHEMA_MAPS: Final = schema_positions("modeled", shapes=("map",))
+"""The maps of named subschemas ``JsonSchemaObject`` holds as fields: ``properties`` and ``patternProperties``."""
+ITEM_POSITIONS: Final = schema_positions("array", without=("contains",))
+"""The positions whose subschemas type the items of an array; ``contains`` only requires a matching item."""
+NAMESPACE_DEFINITION_KEYS: Final = DEFINITION_KEYS[::-1]
+"""The definition keywords in the order namespaces of definitions are read: ``definitions`` first (#3445)."""
+INSTANCE_DATA_KEYWORDS: Final = frozenset({"const", "default", "enum", "example", "examples"})
+"""The keywords whose values are instance data, never subschemas, whatever JSON objects they hold."""
 _UNTYPED_MODEL_POSITIONS: Final = ("additionalItems", "unevaluatedItems", "unevaluatedProperties", "propertyNames")
 MODEL_VALUE_POSITIONS: Final = schema_positions("modeled", without=_UNTYPED_MODEL_POSITIONS)
 """The positions whose schemas make up the values of a schema: its branches, items and properties.

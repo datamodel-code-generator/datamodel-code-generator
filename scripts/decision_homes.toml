@@ -169,18 +169,20 @@ what = "computes components or an order of a graph itself; ask the reference gra
 audit = "D-PP-07"
 
 [homes.Hx-schema-positions]
-decision = "which keywords of a schema hold subschemas, and of which shape"
+decision = "which keywords of a schema hold subschemas, and of which shape; which hold schemas for references only, and which instance data"
 core = ["_json_schema.py"]
 adapters = []
 
 [homes.Hx-schema-positions.signatures.keyword-table]
 kind = "keyword-set"
 keywords = [
+    "$defs",
     "additionalItems",
     "additionalProperties",
     "allOf",
     "anyOf",
     "contains",
+    "definitions",
     "dependentSchemas",
     "else",
     "if",
@@ -196,8 +198,32 @@ keywords = [
     "unevaluatedProperties",
 ]
 min = 4
-paths = ["parser/", "model/", "_target_binding.py", "input_model.py", "_recommend/_signals.py"]
+paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "input_model.py", "_recommend/"]
 what = "lists the subschema keywords itself; read the table of _json_schema.py"
+audit = "D-X-01"
+
+[homes.Hx-schema-positions.signatures.combinator-keywords]
+kind = "keyword-set"
+keywords = ["allOf", "anyOf", "oneOf"]
+min = 3
+paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+what = "lists allOf, anyOf and oneOf itself; read COMBINATOR_POSITIONS of _json_schema.py"
+audit = "D-X-01"
+
+[homes.Hx-schema-positions.signatures.definition-keywords]
+kind = "keyword-set"
+keywords = ["$defs", "definitions"]
+min = 2
+paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+what = "lists $defs and definitions itself; read DEFINITION_KEYS (or a named view) of _json_schema.py"
+audit = "D-X-01"
+
+[homes.Hx-schema-positions.signatures.instance-data-keywords]
+kind = "keyword-set"
+keywords = ["const", "default", "enum", "example", "examples"]
+min = 4
+paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+what = "lists the keywords whose values are instance data itself; read INSTANCE_DATA_KEYWORDS of _json_schema.py"
 audit = "D-X-01"
 
 [homes.Hx-typed-positions]
@@ -325,6 +351,34 @@ kind = "literal"
 contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
 what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
 audit = "C18-N2"
+
+[homes.Hx-module-paths]
+decision = "which module a written Python file holds: its path without the file's .py and without a package's __init__, and whether a file is a package's __init__.py"
+core = ["_module_paths.py"]
+adapters = []
+
+[homes.Hx-module-paths.signatures.module-file-stem]
+kind = "call"
+names = ["removesuffix", "endswith", "replace"]
+strings = [".py"]
+# Left out: the files on disk beside a written module (a dependency-free leaf the writers and the publication journal
+# share), an --input-model value that names a file, and a result path told apart from a package directory.
+exclude = [
+    "_shadowed_modules.py:warn_shadowed_modules",
+    "input_model.py:_is_path_input_model_module",
+    "parser/base.py:Parser.__postprocess_result_modules",
+]
+what = "takes .py off the file name of a module itself; call _module_paths.py:module_parts (or dotted_module)"
+audit = "C09-N6"
+
+[homes.Hx-module-paths.signatures.package-init-test]
+kind = "compare-eq"
+values = ["__init__.py", "__init__"]
+# Left out: the files on disk beside a written module (as above), and the file stems a server target refuses because
+# its file system folds them onto a package's __init__ or a Windows device name.
+exclude = ["_shadowed_modules.py:warn_shadowed_modules", "_fastapi/plan.py:_file_stem_conflict"]
+what = "tests whether a file is a package's __init__.py itself; call _module_paths.py:is_package_init (module_parts drops it)"
+audit = "C09-N6"
 
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
@@ -874,6 +928,27 @@ default = "C-01"
 "_fastapi/plan.py:_scheme" = "C-12"
 "_fastapi/render.py:_scheme" = "C-12"
 "_fastapi/render.py:_registration" = "C-13"
+
+[homes.T-operation.signatures.unbound-use]
+kind = "literal"
+contains = ["has no generated native type", "has no expression a generated module can import"]
+paths = ["_client/", "_fastapi/"]
+what = "refuses a use without a native type, or one no module can import, itself; call _target_operations.py:native_type, read UNSPELLABLE"
+audit = "C21-A2"
+
+[homes.T-operation.signatures.media-key]
+kind = "call"
+names = ["declared_media"]
+paths = ["_client/", "_fastapi/"]
+what = "reads a media key itself; call _target_operations.py:declared_media_type with the target's policy"
+audit = "C21-A14"
+
+[homes.T-operation.signatures.json-null]
+kind = "call"
+names = ["takes_null"]
+paths = ["_client/", "_fastapi/"]
+what = "decides itself whether a body or response sends JSON null; call _target_operations.py:json_null"
+audit = "C21-A6"
 
 [homes.Hx-http]
 decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes and keys, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
@@ -2389,6 +2464,7 @@ fix = "#5656"
 
 [allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_generic_base_class_module"]
 "H26.model-import-path" = { home = "H26", count = 1, audit = "C04-K09" }
+"Hx-module-paths.module-file-stem" = { home = "Hx-module-paths", count = 1, audit = "C09-N6" }
 
 [allow."src/datamodel_code_generator/parser/_passes/imports.py"."tuple_unique_items_warning"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }

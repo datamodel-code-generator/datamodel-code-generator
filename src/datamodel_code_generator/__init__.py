@@ -484,14 +484,9 @@ def is_schema(data: dict) -> bool:
         return True
     if isinstance(data.get("type"), str):
         return True
-    if any(
-        isinstance(data.get(o), list)
-        for o in (
-            "allOf",
-            "anyOf",
-            "oneOf",
-        )
-    ):
+    from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS  # noqa: PLC0415
+
+    if any(isinstance(data.get(o), list) for o in COMBINATOR_POSITIONS):
         return True
     return isinstance(data.get("properties"), dict)
 

@@ -60,6 +60,7 @@ from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._module_paths import dotted_module, is_package_init
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
@@ -174,7 +175,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _hidden_type_names,
     _iter_import_bindings,
     _ModelPositions,
-    _module_name_from_module_path,
     _normalize_result_module_path,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
@@ -1663,7 +1663,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         results = {_expand_result_module_path(k): v for k, v in results.items()}
 
-        init_result = Result(body="") if empty_init else next(v for k, v in results.items() if k[-1] == "__init__.py")
+        init_result = Result(body="") if empty_init else next(v for k, v in results.items() if is_package_init(k[-1]))
         folders = {t[:-1] if t[-1].endswith(".py") else t for t in results}
         for folder in folders:
             for i in range(len(folder)):
@@ -2182,7 +2182,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Process a single module and return its context."""
         imports = Imports(self.use_exact_imports)
         module, is_init = _resolve_module_file(module_, results)
-        module_name = _module_name_from_module_path(module_)
+        module_name = dotted_module(module_)
         # Tree-scope reuse creates synthetic models without a file_path. Keep
         # their ownership in this module for relative import planning without
         # changing the file path used by generated filename headers.
@@ -2357,7 +2357,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
 
-        if (scope := config.all_exports_scope) is not None and ctx.module[-1] == "__init__.py":
+        if (scope := config.all_exports_scope) is not None and is_package_init(ctx.module[-1]):
             export_imports = self._init_export_imports(
                 ctx.module, contexts, scope, config, set(_init_exports.exported_names(ctx.models))
             )
@@ -2425,9 +2425,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Generate exports for empty __init__.py files."""
         if (scope := config.all_exports_scope) is None:  # pragma: no cover
             return
-        processed_init_modules = {ctx.module for ctx in contexts if ctx.module[-1] == "__init__.py"}
+        processed_init_modules = {ctx.module for ctx in contexts if is_package_init(ctx.module[-1])}
         for init_module, init_result in list(results.items()):
-            if init_module[-1] != "__init__.py" or init_module in processed_init_modules or init_result.body:
+            if not is_package_init(init_module[-1]) or init_module in processed_init_modules or init_result.body:
                 continue
             if (export_imports := self._init_export_imports(init_module, contexts, scope, config, set())) is None:
                 continue
@@ -2492,7 +2492,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return {
             "class_name": model.class_name,
             "name": model.name,
-            "module": _module_name_from_module_path(module),
+            "module": dotted_module(module),
             "source_ref": source_ref,
             "source_path": source_path,
             "title": title if isinstance(title, str) else None,

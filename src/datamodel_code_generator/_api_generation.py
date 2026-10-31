@@ -23,6 +23,7 @@ from datamodel_code_generator._api_types import (
     NextSteps,
     OperationRef,
 )
+from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -512,7 +513,7 @@ def _collision_key(path: Path, target_python_version: PythonVersion) -> str:
 
 def _present(location: Path) -> bool:
     """Return whether a user module exists, as its file or as a package directory that Python imports instead."""
-    return location.exists() or (location.name != "__init__.py" and location.with_suffix("").is_dir())
+    return location.exists() or (not is_package_init(location.name) and location.with_suffix("").is_dir())
 
 
 def _located(steps: NextSteps, package: Path, kept: frozenset[Path], cwd: Path) -> NextSteps:

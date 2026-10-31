@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
+from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
@@ -460,7 +461,7 @@ def _taken_over(project: GeneratedProject) -> GeneratedArtifact | None:
     return next(
         artifact
         for artifact in project.artifacts
-        if artifact.kind == "implementation" and artifact.action == "write" and artifact.path.name == "__init__.py"
+        if artifact.kind == "implementation" and artifact.action == "write" and is_package_init(artifact.path.name)
     )
 
 

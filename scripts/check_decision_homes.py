@@ -18,6 +18,7 @@ them, ``what`` words the message):
   one of ``strings`` as a string literal (when given).
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
+* ``compare-eq``: ``y == "x"`` or ``y != "x"`` (the string on either side) for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
 * ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``; a
   dict holds its keys, and its values too with ``dict_values = true`` (a table that maps names to the spellings).
@@ -98,6 +99,7 @@ SIGNATURE_KINDS = frozenset({
     "call",
     "function",
     "compare-in",
+    "compare-eq",
     "number",
     "keyword-set",
     "key",
@@ -127,6 +129,7 @@ INTEGER_OPTIONS = frozenset({"powers", "literals"})
 REQUIRED_STRINGS = {
     "name": "names",
     "compare-in": "values",
+    "compare-eq": "values",
     "keyword-set": "keywords",
     "key": "keys",
     "literal": "contains",
@@ -565,6 +568,16 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
                 and isinstance(node.left, ast.Constant)
                 and node.left.value in options["values"]
             )
+        case "compare-eq":
+            return (
+                isinstance(node, ast.Compare)
+                and len(node.ops) == 1
+                and isinstance(node.ops[0], ast.Eq | ast.NotEq)
+                and any(
+                    isinstance(side, ast.Constant) and side.value in options["values"]
+                    for side in (node.left, *node.comparators)
+                )
+            )
         case "number":
             match node:
                 case ast.Constant(value=int() as value) if not isinstance(value, bool):
@@ -599,6 +612,7 @@ NODE_TYPES = {
     "call": (ast.Call,),
     "function": (ast.FunctionDef, ast.AsyncFunctionDef),
     "compare-in": (ast.Compare,),
+    "compare-eq": (ast.Compare,),
     "number": (ast.Constant, ast.BinOp),
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
     "key": (ast.Subscript, ast.Call),
