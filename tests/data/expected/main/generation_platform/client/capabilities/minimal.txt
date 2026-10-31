@@ -18,17 +18,17 @@ copied runtime
   client/positions.py: 73
   client/raw.py: 714
   client/responses.py: 87
-  client/retry.py: 318
-  client/timing.py: 165
+  client/retry.py: 319
+  client/timing.py: 160
   client/urls.py: 88
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
-  model_codecs/media.py: 497
+  model_codecs/media.py: 526
   model_codecs/parameters.py: 364
   model_codecs/pydantic_adapters.py: 68
   model_codecs/pydantic_models.py: 31
   model_codecs/unset.py: 11
-total 24 modules, 6270 lines
+total 24 modules, 6295 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

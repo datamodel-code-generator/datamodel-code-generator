@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import TypeVar
 
 from ..client.timing import is_aware
+from ..model_codecs.media import json_integer
 from .errors import configuration_error
 from .records import plain_copy
 
@@ -58,9 +59,7 @@ def state_array(value: JSONValue) -> list[JSONValue]:
 
 def state_count(value: JSONValue, limit: int | None = None) -> int:
     """Return a saved nonnegative integer no larger than any limit, refusing any other value."""
-    require_state(
-        isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
-    )
+    require_state(json_integer(value) and value >= 0 and (limit is None or value <= limit))
     return cast("int", value)
 
 

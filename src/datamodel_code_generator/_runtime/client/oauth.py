@@ -19,7 +19,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import SUCCESS_STATUSES
+from ..model_codecs.media import SUCCESS_STATUSES, json_number
 from .auth import (
     OAUTH_ERROR_CODES,
     AuthError,
@@ -142,7 +142,7 @@ def _expiry(fields: dict[str, object], received: float) -> float | None:
     if "expires_in" not in fields:
         return None
     seconds = fields["expires_in"]
-    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not 0 < seconds < float("inf"):
+    if not json_number(seconds) or not 0 < seconds < float("inf"):
         raise AuthError(reason="invalid_expiry")
     return received + seconds
 

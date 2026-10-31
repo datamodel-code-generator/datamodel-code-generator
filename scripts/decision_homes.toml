@@ -1142,7 +1142,7 @@ what = "decides itself whether a body or response sends JSON null; call _target_
 audit = "C21-A6"
 
 [homes.Hx-http]
-decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to"
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, and the ASCII digit run of a count, delay or timestamp a header writes"
 core = ["_runtime/model_codecs/media.py", "_target_operations.py:exact_status", "_target_operations.py:range_start"]
 adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
 
@@ -1201,6 +1201,13 @@ paths = ["_runtime/"]
 what = "bounds a status class or names a status in the runtime itself; read the ranges and named statuses of model_codecs/media.py"
 audit = "C19-M11"
 
+[homes.Hx-http.signatures.runtime-digits]
+kind = "call"
+names = ["isdigit", "isdecimal"]
+paths = ["_runtime/"]
+what = "tests a header's ASCII digit run itself; call model_codecs/media.py:ascii_digits"
+audit = "C23-K41"
+
 [homes.Hx-codec-failure]
 decision = "what a received model codec's failure says of the data (bytes that are not JSON, or a value the model refuses), the body error each condition becomes, and the response failure a body error becomes"
 core = [
@@ -1226,8 +1233,14 @@ what = "turns a body's decode failure into the response failure itself; call Res
 audit = "C23-K36"
 
 [homes.Hx-json-value]
-decision = "what the client runtime reads back from JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), and the value a saved wire value restores, decoded as its codec decodes JSON"
-core = ["_runtime/model_codecs/media.py:json_value", "_runtime/client/operations.py:_restored"]
+decision = "what the runtime reads back from JSON and writes as JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), the value a saved wire value restores, decoded as its codec decodes JSON, the compact JSON text a value writes and the errors it raises (row `legacy-python-json-errors`: the standard library's own), and which values are JSON integers and numbers (a bool is neither)"
+core = [
+    "_runtime/model_codecs/media.py:json_value",
+    "_runtime/model_codecs/media.py:json_text",
+    "_runtime/model_codecs/media.py:json_integer",
+    "_runtime/model_codecs/media.py:json_number",
+    "_runtime/client/operations.py:_restored",
+]
 adapters = []
 
 [homes.Hx-json-value.signatures.json-parse]
@@ -1244,6 +1257,27 @@ mentions = ["json_bytes", "_json_bytes"]
 paths = ["_runtime/"]
 what = "restores a saved wire value through its codec itself; call client/operations.py:_restored"
 audit = "C23-K02"
+
+[homes.Hx-json-value.signatures.json-write]
+kind = "call"
+names = ["dumps"]
+paths = ["_runtime/"]
+what = "writes JSON text itself; call model_codecs/media.py:json_text (or json_bytes)"
+audit = "C23-K07"
+
+[homes.Hx-json-value.signatures.bool-number]
+kind = "call"
+names = ["isinstance"]
+mentions = ["bool"]
+paths = ["_runtime/"]
+# A JSON boolean test and a value's JSON kind (a boolean before a number) read bool for itself, not to leave it out of numbers.
+exclude = [
+    "_runtime/protocols/pagination.py:_more",
+    "_runtime/model_codecs/stdlib_dataclasses.py:_kind",
+    "_runtime/model_codecs/stdlib_typeddicts.py:_kind",
+]
+what = "tells whether a value is a JSON integer or number, a bool being neither, itself; call model_codecs/media.py:json_integer or json_number"
+audit = "C23-K41"
 
 [homes.Hx-parameter-key]
 decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime"
@@ -2449,6 +2483,10 @@ fix = "#5656"
 [legacy_rows."legacy-unredacted-locations"]
 home = "Hx-message-location"
 fix = "#5577"
+
+[legacy_rows."legacy-python-json-errors"]
+home = "Hx-json-value"
+fix = "#5734"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 
