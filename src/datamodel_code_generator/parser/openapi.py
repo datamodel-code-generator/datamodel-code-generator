@@ -32,8 +32,10 @@ from datamodel_code_generator import (
 from datamodel_code_generator._document_reader import string_key, string_keys
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
+    PATHS_PARAMETERS,
     effective_operation,
     effective_parameters,
+    holds_path_item,
     path_selected,
     rooted_path,
 )
@@ -478,7 +480,7 @@ class OpenAPIParser(JsonSchemaParser):
             # Resolve $ref in global parameter list
             global_parameters = [
                 self._get_ref_body(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
-                for p in paths.get("parameters", [])
+                for p in paths.get(PATHS_PARAMETERS, [])
                 if isinstance(p, dict)
             ]
             self._process_path_items(paths, path_parts, "paths", global_parameters, security)
@@ -851,6 +853,8 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, objects_as_paths=True):
+                continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
             item_ref = methods_.get("$ref")

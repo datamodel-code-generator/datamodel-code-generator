@@ -401,6 +401,7 @@ openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/schemas/cat.yaml	yaml_fast_constructor/parity.txt
+openapi/paths_non_path_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_ref_with_external_schema/apis/pets/index.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_ref_with_external_schema/apis/pets/model.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_ref_with_external_schema/openapi.yaml	yaml_fast_constructor/parity.txt

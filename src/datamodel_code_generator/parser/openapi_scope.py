@@ -15,9 +15,11 @@ from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
+    PATHS_PARAMETERS,
     QUERY_METHOD,
     effective_operation,
     effective_parameters,
+    holds_path_item,
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
@@ -747,14 +749,12 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> None:
         """Retain literal route keys and parameter declaration indices during traversal."""
         global_parameters = (
-            self._parameter_declarations(items.get("parameters", []), [*base_path, "parameters"])
+            self._parameter_declarations(items.get(PATHS_PARAMETERS, []), [*base_path, PATHS_PARAMETERS])
             if scope == "paths"
             else []
         )
         for item_name, value in items.items():
-            if scope == "paths" and (
-                self._key_name(items, item_name, base_path, "path") == "parameters" or item_name.startswith("x-")
-            ):
+            if scope == "paths" and not holds_path_item(self._key_name(items, item_name, base_path, "path"), value):
                 continue
             if scope == "paths" and not self._matches_path_pattern(item_name):
                 continue
