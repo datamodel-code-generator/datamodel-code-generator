@@ -300,6 +300,8 @@ _UNSERIALIZABLE_MARKER = "x-python-unserializable"
 _UNION_BRANCH_MARKER = "x-python-union-branch"
 _UNSERIALIZABLE_SCHEMA_KEYS = SCHEMA_VALUE_KEYS.intersection(MODEL_VALUE_POSITIONS)
 """The positions Pydantic writes the schema of a type expression at: branches and items, no named members."""
+_UNSERIALIZABLE_PART_KEYS = _UNSERIALIZABLE_SCHEMA_KEYS.difference(("anyOf", "oneOf"))
+"""Those positions without the union branches: the items, the additional properties and the ``allOf`` parts."""
 _FIELD_SCHEMA_NAME = "x-datamodel-code-generator-field-name"
 _MISSING_FIELD_SCHEMA_NAME = Sentinel("_MISSING_FIELD_SCHEMA_NAME")
 
@@ -687,9 +689,7 @@ def _process_unserializable_property(
     elif prop.get(_UNSERIALIZABLE_MARKER):
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
         prop.pop(_UNSERIALIZABLE_MARKER, None)
-    elif ("items" in prop or "prefixItems" in prop or "additionalProperties" in prop or "allOf" in prop) and (
-        _has_unserializable_schema(prop)
-    ):
+    elif not _UNSERIALIZABLE_PART_KEYS.isdisjoint(prop) and _has_unserializable_schema(prop):
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
         _remove_unserializable_markers(prop)
     elif not in_union and get_origin(annotation) is type:
@@ -979,26 +979,31 @@ def _get_type_family(tp: type) -> str:  # noqa: PLR0911
     return _TYPE_FAMILY_OTHER  # pragma: no cover
 
 
-def _has_qualified_type_export(nested_type: type, qualname: str) -> bool:
-    """Confirm that a static owner path resolves to the same runtime type."""
-    if not issubclass(type(module := sys.modules.get(nested_type.__module__)), types.ModuleType):
-        return False
+def _qualified_type_export(nested_type: type) -> str | None:
+    """Return the dotted qualname of a nested type when its module exports it only through its owners, else None.
+
+    The static owner path must resolve to the same runtime type.
+    """
+    if "." not in (qualname := nested_type.__qualname__) or not issubclass(
+        type(module := sys.modules.get(nested_type.__module__)), types.ModuleType
+    ):
+        return None
     namespace = vars(types.ModuleType)["__dict__"].__get__(module)
     if namespace.get(nested_type.__name__) is nested_type:
-        return False
+        return None
     owner_path, _, name = qualname.rpartition(".")
     parent: object = module
     try:
         for owner_name in owner_path.split("."):
             owner = namespace.get(owner_name)
             if not issubclass(type(owner), type) or getattr(parent, owner_name, None) is not owner:
-                return False
+                return None
             parent = owner
             namespace = type.__dict__["__dict__"].__get__(owner)
-        return namespace.get(name) is nested_type and getattr(parent, name, None) is nested_type
+        return qualname if namespace.get(name) is nested_type and getattr(parent, name, None) is nested_type else None
     except Exception:  # ruff: ignore[blind-except]
         # A user attribute hook may reject this optional path while the short export still works.
-        return False
+        return None
 
 
 def _pydantic_generic_metadata(tp: object) -> dict[str, Any] | None:
@@ -1069,12 +1074,7 @@ def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
         )
     expression = _runtime_python_type_expr(tp)
     if isinstance(tp, type) and isinstance(expression, PythonTypeRuntimeSymbol):
-        qualname = tp.__qualname__
-        parts = (
-            tuple(qualname.split("."))
-            if "." in qualname and _has_qualified_type_export(tp, qualname)
-            else (tp.__name__,)
-        )
+        parts = tuple(qualname.split(".")) if (qualname := _qualified_type_export(tp)) else (tp.__name__,)
         return PythonTypeRuntimeSymbol(tp.__module__, parts)
     replacements: dict[PythonTypeExpr, PythonTypeExpr] = {}
     pending = list(get_args(tp))
@@ -1162,12 +1162,7 @@ def _exported_runtime_symbol(tp: object, modules: list[str]) -> PythonTypeRuntim
                         exported = None
                     if exported is tp:
                         return PythonTypeRuntimeSymbol(module_name, (name,))
-    if (
-        get_origin(tp) is None
-        and isinstance(tp, type)
-        and "." in (qualname := tp.__qualname__)
-        and (_has_qualified_type_export(tp, qualname))
-    ):
+    if get_origin(tp) is None and isinstance(tp, type) and (qualname := _qualified_type_export(tp)):
         return PythonTypeRuntimeSymbol(tp.__module__, tuple(qualname.split(".")))
     return None
 
@@ -1202,7 +1197,12 @@ def _exported_generic_expression(  # ruff: ignore[too-many-return-statements]
     return PythonTypeSubscript(cast("PythonTypeSubscript", expression).base, resolved)
 
 
-def _generic_python_import(
+def _reused_definition(module: str, name: str, **fields: Any) -> dict[str, Any]:
+    """Return the definition that reuses an importable type: its module and name, then how to locate or spell it."""
+    return {"x-python-import": {"module": module, "name": name, **fields}}
+
+
+def _reused_generic_definition(
     origin: type,
     expression_collector: PythonTypeExpressionCollector | None,
     expression: PythonTypeExpr,
@@ -1216,12 +1216,11 @@ def _generic_python_import(
         return item
 
     rewrite_python_type_expr(expression, remember_symbol)
-    return {
-        "module": origin.__module__,
-        "name": origin.__name__,
-        "x-python-type": _transport_python_type_expr(expression, expression_collector),
-        "symbols": symbols,
-    }
+    return _reused_definition(
+        origin.__module__,
+        origin.__name__,
+        **{"x-python-type": _transport_python_type_expr(expression, expression_collector), "symbols": symbols},
+    )
 
 
 def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
@@ -1256,13 +1255,9 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
                     if native_paths is None:
                         native_paths = _native_generic_field_paths(model_classes or list(nested_models.values()))
                     if path := native_paths.get(nested_type):
-                        new_defs[def_name] = {
-                            "x-python-import": {
-                                "module": path["module"],
-                                "name": path["qualname"].split(".")[0],
-                                "native-field": path,
-                            }
-                        }
+                        new_defs[def_name] = _reused_definition(
+                            path["module"], path["qualname"].split(".")[0], **{"native-field": path}
+                        )
                         continue
                     modules = list(
                         dict.fromkeys([nested_type.__module__, *(model.__module__ for model in model_classes or ())])
@@ -1273,18 +1268,12 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
                         # Unreachable Python validators cannot be recovered from JSON Schema.
                         new_defs[def_name] = def_schema
                         continue
-                new_defs[def_name] = {
-                    "x-python-import": _generic_python_import(metadata["origin"], expression_collector, expression)
-                }
+                new_defs[def_name] = _reused_generic_definition(metadata["origin"], expression_collector, expression)
                 continue
-            new_defs[def_name] = {
-                "x-python-import": {
-                    "module": nested_type.__module__,
-                    "name": nested_type.__name__,
-                },
-            }
-            if "." in (qualname := nested_type.__qualname__) and _has_qualified_type_export(nested_type, qualname):
-                new_defs[def_name]["x-python-import"]["qualname"] = qualname
+            qualname = _qualified_type_export(nested_type)
+            new_defs[def_name] = _reused_definition(
+                nested_type.__module__, nested_type.__name__, **({"qualname": qualname} if qualname else {})
+            )
         else:
             new_defs[def_name] = def_schema
 
