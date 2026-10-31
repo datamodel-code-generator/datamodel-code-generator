@@ -680,7 +680,7 @@ class _Events(Generic[T]):
         """
         resume = cast("StreamResumePlan", self._resume)
         waiter = self._client.waiting(self._limits.options, self._session, resume.call.operation_id)
-        if (remaining := waiter.remaining()) is not None and reconnect.delay >= remaining:
+        if waiter.cut_short(reconnect.delay) is not None:
             raise reconnect.failure
         return waiter
 

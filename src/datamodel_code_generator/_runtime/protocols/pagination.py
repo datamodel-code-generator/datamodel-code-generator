@@ -89,6 +89,11 @@ _REFERENCE: Final = re.compile(
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
 
 
+def _end_digests(values: tuple[JSONValue, ...]) -> frozenset[bytes]:
+    """Return the canonical JSON of each value that ends a traversal, as a cursor or next URL plan keeps it."""
+    return frozenset(canonical_json(value) for value in values)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CursorPlan:
@@ -109,7 +114,7 @@ class CursorPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
@@ -152,7 +157,7 @@ class NextUrlPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
