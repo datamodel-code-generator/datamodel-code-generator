@@ -15,7 +15,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
-from datamodel_code_generator._document_reader import string_keys
+from datamodel_code_generator._document_reader import as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._name_words import (
     ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
@@ -138,7 +138,7 @@ class MultiFormatSchemaObject(BaseModel):
 
 
 def _iter_mapping_items(value: Any) -> list[tuple[str, Any]]:
-    return list(value.items()) if isinstance(value, dict) else []
+    return list(as_mapping(value).items())
 
 
 def _iter_trait_items(traits: Any, path: list[str]) -> Iterator[tuple[dict[str, Any], list[str]]]:

@@ -39,11 +39,12 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001  # Preserve the established reference export.
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
+from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
 from datamodel_code_generator._target_unicode import (
     is_identifier,
@@ -414,22 +415,7 @@ def context_variable(setter: Callable[[T], None], current_value: T, new_value: T
 _BUILTIN_TYPE_ATTRIBUTES: frozenset[str] = frozenset(
     name for cls in (str, int, float, bytes) for name in dir(cls) if not name.startswith("_")
 )
-
-_BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN: dict[PythonVersion, frozenset[str]] = {
-    PythonVersion.PY_314: frozenset({"from_number"}),
-}
-
-
-def _get_builtin_type_attributes_for_target(target: PythonVersion) -> frozenset[str]:
-    """Get builtin type attributes adjusted for the target Python version."""
-    attrs = set(_BUILTIN_TYPE_ATTRIBUTES)
-    target_key = target.version_key
-    for ver, names in _BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN.items():
-        if target_key >= ver.version_key:
-            attrs.update(names)
-        else:
-            attrs.difference_update(names)
-    return frozenset(attrs)
+"""The running interpreter's attributes of the builtin types, read only by a resolver without a target (API only)."""
 
 
 class FieldNameResolver:
@@ -678,7 +664,7 @@ class EnumFieldNameResolver(FieldNameResolver):
         super().__init__(**kwargs)
         target = self.target_python_version
         self._builtin_type_attributes = (
-            _get_builtin_type_attributes_for_target(target) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
+            target_builtin_type_attributes(target.version_key) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
         )
 
     @override

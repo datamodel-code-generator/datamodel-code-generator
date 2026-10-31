@@ -2564,7 +2564,7 @@ class _Reader(_SchemaLocations):
         properties = value.get("properties")
         members.extend(
             self.field(resolved.child("properties", name), name, locate, (source, location), form=form)
-            for name in (properties if isinstance(properties, dict) else {})
+            for name in as_mapping(properties)
         )
         declared = value.get("additionalProperties", True)
         additional = (

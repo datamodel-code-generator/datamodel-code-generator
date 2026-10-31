@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_output import write_streamed_json
 from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
@@ -150,7 +151,7 @@ def _read_entries(path: Path) -> dict[str, RemoteLockEntry]:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         msg = f"Unable to read remote lock {path}: {exc}"
         raise RemoteLockError(msg) from exc
-    version = data.get("version") if isinstance(data, dict) else None
+    version = as_mapping(data).get("version")
     if not isinstance(data, dict) or type(version) is not int or version != _LOCK_VERSION:
         msg = f"Invalid remote lock {path}: expected version {_LOCK_VERSION}"
         raise RemoteLockError(msg)
