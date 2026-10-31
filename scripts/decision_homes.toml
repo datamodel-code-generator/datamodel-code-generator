@@ -454,6 +454,33 @@ contains = ["legacy-builtins-of-any-target"]
 what = "reads every target's builtins where the target's are meant; call _python_target_names.py:is_builtin_type_name with row target"
 audit = "C10-K05"
 
+[homes.Hx-target-versions]
+decision = "the supported target versions and how a dotted version compares: its integer parts (a target Pydantic version, the minimum of a requirement row), the oldest target Python version and the newest (the default on an interpreter newer than every target, whose identifier rules accept every identifier)"
+core = ["enums.py:_version_key", "_format_types.py"]
+adapters = []
+
+[homes.Hx-target-versions.signatures.newest-target]
+kind = "call"
+names = ["max"]
+mentions = ["PythonVersion"]
+what = "picks the newest target Python version itself; read _format_types.py:NEWEST_TARGET"
+audit = "C15-B19"
+
+[homes.Hx-construct-minimum]
+decision = "the target Python version a generated construct needs, as an option's documentation, a message or an implied setting names it: the minimum of the construct's row in the requirement table"
+core = ["_requirements.py"]
+adapters = []
+
+[homes.Hx-construct-minimum.signatures.version-member]
+kind = "name"
+names = ["PY_310", "PY_311", "PY_312", "PY_313", "PY_314", "PY_315"]
+receivers = ["PythonVersion"]
+# Left out: the module code of _format_types.py, which names the oldest target, and of reference.py, whose table
+# names the release that added an attribute of the builtin types (C15-B19 K05b).
+exclude = ["_format_types.py:<module>", "reference.py:<module>"]
+what = "names the target a construct needs by a PythonVersion member; read the minimum of its row in _requirements.py:REQUIREMENTS"
+audit = "C15-B19"
+
 [homes.Hx-free-names]
 decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free; a class takes the duplicate name suffix of its model type (its entry of --duplicate-name-suffix, the default entry, else the suffix given alone), as the target scopes do for a model's"
 core = ["_free_names.py", "reference.py:ModelResolver._get_suffix_for_model_type", "reference.py:ModelResolver._duplicate_name_suffix"]

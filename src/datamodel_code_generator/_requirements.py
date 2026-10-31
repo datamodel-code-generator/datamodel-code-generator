@@ -23,7 +23,12 @@ from typing_extensions import final
 
 from datamodel_code_generator._message_text import listed_with_more
 from datamodel_code_generator._records import record
-from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least, _pydantic_version_key
+from datamodel_code_generator.enums import (
+    TargetPydanticVersion,
+    _is_pydantic_version_at_least,
+    _pydantic_version_key,
+    _version_key,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -272,7 +277,7 @@ _ROW_ORDER: Final[Mapping[Construct, int]] = MappingProxyType({row.construct: in
 _LISTED_OWNERS: Final = 3
 NEWEST_TARGET_PYDANTIC_VERSION: Final = max(TargetPydanticVersion, key=_pydantic_version_key)
 _MINIMUM_KEYS: Final[Mapping[Construct, tuple[int, ...]]] = MappingProxyType({
-    row.construct: tuple(int(part) for part in row.minimum.split(".")) for row in _ROWS
+    row.construct: _version_key(row.minimum) for row in _ROWS
 })
 _VERSION_PARTS: Final = 3
 
