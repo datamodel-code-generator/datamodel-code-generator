@@ -13,7 +13,7 @@ from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, 
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -280,13 +280,17 @@ def _path_items(
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
     A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
-    key that is no string is an error, as it is in generation.
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item is skipped as
+    the paths scope skips it (row ``legacy-object-extension-paths``), also for the api scope, whose walk skips an
+    extension key that holds an object too.
     """
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
             string_key(path, kind, error_path)
-            if section == "webhooks" or path_selected(path, include_paths):
+            if section == "webhooks" or (
+                holds_path_item(path, item, "legacy-object-extension-paths") and path_selected(path, include_paths)
+            ):
                 yield path, as_mapping(_dereferenced(document, item))
 
 

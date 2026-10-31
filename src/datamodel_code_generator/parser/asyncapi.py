@@ -789,7 +789,7 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> list[AsyncAPISchema]:
         """Return the schemas of a document: its component schemas, then those of each of its maps, in that order."""
         components = specification.get("components", {})
-        components = components if isinstance(components, dict) else {}
+        components = as_mapping(components)
         component_schemas = components.get("schemas")
         schemas = [
             schema
