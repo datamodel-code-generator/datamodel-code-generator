@@ -54,18 +54,26 @@ from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import (
     call_text,
+    escape_docstring,
+    format_docstring,
     from_import,
     keyword_argument,
     set_display,
     subscript_text,
     tuple_display,
 )
+from datamodel_code_generator._runtime.client.content import CHUNK
+from datamodel_code_generator._runtime.client.errors import MAX_ERROR_BODY_BYTES
 from datamodel_code_generator._runtime.client.operations import BodyFields, FieldArguments, ServerPlan, ServerVariable
+from datamodel_code_generator._runtime.client.options import DEFAULT_RETRY, DEFAULT_TIMEOUT
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
@@ -81,7 +89,6 @@ from datamodel_code_generator._target_render import (
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -557,6 +564,30 @@ class CredentialExample:
     annotation: str
 
 
+def _limit_text(value: float | None, unit: str = "") -> str:
+    """Write a helper limit's default as a runtime reference states it: None as no limit, else its number and unit."""
+    return "None (no limit)" if value is None else f"{format(value, 'g')}{unit}"
+
+
+_HELPER_LIMITS: Final = {
+    "pagination": {
+        "max_pages": _limit_text(_PAGE_LIMITS.max_pages),
+        "max_items": _limit_text(_PAGE_LIMITS.max_items),
+        "total_timeout": _limit_text(_PAGE_LIMITS.total_timeout, " seconds"),
+    },
+    "polling": {
+        "max_polls": _limit_text(_POLL_LIMITS.max_polls),
+        "max_wait": _limit_text(_POLL_LIMITS.max_wait, " seconds"),
+        "total_timeout": _limit_text(_POLL_LIMITS.total_timeout, " seconds"),
+    },
+    "uploads": {
+        "chunk_bytes": _limit_text(_UPLOAD_LIMITS.chunk_bytes / 2**20, " MiB"),
+        "total_timeout": _limit_text(_UPLOAD_LIMITS.total_timeout, " seconds"),
+    },
+}
+"""The limit defaults of the pagination, polling, and upload helpers, as the runtime reference states them."""
+
+
 @dataclass(frozen=True, slots=True)
 class RuntimePagination:
     """The pagination helper kinds a runtime reference describes: cursors, counted positions, and followed URLs."""
@@ -577,6 +608,21 @@ class RuntimeStreams:
     ndjson: bool
     resumed: bool
     no_content: bool
+
+
+_RETRY_STATUSES: Final = tuple(map(str, sorted(DEFAULT_RETRY.statuses)))
+_RUNTIME_DEFAULTS: Final = {
+    **{name: format(getattr(DEFAULT_TIMEOUT, name), "g") for name in ("connect", "read", "write", "pool")},
+    **{name: format(getattr(DEFAULT_RETRY, name), "g") for name in ("initial_delay", "max_delay", "max_retry_after")},
+    **{
+        name: str(getattr(DEFAULT_RETRY, name))
+        for name in ("max_retries", "jitter", "respect_retry_after", "retry_on_pool_timeout")
+    },
+    "statuses": ", ".join(_RETRY_STATUSES),
+    "error_prefix": str(MAX_ERROR_BODY_BYTES // 1024),
+    "read_size": str(CHUNK // 1024),
+}
+"""The runtime defaults a runtime reference states, as it writes them: seconds without a zero fraction, sizes in KiB."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -3190,6 +3236,7 @@ class ClientRenderer:
             "readme.jinja2",
             readme_template.render_with_scope,
             package=config.package,
+            retry_statuses=english_list(_RETRY_STATUSES, "and", "serial"),
             public_modules=english_list((*public, "response types"), "and", "serial"),
             reference="_generated_docs/runtime.md",
             example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
@@ -3288,6 +3335,7 @@ class ClientRenderer:
             "runtime.jinja2",
             runtime_template.render_with_scope,
             package=self.config.package,
+            defaults=_RUNTIME_DEFAULTS,
             oauth=capabilities.oauth,
             schemes=capabilities.schemes,
             security=bool(capabilities.security),
@@ -3300,6 +3348,7 @@ class ClientRenderer:
             if pages
             else None,
             polling=any(isinstance(spec, PollingSpec) for spec in self.helpers),
+            limits=_HELPER_LIMITS,
             cache=_caches(self.helpers),
             uploads=any(isinstance(spec, UploadSpec) for spec in self.helpers),
             streams=RuntimeStreams(

@@ -853,7 +853,7 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
-            if scope_name == "paths" and not holds_path_item(item_name, methods_, objects_as_paths=True):
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
                 continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue

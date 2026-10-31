@@ -8,7 +8,7 @@ from inspect import iscoroutinefunction
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, Final, TypeAlias, cast
 
-from typing_extensions import TypeVar
+from typing_extensions import Self, TypeVar
 
 from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
@@ -17,6 +17,7 @@ from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.timing import Clock
@@ -104,9 +105,9 @@ class StepLock:
         self._closed = False
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        from .errors import configuration_error  # noqa: PLC0415 - Only a refused step loads the helper errors.
+        from .errors import state_error  # noqa: PLC0415 - Only a refused step loads the helper errors.
 
-        return configuration_error(self._helper_id, (action, state), "invalid_state")
+        return state_error(self._helper_id, action, state)
 
     def _refused(self) -> str | None:
         """Return the state that refuses every step of the handle, or None."""
@@ -128,6 +129,40 @@ class StepLock:
             raise self._state_error(action, self._busy)
         self._closed = True
         self._lock.release()
+
+
+class StepHandle:
+    """A `StepLock` handle mixin: leaving its `with` block closes; while another step runs, the error is not masked."""
+
+    __slots__ = ()
+
+    def __enter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
+        lock = cast("StepLock", self)
+        lock._close("close", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+class AsyncStepHandle:
+    """An asyncio `StepLock` handle mixin: leaving its `async with` block closes, as a `StepHandle` does."""
+
+    __slots__ = ()
+
+    async def __aenter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
+        lock = cast("StepLock", self)
+        lock._close("aclose", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:

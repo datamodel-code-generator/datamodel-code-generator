@@ -15,7 +15,7 @@ from typing_extensions import override
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator._python_syntax import (
-    QUOTE_AND_CONTROL_ESCAPES,
+    RAW_SINGLE_QUOTED_ESCAPES,
     call_text,
     keyword_argument,
     subscript_text,
@@ -180,7 +180,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
+escape_characters = RAW_SINGLE_QUOTED_ESCAPES
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 

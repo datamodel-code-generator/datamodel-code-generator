@@ -16,7 +16,7 @@ from io import SEEK_END
 from types import CoroutineType, MappingProxyType
 from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, final
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from ..client.content import CHUNK
 from ..client.errors import (
@@ -32,7 +32,7 @@ from ..client.retry import Delivery
 from ..model_codecs.media import SUCCESS_STATUSES, ascii_digits, json_integer
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, StepLock, UploadOptions, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, StepHandle, StepLock, UploadOptions, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
@@ -51,7 +51,6 @@ from .values import read_expiry, required
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
@@ -589,7 +588,7 @@ def _probed_again(error: Exception) -> bool:
 
 
 @final
-class UploadHandle(_Upload[T]):
+class UploadHandle(_Upload[T], StepHandle):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
 
     `close` only stops local uploading; the remote upload stays. Uploading from two threads at once raises
@@ -729,19 +728,9 @@ class UploadHandle(_Upload[T]):
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
 
 @final
-class AsyncUploadHandle(_Upload[T]):
+class AsyncUploadHandle(_Upload[T], AsyncStepHandle):
     """A resumable upload an asyncio helper created or resumed: `advance` appends one chunk, `run` uploads the rest.
 
     `aclose` only stops local uploading; the remote upload stays. Uploading from two tasks at once raises
@@ -880,16 +869,6 @@ class AsyncUploadHandle(_Upload[T]):
     async def aclose(self) -> None:
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("aclose")
-
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
 
 
 def _ignored(
