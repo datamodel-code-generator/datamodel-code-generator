@@ -2463,6 +2463,11 @@ def _print_command_output(
     return Exit.OK
 
 
+def _print_registry(kind: CommandOutputKind, render: Callable[[Any], str], format_: str) -> Exit:
+    """Print a registry in the listing format, or with ``--output-format json`` its JSON entries as the items."""
+    return _print_command_output(kind, render(format_), lambda: {"items": json.loads(render("json"))}, end="")
+
+
 def _repairs_invalid_dotted_stdout(config: Config, namespace: Namespace, output: Path | None) -> bool:
     """Return whether a run printing text to stdout repairs dotted module names it cannot print as modules."""
     return (
@@ -2695,21 +2700,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
 
     if config.list_deprecations:
-        return _print_command_output(
-            "deprecations",
-            render_deprecations(cast("Any", config.list_deprecations)),
-            lambda: {"items": json.loads(render_deprecations("json"))},
-            end="",
-        )
+        return _print_registry("deprecations", render_deprecations, config.list_deprecations)
     if config.list_experimental:
         from datamodel_code_generator.experimental import render_experimental_features  # noqa: PLC0415
 
-        return _print_command_output(
-            "experimental",
-            render_experimental_features(cast("Any", config.list_experimental)),
-            lambda: {"items": json.loads(render_experimental_features("json"))},
-            end="",
-        )
+        return _print_registry("experimental", render_experimental_features, config.list_experimental)
 
     if diff_error := _diff_against_validation_error(config, namespace):
         print(diff_error, file=sys.stderr)  # noqa: T201

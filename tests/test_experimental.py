@@ -8,8 +8,12 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator.experimental import (
     EXPERIMENTAL_FEATURES,
     ExperimentalFeature,
+    experimental_feature_as_dict,
+    iter_experimental_features,
     render_experimental_features,
+    render_experimental_features_json,
     render_experimental_features_markdown,
+    render_experimental_features_table,
     render_release_note_experimental_features,
 )
 
@@ -37,6 +41,15 @@ def test_experimental_json_output_is_machine_readable() -> None:
     assert isinstance(payload, list)
     assert {entry["id"] for entry in payload} == set(EXPERIMENTAL_FEATURES)
     assert all("since_version" in entry for entry in payload)
+
+
+def test_experimental_format_functions_write_the_listing() -> None:
+    """The public function of each format writes what the listing in that format prints."""
+    assert render_experimental_features_json() + "\n" == render_experimental_features("json")
+    assert render_experimental_features_table() == render_experimental_features("table")
+    assert json.loads(render_experimental_features_json()) == [
+        experimental_feature_as_dict(item) for item in iter_experimental_features()
+    ]
 
 
 def test_experimental_table_output_includes_registered_features() -> None:

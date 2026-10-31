@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from textwrap import fill
+from textwrap import fill  # noqa: F401  # Preserve the established experimental export.
 from typing import Literal
 
 from datamodel_code_generator._registry_render import (
-    _render_registry_json,
+    _RegistryPage,
+    _render_registry,
+    _render_registry_entries_json,
     _render_registry_markdown,
     _render_registry_table,
+    _render_release_notes,
 )
 
 ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "python-api", "behavior", "extra"]
@@ -340,7 +343,7 @@ def experimental_feature_as_dict(feature: ExperimentalFeature) -> dict[str, str 
 
 def render_experimental_features_json() -> str:
     """Render all experimental features as JSON."""
-    return _render_registry_json(experimental_feature_as_dict(feature) for feature in iter_experimental_features())
+    return _render_registry_entries_json(iter_experimental_features())
 
 
 def _cells(feature: ExperimentalFeature) -> list[str]:
@@ -358,55 +361,41 @@ def _details(feature: ExperimentalFeature) -> list[tuple[str, str | None]]:
     ]
 
 
+_PAGE = _RegistryPage(
+    title="Experimental Features",
+    script="build_experimental_docs.py",
+    intro="This page lists features that are available but still experimental.",
+    columns=_COLUMNS,
+    cells=_cells,
+    details=_details,
+    table_notes=True,
+)
+
+
 def render_experimental_features_table() -> str:
     """Render all experimental features as a plain text table with readable notes."""
-    features = iter_experimental_features()
-    table = _render_registry_table([list(_COLUMNS), *map(_cells, features)])
-    notes = [
-        f"{feature.id}:\n{fill(note, width=100, initial_indent='  ', subsequent_indent='  ', break_on_hyphens=False)}"
-        for feature in features
-        if (note := feature.note) is not None
-    ]
-    return "\n".join([
-        *(line.rstrip() for line in table.splitlines()),
-        "",
-        "Notes:",
-        *notes,
-        "",
-    ])
+    return _render_registry_table(iter_experimental_features(), _PAGE)
 
 
 def render_experimental_features_markdown(*, include_header: bool = True) -> str:
     """Render all experimental features as Markdown."""
-    return _render_registry_markdown(
-        iter_experimental_features(),
-        title="Experimental Features",
-        script="build_experimental_docs.py",
-        intro="This page lists features that are available but still experimental.",
-        columns=_COLUMNS,
-        cells=_cells,
-        details=_details,
-        include_header=include_header,
-    )
+    return _render_registry_markdown(iter_experimental_features(), _PAGE, include_header=include_header)
 
 
 def render_experimental_features(format_: ExperimentalFeatureFormat) -> str:
     """Render experimental features in the requested format."""
-    if format_ == "json":
-        return render_experimental_features_json() + "\n"
-    if format_ == "markdown":
-        return render_experimental_features_markdown()
-    return render_experimental_features_table()
+    return _render_registry(iter_experimental_features(), _PAGE, format_)
 
 
 def render_release_note_experimental_features(version: str) -> str:
     """Render release-note text for experimental features introduced in a version."""
-    introduced = [item for item in iter_experimental_features() if item.since_version == version]
-
-    lines: list[str] = []
-    if introduced:
-        lines.extend(["## Experimental Features", ""])
-        lines.extend(f"- `{item.target}` is experimental. {item.message}" for item in introduced)
-        lines.append("")
-
-    return "\n".join(lines)
+    return _render_release_notes((
+        (
+            "Experimental Features",
+            (
+                f"`{item.target}` is experimental. {item.message}"
+                for item in iter_experimental_features()
+                if item.since_version == version
+            ),
+        ),
+    ))

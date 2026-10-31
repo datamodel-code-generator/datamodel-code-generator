@@ -25,7 +25,7 @@ from datamodel_code_generator._json_schema import (
 from datamodel_code_generator.reference import _special_token_pattern
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator.model_metadata import ModelMetadata
 
@@ -413,30 +413,58 @@ class NameChanges:
     examples: tuple[NameChange, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _Matches:
+    """Records of two generations matched by a key, as ``NameChanges`` counts them."""
+
+    matched: int
+    renamed: list[tuple[NameRecord, NameRecord]]
+    renumbered: int
+    removed: int
+    added: int
+
+
+def _match(before: Iterable[NameRecord], after: Iterable[NameRecord], key: Callable[[NameRecord], object]) -> _Matches:
+    """Match the records of each key that one record holds on both sides, in the order ``before`` first gives the keys.
+
+    A record whose key is None is left out; a renamed pair is renumbered when the names differ in digits only.
+    """
+    old: defaultdict[object, list[NameRecord]] = defaultdict(list)
+    new: defaultdict[object, list[NameRecord]] = defaultdict(list)
+    for records, groups in ((before, old), (after, new)):
+        for record in records:
+            if (value := key(record)) is not None:
+                groups[value].append(record)
+    pairs = [
+        (records[0], new[value][0]) for value, records in old.items() if len(records) == len(new.get(value, ())) == 1
+    ]
+    renamed = [(first, second) for first, second in pairs if first.name != second.name]
+    return _Matches(
+        matched=len(pairs),
+        renamed=renamed,
+        renumbered=sum(1 for first, second in renamed if _DIGITS.sub("", first.name) == _DIGITS.sub("", second.name)),
+        removed=len(old.keys() - new.keys()),
+        added=len(new.keys() - old.keys()),
+    )
+
+
+def _location_key(record: NameRecord) -> str:
+    return record.path
+
+
 def location_changes(before: Sequence[NameRecord], after: Sequence[NameRecord], *, examples: int = 3) -> NameChanges:
     """Compare the class names two generations give each schema location."""
-    before_records: defaultdict[str, list[NameRecord]] = defaultdict(list)
-    after_records: defaultdict[str, list[NameRecord]] = defaultdict(list)
-    for record in before:
-        before_records[record.path].append(record)
-    for record in after:
-        after_records[record.path].append(record)
-    matched = [
-        path for path, records in before_records.items() if len(records) == 1 and len(after_records.get(path, ())) == 1
-    ]
-    renamed = [
-        (before_records[path][0], after_records[path][0])
-        for path in matched
-        if before_records[path][0].name != after_records[path][0].name
-    ]
+    matches = _match(before, after, _location_key)
     families = Counter(_TRAILING_DIGITS.sub("", record.name) for record in before)
-    chosen = sorted(renamed, key=lambda pair: (-families[_TRAILING_DIGITS.sub("", pair[0].name)], pair[0].location))
+    chosen = sorted(
+        matches.renamed, key=lambda pair: (-families[_TRAILING_DIGITS.sub("", pair[0].name)], pair[0].location)
+    )
     return NameChanges(
-        matched=len(matched),
-        renamed=len(renamed),
-        renumbered=sum(1 for old, new in renamed if _DIGITS.sub("", old.name) == _DIGITS.sub("", new.name)),
-        removed=len(before_records.keys() - after_records.keys()),
-        added=len(after_records.keys() - before_records.keys()),
+        matched=matches.matched,
+        renamed=len(matches.renamed),
+        renumbered=matches.renumbered,
+        removed=matches.removed,
+        added=matches.added,
         examples=tuple(NameChange(old.location, old.name, new.name) for old, new in chosen[:examples]),
     )
 
@@ -461,19 +489,10 @@ def _fingerprint(record: NameRecord) -> frozenset[str] | None:
 
 def name_stability(old: Sequence[NameRecord], new: Sequence[NameRecord], *, examples: int = 3) -> NameStability:
     """Compare the class names one configuration gives a previous and a current input."""
-    old_names: defaultdict[frozenset[str], list[str]] = defaultdict(list)
-    new_names: defaultdict[frozenset[str], list[str]] = defaultdict(list)
-    for records, names in ((old, old_names), (new, new_names)):
-        for record in records:
-            if (fingerprint := _fingerprint(record)) is not None:
-                names[fingerprint].append(record.name)
-    common = [key for key, names in old_names.items() if len(names) == 1 and len(new_names.get(key, ())) == 1]
-    renamed = [(old_names[key][0], new_names[key][0]) for key in common if old_names[key][0] != new_names[key][0]]
+    fingerprints = _match(old, new, _fingerprint)
     return NameStability(
-        fingerprints_matched=len(common),
-        fingerprints_renamed=len(renamed),
-        fingerprints_renumbered=sum(
-            1 for before, after in renamed if _DIGITS.sub("", before) == _DIGITS.sub("", after)
-        ),
+        fingerprints_matched=fingerprints.matched,
+        fingerprints_renamed=len(fingerprints.renamed),
+        fingerprints_renumbered=fingerprints.renumbered,
         locations=location_changes(old, new, examples=examples),
     )
