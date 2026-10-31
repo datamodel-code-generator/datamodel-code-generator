@@ -166,7 +166,12 @@ from datamodel_code_generator.parser._tag_plan import (
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports
-from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, FIELD_ORIGIN_KEY, FieldOrigin, ModelResolver
+from datamodel_code_generator.reference import (
+    _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    FIELD_ORIGIN_KEY,
+    FieldOrigin,
+    ModelResolver,
+)
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
