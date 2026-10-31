@@ -11,7 +11,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 from urllib.parse import quote
 
-from datamodel_code_generator._api_generation import RenderedFile
+from datamodel_code_generator._api_generation import RenderedFile, runtime_files
 from datamodel_code_generator._client._compiled_templates import arguments as arguments_template
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import helper_plans as helper_plans_template
@@ -65,7 +65,6 @@ from datamodel_code_generator._target_render import (
     Plan,
     field_plan,
     parameter_plan,
-    runtime_files,
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated

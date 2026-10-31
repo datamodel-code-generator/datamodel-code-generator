@@ -1593,7 +1593,7 @@ audit = "C26-9"
 
 [homes.Hx-target-files]
 decision = "how a target turns its output into files: the roles it renders its modules through (a template directory's overrides, or the builtins without one) and the copies of the runtime modules it declares, which the coordinator heads and encodes without formatting"
-core = ["_target_templates.py:roles", "_target_render.py:runtime_files"]
+core = ["_target_templates.py:roles", "_api_generation.py:runtime_files"]
 adapters = []
 
 [homes.Hx-target-files.signatures.role-pick]
@@ -1606,7 +1606,7 @@ audit = "C22-G2"
 kind = "call"
 names = ["RenderedFile"]
 keywords = ["verbatim"]
-what = "wraps a runtime copy as a file itself; call _target_render.py:runtime_files"
+what = "wraps a runtime copy as a file itself; call _api_generation.py:runtime_files"
 audit = "C22-G2"
 
 [homes.Hx-binding-values]

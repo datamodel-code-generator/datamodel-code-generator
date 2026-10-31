@@ -8,7 +8,7 @@ from functools import cached_property
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._api_generation import RenderedFile, implementation_text
+from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
@@ -63,7 +63,6 @@ from datamodel_code_generator._target_render import (
     Parameter,
     field_plan,
     parameter_plan,
-    runtime_files,
 )
 from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none

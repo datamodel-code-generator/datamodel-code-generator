@@ -3,23 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, is_dataclass
-from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final
 
-from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable
 
     from _typeshed import DataclassInstance
 
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
-RUNTIME: Final = Path(__file__).parent / "_runtime"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
     ("pydantic.NameEmail", "email-validator>=2.3"),
@@ -61,19 +58,6 @@ class Plan:
     annotation: str
     constructor: str
     arguments: tuple[Keyword, ...]
-
-
-def runtime_files(modules: Iterable[str]) -> Iterator[RenderedFile]:
-    """Yield the copies of the declared runtime modules and their packages' initializers, in ascending path order.
-
-    A target declares every module its capabilities need; the copy never follows the modules' imports. The coordinator
-    heads and encodes a copy without formatting it.
-    """
-    declared = set(modules)
-    packages = {(PurePosixPath(module).parent / "__init__.py").as_posix() for module in declared}
-    for path in sorted({"__init__.py", *packages, *declared}):
-        text = (RUNTIME / path).read_text(encoding="utf-8")
-        yield RenderedFile(path=PurePosixPath("_runtime", path), kind="runtime", text=text, verbatim=True)
 
 
 def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
