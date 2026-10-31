@@ -521,13 +521,20 @@ def test_schema_validator_property_count_location_uses_document_dialect() -> Non
     """A located 2020-12 $ref keeps siblings even when parser.raw_obj is Draft 7."""
     parser = JsonSchemaParser("", generate_schema_validators=True)
     parser.raw_obj = {"$schema": "http://json-schema.org/draft-07/schema#"}
-    modern = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$defs": {}}
+    modern = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"A": {"type": "object"}},
+    }
     document = parser._schema_resource_document(["modern.json"])
     parser._schema_resource_cache[document] = modern, modern
     obj = JsonSchemaObject.model_validate({"$ref": "#/$defs/A", "minProperties": 2})
     obj = obj.with_schema_location(SchemaLocation("modern.json", ()))
 
     assert parser._ref_siblings_are_parts_of(obj)
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
 
 
 def test_schema_validator_property_count_draft202012_keeps_ref_sibling() -> None:
