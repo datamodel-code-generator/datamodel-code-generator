@@ -294,6 +294,11 @@ def _import_bindings(imports: Imports) -> Iterator[tuple[_ImportKey, str]]:
             yield (from_, name), imports.get_effective_name(from_, name)
 
 
+def _iter_import_bindings(imports: Imports) -> Iterator[str]:
+    """Yield names bound by one generated import block."""
+    return (binding for _, binding in _import_bindings(imports))
+
+
 IMPORT_ANNOTATED = Import.from_full_path("typing.Annotated")
 IMPORT_ANY = Import.from_full_path("typing.Any")
 IMPORT_LIST = Import.from_full_path("typing.List")
