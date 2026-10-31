@@ -72,6 +72,7 @@ unicode-profile	main/recommend_options/project_profile_unicode.txt
 [test_recommend_options_for_schemas]
 asyncapi	main/recommend_options/asyncapi.txt
 asyncapi-v3	main/recommend_options/asyncapi_v3.txt
+blank-union-titles	main/recommend_options/blank_union_titles.txt
 draft-07-pattern-map	main/recommend_options/settings.txt
 enums-read-as-their-const	main/recommend_options/enum_const.txt
 explicit-options	main/recommend_options/api_explicit_options.txt

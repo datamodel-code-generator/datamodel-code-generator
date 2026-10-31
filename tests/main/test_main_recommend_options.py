@@ -251,6 +251,7 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="referenced-holders-api-scope",
         ),
         pytest.param("integer_definition_keys.yaml", [], "integer_definition_keys.txt", id="integer-definition-keys"),
+        pytest.param("blank_union_titles.json", [], "blank_union_titles.txt", id="blank-union-titles"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -262,7 +263,7 @@ def test_recommend_options_for_schemas(
     Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
-    once. A definition under an integer key is named by its text.
+    once. A definition under an integer key is named by its text, and a blank title is no title of a union variant.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))

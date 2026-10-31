@@ -181,6 +181,11 @@ def _types(node: Mapping[str, Any]) -> frozenset[str]:
     )
 
 
+def _title(node: Mapping[str, Any]) -> str:
+    """Return a schema's title without surrounding whitespace; empty when it has none or the title is blank."""
+    return title.strip() if isinstance(title := node.get("title"), str) else ""
+
+
 def _subschemas(node: Mapping[str, Any]) -> Iterator[object]:
     """Yield the subschemas of a schema object that are not keyed by a name."""
     for keyword in _SUBSCHEMA_KEYWORDS:
@@ -572,9 +577,9 @@ class _Walker:
             self.counts["inline_objects"] += 1
             self.record_name(name, parent, self.object_name_parents)
             self.object_shapes[self.shape(node)] += 1
-            if isinstance(title := node.get("title"), str) and title.strip():
+            if title := _title(node):
                 self.counts["inline_titled_objects"] += 1
-                self.inline_titles[title.strip()] += 1
+                self.inline_titles[title] += 1
             depth += 1
             self.max_depth = max(self.max_depth, depth)
             parent = f"{parent}/{name}"
@@ -609,7 +614,7 @@ class _Walker:
                     continue
                 self.counts["inline_union_variants"] += 1
                 self.counts["parent_copy_union_branches"] += self.copies_parent(node, branch)
-                self.counts["inline_titled_union_variants"] += isinstance(branch.get("title"), str)
+                self.counts["inline_titled_union_variants"] += bool(_title(branch))
                 is_object = _is_object(branch) or isinstance(branch.get("allOf"), list)
                 self.counts["inline_object_union_variants" if is_object else "inline_scalar_union_variants"] += 1
         self.count_tags([branch for branch in branches if "$ref" not in branch])
@@ -782,18 +787,14 @@ def measure_signals(
     components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
     named = {key: node for key, node in components.items() if isinstance(node, dict)}
     counts["component_enums"] = sum(_is_enum(node) for node in named.values())
-    titles = {
-        key: title.strip()
-        for key, node in named.items()
-        if isinstance(title := node.get("title"), str) and title.strip()
-    }
+    titles = {key: title for key, node in named.items() if (title := _title(node))}
     root_title = ""
     if kind == "jsonschema":
         root = {key: value for key, value in document.items() if key not in DEFINITION_KEYS}
         walker.count_keywords(root)
         walker.walk_children(root, parent="#", name="", depth=0, component="")
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
-        root_title = title.strip() if isinstance(title := root.get("title"), str) else ""
+        root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
     counts["operations"] = _count_operations(document, kind)
     counts["components"] = len(components)
