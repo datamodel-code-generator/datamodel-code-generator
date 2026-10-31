@@ -25,8 +25,14 @@ paths:
                     items: {$ref: '#/components/schemas/Thing'}
                   has_more: {type: boolean}
                   token: {type: string, writeOnly: true}
+                  cursor:
+                    allOf:
+                      - $ref: '#/components/schemas/Cursor'
 components:
   schemas:
+    Cursor:
+      type: string
+      writeOnly: true
     Thing:
       type: object
       properties:

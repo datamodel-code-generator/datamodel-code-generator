@@ -142,6 +142,7 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     SchemaLocation,
     _is_special_path,
+    _rw_direction,
     _rw_variant_flag,
     _rw_variant_of,
     _rw_variant_path,
@@ -375,6 +376,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.resolutions: dict[SchemaLocation, tuple[SchemaLocation, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
+        self.left_out: dict[str, tuple[tuple[DataModelFieldBase, ...], tuple[DataModelFieldBase, ...]]] = {}
         self.schema_records: dict[SchemaLocation, _SchemaRecord] = {}
         self.schema_locations: dict[SchemaLocation, _SchemaNode] = {}
         self.free_schemas: dict[SchemaLocation, JsonSchemaObject] = {}
@@ -583,6 +585,24 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         if (copied := super()._copy_inherited_field(field, inherited_field, **options)) is not None:
             self.copies[id(copied)] = (copied, inherited_field)
         return copied
+
+    def _create_variant_model(  # noqa: PLR0913
+        self,
+        base_reference: Reference,
+        suffix: Literal["Request", "Response"],
+        model_fields: list[DataModelFieldBase],
+        obj: JsonSchemaObject,
+        data_model_type_class: type[DataModel],
+        *,
+        source_fields: Sequence[DataModelFieldBase] = (),
+    ) -> None:
+        """Record, by the variant's reference key, the split's fields and those of them the variant leaves out."""
+        super()._create_variant_model(
+            base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
+        )
+        kept = {id(field) for field in model_fields}
+        key = self.model_resolver.join_path(tuple(_rw_variant_path(base_reference.path, _rw_direction(suffix))))
+        self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
@@ -2030,8 +2050,6 @@ class _SchemaNode:
     all_of: tuple[_Branch, ...] = ()
     required: tuple[str, ...] = ()
     additional: Literal["absent", "false", "schema", "other"] = "absent"
-    read_only: bool = False
-    write_only: bool = False
     item_schema: bool = False
     item_list: int | None = None
     prefix_items: int | None = None
@@ -2067,8 +2085,6 @@ class _SchemaNode:
             else "schema"
             if isinstance(additional, dict)
             else "other",
-            value.get("readOnly") is True,
-            value.get("writeOnly") is True,
             isinstance(items, dict),
             len(items) if isinstance(items, list) else None,
             len(prefix) if isinstance(prefix, list) else None,
@@ -2913,19 +2929,14 @@ class _Models:
     def variant_exclusions(
         self, model: DataModel, symbol: FinalModelSymbol, members: list[FieldUseBinding]
     ) -> list[FieldUseBinding]:
-        """Add the schema properties a request or response variant leaves out, in the schema's property order."""
-        if (direction := self.variant_direction(model)) == "neutral" or (
-            location := self.locations.get(symbol.id)
-        ) is None:
+        """Add the properties the split of a request or response variant left out, in the order of its fields."""
+        split = self.parser.left_out.get(self.binder.keys.get(id(model.reference), model.reference.path))
+        if split is None or not split[1] or (direction := self.variant_direction(model)) == "neutral":
             return members
-        properties = self.schemas.properties(location)
-        kept = {member.wire_name for member in members}
+        location = self.locations.get(symbol.id)
         excluded: list[FieldUseBinding] = []
-        for name, declaration in properties.items():
-            node = self.schemas.resolve(declaration)[1]
-            if name in kept or not _rw_variant_flag(direction, node.read_only, node.write_only):
-                continue
-            schema = self.documents.location(declaration, "schema")
+        for name in map(_wire_name, split[1]):
+            schema = None if location is None else self.schemas.property_location(location, name, set())
             excluded.append(
                 FieldUseBinding(
                     "property",
@@ -2933,14 +2944,12 @@ class _Models:
                     symbol.id,
                     None,
                     None,
-                    schema,
+                    None if schema is None else self.documents.location(schema, "schema"),
                     direction,
                     _rw_variant_flag(direction, "read_only", "write_only"),
                 )
             )
-        if not excluded:
-            return members
-        positions = {name: index for index, name in enumerate(properties)}
+        positions = {name: index for index, name in enumerate(map(_wire_name, split[0]))}
         return sorted((*members, *excluded), key=lambda member: positions.get(member.wire_name or "", len(positions)))
 
 
@@ -3784,7 +3793,7 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Mapping
+    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr

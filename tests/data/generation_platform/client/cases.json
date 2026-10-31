@@ -5448,6 +5448,18 @@
       ]
     ]
   },
+  "forms-allof-cycle": {
+    "input": "forms-allof-cycle.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "fingerprint-nested": {
     "input": "fingerprint-nested.yaml",
     "references": [

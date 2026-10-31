@@ -82,6 +82,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",
         "multipart-referenced-items",
+        "forms-allof-cycle",
         "server-errors",
         "codec-errors",
         "binary-text",
