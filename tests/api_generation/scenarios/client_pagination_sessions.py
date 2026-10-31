@@ -496,6 +496,7 @@ def _sync(harness: Harness, lines: list[str], error: BaseException | None) -> No
     entered, release = threading.Event(), threading.Event()
 
     def hold(_request: httpx2.Request) -> None:
+        """Hold the worker's request until the main thread releases it, failing if the guard expires."""
         entered.set()
         if not release.wait(10):
             msg = "pagination context scenario release guard expired"
@@ -553,6 +554,7 @@ async def _async_case(harness: Harness, lines: list[str], kind: str) -> None:
     entered, release, body_entered = asyncio.Event(), asyncio.Event(), asyncio.Event()
 
     async def hold(_request: httpx2.Request) -> None:
+        """Signal that the fetch has entered its request hook, then wait for release."""
         entered.set()
         await asyncio.wait_for(release.wait(), 10)
 
@@ -568,6 +570,7 @@ async def _async_case(harness: Harness, lines: list[str], kind: str) -> None:
         errors: list[BaseException] = []
 
         async def body() -> None:
+            """Exercise the selected body exit while another task holds the pager's fetch."""
             async with pager:
                 body_entered.set()
                 if kind == "cancel":
