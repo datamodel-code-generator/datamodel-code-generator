@@ -62,7 +62,10 @@ from datamodel_code_generator._python_syntax import (
     subscript_text,
     tuple_display,
 )
+from datamodel_code_generator._runtime.client.content import CHUNK
+from datamodel_code_generator._runtime.client.errors import MAX_ERROR_BODY_BYTES
 from datamodel_code_generator._runtime.client.operations import BodyFields, FieldArguments, ServerPlan, ServerVariable
+from datamodel_code_generator._runtime.client.options import DEFAULT_RETRY, DEFAULT_TIMEOUT
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
@@ -578,6 +581,21 @@ class RuntimeStreams:
     ndjson: bool
     resumed: bool
     no_content: bool
+
+
+_RETRY_STATUSES: Final = tuple(map(str, sorted(DEFAULT_RETRY.statuses)))
+_RUNTIME_DEFAULTS: Final = {
+    **{name: format(getattr(DEFAULT_TIMEOUT, name), "g") for name in ("connect", "read", "write", "pool")},
+    **{name: format(getattr(DEFAULT_RETRY, name), "g") for name in ("initial_delay", "max_delay", "max_retry_after")},
+    **{
+        name: str(getattr(DEFAULT_RETRY, name))
+        for name in ("max_retries", "jitter", "respect_retry_after", "retry_on_pool_timeout")
+    },
+    "statuses": ", ".join(_RETRY_STATUSES),
+    "error_prefix": str(MAX_ERROR_BODY_BYTES // 1024),
+    "read_size": str(CHUNK // 1024),
+}
+"""The runtime defaults a runtime reference states, as it writes them: seconds without a zero fraction, sizes in KiB."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -3191,6 +3209,7 @@ class ClientRenderer:
             "readme.jinja2",
             readme_template.render_with_scope,
             package=config.package,
+            retry_statuses=english_list(_RETRY_STATUSES, "and", "serial"),
             public_modules=english_list((*public, "response types"), "and", "serial"),
             reference="_generated_docs/runtime.md",
             example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
@@ -3289,6 +3308,7 @@ class ClientRenderer:
             "runtime.jinja2",
             runtime_template.render_with_scope,
             package=self.config.package,
+            defaults=_RUNTIME_DEFAULTS,
             oauth=capabilities.oauth,
             schemes=capabilities.schemes,
             security=bool(capabilities.security),
