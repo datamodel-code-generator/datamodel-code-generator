@@ -1,8 +1,11 @@
-"""The names a client target reserves, and the rules its explicit names and header tokens follow."""
+"""The names a client target reserves, and the rules its explicit names and header tokens follow.
+
+Each helper kind's names are here too: the label documentation and messages call it by, and its options keyword.
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, NamedTuple
 
 from datamodel_code_generator._runtime.model_codecs.media import TOKEN
 from datamodel_code_generator._target_naming import explicit_name, windows_device
@@ -46,17 +49,25 @@ CLIENT_KEYWORDS: Final = (
     "cache_stores",
     "allowed_origins",
 )
-HELPER_ARGUMENTS: Final = frozenset({
-    "cache_options",
-    "items",
-    "pagination_options",
-    "poll_options",
-    "source",
-    "state",
-    "stream_options",
-    "upload_options",
-    "ws_options",
-})
+
+
+class HelperKindNames(NamedTuple):
+    """How documentation and messages call a helper kind, and the keyword its methods take the kind's options by."""
+
+    label: str
+    options: str
+
+
+HELPER_KINDS: Final = {
+    "pagination": HelperKindNames("pagination", "pagination_options"),
+    "polling": HelperKindNames("polling", "poll_options"),
+    "sse": HelperKindNames("SSE", "stream_options"),
+    "ndjson": HelperKindNames("NDJSON", "stream_options"),
+    "websocket": HelperKindNames("WebSocket", "ws_options"),
+    "cache": HelperKindNames("cache", "cache_options"),
+    "resumable_upload": HelperKindNames("upload", "upload_options"),
+}
+HELPER_ARGUMENTS: Final = frozenset({"items", "source", "state", *(names.options for names in HELPER_KINDS.values())})
 
 
 def namespace_problem(value: object, target_python_version: PythonVersion) -> str | None:

@@ -44,13 +44,12 @@ from .errors import (
     SessionLimitError,
     StreamInterruptedError,
     configuration_error,
-    data_error,
     data_refusal,
 )
 from .options import HelperLimits, StreamOptions, checked_options, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
 from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
-from .values import MISSING, Patch, absence, read_expiry, required, resolve, unfit, written
+from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
@@ -65,7 +64,7 @@ if TYPE_CHECKING:
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
     from .pagination import PageBinding
-    from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector
+    from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget
     from .references import OperationRef
     from .writes import ReadPaths, Writes
 
@@ -364,17 +363,16 @@ class _Reconnect:
     delay: float
 
 
-def _dotted(resume: StreamResumePlan, bound: tuple[JSONValue, ...], given: _Given | None) -> Selector | None:
-    """Return the selector of a read value that makes a path segment of the reopen a dot segment once encoded, or None.
+def _callers(resume: StreamResumePlan, given: _Given | None) -> Callable[[], dict[str, str]]:
+    """Return what gives the texts of the caller's own path arguments in the reopen's segments read values go to.
 
-    The caller's own path arguments in the segment, which only a reopen of the helper's own operation repeats, are
-    encoded again by their parameters' codecs, without validation.
+    Only a reopen of the helper's own operation repeats those arguments; each is encoded again by its parameter's
+    codec, without validation.
     """
-    from .writes import caller_texts, dotted_path  # noqa: PLC0415 - A plan loaded the operation runtime.
+    from .writes import caller_texts  # noqa: PLC0415 - A plan loaded the operation runtime.
 
-    parameters, dotted = resume.call.parameters, resume.dotted
     arguments = () if given is None else given[0]
-    return dotted_path(parameters, dotted, bound, lambda: caller_texts(parameters, dotted, arguments))
+    return lambda: caller_texts(resume.call.parameters, resume.dotted, arguments)
 
 
 def _bound(  # noqa: PLR0913, PLR0917
@@ -390,13 +388,10 @@ def _bound(  # noqa: PLR0913, PLR0917
     A stream response's header or status gives a value; a missing one, a header repeated where one is read, and read
     values that make a path segment of the reopen a dot segment once encoded are refused.
     """
-    from .pagination import bound_values  # noqa: PLC0415 - Only resume metadata loads the bindings.
+    from .pagination import targeted_values  # noqa: PLC0415 - Only resume metadata loads the bindings.
 
     refuse = data_refusal(plan.helper_id, operation, info)
-    bound = bound_values(resume.bindings, kept, lambda read: required(read, None, info, refuse))
-    if (read := _dotted(resume, bound, given)) is not None:
-        raise refuse(read, "value")
-    return bound
+    return targeted_values(resume, resume.bindings, None, info, refuse, kept, _callers(resume, given))
 
 
 def _json(frame: _Frame) -> JSONValue | MISSING:
@@ -1257,6 +1252,7 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
     refused as if a server had just given it.
     """
     from .pagination import saved_values  # noqa: PLC0415 - Only resume metadata loads the bindings.
+    from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.
 
     fields = state_fields(state, _STATE)
     cursor = fields["cursor"]
@@ -1268,8 +1264,7 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
     saved = state_array(fields["bound"])
     require_state(len(saved) == len(resume.bindings))
     bound = saved_values(resume.bindings, saved)
-    if (selector := _dotted(resume, bound, given)) is not None:
-        raise data_error(plan.helper_id, resume.operation, None, "value", selector)
+    refuse_dotted(resume, bound, data_refusal(plan.helper_id, resume.operation, None), _callers(resume, given))
     return _Position(given=given, cursor=cursor, cursored=True, bound=bound, expires_at=expires_at)
 
 

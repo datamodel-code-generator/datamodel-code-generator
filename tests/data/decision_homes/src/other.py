@@ -104,3 +104,6 @@ def search(name, taken, words, refresh):
     while remaining:
         remaining = refresh(f"{name}") or (lambda: f"{name}")
     return candidate, annotated, padded, message
+
+
+LABELS = {"one": "Label", "two": "Other"}

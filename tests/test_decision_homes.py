@@ -33,6 +33,7 @@ ALLOWED = """
 [allow."other.py"."<module>"]
 "sample.limit" = { home = "sample", count = 3, audit = "X-7" }
 "sample.keyword-table" = { home = "sample", count = 2, audit = "X-8" }
+"sample.label-table" = { home = "sample", count = 1, audit = "X-14" }
 
 [allow."other.py"."other_helper"]
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
@@ -216,6 +217,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         HOME + 'kind = "call"\naudit = "X"\npaths = "a"\n',
         HOME + 'kind = "number"\naudit = "X"\npowers = ["63"]\n',
         HOME + 'kind = "key"\naudit = "X"\n',
+        HOME + 'kind = "keyword-set"\naudit = "X"\nkeywords = ["x"]\ndict_values = "yes"\n',
         '[allow."a.py"."f"]\n"a.s" = 3\n',
     ],
     ids=[
@@ -226,6 +228,7 @@ HOME = '[homes.a]\ndecision = "x"\ncore = ["a.py"]\n[homes.a.signatures.s]\n'
         "paths-not-a-list",
         "powers-not-integers",
         "key-without-keys",
+        "dict-values-not-a-boolean",
         "entry-not-a-table",
     ],
 )

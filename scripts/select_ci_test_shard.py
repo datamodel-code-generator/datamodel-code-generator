@@ -117,6 +117,20 @@ def _profile_weights(document: dict[str, Any], profile: str) -> Profile:
     return measured["files"], measured["nodes"]
 
 
+def _item_test_counts(measured: Mapping[str, Weights]) -> Weights:
+    """Return the number of measured tests of each measured item: its slow tests plus its fast time over their mean."""
+    slow: dict[str, list[int]] = {}
+    for test, weight in measured["slow"].items():
+        slow.setdefault(test_item(test), []).append(weight)
+    counts: Weights = {}
+    for item, weight in (*measured["files"].items(), *measured["nodes"].items()):
+        slow_weights = slow.get(item, [])
+        fast = max(1, round((weight - sum(slow_weights)) / mean)) if (mean := measured["fast"].get(item)) else 0
+        if tests := len(slow_weights) + fast:
+            counts[item] = tests
+    return counts
+
+
 def _file_node_means(nodes: Mapping[str, int]) -> Weights:
     """Return the mean measured weight of the test functions of each split file."""
     totals: dict[str, list[int]] = {}
@@ -138,11 +152,16 @@ def _is_excluded(item: str, excluded: tuple[str, ...]) -> bool:
     return any(item == path or item.startswith((f"{path}::", f"{path}/")) for path in excluded)
 
 
-def _build_recipe_items(weights: Profile, excluded: tuple[str, ...] = ()) -> list[dict[str, int | str]]:
+def _build_recipe_items(
+    weights: Profile, excluded: tuple[str, ...] = (), tests: Mapping[str, int] | None = None
+) -> list[dict[str, int | str]]:
+    """Return each collected item with its weight and, when measured, its number of tests."""
     fallback = (median_weight(weights[0]), median_weight(weights[1]))
     node_means = _file_node_means(weights[1])
+    counts = tests or {}
     return [
         {"nodeid": item, "weight": _item_weight(item, weights, fallback, node_means)}
+        | ({"tests": count} if (count := counts.get(item)) else {})
         for item in _collect_test_items()
         if not _is_excluded(item, excluded)
     ]
@@ -164,6 +183,10 @@ def estimate_test_durations(nodeids: Iterable[str], slow: Mapping[str, int], fas
     return {nodeid: weight or fallback for nodeid, weight in estimates.items()}
 
 
+def _is_positive(value: object) -> bool:
+    return type(value) is int and value > 0
+
+
 def _validate_recipe_items(items: object) -> list[dict[str, int | str]]:
     if not isinstance(items, list) or not items:
         msg = "recipe items must be a nonempty list"
@@ -173,16 +196,18 @@ def _validate_recipe_items(items: object) -> list[dict[str, int | str]]:
     seen: set[str] = set()
     for item in items:
         match item:
-            case {"nodeid": str(nodeid), "weight": int(weight)} if (
-                not isinstance(weight, bool)
-                and weight > 0
+            case {"nodeid": str(nodeid), "weight": weight} if (
+                _is_positive(weight)
+                and _is_positive(item.get("tests", 1))
                 and nodeid.strip()
                 and "\n" not in nodeid
                 and "\r" not in nodeid
                 and nodeid not in seen
             ):
                 seen.add(nodeid)
-                validated.append({"nodeid": nodeid, "weight": weight})
+                validated.append(
+                    {"nodeid": nodeid, "weight": weight} | ({"tests": item["tests"]} if "tests" in item else {})
+                )
             case _:
                 msg = f"invalid recipe item: {item!r}"
                 raise SystemExit(msg)
@@ -343,31 +368,34 @@ def select_shard(weights: Mapping[str, int], shard_index: int, shard_total: int)
     return _assign_shards(weights, shard_total)[0][shard_index - 1]
 
 
-def _part_items(weights: Mapping[str, int], shard_total: int, divisor: int) -> dict[str, int]:
+def _part_items(weights: Mapping[str, int], shard_total: int, divisor: int, tests: Mapping[str, int]) -> dict[str, int]:
     """Divide each item heavier than ``1/divisor`` of a shard's share into ``ITEM@INDEX/TOTAL`` parts.
 
-    Each item gets at most one part per shard.
+    Each item gets at most one part per shard and per test it holds, so no part is empty.
     """
     limit = sum(weights.values()) / (divisor * shard_total)
     parted: dict[str, int] = {}
     for item, weight in weights.items():
-        if (parts := min(shard_total, math.ceil(weight / limit))) > 1:
+        if (parts := min(shard_total, tests.get(item, shard_total), math.ceil(weight / limit))) > 1:
             parted.update({f"{item}@{index}/{parts}": math.ceil(weight / parts) for index in range(1, parts + 1)})
         else:
             parted[item] = weight
     return parted
 
 
-def select_parted_shard(weights: Mapping[str, int], shard_index: int, shard_total: int) -> list[str]:
+def select_parted_shard(
+    weights: Mapping[str, int], shard_index: int, shard_total: int, tests: Mapping[str, int] | None = None
+) -> list[str]:
     """Select a shard like ``select_shard``, after splitting heavy items into the parts that shorten the slowest most.
 
     Items heavier than a shard's share divided by each of ``PART_DIVISORS`` are split, and the split whose slowest
     shard is lightest wins, the one with fewer items on a tie and no split when splitting does not help.
     pytest runs a part ``ITEM@INDEX/TOTAL`` through ``--test-part``, which splits the item's tests like
-    ``--test-shard``.
+    ``--test-shard``, so an item is never split into more parts than ``tests`` counts tests in it.
     """
     _check_shard(shard_index, shard_total)
-    candidates = [weights, *(_part_items(weights, shard_total, divisor) for divisor in PART_DIVISORS)]
+    counts = tests or {}
+    candidates = [weights, *(_part_items(weights, shard_total, divisor, counts) for divisor in PART_DIVISORS)]
     chosen = min(candidates, key=lambda candidate: (max(_assign_shards(candidate, shard_total)[1]), len(candidate)))
     return select_shard(chosen, shard_index, shard_total)
 
@@ -399,11 +427,15 @@ def main(argv: list[str] | None = None) -> None:
         _record_weights(args.weights, args.profile, args.junit, run_id=args.run_id, sha=args.sha)
         return
 
-    items = (
-        _load_recipe_items(args.recipe)
-        if args.recipe
-        else _build_recipe_items(_profile_weights(_read_weights(args.weights), args.profile), tuple(args.exclude))
-    )
+    if args.recipe:
+        items = _load_recipe_items(args.recipe)
+    else:
+        document = _read_weights(args.weights)
+        items = _build_recipe_items(
+            _profile_weights(document, args.profile),
+            tuple(args.exclude),
+            _item_test_counts(document["profiles"][args.profile]),
+        )
     if args.write_recipe:
         _write_json(args.write_recipe, {"version": RECIPE_VERSION, "items": items})
         if args.shard_index is None and args.shard_total is None:
@@ -413,7 +445,8 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("shard_index and shard_total are required unless only --write-recipe is used")
 
     weights = {str(item["nodeid"]): int(item["weight"]) for item in items}
-    if selected := select_parted_shard(weights, args.shard_index, args.shard_total):
+    tests = {str(item["nodeid"]): int(item["tests"]) for item in items if "tests" in item}
+    if selected := select_parted_shard(weights, args.shard_index, args.shard_total, tests):
         print(*selected, sep="\n")
         return
 

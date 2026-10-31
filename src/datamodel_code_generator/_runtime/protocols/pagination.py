@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
@@ -40,7 +40,7 @@ from .records import (
 from .values import MISSING, absence, read_selector, required, resolve, unfit, written
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Sequence
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
     from types import TracebackType
 
     from ..client.errors import ConfigurationError
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from .client import AsyncClientCore, ClientCore
     from .errors import DataRule, Refuse
     from .references import OperationRef
-    from .writes import ReadPaths, Targeted, Writes
+    from .writes import DottedPaths, ReadPaths, Writes
 
 __all__ = (
     "AsyncPager",
@@ -71,6 +71,7 @@ __all__ = (
     "first_page",
     "following_page",
     "iterate_pages",
+    "required_values",
     "resume_pages",
     "saved_values",
     "targeted_values",
@@ -222,22 +223,38 @@ def saved_values(bindings: Iterable[PageBinding], values: Iterable[JSONValue]) -
     )
 
 
+def required_values(
+    bindings: Iterable[PageBinding],
+    kept: tuple[JSONValue, ...],
+    wire: JSONValue,
+    info: ResponseInfo,
+    refuse: Refuse,
+) -> tuple[JSONValue, ...]:
+    """Return what bindings write, each selector's value read from a response that must give it.
+
+    A missing value and a header read once that the response repeats are refused.
+    """
+    return bound_values(bindings, kept, lambda read: required(read, wire, info, refuse))
+
+
 def targeted_values(  # noqa: PLR0913, PLR0917
-    targeted: Targeted[Any],
+    targeted: DottedPaths,
     bindings: Iterable[PageBinding],
     wire: JSONValue,
     info: ResponseInfo,
     refuse: Refuse,
     kept: tuple[JSONValue, ...] = (),
+    callers: Callable[[], Mapping[str, str]] = dict,
 ) -> tuple[JSONValue, ...]:
     """Return what bindings write into a targeted operation, refusing a missing value a response gives.
 
-    Read values that make a path segment a dot segment once encoded are refused as well.
+    Read values that make a path segment a dot segment once encoded are refused as well; the caller's own path
+    arguments in such a segment keep the texts `callers` gives.
     """
     from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.
 
-    written = bound_values(bindings, kept, lambda read: required(read, wire, info, refuse))
-    refuse_dotted(targeted, written, refuse)
+    written = required_values(bindings, kept, wire, info, refuse)
+    refuse_dotted(targeted, written, refuse, callers)
     return written
 
 
@@ -671,11 +688,10 @@ class _Walk(Generic[T, P]):
 
     def dotted(self, written: tuple[JSONValue, ...], info: ResponseInfo | None) -> None:
         """Refuse a read value among those the next request writes that makes a path segment a dot segment."""
-        from .writes import dotted_path  # noqa: PLC0415 - A plan loaded the operation runtime.
+        from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.
 
         plan = self.plan
-        if (read := dotted_path(plan.call.parameters, plan.dotted, written, self.callers)) is not None:
-            raise _data_error(plan, info, "value", read)
+        refuse_dotted(plan, written, data_refusal(plan.helper_id, plan.operation, info), self.callers)
 
     def limit(self, limit: int, kind: Literal["items", "pages"]) -> SessionLimitError:
         """Return the error of a session limit reached while pages remain."""
@@ -848,8 +864,7 @@ class _Walk(Generic[T, P]):
         """
         plan, link = self.plan, self.link
         kept = link.bound if link is not None and link.index >= 0 else ()
-        refuse = data_refusal(plan.helper_id, plan.operation, info)
-        return bound_values(plan.bindings, kept, lambda read: required(read, wire, info, refuse))
+        return required_values(plan.bindings, kept, wire, info, data_refusal(plan.helper_id, plan.operation, info))
 
     def follow(
         self, rule: NextUrlPlan | LinkPlan, wire: JSONValue, info: ResponseInfo, url: str, stripped: frozenset[str]

@@ -319,5 +319,73 @@
       "1",
       "2"
     ]
+  },
+  "parts-capped-at-tests": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 8,
+        "tests": 2
+      },
+      {
+        "nodeid": "b",
+        "weight": 1
+      },
+      {
+        "nodeid": "c",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "2",
+      "3"
+    ]
+  },
+  "one-test-unsplit": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 8,
+        "tests": 1
+      },
+      {
+        "nodeid": "b",
+        "weight": 1
+      },
+      {
+        "nodeid": "c",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "3"
+    ]
+  },
+  "zero-tests": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1,
+        "tests": 0
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "boolean-tests": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1,
+        "tests": true
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
   }
 }

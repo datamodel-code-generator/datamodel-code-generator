@@ -371,5 +371,111 @@
       ]
     ],
     "dump": "3.14"
+  },
+  "unmeasured-tests": {
+    "weights": {
+      "version": 4,
+      "profiles": {
+        "3.10": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "3.11": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "3.12": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "3.13": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "3.14": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "3.15": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "windows": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "macos": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        },
+        "e2e": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {},
+          "fast": {}
+        }
+      }
+    },
+    "runs": [
+      [
+        "--profile",
+        "3.14",
+        "--write-recipe",
+        "recipe.json"
+      ]
+    ],
+    "recipe": "recipe.json"
   }
 }
