@@ -121,7 +121,6 @@ def run_input_model_and_assert(
     *,
     input_model: str,
     output_path: Path,
-    expected_file: Path,
     extra_args: Sequence[str] | None = None,
 ) -> None:
     """Run main with --input-model and assert results."""
@@ -133,7 +132,7 @@ def run_input_model_and_assert(
             use_builtin_default_formatter=False,
             isolate_model_template_cache=True,
         )
-    assert_output(output_path.read_text(encoding="utf-8"), expected_file)
+    assert_output(output_path.read_text(encoding="utf-8"))
 
 
 def run_input_model_error_and_assert(
@@ -178,7 +177,6 @@ def test_input_model_pydantic_basemodel(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_basemodel.py",
     )
 
 
@@ -187,7 +185,6 @@ def test_input_model_pydantic_to_typeddict(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_to_typeddict.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -197,7 +194,6 @@ def test_input_model_pydantic_with_jsonschema_type(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_with_jsonschema.py",
         extra_args=["--input-file-type", "jsonschema"],
     )
 
@@ -223,7 +219,6 @@ def test_input_model_dict_with_jsonschema(tmp_path: Path) -> None:
         run_input_model_and_assert(
             input_model="tests.data.python.input_model.dict_schemas:USER_SCHEMA",
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "dict_with_jsonschema.py",
             extra_args=["--input-file-type", "jsonschema"],
         )
 
@@ -246,7 +241,6 @@ def test_input_model_dict_openapi(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.dict_schemas:OPENAPI_SPEC",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "dict_openapi.py",
         extra_args=["--input-file-type", "openapi"],
     )
 
@@ -259,7 +253,6 @@ def test_input_model_dict_preserves_json_round_trip(tmp_path: Path) -> None:
         run_input_model_and_assert(
             input_model="tests.data.python.input_model.dict_schemas:JSON_COERCIBLE_SCHEMA",
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "dict_json_coercible.py",
             extra_args=["--input-file-type", "jsonschema", "--disable-timestamp"],
         )
 
@@ -282,7 +275,6 @@ def test_input_model_std_dataclass(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.dataclass_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "std_dataclass.py",
     )
 
 
@@ -291,17 +283,20 @@ def test_input_model_pydantic_dataclass(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_dataclass_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_dataclass.py",
     )
 
 
 def test_input_model_typeddict(tmp_path: Path) -> None:
-    """Test TypedDict input converts to Pydantic BaseModel output (default)."""
-    run_input_model_and_assert(
-        input_model="tests.data.python.input_model.typeddict_models:User",
-        output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "typeddict.py",
-    )
+    """Test TypedDict input converts to Pydantic BaseModel output (default); docs/input-model.md shows the output."""
+    output_path = tmp_path / "output.py"
+    with freeze_time(TIMESTAMP):
+        run_main_with_args(
+            _input_model_args("tests.data.python.input_model.typeddict_models:User", output_path=output_path),
+            use_parsed_source_cache=False,
+            use_builtin_default_formatter=False,
+            isolate_model_template_cache=True,
+        )
+    assert_output(output_path.read_text(encoding="utf-8"), EXPECTED_INPUT_MODEL_PATH / "typeddict.py")
 
 
 def test_input_model_dataclass_non_jsonschema_error(
@@ -405,7 +400,6 @@ def test_input_model_restores_cwd_in_sys_path(
         run_input_model_and_assert(
             input_model="tests.data.python.input_model.pydantic_models:User",
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_basemodel.py",
         )
         assert sys.path == original_sys_path
     finally:
@@ -451,14 +445,17 @@ def test_input_model_restores_cwd_package_modules(
     for directory_name, marker in (("first", "first"), ("second", "second")):
         directory = tmp_path / directory_name
         monkeypatch.chdir(directory)
-        run_input_model_and_assert(
-            input_model=f"{package_name}.model:User",
-            output_path=directory / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "pydantic_basemodel.py",
-        )
+        with freeze_time(TIMESTAMP):
+            run_main_with_args(
+                _input_model_args(f"{package_name}.model:User", output_path=directory / "output.py"),
+                use_parsed_source_cache=False,
+                use_builtin_default_formatter=False,
+                isolate_model_template_cache=True,
+            )
         assert (directory / "loaded.txt").read_text(encoding="utf-8") == marker
         _assert_sys_modules_with_prefix(package_name, existing_modules)
         _assert_sys_module_is(helper_name, existing_helper)
+    assert_output((directory / "output.py").read_text(encoding="utf-8"))
 
 
 def test_input_model_preserves_unrelated_concurrent_import(
@@ -611,7 +608,6 @@ def test_input_model_path_format(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests/data/python/input_model/pydantic_models.py:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "path_format.py",
     )
 
 
@@ -628,7 +624,6 @@ def test_input_model_path_format_restores_sys_modules(tmp_path: Path) -> None:
         run_input_model_and_assert(
             input_model=f"{model_path}:User",
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "path_format.py",
         )
 
         _assert_sys_module_missing(module_name)
@@ -651,7 +646,6 @@ def test_input_model_path_format_restores_existing_sys_modules(
     run_input_model_and_assert(
         input_model=f"{model_path}:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "path_format.py",
     )
 
     _assert_sys_module_is(module_name, existing_module)
@@ -717,7 +711,6 @@ def test_input_model_path_format_filename_only(
     run_input_model_and_assert(
         input_model="pydantic_models.py:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "path_format_filename_only.py",
     )
 
 
@@ -861,23 +854,21 @@ def test_input_model_preserves_python_types(tmp_path: Path, test_id: str) -> Non
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithPythonTypes",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "model_with_python_types.py",
     )
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file"),
+    "output_model_type",
     [
-        ("typing.TypedDict", "model_with_python_types_typeddict.py"),
-        ("dataclasses.dataclass", "model_with_python_types_dataclass.py"),
+        "typing.TypedDict",
+        "dataclasses.dataclass",
     ],
 )
-def test_input_model_x_python_type_output_formats(tmp_path: Path, output_model_type: str, expected_file: str) -> None:
+def test_input_model_x_python_type_output_formats(tmp_path: Path, output_model_type: str) -> None:
     """Test that x-python-type works with different output model types."""
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithPythonTypes",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / expected_file,
         extra_args=["--output-model-type", output_model_type],
     )
 
@@ -887,7 +878,6 @@ def test_input_model_dataclass_with_python_types(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.dataclass_models:DataclassWithPythonTypes",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "dataclass_with_python_types.py",
     )
 
 
@@ -896,7 +886,6 @@ def test_input_model_recursive_model_types(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:RecursiveNode",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "recursive_model_types.py",
     )
 
 
@@ -905,7 +894,6 @@ def test_input_model_structured_runtime_annotations(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.structured_annotations:StructuredAnnotations",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "structured_annotations.py",
         extra_args=["--disable-timestamp"],
     )
 
@@ -915,7 +903,6 @@ def test_input_model_transport_preserves_inheritance(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.structured_annotations:StructuredChild",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "structured_inheritance.py",
         extra_args=["--disable-timestamp"],
     )
 
@@ -925,7 +912,6 @@ def test_input_model_transport_preserves_nested_runtime_identity(tmp_path: Path)
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.structured_annotations:NestedRuntimeAnnotations",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "nested_runtime_annotations.py",
         extra_args=["--formatters", "builtin", "--disable-timestamp"],
     )
 
@@ -944,7 +930,6 @@ def test_input_model_optional_types(tmp_path: Path, test_id: str) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithPythonTypes",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "model_with_python_types.py",
     )
 
 
@@ -971,7 +956,6 @@ def test_input_model_callable_types(tmp_path: Path, test_id: str) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithCallableTypes",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "model_with_callable_types.py",
     )
 
 
@@ -980,7 +964,6 @@ def test_input_model_nested_model_with_callable(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithNestedCallable",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "nested_model_with_callable.py",
     )
 
 
@@ -989,7 +972,6 @@ def test_input_model_custom_class(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithCustomClass",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "custom_class.py",
     )
 
 
@@ -998,7 +980,6 @@ def test_input_model_union_callable(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithUnionCallable",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "union_callable.py",
     )
 
 
@@ -1007,7 +988,6 @@ def test_input_model_custom_generic_type_import(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithCustomGeneric",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "custom_generic_type_import.py",
     )
 
 
@@ -1016,7 +996,6 @@ def test_input_model_default_put_dict_import(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:ModelWithDefaultPutDict",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "default_put_dict_import.py",
     )
 
 
@@ -1043,7 +1022,6 @@ def test_input_model_ref_strategy_regenerate_all_default(tmp_path: Path) -> None
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_regenerate_all.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1053,7 +1031,6 @@ def test_input_model_ref_strategy_regenerate_all_explicit(tmp_path: Path) -> Non
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_regenerate_all.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1068,7 +1045,6 @@ def test_input_model_ref_strategy_reuse_foreign(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1083,7 +1059,6 @@ def test_input_model_ref_strategy_reuse_foreign_no_regeneration(tmp_path: Path) 
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1098,7 +1073,6 @@ def test_input_model_ref_strategy_reuse_all(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_all.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1113,7 +1087,6 @@ def test_input_model_path_ref_strategy_reuse_all_keeps_stem_imports(tmp_path: Pa
     run_input_model_and_assert(
         input_model="tests/data/python/input_model/nested_models.py:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "path_ref_strategy_reuse_all.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1128,7 +1101,6 @@ def test_input_model_ref_strategy_reuse_all_no_regeneration(tmp_path: Path) -> N
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.nested_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_all.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1164,7 +1136,6 @@ def test_input_model_ref_strategy_no_nested_types(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.pydantic_models:User",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_no_nested_types.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -1179,7 +1150,6 @@ def test_input_model_ref_strategy_dataclass_reuse_foreign(tmp_path: Path) -> Non
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.dataclass_nested:Task",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_dataclass_reuse_foreign.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1194,7 +1164,6 @@ def test_input_model_ref_strategy_typeddict_reuse_all(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.typeddict_nested:Member",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_typeddict_reuse_all.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -1209,7 +1178,6 @@ def test_input_model_ref_strategy_typeddict_reuse_foreign(tmp_path: Path) -> Non
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.typeddict_nested:Member",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_typeddict_reuse_foreign.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -1224,7 +1192,6 @@ def test_input_model_ref_strategy_reuse_foreign_same_family_typeddict(tmp_path: 
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithTypedDict",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_same_family_typeddict.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1239,7 +1206,6 @@ def test_input_model_ref_strategy_reuse_foreign_different_family_regenerate(tmp_
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithPydantic",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_different_family.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1254,7 +1220,6 @@ def test_input_model_ref_strategy_reuse_foreign_same_family_dataclass(tmp_path: 
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithDataclass",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_same_family_dataclass.py",
         extra_args=[
             "--output-model-type",
             "dataclasses.dataclass",
@@ -1269,7 +1234,6 @@ def test_input_model_ref_strategy_reuse_foreign_mixed_types(tmp_path: Path) -> N
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithMixed",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_mixed_types.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1284,7 +1248,6 @@ def test_input_model_ref_strategy_reuse_foreign_pydantic_output(tmp_path: Path) 
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithPydantic",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_pydantic_output.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -1299,7 +1262,6 @@ def test_input_model_ref_strategy_reuse_foreign_msgspec_output(tmp_path: Path) -
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.mixed_nested:ModelWithPydantic",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "ref_strategy_reuse_foreign_msgspec_output.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -1314,7 +1276,6 @@ def test_input_model_config_class(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="datamodel_code_generator.config:GenerateConfig",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "config_class.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1328,7 +1289,6 @@ def run_multiple_input_models_and_assert(
     *,
     input_models: Sequence[str],
     output_path: Path,
-    expected_file: Path,
     extra_args: Sequence[str] | None = None,
 ) -> None:
     """Run main with multiple --input-model and assert results."""
@@ -1340,7 +1300,7 @@ def run_multiple_input_models_and_assert(
             use_builtin_default_formatter=False,
             isolate_model_template_cache=True,
         )
-    assert_output(output_path.read_text(encoding="utf-8"), expected_file)
+    assert_output(output_path.read_text(encoding="utf-8"))
 
 
 def run_multiple_input_models_error_and_assert(
@@ -1368,7 +1328,6 @@ def test_input_model_single_with_inheritance(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.inheritance_models:ChildA",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "single_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1378,7 +1337,6 @@ def test_input_model_single_multi_level_inheritance(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.inheritance_models:GrandChild",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multi_level_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1388,7 +1346,6 @@ def test_input_model_single_no_inheritance(tmp_path: Path) -> None:
     run_input_model_and_assert(
         input_model="tests.data.python.input_model.inheritance_models:NoInheritance",
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "no_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1401,7 +1358,6 @@ def test_input_model_multiple_forked_inheritance(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "forked_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1414,7 +1370,6 @@ def test_input_model_multiple_mixed_inheritance(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:GrandChild",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "mixed_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1427,7 +1382,6 @@ def test_input_model_multiple_with_pydantic_output(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_with_pydantic_output.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -1440,7 +1394,6 @@ def test_input_model_multiple_with_dataclass_output(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_with_dataclass_output.py",
         extra_args=["--output-model-type", "dataclasses.dataclass"],
     )
 
@@ -1542,7 +1495,6 @@ def test_input_model_multiple_same_module(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:GrandChild",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_same_module.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1555,7 +1507,6 @@ def test_input_model_multiple_file_path_format(tmp_path: Path) -> None:
             "tests/data/python/input_model/inheritance_models.py:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "forked_inheritance.py",
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
 
@@ -1599,7 +1550,6 @@ def test_input_model_multiple_file_path_same_basename_forward_refs(tmp_path: Pat
                 f"{second_model_path}:UserB",
             ],
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_same_basename_paths.py",
         )
 
         _assert_sys_module_missing(module_name)
@@ -1630,7 +1580,6 @@ def test_input_model_multiple_file_path_format_restores_sys_modules(tmp_path: Pa
                 f"{model_path}:ChildB",
             ],
             output_path=tmp_path / "output.py",
-            expected_file=EXPECTED_INPUT_MODEL_PATH / "forked_inheritance.py",
             extra_args=["--output-model-type", "typing.TypedDict"],
         )
 
@@ -1645,7 +1594,6 @@ def test_input_model_multiple_with_ref_strategy(tmp_path: Path) -> None:
             "tests.data.python.input_model.inheritance_models:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "forked_inheritance.py",
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -1735,7 +1683,6 @@ def test_input_model_empty_child_no_properties(
     run_multiple_input_models_and_assert(
         input_models=["tests.data.python.input_model.inheritance_models:EmptyChild"],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "empty_child_no_properties.py",
     )
 
 
@@ -1746,7 +1693,6 @@ def test_input_model_optional_only_child_no_required(
     run_multiple_input_models_and_assert(
         input_models=["tests.data.python.input_model.inheritance_models:OptionalOnlyChild"],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "optional_only_child_no_required.py",
     )
 
 
@@ -1765,7 +1711,6 @@ def test_input_model_cwd_already_in_path(
             "tests.data.python.input_model.inheritance_models:ChildB",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_with_pydantic_output.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     final_count = sys.path.count(cwd)
@@ -1794,7 +1739,6 @@ class TempModel(BaseModel):
             "temp_model.py:TempModel",
         ],
         output_path=tmp_path / "output.py",
-        expected_file=EXPECTED_INPUT_MODEL_PATH / "multiple_py_file_without_path_separator.py",
     )
 
 
@@ -1968,7 +1912,6 @@ def test_input_model_union_branch_provenance(model_name: str, entrypoint: str, f
         run_input_model_and_assert(
             input_model=source,
             output_path=output,
-            expected_file=INPUT_UNION_EXPECTED / f"{expected_name}.py",
             extra_args=["--disable-timestamp", "--formatters", *formatters, *extra_args],
         )
     else:
@@ -2018,7 +1961,6 @@ def test_input_model_union_caller_extensions(model_name: str, entrypoint: str, f
         run_input_model_and_assert(
             input_model=source,
             output_path=output,
-            expected_file=INPUT_UNION_EXPECTED / f"extension_{model_name}.py",
             extra_args=["--disable-timestamp", "--formatters", *formatters],
         )
     else:
@@ -2098,7 +2040,6 @@ def test_input_model_inherited_overrides(model_name: str, entrypoint: str, tmp_p
             run_input_model_and_assert(
                 input_model=source,
                 output_path=output,
-                expected_file=expected_file,
                 extra_args=extra_args,
             )
     else:
@@ -2854,7 +2795,6 @@ def test_python_generic_reuse(  # noqa: PLR0912, PLR0914
             run_input_model_and_assert(
                 input_model=paths[0],
                 output_path=output,
-                expected_file=expected_file,
                 extra_args=[*_input_model_args(paths[1:]), *extra_args],
             )
     else:
