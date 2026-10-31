@@ -166,7 +166,7 @@ from datamodel_code_generator.parser._tag_plan import (
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports
-from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
+from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, FIELD_ORIGIN_KEY, FieldOrigin, ModelResolver
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
@@ -1991,6 +1991,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                         required=True,
                     ),
                 )
+                discriminator_field.__dict__[FIELD_ORIGIN_KEY] = FieldOrigin("tag", None)
                 if parser.config.aliases:
                     discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = discriminator_model.class_name
                     parser.model_resolver.prepare_explicit_field_aliases(

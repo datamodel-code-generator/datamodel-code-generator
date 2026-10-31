@@ -43,6 +43,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _located_model_schema
@@ -64,7 +65,13 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
 )
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
-from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
+from datamodel_code_generator.reference import (
+    FIELD_ORIGIN_KEY,
+    SCHEMA_LOCATION_KEY,
+    FieldNameResolver,
+    is_url,
+    snake_to_upper_camel,
+)
 from datamodel_code_generator.types import (
     DataType,
     EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
@@ -720,11 +727,13 @@ class OpenAPIParser(JsonSchemaParser):
                     result_fields.append(field_obj)
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
+                origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
                 field_obj = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
-                    "data_type": new_field_type,
+                    "data_type": with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
                 })
+                field_obj.__dict__[FIELD_ORIGIN_KEY] = origin
             result_fields.append(field_obj)
 
         return result_fields

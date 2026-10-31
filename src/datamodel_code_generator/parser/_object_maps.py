@@ -13,6 +13,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
 from datamodel_code_generator.parser.base import get_special_path
@@ -290,7 +291,10 @@ def get_typed_additional_properties_field(
     obj: JsonSchemaObject,
     path: list[str],
 ) -> DataModelFieldBase | None:
-    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``)."""
+    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``).
+
+    The field records the location of the additionalProperties schema as its origin (``reference.field_origin_of``).
+    """
     if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
@@ -304,7 +308,7 @@ def get_typed_additional_properties_field(
     )
     dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
 
-    return parser.data_model_type.create_typed_extra_field(
+    field = parser.data_model_type.create_typed_extra_field(
         field_model=parser.data_model_field_type,
         data_type=parser.data_type(
             data_types=[extra_value_type],
@@ -312,6 +316,7 @@ def get_typed_additional_properties_field(
             dict_key=dict_key,
         ),
     )
+    return None if field is None else with_field_origin(field, "additional", additional_props.schema_location)
 
 
 def flatten_additional_properties_all_of(
@@ -750,6 +755,7 @@ def get_additional_properties_root_field(
     ``legacy-validated-pattern-maps`` keeps ``str`` keys and counts without the patterns. Elsewhere the keys are
     ``str``: an object with propertyNames and without properties reaches this field only where the validator checks
     its patterns. The dict takes the object map builder's null unless row ``legacy-map-null-left-to-field`` is kept.
+    The field and its dict record the location of ``obj`` as their origin.
     """
     value_type = parser.data_type_manager.get_data_type(Types.any)
     key_type = None
@@ -772,8 +778,9 @@ def get_additional_properties_root_field(
                     obj,
                     additional_properties=additional_properties,
                 )
-    map_type = parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type)
-    return parser.get_object_field(
+    location = obj.schema_location
+    map_type = with_type_origin(parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type), location)
+    field = parser.get_object_field(
         field_name=None,
         field=parser._schema_object(counts),  # noqa: SLF001
         required=True,
@@ -785,6 +792,8 @@ def get_additional_properties_root_field(
         ),
         alias=None,
     )
+    with_type_origin(with_field_origin(field, "root", location).data_type, location)
+    return field
 
 
 def object_map_key_type(  # noqa: PLR0913

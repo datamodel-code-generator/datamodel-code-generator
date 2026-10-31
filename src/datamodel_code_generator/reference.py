@@ -71,6 +71,9 @@ if TYPE_CHECKING:
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
+    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root", "tag"]
+    """What a field is built for: a property, a required name without one, the typed extra properties, the value of a
+    root model, or the discriminator tag that the L5 discriminator pass appends to a variant."""
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -335,6 +338,44 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     that two different schema objects reach (colliding parse paths) has none.
     """
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
+
+
+FIELD_ORIGIN_KEY: Final = "_field_origin"
+TYPE_ORIGIN_KEY: Final = "_type_origin"
+
+
+@record
+class FieldOrigin:
+    """Where a field is built: its kind, and the location of the schema object it is built from, if it has one.
+
+    The location is None for a field built from no schema object of its own (a required name, a discriminator tag, a
+    boolean property schema) or from one without a location.
+    """
+
+    kind: FieldOriginKind
+    location: SchemaLocation | None
+
+
+def field_origin_of(field: object) -> FieldOrigin | None:
+    """Return where a field was built (FIELD_ORIGIN); a copy of a field keeps the origin of the field it copies.
+
+    The builder of a field records it when it builds the field: the parser's builders in L1, the discriminator pass for
+    the tag fields it appends in L5. A field that no builder recorded, such as one a parser extension builds, has none.
+    """
+    return field.__dict__.get(FIELD_ORIGIN_KEY)
+
+
+def type_origin_of(data_type: object) -> SchemaLocation | None:
+    """Return the location of the schema object the parser built a type node from (TYPE_ORIGIN, final after L1).
+
+    ``parse_item`` records it on the node it returns for a subschema, and the root model builders on the type of a root
+    field; the innermost build keeps its record, so a node that a nested parse returned unchanged keeps the location of
+    the nested schema. The nodes a build makes inside the node it returns (a container, a union's members built from no
+    subschema of their own) have none: the nearest ancestor with an origin names their schema. A copy of a node keeps
+    the origin of the node it copies; a node a later pass builds, and a node built from a schema object without a
+    location, has none.
+    """
+    return data_type.__dict__.get(TYPE_ORIGIN_KEY)
 
 
 def _special_path(keyword: str, path: list[str]) -> list[str]:
