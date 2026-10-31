@@ -193,7 +193,7 @@ the helper, then the default below. The session types are imported from
 | Limit | Effective default |
 |---|---|
 | polls per session | {{ limits['polling']['max_polls'] }}; None removes it |
-| poll interval | the helper's declared interval, 1 second unless declared |
+| poll interval | the helper's declared interval, {{ limits['polling']['interval'] }} unless declared |
 | allowed wait before a poll | {{ limits['polling']['max_wait'] }}; None removes it |
 | session total timeout (`total_timeout`) | {{ limits['polling']['total_timeout'] }}; None removes it |
 

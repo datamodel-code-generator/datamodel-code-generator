@@ -41,6 +41,7 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
+from datamodel_code_generator._client.protocols import POLL_INTERVAL
 from datamodel_code_generator._client.runtime import (
     Capabilities,
     compresses,
@@ -51,7 +52,7 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._python_syntax import (
     call_text,
     escape_docstring,
@@ -577,6 +578,7 @@ _HELPER_LIMITS: Final = {
     },
     "polling": {
         "max_polls": _limit_text(_POLL_LIMITS.max_polls),
+        "interval": _limit_text(POLL_INTERVAL, f" {for_count(POLL_INTERVAL, 'second')}"),
         "max_wait": _limit_text(_POLL_LIMITS.max_wait, " seconds"),
         "total_timeout": _limit_text(_POLL_LIMITS.total_timeout, " seconds"),
     },
