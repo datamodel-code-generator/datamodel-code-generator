@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import TypeVar
 
+from ..client.timing import is_aware
 from .errors import configuration_error
 from .records import plain_copy
 
@@ -82,7 +83,7 @@ def state_expiry(value: JSONValue) -> datetime | None:
         expires_at = datetime.fromisoformat(text)
     except ValueError:
         raise MalformedStateError from None
-    require_state(expires_at.utcoffset() is not None and expires_at.isoformat() == text)
+    require_state(is_aware(expires_at) and expires_at.isoformat() == text)
     return expires_at
 
 
