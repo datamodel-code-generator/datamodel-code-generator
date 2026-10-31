@@ -16,7 +16,7 @@ from weakref import WeakKeyDictionary
 from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, final
 
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._phases import DecisionOutcome
@@ -164,10 +164,9 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
         An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key.
         """
         path = reference.path
-        by_path = self.get(path)
-        if by_path != self.assigned.get(path) or reference.source is None:
+        if (by_path := self.get(path)) != self.assigned.get(path):
             return by_path
-        return by_path if (by_key := self.by_key.get(model_key_of(reference))) is None else by_key
+        return by_path if (kept := keyed_or_path(reference, self.by_key, self)) is None else kept
 
 
 SortedDataModels = dict[ModelKey, DataModel]
