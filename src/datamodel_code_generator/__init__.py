@@ -528,7 +528,7 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
     if output is None and model_metadata is None and lockfile is None:
         return
 
-    from datamodel_code_generator._paths import lexical, resolved  # noqa: PLC0415
+    from datamodel_code_generator._paths import lexical, overlaps, resolved, same_file  # noqa: PLC0415
 
     targets = [
         (label, path, lexical(path), resolved(path))
@@ -542,14 +542,11 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
 
     for target_index, (label, _, absolute_path, resolved_path) in enumerate(targets):
         for other_label, _, other_absolute_path, resolved_other_path in targets[target_index + 1 :]:
-            same_path = absolute_path == other_absolute_path
-            if not same_path:
-                same_path = resolved_path == resolved_other_path or (
-                    absolute_path.exists()
-                    and other_absolute_path.exists()
-                    and absolute_path.samefile(other_absolute_path)
-                )
-            if same_path:
+            if (
+                absolute_path == other_absolute_path
+                or resolved_path == resolved_other_path
+                or same_file(absolute_path, other_absolute_path)
+            ):
                 if (label, other_label) == ("Output", "Model metadata"):
                     msg = f"Output and model metadata paths must be different: {absolute_path}"
                 else:
@@ -557,13 +554,7 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                 raise Error(msg)
             if "Remote lock" not in {label, other_label}:
                 continue
-            paths_overlap = (
-                absolute_path.is_relative_to(other_absolute_path)
-                or other_absolute_path.is_relative_to(absolute_path)
-                or resolved_path.is_relative_to(resolved_other_path)
-                or resolved_other_path.is_relative_to(resolved_path)
-            )
-            if paths_overlap:
+            if overlaps(absolute_path, other_absolute_path) or overlaps(resolved_path, resolved_other_path):
                 msg = f"{label} and {other_label} paths must not overlap: {absolute_path}"
                 raise Error(msg)
 
@@ -588,7 +579,9 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                     raise Error(msg)
                 continue
             target_exists = target.exists()
-            if (target == absolute_input and input_path.exists()) or (target_exists and target.samefile(input_path)):
+            if (target == absolute_input and input_path.exists()) or (
+                target_exists and same_file(target, input_path, missing="legacy-missing-input-raises")
+            ):
                 msg = f"{label} path must not overwrite an input path: {target}"
                 raise Error(msg)
 

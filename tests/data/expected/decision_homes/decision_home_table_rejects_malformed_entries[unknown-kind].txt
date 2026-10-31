@@ -1,1 +1,1 @@
-signature a.s: kind must be one of ancestor-walk, attribute-join, branch, call, compare-eq, compare-in, count-form, display, dotted-join, english-list, function, key, keyword, keyword-set, literal, mapping-guard, name, name-search, number, prefix-slice, split-each, subscript
+signature a.s: kind must be one of ancestor-walk, attribute-join, both-ways, branch, call, compare-eq, compare-in, count-form, display, dotted-join, english-list, function, key, keyword, keyword-set, literal, mapping-guard, name, name-search, number, prefix-slice, split-each, subscript

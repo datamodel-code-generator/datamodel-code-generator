@@ -121,7 +121,7 @@ from datamodel_code_generator._cli_config import (
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
-from datamodel_code_generator._paths import concrete_parent, resolved
+from datamodel_code_generator._paths import concrete_parent, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -711,17 +711,12 @@ def _resolved_artifact_paths(path: Path | None) -> tuple[Path | None, Path | Non
     return (None, None) if path is None else (resolved(path), concrete_parent(path))
 
 
-def _paths_overlap(first: Path, second: Path) -> bool:
-    """Return whether two output artifacts share a path or ancestor."""
-    return first == second or first in second.parents or second in first.parents
-
-
 def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
     """Return whether paths overlap or existing files refer to the same inode."""
-    if _paths_overlap(first, second):
+    if overlaps(first, second):
         return True
     try:
-        return first.exists() and second.exists() and first.samefile(second)
+        return same_file(first, second)
     except OSError:  # pragma: no cover - a raced path is handled by generation or publication
         return False
 
@@ -2055,7 +2050,7 @@ def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
                 if metadata is not None and file.staged_file == metadata.staged
                 else staged_plan.plan.resolved_output_root,
             )
-            if concrete_target != artifact_root and artifact_root not in concrete_target.parents:
+            if not concrete_target.is_relative_to(artifact_root):
                 msg = (
                     f"Job '{staged_plan.plan.name}' generated file escapes its output path: "
                     f"{file.target} resolves outside {artifact_root}"

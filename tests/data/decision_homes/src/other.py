@@ -301,3 +301,19 @@ def count_words(count, words):
         "one" if count == 2 else "two",
         words[0] if count == 1 else "many",
     )
+
+
+def relate(first, second, third):
+    """Test a relation both ways, by a method or a membership, among other tests; one way, two other values, a
+    relation not listed, the same value both ways and an ``and`` do not count.
+    """
+    return (
+        first.is_relative_to(second) or second.is_relative_to(first),
+        first == second or first in second.parents or second in first.parents,
+        third or first.is_relative_to(second.parent) or second.parent.is_relative_to(first),
+        first.is_relative_to(second) or third.is_relative_to(first),
+        first.is_relative_to(second) or first in second.parents,
+        first.startswith(second) or second.startswith(first),
+        first.is_relative_to(first) or first.is_relative_to(first),
+        first.is_relative_to(second) and second.is_relative_to(first),
+    )

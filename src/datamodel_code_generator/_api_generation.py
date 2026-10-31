@@ -25,7 +25,7 @@ from datamodel_code_generator._api_types import (
 from datamodel_code_generator._fastapi.packages import beside, services_package
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, lexical, resolved
+from datamodel_code_generator._paths import concrete, concrete_parent, lexical, overlaps, resolved
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -374,7 +374,7 @@ def _remote_lock(
     if owns_lock_update(config):
         config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         package = lexical(target.output, cwd)
-        if any(lockfile.is_relative_to(root) or root.is_relative_to(lockfile) for root in (package, package.resolve())):
+        if any(overlaps(lockfile, root) for root in (package, package.resolve())):
             from datamodel_code_generator import Error  # noqa: PLC0415
 
             label = (target._option_prefix or "target").capitalize()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
@@ -637,7 +637,7 @@ class _Planner:
                 parent = parents[location.parent] = concrete_parent(location)
                 for directory in (parent, *parent.parents):
                     directories.add(key := _collision_key(directory, target))
-                    if any(directory == root or root in directory.parents for root in roots):
+                    if any(directory.is_relative_to(root) for root in roots):
                         packages.add(key)
             locations.append(parent / location.name)
         seen: set[str] = set()
@@ -735,7 +735,7 @@ class _Planner:
         path = package
         if found := next((path for path in models if path in {module, package}), None):
             path, message = found, f"The models module has the name of {clash}: name the models otherwise, or {remedy}"
-        elif any(package in path.parents for path in models):
+        elif any(path.is_relative_to(package) for path in models):
             message = f"The models package would be {clash}: name the models otherwise, or {remedy}"
         elif (self.cwd / module).is_file():
             path, message = module, f"This module of yours has the name of {clash}: rename the module, or {remedy}"
