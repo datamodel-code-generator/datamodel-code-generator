@@ -1,4 +1,4 @@
-"""How generated Python spells a call, a subscript, a keyword argument, a display and an import statement.
+"""How generated Python spells a call, a subscript, a keyword argument, a display, an import statement and a string.
 
 Every writer of generated code that joins a variable number of expression texts into a call, a subscript or a tuple,
 list, set or dict display, passes a value text under a keyword its data names, or imports names, goes through this
@@ -7,6 +7,8 @@ a set without items, the colon of a dict entry, the equals sign of a keyword arg
 statement are written once. A value becomes its text first (``python_literal.represent_python_value`` or a target's
 own writer), a type renderer decides which types a subscript holds, a keyword written in a call's source text is that
 text's own, and a writer of imports decides which names it imports, in which order, and when one takes another name.
+The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal; the caller
+or its template writes the quotes.
 """
 
 from __future__ import annotations
@@ -15,6 +17,21 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+QUOTE_AND_CONTROL_ESCAPES = {
+    "'": r"\'",
+    "\b": r"\b",
+    "\f": r"\f",
+    "\n": r"\n",
+    "\r": r"\r",
+    "\t": r"\t",
+}
+"""The escapes the text of any single-quoted literal needs: the quote and the control characters. The text of a raw
+literal (a Pydantic pattern) needs these only, as it reads a backslash as itself."""
+
+SINGLE_QUOTED_ESCAPES = str.maketrans({"\u0000": r"\x00", "\\": r"\\", **QUOTE_AND_CONTROL_ESCAPES})
+"""The escapes of the text of a single-quoted literal that is not raw, as ``str.translate`` reads them (an enum value,
+a ``TypedDict`` key): the escapes above, the backslash, and the null byte, which a module cannot hold."""
 
 
 def call_text(head: str, arguments: Iterable[str], /) -> str:
