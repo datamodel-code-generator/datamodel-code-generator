@@ -413,8 +413,8 @@ what = "reads every target's builtins where the target's are meant; call _python
 audit = "C10-K05"
 
 [homes.Hx-free-names]
-decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
-core = ["_free_names.py"]
+decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free; a class takes the duplicate name suffix of its model type (its entry of --duplicate-name-suffix, the default entry, else the suffix given alone), as the target scopes do for a model's"
+core = ["_free_names.py", "reference.py:ModelResolver._get_suffix_for_model_type", "reference.py:ModelResolver._duplicate_name_suffix"]
 adapters = []
 
 [homes.Hx-free-names.signatures.name-search]
@@ -425,6 +425,19 @@ kind = "name-search"
 exclude = ["reference.py:FieldNameResolver.get_valid_name"]
 what = "searches for the first name its scope does not hold; call _free_names.py:first_free with the row of the feature's numbering"
 audit = "C09-N1"
+
+[homes.Hx-free-names.signatures.duplicate-suffix]
+kind = "name"
+names = ["duplicate_name_suffix_map"]
+# Left out: the places that hand the suffix map on to a resolver they make (its constructor, the module names of the
+# stdout repair and the resolvers of the name allocation schemes).
+exclude = [
+    "reference.py:ModelResolver.__init__",
+    "parser/_stdout_repair.py:flatten_invalid_modules",
+    "parser/_passes/_name_allocation.py:scheme_resolver",
+]
+what = "reads the duplicate name suffix of a model type itself; call reference.py:ModelResolver._duplicate_name_suffix"
+audit = "C09-N1b"
 
 [homes.Hx-name-words]
 decision = "how a class name is made from the words of a free text: its runs of ASCII letters and digits, each titled by the feature's row, joined, with the feature's prefix for a name that would start with a digit"
@@ -497,7 +510,7 @@ what = "makes a parsed float source-safe itself; call python_literal.py:_convert
 audit = "C18-7a"
 
 [homes.Hx-module-paths]
-decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py, the dotted name a model has across modules (its module's dotted name and its class name, the class name alone in the root module), and whether a module lies below a package or within it"
+decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py, the dotted name of a name in a module (the module's dotted name and the name, the name alone without a module: a model across modules, the path an import names, a runtime symbol, a package beside another), and whether a module lies below a package or within it"
 core = ["_module_paths.py"]
 adapters = []
 
@@ -552,25 +565,23 @@ audit = "C09-N7"
 [homes.Hx-module-paths.signatures.dotted-packages]
 kind = "split-each"
 strings = ["."]
-# Left out: the client's resource namespaces, dotted names of operations that the client plans by itself.
-exclude = ["_client/plan.py:Planner.named", "_client/plan.py:Planner.resources"]
 what = "splits the dotted names of a module path into packages itself; call _module_paths.py:package_path (or expanded_path, written_path)"
 audit = "C09-N7"
 
 [homes.Hx-module-paths.signatures.dotted-model-name]
 kind = "dotted-join"
 strings = ["."]
-# Left out: the dotted paths of Python symbols that an import, a runtime symbol of a type expression or a type override
-# names, the package name of a server found on disk, and Avro full names (a namespace and a name, by the Avro rules).
-exclude = [
-    "_api_generation.py:_Planner.other_server",
-    "_python_type_annotation.py:_runtime_symbol_name",
-    "_target_binding.py:_bound",
-    "parser/_type_overrides.py:_override_path",
-    "parser/avro.py:_AvroSchemaConverter._make_name",
-]
-what = "joins a model's class name to the dotted name of its module itself; call _module_paths.py:dotted_name"
+# Left out: Avro full names (a namespace and a name, by the Avro rules).
+exclude = ["parser/avro.py:_AvroSchemaConverter._make_name"]
+what = "joins a name to the dotted name of its module itself; call _module_paths.py:dotted_name"
 audit = "C09-N8"
+
+[homes.Hx-module-paths.signatures.import-path]
+kind = "attribute-join"
+strings = ["."]
+names = ["from_", "import_", "import_from", "import_name"]
+what = "joins an import's module and name itself; call imports.py:_import_path (or _module_paths.py:dotted_name)"
+audit = "C04-K05"
 
 [homes.Hx-module-paths.signatures.module-ancestry]
 kind = "prefix-slice"
@@ -578,6 +589,19 @@ kind = "prefix-slice"
 exclude = ["parser/jsonschema.py:JsonSchemaParser._is_named_schema_definition_path"]
 what = "tests whether a module path starts with a package's itself; call _module_paths.py:is_below (or is_within)"
 audit = "C09-N10"
+
+[homes.Hx-services-package]
+decision = "the package of the user's implementations that a server package imports: services, beside the server package (in its parent package, at the top level for a top-level server package), and the dotted name of another package beside it"
+core = ["_fastapi/packages.py"]
+adapters = []
+
+[homes.Hx-services-package.signatures.services-name]
+kind = "literal"
+contains = [".services"]
+# Left out: the module services.py inside the server package, which holds the Protocols the implementations follow.
+exclude = ["_fastapi/render.py:ServerRenderer.stub"]
+what = "spells the services package beside a server package itself; call _fastapi/packages.py:services_package"
+audit = "C09-N12"
 
 [homes.Hx-regex-engine]
 decision = "whether Pydantic needs Python's re (the python-re engine) for a pattern: a model's config, the models that use a type alias, a schema validator's adapter"
@@ -1717,13 +1741,18 @@ what = "spells the options keyword or class of a helper kind itself; read client
 audit = "C26-7"
 
 [homes.Hx-client-names]
-decision = "the names a client package's generated modules define for each other: the constant or function of a family that serves a module's index-th item (an operation's registry plan and security binding, its keywords record, a helper's plans and typed accessors, a use's model codec), an operation's response alias and header decoder and the constant of its header decoders (row legacy-header-constant-by-upper: the method name upper-cased, reserved but never claimed in the types module), and the classes of a resource and its views in the sync and asyncio modules"
+decision = "the names a client package's generated modules define for each other: the constant or function of a family that serves a module's index-th item (an operation's registry plan and security binding, its keywords record, a helper's plans and typed accessors, a use's model codec), an operation's response alias and header decoder, the constant of its header decoders (row legacy-header-constant-by-upper: the method name upper-cased, reserved but never claimed in the types module), the classes of a resource and its views in the sync and asyncio modules, a resource's PascalCase name (the class name of each part of its dotted namespace, joined), the namespaces a resource opens (its outer ones first) and its parts, and the class of a helper namespace (the target's PascalCase parts, then Protocols)"
 core = [
     "_client/naming.py:numbered",
     "_client/naming.py:response_alias",
     "_client/naming.py:header_decoder",
     "_client/naming.py:header_constant",
     "_client/naming.py:resource_class",
+    "_client/naming.py:helper_classes",
+    "_client/naming.py:namespace_class",
+    "_client/plan.py:Planner._resource_pascal",
+    "_client/plan.py:_opened",
+    "_client/plan.py:_namespace_parts",
 ]
 adapters = []
 
@@ -1748,6 +1777,13 @@ paths = ["_client/render.py", "_client/codec_render.py", "_client/webhooks.py", 
 exclude = ["_client/webhooks.py:_Webhooks.module", "_client/webhooks.py:_Webhooks.unsigned"]
 what = "spells a name a client package's modules define for each other itself; call client/naming.py:numbered, header_constant or header_decoder"
 audit = "C22-G3"
+
+[homes.Hx-client-names.signatures.namespace-class]
+kind = "literal"
+contains = ["Protocols"]
+paths = ["_client/"]
+what = "spells the class of a helper namespace itself; call client/naming.py:namespace_class"
+audit = "C09-N14"
 
 [homes.Hx-client-capabilities]
 decision = "what a client package declares from its operations and helpers: an operation accepting gzip request bodies, which the clients then compress on request, the pagination helpers among its helpers and whether one follows the URLs a server gives (a next-URL or Link continuation), and whether a cache helper is among them"

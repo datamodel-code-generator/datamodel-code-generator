@@ -29,6 +29,7 @@ from datamodel_code_generator._target_contract import (
     wrapped_type,
 )
 from datamodel_code_generator._target_types import present, without_none
+from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -326,7 +327,7 @@ class ModelFacts:
 
 
 def _name(value: TypeView) -> str | None:
-    """Return the dotted name of a builtin or imported type, or None for any other type."""
+    """Return the dotted name of a builtin or imported type, or None for any other type, a module import included."""
     if isinstance(value, BuiltinType):
         return value.name
-    return f"{value.import_.from_}.{value.import_.import_}" if isinstance(value, ImportedType) else None
+    return _import_path(value.import_) if isinstance(value, ImportedType) and value.import_.from_ else None

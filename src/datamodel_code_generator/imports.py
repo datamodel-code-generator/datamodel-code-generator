@@ -12,6 +12,7 @@ from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._requirements import backport_path
 
@@ -22,6 +23,14 @@ if TYPE_CHECKING:
 def _bound_name(from_: str | None, name: str, alias: str | None) -> str:
     """Return the name an import binds: its alias, else the first part of a module import or the imported name."""
     return alias or (name.partition(".")[0] if from_ is None else name)
+
+
+def _import_path(import_: Import) -> str:
+    """Return the dotted path an import names: its module's and its name's, or the module alone for ``import m``.
+
+    ``Import.from_full_path`` splits such a path back into its import.
+    """
+    return dotted_name(import_.from_, import_.import_)
 
 
 @dataclass(frozen=True)

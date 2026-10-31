@@ -190,9 +190,11 @@ class TargetNames:
         """Capture the naming rules of a parser's model resolver."""
         from datamodel_code_generator.reference import ModelType  # noqa: PLC0415
 
-        suffixes = model_resolver.duplicate_name_suffix_map
-        suffix = suffixes.get("model", suffixes.get("default")) or model_resolver.duplicate_name_suffix
-        return cls(model_resolver.field_name_resolvers[ModelType.CLASS], suffix, model_resolver.naming_strategy)
+        return cls(
+            model_resolver.field_name_resolvers[ModelType.CLASS],
+            model_resolver._duplicate_name_suffix("model"),  # noqa: SLF001
+            model_resolver.naming_strategy,
+        )
 
     def function(self, text: str) -> str:
         """Return the snake_case name of a method, handler, resource, or module."""

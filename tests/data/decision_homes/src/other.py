@@ -258,3 +258,16 @@ def import_lines(module, names):
         f"import {', '.join(names)}",
         f"from {module} import {'; '.join(names)}",
     )
+
+
+def import_paths(item, other, module):
+    """Join two listed attributes at a separator; another separator or attribute, a name and more text do not count."""
+    return (
+        f"{item.from_}.{item.import_}",
+        f"{other.import_from}.{item.import_}",
+        f"{item.from_}/{item.import_}",
+        f"{item.from_}.{item.name}",
+        f"{module}.{item.import_}",
+        f"{item.from_}.{item.import_}.py",
+        f"{item.from_!r}.{item.import_}",
+    )

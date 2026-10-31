@@ -1,1 +1,1 @@
-sample: 27 entries, 64 hits
+sample: 28 entries, 66 hits

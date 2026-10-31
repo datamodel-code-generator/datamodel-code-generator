@@ -22,6 +22,7 @@ from datamodel_code_generator._fastapi._compiled_templates import readme as read
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import security as security_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
+from datamodel_code_generator._fastapi.packages import SERVICES, services_package
 from datamodel_code_generator._fastapi.plan import (
     Default,
     JsonPartSpec,
@@ -533,7 +534,7 @@ class Owned:
     @property
     def path(self) -> PurePosixPath:
         """Return the module's file relative to the directory that holds the server package."""
-        return PurePosixPath("services", f"{self.stem}.py")
+        return PurePosixPath(SERVICES, f"{self.stem}.py")
 
     @property
     def file(self) -> str:
@@ -612,8 +613,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     @property
     def services_package(self) -> str:
         """Return the package of the user's implementations: `services`, beside the server package."""
-        parent = self.config.package.rpartition(".")[0]
-        return f"{parent}.services" if parent else "services"
+        return services_package(self.config.package)
 
     @cached_property
     def owned(self) -> tuple[Owned, ...]:
@@ -680,21 +680,18 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             "datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it."
         )
         return (
-            self.file(
-                PurePosixPath("services", "__init__.py"), "package", self.facade(self.services_package, docstring)
-            ),
+            self.file(PurePosixPath(SERVICES, "__init__.py"), "package", self.facade(self.services_package, docstring)),
             *(RenderedFile(path=item.path, kind="implementation", text=item.source) for item in owned),
         )
 
     def next_steps(self) -> NextSteps:
         """Return the README, the entrypoint and its application, and the implementations it imports."""
-        services = self.services_package.rpartition(".")[2]
         return NextSteps(
             readme=Path("README.md"),
             app=f"{self.config.package}.main:app",
             entrypoint=Path("main.py"),
             implementations=tuple(
-                Implementation(module=item.module, name=item.name, path=Path(services, f"{item.stem}.py"))
+                Implementation(module=item.module, name=item.name, path=Path(SERVICES, f"{item.stem}.py"))
                 for item in self.owned
             ),
         )

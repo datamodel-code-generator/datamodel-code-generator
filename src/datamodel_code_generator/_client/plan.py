@@ -307,7 +307,7 @@ class ResourceSpec:
     @property
     def parts(self) -> tuple[str, ...]:
         """Return the namespace's dotted parts."""
-        return tuple(self.namespace.split("."))
+        return _namespace_parts(self.namespace)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -426,7 +426,7 @@ class Planner:
         setting = self.settings.get(operation.id.use_site.pointer)
         name = self.method(operation, setting)
         resource = self.resource(operation, setting)
-        scopes = (*resource.split("."), name)
+        scopes = (*_namespace_parts(resource), name)
         parameters = self.parameters(operation, setting, scopes)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
@@ -560,7 +560,7 @@ class Planner:
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.resource, []).append(spec)
-        namespaces = {".".join(parts[:size]) for parts in map(_parts_of, members) for size in range(1, len(parts) + 1)}
+        namespaces = {namespace for resource in members for namespace in _opened(resource)}
         named = list(specs)
         for namespace, operations in members.items():
             scope = NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace)
@@ -571,7 +571,7 @@ class Planner:
                     self.problems.append(_problem("E_NAME_COLLISION", message))
             for name in RESERVED_MEMBERS:
                 scope.take(name)
-            parts = tuple(namespace.split("."))
+            parts = _namespace_parts(namespace)
             derived = [spec for spec in operations if spec.index not in explicit]
             claimed = dict(
                 zip(
@@ -581,7 +581,7 @@ class Planner:
                 )
             )
             methods = [claimed.get(spec.index, spec.name) for spec in operations]
-            prefix = ("".join(map(self.names.pascal, parts)),)
+            prefix = (self._resource_pascal(namespace),)
             pascals = type_names(
                 self.names, ((name, spec.contract, prefix) for spec, name in zip(operations, methods, strict=True))
             )
@@ -1060,13 +1060,16 @@ class Planner:
             resolved.append(spec)
         return tuple(resolved)
 
+    def _resource_pascal(self, namespace: str) -> str:
+        """Return the PascalCase name of a resource namespace: the class name of each of its parts, joined."""
+        return "".join(map(self.names.pascal, _namespace_parts(namespace)))
+
     def resources(self, specs: tuple[OperationSpec, ...]) -> tuple[ResourceSpec, ...]:
         """Group operations by namespace, with every parent namespace, and check the names each resource holds."""
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
-            parts = spec.resource.split(".")
-            for size in range(1, len(parts) + 1):
-                members.setdefault(".".join(parts[:size]), [])
+            for namespace in _opened(spec.resource):
+                members.setdefault(namespace, [])
             members[spec.resource].append(spec)
         children: dict[str, list[str]] = {namespace: [] for namespace in members}
         for namespace in members:
@@ -1091,14 +1094,22 @@ class Planner:
                 namespace=namespace,
                 operations=tuple(operations),
                 children=tuple(children[namespace]),
-                pascal="".join(self.names.pascal(part) for part in namespace.split(".")),
+                pascal=self._resource_pascal(namespace),
             )
             for namespace, operations in members.items()
         )
 
 
-def _parts_of(namespace: str) -> list[str]:
-    return namespace.split(".")
+def _namespace_parts(namespace: str) -> tuple[str, ...]:
+    """Return the names of a dotted resource namespace."""
+    return tuple(namespace.split("."))
+
+
+def _opened(namespace: str) -> Iterator[str]:
+    """Yield each namespace a resource namespace opens, its outermost first and itself last."""
+    parts = _namespace_parts(namespace)
+    for size in range(1, len(parts) + 1):
+        yield ".".join(parts[:size])
 
 
 def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:

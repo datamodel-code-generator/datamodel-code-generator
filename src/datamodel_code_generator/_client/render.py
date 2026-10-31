@@ -33,6 +33,7 @@ from datamodel_code_generator._client.naming import (
     header_constant,
     header_decoder,
     helper_classes,
+    namespace_class,
     numbered,
     pascal_parts,
     resource_class,
@@ -2671,7 +2672,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         cached = module.name("functools", "cached_property")
         namespaces = [
             Namespace(
-                f"{prefix}{pascal_parts(parts, self.python_version)}Protocols" if parts else root,
+                f"{prefix}{namespace_class(parts, self.python_version)}" if parts else root,
                 f"The {'.'.join(parts)} protocol helpers." if parts else "The protocol helpers of this API.",
                 core if parts else base_core,
                 "" if parts else core,
