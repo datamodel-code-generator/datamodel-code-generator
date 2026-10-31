@@ -22,6 +22,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
@@ -38,7 +39,10 @@ from datamodel_code_generator.types import Types
 try:
     import graphql
 except ImportError as exc:  # pragma: no cover
-    msg = "Please run `$pip install 'datamodel-code-generator[graphql]`' to generate data-model from a GraphQL schema."
+    msg = (
+        f"Please run {install_command('graphql', row='legacy-graphql-quote')} "
+        "to generate data-model from a GraphQL schema."
+    )
     raise Exception(msg) from exc  # noqa: TRY002
 
 

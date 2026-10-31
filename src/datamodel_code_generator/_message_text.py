@@ -1,21 +1,41 @@
-"""How the generator's messages write English: a list of items, the items left out of one, and a word for a count.
+"""How the generator's messages write English: lists, counts, install hints and the lines of a paragraph.
 
 A message lists items with a conjunction (``english_list``), names the first items of a longer list and how many more
-there are (``listed_with_more``), and writes a word or a counted noun in its form for a number (``for_count``,
-``counted``). The module imports only the standard library, so every layer can import it.
+there are (``listed_with_more``), writes a word or a counted noun in its form for a number (``for_count``,
+``counted``), names an extra of the generator or the pip command that installs it (``extra_requirement``,
+``install_command``), and a text report wraps a paragraph into lines (``wrapped_lines``). The module imports only the
+standard library, so every layer can import it.
 """
 
 from __future__ import annotations
 
+from textwrap import wrap
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-__all__ = ["Conjunction", "ListForm", "counted", "english_list", "for_count", "listed_with_more"]
+__all__ = [
+    "Conjunction",
+    "InstallPrompt",
+    "InstallRow",
+    "ListForm",
+    "counted",
+    "english_list",
+    "extra_requirement",
+    "for_count",
+    "install_command",
+    "listed_with_more",
+    "wrapped_lines",
+]
 
 Conjunction: TypeAlias = Literal["and", "or"]
 ListForm: TypeAlias = Literal["final", "serial", "each"]
+InstallPrompt: TypeAlias = Literal["$", "$ ", ""]
+InstallRow: TypeAlias = Literal["code", "plain", "legacy-graphql-quote"]
+"""How ``install_command`` writes the command: as a code span, as plain text, or as the GraphQL hint of 0.87.0 does."""
+
+_REPORT_WIDTH = 100
 
 
 def english_list(items: Iterable[str], conjunction: Conjunction, form: ListForm = "final") -> str:
@@ -53,3 +73,29 @@ def for_count(count: int, one: str, many: str | None = None) -> str:
 def counted(count: int, noun: str) -> str:
     """Return ``count`` followed by ``noun`` in its form for that count: ``1 key``, ``3 keys``, ``0 classes``."""
     return f"{count} {for_count(count, noun)}"
+
+
+def extra_requirement(extra: str) -> str:
+    """Return the requirement that installs the generator with an extra: ``datamodel-code-generator[extra]``."""
+    return f"datamodel-code-generator[{extra}]"
+
+
+def install_command(extra: str, *, prompt: InstallPrompt = "$", row: InstallRow = "code") -> str:
+    """Return the pip command that installs the generator with ``extra``, written after ``prompt``.
+
+    Row ``code`` writes it as a code span (`` `$pip install 'datamodel-code-generator[x]'` ``), ``plain`` without the
+    backticks. Row ``legacy-graphql-quote`` writes the closing backtick before the closing quote.
+    """
+    command = f"{prompt}pip install '{extra_requirement(extra)}"
+    if row == "plain":
+        return f"{command}'"
+    return f"`{command}`'" if row == "legacy-graphql-quote" else f"`{command}'`"
+
+
+def wrapped_lines(text: str, indent: str, subsequent_indent: str | None = None) -> list[str]:
+    """Wrap a paragraph of a text report into lines of at most 100 columns, never broken at a hyphen.
+
+    The first line starts with ``indent``, the others with ``subsequent_indent`` (``indent`` when it is None).
+    """
+    subsequent = indent if subsequent_indent is None else subsequent_indent
+    return wrap(text, width=_REPORT_WIDTH, initial_indent=indent, subsequent_indent=subsequent, break_on_hyphens=False)

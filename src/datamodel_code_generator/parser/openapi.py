@@ -1232,11 +1232,13 @@ class OpenAPIParser(JsonSchemaParser):
                                 encoding=self.encoding,
                             )
                         except ImportError:  # pragma: no cover
+                            from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
                             warn(
                                 "Warning: Validation was skipped for OpenAPI. "
                                 "`prance` or `openapi-spec-validator` are not installed.\n"
                                 "To use --validation option after datamodel-code-generator 0.24.0, "
-                                "Please run `$pip install 'datamodel-code-generator[validation]'`.\n",
+                                f"Please run {install_command('validation')}.\n",
                                 stacklevel=2,
                             )
 

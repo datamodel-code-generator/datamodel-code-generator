@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from textwrap import fill  # noqa: F401  # Preserve the established experimental export.
 from typing import Literal
 
+from datamodel_code_generator._message_text import extra_requirement
 from datamodel_code_generator._registry_render import (
     _RegistryPage,
     _render_registry,
@@ -108,12 +109,12 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "extra.httpx2": ExperimentalFeature(
         id="extra.httpx2",
         kind="extra",
-        target="datamodel-code-generator[httpx2]",
+        target=extra_requirement("httpx2"),
         message="The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
         since_version="0.71.1",
         note=(
-            "`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; "
-            "`datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable "
+            f"`{extra_requirement('http')}` remains the stable HTTPX backend and is not deprecated; "
+            f"`{extra_requirement('httpx2')}` is experimental. The default HTTP backend policy is auto: stable "
             "httpx is selected when its client module is installed, including when both pairs are installed, and "
             "experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or "
             "`HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency "

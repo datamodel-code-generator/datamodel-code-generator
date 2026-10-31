@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
 
@@ -686,8 +687,8 @@ def _get_http_stack(http_backend: HTTPBackend = HTTPBackend.AUTO) -> _HTTPStack[
             return stack
 
         msg = (
-            "Please run `$pip install 'datamodel-code-generator[http]'` to resolve HTTP(S) URL references, "
-            "or install the experimental `datamodel-code-generator[httpx2]` extra"
+            f"Please run {install_command('http')} to resolve HTTP(S) URL references, "
+            f"or install the experimental `{extra_requirement('httpx2')}` extra"
         )
         raise Exception(msg) from None  # noqa: TRY002
 
@@ -700,10 +701,7 @@ def _get_http_stack(http_backend: HTTPBackend = HTTPBackend.AUTO) -> _HTTPStack[
     except ModuleNotFoundError as exc:
         if exc.name != backend:
             raise
-        msg = (
-            f"The explicitly selected {backend} HTTP backend is not installed. "
-            f"Please run `$pip install 'datamodel-code-generator[{extra}]'`."
-        )
+        msg = f"The explicitly selected {backend} HTTP backend is not installed. Please run {install_command(extra)}."
         raise ModuleNotFoundError(msg, name=backend) from None
 
 

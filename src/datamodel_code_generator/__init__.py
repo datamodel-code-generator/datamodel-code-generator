@@ -326,7 +326,9 @@ def enable_debug_message() -> None:  # pragma: no cover
         pysnooper.tracer.DISABLED = False
         _pysnooper_default_state_set = True
     except ImportError as err:
-        msg = "Please run `$pip install 'datamodel-code-generator[debug]'` to use debug option"
+        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
+        msg = f"Please run {install_command('debug')} to use debug option"
         raise Exception(msg) from err  # noqa: TRY002
 
 

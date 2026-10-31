@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from textwrap import fill
 from typing import TYPE_CHECKING, Any, Literal
 
 from datamodel_code_generator._json_output import dump_json
+from datamodel_code_generator._message_text import wrapped_lines
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -50,7 +50,7 @@ def _render_registry_table(entries: Sequence[Any], page: _RegistryPage) -> str:
     if page.table_notes:
         lines += ["", "Notes:"]
         lines.extend(
-            f"{entry.id}:\n{fill(note, width=100, initial_indent='  ', subsequent_indent='  ', break_on_hyphens=False)}"
+            f"{entry.id}:\n" + "\n".join(wrapped_lines(note, "  "))
             for entry in entries
             if (note := entry.note) is not None
         )
