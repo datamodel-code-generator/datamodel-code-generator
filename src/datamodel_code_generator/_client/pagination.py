@@ -15,8 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
-from datamodel_code_generator._client.plan import schema_use
-from datamodel_code_generator._client.protocol_plan import HelperPlanner
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
@@ -256,15 +255,6 @@ class _Pages(HelperPlanner):
             else self.facts.field_types(member.model_facts)
         )
 
-    def item_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
-        """Return the type a helper's item schema is read as in a direction, or say its document has no such pointer.
-
-        None is a schema no model stands for.
-        """
-        if (location := self.location(reference)) is None:
-            return "missing"
-        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
-
     def read_as(self, expected: TypeView) -> tuple[TypeView, ...]:
         """Return the types an item schema's type is read as, without None and through aliases.
 
@@ -314,8 +304,8 @@ class _Pages(HelperPlanner):
 
         A value is read as a schema when it is the schema's type, through None and aliases.
         """
-        if (expected := self.item_type(reference, direction)) == "missing":
-            message = f"The {noun} {reference.pointer!r} of {helper.name!r} does not exist in its document"
+        if (expected := self.schema_type(reference, direction)) == "missing":
+            message = missing_schema(helper, noun, reference)
         elif value is None or expected is None or self.present(value) not in self.read_as(expected):
             message = f"The {noun} {reference.pointer!r} of {helper.name!r} is not {mismatch}"
         else:

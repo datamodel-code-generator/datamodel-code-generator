@@ -72,8 +72,8 @@ def runtime_record(
     """Return the constructor of a runtime record, naming its class through `local`; defaults are left out.
 
     Each field the constructor takes is passed by keyword unless it holds its default, spelled by `spelled` when given,
-    else a runtime record by its own constructor and any other value by its repr. The class is named from the module of
-    the package's runtime copy that defines it.
+    else a runtime record by its own constructor, a tuple item by item, and any other value by its repr. The class is
+    named from the module of the package's runtime copy that defines it.
     """
     entries = [
         keyword_argument(item.name, _record_value(local, value) if spelled is None else spelled(item.name, value))
@@ -85,6 +85,8 @@ def runtime_record(
 
 
 def _record_value(local: Callable[[str, str], str], value: object) -> str:
+    if type(value) is tuple:
+        return tuple_display(_record_value(local, item) for item in value)
     return runtime_record(local, value) if is_dataclass(value) and not isinstance(value, type) else repr(value)
 
 

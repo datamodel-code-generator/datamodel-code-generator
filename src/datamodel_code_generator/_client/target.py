@@ -117,7 +117,7 @@ class ClientTarget:
             plan = Planner(request, config, wire, facts, helping).plan()
         except PlanError as error:
             raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
-        events, hooked = webhook_uses(protocols, request)
+        events, hooked = webhook_uses(protocols, plan, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
         streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
         opened, messages, socket_problems = socket_uses(protocols, plan, request)

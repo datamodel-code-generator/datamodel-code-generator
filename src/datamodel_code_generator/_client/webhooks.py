@@ -14,13 +14,12 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module, statement
-from datamodel_code_generator._client.plan import schema_use
-from datamodel_code_generator._client.protocol_plan import _problem
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, _problem, missing_schema
 from datamodel_code_generator._client.render import Function
-from datamodel_code_generator._client.streams import _events
+from datamodel_code_generator._client.streams import _events, discriminator
 from datamodel_code_generator._python_syntax import call_text, dict_display, subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._target_contract import OperationId, schema_uses
+from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.codec_render import UseAccessors
+    from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._format_types import PythonVersion
@@ -146,7 +146,7 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
 
 
 def webhook_uses(
-    protocols: Protocols | None, request: TargetRequest
+    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
 ) -> tuple[tuple[WebhookSpec, ...], dict[str, list[Diagnostic]]]:
     """Return each enabled webhook helper with its events' request-body uses, and each such helper's problems.
 
@@ -172,15 +172,15 @@ def webhook_uses(
         and use.type is not None
         and media_kind(use.id.media or "") == "json"
     ]
-    schemas = schema_uses(request.batch.type_uses)
+    planner = HelperPlanner(protocols, plan, request)
 
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
-        if not request.lease.exists(location := protocols.locations[reference]):
-            message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
-            problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
+        if (expected := planner.schema_type(reference, "request")) == "missing":
+            problems[helper.name].append(
+                _problem("E_CONFIG_VALUE", "config", at, missing_schema(helper, "event_schema", reference))
+            )
             return None
-        expected = None if (bound := schema_use(schemas, location, "request")) is None else bound.type
         if expected is None or (use := next((item for item in candidates if item.type == expected), None)) is None:
             message = (
                 f"The event_schema {reference.pointer!r} of {helper.name!r} is not the schema of a JSON request body "
@@ -280,10 +280,9 @@ class _Webhooks:
         for event in spec.events:
             assert event.use.type is not None
             types[module.hint(event.use.type)] = None
-        first = spec.events[0]
-        if first.name is None:
-            return module.union(*types), self.decoder(module, first)
-        pointer = spec.helper.tree["event_schema"]["discriminator"]["pointer"]
+        if (selector := discriminator(spec.helper)) is None:
+            return module.union(*types), self.decoder(module, spec.events[0])
+        pointer = selector["pointer"]
         mapping = dict_display((repr(event.name), self.decoder(module, event)) for event in spec.events)
         return module.union(*types), call_text(module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), mapping))
 

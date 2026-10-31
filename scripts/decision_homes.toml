@@ -1105,6 +1105,8 @@ audit = "M-09"
 kind = "key"
 keys = ["discriminator", "propertyName", "mapping"]
 paths = ["_target_binding.py", "_client/", "_fastapi/", "_openapi_codec_plan.py", "_openapi_wire_plan.py"]
+# A stream or webhook helper's configuration names its events' discriminator and mapping too: no schema is read there.
+exclude = ["_client/protocols.py:_Validator.stream", "_client/streams.py:_events", "_client/streams.py:discriminator"]
 what = "reads a discriminator of a raw schema; read the H11 tag plan (variant_tags, mapped_tags)"
 audit = "M-09"
 
@@ -1716,7 +1718,7 @@ what = "lists the WebSocket message codecs itself; read client/protocols.py:MESS
 audit = "C26-3"
 
 [homes.Hx-runtime-record-text]
-decision = "how generated code spells a runtime record the generator holds: its class named from the module of the package's runtime copy that defines it, each field the constructor takes by keyword unless it holds the field's default, a record in a field by its own constructor (a parameter plan's members by their positional FieldPlan constructors)"
+decision = "how generated code spells a runtime record the generator holds: its class named from the module of the package's runtime copy that defines it, each field the constructor takes by keyword unless it holds the field's default, a record in a field by its own constructor and a tuple item by item (a parameter plan's members by their positional FieldPlan constructors)"
 core = ["_target_render.py:runtime_record", "_target_render.py:_record_value"]
 adapters = []
 
@@ -1735,10 +1737,59 @@ strings = [
     "CursorPlan",
     "NextUrlPlan",
     "ParameterPlan",
+    "ServerPlan",
+    "ServerVariable",
+    "IdempotencyPlan",
+    "BodyFields",
+    "FieldArguments",
 ]
 paths = ["_client/", "_fastapi/"]
 what = "spells the constructor of a runtime record by hand; build the record and call _target_render.py:runtime_record"
 audit = "C26-9"
+
+[homes.Hx-helper-schemas]
+decision = "where a protocol helper's schema reference is and the type its value use is read or sent as in a direction, a reference whose document has no such pointer refused in one message"
+core = [
+    "_client/protocol_plan.py:HelperPlanner.location",
+    "_client/protocol_plan.py:HelperPlanner.schema_type",
+    "_client/protocol_plan.py:missing_schema",
+]
+adapters = []
+
+[homes.Hx-helper-schemas.signatures.schema-exists]
+kind = "call"
+names = ["exists"]
+paths = ["_client/"]
+what = "tests that a helper's schema reference exists itself; call client/protocol_plan.py:HelperPlanner.location or schema_type"
+audit = "C26-14"
+
+[homes.Hx-helper-schemas.signatures.missing-schema-text]
+kind = "literal"
+contains = ["does not exist in its document"]
+paths = ["_client/"]
+what = "words the refusal of a missing helper schema itself; call client/protocol_plan.py:missing_schema"
+audit = "C26-14"
+
+[homes.Hx-event-routes]
+decision = "how an SSE, NDJSON or webhook helper routes its events: the selector its discriminator reads, none for one event schema, and whether a stream helper gives an event of an unmapped type as an UnknownEvent"
+core = ["_client/streams.py:discriminator", "_client/streams.py:StreamSpec"]
+adapters = []
+
+[homes.Hx-event-routes.signatures.event-discriminator]
+kind = "key"
+keys = ["discriminator"]
+paths = ["_client/"]
+what = "reads the discriminator of a helper's event schema itself; call client/streams.py:discriminator"
+audit = "C26-13"
+
+[homes.Hx-event-routes.signatures.unknown-events]
+kind = "compare-eq"
+values = ["raw"]
+paths = ["_client/"]
+# The validator refuses 'raw' without a discriminator while it builds the configuration.
+exclude = ["_client/protocols.py:_Validator.stream"]
+what = "decides whether a stream helper keeps unknown events itself; read client/streams.py:StreamSpec.keeps_unknown"
+audit = "C26-11"
 
 [homes.Hx-target-files]
 decision = "how a target turns its output into files: the roles it renders its modules through (a template directory's overrides, or the builtins without one) and the copies of the runtime modules it declares, which the coordinator heads and encodes without formatting"
@@ -3064,14 +3115,8 @@ fix = "#5769"
 [allow."src/datamodel_code_generator/_client/polling.py"."_Polls.result"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.stream"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
-
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
-
-[allow."src/datamodel_code_generator/_client/render.py"."_Helpers.stream_plan"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.upload"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
@@ -3082,20 +3127,8 @@ fix = "#5769"
 [allow."src/datamodel_code_generator/_client/sockets.py"."_references"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_client/streams.py"."_Streams.terminal"]
-"H11.target-tag-key" = { home = "H11", count = 2, audit = "M-09" }
-
-[allow."src/datamodel_code_generator/_client/streams.py"."_discriminated"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
-
-[allow."src/datamodel_code_generator/_client/streams.py"."_events"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
-
 [allow."src/datamodel_code_generator/_client/target.py"."_named"]
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
-
-[allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.event"]
-"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
 [allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.plan"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
