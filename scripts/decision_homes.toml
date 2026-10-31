@@ -353,6 +353,28 @@ exclude = ["_target_unicode.py"]
 what = "decides a name by the running interpreter's Unicode itself; read untrusted data through python_literal.py:_normalized_safe_python_name, or call the core with the target's row"
 audit = "C10-K16"
 
+[homes.Hx-fold-key]
+decision = "the key two names or paths of generated files compare in, as case-insensitive file systems compare them: NFC, then case-folded by the target's rules (row nfc), or case-folded only (row legacy-fold-without-nfc); a reserved file name (a Windows device, a package's __init__) is compared in the same key"
+core = ["_target_naming.py:fold_key"]
+adapters = ["_target_naming.py:NameScope._key", "_client/plan.py:Planner.resources"]
+
+[homes.Hx-fold-key.signatures.casefold-call]
+kind = "call"
+names = ["casefold"]
+# Left out: _target_unicode.py, which defines the case tables, and the entrypoint's imports of the FastAPI
+# implementations, an order (case-insensitive) rather than a key two names compare in.
+exclude = ["_target_unicode.py", "_fastapi/render.py:ServerRenderer.main"]
+what = "folds names or paths for a comparison itself; call _target_naming.py:fold_key with the row of the feature"
+audit = "C10-K02"
+
+[homes.Hx-fold-key.signatures.legacy-row]
+kind = "literal"
+contains = ["legacy-fold-without-nfc"]
+# Left out: the module code of _target_naming.py, which defines the row.
+exclude = ["_target_naming.py:<module>"]
+what = "compares names case-folded without NFC; call _target_naming.py:fold_key with row nfc"
+audit = "C10-K02"
+
 [homes.Hx-free-names]
 decision = "how a name that its scope already holds is told apart: the candidates after it, numbered in the row of the feature that names it, and the first one free"
 core = ["_free_names.py"]
@@ -2565,6 +2587,10 @@ fix = "#5637"
 [legacy_rows."legacy-host-identifiers"]
 home = "Hx-python-names"
 fix = "#5656"
+
+[legacy_rows."legacy-fold-without-nfc"]
+home = "Hx-fold-key"
+fix = "#5748"
 
 [legacy_rows."legacy-unredacted-locations"]
 home = "Hx-message-location"

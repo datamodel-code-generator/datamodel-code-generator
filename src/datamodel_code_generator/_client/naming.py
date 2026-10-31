@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final, NamedTuple
 
 from datamodel_code_generator._runtime.model_codecs.media import TOKEN
 from datamodel_code_generator._target_naming import explicit_name, windows_device
-from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc
+from datamodel_code_generator._target_unicode import is_nfkc, is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -94,11 +94,6 @@ def namespace_problem(value: object, target_python_version: PythonVersion) -> st
 def token(value: object) -> bool:
     """Return whether a value is an HTTP token, such as a header name."""
     return isinstance(value, str) and TOKEN.fullmatch(value) is not None
-
-
-def folded(name: str, target_python_version: PythonVersion) -> str:
-    """Return the form two helper names are compared in: NFC-normalized, then case-folded, as the target does."""
-    return casefold(nfc(name, target_python_version), target_python_version)
 
 
 def helper_name_problem(value: str, target_python_version: PythonVersion) -> str | None:

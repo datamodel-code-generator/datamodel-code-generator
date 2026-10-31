@@ -57,7 +57,13 @@ from datamodel_code_generator._target_contract import (
     type_uses,
     uses_by_id,
 )
-from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
+from datamodel_code_generator._target_naming import (
+    PATH_PLACEHOLDER,
+    NameScope,
+    fold_key,
+    path_placeholders,
+    windows_device,
+)
 from datamodel_code_generator._target_operations import (
     CLIENT,
     alias,
@@ -77,7 +83,6 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
-from datamodel_code_generator._target_unicode import casefold
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -1074,7 +1079,9 @@ class Planner:
                 children[namespace.rpartition(".")[0]].append(namespace)
         folded: dict[str, list[str]] = {}
         for namespace in members:
-            folded.setdefault(casefold(namespace, self.names.python_version), []).append(namespace)
+            folded.setdefault(
+                fold_key(namespace, self.names.python_version, rule="legacy-fold-without-nfc"), []
+            ).append(namespace)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",

@@ -67,7 +67,7 @@ from datamodel_code_generator._target_contract import (
     uses_by_id,
     wrapped_facts,
 )
-from datamodel_code_generator._target_naming import NameScope, windows_device
+from datamodel_code_generator._target_naming import NameScope, fold_key, windows_device
 from datamodel_code_generator._target_operations import (
     SERVER,
     UNSPELLABLE,
@@ -92,7 +92,6 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
-from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -438,7 +437,7 @@ class ServerPlan:
 
 def _file_stem_conflict(stem: str, target_python_version: PythonVersion) -> bool:
     """Return whether a file stem is reserved by the package layout or by Windows device names, folded as the target."""
-    return casefold(stem, target_python_version) == "__init__" or windows_device(stem, target_python_version)
+    return fold_key(stem, target_python_version) == "__init__" or windows_device(stem, target_python_version)
 
 
 def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnostic | None:

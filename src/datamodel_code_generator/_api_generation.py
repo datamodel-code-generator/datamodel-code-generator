@@ -30,7 +30,7 @@ from datamodel_code_generator._target_config import (
     config_error,
 )
 from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
-from datamodel_code_generator._target_unicode import casefold, nfc
+from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.base_config import implied_target_settings as implied_settings
 
 if TYPE_CHECKING:
@@ -503,8 +503,8 @@ def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContra
 
 
 def _collision_key(path: Path, target_python_version: PythonVersion) -> str:
-    """Return the form two paths compare in: NFC-normalized, then case-folded, as the target does."""
-    return casefold(nfc(str(path), target_python_version), target_python_version)
+    """Return the key two paths compare in, as case-insensitive file systems compare them."""
+    return fold_key(str(path), target_python_version)
 
 
 def _present(location: Path) -> bool:
