@@ -17,12 +17,16 @@ from datamodel_code_generator._runtime.client.security import (
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
-    LiteralMapping,
     LiteralScalar,
-    LiteralSequence,
+    api_key_place,
     fact,
+    http_scheme,
     label,
     operation_literal,
+    operation_schemes,
+    requirement_alternatives,
+    scheme_catalogues,
+    unresolved_reference,
 )
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import declared_in
@@ -71,19 +75,6 @@ def _scope_tuple(value: object) -> tuple[str, ...]:
             raise ValueError(msg)
         normalized.add(item)
     return tuple(sorted(normalized))
-
-
-def _key_scheme(name: str, declaration: WireDeclaration) -> SecuritySchemeEntry:
-    location, wire_name = fact(declaration, "in"), fact(declaration, "name")
-    if location not in {"header", "query", "cookie"} or not isinstance(wire_name, str) or not wire_name:
-        return UnavailableSecurityScheme(name=name)
-    if location == "query":
-        return SecurityScheme(name=name, kind="api_key", location="query", wire_name=wire_name)
-    if not token(wire_name):
-        return UnavailableSecurityScheme(name=name)
-    return SecurityScheme(
-        name=name, kind="api_key", location="header" if location == "header" else "cookie", wire_name=wire_name
-    )
 
 
 def _url(flow: object, *names: str) -> str | None:
@@ -136,20 +127,18 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
     name = declaration.name
     assert name is not None
     unavailable = UnavailableSecurityScheme(name=name)
-    if any(reference.state != "resolved" for reference in declaration.references):
+    if unresolved_reference(declaration) is not None:
         return unavailable
-    kind = fact(declaration, "type")
-    if kind == "apiKey":
-        return _key_scheme(name, declaration)
-    scheme = fact(declaration, "scheme")
-    if kind == "http" and isinstance(scheme, str) and scheme.lower() in {"basic", "bearer"}:
+    if (place := api_key_place(declaration)) is not None:
+        location, wire_name = place
+        if location != "query" and not token(wire_name):
+            return unavailable
+        return SecurityScheme(name=name, kind="api_key", location=location, wire_name=wire_name)
+    if (scheme := http_scheme(declaration)) in {"basic", "bearer"}:
         return SecurityScheme(
-            name=name,
-            kind="basic" if scheme.lower() == "basic" else "bearer",
-            location="header",
-            wire_name="Authorization",
+            name=name, kind="basic" if scheme == "basic" else "bearer", location="header", wire_name="Authorization"
         )
-    if kind in {"oauth2", "openIdConnect"}:
+    if fact(declaration, "type") in {"oauth2", "openIdConnect"}:
         return SecurityScheme(name=name, kind="bearer", location="header", wire_name="Authorization")
     return unavailable
 
@@ -162,11 +151,11 @@ class SecurityPlanner:
         self.catalogues: dict[SourceDocumentId, dict[str, SecuritySchemeEntry]] = {}
         self.declarations: dict[str, WireDeclaration] = {}
         root = batch.documents[0].id
-        for item in batch.security_schemes:
-            scheme = _scheme(item)
-            self.catalogues.setdefault(item.use_site.document, {})[scheme.name] = scheme
-            if item.use_site.document == root or scheme.name not in self.declarations:
-                self.declarations[scheme.name] = item
+        for document, schemes in scheme_catalogues(batch).items():
+            for name, item in schemes.items():
+                self.catalogues.setdefault(document, {})[name] = _scheme(item)
+                if document == root or name not in self.declarations:
+                    self.declarations[name] = item
         self.root = tuple(self.catalogues.get(root, {}).values())
         self.root_document = root
         self.problems = problems
@@ -224,29 +213,24 @@ class SecurityPlanner:
         value = operation_literal(operation, "security")
         if value is None:
             return None
-        schemes = self.catalogues.get(operation.id.use_site.document, {})
-        if not isinstance(value, LiteralSequence):
+        schemes = operation_schemes(self.catalogues, operation)
+        if (declared := requirement_alternatives(value)) is None:
             self.problem(operation, "must be an array of requirement objects")
             return None
         alternatives: list[tuple[SecurityRequirement, ...]] = []
-        for alternative in value.items:
-            if not isinstance(alternative, LiteralMapping):
+        for alternative in declared:
+            if alternative is None:
                 self.problem(operation, "must contain only requirement objects")
                 continue
             requirements: list[SecurityRequirement] = []
             owners: set[tuple[str, str]] = set()
-            for key, scopes in alternative.entries:
-                name = key.value if isinstance(key, LiteralScalar) else None
+            for name, scopes in alternative:
                 scheme = schemes.get(name) if isinstance(name, str) else None
                 if not isinstance(scheme, SecurityScheme):
                     self.problem(operation, f"requires the unavailable scheme {name!r}")
                     continue
                 try:
-                    required = _scope_tuple(
-                        tuple(item.value if isinstance(item, LiteralScalar) else None for item in scopes.items)
-                        if isinstance(scopes, LiteralSequence)
-                        else None
-                    )
+                    required = _scope_tuple(scopes)
                 except ValueError:
                     self.problem(operation, f"requires valid scope tokens for scheme {name!r}")
                     continue
