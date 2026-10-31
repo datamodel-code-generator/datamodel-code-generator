@@ -35,6 +35,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
+from datamodel_code_generator._openapi_paths import inherited_security
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
@@ -3697,8 +3698,8 @@ class _Contracts(_SchemaUses):
         )
         root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)
-        if walked.security is not None and "security" not in raw:
-            facts = (*facts, *_facts({"security": walked.security}, ("security",), root))
+        if (security := inherited_security(raw, walked.security)) is not None:
+            facts = (*facts, *_facts({"security": security}, ("security",), root))
         if "servers" not in raw:
             facts = (
                 *facts,

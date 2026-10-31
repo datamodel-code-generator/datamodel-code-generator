@@ -40,7 +40,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
-    LOCATIONS,
     BuiltinType,
     ConstructorType,
     LiteralScalar,
@@ -53,6 +52,7 @@ from datamodel_code_generator._target_contract import (
     fact,
     label,
     operation_literal,
+    parameter_place,
     schema_uses,
     type_uses,
     uses_by_id,
@@ -598,8 +598,7 @@ class Planner:
         declared: list[tuple[WireDeclaration, ParameterLocation, str, ParameterPlan, str | None]] = []
         scope = NameScope()
         for declaration in operation.parameters:
-            location = LOCATIONS[fact(declaration, "in")]
-            wire_name = declaration.name or ""
+            location, wire_name = parameter_place(declaration)
             if (plan := plans.get((location, wire_name))) is None:
                 continue
             given = explicit.pop((location, wire_name), None) or alias(

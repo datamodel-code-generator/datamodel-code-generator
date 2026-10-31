@@ -1280,8 +1280,12 @@ what = "tells whether a value is a JSON integer or number, a bool being neither,
 audit = "C23-K41"
 
 [homes.Hx-parameter-key]
-decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime"
-core = ["_runtime/model_codecs/parameters.py:parameter_key"]
+decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime (row legacy-case-sensitive-parameter-override: the paths scope's walk overrides a path item's parameter by its name as written); and where a parameter of the target contract goes: its declared location and wire name"
+core = [
+    "_runtime/model_codecs/parameters.py:parameter_key",
+    "_target_contract.py:parameter_location",
+    "_target_contract.py:parameter_place",
+]
 adapters = []
 
 [homes.Hx-parameter-key.signatures.header-fold]
@@ -1293,8 +1297,21 @@ exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "folds a parameter's name by its location itself; call model_codecs/parameters.py:parameter_key"
 audit = "C20-8"
 
+[homes.Hx-parameter-key.signatures.declared-location]
+kind = "call"
+names = ["fact"]
+strings = ["in"]
+# The location of an apiKey security scheme is the scheme's, not a parameter's (C20 security reading).
+exclude = [
+    "_client/security.py:_key_scheme",
+    "_fastapi/plan.py:_scheme",
+    "_openapi_wire_plan.py:auth_names",
+]
+what = "reads where a parameter declaration goes itself; call _target_contract.py:parameter_place (or parameter_location)"
+audit = "C20-8"
+
 [homes.Hx-openapi-paths]
-decision = "what the keys of an OpenAPI document's paths say: which fields of a path item hold an operation (and the views of the paths scope, the API walk before OpenAPI 3.2 and the recommender), and which paths --openapi-include-paths selects"
+decision = "what the keys of an OpenAPI document's paths say: which fields of a path item hold an operation (and the views of the paths scope, the API walk before OpenAPI 3.2 and the recommender), which paths --openapi-include-paths selects, and the operation in effect: the parameters of its path item it does not override and the document's security requirement unless it declares its own"
 core = ["_openapi_paths.py"]
 adapters = []
 
@@ -1310,6 +1327,12 @@ kind = "call"
 names = ["fnmatch", "fnmatchcase"]
 what = "matches a path against --openapi-include-paths itself; call _openapi_paths.py:path_selected"
 audit = "C20-5"
+
+[homes.Hx-openapi-paths.signatures.inherited-security]
+kind = "compare-in"
+values = ["security"]
+what = "decides itself whether an operation inherits the document's security requirement; call _openapi_paths.py:inherited_security (or effective_operation)"
+audit = "C20-2"
 
 [homes.Hx-request-parts]
 decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"
@@ -2505,6 +2528,10 @@ fix = "#5577"
 [legacy_rows."legacy-python-json-errors"]
 home = "Hx-json-value"
 fix = "#5734"
+
+[legacy_rows."legacy-case-sensitive-parameter-override"]
+home = "Hx-parameter-key"
+fix = "#5747"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

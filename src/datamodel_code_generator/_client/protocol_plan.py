@@ -9,7 +9,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._target_contract import SourceLocation, fact, schema_uses
+from datamodel_code_generator._target_contract import SourceLocation, parameter_place, schema_uses
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url
@@ -190,7 +190,7 @@ class HelperPlanner:
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:
     """Return why an operation cannot take a request target: an undeclared parameter, querystring, or body."""
-    declared = [(fact(item, "in"), item.name or "") for item in operation.parameters]
+    declared = [parameter_place(item) for item in operation.parameters]
     querystrings = {name for location, name in declared if location == "querystring"}
     location, name = target["in"], target.get("name", "")
     if location == "body":

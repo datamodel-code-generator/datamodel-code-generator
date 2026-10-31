@@ -45,7 +45,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalized,
 )
 from datamodel_code_generator._target_contract import (
-    LOCATIONS,
     WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
@@ -62,6 +61,7 @@ from datamodel_code_generator._target_contract import (
     label,
     members_by_consumer,
     operation_literal,
+    parameter_place,
     symbols_by_id,
     type_uses,
     uses_by_id,
@@ -905,8 +905,7 @@ class Planner:  # noqa: PLR0904
         self, operation: OperationContract, declaration: WireDeclaration, repeated: set[str]
     ) -> ParameterSpec:
         """Decide how the server receives one effective parameter: natively when FastAPI reads its style and type."""
-        location = LOCATIONS[fact(declaration, "in")]
-        name = declaration.name or ""
+        location, name = parameter_place(declaration)
         use = self.bound(self.use(type_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)

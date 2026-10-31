@@ -24,7 +24,6 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     parameter_key,
 )
 from datamodel_code_generator._target_contract import (
-    LOCATIONS,
     WRAPPER_KINDS,
     BindingReason,
     BuiltinType,
@@ -52,6 +51,8 @@ from datamodel_code_generator._target_contract import (
     label,
     members_by_consumer,
     operation_literal,
+    parameter_location,
+    parameter_place,
     schema_uses,
     symbols_by_id,
     type_uses,
@@ -612,7 +613,7 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
     declarations = operation.parameters
     auth = auth_names(planner.batch, operation)
-    names = [*((fact(item, "in"), item.name or "") for item in declarations), *auth]
+    names = [*(parameter_place(item) for item in declarations), *auth]
     plans = [
         plan
         for declaration in declarations
@@ -640,7 +641,7 @@ def parameter_collisions(
             or len(absorbing) > 1
             or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
         ):
-            source = next(item.use_site for item in operation.parameters if fact(item, "in") == location)
+            source = next(item.use_site for item in operation.parameters if parameter_location(item) == location)
             found.append(
                 CodecDiagnostic(
                     "MC_PARAMETER_ENCODING", source, f"Expanded {location} parameter names collide", operation.id
@@ -651,8 +652,7 @@ def parameter_collisions(
 
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
     source = declaration.use_site
-    location = LOCATIONS[fact(declaration, "in")]
-    name = declaration.name or ""
+    location, name = parameter_place(declaration)
     required = fact(declaration, "required") is True
     _finite(planner, declaration)
     if location == "querystring" or declaration.children:
