@@ -910,7 +910,7 @@ def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
 
 
 def _json_type(value: object, other: str | None = None) -> str:
-    """Return the JSON type of an enum or const value by its literal kind (H08).
+    """Return the JSON type of an enum or const value by its literal kind.
 
     Any other value is ``other``, or by default a number when it is a Decimal, an object when it is a dict, and an
     array otherwise.

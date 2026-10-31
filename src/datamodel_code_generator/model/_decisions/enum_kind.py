@@ -1,8 +1,8 @@
 """Enum class kind and literal value kind: which class an enum is written as, and which values a ``Literal`` holds.
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters read the facts
-from the live objects and build the class through ``model/enum.py:_enum_class``; they are listed under H08 in
-``scripts/decision_homes.toml``.
+from the live objects and build the class through ``model/enum.py:_enum_class``; they are listed in
+``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.

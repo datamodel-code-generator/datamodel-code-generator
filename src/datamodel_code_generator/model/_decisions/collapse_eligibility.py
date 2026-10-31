@@ -5,7 +5,7 @@ an immutable fact, so the functions read nothing else. ``keeps_root_model_named`
 ``--collapse-root-models`` leaves the site naming the root model, with the rule that keeps it, or inlines it there.
 ``later_holders_follow`` decides whether the later holders of a root model that the ``parent`` strategy collapsed at
 its first holder name its inner model too. The adapters read the facts from the live models at L5; they are listed
-under H13 in ``scripts/decision_homes.toml``.
+in ``docs/architecture.md``.
 
 The row named ``legacy-*`` keeps today's output where the decision reads a fact before it is final; its fix deletes
 the row.

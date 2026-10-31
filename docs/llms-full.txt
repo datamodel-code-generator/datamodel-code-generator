@@ -69056,144 +69056,124 @@ A table that `types.py` reads while it is imported is a top-level leaf instead, 
 | how a message, a warning or the model metadata names the schema object it is about: its location as `document#pointer` with the document URL redacted (`redact_reference`), or the caller's text when it has none; the parse path of a `SchemaParseError`, which redacts each part when it is printed | `_url_redaction.py:named_location` (rows `redacted`, `legacy-unredacted-locations`), `parser/_schema_object.py:_named_path` | `parser/_passes/settle.py:_named_model_path`, `parser/base.py:Parser._model_metadata` |
 | how the parse of the input sources ends: after the parse in its block, the targets the parsed documents leave (row `resolve`: the targets the sources reserve, `_resolve_unparsed_json_pointer`, for JSON Schema, Avro, XML Schema and Protocol Buffers; OpenAPI's `_resolve_specification_targets`, which parses the models specialized for a dynamic scope first and the models that parameter models use last; AsyncAPI's `_resolve_asyncapi_unparsed_json_pointer`, which reads each target in the document of its context), then `_end_schema_parsing`, and on every path the release of the inherited-field state (`_clear_inherited_field_caches`) and of the local source cache | `parser/jsonschema.py:JsonSchemaParser._parsing_session` | the parsers' `parse_raw`: JSON Schema, Avro and XML Schema (`parser/_schema_documents.py:parse_converted_sources`), OpenAPI and its `api` scope, Protocol Buffers, AsyncAPI |
 
-The target rows have their code shapes in the toml (`T-wire`, `T-resolver`, `T-kind`, `T-type`, `T-operation`,
-`T-batch`, `H14`, `Hx-closedness`, and target signatures of `H08`, `H11`, `H23`, `H24`). A `planned` place is a core
-that a later change creates: it covers its hits and need not exist yet, and the check fails once it does, so that the
-change moves it to `core`. The target sites that exist today are in the allowlist, each under the audit row it belongs
-to (`R-nn` a read of the document after the API walk, `M-nn` a model fact decided again, `C-nn` a decision that the
-client and the server plan twice). The code shape `key` is a string key read of a raw object: `x["k"]`, `x.get("k")`,
-`x.pop("k")` or `x.setdefault("k", ...)`.
-
-**Keeping a decision in its home.** `scripts/decision_homes.toml` records, for each decision above and for the options
-that 0.87.0 added, the home's core and adapters and the code shapes that mean "this code decides it": a read of a schema
-object's `nullable`, a call that computes the components or the order of a graph, the list of subschema keywords, a
-literal `2 ** 63`, a read of an option outside the place that owns it. `scripts/check_decision_homes.py` (run by
-`tests/test_decision_homes.py`) fails with "decision X has its home in file:function" for such a shape anywhere else;
-the sites that exist today are the allowlist at the end of the toml, which only shrinks. A new site goes through the
-home: build the facts in an adapter and call the core, or, for a decision with no home yet, add the home with the change
-instead of a second copy. Calling the core is never a site: a call whose callee is a function or class that the home's
-core defines (a module-level function or class, found through the imports of the calling file with re-exports
-followed, unless a parameter, variable, nested definition or rebinding of the name stands in between) passes wherever it
-is made, so a caller needs no adapter entry; a hand-written copy, a raw read and a call of a helper the signature names
-but the core does not define are still reported. An adapter is a place that reads raw facts and hands them to the core. An allowlist
-entry needs the owner's agreement and names the audit entry it belongs to (`audit`). After a change routes sites to a
-home, `python scripts/check_decision_homes.py --write-allowlist` lowers the list.
+**Keeping a decision in its home.** A new site goes through the home: build the facts in an adapter and call the
+core, or, for a decision with no home yet, add the home with the change instead of a second copy. An adapter is a
+place that reads raw facts and hands them to the core; calling the core needs no adapter.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
-names is a table of `legacy_rows` in the toml with its home and what deletes it (`fix`: an issue, a plan group, or
-`keep` for output that stays the default for good), and a row of this table with the same home and fix; the check fails
-for a row on one side only, so the page names no row the code lacks and the code has no unplanned row. A new
-exception to a home is a new named row, never an anonymous `if`.
+names is a row of this table with what deletes it (`fix`: an issue, a plan group, or `keep` for output that stays the
+default for good), and the page names no row the code lacks (`tests/test_legacy_rows.py`). A new exception to a home
+is a new named row, never an anonymous `if`.
 
-| Row | Home | Keeps | Fix |
-| --- | --- | --- | --- |
-| `legacy-exact-ints-as-floats` | H07 | the schema models read an int constraint as a float where one equals it | keep |
-| `legacy-rw-parsed-facts` | F-dedupe-request-response-variants | without `--dedupe-request-response-variants`, the read/write facts and graph node of a key come from a temporary parse of its fields, the walk reads every reference of a key, and every model collects its inherited fields to decide its split | keep |
-| `legacy-rw-unowned-parent-fields` | F-dedupe-request-response-variants | without `--dedupe-request-response-variants`, the inline models of an allOf parent's own fields are parsed at no owner path | keep |
-| `legacy-rw-extra-items-as-written` | Hx-typed-positions | the request/response walk reads the TypedDict extra_items type of additionalProperties as written, not with its false allOf values read as `set_additional_properties` reads them | B5 |
-| `legacy-rw-field-site-as-written` | Hx-typed-positions | the request/response walk chooses the row of a field site from the site as written, its `$ref` merged with its siblings only where the site itself writes a customTypePath (`parse_item` merges every `$ref` with siblings first) | B5 |
-| `legacy-merge-row` | H03 | a `$ref` with siblings and an inherited property override are the earlier merge (`concatenating_row` / `inherited_override_row`) | G01 |
-| `legacy-lookahead-patterns` | H03 | patterns are joined by lookaheads with no warning; an allOf member merge keeps the later pattern | G01 |
-| `legacy-all-of-site-form` | H03 | allOf value sites keep their earlier form with no conflict warning (a model without fields only where their parts admit an object); a `$ref` member's sibling `enum`/`const` does not narrow its literals | G01 |
-| `legacy-all-of-null-as-written` | H03 | null is read as written where allOf parts meet (null members beside a `type` without null, an allOf map member's `type` keeps its null, a `None` merged enum value fits) | G01 |
-| `legacy-map-union-of-dicts` | F-use-single-dict-for-object-maps | without `--use-single-dict-for-object-maps`, patternProperties give a union of dicts, one per rendered value type, with no inexact-map warning (msgspec, which cannot decode it, gets the one dict) | keep |
-| `legacy-map-pattern-keys-only` | F-use-single-dict-for-object-maps | without `--use-single-dict-for-object-maps`, an additionalProperties schema beside patternProperties types no key; the dict admits the keys of its patterns only | keep |
-| `legacy-map-null-left-to-field` | F-use-single-dict-for-object-maps | without `--use-single-dict-for-object-maps`, the dict of an object map takes neither the null of its type array or `nullable` nor its property counts, which stay on the field (a type array of object and null is a union holding the dict); only the typed values of `--use-typed-nullable-map-values` make one dict, optional where its type array lists null, joined with the other types | keep |
-| `legacy-validated-pattern-maps` | F-check-pattern-maps-strictly | without `--check-pattern-maps-strictly`, the root dict of a map the patternProperties validator checks has `str` keys and counts no pattern, a declared key whose simple schema a pattern rejects witnesses the check, and the model of an object without properties joins no other type of its type array | keep |
-| `legacy-nullable-as-type-list` | H06 | OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item is nullable under a root model and not elsewhere) | G12 |
-| `legacy-merged-reference-null` | H23 | a reference whose schema admits null takes the null of the model it names after a merge, so it loses the None when that model rejects null | #4816 |
-| `legacy-root-model-type-only` | H06 | a root model ignores `nullable` and reads only its `type` | G12 |
-| `legacy-ref-target-null-type-only` | H06 | a reference reads only a `type` of null (or strict `nullable`) of its target, not a type list | G12 |
-| `legacy-map-copied-nullable` | H06 | a `nullable` copied into a combined branch leaves its map without null (the owner kept it) | keep |
-| `legacy-root-type-nullable-ungated` | H06 | a root field is nullable by `nullable` without `--strict-nullable` | #5054 |
-| `legacy-multiple-types-nullable-not-recorded` | H06 | a type list with an object records only the type list's null; `--read-nullable-beside-type-list` reads `nullable` too | keep |
-| `legacy-array-nullable-ungated` | H06 | an array field is nullable by `nullable` without `--strict-nullable` | #5054 |
-| `legacy-enum-literal-value-only` | H06 | a `Literal` enum admits null by its null value alone | #5054 |
-| `legacy-msgspec-top-level-null-as-written` | H23 | msgspec reads `is_optional` for the top-level None before render preparation writes rendered nullability | RP13 |
-| `legacy-member-null-from-hint-text` | H23 | a union takes the None of a member by rendering the member's hint | RP13 |
-| `legacy-l3-import-nullability` | H23 | L3 deduplication renders write nullability that overrides and constructor ordering read | RP14 |
-| `legacy-consumed-at-object-property` | H07 | a zero-bound class consumes its keyword only at an object property; `--omit-redundant-constraints` omits it everywhere | keep |
-| `legacy-all-of-root-format-kinds` | H07 | an allOf root keeps, silently, the keywords of the kinds its format names | G03b |
-| `legacy-undeclared-keywords-off-literal` | H07 | the `Literal` of a const or enum takes no keyword of an undeclared kind | G03b |
-| `legacy-override-keeps-string-keywords` | H07 | `--type-overrides` keeps the string keywords the replaced type took | G03b |
-| `legacy-anyurl-keeps-string-keywords` | H07 | `AnyUrl` takes every string keyword and Pydantic then drops them all at render | G03b |
-| `legacy-value-base-changing-a-member` | H08 | the 0.86.0 `IntEnum` or `(T, Enum)` base that changes a member value (`2.5` becomes `2`); `--keep-enum-member-values` keeps the values | keep |
-| `legacy-msgspec-decodable-value-base` | H08 | msgspec keeps the 0.86.0 value base so that the class decodes its members | G16 |
-| `legacy-inherited-first-base-class` | H08 | an enum merged from allOf takes the class of the first enum | G01-3 |
-| `legacy-inherited-specialized-without-member-check` | H08 | a merged enum keeps the `IntEnum` or `StrEnum` of the first and, since 0.87.0, leaves out the members it cannot hold | G01-3 |
-| `legacy-const-drops-null` | H09 | a required or defaulted const drops the null its schema admits | #4873 |
-| `legacy-const-without-literal-not-null` | H09 | an optional const that no `Literal` holds is not nullable but defaults to None | #4804 |
-| `legacy-msgspec-const-not-null` | H09 | a msgspec const is never nullable and takes no default | #5054 |
-| `legacy-one-literal-drops-type-null` | H09 | a one-literal default drops the null of a type list that a tag keeps | #5054 |
-| `legacy-non-array-first` | H10 | the branches beside `array` of a type array go before it | keep |
-| `legacy-replacement-last` | H10 | the member that collapse replaces goes last in its union | OPT-6 |
-| `legacy-graphql-template` | H10 | the GraphQL union template writes `Union[...]` whatever the union operator | OPT-8 |
-| `legacy-graphql-field` | Hx-field-build | a GraphQL field takes neither `--use-frozen-field` nor `--use-default-factory-for-optional-nested-models` (an optional nested model defaults to `None`) | #5588 |
-| `legacy-boolean-property` | Hx-field-build | a property whose schema is `true` or `false` takes neither `--use-serialize-as-any`, `--use-default-kwarg` (it writes `Field(None, ...)`), `--use-frozen-field` nor `--use-default-factory-for-optional-nested-models` | #5588 |
-| `legacy-alias-option-only` | Hx-field-build | a required name without a property or an inherited field, and the tag field the discriminator pass appends, take `--use-serialization-alias` only of the field options (no `Annotated` under `--use-annotated`) | #5588 |
-| `legacy-dedup-before-strip` | H10 | rendering compares a member's text before stripping its None | OPT-5 |
-| `legacy-missing-appended` | H10 | Pydantic writes `MISSING` after the hint and keeps a nested union | RP14 |
-| `legacy-any-key` | H11 | the msgspec layout prediction of L4 matches mapping paths by all four key kinds | G05 |
-| `legacy-hash-order` | H11 | the redeclared tag field is picked in string-hash order when both its names are tag fields | G05 |
-| `legacy-literal-only` | H11 | L6 reads a redeclared tag field only as a one-value `Literal` | G05 |
-| `legacy-literal-property-replaces-declared` | H11 | the L1 tag property replaces a declared one | G05 |
-| `legacy-python-equality` | H11 | `1 == True` share a tag at L5 and L6 but not at L1 | G05 |
-| `legacy-python-name` | H11 | msgspec `tag_field` by Python name without `--use-msgspec-tagged-unions` or `--tag-msgspec-by-payload-name` | keep |
-| `legacy-same-name-dedup` | H12 | same-name deduplication leaves union tags out and renders models under their own class name | G06 |
-| `legacy-collapse-reuse` | H12 | collapse-reuse skips root models, renders each round anew and tells bases apart by reference | G06 |
-| `legacy-tree-scope` | H12 | tree-scope reuse compares models by its own key | G06 |
-| `legacy-reuse-model` | H12 | `--reuse-model` compares models by its own key | G06 |
-| `legacy-stale-dedup-keys` | H12 | users compare a dedup key memoized by an earlier pass | FIX-9 |
-| `legacy-module-owned-users` | Hx-duplicate-merge | module-scope reuse of a typed map value hands the canonical model only the users its module's models own; a schema validator rule's type keeps naming the removed model | #5733 |
-| `legacy-graphql-affix-only` | H16 | GraphQL names get affixes only: no uniqueness, map, strategy or singularization | G09 |
-| `legacy-recursion-follows-path` | H20 | recursion facts follow paths through `_internal` relocation | GR9a |
-| `legacy-keyless-reference-by-path` | H21 | a reference that no model was built with names the model at its path | GR11 |
-| `legacy-module-follows-path` | H21 | module entries follow paths | GR11 |
-| `legacy-keep-order-short-name` | H21 | a false dependency on a same-named model of another module | GR11 |
-| `legacy-replaced-root-shares-path` | H21 | a collapsed root and its inner model name each other | GR11 |
-| `legacy-nested-factory-at-read` | H24 | the assignment is read with the nested factories it has then, before L6 records the recursive paths | PH2 |
-| `legacy-nested-factory-order-before-nullability` | H24 | a Pydantic dataclass under `--strip-default-none` keeps the required-fields answer of the first read | PH2 |
-| `legacy.L-NF` | H24 | the import snapshot reads fields as if the nested factory were written | PH2 |
-| `legacy-stdlib-annotated` | H24 | a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned | DC12 |
-| `legacy-collapse-import-path` | H26 | the models a type inlined into a module names (collapsed root types, dict keys typed by root types) are imported by the module path alone: no `_internal` or same-named module rule, no package `__init__` dot, the binding written even where it is the class name | #5465 |
-| `legacy.alias-order` | H26 | import names in the order that L5 and L6 repairs asked for them | RP15b |
-| `legacy.enum-member-import-bindings` | H26 | an enum's `Field` import is bound but not written | RP15b |
-| `legacy.pdc-annotated-strip` | H26 | a Pydantic dataclass drops the `Annotated` import whenever it must see the field's metadata, also when the hint writes `Annotated` | RP15b |
-| `legacy-run-alias-generator-import` | H26 | a BaseModel keeps importing the run's `--alias-generator` where it does not render it, so that class naming is unchanged | RP15b |
-| `legacy-reparse-for-final-names` | Hx-user-keys | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
-| `legacy-module-suffix-model` | H16 | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map | keep |
-| `legacy-predicted-rename` | H13 | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |
-| `legacy-decide-in-union-module` | H11 | a discriminated union is tagged when its module is processed, not after the module loop | G05 |
-| `legacy-tag-from-earlier-union` | H11 | a variant keeps the tags of the first union that tags it | G05 |
-| `legacy-inline-variants-at-first-ask` | H11 | the inline variants that take the tag they inherit are decided at the first collapse or apply that asks | G05 |
-| `legacy-api-lockfile-as-written` | Hx-remote-lock-plan | `generate()` runs other than an update published with output or metadata open, check, name and (stdout updates) replace an absolute lockfile as written, a symlink included | #5583 |
-| `legacy-api-skips-missing-metadata` | Hx-output-staging | `generate()` pairs a staged model metadata file like its output, so one that is missing when the run publishes (another process removed it) is left out and the other files publish; the command line pairs it as staged and the publication fails | #5620 |
-| `legacy-staging-parent-may-be-a-file` | Hx-existing-ancestor | private staging is made in the deepest existing path above its target, a regular file included, so it fails naming its random private directory | #5618 |
-| `legacy-unbounded-ancestor-walk` | Hx-existing-ancestor | the publication walks (anchor, staging, created parents) keep testing a root that does not exist (a missing drive) instead of stopping there | #5722 |
-| `legacy-metadata-tilde-as-written` | Hx-concrete-destination | the files a directory input leaves out read a leading `~` as a directory named `~`, where a direct run writes `--emit-model-metadata ~/...`, so a staged run (`--update-lock`, jobs) that publishes it under the home directory does not leave it out | #5744 |
-| `legacy-missing-input-raises` | Hx-path-relations | the check that an output does not overwrite its input (`generate()`, the command line) stats the input as spelled once the output exists, so a missing input ends in `FileNotFoundError` from the check instead of the "File not found" error of reading it | #5803 |
-| `legacy-predicted-tag-names` | H11 | L4 layout flattening reads a superset of the msgspec tag fields (`possible_tag_names`) | G05 |
-| `legacy-collapse-python-name-mode` | H11 | the union that `--collapse-root-models` inlines as list items is checked by the Python names of its variants' tag fields, where L5 checks one that writes `discriminator=` by the schema's names | G05 |
-| `legacy-int-tokens` | Hx-pointer-members | the target binding reads an item of any value that is no mapping by whatever `int()` accepts (`-1`, `01`, `1_0`, a character of a string) | #5579 |
-| `legacy-decimal-tokens` | Hx-pointer-members | the served document reads a list item by any decimal token below its length (`01`, non-ASCII digits), and a mapping member by the token before a decimal integer key | #5579 |
-| `legacy-objects-only` | Hx-pointer-members | the recommender reads only mapping members, by the token, when it follows a local `$ref` | #5579 |
-| `legacy-dataclass-overwrites-engine` | Hx-regex-engine | a `pydantic_v2.dataclass` that needs Python's `re` writes `python-re` over a `regex_engine` its config names (`--extra-template-data`), which a `pydantic_v2.BaseModel` keeps | #5637 |
-| `legacy-host-identifiers` | Hx-python-names | `--schema-validator-base-class-name`, `--validators` field names and functions, `--additional-imports`, `customBasePath`, the keys of `ConfigDict` and msgspec `Struct` template options and the bare type names of template data are names by the running interpreter's Unicode, not the target's | #5656 |
-| `legacy-fold-without-nfc` | Hx-fold-key | the folded name scopes of client resources and server routers and the client's check of resource namespaces that differ only by case compare names case-folded without NFC, so two names that differ only by normalization stop the run at the path check ("Two generated files resolve to the same path") | #5748 |
-| `legacy-builtins-of-any-target` | Hx-target-builtins | the IMPORTS passes that alias builtins read the builtin classes of every supported target, so a name a later Python adds (`ExceptionGroup` before 3.11, `frozendict` before 3.15) counts as a builtin of an older target: a package that writes it bare beside its submodule of that name imports it from `builtins`, and a module that writes it bare aliases its module import of that name | #5772 |
-| `legacy-flat-bare-loads` | H26 | the check of module imports named like a builtin counts every name node of a rendered model as a bare load of it: stores, and names that a function, lambda or comprehension of a custom template binds itself | keep |
-| `legacy-abstract-containers-as-unions` | Hx-container-kinds | the keywords a field's type consumes or enforces itself read a `Sequence` or `Mapping` through to its members, like a union, where every other container is its own leaf | #5821 |
-| `legacy-frozen-set-not-an-array` | Hx-container-kinds | the uniqueItems checks of `--generate-schema-validators` read a frozen set as a type that takes no array and is no item container | #5818 |
-| `legacy-all-of-items-not-in-frozen-sets` | Hx-container-kinds | an allOf root types the enum items of the array it holds in any array but a frozen set | #5817 |
-| `legacy-unique-tuple-inside-sequence` | Hx-container-kinds | the tuple of a uniqueItems array is looked up inside the items of a `Sequence` too, as in a union | #5820 |
-| `legacy-collapse-beside-lists-and-dicts` | Hx-container-kinds | under `--field-constraints`, collapse keeps a constrained root model beside a list, a dict or a union only, and inlines it into a `Sequence`, `Mapping`, set or tuple | #5819 |
-| `legacy-unredacted-locations` | Hx-message-location | the warnings about schemas whose parts no value satisfies, patterns no regular expression joins and object maps one dict cannot express name the schema's location with the document URL as written (userinfo and query included) | #5577 |
-| `legacy-python-json-errors` | Hx-json-value | a generated server writes the JSON body of a response without a model through `json_text` with the standard library's own errors and messages (`ValueError` for NaN or an integer over the decimal conversion limit, worded per Python version), where every other runtime site raises the runtime's own | #5734 |
-| `legacy-case-sensitive-parameter-override` | Hx-parameter-key | the paths scope's walk (`OpenAPIParser._process_path_items`) keeps a path item's parameter that an operation redeclares with a header name in another case, so `parse_operation` and its overrides see both; the API walk and the targets fold a header's name | #5747 |
-| `legacy-upload-size-query` | Hx-helper-writes | an upload helper names the target its create call writes the content's size into as a query parameter unless it is a header, a path parameter included, so a call's extra query of that name is refused although the helper writes none | #5693 |
-| `legacy-lenient-quoted-string` | Hx-http | a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed (control characters included), so a response whose directive quotes one is read as well-formed and stored, where the RFC 9110 quoted-string of a media type's or a Link's parameters refuses it | #5769 |
-| `legacy-header-constant-by-upper` | Hx-client-names | the constant of an operation's header decoders is its method name upper-cased, which the resource's types module reserves but never claims, so two method names that upper-case alike (`straße`, `strasse`) define one constant twice and the first operation's header accessor decodes with the second one's decoders | #5781 |
-| `legacy-graphql-quote` | Hx-install-hint | the error raised when the `graphql` extra is missing writes the closing backtick of its pip command before the closing quote (`` `$pip install 'datamodel-code-generator[graphql]`' ``), so the command copied from the code span leaves its quote open | #5791 |
+| Row | Keeps | Fix |
+| --- | --- | --- |
+| `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it | keep |
+| `legacy-rw-parsed-facts` | without `--dedupe-request-response-variants`, the read/write facts and graph node of a key come from a temporary parse of its fields, the walk reads every reference of a key, and every model collects its inherited fields to decide its split | keep |
+| `legacy-rw-unowned-parent-fields` | without `--dedupe-request-response-variants`, the inline models of an allOf parent's own fields are parsed at no owner path | keep |
+| `legacy-rw-extra-items-as-written` | the request/response walk reads the TypedDict extra_items type of additionalProperties as written, not with its false allOf values read as `set_additional_properties` reads them | B5 |
+| `legacy-rw-field-site-as-written` | the request/response walk chooses the row of a field site from the site as written, its `$ref` merged with its siblings only where the site itself writes a customTypePath (`parse_item` merges every `$ref` with siblings first) | B5 |
+| `legacy-merge-row` | a `$ref` with siblings and an inherited property override are the earlier merge (`concatenating_row` / `inherited_override_row`) | G01 |
+| `legacy-lookahead-patterns` | patterns are joined by lookaheads with no warning; an allOf member merge keeps the later pattern | G01 |
+| `legacy-all-of-site-form` | allOf value sites keep their earlier form with no conflict warning (a model without fields only where their parts admit an object); a `$ref` member's sibling `enum`/`const` does not narrow its literals | G01 |
+| `legacy-all-of-null-as-written` | null is read as written where allOf parts meet (null members beside a `type` without null, an allOf map member's `type` keeps its null, a `None` merged enum value fits) | G01 |
+| `legacy-map-union-of-dicts` | without `--use-single-dict-for-object-maps`, patternProperties give a union of dicts, one per rendered value type, with no inexact-map warning (msgspec, which cannot decode it, gets the one dict) | keep |
+| `legacy-map-pattern-keys-only` | without `--use-single-dict-for-object-maps`, an additionalProperties schema beside patternProperties types no key; the dict admits the keys of its patterns only | keep |
+| `legacy-map-null-left-to-field` | without `--use-single-dict-for-object-maps`, the dict of an object map takes neither the null of its type array or `nullable` nor its property counts, which stay on the field (a type array of object and null is a union holding the dict); only the typed values of `--use-typed-nullable-map-values` make one dict, optional where its type array lists null, joined with the other types | keep |
+| `legacy-validated-pattern-maps` | without `--check-pattern-maps-strictly`, the root dict of a map the patternProperties validator checks has `str` keys and counts no pattern, a declared key whose simple schema a pattern rejects witnesses the check, and the model of an object without properties joins no other type of its type array | keep |
+| `legacy-nullable-as-type-list` | OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item is nullable under a root model and not elsewhere) | G12 |
+| `legacy-merged-reference-null` | a reference whose schema admits null takes the null of the model it names after a merge, so it loses the None when that model rejects null | #4816 |
+| `legacy-root-model-type-only` | a root model ignores `nullable` and reads only its `type` | G12 |
+| `legacy-ref-target-null-type-only` | a reference reads only a `type` of null (or strict `nullable`) of its target, not a type list | G12 |
+| `legacy-map-copied-nullable` | a `nullable` copied into a combined branch leaves its map without null (the owner kept it) | keep |
+| `legacy-root-type-nullable-ungated` | a root field is nullable by `nullable` without `--strict-nullable` | #5054 |
+| `legacy-multiple-types-nullable-not-recorded` | a type list with an object records only the type list's null; `--read-nullable-beside-type-list` reads `nullable` too | keep |
+| `legacy-array-nullable-ungated` | an array field is nullable by `nullable` without `--strict-nullable` | #5054 |
+| `legacy-enum-literal-value-only` | a `Literal` enum admits null by its null value alone | #5054 |
+| `legacy-msgspec-top-level-null-as-written` | msgspec reads `is_optional` for the top-level None before render preparation writes rendered nullability | RP13 |
+| `legacy-member-null-from-hint-text` | a union takes the None of a member by rendering the member's hint | RP13 |
+| `legacy-l3-import-nullability` | L3 deduplication renders write nullability that overrides and constructor ordering read | RP14 |
+| `legacy-consumed-at-object-property` | a zero-bound class consumes its keyword only at an object property; `--omit-redundant-constraints` omits it everywhere | keep |
+| `legacy-all-of-root-format-kinds` | an allOf root keeps, silently, the keywords of the kinds its format names | G03b |
+| `legacy-undeclared-keywords-off-literal` | the `Literal` of a const or enum takes no keyword of an undeclared kind | G03b |
+| `legacy-override-keeps-string-keywords` | `--type-overrides` keeps the string keywords the replaced type took | G03b |
+| `legacy-anyurl-keeps-string-keywords` | `AnyUrl` takes every string keyword and Pydantic then drops them all at render | G03b |
+| `legacy-value-base-changing-a-member` | the 0.86.0 `IntEnum` or `(T, Enum)` base that changes a member value (`2.5` becomes `2`); `--keep-enum-member-values` keeps the values | keep |
+| `legacy-msgspec-decodable-value-base` | msgspec keeps the 0.86.0 value base so that the class decodes its members | G16 |
+| `legacy-inherited-first-base-class` | an enum merged from allOf takes the class of the first enum | G01-3 |
+| `legacy-inherited-specialized-without-member-check` | a merged enum keeps the `IntEnum` or `StrEnum` of the first and, since 0.87.0, leaves out the members it cannot hold | G01-3 |
+| `legacy-const-drops-null` | a required or defaulted const drops the null its schema admits | #4873 |
+| `legacy-const-without-literal-not-null` | an optional const that no `Literal` holds is not nullable but defaults to None | #4804 |
+| `legacy-msgspec-const-not-null` | a msgspec const is never nullable and takes no default | #5054 |
+| `legacy-one-literal-drops-type-null` | a one-literal default drops the null of a type list that a tag keeps | #5054 |
+| `legacy-non-array-first` | the branches beside `array` of a type array go before it | keep |
+| `legacy-replacement-last` | the member that collapse replaces goes last in its union | OPT-6 |
+| `legacy-graphql-template` | the GraphQL union template writes `Union[...]` whatever the union operator | OPT-8 |
+| `legacy-graphql-field` | a GraphQL field takes neither `--use-frozen-field` nor `--use-default-factory-for-optional-nested-models` (an optional nested model defaults to `None`) | #5588 |
+| `legacy-boolean-property` | a property whose schema is `true` or `false` takes neither `--use-serialize-as-any`, `--use-default-kwarg` (it writes `Field(None, ...)`), `--use-frozen-field` nor `--use-default-factory-for-optional-nested-models` | #5588 |
+| `legacy-alias-option-only` | a required name without a property or an inherited field, and the tag field the discriminator pass appends, take `--use-serialization-alias` only of the field options (no `Annotated` under `--use-annotated`) | #5588 |
+| `legacy-dedup-before-strip` | rendering compares a member's text before stripping its None | OPT-5 |
+| `legacy-missing-appended` | Pydantic writes `MISSING` after the hint and keeps a nested union | RP14 |
+| `legacy-any-key` | the msgspec layout prediction of L4 matches mapping paths by all four key kinds | G05 |
+| `legacy-hash-order` | the redeclared tag field is picked in string-hash order when both its names are tag fields | G05 |
+| `legacy-literal-only` | L6 reads a redeclared tag field only as a one-value `Literal` | G05 |
+| `legacy-literal-property-replaces-declared` | the L1 tag property replaces a declared one | G05 |
+| `legacy-python-equality` | `1 == True` share a tag at L5 and L6 but not at L1 | G05 |
+| `legacy-python-name` | msgspec `tag_field` by Python name without `--use-msgspec-tagged-unions` or `--tag-msgspec-by-payload-name` | keep |
+| `legacy-same-name-dedup` | same-name deduplication leaves union tags out and renders models under their own class name | G06 |
+| `legacy-collapse-reuse` | collapse-reuse skips root models, renders each round anew and tells bases apart by reference | G06 |
+| `legacy-tree-scope` | tree-scope reuse compares models by its own key | G06 |
+| `legacy-reuse-model` | `--reuse-model` compares models by its own key | G06 |
+| `legacy-stale-dedup-keys` | users compare a dedup key memoized by an earlier pass | FIX-9 |
+| `legacy-module-owned-users` | module-scope reuse of a typed map value hands the canonical model only the users its module's models own; a schema validator rule's type keeps naming the removed model | #5733 |
+| `legacy-graphql-affix-only` | GraphQL names get affixes only: no uniqueness, map, strategy or singularization | G09 |
+| `legacy-recursion-follows-path` | recursion facts follow paths through `_internal` relocation | GR9a |
+| `legacy-keyless-reference-by-path` | a reference that no model was built with names the model at its path | GR11 |
+| `legacy-module-follows-path` | module entries follow paths | GR11 |
+| `legacy-keep-order-short-name` | a false dependency on a same-named model of another module | GR11 |
+| `legacy-replaced-root-shares-path` | a collapsed root and its inner model name each other | GR11 |
+| `legacy-nested-factory-at-read` | the assignment is read with the nested factories it has then, before L6 records the recursive paths | PH2 |
+| `legacy-nested-factory-order-before-nullability` | a Pydantic dataclass under `--strip-default-none` keeps the required-fields answer of the first read | PH2 |
+| `legacy.L-NF` | the import snapshot reads fields as if the nested factory were written | PH2 |
+| `legacy-stdlib-annotated` | a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned | DC12 |
+| `legacy-collapse-import-path` | the models a type inlined into a module names (collapsed root types, dict keys typed by root types) are imported by the module path alone: no `_internal` or same-named module rule, no package `__init__` dot, the binding written even where it is the class name | #5465 |
+| `legacy.alias-order` | import names in the order that L5 and L6 repairs asked for them | RP15b |
+| `legacy.enum-member-import-bindings` | an enum's `Field` import is bound but not written | RP15b |
+| `legacy.pdc-annotated-strip` | a Pydantic dataclass drops the `Annotated` import whenever it must see the field's metadata, also when the hint writes `Annotated` | RP15b |
+| `legacy-run-alias-generator-import` | a BaseModel keeps importing the run's `--alias-generator` where it does not render it, so that class naming is unchanged | RP15b |
+| `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
+| `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map | keep |
+| `legacy-predicted-rename` | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |
+| `legacy-decide-in-union-module` | a discriminated union is tagged when its module is processed, not after the module loop | G05 |
+| `legacy-tag-from-earlier-union` | a variant keeps the tags of the first union that tags it | G05 |
+| `legacy-inline-variants-at-first-ask` | the inline variants that take the tag they inherit are decided at the first collapse or apply that asks | G05 |
+| `legacy-api-lockfile-as-written` | `generate()` runs other than an update published with output or metadata open, check, name and (stdout updates) replace an absolute lockfile as written, a symlink included | #5583 |
+| `legacy-api-skips-missing-metadata` | `generate()` pairs a staged model metadata file like its output, so one that is missing when the run publishes (another process removed it) is left out and the other files publish; the command line pairs it as staged and the publication fails | #5620 |
+| `legacy-staging-parent-may-be-a-file` | private staging is made in the deepest existing path above its target, a regular file included, so it fails naming its random private directory | #5618 |
+| `legacy-unbounded-ancestor-walk` | the publication walks (anchor, staging, created parents) keep testing a root that does not exist (a missing drive) instead of stopping there | #5722 |
+| `legacy-metadata-tilde-as-written` | the files a directory input leaves out read a leading `~` as a directory named `~`, where a direct run writes `--emit-model-metadata ~/...`, so a staged run (`--update-lock`, jobs) that publishes it under the home directory does not leave it out | #5744 |
+| `legacy-missing-input-raises` | the check that an output does not overwrite its input (`generate()`, the command line) stats the input as spelled once the output exists, so a missing input ends in `FileNotFoundError` from the check instead of the "File not found" error of reading it | #5803 |
+| `legacy-predicted-tag-names` | L4 layout flattening reads a superset of the msgspec tag fields (`possible_tag_names`) | G05 |
+| `legacy-collapse-python-name-mode` | the union that `--collapse-root-models` inlines as list items is checked by the Python names of its variants' tag fields, where L5 checks one that writes `discriminator=` by the schema's names | G05 |
+| `legacy-int-tokens` | the target binding reads an item of any value that is no mapping by whatever `int()` accepts (`-1`, `01`, `1_0`, a character of a string) | #5579 |
+| `legacy-decimal-tokens` | the served document reads a list item by any decimal token below its length (`01`, non-ASCII digits), and a mapping member by the token before a decimal integer key | #5579 |
+| `legacy-objects-only` | the recommender reads only mapping members, by the token, when it follows a local `$ref` | #5579 |
+| `legacy-dataclass-overwrites-engine` | a `pydantic_v2.dataclass` that needs Python's `re` writes `python-re` over a `regex_engine` its config names (`--extra-template-data`), which a `pydantic_v2.BaseModel` keeps | #5637 |
+| `legacy-host-identifiers` | `--schema-validator-base-class-name`, `--validators` field names and functions, `--additional-imports`, `customBasePath`, the keys of `ConfigDict` and msgspec `Struct` template options and the bare type names of template data are names by the running interpreter's Unicode, not the target's | #5656 |
+| `legacy-fold-without-nfc` | the folded name scopes of client resources and server routers and the client's check of resource namespaces that differ only by case compare names case-folded without NFC, so two names that differ only by normalization stop the run at the path check ("Two generated files resolve to the same path") | #5748 |
+| `legacy-builtins-of-any-target` | the IMPORTS passes that alias builtins read the builtin classes of every supported target, so a name a later Python adds (`ExceptionGroup` before 3.11, `frozendict` before 3.15) counts as a builtin of an older target: a package that writes it bare beside its submodule of that name imports it from `builtins`, and a module that writes it bare aliases its module import of that name | #5772 |
+| `legacy-flat-bare-loads` | the check of module imports named like a builtin counts every name node of a rendered model as a bare load of it: stores, and names that a function, lambda or comprehension of a custom template binds itself | keep |
+| `legacy-abstract-containers-as-unions` | the keywords a field's type consumes or enforces itself read a `Sequence` or `Mapping` through to its members, like a union, where every other container is its own leaf | #5821 |
+| `legacy-frozen-set-not-an-array` | the uniqueItems checks of `--generate-schema-validators` read a frozen set as a type that takes no array and is no item container | #5818 |
+| `legacy-all-of-items-not-in-frozen-sets` | an allOf root types the enum items of the array it holds in any array but a frozen set | #5817 |
+| `legacy-unique-tuple-inside-sequence` | the tuple of a uniqueItems array is looked up inside the items of a `Sequence` too, as in a union | #5820 |
+| `legacy-collapse-beside-lists-and-dicts` | under `--field-constraints`, collapse keeps a constrained root model beside a list, a dict or a union only, and inlines it into a `Sequence`, `Mapping`, set or tuple | #5819 |
+| `legacy-unredacted-locations` | the warnings about schemas whose parts no value satisfies, patterns no regular expression joins and object maps one dict cannot express name the schema's location with the document URL as written (userinfo and query included) | #5577 |
+| `legacy-python-json-errors` | a generated server writes the JSON body of a response without a model through `json_text` with the standard library's own errors and messages (`ValueError` for NaN or an integer over the decimal conversion limit, worded per Python version), where every other runtime site raises the runtime's own | #5734 |
+| `legacy-case-sensitive-parameter-override` | the paths scope's walk (`OpenAPIParser._process_path_items`) keeps a path item's parameter that an operation redeclares with a header name in another case, so `parse_operation` and its overrides see both; the API walk and the targets fold a header's name | #5747 |
+| `legacy-upload-size-query` | an upload helper names the target its create call writes the content's size into as a query parameter unless it is a header, a path parameter included, so a call's extra query of that name is refused although the helper writes none | #5693 |
+| `legacy-lenient-quoted-string` | a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed (control characters included), so a response whose directive quotes one is read as well-formed and stored, where the RFC 9110 quoted-string of a media type's or a Link's parameters refuses it | #5769 |
+| `legacy-header-constant-by-upper` | the constant of an operation's header decoders is its method name upper-cased, which the resource's types module reserves but never claims, so two method names that upper-case alike (`straße`, `strasse`) define one constant twice and the first operation's header accessor decodes with the second one's decoders | #5781 |
+| `legacy-graphql-quote` | the error raised when the `graphql` extra is missing writes the closing backtick of its pip command before the closing quote (`` `$pip install 'datamodel-code-generator[graphql]`' ``), so the command copied from the code span leaves its quote open | #5791 |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
@@ -69787,24 +69767,10 @@ remediation without reading the checker implementation.
 
 A decision that several parser passes or output models need has one home in
 `docs/architecture.md` ("One home per decision"): a pure core and its adapters.
-`scripts/decision_homes.toml` names each home and the code shapes that mean "this
-code decides it" (a read of a schema object's `nullable`, a graph-component
-computation, the int64 limit, an option read outside its owner). Run
-
-```bash
-python scripts/check_decision_homes.py
-```
-
-after a change. A shape found outside its home fails with "decision X has its
-home in file:function": build the facts in the adapter and call the core, or, for
-a decision without a home, add the home to the toml in the same change instead of
-writing a second copy. A call of a function that the home's core defines is never
-reported, wherever it is made, so a caller of the core needs no adapter entry. The
-sites that exist today are the allowlist at the end of the toml; it only shrinks,
-and `--write-allowlist` lowers it after you route a site. A new `legacy-*` row
-needs a `legacy_rows` entry (home and `fix`) and a row of the "Legacy rows" table
-in `docs/architecture.md`. The check runs as `tests/test_decision_homes.py`; its
-fixtures are under `tests/data/decision_homes/`.
+Build the facts in an adapter and call the core; for a decision without a home,
+add the home in the same change instead of writing a second copy. A new `legacy-*`
+row needs a row of the "Legacy rows" table in `docs/architecture.md` with what
+deletes it (`fix`); `tests/test_legacy_rows.py` fails for a row on one side only.
 
 ## Parser generation state
 
