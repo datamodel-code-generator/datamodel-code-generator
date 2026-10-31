@@ -277,7 +277,9 @@ datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-opt
   version applies them (JSON Schema 2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3).
 - For OpenAPI, it measures what your `--openapi-scopes` generate: component schemas with the `schemas` scope
   (otherwise only those the operations reference), and request, response, parameter, webhook, and request body
-  schemas with those scopes, filtered by `--openapi-include-paths`; parameter schemas follow every walked operation.
+  schemas with those scopes, filtered by `--openapi-include-paths`; parameter schemas follow every walked operation. A
+  path item, request body or response that is a local `$ref` (percent-encoded or not) counts as the object it names,
+  once however many operations name it.
   For AsyncAPI, it measures component schemas and the payload and header schemas of messages in components and
   channels, including multi-format schema objects.
 - Generation reads the `definitions` of a Swagger 2.0 document with `--input-file-type jsonschema`, so that is how it

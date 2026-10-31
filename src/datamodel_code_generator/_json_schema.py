@@ -130,16 +130,21 @@ def subschema_entries(keyword: str, value: object) -> Iterator[tuple[tuple[str |
 def json_nodes(value: object, *, tuples: bool = False) -> Iterator[object]:
     """Yield a loaded JSON value and every value inside it, on a stack: the last member of an object or array first.
 
+    An object or array met again, as a YAML alias gives it and also one that holds itself, is yielded and walked once.
     The walk takes the members of an object or array when it resumes after yielding it, so a caller may change the
     object first, or stop. ``tuples`` also walks the items of a tuple (a schema built in Python).
     """
+    containers = (dict, list, tuple) if tuples else (dict, list)
+    seen: dict[int, object] = {}
     pending = [value]
     while pending:
-        yield (node := pending.pop())
-        if isinstance(node, dict):
-            pending.extend(node.values())
-        elif isinstance(node, list) or (tuples and isinstance(node, tuple)):
-            pending.extend(node)
+        node = pending.pop()
+        if not isinstance(node, containers):
+            yield node
+        elif id(node) not in seen:
+            seen[id(node)] = node
+            yield node
+            pending.extend(node.values() if isinstance(node, dict) else node)
 
 
 SCHEMA_MAP_KEYS: frozenset[str] = frozenset(schema_positions(shapes=("map",)))

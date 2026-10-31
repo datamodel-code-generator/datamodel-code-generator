@@ -1,0 +1,28 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Integer keys
+type: object
+properties:
+  shape:
+    oneOf:
+      - allOf:
+          - $ref: "#/definitions/200"
+      - type: object
+        properties:
+          kind:
+            const: b
+  settings:
+    type: object
+    properties:
+      name:
+        type: string
+    default:
+      1: one
+      name: two
+definitions:
+  200:
+    type: object
+    properties:
+      kind:
+        const: a
+  Other:
+    type: string
