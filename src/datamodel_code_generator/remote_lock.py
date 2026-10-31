@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
 from datamodel_code_generator._json_output import write_streamed_json
-from datamodel_code_generator._paths import existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -362,8 +362,7 @@ class RemoteReferenceLock:
         anchor = None
         staging_directory = None
         try:
-            target = self.path if self.path.is_absolute() else Path.cwd() / self.path
-            target = target.expanduser().parent.resolve(strict=False) / target.name
+            target = concrete(self.path if self.path.is_absolute() else Path.cwd() / self.path)
             anchor, staging_directory = _open_lock_staging(target.parent)
             publish_staged_files((_staged_lock(self, staging_directory, anchor, target),))
         except OSError as exc:

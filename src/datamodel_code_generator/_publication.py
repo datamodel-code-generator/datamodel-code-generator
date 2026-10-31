@@ -18,7 +18,7 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
-from datamodel_code_generator._paths import existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -576,7 +576,7 @@ def _planned_staged_file(file: tuple[Path, Path] | StagedFile) -> StagedFile:
     if isinstance(file, StagedFile):
         return file
     staged_file, target = file
-    return StagedFile(staged_file, target, target.expanduser().parent.resolve(strict=False) / target.name)
+    return StagedFile(staged_file, target, concrete(target))
 
 
 def _create_directory(directory: Path) -> bool:
@@ -642,7 +642,7 @@ def _remove_created_directory(directory: Path) -> list[Path]:
 
 
 def _validate_planned_target(file: StagedFile) -> None:  # pragma: no cover - Windows fallback
-    concrete_target = file.target.expanduser().parent.resolve(strict=False) / file.target.name
+    concrete_target = concrete(file.target)
     if concrete_target != file.resolved_target:
         raise OSError(f"batch output target changed before publication: {file.target}")
 

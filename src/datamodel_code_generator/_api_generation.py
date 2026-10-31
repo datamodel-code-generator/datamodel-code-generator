@@ -24,6 +24,7 @@ from datamodel_code_generator._api_types import (
     OperationRef,
 )
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._paths import concrete, concrete_parent
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -622,7 +623,7 @@ class _Planner:
         for artifact in artifacts:
             location = self.cwd / artifact.path
             if (parent := parents.get(location.parent)) is None:
-                parent = parents[location.parent] = location.parent.resolve()
+                parent = parents[location.parent] = concrete_parent(location)
                 for directory in (parent, *parent.parents):
                     directories.add(key := _collision_key(directory, target))
                     if any(directory == root or root in directory.parents for root in roots):
@@ -980,7 +981,7 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         destination = (directory := target.directory(artifact)) or artifact.path
         if (place := places.get(destination)) is None:
             location = cwd / destination
-            resolved = location.resolve() if directory else location.parent.resolve() / location.name
+            resolved = location.resolve() if directory else concrete(location)
             stack.callback(close_anchor, anchor := publication_anchor(resolved))
             staging = stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=anchor.path))
             place = places[destination] = (Path(staging), resolved, anchor)
@@ -1033,7 +1034,7 @@ def _unshared(
             yield artifact
             continue
         location = target.cwd / artifact.path
-        owner, planned = models.setdefault(location.parent.resolve(strict=False) / location.name, (job, artifact))
+        owner, planned = models.setdefault(concrete(location), (job, artifact))
         if planned is artifact:
             yield artifact
         elif planned.content != artifact.content:
