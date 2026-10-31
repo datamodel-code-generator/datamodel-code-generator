@@ -1,11 +1,13 @@
 """The names a client target reserves, and the rules its explicit names and header tokens follow.
 
-Each helper kind's names are here too: the label documentation and messages call it by, and its options keyword.
+Each helper kind's names are here too: the label documentation and messages call it by, and its options keyword. So
+are the names the generated modules define for each other: an operation's response alias and header decoder, a
+resource's classes, and each numbered plan, accessor and codec.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, NamedTuple
+from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._runtime.model_codecs.media import TOKEN
 from datamodel_code_generator._target_naming import explicit_name, windows_device
@@ -68,6 +70,9 @@ HELPER_KINDS: Final = {
     "resumable_upload": HelperKindNames("upload", "upload_options"),
 }
 HELPER_ARGUMENTS: Final = frozenset({"items", "source", "state", *(names.options for names in HELPER_KINDS.values())})
+Numbered: TypeAlias = Literal[
+    "OPERATION", "KEYWORDS", "PLAN", "CANCEL", "STREAM", "SOCKET", "_items", "_result", "_immediate", "codec"
+]
 
 
 def namespace_problem(value: object, target_python_version: PythonVersion) -> str | None:
@@ -126,3 +131,40 @@ def helper_classes(name: str, kind: str, target_python_version: PythonVersion) -
     for end in range(1, len(parts)):
         yield parts[:end], f"{pascal_parts(parts[:end], target_python_version)}Protocols"
     yield parts, f"{pascal_parts(parts, target_python_version)}{pascal_parts((kind,), target_python_version)}"
+
+
+def numbered(family: Numbered, index: int) -> str:
+    """Return the name a generated module gives the constant or function of a family that serves its index-th item.
+
+    `OPERATION` names an operation's plan in the registry and its security binding, `KEYWORDS` the keywords record of
+    its unpacked methods, `PLAN`, `CANCEL`, `STREAM` and `SOCKET` a helper's plans, `_items`, `_result` and
+    `_immediate` a helper's typed accessors, and `codec` a planned use's model codec.
+    """
+    return f"{family}_{index}"
+
+
+def response_alias(pascal: str) -> str:
+    """Return the name of the response alias an operation's resource types module defines, by its PascalCase name."""
+    return f"{pascal}Response"
+
+
+def header_decoder(name: str) -> str:
+    """Return the name of the function that decodes an operation's declared response headers, by its method name."""
+    return f"decode_{name}_header"
+
+
+def header_constant(name: str) -> str:
+    """Return the name of the constant holding the header decoders of an operation, by its method name.
+
+    Row ``legacy-header-constant-by-upper``: the method name upper-cased, which the types module reserves but never
+    claims, so two method names that upper-case alike (``straße``, ``strasse``) name one constant twice.
+    """
+    return f"_{name.upper()}_HEADERS"
+
+
+def resource_class(pascal: str, prefix: str = "", suffix: str = "Resource") -> str:
+    """Return the name of a resource's class, or with a view's suffix of the view's, in the sync or asyncio module.
+
+    `prefix` is `Async` in the asyncio module and empty in the sync one.
+    """
+    return f"{prefix}{pascal}{suffix}"

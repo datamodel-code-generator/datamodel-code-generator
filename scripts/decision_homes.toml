@@ -1704,6 +1704,39 @@ paths = ["_client/"]
 what = "spells the options keyword or class of a helper kind itself; read client/naming.py:HELPER_KINDS and runtime protocols/options.py:_KIND_OPTIONS"
 audit = "C26-7"
 
+[homes.Hx-client-names]
+decision = "the names a client package's generated modules define for each other: the constant or function of a family that serves a module's index-th item (an operation's registry plan and security binding, its keywords record, a helper's plans and typed accessors, a use's model codec), an operation's response alias and header decoder and the constant of its header decoders (row legacy-header-constant-by-upper: the method name upper-cased, reserved but never claimed in the types module), and the classes of a resource and its views in the sync and asyncio modules"
+core = [
+    "_client/naming.py:numbered",
+    "_client/naming.py:response_alias",
+    "_client/naming.py:header_decoder",
+    "_client/naming.py:header_constant",
+    "_client/naming.py:resource_class",
+]
+adapters = []
+
+[homes.Hx-client-names.signatures.numbered-name]
+kind = "literal"
+contains = [
+    "OPERATION_",
+    "KEYWORDS_",
+    "PLAN_",
+    "CANCEL_",
+    "STREAM_",
+    "SOCKET_",
+    "_items_",
+    "_result_",
+    "_immediate_",
+    "codec_",
+    "_HEADERS",
+    "decode_",
+]
+paths = ["_client/render.py", "_client/codec_render.py", "_client/webhooks.py", "_client/facade.py"]
+# Left out: a webhook module's own decode function and the runtime function it calls, which no rule numbers or names.
+exclude = ["_client/webhooks.py:_Webhooks.module", "_client/webhooks.py:_Webhooks.unsigned"]
+what = "spells a name a client package's modules define for each other itself; call client/naming.py:numbered, header_constant or header_decoder"
+audit = "C22-G3"
+
 [homes.Hx-helper-records]
 decision = "what a protocol helper's configuration stands for at run time: the selector and request target record of each selector and target, which the validator builds to check them and the renderer spells, and the frame every WebSocket message of a codec takes with the media kind its payload is typed as"
 core = ["_client/protocols.py"]
@@ -3066,6 +3099,10 @@ fix = "#5693"
 [legacy_rows."legacy-lenient-quoted-string"]
 home = "Hx-http"
 fix = "#5769"
+
+[legacy_rows."legacy-header-constant-by-upper"]
+home = "Hx-client-names"
+fix = "#5781"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

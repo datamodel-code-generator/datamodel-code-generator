@@ -17,6 +17,7 @@ from datamodel_code_generator._client.codec_plan import (
     Items,
     Values,
 )
+from datamodel_code_generator._client.naming import numbered
 from datamodel_code_generator._python_syntax import (
     call_text,
     from_import,
@@ -55,6 +56,10 @@ class UseAccessors:
     use: TypeUseId
     codec: str
 
+    def reference(self, module: TargetModule) -> str:
+        """Return the use's codec as another generated module spells it: an attribute of the model bindings module."""
+        return f"{module.local('_generated', 'model_bindings')}.{self.codec}"
+
 
 @dataclass(frozen=True, slots=True)
 class RenderedBindings:
@@ -91,7 +96,9 @@ def _description(use: TypeUseId) -> str:
 class _Renderer:
     def __init__(self, plan: ClientCodecs, types: TypeNames) -> None:
         self.plan = plan
-        self.module = TargetModule(types, (*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))), level=1)
+        self.module = TargetModule(
+            types, (*_NAMES, *(numbered("codec", index) for index in range(len(plan.uses)))), level=1
+        )
         self.records: set[str] = set()
 
     def call(self, name: str, *values: str, **keywords: str) -> str:
@@ -143,15 +150,16 @@ class _Renderer:
             if use.extras:
                 arguments = (*arguments, EXTRAS)
             final = self.module.name("typing", "Final")
+            name = numbered("codec", index)
             entries.append(
                 Codec(
-                    f"codec_{index}",
+                    name,
                     subscript_text(final, (subscript_text(codec, (static,)),)),
                     call_text(codec, arguments),
                     _description(use.use),
                 )
             )
-            accessors.append(UseAccessors(use.use, f"codec_{index}"))
+            accessors.append(UseAccessors(use.use, name))
         names = sorted({runtime.codec, *self.records})
         imports = [from_import(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
         if self.plan.extras:

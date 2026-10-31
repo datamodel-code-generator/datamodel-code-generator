@@ -271,7 +271,7 @@ class _Webhooks:
 
     def decoder(self, module: TargetModule, event: WebhookEvent) -> str:
         """Return the runtime decoder of one event type."""
-        codec = f"{module.local('_generated', 'model_bindings')}.{self.accessors[event.use.id].codec}"
+        codec = self.accessors[event.use.id].reference(module)
         return call_text(module.local(_EVENTS, "EventDecoder"), (codec,))
 
     def event(self, module: TargetModule, spec: WebhookSpec) -> tuple[str, str]:
