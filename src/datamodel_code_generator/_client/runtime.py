@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -135,7 +137,7 @@ class Capabilities:
             (self.multipart_requests, _MULTIPART),
             (self.response_headers, _HEADERS),
             (self.multipart_responses, (*_MULTIPART, "client/multipart_responses.py")),
-            (self.extras, ("model_codecs/pydantic_extras.py",)),
+            (self.extras, (EXTRAS.path,)),
         ):
             if declared:
                 modules.update(needed)

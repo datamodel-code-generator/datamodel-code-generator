@@ -224,6 +224,14 @@ def json_null(
     return kind == "json" and takes_null(None if use is None else use.type, symbols, members)
 
 
+def coded_use(kind: MediaKind, use: TypeUseBinding | None) -> TypeUseBinding | None:
+    """Return the type use whose model reads and writes a body of a media kind, or None for raw unconstrained bytes.
+
+    A binary body's model reads it only when the models constrain its bytes; a body of any other kind is read whole.
+    """
+    return None if use is None or (kind == "binary" and not use.checked) else use
+
+
 def tags(operation: OperationContract) -> tuple[str, ...]:
     """Return an operation's tags in declaration order."""
     if not isinstance(value := operation_literal(operation, "tags"), LiteralSequence):

@@ -102,8 +102,6 @@ class CodecRuntime:
         return tuple(f"model_codecs/{name}.py" for name in (*self.imports, self.module))
 
 
-EXTRAS: Final = "extras_serializer"
-EXTRAS_MODULE: Final = "pydantic_extras"
 CODEC_RUNTIMES: Final[dict[CodecBackend, CodecRuntime]] = {
     "pydantic_v2.BaseModel": CodecRuntime("pydantic_models", "PydanticCodec", ("pydantic_adapters",)),
     "pydantic_v2.dataclass": CodecRuntime("pydantic_dataclasses", "PydanticDataclassCodec", ("pydantic_adapters",)),

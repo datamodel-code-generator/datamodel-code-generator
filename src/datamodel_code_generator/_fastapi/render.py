@@ -33,6 +33,7 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     dict_display,
@@ -58,7 +59,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import described, tags
+from datamodel_code_generator._target_operations import coded_use, described, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -165,8 +166,6 @@ _SERVER_RUNTIME: Final = (
     "server/responses.py",
 )
 _SECURITY_RUNTIME: Final = ("server/security.py",)
-_EXTRAS_MODULE: Final = "_runtime.model_codecs.pydantic_extras"
-_EXTRAS_RUNTIME: Final = ("model_codecs/pydantic_extras.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/parameter_reads.py",
     "model_codecs/unset.py",
@@ -809,7 +808,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        extras = _EXTRAS_RUNTIME if any(map(_keeps_extras, self.plan.operations)) else ()
+        extras = (EXTRAS.path,) if any(map(_keeps_extras, self.plan.operations)) else ()
         yield from runtime_files((*_SERVER_RUNTIME, *security, *inputs, *extras))
 
     def application(self) -> Templated:
@@ -1255,7 +1254,7 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
         if (value := _checked(media)) is not None:
             entries.append(f"model={module.annotation(value)}")
         if media.extras:
-            entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
+            entries.append(f"dump={module.local(EXTRAS.module, EXTRAS.writer)}")
         if null:
             entries.append("null=True")
     return call_text(module.local("_runtime.server.responses", "Declared"), entries)
@@ -1298,9 +1297,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
 
 def _checked(media: MediaSpec) -> TypeView | None:
     """Return the model type that validates a media's body: any but raw bytes the models leave unconstrained."""
-    if (use := media.use) is None or (media.kind == "binary" and not use.checked):
-        return None
-    return use.type
+    return None if (use := coded_use(media.kind, media.use)) is None else use.type
 
 
 def _payload(media: MediaSpec) -> TypeView | None:
