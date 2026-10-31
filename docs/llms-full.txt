@@ -68291,8 +68291,11 @@ longer applies the generic base class.
 **Module imports.** The passes from L1 to L7 write the imports of a module (`ModuleContext.imports`) and the imports
 all modules share (`Parser.imports`) only through `parser/_imports_plan.py:ModuleImportLedger`, which applies each write to
 the live `Imports` at once and keeps it as an entry with its producer: the pass (`ImportPass`), and the model and
-field it wrote for. The live `Imports` is the replay of its entries (`replay`). The import block that
-`_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
+field it wrote for. The live `Imports` is the replay of its entries (`replay`). `imports.py` reads every import the
+same way: by its module and name (`_import_key`, the key every alias map uses), a stored `X as Y` split into the name and
+the alias kept apart (`_stored_import`), the module `--import-overrides` moves a name to (`_override_module`, never a
+`__future__` name), and whether an `Imports` holds an import or drops every count of it (`_holds`, `_remove_all`).
+The import block that `_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
 wrote of their models' unrendered imports (`DataModel._unrendered_imports`), counted as the difference between the
 replay of the entries and their replay without those imports, so the module lines keep their order and imports
 written outside the ledger stay. The named row `legacy.enum-member-import-bindings` uses it: an Enum's `imports` keep

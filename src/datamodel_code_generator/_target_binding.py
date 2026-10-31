@@ -100,7 +100,7 @@ from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import admits_none, is_none, present
 from datamodel_code_generator.enums import DataclassArguments
-from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path
+from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
@@ -743,7 +743,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
 def _imported_names(imports: Imports) -> Iterator[str]:
     """Yield every module and module member that the import statements of a collection name."""
     for module, names in imports.items():
-        members = (name.partition(" as ")[0] for name in names)
+        members = (_stored_import(name)[0] for name in names)
         if module is None:
             yield from members
         else:

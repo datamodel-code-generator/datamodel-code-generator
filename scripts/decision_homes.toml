@@ -781,6 +781,11 @@ adapters = ["model/base.py:DataModel._field_assignment_facts"]
 [homes.H26]
 decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node)"
 core = [
+    "imports.py:_import_key",
+    "imports.py:_stored_import",
+    "imports.py:_override_module",
+    "imports.py:_holds",
+    "imports.py:_remove_all",
     "model/_rendered_names.py",
     "parser/_imports_plan.py",
     "parser/_passes/_shared.py:ReferenceImportTarget",
@@ -799,6 +804,13 @@ kind = "literal"
 contains = ["legacy-flat-bare-loads"]
 what = "counts every name node of a rendered text as a bare load; call model/_rendered_names.py:_bare_loads_of with row scoped"
 audit = "C10-K19"
+
+[homes.H26.signatures.stored-alias-split]
+kind = "call"
+names = ["partition"]
+strings = [" as "]
+what = "splits a name Imports stores into its name and kept alias itself; call imports.py:_stored_import"
+audit = "C04-K02"
 
 [homes.H26.signatures.reference-target-name]
 kind = "call"

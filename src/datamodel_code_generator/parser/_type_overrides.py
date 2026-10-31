@@ -24,7 +24,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.enums import _pydantic_version_key
-from datamodel_code_generator.imports import Import, _import_path
+from datamodel_code_generator.imports import Import, _import_key, _import_path
 from datamodel_code_generator.model.base import ConstraintsBase
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import ModuleContextView
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -183,7 +183,7 @@ def get_emitted_python_type_path(parser: TypeOverridesHost, path: str) -> str:
         return parser._get_target_python_type_path(path)  # noqa: SLF001
     except Error as exc:
         import_ = Import.from_full_path(path)
-        parser._unavailable_imports[import_.from_, import_.import_] = str(exc)  # noqa: SLF001
+        parser._unavailable_imports[_import_key(import_)] = str(exc)  # noqa: SLF001
         return path
 
 
@@ -246,23 +246,19 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
         read_literal_enum_members,
         rewrite_python_type_expr,
     )
-    from datamodel_code_generator._python_type_binding import (  # noqa: PLC0415
-        BoundPythonType,
-        python_type_import_key,
-        python_type_import_name,
-    )
+    from datamodel_code_generator._python_type_binding import BoundPythonType  # noqa: PLC0415
 
     imports: dict[Import, None] = {}
-    bound_imports: dict[tuple[str | None, str], Import] = {}
+    bound_imports: dict[_ImportKey, Import] = {}
     resolved_name_imports: dict[str, Import | PythonTypeExpr | None] = {}
     resolving_names: set[str] | None = None
 
     def bind_import(import_: Import) -> tuple[Import, str]:
-        key = python_type_import_key(import_)
+        key = _import_key(import_)
         if (bound_import := bound_imports.get(key)) is not None:
-            return bound_import, python_type_import_name(bound_import)
+            return bound_import, bound_import.binding_name
 
-        name = python_type_import_name(import_)
+        name = import_.binding_name
         bound_imports[key] = import_
         imports.setdefault(import_, None)
         return import_, name

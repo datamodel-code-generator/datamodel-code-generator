@@ -29,7 +29,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, type_override_classes
-from datamodel_code_generator.imports import Import, _import_bindings
+from datamodel_code_generator.imports import Import, _import_bindings, _import_key, _override_module
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -81,7 +81,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -137,12 +137,9 @@ def iter_models_field_data_types(
                 yield model, field, data_type
 
 
-_PythonTypeImportKey: TypeAlias = tuple[str | None, str]
-
-
-def _aliased_import(import_: Import | None, aliased_imports: Mapping[_PythonTypeImportKey, Import]) -> Import | None:
+def _aliased_import(import_: Import | None, aliased_imports: Mapping[_ImportKey, Import]) -> Import | None:
     """Return the import that aliases ``import_``, or None when it has none other than itself."""
-    if import_ is None or (aliased := aliased_imports.get((import_.from_, import_.import_))) is import_:
+    if import_ is None or (aliased := aliased_imports.get(_import_key(import_))) is import_:
         return None
     return aliased
 
@@ -150,9 +147,9 @@ def _aliased_import(import_: Import | None, aliased_imports: Mapping[_PythonType
 def _ordinary_field_shadow_aliases(
     models: list[DataModel],
     all_model_field_names: set[str],
-) -> tuple[dict[_PythonTypeImportKey, Import], bool, bool]:
+) -> tuple[dict[_ImportKey, Import], bool, bool]:
     """Run the narrow fast path and report whether structured imports exist."""
-    aliases: dict[_PythonTypeImportKey, Import] = {}
+    aliases: dict[_ImportKey, Import] = {}
     has_python_type = False
     has_runtime_expressions = False
     for model in models:
@@ -165,7 +162,7 @@ def _ordinary_field_shadow_aliases(
                 if not has_runtime_expressions and data_type.runtime_expression_imports:
                     has_runtime_expressions = True
                 if data_type.import_ and data_type.type in all_model_field_names:
-                    key = (data_type.import_.from_, data_type.import_.import_)
+                    key = _import_key(data_type.import_)
                     aliases.setdefault(
                         key,
                         Import(
@@ -181,7 +178,7 @@ def _ordinary_field_shadow_aliases(
 def _apply_structured_import_aliases(
     builder: GraphBuilder,
     models: list[DataModel],
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Rewrite every identity-carrying structured consumer of selected imports."""
     for model in models:
@@ -197,7 +194,7 @@ def _apply_structured_import_aliases(
 def _alias_field_runtime_expressions(
     builder: GraphBuilder,
     field: DataModelFieldBase,
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Rewrite a field only when its producer registered a runtime expression."""
     imports = field.runtime_expression_imports
@@ -211,7 +208,7 @@ def _alias_field_runtime_expressions(
 def _alias_data_type_structured_imports(
     builder: GraphBuilder,
     data_type: DataType,
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Apply aliases to type, annotation, and producer-registered kwargs expressions."""
     if (aliased_import := _aliased_import(data_type.import_, aliased_imports)) is not None:
@@ -900,7 +897,10 @@ def has_import_override(import_overrides: dict[str, str] | None, *imports: Impor
     """Avoid changing generated defaults when an import policy redirects their bindings."""
     if not import_overrides:
         return False
-    return any(import_overrides.get(import_.import_, import_.from_) != import_.from_ for import_ in imports)
+    return any(
+        _override_module(import_overrides, import_.from_, import_.import_) not in {None, import_.from_}
+        for import_ in imports
+    )
 
 
 def apply_inherited_field_default(

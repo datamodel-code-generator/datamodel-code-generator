@@ -11,9 +11,10 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeRuntimeSymbol,
     rewrite_python_type_expr,
 )
+from datamodel_code_generator.imports import _import_key
 
 if TYPE_CHECKING:
-    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.imports import Import, _ImportKey
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,26 +34,16 @@ class BoundPythonType:
         return self
 
 
-def python_type_import_key(import_: Import) -> tuple[str | None, str]:
-    """Return the stable identity used when an import receives an alias."""
-    return import_.from_, import_.import_
-
-
-def python_type_import_name(import_: Import) -> str:
-    """Return the identifier currently bound by an import statement."""
-    return import_.binding_name
-
-
 def alias_bound_python_type(
     bound_type: BoundPythonType,
-    aliases: dict[tuple[str | None, str], Import],
+    aliases: dict[_ImportKey, Import],
 ) -> BoundPythonType:
     """Alias imports and their semantic leaves together without a text round trip."""
     module_aliases: dict[str, str] = {}
     imports: list[Import] = []
     changed = False
     for import_ in bound_type.imports:
-        if (aliased_import := aliases.get(python_type_import_key(import_))) is None:
+        if (aliased_import := aliases.get(_import_key(import_))) is None:
             imports.append(import_)
             continue
         changed = True
@@ -86,6 +77,4 @@ def alias_bound_python_type(
 __all__ = [
     "BoundPythonType",
     "alias_bound_python_type",
-    "python_type_import_key",
-    "python_type_import_name",
 ]
