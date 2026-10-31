@@ -1,1 +1,0 @@
-allowlist entry a.py f a.s: write { home, count, audit }

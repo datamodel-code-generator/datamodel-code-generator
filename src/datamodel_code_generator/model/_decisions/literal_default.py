@@ -3,7 +3,7 @@
 A field is fixed to one value by its ``const``, by a type of one ``Literal`` under ``--use-one-literal-as-default``,
 or as the tag field of a discriminated union variant. Every input is an immutable fact passed by keyword, so the
 functions read nothing else. The adapters read the facts from the live objects and write the decision with
-``model/base.py:_apply_literal_default``; they are listed under H09 in ``scripts/decision_homes.toml``. ``const_type``
+``model/base.py:_apply_literal_default``; they are listed in ``docs/architecture.md``. ``const_type``
 gives the type of a const, for the field hook and for the L1 const type, which returns it before the null a ``type``
 list or ``nullable`` (under ``--strict-nullable``) adds beside it.
 

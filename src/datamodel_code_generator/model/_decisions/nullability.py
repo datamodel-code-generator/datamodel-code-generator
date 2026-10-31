@@ -1,7 +1,7 @@
 """Rendered nullability: whether a type's hint, or the annotation a field writes around it, includes ``None``.
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters read the facts
-from the live objects (listed under H23 in ``scripts/decision_homes.toml``); ``parser/generation.py:GenerationStore.
+from the live objects (listed in ``docs/architecture.md``); ``parser/generation.py:GenerationStore.
 write_rendered_null`` writes it once at render preparation. The client and server targets read the None of an
 annotation the document writes from ``written_annotation_null``.
 

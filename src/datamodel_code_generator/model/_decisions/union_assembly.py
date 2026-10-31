@@ -2,7 +2,7 @@
 
 Every input is an immutable fact, so the functions read nothing else. ``assemble_union`` decides a union when it is
 built or rewritten: each builder passes the row of ``UnionRow`` it follows and a ``MemberFacts`` per member. The
-adapters that apply the plan are listed under H10 in ``scripts/decision_homes.toml``. ``merge_members`` decides which
+adapters that apply the plan are listed in ``docs/architecture.md``. ``merge_members`` decides which
 written members a union keeps and whether it takes over their None, by rendered text or by projected type.
 ``join_union`` writes the members, for type hints and
 for the ``MISSING`` sentinel of Pydantic fields, which it writes after the hint as rendered, so a union in the hint

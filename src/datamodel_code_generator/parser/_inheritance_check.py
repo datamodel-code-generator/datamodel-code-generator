@@ -2,7 +2,7 @@
 
 ``check_model_inheritance`` rejects, with an ``Error``, the builtin classes Python would refuse to create: an
 inheritance cycle, a local base written after its subclass, and bases whose method resolution orders conflict, which
-it reads through the H14 core (``_mro.py:c3_merge``, rule ``python``). It takes the parser through
+it reads through the MRO core (``_mro.py:c3_merge``, rule ``python``). It takes the parser through
 ``InheritanceCheckHost``, which ``Parser`` satisfies structurally, and ``Parser._check_model_inheritance`` stays the
 hook the pipeline calls and subclasses override.
 """

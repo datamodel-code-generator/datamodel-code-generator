@@ -1,4 +1,4 @@
-"""What the client and server targets read from a model type's frozen view: its None (H23), its kind (T-kind).
+"""What the client and server targets read from a model type's frozen view: its None, its kind.
 
 The binder writes into each view the None the model renders (``model/_decisions/nullability.py``), as a `NoneType`
 member; these pure functions are the one reading of it, so no target decides by its own walk whether a type takes
