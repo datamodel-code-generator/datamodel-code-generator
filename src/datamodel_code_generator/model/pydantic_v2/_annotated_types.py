@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _RuntimeAnnotatedDataType
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -25,7 +25,7 @@ class AnnotatedStringDataType(PydanticV2DataType):
     @override
     def type_hint(self) -> str:
         """Render string constraints inside an Annotated subscript."""
-        return f"{self.runtime_expression_imports[0].binding_name}[str, {super().type_hint}]"
+        return subscript_text(self.runtime_expression_imports[0].binding_name, ("str", super().type_hint))
 
     @property
     @override
@@ -88,4 +88,4 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
             metadata.append(f"{self._binding('MultipleOf')}({represent_python_value(multiple_of)})")
         if not metadata:
             return self.annotated_base_type
-        return f"{self._binding('Annotated')}[{self.annotated_base_type}, {', '.join(metadata)}]"
+        return subscript_text(self._binding("Annotated"), (self.annotated_base_type, *metadata))

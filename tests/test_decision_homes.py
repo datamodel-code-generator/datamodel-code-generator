@@ -48,7 +48,7 @@ ALLOWED = """
 "sample.spelling" = { home = "sample", count = 2, audit = "X-10" }
 
 [allow."other.py"."displays"]
-"sample.hand-display" = { home = "sample", count = 3, audit = "X-11" }
+"sample.hand-display" = { home = "sample", count = 5, audit = "X-11" }
 
 [allow."other.py"."keywords"]
 "sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }
@@ -99,8 +99,13 @@ def test_decision_home_detector_reports_every_signature_kind() -> None:
 
 def test_decision_home_allowlist_accepts_known_sites_only() -> None:
     """Accept the sites an allowlist counts and report the ones beyond it."""
-    lowered = ALLOWED.replace("count = 3", "count = 2").replace(
-        '"sample.null-test" = { home = "sample", count = 2', '"sample.null-test" = { home = "sample", count = 1'
+    lowered = (
+        ALLOWED
+        .replace("count = 3", "count = 2")
+        .replace("count = 5", "count = 4")
+        .replace(
+            '"sample.null-test" = { home = "sample", count = 2', '"sample.null-test" = { home = "sample", count = 1'
+        )
     )
 
     assert_output(_scan_report(FIXTURE_CONFIG + ALLOWED), name="complete")

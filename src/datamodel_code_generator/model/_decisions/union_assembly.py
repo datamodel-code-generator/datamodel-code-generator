@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, TypeVar, final
 
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
@@ -225,4 +226,4 @@ def merge_members(members: Iterable[WrittenMember[_T]], /) -> MergedMembers[_T]:
 
 def join_union(members: Sequence[str], /, *, union_operator: bool) -> str:
     """Write a union of member hints, with ``|`` or as ``Union[...]``."""
-    return " | ".join(members) if union_operator else f"Union[{', '.join(members)}]"
+    return " | ".join(members) if union_operator else subscript_text("Union", members)

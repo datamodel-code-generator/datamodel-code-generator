@@ -47,6 +47,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -327,9 +328,9 @@ class _HelperDigests:
         """
         match value:
             case GenericType():
-                arguments = ", ".join(self.spelled(item) for item in value.arguments)
+                arguments = [self.spelled(item) for item in value.arguments]
                 base = self.spelled(value.base)
-                return f"{base}[{arguments or '()'}]" if arguments or value.tuple_form == "fixed" else base
+                return subscript_text(base, arguments) if arguments or value.tuple_form == "fixed" else base
             case UnionType():
                 return " | ".join(self.spelled(member) for member in value.members)
             case _:

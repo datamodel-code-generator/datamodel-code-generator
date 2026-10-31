@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._python_syntax import list_display, tuple_display
+from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
 from datamodel_code_generator._target_unicode import is_python_name
 
 if TYPE_CHECKING:
@@ -252,8 +252,7 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
             rendered_base = render_python_type_expr(expression.base)
             if isinstance(expression.base, PythonTypeUnion):
                 rendered_base = f"({rendered_base})"
-            arguments = ", ".join(map(render_python_type_expr, expression.arguments)) or "()"
-            return f"{rendered_base}[{arguments}]"
+            return subscript_text(rendered_base, map(render_python_type_expr, expression.arguments))
         case PythonTypeModelField():
             member = "model_fields" if expression.pydantic else "__annotations__"
             result = f"{render_python_type_expr(expression.model)}.{member}[{expression.field_name!r}]"

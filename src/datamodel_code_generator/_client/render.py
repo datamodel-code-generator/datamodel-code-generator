@@ -44,7 +44,13 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._python_syntax import call_text, keyword_argument, set_display, tuple_display
+from datamodel_code_generator._python_syntax import (
+    call_text,
+    keyword_argument,
+    set_display,
+    subscript_text,
+    tuple_display,
+)
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
@@ -421,9 +427,9 @@ class _Parts:
 
 _Key: TypeAlias = _Model | _Parts | str
 _SURFACES: Final = {
-    "form": ("bodies", "FormData", ""),
-    "multipart": ("bodies", "MultipartData", "[bytes]"),
-    "wire": ("types", "JSONValue", ""),
+    "form": ("bodies", "FormData", ()),
+    "multipart": ("bodies", "MultipartData", ("bytes",)),
+    "wire": ("types", "JSONValue", ()),
 }
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
@@ -458,7 +464,7 @@ class _Argument:
         """Return the argument as a key of a TypedDict, which a call may omit unless the argument is required."""
         if self.default == "required":
             return Parameter(self.name, self.annotation)
-        return Parameter(self.name, f"{module.name('typing_extensions', 'NotRequired')}[{self.annotation}]")
+        return Parameter(self.name, subscript_text(module.name("typing_extensions", "NotRequired"), (self.annotation,)))
 
     def lookup(self, module: TargetModule) -> str:
         """Return the argument read from the keywords an unpacked method was given, with its default when omitted."""
@@ -810,7 +816,7 @@ def _merged(module: TargetModule, types: Iterable[TypeView]) -> str:
 
 
 def _literal(literal: str, values: Iterable[str]) -> str:
-    return f"{literal}[{', '.join(repr(value) for value in values)}]"
+    return subscript_text(literal, map(repr, values))
 
 
 def _call(head: str, entries: Iterable[tuple[str, str]]) -> str:
@@ -1052,10 +1058,11 @@ class _Typing:
             case _Model():
                 return module.hint(key.type)
             case _Parts():
-                return f"{module.local('bodies', 'MultipartData')}[{_Typing.values(module, key)}]"
+                return subscript_text(module.local("bodies", "MultipartData"), (_Typing.values(module, key),))
             case str() if (surface := _SURFACES.get(key)) is not None:
                 package, name, arguments = surface
-                return f"{module.local(package, name)}{arguments}"
+                head = module.local(package, name)
+                return subscript_text(head, arguments) if arguments else head
             case _:
                 pass
         return key
@@ -1129,7 +1136,7 @@ class _Typing:
                 values = self.part_values(module, media)
             case _:
                 return self.surface(module, media.kind, media.use)
-        return f"{module.local('bodies', f'{prefix}MultipartBody')}[{values}]"
+        return subscript_text(module.local("bodies", f"{prefix}MultipartBody"), (values,))
 
     def part_values(self, module: TargetModule, media: MediaSpec) -> str:
         """Return the values the field parts of a body sent as parts take: each member's, JSONValue for any extra."""
@@ -1210,7 +1217,9 @@ class _Resources(_Typing):
         """Return the body type `request_raw` takes: the bodies of the package's request media, else bytes."""
         match self.raw_body:
             case "multipart":
-                return f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('types', 'JSONValue')}]"
+                return subscript_text(
+                    module.local("bodies", f"{prefix}BodyInput"), (module.local("types", "JSONValue"),)
+                )
             case "binary":
                 return module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
             case _:
@@ -1249,7 +1258,7 @@ class _Resources(_Typing):
         """
         unset = module.local("_runtime.model_codecs.unset", "UNSET")
         native = module.module("httpx2")
-        pairs = f"{module.name('collections.abc', 'Mapping')}[str, str | None] | None"
+        pairs = f"{subscript_text(module.name('collections.abc', 'Mapping'), ('str', 'str | None'))} | None"
         given = {
             "base_url": ("str | None", "None"),
             "server": (f"{module.local('options', 'ServerSelection')} | None", "None"),
@@ -1271,17 +1280,20 @@ class _Resources(_Typing):
             "http_client": (f"{native}.{'Async' if asynchronous else ''}Client | None", "None"),
         }
         if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
-            root["compression"] = (f'{module.name("typing", "Literal")}["gzip"] | None', '"gzip"')
+            gzip = subscript_text(module.name("typing", "Literal"), ('"gzip"',))
+            root["compression"] = (f"{gzip} | None", '"gzip"')
         if protocols:
             root["helper_defaults"] = (
-                f"{module.name('collections.abc', 'Mapping')}[str, HelperOptions] | None",
+                f"{subscript_text(module.name('collections.abc', 'Mapping'), ('str', 'HelperOptions'))} | None",
                 "None",
             )
         if any(isinstance(spec, CacheSpec) for spec in self.helpers):
             store = f"{'Async' if asynchronous else ''}CacheStore"
-            root["cache_stores"] = (f"{module.name('collections.abc', 'Mapping')}[str, {store}] | None", "None")
+            stores = subscript_text(module.name("collections.abc", "Mapping"), ("str", store))
+            root["cache_stores"] = (f"{stores} | None", "None")
         if self._follows:
-            root["allowed_origins"] = (f"{module.name('collections.abc', 'Sequence')}[Origin] | None", "None")
+            origins = subscript_text(module.name("collections.abc", "Sequence"), ("Origin",))
+            root["allowed_origins"] = (f"{origins} | None", "None")
         client = [Parameter(name, *root[name]) for name in CLIENT_KEYWORDS if name in root]
         return client, view
 
@@ -1732,7 +1744,7 @@ class _Resources(_Typing):
         if (records := self.records) is None:
             return Signature(tuple(argument.record(module) for argument in variant.parameters), "", variant.returns)
         record = module.local("_generated.client_arguments", records.names[branch])
-        return Signature((), f"{module.name('typing_extensions', 'Unpack')}[{record}]", variant.returns)
+        return Signature((), subscript_text(module.name("typing_extensions", "Unpack"), (record,)), variant.returns)
 
     def result(
         self, module: TargetModule, spec: OperationSpec, keys: tuple[_Key, ...], *, asynchronous: bool, view: View
@@ -1741,12 +1753,12 @@ class _Resources(_Typing):
         prefix = "Async" if asynchronous else ""
         match view:
             case "metadata":
-                return f"{module.local('responses', 'Response')}[{self.named(module, spec, keys)}]"
+                return subscript_text(module.local("responses", "Response"), (self.named(module, spec, keys),))
             case "raw":
                 return module.local("responses", f"{prefix}RawResponse")
             case "streaming":
                 manager = module.name("contextlib", f"Abstract{prefix}ContextManager")
-                return f"{manager}[{module.local('responses', f'{prefix}RawResponse')}]"
+                return subscript_text(manager, (module.local("responses", f"{prefix}RawResponse"),))
             case _:
                 pass
         return self.named(module, spec, keys)
@@ -1851,12 +1863,17 @@ class _Types(_Typing):
         missing = any(not header.required for _, branches in headers.values() for _, header in branches)
         decoders = module.local(_CODECS, "ResponseHeaders")
         absent = unset if missing else module.name("typing_extensions", "Never")
-        annotation = f"{module.name('typing', 'Final')}[{decoders}[{module.union(*every)}, {absent}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(decoders, (module.union(*every), absent)),)
+        )
         statuses = set_display(repr(response.status) for response in spec.responses)
         info = module.local("responses", "ResponseInfo")
         literal = module.name("typing", "Literal")
         overloads = (
-            tuple(HeaderOverload(f"{literal}[{spelling!r}]", result) for spelling, result in results.items())
+            tuple(
+                HeaderOverload(subscript_text(literal, (repr(spelling),)), result)
+                for spelling, result in results.items()
+            )
             if len(results) > 1
             else ()
         )
@@ -1936,7 +1953,9 @@ class _Security:
                     Keyword("wire_name", repr(scheme.wire_name)),
                 ))
             schemes.append(Plan(name, final, module.local(runtime, kind), tuple(arguments)))
-        root_annotation = f"{final}[tuple[{module.local(runtime, 'SecuritySchemeEntry')}, ...]]"
+        root_annotation = subscript_text(
+            final, (subscript_text("tuple", (module.local(runtime, "SecuritySchemeEntry"), "...")),)
+        )
         operations: list[Plan] = []
         for spec in self.plan.operations:
             if (binding := spec.security) is None:
@@ -1984,7 +2003,8 @@ class _Registry(_Typing):
         plan = module.local(_RUNTIME, "OperationPlan")
         operations = []
         for spec in self.plan.operations:
-            annotation = f"{final}[{plan}[{module.local(f'types.{spec.resource}', f'{spec.pascal}Response')}]]"
+            response = module.local(f"types.{spec.resource}", f"{spec.pascal}Response")
+            annotation = subscript_text(final, (subscript_text(plan, (response,)),))
             arguments = self.operation(module, spec, servers[spec.servers])
             operations.append(Plan(f"OPERATION_{spec.index}", annotation, plan, arguments))
         return templated(
@@ -2236,7 +2256,7 @@ class _Registry(_Typing):
 
     def parts_branch(self, module: TargetModule, status: str, media: MediaSpec) -> str:
         """Return the branch of a form-data response with file parts: its reader of each member's parts."""
-        reader = f"{module.local(_PARTS, 'PartsReader')}[{self.values(module, self.parts(media))}]"
+        reader = subscript_text(module.local(_PARTS, "PartsReader"), (self.values(module, self.parts(media)),))
         entries: list[tuple[str, str]] = [
             ("", tuple_display(self.read_part(module, part) for part in media.members or ()))
         ]
@@ -2377,7 +2397,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("statuses=", f"frozenset({tuple_display(map(repr, statuses))})"))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
             entries.append(("vary_allowlist=", f"frozenset({tuple_display(map(repr, names))})"))
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(plan, (self.response(module, spec.operation),)),)
+        )
         return Plan(f"PLAN_{index}", annotation, plan, _arguments(entries))
 
     def items(self, module: TargetModule, index: int, spec: PaginationSpec) -> Accessor:
@@ -2503,7 +2525,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((("bindings=", self.bindings(module, bindings)),) if (bindings := helper.tree["bindings"]) else ()),
         ]
         page = self.response(module, spec.operation)
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{module.hint(spec.item)}, {page}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(plan, (module.hint(spec.item), page)),)
+        )
         return Plan(f"PLAN_{index}", annotation, plan, _arguments(entries))
 
     @staticmethod
@@ -2573,7 +2597,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         if (expires_at := tree.get("expires_at")) is not None:
             entries.append(("expires_at=", self.selector(module, expires_at)))
         plan = module.local(_POLLING, "PollingPlan")
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{result}, {poll}, {create}]]"
+        annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (result, poll, create)),))
         plans.append(Plan(f"PLAN_{index}", annotation, plan, _arguments(entries)))
 
     def cancel(self, module: TargetModule, index: int, spec: PollingSpec, cancel: OperationSpec) -> Plan:
@@ -2583,7 +2607,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         if bindings:
             entries.append(("bindings=", self.bindings(module, bindings)))
         plan = module.local(_POLLING, "CancelPlan")
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{self.response(module, cancel)}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(plan, (self.response(module, cancel),)),)
+        )
         return Plan(f"CANCEL_{index}", annotation, plan, _arguments(entries))
 
     def module(self, *, asynchronous: bool) -> Templated:  # noqa: PLR0914
@@ -2691,8 +2717,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
         runtime = "_runtime.protocols.pagination"
         item, page = module.hint(spec.item), self.response(module, spec.operation)
-        page_type = f"{module.local(runtime, 'Page')}[{item}, {page}]"
-        pager = f"{module.local(runtime, 'AsyncPager' if asynchronous else 'Pager')}[{item}, {page}]"
+        page_type = subscript_text(module.local(runtime, "Page"), (item, page))
+        pager = subscript_text(module.local(runtime, "AsyncPager" if asynchronous else "Pager"), (item, page))
         plan = f"{module.name('.', '_plans')}.PLAN_{index}"
         first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
@@ -2738,7 +2764,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
         base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
-        returns = handle or f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        returns = handle or subscript_text(base, (self.result(module, spec), self.response(module, spec.poll)))
         plan = f"{module.name('.', '_plans')}.PLAN_{index}"
         extra = (("handle=", handle),) if handle is not None else ()
         start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
@@ -2772,7 +2798,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, body=False)
         plan = f"{module.name('.', '_plans')}.PLAN_{index}"
-        result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, spec.operation)}]"
+        result = subscript_text(
+            module.local("_runtime.protocols.caches", "CacheResult"), (self.response(module, spec.operation),)
+        )
         fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
         docstring = f"Fetch {shape.route} through the helper's cache, revalidating a stale entry."
         return shape.function(plan, "fetch", (), result, docstring, fetch, coroutine=asynchronous)
@@ -2782,11 +2810,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         cancel = spec.cancel
         assert cancel is not None
         base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
-        receipt = f"{module.local('_runtime.protocols.records', 'CancelReceipt')}[{self.response(module, cancel)}]"
+        receipt = subscript_text(
+            module.local("_runtime.protocols.records", "CancelReceipt"), (self.response(module, cancel),)
+        )
         route = _route(cancel)
         return Handle(
             name,
-            f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]",
+            subscript_text(base, (self.result(module, spec), self.response(module, spec.poll))),
             f"A handle of the {spec.helper.name} polling helper, which also cancels the operation with {route}.",
             receipt,
             f"{module.name('.', '_plans')}.CANCEL_{index}",
@@ -2843,7 +2873,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ))
         plan = module.local(_UPLOADS, "UploadPlan")
         result = self.upload_result(module, spec)
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{result}, {self.response(module, spec.operation)}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(plan, (result, self.response(module, spec.operation))),)
+        )
         return Plan(f"PLAN_{index}", annotation, plan, _arguments(entries))
 
     def upload_methods(
@@ -2854,7 +2886,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, skip=size)
         prefix = "Async" if asynchronous else ""
-        handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
+        handle = subscript_text(module.local(_UPLOADS, f"{prefix}UploadHandle"), (self.upload_result(module, spec),))
         source = Parameter("source", module.name(".", "UploadSource"))
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
         plan = f"{module.name('.', '_plans')}.PLAN_{index}"
@@ -2931,7 +2963,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 entries.append(("final_line=", repr(final)))
         if (reopen := spec.reopen) is not None:
             entries.append(("resume=", self.resumption(module, spec, reopen)))
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{self.event_type(module, spec)}]]"
+        annotation = subscript_text(
+            module.name("typing", "Final"), (subscript_text(plan, (self.event_type(module, spec),)),)
+        )
         return Plan(f"STREAM_{index}", annotation, plan, _arguments(entries))
 
     def resumption(self, module: TargetModule, spec: StreamSpec, reopen: OperationSpec) -> str:
@@ -2976,7 +3010,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         plan = f"{module.name('.', '_plans')}.STREAM_{index}"
         opener = module.local(_STREAMS, "aopen_events" if asynchronous else "open_events")
         stream = _STREAM_KINDS[spec.helper.kind]
-        returns = f"{handle}[{self.event_type(module, spec)}]"
+        returns = subscript_text(handle, (self.event_type(module, spec),))
         methods = [
             shape.function(
                 plan,
@@ -3038,7 +3072,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         if subprotocols := tree["subprotocols"]:
             entries.append(("subprotocols=", tuple_display(map(repr, subprotocols))))
         sent, received = self.message_types(module, spec)
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{sent}, {received}]]"
+        annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (sent, received)),))
         return Plan(f"SOCKET_{index}", annotation, plan, _arguments(entries))
 
     def socket_method(self, module: TargetModule, index: int, spec: SocketSpec, *, asynchronous: bool) -> Function:
@@ -3050,10 +3084,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         plan = f"{module.name('.', '_plans')}.SOCKET_{index}"
         opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
         sent, received = self.message_types(module, spec)
-        returns = f"{session}[{sent}, {received}]"
+        returns = subscript_text(session, (sent, received))
         summary = f"Open the WebSocket of {shape.route}, returning once its handshake got a valid 101."
         if asynchronous:
-            returns = f"{module.name('contextlib', 'AbstractAsyncContextManager')}[{returns}]"
+            returns = subscript_text(module.name("contextlib", "AbstractAsyncContextManager"), (returns,))
             summary = f"Open the WebSocket of {shape.route} for an async with block once its handshake got a valid 101."
         return shape.function(plan, "connect", (), returns, summary, opener)
 
