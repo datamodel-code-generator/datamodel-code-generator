@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Literal, cast
 
-from typing_extensions import Sentinel
+from typing_extensions import Sentinel, TypeVar
 
 from ..model_codecs.unset import UNSET
 from .records import BodySelector, HeaderSelector
@@ -32,6 +32,7 @@ __all__ = (
     "Patch",
     "RepeatedValueError",
     "absence",
+    "accessed",
     "read_expiry",
     "read_selector",
     "required",
@@ -46,6 +47,9 @@ _RFC3339: Final = re.compile(
     r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})(?:\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})"
 )
 _LEAP_SECOND: Final = "60"
+
+T = TypeVar("T")
+D = TypeVar("D")
 
 
 MISSING = Sentinel("MISSING")
@@ -112,6 +116,17 @@ def required(read: Selector, wire: JSONValue, info: ResponseInfo, refuse: Refuse
     """Return what a selector reads from a response, refusing a missing value and a header read once that repeats."""
     if (value := read_selector(read, wire, info, refuse)) is MISSING:
         raise refuse(read, "missing")
+    return value
+
+
+def accessed(read: Callable[[D], T | None], selector: BodySelector, data: D, wire: JSONValue, refuse: Refuse) -> T:
+    """Return what an accessor reads from a decoded response, a page's items or an operation's result.
+
+    The member is checked in the wire value before the accessor reads the decoded one: a missing member is refused,
+    and so is a null one or one the accessor reads as None.
+    """
+    if (found := resolve(wire, selector.pointer)) is MISSING or found is None or (value := read(data)) is None:
+        raise refuse(selector, absence(found))
     return value
 
 

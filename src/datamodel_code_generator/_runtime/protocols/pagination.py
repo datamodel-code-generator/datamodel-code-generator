@@ -11,7 +11,6 @@ import threading
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from hashlib import sha256
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
@@ -33,10 +32,11 @@ from .records import (
     Selector,
     Steps,
     canonical_json,
+    json_digest,
     plain_copy,
     record_instance,
 )
-from .values import MISSING, absence, read_selector, required, resolve, unfit, written
+from .values import MISSING, absence, accessed, read_selector, required, resolve, unfit, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
@@ -865,7 +865,7 @@ class _Walk(Generic[T, P]):
             from ..client.urls import absolute_target, strip_query  # noqa: PLC0415 - Only a followed URL is parsed.
 
             first = strip_query(absolute_target(url).url, stripped)
-            self.seed = sha256(canonical_json(first)).digest()
+            self.seed = json_digest(first)
         reference = _linked(plan, rule, info) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
         if reference is MISSING:
             return reference
@@ -885,14 +885,8 @@ class _Walk(Generic[T, P]):
         encoded is refused.
         """
         plan = self.plan
-        selector = plan.items_selector
-        if (
-            (selected := resolve(wire, selector.pointer)) is MISSING
-            or selected is None
-            or (native := plan.items(data)) is None
-        ):
-            raise _data_error(plan, info, absence(selected), selector)
-        items = tuple(native)
+        refuse = data_refusal(plan.helper_id, plan.operation, info)
+        items = tuple(accessed(plan.items, plan.items_selector, data, wire, refuse))
         rule = plan.continuation
         if isinstance(rule, CursorPlan):
             cursor = _ended(plan, rule, wire, info)
@@ -915,7 +909,7 @@ class _Walk(Generic[T, P]):
         """
         previous = self.previous = self.link
         index = 0 if previous is None else previous.index + 1
-        digest = None if cursor is MISSING else sha256(canonical_json(cursor)).digest()
+        digest = None if cursor is MISSING else json_digest(cursor)
         history = _line(previous)
         if (seed := self.seed) is not None and previous is None:
             history.seen[seed] = 0
@@ -1010,7 +1004,7 @@ def _restored(
         stripped = core.follow_query()
         state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
-        digest = sha256(canonical_json(state)).digest()
+        digest = json_digest(state)
     except (TypeError, ValueError):
         raise configuration_error(plan.helper_id, ("state",)) from None
     walk.seed = digest

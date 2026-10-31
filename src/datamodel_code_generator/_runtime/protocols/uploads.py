@@ -36,15 +36,14 @@ from .options import HelperLimits, StepLock, UploadOptions, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
-    decoded_state,
     require_state,
+    restored,
     saved_expiry,
     state_array,
     state_count,
     state_expiry,
     state_fields,
     state_text,
-    unexpired,
 )
 from .sources import UploadProgress
 from .values import read_expiry, required
@@ -1009,8 +1008,7 @@ def _resume_start(
     exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory; the refusal names the option
     that set the call's size. Saved values are encoded as the server's are when each request is built.
     """
-    saved = decoded_state(plan.helper_id, state, partial(_decoded, plan))
-    unexpired(plan.helper_id, saved.expires_at, limits.clock)
+    saved = restored(plan.helper_id, state, partial(_decoded, plan), lambda saved: saved.expires_at, limits.clock)
     if saved.chunk > limits.chunk_bytes:
         raise configuration_error(plan.helper_id, limits.chunk_path)
     from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.

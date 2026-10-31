@@ -30,8 +30,8 @@ from .records import (
     canonical_json,
     plain_copy,
 )
-from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
-from .values import MISSING, absence, read_expiry, required, resolve
+from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
+from .values import MISSING, accessed, read_expiry, required
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -234,16 +234,6 @@ def _limits(
     return limits
 
 
-def _result(
-    read: Callable[[V], T | None], selector: BodySelector | None, data: V, wire: JSONValue, refuse: Refuse
-) -> T:
-    """Return the result a response carries, refusing a missing or null one before its accessor reads it."""
-    assert selector is not None
-    if (found := resolve(wire, selector.pointer)) is MISSING or found is None or (value := read(data)) is None:
-        raise refuse(selector, absence(found))
-    return value
-
-
 @dataclass(frozen=True, slots=True)
 class _Step(Generic[T, P]):
     """What one child call settled: the phase, when the next poll may be sent, the poll, and what comes next.
@@ -444,7 +434,8 @@ class _Operation(StepLock, Generic[T, P]):
             return _Step(_Phase.PENDING, not_before, bound=bound, seed=seed, cancel=cancel, expires_at=expires_at)
         if status in plan.immediate_statuses:
             assert plan.immediate is not None
-            result = _result(plan.immediate, plan.immediate_selector, data, wire, refuse)
+            assert plan.immediate_selector is not None
+            result = accessed(plan.immediate, plan.immediate_selector, data, wire, refuse)
             return _Step(_Phase.SUCCEEDED, not_before, result=result)
         raise refuse(StatusSelector(), "value")
 
@@ -481,7 +472,8 @@ class _Operation(StepLock, Generic[T, P]):
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         if (inline := plan.inline) is not None:
-            return (), _result(inline, plan.inline_selector, data, wire, refuse)
+            assert plan.inline_selector is not None
+            return (), accessed(inline, plan.inline_selector, data, wire, refuse)
         if (fetched := plan.fetched) is not None:
             return targeted_values(fetched, plan.fetch_bindings, wire, info, refuse, self._seed), MISSING
         return (), cast("T", None)
@@ -845,8 +837,7 @@ def _restored(
     past the server's expiry by the client's wall clock.
     """
     handle = make(new_session(limits))
-    decoded_state(plan.helper_id, state, handle._restore)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    unexpired(plan.helper_id, handle._expires_at, limits.clock)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    restored(plan.helper_id, state, handle._restore, lambda _: handle._expires_at, limits.clock)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 

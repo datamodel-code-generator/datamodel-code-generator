@@ -107,6 +107,16 @@ def canonical_json(value: object) -> bytes:
     return json_bytes(value, sort_keys=True)
 
 
+def json_digest(value: object) -> bytes:
+    """Return the SHA-256 digest of a JSON value's canonical JSON, which identifies the value as `canonical_json` does.
+
+    It refuses what `canonical_json` refuses.
+    """
+    from hashlib import sha256  # noqa: PLC0415 - Only a pager and a cache helper digest values, as they use them.
+
+    return sha256(canonical_json(value)).digest()
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodySelector:
     """Select a decoded JSON body member by its RFC 6901 pointer over wire names; an empty pointer is the body."""

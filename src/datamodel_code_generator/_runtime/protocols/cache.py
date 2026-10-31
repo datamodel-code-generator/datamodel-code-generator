@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
-from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 
 import httpx2
@@ -21,14 +20,14 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.media import NOT_MODIFIED, ascii_digits, normalized
+from ..model_codecs.media import LENIENT_QUOTED, NOT_MODIFIED, TCHARS, ascii_digits, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError, configuration_error, data_error
 from .options import CacheOptions, layered
-from .records import canonical_json
+from .records import json_digest
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -80,9 +79,7 @@ _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], st
     ("If-None-Match", "etag"),
     ("If-Modified-Since", "last-modified"),
 )
-_ITEM: Final = re.compile(
-    r"[ \t]*(?:([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?:=([!#$%&'*+.^_`|~0-9A-Za-z-]+|\"(?:[^\"\\]|\\.)*\"))?)?[ \t]*(?:,|\Z)"
-)
+_ITEM: Final = re.compile(rf"[ \t]*(?:({TCHARS})(?:=({TCHARS}|{LENIENT_QUOTED}))?)?[ \t]*(?:,|\Z)")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
 _MAX_TTL: Final = 300.0
@@ -267,15 +264,13 @@ class _Fetch(Generic[T]):
         if identity.authenticated > authenticated or authenticated > (identity.authenticated or identity.authorized):
             raise configuration_error(self.plan.helper_id, ("auth",), "binding_mismatch")
         self.identity = identity
-        self.base_key = sha256(
-            canonical_json({
-                "method": self.request.method,
-                "url": identity.url,
-                "accept": HeadersView(request_fields(self.request)).get("accept"),
-                "credentials": identity.headers,
-                "varied": sorted(self.implicit),
-            })
-        ).digest()
+        self.base_key = json_digest({
+            "method": self.request.method,
+            "url": identity.url,
+            "accept": HeadersView(request_fields(self.request)).get("accept"),
+            "credentials": identity.headers,
+            "varied": sorted(self.implicit),
+        })
         return self.base_key
 
     def found(self, entry: object) -> CacheEntry | None:
