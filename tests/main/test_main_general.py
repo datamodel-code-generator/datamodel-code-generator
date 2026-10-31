@@ -4588,7 +4588,6 @@ def test_reference_import_target_normalizes_hyphenated_module_names() -> None:
     name must be normalized to match the on-disk module name (hyphens become
     underscores).
     """
-
     from datamodel_code_generator.parser._passes._shared import reference_import_target
 
     target = reference_import_target(
