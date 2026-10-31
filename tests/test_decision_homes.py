@@ -77,6 +77,8 @@ ALLOWED = """
 "sample.expanded-resolve" = { home = "sample", count = 2, audit = "X-23" }
 [allow."other.py"."import_lines"]
 "sample.hand-display" = { home = "sample", count = 1, audit = "X-11" }
+[allow."other.py"."import_paths"]
+"sample.attribute-join" = { home = "sample", count = 2, audit = "X-24" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

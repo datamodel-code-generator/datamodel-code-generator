@@ -22,6 +22,7 @@ from datamodel_code_generator._api_types import (
     NextSteps,
     OperationRef,
 )
+from datamodel_code_generator._fastapi.packages import beside, services_package
 from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._paths import concrete, concrete_parent, lexical, resolved
 from datamodel_code_generator._target_config import (
@@ -555,12 +556,6 @@ def _collision(message: str, path: Path) -> Diagnostic:
     )
 
 
-def _services(server: str) -> tuple[str, str]:
-    """Return the parent package of a server package and the `services` package it imports implementations from."""
-    parent = server.rpartition(".")[0]
-    return parent, f"{parent}.services" if parent else "services"
-
-
 def _adopted(owner: re.Match[str], server: str) -> str:
     """Return an initializer of implementations whose docstring names another server package as this one's."""
     text = owner.string
@@ -732,7 +727,7 @@ class _Planner:
             return artifacts, None
         module = (package := paths[0].parent).with_suffix(".py")
         models = [artifact.path for artifact in artifacts if artifact.kind == "model"]
-        parent, services = _services(server := self.config.package)
+        services = services_package(server := self.config.package)
         job = f" of job '{self.job}'" if self.job else ""
         clash = f"the {services} package, from which {server}.main{job} imports your implementations"
         remedy = "put the server package under a parent package of its own"
@@ -743,7 +738,7 @@ class _Planner:
             message = f"The models package would be {clash}: name the models otherwise, or {remedy}"
         elif (self.cwd / module).is_file():
             path, message = module, f"This module of yours has the name of {clash}: rename the module, or {remedy}"
-        elif other := self.other_server(package.parent, parent):
+        elif other := self.other_server(package.parent, server):
             message = (
                 f"The server packages {other[0]}, generated before, and {server}{job} would both import their "
                 f"implementations from the {services} package: put each server package under a parent package of its "
@@ -768,12 +763,12 @@ class _Planner:
             return None
         return _SERVICES_OWNER.search(location.read_bytes().decode(*self.codec))
 
-    def other_server(self, directory: Path, parent: str) -> tuple[str, Path] | None:
+    def other_server(self, directory: Path, server: str) -> tuple[str, Path] | None:
         """Return the name and directory of a server package generated in `directory` other than this one, if any.
 
         A generated server package is a directory with a `_generated` directory and an initializer whose docstring says
         it is one, whether its `main.py` is there or not. The docstring names the package, whatever its directory's
-        name; the docstring of earlier versions does not, so the package takes its directory's name in `parent`.
+        name; the docstring of earlier versions does not, so the package takes its directory's name beside `server`.
         """
         if not (home := self.cwd / directory).is_dir():
             return None
@@ -784,7 +779,7 @@ class _Planner:
                 and location.resolve() != self.root
                 and (found := _SERVER_PACKAGE.search(initializer.read_bytes().decode(*self.codec))) is not None
             ):
-                return found[1] or (f"{parent}.{location.name}" if parent else location.name), directory / location.name
+                return found[1] or beside(server, location.name), directory / location.name
         return None
 
     def planned(self) -> PlannedTarget:
@@ -950,8 +945,8 @@ def check_shared_services(job: str, target: PlannedTarget, earlier: Iterable[tup
         if planned.services is not None and (planned.cwd / planned.services).resolve() == location:
             message = (
                 f"The server packages {planned.name} of job '{owner}' and {target.name} of job '{job}' would both "
-                f"import their implementations from the {_services(target.name)[1]} package: put each server package "
-                "under a parent package of its own"
+                f"import their implementations from the {services_package(target.name)} package: put each server "
+                "package under a parent package of its own"
             )
             raise APIGenerationError((_collision(message, shown(services, target.cwd)),))
 

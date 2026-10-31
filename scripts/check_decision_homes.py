@@ -56,6 +56,8 @@ them, ``what`` words the message):
   name ``n`` joined below ``m``, or ``n`` alone when ``m`` is empty.
 * ``prefix-slice``: a comparison ``x[: len(p)] == p`` or ``!=`` (its slice also inside ``tuple(...)``): whether a
   sequence starts with another.
+* ``attribute-join``: an f-string that writes only ``{x.a}<s>{y.b}``, for a separator ``s`` in ``strings`` and
+  attributes ``a`` and ``b`` that ``names`` lists: a value spelled from two fields of a record.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -136,6 +138,7 @@ SIGNATURE_KINDS = frozenset({
     "mapping-guard",
     "dotted-join",
     "prefix-slice",
+    "attribute-join",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -170,6 +173,7 @@ REQUIRED_STRINGS = {
     "ancestor-walk": "names",
     "mapping-guard": "names",
     "dotted-join": "strings",
+    "attribute-join": "strings",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 SUBSCRIPT_BRACKETS = re.compile(r"(\w*)\[|\]")
@@ -376,7 +380,7 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
             msg = f"{owner}: ctx must be load, store or any"
             raise ConfigError(msg)
         _strings(options, REQUIRED_STRINGS[kind], owner, required=kind != "compare-in" or not options.get("names"))
-        if kind == "branch":
+        if kind in {"branch", "attribute-join"}:
             _strings(options, "names", owner, required=True)
     return Signature(
         id=f"{home}.{name}",
@@ -625,6 +629,18 @@ def _joins_below(node: ast.IfExp, separators: Iterable[str]) -> bool:
     return False
 
 
+def _joins_attributes(node: ast.JoinedStr, separators: Iterable[str], names: Iterable[str]) -> bool:
+    """Return whether ``node`` writes only two listed attributes joined at a separator (``attribute-join``)."""
+    match node.values:
+        case [
+            ast.FormattedValue(value=ast.Attribute(attr=first), conversion=-1, format_spec=None),
+            ast.Constant(value=str() as separator),
+            ast.FormattedValue(value=ast.Attribute(attr=second), conversion=-1, format_spec=None),
+        ]:
+            return separator in separators and first in names and second in names
+    return False
+
+
 def _tests_prefix(node: ast.Compare) -> bool:
     """Return whether ``node`` compares a sequence's start, cut to another's length, with it (``prefix-slice``)."""
     if len(node.ops) != 1 or not isinstance(node.ops[0], ast.Eq | ast.NotEq):
@@ -819,6 +835,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return isinstance(node, ast.IfExp) and _joins_below(node, options["strings"])
         case "prefix-slice":
             return isinstance(node, ast.Compare) and _tests_prefix(node)
+        case "attribute-join":
+            return isinstance(node, ast.JoinedStr) and _joins_attributes(node, options["strings"], options["names"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -844,6 +862,7 @@ NODE_TYPES = {
     "mapping-guard": (ast.IfExp,),
     "dotted-join": (ast.IfExp,),
     "prefix-slice": (ast.Compare,),
+    "attribute-join": (ast.JoinedStr,),
 }
 
 

@@ -129,7 +129,7 @@ def helper_classes(name: str, kind: str, target_python_version: PythonVersion) -
     """
     parts = tuple(name.split("."))
     for end in range(1, len(parts)):
-        yield parts[:end], f"{pascal_parts(parts[:end], target_python_version)}Protocols"
+        yield parts[:end], namespace_class(parts[:end], target_python_version)
     yield parts, f"{pascal_parts(parts, target_python_version)}{pascal_parts((kind,), target_python_version)}"
 
 
@@ -168,3 +168,8 @@ def resource_class(pascal: str, prefix: str = "", suffix: str = "Resource") -> s
     `prefix` is `Async` in the asyncio module and empty in the sync one.
     """
     return f"{prefix}{pascal}{suffix}"
+
+
+def namespace_class(parts: Iterable[str], target_python_version: PythonVersion) -> str:
+    """Return the class of the helper namespace a dotted helper name opens: its PascalCase parts, then `Protocols`."""
+    return f"{pascal_parts(parts, target_python_version)}Protocols"

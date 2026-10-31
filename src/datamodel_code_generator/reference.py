@@ -2034,11 +2034,7 @@ class ModelResolver:  # noqa: PLR0904
         prefix: str = "",
         yields: bool = False,
     ) -> str:
-        # Determine the suffix to use
-        suffix = self._get_suffix_for_model_type(model_type)
-        if not suffix and self.duplicate_name_suffix:
-            suffix = self.duplicate_name_suffix
-
+        suffix = self._duplicate_name_suffix(model_type)
         numbering: Numbering = "joined" if camel else "underscore"
         if yields:
             return self._get_yielding_unique_name(name, suffix, numbering, prefix)
@@ -2096,6 +2092,10 @@ class ModelResolver:  # noqa: PLR0904
     def _get_suffix_for_model_type(self, model_type: str) -> str:
         """Get the suffix for a given model type from the suffix map."""
         return self.duplicate_name_suffix_map.get(model_type, self.duplicate_name_suffix_map.get("default", ""))
+
+    def _duplicate_name_suffix(self, model_type: str) -> str | None:
+        """Return the suffix a duplicate name of a model type takes: its suffix map entry, else the lone suffix."""
+        return self._get_suffix_for_model_type(model_type) or self.duplicate_name_suffix
 
     @classmethod
     def validate_name(cls, name: str, target_python_version: PythonVersion | None = None) -> bool:

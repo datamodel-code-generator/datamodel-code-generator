@@ -85,6 +85,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TUPLE,
     IMPORT_UNION,
     Import,
+    _import_path,
 )
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.reference import Reference, _BaseModel
@@ -1683,7 +1684,7 @@ def _annotation_base_path(expression: PythonTypeExpr, target_version: tuple[int,
 
     base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
     return base, _standard_type_path(
-        f"{base.import_from}.{base.import_name}"
+        dotted_name(base.import_from, base.import_name)
         if isinstance(base, PythonTypeBoundName) and base.import_from
         else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base),
         target_version,
@@ -1704,9 +1705,9 @@ def _qualified_type_path(expression: PythonTypeExpr, target_version: tuple[int, 
 
 @cache
 def _import_paths(module: ModuleType) -> frozenset[str]:
-    """Return the import path of every type or name a generator imports module declares."""
+    """Return the import path of every type or name a generator imports module declares (a module import names none)."""
     return frozenset(
-        f"{import_.from_}.{import_.import_}" for import_ in vars(module).values() if isinstance(import_, Import)
+        _import_path(import_) for import_ in vars(module).values() if isinstance(import_, Import) and import_.from_
     )
 
 
@@ -1931,7 +1932,7 @@ class DataTypeManager(ABC):
         if data_type.python_type is None:
             import_ = data_type.import_
             return cls.type_constraint_keywords(
-                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or "",
+                _import_path(import_) if import_ and import_.from_ else data_type.type or "",
                 target_version,
                 number_values=number_values,
                 target_model_version=target_model_version,

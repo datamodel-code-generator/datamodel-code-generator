@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
 from datamodel_code_generator._target_unicode import is_python_name
 
@@ -229,8 +230,7 @@ def python_type_name(value: str) -> PythonTypeName:
 
 
 def _runtime_symbol_name(symbol: PythonTypeRuntimeSymbol) -> str:
-    name = ".".join(symbol.qualname_parts)
-    return f"{symbol.module}.{name}" if symbol.module else name
+    return dotted_name(symbol.module, ".".join(symbol.qualname_parts))
 
 
 def _unchanged(rewritten: tuple[PythonTypeExpr, ...], original: tuple[PythonTypeExpr, ...]) -> bool:

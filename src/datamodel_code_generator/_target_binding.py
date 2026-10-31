@@ -100,7 +100,7 @@ from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import admits_none, is_none, present
 from datamodel_code_generator.enums import DataclassArguments
-from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
+from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
@@ -1769,9 +1769,7 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
             and (actual := modules.get(expression.module))
             and not (actual.from_ or "").startswith(".")
         ):
-            return PythonTypeRuntimeSymbol(
-                f"{actual.from_}.{actual.import_}" if actual.from_ else actual.import_, expression.qualname_parts
-            )
+            return PythonTypeRuntimeSymbol(_import_path(actual), expression.qualname_parts)
         return expression
 
     return BoundPythonType(rewrite_python_type_expr(value.expression, leaf), resolved)
@@ -2825,7 +2823,7 @@ class _Models:
                 or (
                     (import_ := current.import_) is not None
                     and python_imports is not None
-                    and python_imports[0].get(f"{import_.from_}.{import_.import_}") is import_
+                    and python_imports[0].get(_import_path(import_)) is import_
                 )
             )
             pending.extend(current.data_types)

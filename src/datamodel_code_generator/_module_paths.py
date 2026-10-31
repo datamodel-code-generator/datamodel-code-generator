@@ -13,8 +13,9 @@ imported module names, the ``--all-exports-scope`` exports, the submodules a pac
 cycles, the targets' result keys and model imports and the modules the dynamic models run in all read them here, so
 that they name the modules the output writes.
 
-A model is named across modules by its dotted name: its module's dotted name and its class name, or the class name
-alone in the root module (``dotted_name``), which the imports of other modules read. A module lies below a package when
+A name in a module has a dotted name: the module's dotted name and the name, or the name alone without a module
+(``dotted_name``). A model is named across modules by it, which the imports of other modules read, and an import, a
+runtime symbol and a package beside a server package are named by it too. A module lies below a package when
 the package's path starts its own and is shorter (``is_below``), so Python runs the package's ``__init__`` first; it
 lies within the package when it is that package or below it (``is_within``). This module imports only the standard
 library, so every layer may use it.
@@ -64,7 +65,7 @@ def dotted_module(path: Sequence[str], package: str | None = None) -> str:
 
 
 def dotted_name(module: str | None, name: str) -> str:
-    """Return the dotted name of ``name`` in the module ``module``: ``module.name``, or ``name`` in the root module."""
+    """Return the dotted name of ``name`` in the module ``module``: ``module.name``, or ``name`` without a module."""
     return f"{module}.{name}" if module else name
 
 
