@@ -27,8 +27,9 @@ copied runtime
   model_codecs/parameters.py
   model_codecs/pydantic_adapters.py
   model_codecs/pydantic_dataclasses.py
+  model_codecs/shared.py
   model_codecs/unset.py
-total 24 modules
+total 25 modules
 public files
   publication_client/__init__.py
   publication_client/errors.py

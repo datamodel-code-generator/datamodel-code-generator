@@ -35,17 +35,18 @@ class ExtrasRuntime:
     """The runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps.
 
     A client's codecs take its `serializer` and a server's responses dump by its `writer`; a target that uses either
-    copies the module's `path` and imports from its `module`.
+    copies the module's `paths`, its own and those of the codec modules it `imports`, and imports from its `module`.
     """
 
     name: str = "pydantic_extras"
     serializer: str = "extras_serializer"
     writer: str = "extras_json"
+    imports: tuple[str, ...] = ("shared",)
 
     @property
-    def path(self) -> str:
-        """Return the module's file below the runtime package, as a target declares its copy."""
-        return codec_file(self.name)
+    def paths(self) -> tuple[str, ...]:
+        """Return the files below the runtime package a target copies for the module, as it declares them."""
+        return tuple(map(codec_file, (*self.imports, self.name)))
 
     @property
     def module(self) -> str:

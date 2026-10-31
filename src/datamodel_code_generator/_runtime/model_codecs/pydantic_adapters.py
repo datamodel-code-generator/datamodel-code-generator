@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final, Generic, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from pydantic import TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
 from typing_extensions import TypeVar
 
-from .media import plain
+from .shared import ValidatingCodec, identity_cached
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from typing_extensions import TypeForm
 
 T = TypeVar("T")
@@ -23,13 +21,10 @@ _ERRORS: Final = (ValidationError, PydanticSerializationError)
 
 def adapter(type_: TypeForm[Any]) -> TypeAdapter[Any]:
     """Return the cached TypeAdapter of a type expression, building it on first use."""
-    if (cached := _ADAPTERS.get(id(type_))) is None:
-        built: TypeAdapter[Any] = TypeAdapter(cast("Any", type_))
-        _ADAPTERS[id(type_)] = cached = (type_, built)
-    return cached[1]
+    return identity_cached(_ADAPTERS, type_, lambda key: TypeAdapter(cast("Any", key)))
 
 
-class AdapterCodec(Generic[T]):
+class AdapterCodec(ValidatingCodec[T]):
     """Use Pydantic's own JSON validation, including aliases; a subclass serializes as its backend does."""
 
     __slots__ = ("type",)
@@ -45,14 +40,6 @@ class AdapterCodec(Generic[T]):
     def convert(self, value: object) -> T:
         """Construct from a parsed parameter or non-JSON body through Pydantic."""
         return cast("T", adapter(self.type).validate_python(value))
-
-    def text(self, value: object) -> T:
-        """Construct from header, form, or part text, leaving text that is no JSON literal to Pydantic."""
-        return cast("T", adapter(self.type).validate_python(plain(value)))
-
-    def assemble(self, fields: Mapping[str, object]) -> T:
-        """Construct the native model from field arguments addressed by their wire aliases."""
-        return self.convert(dict(fields))
 
     @property
     def errors(self) -> tuple[type[Exception], ...]:

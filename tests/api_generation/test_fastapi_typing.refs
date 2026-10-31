@@ -5,6 +5,8 @@ DataModelType.PydanticV2BaseModel-applications-basemodel	main/generation_platfor
 DataModelType.PydanticV2Dataclass-applications-dataclass	main/generation_platform/fastapi/typing/applications-dataclass.txt	= main/generation_platform/fastapi/typing/applications-basemodel.txt
 [test_fastapi_typing_bodies]
 	main/generation_platform/fastapi/typing/bodies.txt
+[test_fastapi_typing_extras]
+	api_generation/fastapi_typing/extras.txt
 [test_fastapi_typing_missing]
 	main/generation_platform/fastapi/typing/missing-dataclass.txt
 [test_fastapi_typing_parameters]
