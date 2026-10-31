@@ -25233,6 +25233,55 @@ def test_main_jsonschema_generate_schema_validators_property_count(output_file: 
     )
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "expected_name", "valid_json", "invalid_json"),
+    [
+        pytest.param(
+            "schema_validators_property_count_root_ref_draft7.json",
+            "schema_validators_property_count_root_ref_draft7.py",
+            '{"a":"x"}',
+            "{}",
+            id="draft7",
+        ),
+        pytest.param(
+            "schema_validators_property_count_root_ref_2020.json",
+            "schema_validators_property_count_root_ref_2020.py",
+            '{"a":"x","extra":true}',
+            '{"a":"x"}',
+            id="2020-12",
+        ),
+    ],
+)
+def test_main_jsonschema_property_count_root_ref_allof_siblings(
+    output_file: Path, fixture_name: str, expected_name: str, valid_json: str, invalid_json: str
+) -> None:
+    """Keep root-ref target counts while applying only dialect-valid sibling allOf counts."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_name,
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_property_count_root_ref",
+        model_name="Model",
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type="value_error",
+    )
+
+
 def test_main_jsonschema_property_count_default_generation_is_unchanged(output_file: Path) -> None:
     """Keep named-object property counts opt-in for schema-runtime validators."""
     run_main_and_assert(
