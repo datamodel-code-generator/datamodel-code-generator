@@ -14,7 +14,7 @@ it.
 from __future__ import annotations
 
 from fnmatch import fnmatch
-from typing import TYPE_CHECKING, Any, Final, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
@@ -24,6 +24,7 @@ __all__ = [
     "PATHS_PARAMETERS",
     "PATH_ITEM_METHODS",
     "QUERY_METHOD",
+    "PathKeyRow",
     "effective_operation",
     "effective_parameters",
     "holds_path_item",
@@ -43,18 +44,19 @@ PATH_ITEM_METHODS: Final = (*OPERATION_METHODS, QUERY_METHOD)
 PATHS_PARAMETERS: Final = "parameters"
 """The key of ``paths`` that holds the parameters of every path; it is not a path item."""
 _EXTENSION_PREFIX: Final = "x-"
+PathKeyRow: TypeAlias = Literal["openapi", "legacy-object-extension-paths"]
 
 
-def holds_path_item(key: str, value: object, *, objects_as_paths: bool = False) -> bool:
+def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> bool:
     """Return whether a key of ``paths`` holds a path item: not ``PATHS_PARAMETERS`` and not a specification extension.
 
     A path item is under a path template. OpenAPI reads a key that begins with ``x-`` as an extension of ``paths``, and
-    ``PATHS_PARAMETERS`` holds the parameters of every path, so the API walk skips both. With ``objects_as_paths`` the
-    paths scope's walk reads such a key that holds an object as a path, as it always has (#5746), and skips the rest,
-    which no path item can be.
+    ``PATHS_PARAMETERS`` holds the parameters of every path, so row ``openapi`` (the API walk) skips both. Row
+    ``legacy-object-extension-paths`` (the paths scope's walk) reads such a key that holds an object as a path, as it
+    always has, and skips the rest, which no path item can be.
     """
     return not (key == PATHS_PARAMETERS or key.startswith(_EXTENSION_PREFIX)) or (
-        objects_as_paths and isinstance(value, dict)
+        row == "legacy-object-extension-paths" and isinstance(value, dict)
     )
 
 
