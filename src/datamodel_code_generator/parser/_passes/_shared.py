@@ -19,6 +19,7 @@ from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
+from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
@@ -398,15 +399,12 @@ def _join_module(from_: str, name: str) -> str:
 def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
     """Break parent cycles on a deferred field that is about to be discarded."""
     field.parent = None
-    for data_type in field.data_type.all_data_types:
-        data_type.parent = None
+    clear_parents(field.data_type)
     match field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY):
         case DataType() as deferred_type:
-            for data_type in deferred_type.all_data_types:
-                data_type.parent = None
+            clear_parents(deferred_type)
         case _InheritedTypeModifiers(list_wrapper=DataType() as list_wrapper):
-            for data_type in list_wrapper.all_data_types:
-                data_type.parent = None
+            clear_parents(list_wrapper)
 
 
 def _restore_inherited_field_names_for_unique_aliases(

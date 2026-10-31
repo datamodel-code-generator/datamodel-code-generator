@@ -23,6 +23,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._python_syntax import call_text
@@ -2205,9 +2206,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if (dict_key := data_type.dict_key) is not None and (
             (capability := cls._TYPED_EXTRA_DICT_KEY_CAPABILITY) is None or not capability(dict_key)
         ):
-            for nested_data_type in dict_key.all_data_types:
-                nested_data_type.unregister_reference()
-                nested_data_type.parent = None
+            drop_tree(dict_key)
+            clear_parents(dict_key)
             data_type.dict_key = None
 
         return field_model(
