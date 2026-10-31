@@ -18,7 +18,6 @@ from ..client.errors import ConfigurationError
 from .errors import configuration_error
 from .webhook_events import (
     EventPlan,
-    Facts,
     epoch_microseconds,
     local_arguments,
     received,
@@ -107,7 +106,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     verifier: Verifier[K],
     now: datetime,
     options: object,
-) -> Facts:
+) -> VerifiedSignature:
     """Run every stage before decoding; return the verified facts."""
     helper_id = plan.helper_id
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
@@ -117,7 +116,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
     if timestamp is not None and not within(now_us, epoch_microseconds(timestamp), limits):
         reject("timestamp_window", helper_id)
-    return Facts(delivery_id, timestamp, matched_key_id)
+    return VerifiedSignature(delivery_id=delivery_id, timestamp=timestamp, matched_key_id=matched_key_id)
 
 
 def verify_adapted(  # ruff: ignore[too-many-arguments]

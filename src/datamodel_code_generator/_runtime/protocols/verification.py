@@ -17,7 +17,6 @@ from .errors import configuration_error
 from .signatures import UnsupportedKeyError, signature_bytes
 from .webhook_events import (
     EventPlan,
-    Facts,
     instant,
     local_arguments,
     received,
@@ -25,6 +24,7 @@ from .webhook_events import (
     size,
     within,
 )
+from .webhooks import VerifiedSignature
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -139,7 +139,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     *,
     now: datetime,
     options: object,
-) -> Facts:
+) -> VerifiedSignature:
     """Authenticate the exact bytes of one preset and return its verified facts."""
     helper_id, algorithm = plan.helper_id, plan.algorithm
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
@@ -171,7 +171,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     )
     if (matched := next(found, None)) is None:
         reject("invalid_signature", helper_id)
-    return Facts(delivery, moment, matched)
+    return VerifiedSignature(delivery_id=delivery, timestamp=moment, matched_key_id=matched)
 
 
 def verify_webhook(  # ruff: ignore[too-many-arguments]

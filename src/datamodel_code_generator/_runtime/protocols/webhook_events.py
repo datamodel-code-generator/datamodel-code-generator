@@ -21,7 +21,7 @@ from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
 from .values import resolve, unfit
-from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
+from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedSignature, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -32,7 +32,6 @@ if TYPE_CHECKING:
 __all__ = (
     "EventDecoder",
     "EventPlan",
-    "Facts",
     "MappedEventDecoder",
     "decode_unsigned",
     "epoch_microseconds",
@@ -129,15 +128,6 @@ class EventPlan(Generic[T]):
     event: EventDecoder[T] | MappedEventDecoder[T]
 
 
-@dataclass(frozen=True, slots=True)
-class Facts:
-    """The authenticated facts of a delivery."""
-
-    delivery_id: str | None
-    timestamp: datetime | None
-    matched_key_id: str
-
-
 def reject(
     condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
     helper_id: str,
@@ -220,7 +210,7 @@ def within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     return (now - timestamp) * past_scale <= past * 1_000_000 and (timestamp - now) * future_scale <= future * 1_000_000
 
 
-def received(plan: EventPlan[T], raw_body: bytes, facts: Facts) -> VerifiedWebhook[T]:
+def received(plan: EventPlan[T], raw_body: bytes, facts: VerifiedSignature) -> VerifiedWebhook[T]:
     """Decode an authenticated event and return its facts without retaining delivery state."""
     return VerifiedWebhook(
         data=plan.event.decode(raw_body, plan.helper_id),
