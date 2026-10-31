@@ -18,7 +18,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     participates_in_constructor,
 )
-from datamodel_code_generator.model._render_plan import CallPlan, Kwarg, Positional, RuleId, Why
+from datamodel_code_generator.model._render_plan import FORCED_ASSIGNMENT, CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
@@ -58,8 +58,6 @@ from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
-_FORCED_ASSIGNMENT = Why(RuleId("D4.default.forced-required-assignment"))
-"""A required field that a dataclass base's defaults would follow writes ``Field(...)``, so it stays required."""
 _VISIBLE_METADATA = Why(RuleId("D11.pydantic-dataclass.visible-metadata"), option="--use-annotated")
 """The dataclass must see the call's metadata: the call follows a plain annotation instead of going into it."""
 _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
@@ -383,7 +381,7 @@ class DataModelField(DataModelFieldV2):
             if not self._has_forced_field_assignment:
                 return plan
             call = CallPlan(
-                Positional("required", _FORCED_ASSIGNMENT), None, (), default_keyword=False, why=_FORCED_ASSIGNMENT
+                Positional("required", FORCED_ASSIGNMENT), None, (), default_keyword=False, why=FORCED_ASSIGNMENT
             )
             plan = self._field_render_plan(
                 call,
