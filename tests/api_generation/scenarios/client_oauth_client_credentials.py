@@ -132,7 +132,10 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
     errors = importlib.import_module(f"{package.__name__}.errors")
 
     def refused() -> str:
-        raise errors.ConfigurationError(field_path=("vault",), reason="missing_value")
+        try:
+            return {}["vault"]
+        except KeyError as error:
+            raise errors.ConfigurationError(field_path=("vault",), reason="missing_value") from error
 
     for label, value in (
         ("secret callable failure", secret),

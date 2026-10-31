@@ -1103,7 +1103,8 @@ or `malformed_coding` for a body whose content coding does not decode. A stream 
 message that does not decode has the reason `missing`, `null`, `type`, `value`, or `malformed`, the `location` `("event", sequence)` or `("message", sequence)` with a pointer
 where a member is at fault, and at most 64 KiB of it as `body_bytes`. `AuthError` has the reason `provider_failed`, `invalid_expiry`, `oauth_error`, `timeout`, or `reauthorization_required`.
 It keeps no credential material or provider description itself; the `cause` of `provider_failed` is the application's
-own exception from its credential callable or token callback.
+own exception from its credential callable or token callback. An `SDKError` such a callable or callback raises reaches
+the caller as it is, with the exception it chains.
 
 Helpers raise `ProtocolDataError`, `SessionLimitError`, `StreamInterruptedError`, and
 `WebSocketClosedError`, described with each helper, and `SDKError` with the reason `store_failed` for a cache store that
