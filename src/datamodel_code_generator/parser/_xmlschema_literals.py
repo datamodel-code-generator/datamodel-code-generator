@@ -8,11 +8,13 @@ import re
 from decimal import Decimal
 from math import isfinite
 
+from datamodel_code_generator import imports
 from datamodel_code_generator._python_syntax import call_text, keyword_argument
-from datamodel_code_generator.imports import Import
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
-    _safe_non_finite_float,
+    _converted_float,
+    _datetime_expression,
+    _isoformat_expression,
 )
 
 XML_DATE_PATTERN = re.compile(r"^(?P<date>-?\d{4,}-\d{2}-\d{2})(?:Z|[+-]\d{2}:\d{2})?$")
@@ -21,7 +23,7 @@ DAY_TIME_DURATION_PATTERN = re.compile(
     r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?$"
 )
 XSD_WHITESPACE_CHARS = " \t\n\r"
-IMPORT_DATETIME_MODULE = Import(import_="datetime", alias="datetime_module")
+IMPORT_DATETIME_MODULE = imports.IMPORT_DATETIME_MODULE
 
 
 # Compatibility aliases for existing parser integrations. New runtime expressions
@@ -37,7 +39,7 @@ def _safe_float(value: str, *, source_safe_non_finite: bool = False) -> float | 
         return None
     match value:
         case "INF" | "+INF" | "-INF" | "NaN":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
+            return _converted_float(number, source_safe_non_finite=source_safe_non_finite)
     return number if isfinite(number) else None
 
 
@@ -50,20 +52,16 @@ def _safe_bool(value: str) -> bool | None:
     return None
 
 
-def _datetime_expression(suffix: str, *, prefix: str = "") -> _PythonExpression:
-    return _PythonExpression(IMPORT_DATETIME_MODULE, prefix, suffix)
-
-
 def _normalize_timezone(value: str) -> str:
     return f"{value[:-1]}+00:00" if value.endswith("Z") else value
 
 
 def _safe_isoformat_expression(kind: str, value: str) -> _PythonExpression | None:
-    """Return ``datetime_module.<kind>.fromisoformat(...)`` of a value Python reads, with ``Z`` as ``+00:00``."""
+    """Return the expression that builds ``kind`` from a value Python reads, with ``Z`` as ``+00:00``."""
     normalized = _normalize_timezone(value.strip(XSD_WHITESPACE_CHARS))
     with contextlib.suppress(ValueError):
         getattr(datetime_module, kind).fromisoformat(normalized)
-        return _datetime_expression(f".{kind}.fromisoformat({normalized!r})")
+        return _isoformat_expression(kind, normalized)
     return None
 
 
