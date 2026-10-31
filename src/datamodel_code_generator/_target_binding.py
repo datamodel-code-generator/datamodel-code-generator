@@ -2044,7 +2044,6 @@ class _SchemaNode:
         """Read a loaded schema's member locations, following its `$ref`; any value but a mapping declares none."""
         if not isinstance(value, dict) or not value:
             return _LEAF
-        properties = value.get("properties")
         branches = value.get("allOf")
         required = value.get("required")
         additional = value.get("additionalProperties", MISSING)
@@ -2054,7 +2053,7 @@ class _SchemaNode:
             follow(ref) if isinstance(ref := value.get("$ref"), str) else None,
             "$ref" in value,
             "properties" in value,
-            tuple(properties) if isinstance(properties, dict) else (),
+            tuple(as_mapping(value.get("properties"))),
             tuple(
                 ("reference" if "$ref" in branch else "schema") if isinstance(branch, dict) else "other"
                 for branch in (branches if isinstance(branches, list) else ())
