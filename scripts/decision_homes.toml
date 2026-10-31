@@ -1651,10 +1651,13 @@ what = "decides itself whether an operation inherits the document's security req
 audit = "C20-2"
 
 [homes.Hx-request-parts]
-decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, a path or server template filled with values, the name of a query field as forms decode it, and the name of a Cookie pair"
+decision = "the parts of a request the client runtime writes and reads back: the schemes of an HTTP URL, the placeholders of a path or server template and the template filled with values, the characters the literal text of a path keeps and the encoding that keeps a text's percent-encoded octets, the name of a query field as forms decode it, and the name of a Cookie pair"
+# model_codecs/parameters.py holds PLACEHOLDER and PATH_SAFE, which client and server packages both copy (a place cannot
+# name module level).
 core = [
     "_runtime/client/options.py",
     "_runtime/client/paths.py",
+    "_runtime/model_codecs/parameters.py:percent_encoded",
     "_runtime/client/urls.py:query_field",
     "_runtime/client/positions.py:cookie_name",
 ]
@@ -1674,6 +1677,20 @@ names = ["PLACEHOLDER"]
 paths = ["_runtime/client/", "_runtime/protocols/"]
 what = "reads the placeholders of a path or server template itself; call client/paths.py:filled or path_segments"
 audit = "C24-fill"
+
+[homes.Hx-request-parts.signatures.placeholder-pattern]
+kind = "literal"
+contains = ["[^{}]*"]
+exclude = ["_runtime/model_codecs/parameters.py:<module>"]
+what = "spells the placeholder of a path or server template itself; read model_codecs/parameters.py:PLACEHOLDER (the generator's _target_naming.py:PATH_PLACEHOLDER)"
+audit = "C24-B31"
+
+[homes.Hx-request-parts.signatures.path-safe]
+kind = "literal"
+contains = ["/:@!$&'()*+,;="]
+exclude = ["_runtime/model_codecs/parameters.py:<module>"]
+what = "spells the characters the literal text of a path keeps itself; read model_codecs/parameters.py:PATH_SAFE (with percent_encoded to keep a text's percent-encoded octets)"
+audit = "C24-G3"
 
 [homes.Hx-request-parts.signatures.field-name]
 kind = "call"

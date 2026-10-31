@@ -36,6 +36,7 @@ from ..model_codecs.parameter_reads import (
     raw_parameter,
     split_query,
 )
+from ..model_codecs.parameters import PATH_SAFE, PLACEHOLDER
 from ..model_codecs.unset import UNSET
 from .application import ParameterReader, Rejected, malformed_request, reject
 from .errors import invalid, media_invalid, missing, model_records, unsupported_media
@@ -52,9 +53,7 @@ if TYPE_CHECKING:
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]
 T = TypeVar("T")
 
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
-_PATH_SAFE: Final = "/:@!$&'()*+,;="
 _TEXT: Final = FieldPlan("")
 _ANY: Final[TypeAdapter[object]] = TypeAdapter(object)
 _JSON_WHITESPACE: Final = b" \t\r\n"
@@ -84,7 +83,7 @@ class RawPath:
 
     def __post_init__(self) -> None:
         """Compile the template's patterns once: its usual encoding first, then any percent-encoding."""
-        pieces = _PLACEHOLDER.split(self.template)
+        pieces = PLACEHOLDER.split(self.template)
         patterns = tuple(_pattern(pieces[::2], literal) for literal in (_encoded, _any_encoding))
         object.__setattr__(self, "patterns", patterns)
         slots = tuple((f"s{index}", name) for index, name in enumerate(pieces[1::2]) if name in self.names)
@@ -103,7 +102,7 @@ def _pattern(literals: list[str], literal: Callable[[str], bytes]) -> re.Pattern
 
 
 def _encoded(text: str) -> bytes:
-    return re.escape(quote(text, safe=_PATH_SAFE).encode())
+    return re.escape(quote(text, safe=PATH_SAFE).encode())
 
 
 def _any_encoding(text: str) -> bytes:
@@ -177,7 +176,7 @@ class ParameterAdapter(ParameterReader):
         """Return the raw value of each named slot, adding the record of a repeated slot whose values differ."""
         if not isinstance(raw := scope.get("raw_path"), bytes):
             decoded = scope.get("path")
-            raw = quote(decoded, safe=_PATH_SAFE).encode() if isinstance(decoded, str) else b""
+            raw = quote(decoded, safe=PATH_SAFE).encode() if isinstance(decoded, str) else b""
         if (found := path.search(raw.partition(b"?")[0])) is None:
             raise malformed_request()
         captured: dict[str, bytes] = {}
