@@ -1113,8 +1113,11 @@ class _Traversal(Generic[T, P]):
         finally:
             self._lock.release()
 
-    def _close(self, action: str) -> None:
+    def _close(self, action: str, *, quiet: bool = False) -> None:
+        """Close the pager, refusing a running step unless an error is already leaving its block."""
         if not self._lock.acquire(blocking=False):
+            if quiet:
+                return
             raise self._walk.state_error(action, "fetching")
         self._state = _State.CLOSED
         self._lock.release()
@@ -1187,8 +1190,8 @@ class Pager(_Traversal[T, P]):
     def __exit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
-        """Close the pager."""
-        self.close()
+        """Close the pager; while another step runs, leave it open rather than mask the block's error."""
+        self._close("close", quiet=exc is not None)
 
 
 @final
@@ -1258,8 +1261,8 @@ class AsyncPager(_Traversal[T, P]):
     async def __aexit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
-        """Close the pager."""
-        await self.aclose()
+        """Close the pager; while another step runs, leave it open rather than mask the block's error."""
+        self._close("aclose", quiet=exc is not None)
 
 
 def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
