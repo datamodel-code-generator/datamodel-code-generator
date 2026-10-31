@@ -29,6 +29,13 @@ from datamodel_code_generator.model._decisions.assignment import (
     written_data,
 )
 from datamodel_code_generator.model._render_plan import (
+    BARE_DEFAULT,
+    DEFAULT_VALUE,
+    FORCED_ASSIGNMENT,
+    MUTABLE_FACTORY,
+    NESTED_MODEL_FACTORY,
+    PLAIN_ANNOTATION,
+    REQUIRED_FIELD,
     CallArguments,
     CallPlan,
     FieldDefault,
@@ -209,23 +216,12 @@ def _build_nested_dataclass_default_factory(
     return _NestedDataclassFactory(data_type, tuple(arguments))
 
 
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
 _FIELD_CALL = Why(RuleId("D11.dataclass.field-call"))
 """The field writes ``field(...)``: an argument, a default factory, or a forced assignment needs one."""
-_FORCED_FIELD_CALL = Why(RuleId("D4.default.forced-required-assignment"))
-"""A required field that a dataclass base's defaults would follow writes ``field()``, so it stays required."""
 _FIELD_ARGUMENT = RuleId("D11.dataclass.field-argument")
-_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
-_BARE_DEFAULT = Why(RuleId("D4.default.bare"), keyword="default")
-"""The field writes its default alone after the annotation."""
 _KEPT_NONE_DEFAULT = Why(RuleId("D4.default.none-beside-arguments"), keyword="default")
 """A ``None`` default goes into a ``field(...)`` other arguments need, unless ``--strip-default-none`` strips it."""
-_REQUIRED = Why(RuleId("D4.default.required"), keyword="required")
-_NESTED_MODEL_FACTORY = Why(
-    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
-)
 _NESTED_MAPPING_FACTORY = Why(RuleId("D4.default.nested-dataclass-from-mapping"), keyword="default")
-_MUTABLE_FACTORY = Why(RuleId("D4.default.mutable-factory"), keyword="default")
 _UNBOUND_FACTORY = Why(RuleId("D4.default.unbound-field-factory"))
 """A field that hides a type its class names writes its default through a factory, so ``dataclasses`` unbinds it."""
 _REQUIRED_INHERITED_INIT_KEY = "_required_inherited_init"
@@ -455,24 +451,24 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         items = self._field_items(nested)
         args = CallArguments(omitted)
         for key in items.dropped:
-            args.omit(f"extra:{key}", self.extras[key], "factory-not-applicable", _REQUIRED)
+            args.omit(f"extra:{key}", self.extras[key], "factory-not-applicable", REQUIRED_FIELD)
         for name, item in items.written:
             match item:
                 case "extra":
                     args.put(name, self.extras[name], Why(_FIELD_ARGUMENT, name), (f"extra:{name}",))
                 case "nested-model-factory":
-                    args.put(name, nested, _NESTED_MODEL_FACTORY)
+                    args.put(name, nested, NESTED_MODEL_FACTORY)
                 case "kept-none-default":
                     args.put(name, None, _KEPT_NONE_DEFAULT)
                 case "default":
-                    args.put(name, self.default, _DEFAULT)
+                    args.put(name, self.default, DEFAULT_VALUE)
                 case "value-factory":
                     if isinstance(self.default, dict) and (
                         nested_factory := self._get_default_factory_for_nested_value(self.default)
                     ):
                         args.put(name, nested_factory, _NESTED_MAPPING_FACTORY)
                     else:
-                        args.put(name, _ValueFactory(self.default), _MUTABLE_FACTORY)
+                        args.put(name, _ValueFactory(self.default), MUTABLE_FACTORY)
                 case _:
                     args.put(name, _ValueFactory(self.default, always_lambda=True), _UNBOUND_FACTORY)
         return args
@@ -491,13 +487,13 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         args = self._field_arguments([])
         kwargs = args.kwargs()
         call: CallPlan | None = None
-        default = FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT)
+        default = FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE)
         bare_default = False
         if not kwargs:
             if self._has_forced_field_assignment:
-                call = CallPlan(None, None, (), default_keyword=False, why=_FORCED_FIELD_CALL, callee="field")
+                call = CallPlan(None, None, (), default_keyword=False, why=FORCED_ASSIGNMENT, callee="field")
         elif len(kwargs) == 1 and kwargs[0].name == "default":
-            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=_BARE_DEFAULT, items=kwargs[0].items)
+            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=BARE_DEFAULT, items=kwargs[0].items)
             bare_default = True
         else:
             call = CallPlan(None, None, kwargs, default_keyword=False, why=_FIELD_CALL, callee="field")
@@ -508,7 +504,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             has_default_factory_in_field="default_factory" in args,
             omitted=tuple(args.omitted),
             symbol_imports=() if call is None else ((IMPORT_FIELD, call.why),),
-            why=_PLAIN_ANNOTATION,
+            why=PLAIN_ANNOTATION,
             bare_default=bare_default,
         )
 

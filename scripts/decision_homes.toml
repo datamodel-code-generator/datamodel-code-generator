@@ -1996,6 +1996,30 @@ exclude = ["parser/mcp.py:_tool_validation_error"]
 what = "writes the text of a schema location itself; call _url_redaction.py:named_location (the `loc` of a pydantic error is no schema location)"
 audit = "C16"
 
+[homes.Hx-shared-why]
+decision = "the reason (`Why`) a render plan records for an item that more than one output backend writes: its rule, keyword and option, one value each"
+core = ["model/_render_plan.py"]
+adapters = []
+
+[homes.Hx-shared-why.signatures.shared-rule]
+kind = "call"
+names = ["RuleId"]
+strings = [
+    "D11.annotation.plain",
+    "D11.annotation.annotated",
+    "D4.default.value",
+    "D4.default.bare",
+    "D4.default.missing-sentinel",
+    "D4.default.required",
+    "D4.default.mutable-factory",
+    "D4.default.nested-model-factory",
+    "D4.default.forced-required-assignment",
+    "D9.alias.explicit",
+    "D2.untaken-by-type",
+]
+what = "defines a reason that more than one backend writes itself; import it from model/_render_plan.py"
+audit = "C16-B15"
+
 [homes.Hx-context-scope]
 decision = "how a block runs with context variables set: each set to its value in order before the block, and reset by its token in reverse order after it, also when the block raises"
 core = ["_context_scope.py:context_values"]

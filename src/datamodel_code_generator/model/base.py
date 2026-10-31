@@ -85,6 +85,8 @@ from datamodel_code_generator.model._field_imports import (
     _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
 )
 from datamodel_code_generator.model._render_plan import (
+    DEFAULT_VALUE,
+    PLAIN_ANNOTATION,
     RENDER_READY,
     AssignmentFacts,
     FieldDefault,
@@ -1157,11 +1159,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return FieldRenderPlan(
             annotation_form="plain",
             call=None,
-            default=FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT_VALUE),
+            default=FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE),
             has_default_factory_in_field=False,
             omitted=(),
             symbol_imports=(),
-            why=_PLAIN_ANNOTATION,
+            why=PLAIN_ANNOTATION,
         )
 
     def _written_assignment(self) -> WrittenAssignment:
@@ -1426,12 +1428,6 @@ def _nested_render_inputs(items: tuple[Any, ...]) -> tuple[RenderInputs, ...]:
 def _holds_render_inputs(value: object) -> bool:
     """Return whether a render plan reads inside ``value``: a container, or a type or constraints, not a reference."""
     return isinstance(value, _HOLDERS) and not isinstance(value, Reference)
-
-
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
-"""The annotation is the field's type alone."""
-_DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
-"""The field's default, as its schema or the parser gives it."""
 
 
 @final

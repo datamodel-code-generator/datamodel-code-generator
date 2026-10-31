@@ -51,7 +51,18 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
 
 __all__ = [
+    "ANNOTATED_ANNOTATION",
+    "BARE_DEFAULT",
+    "DEFAULT_VALUE",
+    "EXPLICIT_ALIAS",
+    "FORCED_ASSIGNMENT",
+    "MISSING_DEFAULT",
+    "MUTABLE_FACTORY",
+    "NESTED_MODEL_FACTORY",
+    "PLAIN_ANNOTATION",
     "RENDER_READY",
+    "REQUIRED_FIELD",
+    "UNTAKEN_BY_TYPE",
     "AnnotationForm",
     "AssignmentFacts",
     "AssignmentRule",
@@ -156,13 +167,40 @@ class Why(NamedTuple):
 
     ``keyword`` is the schema keyword or field attribute the item comes from, ``option`` the option that selected
     the rule, ``via`` the earlier decisions it went through. The schema location is not stored: it is the location of
-    the field's model and property.
+    the field's model and property. The rows that more than one backend writes are defined once below
+    (``PLAIN_ANNOTATION`` to ``UNTAKEN_BY_TYPE``); the rows of one backend stay in its module.
     """
 
     rule: RuleId
     keyword: str | None = None
     option: str | None = None
     via: tuple[RuleId, ...] = ()
+
+
+PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
+"""The annotation is the field's type alone."""
+ANNOTATED_ANNOTATION = Why(RuleId("D11.annotation.annotated"), option="--use-annotated")
+"""The annotation is ``Annotated[type, <the field's call>]``."""
+DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
+"""The field's default, as its schema or the parser gives it."""
+BARE_DEFAULT = Why(RuleId("D4.default.bare"), keyword="default")
+"""The field writes its default alone after the annotation."""
+MISSING_DEFAULT = Why(RuleId("D4.default.missing-sentinel"), option="--use-missing-sentinel")
+"""The field's default is Pydantic's ``MISSING`` sentinel."""
+REQUIRED_FIELD = Why(RuleId("D4.default.required"), keyword="required")
+"""The field is required: its call writes no default, or writes ``...`` for one."""
+MUTABLE_FACTORY = Why(RuleId("D4.default.mutable-factory"), keyword="default")
+"""A list, dict or set default is written as a default factory."""
+NESTED_MODEL_FACTORY = Why(
+    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
+)
+"""The default factory of an optional nested model."""
+FORCED_ASSIGNMENT = Why(RuleId("D4.default.forced-required-assignment"))
+"""A required field that a dataclass base's defaults would follow writes its call, so it stays required."""
+EXPLICIT_ALIAS = Why(RuleId("D9.alias.explicit"), keyword="alias")
+"""The field's alias, written as the call's argument."""
+UNTAKEN_BY_TYPE = RuleId("D2.untaken-by-type")
+"""A constraint the field's type does not take is not written."""
 
 
 class Kwarg(NamedTuple):

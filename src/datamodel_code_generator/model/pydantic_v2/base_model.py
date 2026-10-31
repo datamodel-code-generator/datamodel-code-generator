@@ -44,6 +44,8 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
+    DEFAULT_VALUE,
+    MISSING_DEFAULT,
     CallPlan,
     FieldDefault,
     FieldRenderPlan,
@@ -303,8 +305,6 @@ _SERIALIZATION_ALIAS_FROM_ALIAS = Why(
 )
 _JSON_SCHEMA_EXTRA = Why(RuleId("D11.pydantic.json-schema-extra"))
 _NULL_DEFAULT = Why(RuleId("D4.default.pydantic-null-type"), keyword="default")
-_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
-_MISSING_DEFAULT = Why(RuleId("D4.default.missing-sentinel"), option="--use-missing-sentinel")
 _LEGACY_PYDANTIC_EXTRA_TEMPLATE_PATTERN = re.compile(
     r"{%-?\s*(?:if|elif)\s+(?:not\s+)?field\.use_pydantic_extra_annotation_assignment\b"
 )
@@ -851,7 +851,7 @@ class DataModelField(_PydanticBaseDataModelField):
         ):
             return self._field_render_plan(
                 None,
-                FieldDefault(self.default, missing, _MISSING_DEFAULT if missing else _DEFAULT),
+                FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE),
                 has_default_factory_in_field=False,
                 omitted=tuple(self._warned_omissions()[0]),
             )
