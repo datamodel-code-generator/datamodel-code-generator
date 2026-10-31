@@ -20,11 +20,10 @@ from ..model_codecs.media import (
     encode_form,
     finite,
     form_encode,
+    form_pairs,
     json_value,
     media_range,
     normalized,
-    percent_decode,
-    split_form,
     status_key,
 )
 from ..model_codecs.media import json_bytes as _json_bytes
@@ -499,14 +498,8 @@ def _text(body: bytes, info: ResponseInfo) -> str:
         raise InvalidBodyError(error) from None
 
 
-def _form_pairs(body: bytes) -> FormData:
-    return tuple(
-        (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
-    )
-
-
 def _pairs(body: bytes, _: ResponseInfo) -> FormData:
-    return _parsed(_form_pairs, body)
+    return _parsed(form_pairs, body)
 
 
 def _bytes(body: bytes, _: ResponseInfo) -> bytes:

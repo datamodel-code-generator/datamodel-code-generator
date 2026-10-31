@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from email.message import Message
 
-    from ..model_codecs.media import JSONValue, LexicalKind
+    from ..model_codecs.media import JSONScalar, JSONValue, LexicalKind
     from .operations import InboundModelCodec
     from .parts import PartKind, PartPlan
     from .responses import ResponseInfo
@@ -173,14 +173,22 @@ def parse_multipart(body: bytes, content_type: str | None) -> tuple[DecodedPart[
     return tuple(_part(part) for part in cast("list[Message]", message.get_payload()))
 
 
-def _json_part(part: DecodedPart[bytes]) -> bool:
-    return media_kind(essence(part.content_type or "").strip().lower()) == "json"
+def _text_kind(part: DecodedPart[bytes], kind: PartKind) -> LexicalKind | None:
+    """Return the lexical kind a part's text is read in, or None when it is read as JSON.
+
+    A part is JSON when its member is of the JSON kind or it names a JSON media type.
+    """
+    return None if kind == "json" or media_kind(essence(part.content_type or "").strip().lower()) == "json" else kind
+
+
+def _typed_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONScalar:
+    return typed(part.value.decode(charset(part.content_type or "")), kind)
 
 
 def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:
-    if kind == "json" or _json_part(part):
+    if (lexical := _text_kind(part, kind)) is None:
         return json_value(part.value)
-    return typed(part.value.decode(charset(part.content_type or "")), kind)
+    return _typed_text(part, lexical)
 
 
 def decode_parts(
@@ -252,15 +260,15 @@ def file_part(
 
 def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONValue:
     try:
-        return typed(part.value.decode(charset(part.content_type or "")), kind)
+        return _typed_text(part, kind)
     except ValueError as error:
         raise InvalidBodyError(error) from None
 
 
 def _decoded(codec: InboundModelCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
-    if kind == "json" or _json_part(part):
+    if (lexical := _text_kind(part, kind)) is None:
         return coded(codec, partial(codec.decode, part.value))
-    return coded(codec, lambda: codec.text(_part_text(part, kind)))
+    return coded(codec, lambda: codec.text(_part_text(part, lexical)))
 
 
 def value_part(  # noqa: PLR0913

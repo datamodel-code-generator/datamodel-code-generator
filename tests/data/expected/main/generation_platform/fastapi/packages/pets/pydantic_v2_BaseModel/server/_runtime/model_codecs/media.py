@@ -34,6 +34,7 @@ __all__ = (
     "TCHARS",
     "TOKEN",
     "FieldPlan",
+    "JSONKind",
     "JSONScalar",
     "JSONValue",
     "LexicalKind",
@@ -50,6 +51,7 @@ __all__ = (
     "essence",
     "finite",
     "form_encode",
+    "form_pairs",
     "json_bytes",
     "json_integer",
     "json_number",
@@ -73,6 +75,7 @@ __all__ = (
 JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
 JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
+JSONKind = Literal["object", "array", "string", "number", "boolean"]
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
 MediaOrder: TypeAlias = Literal["specific", "declared"]
@@ -511,14 +514,18 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
     return tuple((name, value) for name, _, value in (part.partition(b"=") for part in raw.split(b"&") if part))
 
 
+def form_pairs(raw: bytes) -> tuple[tuple[str, str], ...]:
+    """Split URL-encoded bytes into ordered name/value pairs, each percent-decoded with a plus sign as a space."""
+    return tuple((percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(raw))
+
+
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> JSONValue:
     """Split URL-encoded text for native model conversion: repeated fields as lists, a single value by its last."""
     declared = {field.name: field for field in fields}
     result: dict[str, JSONValue] = {}
-    for raw_name, raw_value in split_form(raw):
-        name = percent_decode(raw_name, plus=True)
+    for name, text in form_pairs(raw):
         field = declared.get(name, additional)
-        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
+        value = typed(text, "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)

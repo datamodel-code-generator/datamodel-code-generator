@@ -1496,6 +1496,32 @@ paths = ["_runtime/"]
 what = "digests the canonical JSON of a value itself; call protocols/records.py:json_digest"
 audit = "C27-B9"
 
+[homes.Hx-form-reads]
+decision = "how the client runtime reads a URL-encoded or form-data body before its model reads it: the ordered name/value pairs URL-encoded bytes hold, each percent-decoded with a plus sign as a space, and whether a form-data part is read as JSON (its member is of the JSON kind or the part names a JSON media type) or as the text of its member's lexical kind in the part's charset"
+core = [
+    "_runtime/model_codecs/media.py:form_pairs",
+    "_runtime/client/multipart_responses.py:_text_kind",
+    "_runtime/client/multipart_responses.py:_typed_text",
+]
+adapters = []
+
+[homes.Hx-form-reads.signatures.form-pairs]
+kind = "call"
+names = ["split_form"]
+paths = ["_runtime/"]
+# A query parameter keeps the raw fragments of the query and percent-decodes only the ones it reads.
+exclude = ["_runtime/model_codecs/parameter_reads.py:split_query"]
+what = "decodes the name/value pairs of URL-encoded bytes itself; call model_codecs/media.py:form_pairs"
+audit = "C23-K05"
+
+[homes.Hx-form-reads.signatures.part-text]
+kind = "call"
+names = ["typed"]
+mentions = ["charset"]
+paths = ["_runtime/"]
+what = "reads a part's text in its charset as a lexical kind itself; call client/multipart_responses.py:_typed_text (as _text_kind selects it)"
+audit = "C23-K14"
+
 [homes.Hx-parameter-key]
 decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime (row legacy-case-sensitive-parameter-override: the paths scope's walk overrides a path item's parameter by its name as written); and where a parameter or an apiKey credential of the target contract goes: a parameter's declared location and wire name, an apiKey security scheme's location (query, header or cookie) and nonempty name"
 core = [
@@ -2932,9 +2958,6 @@ fix = "#5769"
 
 [allow."src/datamodel_code_generator/__main__.py"."_target_usage_errors"]
 "Hx-option-arguments.negative-option" = { home = "Hx-option-arguments", count = 1, audit = "C14-B8" }
-
-[allow."src/datamodel_code_generator/_client/codec_plan.py"."<module>"]
-"T-kind.kind-table" = { home = "T-kind", count = 2, audit = "M-02" }
 
 [allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.discriminator"]
 "H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
