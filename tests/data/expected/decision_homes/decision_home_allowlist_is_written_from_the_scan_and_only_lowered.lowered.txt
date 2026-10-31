@@ -29,7 +29,7 @@
 "sample.fold" = { home = "sample", count = 2, audit = "X-12" }
 
 [allow."other.py"."guarded_reads"]
-"sample.mapping-guard" = { home = "sample", count = 5, audit = "X-19" }
+"sample.mapping-guard" = { home = "sample", count = 6, audit = "X-19" }
 
 [allow."other.py"."keywords"]
 "sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }

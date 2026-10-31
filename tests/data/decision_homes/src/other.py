@@ -175,7 +175,9 @@ def climb(path, other, roots):
 
 
 def guarded_reads(value, other, owner, flag):
-    """Read a value or its members only when it is a dict; another class, value, fallback or wrapper does not count."""
+    """Read a value or its members only when it is a dict, also in a nested and; another class, value, fallback, wrapper
+    or isinstance callee does not count.
+    """
     return (
         value if isinstance(value, dict) else {},
         value.get("key") if isinstance(value, dict) else None,
@@ -186,4 +188,6 @@ def guarded_reads(value, other, owner, flag):
         other.get("key") if isinstance(value, dict) else None,
         value if isinstance(value, dict) else other,
         tuple(value) if isinstance(value, dict) else (),
+        value.get("key") if owner.isinstance(value, dict) else None,
+        value.get("key") if flag and (isinstance(value, dict) and owner) else None,
     )

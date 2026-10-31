@@ -66,7 +66,7 @@ ALLOWED = """
 [allow."other.py"."climb"]
 "sample.ancestor-walk" = { home = "sample", count = 2, audit = "X-18" }
 [allow."other.py"."guarded_reads"]
-"sample.mapping-guard" = { home = "sample", count = 5, audit = "X-19" }
+"sample.mapping-guard" = { home = "sample", count = 6, audit = "X-19" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
