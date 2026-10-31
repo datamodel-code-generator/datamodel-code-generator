@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
-from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections import defaultdict
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.json_config import JsonConfigFieldName, JsonConfigSource
     from datamodel_code_generator.validators import ModelValidators
 
@@ -324,7 +324,7 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_keyword_only(self: Self) -> Self:
             """Validate keyword-only compatibility with target Python version."""
-            from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
+            from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
 
             output_model_type: DataModelType = self.output_model_type
             python_target: PythonVersion = self.target_python_version
@@ -334,7 +334,8 @@ def _get_config_class() -> type[Config]:
                 and not python_target_meets("python.kw_only_dataclass", python_target.version_key)
             ):
                 msg = (  # pragma: no cover
-                    f"`--keyword-only` requires `--target-python-version` {PythonVersion.PY_310.value} or higher."
+                    f"`--keyword-only` requires `--target-python-version` "
+                    f"{REQUIREMENTS['python.kw_only_dataclass'].minimum} or higher."
                 )
                 raise Error(msg)  # pragma: no cover
             return self

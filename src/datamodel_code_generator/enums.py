@@ -269,10 +269,14 @@ class TargetPydanticVersion(Enum):
     V2_14 = "2.14"
 
 
+def _version_key(version: str) -> tuple[int, ...]:
+    """Convert a dotted version, such as a target or a requirement's minimum, into comparable integer parts."""
+    return tuple(int(part) for part in version.split("."))
+
+
 def _pydantic_version_key(target_version: TargetPydanticVersion | str) -> tuple[int, ...]:
     """Convert a target Pydantic version into comparable integer parts."""
-    value = target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
-    return tuple(int(part) for part in value.split("."))
+    return _version_key(target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version)
 
 
 def _is_pydantic_version_at_least(

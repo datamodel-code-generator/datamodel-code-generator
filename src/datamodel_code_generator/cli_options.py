@@ -19,7 +19,8 @@ from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
+from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.deprecations import deprecation_message
 from datamodel_code_generator.enums import (
     AllExportsScope,
@@ -245,10 +246,10 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--keyword-only",
         requires=_relations(
             "--target-python-version",
-            value=f"{PythonVersion.PY_310.value}+",
+            value=f"{REQUIREMENTS['python.kw_only_dataclass'].minimum}+",
             message=(
                 f"`--keyword-only` requires `--target-python-version` "
-                f"{PythonVersion.PY_310.value} or higher for dataclasses."
+                f"{REQUIREMENTS['python.kw_only_dataclass'].minimum} or higher for dataclasses."
             ),
         ),
     ),
@@ -428,9 +429,10 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-specialized-enum",
         requires=_relations(
             "--target-python-version",
-            value=f"{PythonVersion.PY_311.value}+",
+            value=f"{REQUIREMENTS['python.strenum'].minimum}+",
             message=(
-                f"`--use-specialized-enum` requires `--target-python-version` {PythonVersion.PY_311.value} or higher."
+                f"`--use-specialized-enum` requires `--target-python-version` "
+                f"{REQUIREMENTS['python.strenum'].minimum} or higher."
             ),
         ),
     ),

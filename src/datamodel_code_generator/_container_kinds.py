@@ -101,10 +101,11 @@ class ContainerKind:
     __slots__ = ("_flags_of", "flags", "slots")
 
     def __init__(self, *slots: ContainerSlot) -> None:
-        """Make the kind of two or more ``slots``."""
+        """Make the kind of one or more ``slots``."""
         self.slots = frozenset(slots)
         self.flags = frozenset(CONTAINER_FLAGS[slot] for slot in slots)
-        self._flags_of = attrgetter(*(CONTAINER_FLAGS[slot] for slot in slots))
+        names = tuple(CONTAINER_FLAGS[slot] for slot in slots)
+        self._flags_of = attrgetter(*names) if len(names) > 1 else attrgetter(*names, *names)
 
     def __contains__(self, node: object) -> bool:
         """Return whether the flags of ``node`` put it in a container of this kind."""

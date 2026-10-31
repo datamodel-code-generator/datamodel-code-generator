@@ -165,7 +165,7 @@ def _unmodeled_pattern_properties(node: Mapping[str, Any]) -> bool:
     """
     if not isinstance(patterns := node.get("patternProperties"), dict) or not patterns:
         return False
-    if isinstance(properties := node.get("properties"), dict) and properties:
+    if _is_object(node):
         return True
     if isinstance(additional := node.get("additionalProperties"), dict) and additional:
         return False
@@ -593,11 +593,10 @@ class _Walker:
 
         Generation copies the holder's properties into a model for each such branch.
         """
-        parent_properties = node.get("properties")
+        parent_properties = as_mapping(node.get("properties"))
         properties = branch.get("properties", {})
         return (
-            isinstance(parent_properties, dict)
-            and bool(parent_properties)
+            _is_object(node)
             and branch.keys() <= _CONSTRAINT_ONLY_KEYWORDS
             and ("required" in branch or "properties" in branch)
             and isinstance(properties, dict)
@@ -653,9 +652,8 @@ def _reference_cycles(references: Mapping[str, set[str]]) -> int:
     return sum(len(group) > 1 for group in groups)
 
 
-def _count_titles(counts: Counter[str], titles: Mapping[str, str], components: Iterable[str]) -> Counter[str]:
-    """Count component titles that collide or repeat keys; return the shared titles with their group sizes."""
-    keys = {normalize_name(key) for key in components}
+def _count_titles(counts: Counter[str], titles: Mapping[str, str], keys: AbstractSet[str]) -> Counter[str]:
+    """Count component titles that collide or repeat the normalized component ``keys``; return the shared titles."""
     groups = Counter(normalize_name(title) for title in titles.values())
     shared = {title: count for title, count in groups.items() if count > 1}
     counts["titled_components"] = len(titles)
@@ -673,9 +671,8 @@ def _count_titles(counts: Counter[str], titles: Mapping[str, str], components: I
     })
 
 
-def _count_names(counts: Counter[str], walker: _Walker, components: Iterable[str]) -> Counter[str]:
-    """Count inline model names shared by parents or taken by components; return the shared names."""
-    keys = {normalize_name(key) for key in components}
+def _count_names(counts: Counter[str], walker: _Walker, keys: AbstractSet[str]) -> Counter[str]:
+    """Count inline model names shared by parents or taken by the normalized component ``keys``; return the shared."""
     shared = Counter({name: len(parents) for name, parents in walker.name_parents.items() if len(parents) > 1})
     counts["shared_inline_names"] = len(shared)
     counts["shared_inline_object_names"] = sum(len(parents) > 1 for parents in walker.object_name_parents.values())
@@ -752,8 +749,9 @@ def measure_signals(
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
-    shared_names = _count_names(counts, walker, components)
-    shared_titles = _count_titles(counts, titles, components)
+    keys = {normalize_name(key) for key in components}
+    shared_names = _count_names(counts, walker, keys)
+    shared_titles = _count_titles(counts, titles, keys)
     counts["inline_title_max_repeat"] = max(walker.inline_titles.values(), default=0)
     dotted = [key for key in components if "." in key]
     counts["dotted_keys"] = len(dotted)
