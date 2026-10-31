@@ -18,13 +18,13 @@ if TYPE_CHECKING:
 def _resolve_profile_extends(
     profiles: Mapping[str, Any],
     profile_name: str,
-    visited: set[str] | None = None,
+    visited: list[str] | None = None,
     *,
     missing: str | None = None,
 ) -> dict[str, Any]:
     """Resolve profile inheritance via extends key; ``missing`` names a missing requested profile."""
     if visited is None:
-        visited = set()
+        visited = []
 
     if profile_name in visited:
         chain = " -> ".join(visited) + f" -> {profile_name}"
@@ -37,7 +37,7 @@ def _resolve_profile_extends(
         msg = f"{missing}. Available profiles: {available}"
         raise Error(msg)
 
-    visited.add(profile_name)
+    visited.append(profile_name)
     profile = profiles[profile_name]
     if not isinstance(profile, Mapping):
         msg = f"Profile '{profile_name}' must be a table"
