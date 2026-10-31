@@ -187,7 +187,23 @@
           ],
           "protocols": "ProtocolHelpers",
           "protocols_module": ".protocols._helpers",
-          "helper_settings": "._runtime.protocols.options"
+          "helper_settings": "._runtime.protocols.options",
+          "limits": {
+            "pagination": {
+              "max_pages": "None (no limit)",
+              "max_items": "None (no limit)",
+              "total_timeout": "None (no limit)"
+            },
+            "polling": {
+              "max_polls": "1000",
+              "max_wait": "60 seconds",
+              "total_timeout": "600 seconds"
+            },
+            "uploads": {
+              "chunk_bytes": "8 MiB",
+              "total_timeout": "None (no limit)"
+            }
+          }
         }
       },
       {
@@ -251,7 +267,23 @@
           "resources": [],
           "protocols": "",
           "protocols_module": ".protocols._helpers",
-          "helper_settings": ""
+          "helper_settings": "",
+          "limits": {
+            "pagination": {
+              "max_pages": "None (no limit)",
+              "max_items": "None (no limit)",
+              "total_timeout": "None (no limit)"
+            },
+            "polling": {
+              "max_polls": "1000",
+              "max_wait": "60 seconds",
+              "total_timeout": "600 seconds"
+            },
+            "uploads": {
+              "chunk_bytes": "8 MiB",
+              "total_timeout": "None (no limit)"
+            }
+          }
         }
       }
     ],
@@ -1771,6 +1803,22 @@
             "statuses": "408, 429, 500, 502, 503, 504",
             "error_prefix": "64",
             "read_size": "64"
+          },
+          "limits": {
+            "pagination": {
+              "max_pages": "None (no limit)",
+              "max_items": "None (no limit)",
+              "total_timeout": "None (no limit)"
+            },
+            "polling": {
+              "max_polls": "1000",
+              "max_wait": "60 seconds",
+              "total_timeout": "600 seconds"
+            },
+            "uploads": {
+              "chunk_bytes": "8 MiB",
+              "total_timeout": "None (no limit)"
+            }
           }
         }
       },
@@ -1808,6 +1856,22 @@
             "statuses": "408, 429, 500, 502, 503, 504",
             "error_prefix": "64",
             "read_size": "64"
+          },
+          "limits": {
+            "pagination": {
+              "max_pages": "None (no limit)",
+              "max_items": "None (no limit)",
+              "total_timeout": "None (no limit)"
+            },
+            "polling": {
+              "max_polls": "1000",
+              "max_wait": "60 seconds",
+              "total_timeout": "600 seconds"
+            },
+            "uploads": {
+              "chunk_bytes": "8 MiB",
+              "total_timeout": "None (no limit)"
+            }
           }
         }
       },
@@ -1862,6 +1926,22 @@
             "statuses": "408, 429, 500, 502, 503, 504",
             "error_prefix": "64",
             "read_size": "64"
+          },
+          "limits": {
+            "pagination": {
+              "max_pages": "None (no limit)",
+              "max_items": "None (no limit)",
+              "total_timeout": "None (no limit)"
+            },
+            "polling": {
+              "max_polls": "1000",
+              "max_wait": "60 seconds",
+              "total_timeout": "600 seconds"
+            },
+            "uploads": {
+              "chunk_bytes": "8 MiB",
+              "total_timeout": "None (no limit)"
+            }
           }
         }
       }

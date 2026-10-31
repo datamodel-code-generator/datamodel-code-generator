@@ -22,6 +22,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
@@ -433,7 +434,7 @@ def _config_dict_items(config: Any) -> list[tuple[str, Any]]:
     if not dump:
         return []
     values = dump(exclude_unset=True)
-    return list(values.items()) if isinstance(values, dict) else []
+    return list(as_mapping(values).items())
 
 
 def _decode_legacy_quoted_config_string(value: str) -> str:

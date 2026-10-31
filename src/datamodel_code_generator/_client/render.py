@@ -71,6 +71,9 @@ from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, med
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
@@ -559,6 +562,30 @@ class CredentialExample:
     name: str
     value: str
     annotation: str
+
+
+def _limit_text(value: float | None, unit: str = "") -> str:
+    """Write a helper limit's default as a runtime reference states it: None as no limit, else its number and unit."""
+    return "None (no limit)" if value is None else f"{format(value, 'g')}{unit}"
+
+
+_HELPER_LIMITS: Final = {
+    "pagination": {
+        "max_pages": _limit_text(_PAGE_LIMITS.max_pages),
+        "max_items": _limit_text(_PAGE_LIMITS.max_items),
+        "total_timeout": _limit_text(_PAGE_LIMITS.total_timeout, " seconds"),
+    },
+    "polling": {
+        "max_polls": _limit_text(_POLL_LIMITS.max_polls),
+        "max_wait": _limit_text(_POLL_LIMITS.max_wait, " seconds"),
+        "total_timeout": _limit_text(_POLL_LIMITS.total_timeout, " seconds"),
+    },
+    "uploads": {
+        "chunk_bytes": _limit_text(_UPLOAD_LIMITS.chunk_bytes / 2**20, " MiB"),
+        "total_timeout": _limit_text(_UPLOAD_LIMITS.total_timeout, " seconds"),
+    },
+}
+"""The limit defaults of the pagination, polling, and upload helpers, as the runtime reference states them."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -3321,6 +3348,7 @@ class ClientRenderer:
             if pages
             else None,
             polling=any(isinstance(spec, PollingSpec) for spec in self.helpers),
+            limits=_HELPER_LIMITS,
             cache=_caches(self.helpers),
             uploads=any(isinstance(spec, UploadSpec) for spec in self.helpers),
             streams=RuntimeStreams(
