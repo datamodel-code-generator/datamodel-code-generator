@@ -1,0 +1,7 @@
+{
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "f": {"type": "string", "maxLength": 3}
+  }
+}

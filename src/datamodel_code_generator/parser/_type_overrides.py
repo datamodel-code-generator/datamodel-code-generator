@@ -235,8 +235,8 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
     Keep the IR through internal stages: rendering and reparsing here would
     incorrectly make the host AST/tokenizer an authority for target syntax.
     """
-    # Binding is exclusive to x-python-type. Import it only after that
-    # extension is present so ordinary schema generation keeps its fast path.
+    # Load annotation binding only when an explicit Python type or override needs it,
+    # so ordinary schema generation keeps its fast path.
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeExpr,
@@ -309,12 +309,12 @@ def override_annotation(
 ) -> DataType | None:
     """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class.
 
-    A value with brackets, such as ``typing.Literal[1, 2]``, names no class to import: it is written as
-    ``x-python-type`` writes it, with the imports of its names and the keywords that type takes. A value with
-    brackets that is no annotation is an error, as it has no import to write either.
+    A bare target builtin or a value with brackets, such as ``typing.Literal[1, 2]``, names no class to import:
+    it is written as ``x-python-type`` writes it, with the imports of its names and the keywords that type takes.
+    A value with brackets that is no annotation is an error, as it has no import to write either.
     """
     path = _import_path(override_import)
-    if "[" not in path:
+    if "[" not in path and not parser._is_target_python_builtin_type(path):  # noqa: SLF001
         return None
     if (expression := _parse_override_annotation(path)) is None:
         msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
