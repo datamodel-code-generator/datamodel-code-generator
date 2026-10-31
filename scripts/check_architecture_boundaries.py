@@ -239,13 +239,14 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             *sys.stdlib_module_names,
             "typing_extensions",
             "datamodel_code_generator._json_schema",
+            "datamodel_code_generator._model_keys",
             "datamodel_code_generator._records",
             "datamodel_code_generator._regex_syntax",
         }),
         (
             "a pure parser core computes from the dumped schemas it is given: import only the standard library, "
-            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._records and "
-            "datamodel_code_generator._regex_syntax"
+            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._model_keys, "
+            "datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
         ),
     ),
 }

@@ -5446,7 +5446,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         reference_site.with_schema_location(item.schema_location),
                         all_of_path,
                     )
-                self._site_model_reference_ids.add(id(site_type.reference))
+                self._site_model_keys.add(model_key_of(site_type.reference))
                 return site_type
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         with (
@@ -6113,7 +6113,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference = self.model_resolver.add(
                 path, self._apply_title_as_name(name, obj), loaded=True, class_name=True
             )
-            self.typed_nullable_map_reference_ids.add(id(reference))
+            self.typed_nullable_map_reference_ids.add(model_key_of(reference))
             data_type = self._parse_object_map(name, obj, path, path, typed_values=typed_values)
         elif obj.type:
             if preserve_constraints and effective_use_annotated:
