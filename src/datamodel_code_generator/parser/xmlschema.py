@@ -28,7 +28,7 @@ from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, 
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
 from datamodel_code_generator.parser import _xmlschema_literals
-from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import with_null
 from datamodel_code_generator.parser._xmlschema_literals import (
     _PythonExpression,
@@ -717,25 +717,8 @@ class _XMLSchemaConverter:
     def _prepare_definition_names(self) -> None:
         keys = {self._type_definition_key(key) for key in set(self.simple_types) | set(self.complex_types)}
         keys.update(self._element_definition_key(key) for key in self._resolved_referenced_elements())
-        keys_by_local: dict[str, list[DefinitionKey]] = {}
-        for key in keys:
-            keys_by_local.setdefault(key[2], []).append(key)
-
-        used_names: set[str] = set()
-        for local, local_keys in sorted(keys_by_local.items()):
-            sorted_keys = sorted(local_keys, key=self._definition_sort_key)
-            namespaces = {key[1] for key in sorted_keys}
-            for key in sorted_keys:
-                same_qname_count = sum(candidate[1:] == key[1:] for candidate in sorted_keys)
-                if len(sorted_keys) == 1:
-                    name = local
-                else:
-                    namespace_name = _namespace_name(key[1], _to_class_title) if len(namespaces) > 1 else ""
-                    kind_name = _to_class_title(key[0]) if same_qname_count > 1 else ""
-                    name = f"{namespace_name}{_to_class_title(local)}{kind_name}"
-                candidate = _unique_name(name, used_names)
-                self._definition_names[key] = candidate
-                used_names.add(candidate)
+        qualified_names = {key: key for key in sorted(keys, key=self._definition_sort_key)}
+        self._definition_names.update(_name_definitions(qualified_names, _to_class_title, lone="as-written"))
 
     def _build_definitions(self) -> None:
         for keys, definition_key in (

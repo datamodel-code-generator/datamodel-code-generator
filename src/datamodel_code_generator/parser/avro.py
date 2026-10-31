@@ -22,7 +22,7 @@ from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
@@ -222,22 +222,11 @@ class _AvroSchemaConverter:
                 self._collect_named_schemas(schema.get("values"), namespace)
 
     def _prepare_definition_names(self) -> None:
-        fullnames_by_local: dict[str, list[str]] = {}
-        for fullname, name_info in self.names.items():
-            fullnames_by_local.setdefault(name_info.name.rsplit(".", maxsplit=1)[-1], []).append(fullname)
-
-        used_names: set[str] = set()
-        for local, fullnames in sorted(fullnames_by_local.items()):
-            for fullname in sorted(fullnames):
-                name_info = self.names[fullname]
-                name = (
-                    first_upper(local)
-                    if len(fullnames) == 1
-                    else f"{_namespace_name(name_info.namespace, first_upper)}{first_upper(local)}"
-                )
-                candidate = _unique_name(name, used_names)
-                self.definition_names[fullname] = candidate
-                used_names.add(candidate)
+        qualified_names = {
+            fullname: ("", name_info.namespace, name_info.name.rsplit(".", maxsplit=1)[-1])
+            for fullname, name_info in sorted(self.names.items())
+        }
+        self.definition_names.update(_name_definitions(qualified_names, first_upper, lone="titled"))
 
     def _convert_schema(
         self,

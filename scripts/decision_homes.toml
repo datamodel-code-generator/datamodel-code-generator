@@ -378,6 +378,17 @@ contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
 what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
 audit = "C18-N2"
 
+[homes.Hx-definition-names]
+decision = "the definition name each named type of a converted schema takes (Avro, XML Schema): in the order of their local names, a local name one type declares is its name (row lone: titled for Avro, as written for XML Schema), else the namespace's name when the namespaces of the local name differ, the titled local name and the titled kind when one qualified name has several kinds; each takes the first free name (joined-from-2); the caller's rows are its titler and the order of the types of one local name (Avro by full name, XML Schema by namespace, absent first, then kind)"
+core = ["parser/_convert_common.py:_name_definitions"]
+adapters = []
+
+[homes.Hx-definition-names.signatures.namespace-name]
+kind = "call"
+names = ["_namespace_name"]
+what = "names a converted definition by its namespace itself; call parser/_convert_common.py:_name_definitions with the converter's rows"
+audit = "C18-N5"
+
 [homes.Hx-parse-session]
 decision = "how the parse of the input sources ends: after the parse in its block, the targets the parsed documents leave (row resolve: the targets the sources reserve, OpenAPI's, which parses the models specialized for a dynamic scope first and the models that parameter models use last, or AsyncAPI's, which reads each target in the document of its context), the end of the schema parsing, and on every path the release of the inherited-field state and of the local source cache"
 core = ["parser/jsonschema.py:JsonSchemaParser._parsing_session"]
