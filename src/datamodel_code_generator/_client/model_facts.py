@@ -24,6 +24,9 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     NoneType,
     UnionType,
+    members_by_consumer,
+    symbols_by_id,
+    wrapped_type,
 )
 from datamodel_code_generator._target_types import present, without_none
 
@@ -153,10 +156,8 @@ class ModelFacts:
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
         """Index the batch's symbols by identity and its field bindings by consuming symbol."""
-        self.symbols = {symbol.id: symbol for symbol in batch.symbols}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
+        self.symbols = symbols_by_id(batch)
+        self.members = members_by_consumer(batch)
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
@@ -199,9 +200,7 @@ class ModelFacts:
 
     def root(self, symbol: SymbolId) -> TypeView | None:
         """Return the type an alias or root symbol stands for, or None when the batch binds none."""
-        return next(
-            (facts.type for member in self.members.get(symbol, ()) if (facts := member.model_facts) is not None), None
-        )
+        return wrapped_type(self.members, symbol)
 
     def argument(
         self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()

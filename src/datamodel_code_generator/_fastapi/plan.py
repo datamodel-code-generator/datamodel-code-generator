@@ -60,8 +60,12 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     fact,
     label,
+    members_by_consumer,
     operation_literal,
+    symbols_by_id,
     type_uses,
+    uses_by_id,
+    wrapped_facts,
 )
 from datamodel_code_generator._target_naming import NameScope, windows_device
 from datamodel_code_generator._target_operations import (
@@ -104,7 +108,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
-        FieldUseBinding,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
@@ -612,16 +615,9 @@ class Planner:  # noqa: PLR0904
         self.wire = wire
         self.types = types
         self.unspelled: set[TypeUseId] = set()
-        self.uses = {use.id: use for use in request.batch.type_uses}
-        self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in request.batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
-        self.facts: dict[SymbolId, ModelFieldFacts] = {
-            member.consumer: member.model_facts
-            for member in reversed(request.batch.fields)
-            if member.model_facts is not None
-        }
+        self.uses = uses_by_id(request.batch)
+        self.symbols = symbols_by_id(request.batch)
+        self.members = members_by_consumer(request.batch)
         self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
         self.scheme_declarations = {
@@ -966,7 +962,7 @@ class Planner:  # noqa: PLR0904
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
             and self.symbols[value.symbol].kind in WRAPPER_KINDS
-            and (facts := self.facts.get(value.symbol)) is not None
+            and (facts := wrapped_facts(self.members, value.symbol)) is not None
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
@@ -982,7 +978,7 @@ class Planner:  # noqa: PLR0904
         if factory is not None and literal is None and default is Default.ABSENT:
             value = factory
         if isinstance(value, GeneratedSymbolType) and self.symbols[value.symbol].kind == "root":
-            wrapped = self.facts.get(value.symbol)
+            wrapped = wrapped_facts(self.members, value.symbol)
             return value, RootDefault(
                 value, literal
             ) if not null and wrapped is not None and wrapped.has_default else default
@@ -1032,7 +1028,7 @@ class Planner:  # noqa: PLR0904
             case GeneratedSymbolType() if (
                 value.symbol not in seen
                 and self.symbols[value.symbol].kind == "alias"
-                and (facts := self.facts.get(value.symbol)) is not None
+                and (facts := wrapped_facts(self.members, value.symbol)) is not None
                 and (plain := self.plain(value.symbol, facts, seen)) is not None
             ):
                 return plain
@@ -1083,9 +1079,9 @@ class Planner:  # noqa: PLR0904
             case GeneratedSymbolType() if (
                 value.symbol not in seen
                 and self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and value.symbol in self.facts
+                and (facts := wrapped_facts(self.members, value.symbol)) is not None
             ):
-                return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
+                return self.strict_bytes(facts.type, seen | {value.symbol})
             case _:
                 pass
         return False

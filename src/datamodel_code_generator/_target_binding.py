@@ -26,7 +26,9 @@ from datamodel_code_generator._document_reader import MISSING, as_mapping, desce
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
 from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
     MODEL_VALUE_POSITIONS,
+    MODELED_SCHEMA_MAPS,
     SCHEMA_SHAPES,
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
@@ -859,7 +861,6 @@ _JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
 _VALUE_SCHEMA_LISTS = tuple(
     keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SEQUENCE_SCHEMA_SHAPES
 )
-_VALUE_SCHEMA_MAPS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] == "map")
 _VALUE_SCHEMAS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SINGLE_SCHEMA_SHAPES)
 
 
@@ -2449,7 +2450,7 @@ class _Reader(_SchemaLocations):
         for keyword in _VALUE_SCHEMA_LISTS:
             if isinstance(branches := raw.get(keyword), list):
                 yield from (declaration.child(keyword, str(index)) for index in range(len(branches)))
-        for keyword in _VALUE_SCHEMA_MAPS:
+        for keyword in MODELED_SCHEMA_MAPS:
             yield from (declaration.child(keyword, str(name)) for name in as_mapping(raw.get(keyword)))
         for keyword in _VALUE_SCHEMAS:
             if isinstance(raw.get(keyword), dict):
@@ -2518,7 +2519,7 @@ class _Reader(_SchemaLocations):
             values := value.get("enum", [value["const"]] if "const" in value else None), list
         ):
             kinds = frozenset(_json_type(item, "object") for item in values)
-        for keyword in ("allOf", "anyOf", "oneOf"):
+        for keyword in COMBINATOR_POSITIONS:
             branches = value.get(keyword)
             if not isinstance(branches, list) or not branches:
                 continue
