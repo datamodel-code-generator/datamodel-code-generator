@@ -4633,6 +4633,50 @@ def test_reference_import_target_normalizes_hyphenated_module_names() -> None:
     assert default_config.written_from == "."
 
 
+def test_reference_import_target_non_exact_hyphenated_internal_module() -> None:
+    """Cover the ``not use_exact`` internal-module membership branch with hyphens.
+
+    CodeRabbit follow-up: both earlier calls passed ``use_exact=True``, so the
+    branch checking ``ref_module in internal_modules`` never ran. With
+    ``use_exact=False`` and a hyphenated target module, the tuple must match
+    against ``internal_modules`` using the normalized (underscored) name.
+    """
+    from datamodel_code_generator.parser._passes._shared import reference_import_target
+
+    # Hyphenated module tuple present in internal_modules: the relative import
+    # collapses to ".my_dir import b" instead of importing my_dir itself.
+    included = reference_import_target(
+        "b",
+        "pkgout2.a",
+        "pkgout2.my-dir.b",
+        use_exact=False,
+        init=False,
+        internal_modules={("pkgout2", "my_dir")},
+        base_class=False,
+        treat_dot_as_module=None,
+    )
+    assert included.from_ == ".my_dir"
+    assert included.import_ == "b"
+    assert included.full_path == (".my_dir", "b")
+
+    # Same tuple excluded from internal_modules: the branch does not run and
+    # the module import is kept.
+    excluded = reference_import_target(
+        "b",
+        "pkgout2.a",
+        "pkgout2.my-dir.b",
+        use_exact=False,
+        init=False,
+        internal_modules=set(),
+        base_class=False,
+        treat_dot_as_module=None,
+    )
+    assert excluded.from_ == "."
+    assert excluded.import_ == "my_dir"
+    assert excluded.full_path == (".", "my_dir")
+    assert excluded.written_from == "."
+
+
 def test_check_respects_pyproject_toml_settings(tmp_path: Path) -> None:
     """Test --check uses pyproject.toml formatter settings from output path.
 
