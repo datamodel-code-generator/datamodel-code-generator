@@ -42,6 +42,8 @@ from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     dict_display,
+    escape_docstring,
+    format_docstring,
     keyword_argument,
     list_display,
     set_display,
@@ -74,7 +76,6 @@ from datamodel_code_generator._target_render import (
 from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none, type_identity
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
 if TYPE_CHECKING:

@@ -54,6 +54,8 @@ from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import (
     call_text,
+    escape_docstring,
+    format_docstring,
     from_import,
     keyword_argument,
     set_display,
@@ -81,7 +83,6 @@ from datamodel_code_generator._target_render import (
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
