@@ -250,6 +250,33 @@ message
   bad quoting next = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  control in quoted value after stale = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
+  control in quoted value = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60, private="a\x01b"'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  control in quoted value next = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  DEL in quoted value after stale = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
+  DEL in quoted value = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60, private="a\x7fb"'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  DEL in quoted value next = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  escaped control after stale = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
+  escaped control = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60, private="a\\\x01b"'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  escaped control next = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   unlisted status after stale = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
