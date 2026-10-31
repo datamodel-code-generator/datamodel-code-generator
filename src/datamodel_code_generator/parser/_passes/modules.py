@@ -71,6 +71,7 @@ from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
+from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._import_binding import (
     ReferenceExpressionHost,
     import_references,
@@ -1982,14 +1983,18 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 )
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser._build_field(  # noqa: SLF001
-                        "legacy-alias-option-only",
-                        new_data_type,
-                        name=field_name,
-                        alias=names.alias,
-                        source_name=names.property_name,
-                        class_name=discriminator_model.name,
-                        required=True,
+                    discriminator_field := with_field_origin(
+                        parser._build_field(  # noqa: SLF001
+                            "legacy-alias-option-only",
+                            new_data_type,
+                            name=field_name,
+                            alias=names.alias,
+                            source_name=names.property_name,
+                            class_name=discriminator_model.name,
+                            required=True,
+                        ),
+                        "tag",
+                        None,
                     ),
                 )
                 if parser.config.aliases:

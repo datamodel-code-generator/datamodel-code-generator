@@ -381,7 +381,7 @@ def test_fields_and_types_record_the_schema_they_are_built_from(
 
     A property field records its property schema, a root field and its type the schema of the root model, the typed
     extra field the additionalProperties schema; a required name without a property records its kind without a
-    schema, as does a boolean property schema, and a discriminator tag field the L5 pass appends records none. A type
+    schema, as does a boolean property schema and a discriminator tag field the L5 pass appends (kind ``tag``). A type
     node records the subschema it is parsed from (items, prefixItems, additionalProperties, patternProperties,
     propertyNames, anyOf and oneOf branches, a merged allOf property its part); a container, a type list member and a
     const the field types itself record the schema they are built from.

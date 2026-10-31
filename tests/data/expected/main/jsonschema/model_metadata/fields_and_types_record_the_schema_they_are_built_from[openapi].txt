@@ -4,7 +4,7 @@ Pet
 Cat
   meow: property /components/schemas/Cat/allOf/1/properties/meow {"type": "boolean"}
     .: /components/schemas/Cat/allOf/1/properties/meow {"type": "boolean"}
-  kind: None None
+  kind: tag None
     .: None
 Owner
   pet: property /components/schemas/Owner/properties/pet {"$ref": "#/components/schemas/Pet"}

@@ -71,9 +71,9 @@ if TYPE_CHECKING:
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
-    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root"]
-    """What a field is built for: a property, a required name without one, the typed extra properties or the value of a
-    root model."""
+    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root", "tag"]
+    """What a field is built for: a property, a required name without one, the typed extra properties, the value of a
+    root model or the tag a discriminated union gives a variant without a field of that name."""
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -357,10 +357,11 @@ class FieldOrigin:
 
 
 def field_origin_of(field: object) -> FieldOrigin | None:
-    """Return where a field was built (FIELD_ORIGIN, final after L1); a copy of a field keeps the origin it copies.
+    """Return where a field was built (FIELD_ORIGIN, final after L5); a copy of a field keeps the origin it copies.
 
-    The parser's builders record it when they build the field in L1. A field built later, such as a discriminator tag
-    field the L5 discriminator pass appends, or by no builder that records it, such as a parser extension's, has none.
+    The parser's builders record it when they build the field in L1, and the L5 discriminator pass when it appends a
+    tag field (kind ``tag``, without a location). A field built by no builder that records it, such as a parser
+    extension's, has none.
     """
     return field.__dict__.get(FIELD_ORIGIN_KEY)
 
