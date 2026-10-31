@@ -280,6 +280,19 @@ def test_recommend_options_quotes_arguments(tmp_path: Path, capsys: pytest.Captu
     )
 
 
+def test_recommend_options_reads_each_container_once(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Return the report of a document that holds a YAML alias to the list that contains it."""
+    source = DATA_PATH / "generation_platform" / "targets" / "spec" / "input-cycle-list.yaml"
+    _recommend(
+        tmp_path,
+        capsys,
+        ["--input", source.name, "--input-file-type", "openapi", "--target-python-version", "3.14"],
+        "input_cycle_list.txt",
+        inputs=_inputs(source),
+        mode=(),
+    )
+
+
 @pytest.mark.parametrize(
     ("source", "args", "expected_stderr"),
     [
