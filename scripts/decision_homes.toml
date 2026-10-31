@@ -2461,6 +2461,25 @@ exclude = ["_recommend/_report.py:_start_lines", "_recommend/_report.py:_option_
 what = "merges the values of options itself; call _recommend/__init__.py:_merged_values"
 audit = "C28-R5"
 
+[homes.Hx-name-matching]
+decision = "which classes of two generations are the same class: a key (the identity path, or the set of field names) that one class holds on each side, keys left out where a class has none; a renamed pair is renumbered when the names differ in digits only"
+core = ["_recommend/_metrics.py:_match"]
+
+[homes.Hx-name-matching.signatures.key-groups]
+kind = "call"
+names = ["defaultdict"]
+mentions = ["list"]
+paths = ["_recommend/_metrics.py"]
+what = "groups the classes of a generation by a key itself; call _recommend/_metrics.py:_match"
+audit = "C28-R6"
+
+[homes.Hx-name-matching.signatures.digit-rename]
+kind = "name"
+names = ["_DIGITS"]
+paths = ["_recommend/"]
+what = "tells a rename that changes digits only itself; call _recommend/_metrics.py:_match"
+audit = "C28-R7"
+
 [homes.Hx-remote-lock-plan]
 decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"
 core = ["_lock_plan.py"]
