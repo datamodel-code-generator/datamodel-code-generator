@@ -12,6 +12,10 @@ happens at a root that fails, and each difference is a named row of ``existing_a
 The concrete form of a path is its parent with ``~`` expanded and symlinks resolved, joined with its last component as
 written: the journal binds a staged file to it, the remote lock commits to it, and the watcher and the target checks
 compare with it.
+
+Two paths relate as written, without the filesystem: one lies inside the other when it is the other or below it
+(``Path.is_relative_to``), and they overlap when either lies inside the other. Two existing paths name one file when
+they reach one inode; the callers decide which forms they compare and what an error of the filesystem means.
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ if TYPE_CHECKING:
 AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Tilde = Literal["expand", "legacy-metadata-tilde-as-written"]
+Missing = Literal["none", "legacy-missing-input-raises"]
 
 
 def lexical(path: Path, base: Path | None = None) -> Path:
@@ -82,3 +87,20 @@ def concrete(path: Path, *, tilde: Tilde = "expand") -> Path:
     """
     parent = concrete_parent(path) if tilde == "expand" else path.parent.resolve(strict=False)
     return parent / path.name
+
+
+def overlaps(first: Path, second: Path) -> bool:
+    """Return whether one of two paths lies inside the other or is the other, compared as written."""
+    return first.is_relative_to(second) or second.is_relative_to(first)
+
+
+def same_file(first: Path, second: Path, *, missing: Missing = "none") -> bool:
+    """Return whether two paths name one existing file, symlinks followed.
+
+    Rows of ``missing``: ``none`` names no file for a path that does not exist; ``legacy-missing-input-raises`` (the
+    check that an output does not overwrite its input, fix C17-5) stats both paths as they are, so a missing input
+    raises ``FileNotFoundError``; its caller tests that the output exists first.
+    """
+    if missing == "none" and not (first.exists() and second.exists()):
+        return False
+    return first.samefile(second)

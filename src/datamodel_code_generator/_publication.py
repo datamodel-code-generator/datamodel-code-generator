@@ -18,7 +18,7 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, resolved
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, resolved, same_file
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -609,7 +609,7 @@ def _restore_backup(backup: Path, target: Path) -> None:
         _unlink(backup)
         return
     with suppress(OSError):
-        if backup.samefile(target):
+        if same_file(backup, target):
             _unlink(backup)
             return
     _replace(backup, target)

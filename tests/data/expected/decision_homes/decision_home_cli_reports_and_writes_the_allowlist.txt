@@ -74,6 +74,9 @@ other.py:296:8: decision sample (the sample decision) has its home in core.py; p
 other.py:297:23: decision sample (the sample decision) has its home in core.py; picks the form of a word for a count itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in count_words)
 other.py:298:8: decision sample (the sample decision) has its home in core.py; picks the form of a word for a count itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in count_words)
 other.py:299:8: decision sample (the sample decision) has its home in core.py; picks the form of a word for a count itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in count_words)
+other.py:311:8: decision sample (the sample decision) has its home in core.py; tests whether two paths overlap itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in relate)
+other.py:312:8: decision sample (the sample decision) has its home in core.py; tests whether two paths overlap itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in relate)
+other.py:313:8: decision sample (the sample decision) has its home in core.py; tests whether two paths overlap itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in relate)
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
@@ -110,6 +113,7 @@ other.py: other_helper: sample.keyword-table
 other.py: package_files: sample.init-test
 other.py: prefixes: sample.prefix-slice
 other.py: read_keys: sample.read-key
+other.py: relate: sample.both-ways
 other.py: search: sample.name-search
 other.py: spell: sample.spelling
 other.py: split_names: sample.dotted-split

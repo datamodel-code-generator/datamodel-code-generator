@@ -167,6 +167,12 @@ kind = "count-form"
 what = "picks the form of a word for a count itself"
 audit = "X-26"
 
+[homes.sample.signatures.both-ways]
+kind = "both-ways"
+names = ["is_relative_to", "parents"]
+what = "tests whether two paths overlap itself"
+audit = "X-27"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

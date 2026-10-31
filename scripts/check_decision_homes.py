@@ -64,6 +64,9 @@ them, ``what`` words the message):
 * ``count-form``: a conditional expression whose test compares a value with the integer ``1`` (``==``, ``!=`` or
   ``>``) and whose branches are string literals, or conditional expressions of them, one of which holds a letter: the
   form of a word for a count, chosen by hand.
+* ``both-ways``: an ``or`` that tests a relation of ``names`` between two values one way and the other way, as a
+  method call (``a.is_relative_to(b) or b.is_relative_to(a)``) or as a membership in an attribute (``a in b.parents or
+  b in a.parents``): a symmetric relation spelled by hand.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -147,6 +150,7 @@ SIGNATURE_KINDS = frozenset({
     "attribute-join",
     "english-list",
     "count-form",
+    "both-ways",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -183,6 +187,7 @@ REQUIRED_STRINGS = {
     "dotted-join": "strings",
     "attribute-join": "strings",
     "english-list": "strings",
+    "both-ways": "names",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 SUBSCRIPT_BRACKETS = re.compile(r"(\w*)\[|\]")
@@ -694,6 +699,35 @@ def _branch_words(node: ast.AST) -> list[str] | None:
     return None
 
 
+def _relation_test(node: ast.AST, names: Iterable[str]) -> tuple[str, str, str] | None:
+    """Return the relation of ``names`` that ``a.m(b)`` or ``a in b.m`` tests, with ``a`` and ``b``, or ``None``."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        relation, first, second = node.func.attr, node.func.value, node.args[0]
+    elif (
+        isinstance(node, ast.Compare)
+        and len(node.ops) == 1
+        and isinstance(node.ops[0], ast.In)
+        and isinstance(member := node.comparators[0], ast.Attribute)
+    ):
+        relation, first, second = member.attr, node.left, member.value
+    else:
+        return None
+    return (relation, ast.unparse(first), ast.unparse(second)) if relation in names else None
+
+
+def _both_ways(node: ast.BoolOp, names: Iterable[str]) -> bool:
+    """Return whether an ``or`` tests a relation of two values one way and the other way (``both-ways``)."""
+    if not isinstance(node.op, ast.Or):
+        return False
+    tests = {test for operand in node.values if (test := _relation_test(operand, names)) is not None}
+    return any(first != second and (relation, second, first) in tests for relation, first, second in tests)
+
+
 def _count_form(node: ast.IfExp) -> bool:
     """Return whether ``node`` picks the form of a word by whether a count is one (``count-form``)."""
     match node.test:
@@ -893,6 +927,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return _hand_list(node, tuple(options["strings"]))
         case "count-form":
             return isinstance(node, ast.IfExp) and _count_form(node)
+        case "both-ways":
+            return isinstance(node, ast.BoolOp) and _both_ways(node, options["names"])
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -921,6 +957,7 @@ NODE_TYPES = {
     "attribute-join": (ast.JoinedStr,),
     "english-list": (ast.Call, ast.JoinedStr),
     "count-form": (ast.IfExp,),
+    "both-ways": (ast.BoolOp,),
 }
 
 

@@ -83,6 +83,8 @@ ALLOWED = """
 "sample.hand-list" = { home = "sample", count = 4, audit = "X-25" }
 [allow."other.py"."count_words"]
 "sample.count-word" = { home = "sample", count = 4, audit = "X-26" }
+[allow."other.py"."relate"]
+"sample.both-ways" = { home = "sample", count = 3, audit = "X-27" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, same_file
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -136,7 +136,9 @@ def _logical_working_directory() -> Path:
     working_directory = Path.cwd()
     logical_working_directory = Path(os.environ.get("PWD", working_directory)).expanduser()
     try:
-        return logical_working_directory if logical_working_directory.samefile(working_directory) else working_directory
+        return (
+            logical_working_directory if same_file(logical_working_directory, working_directory) else working_directory
+        )
     except OSError:
         return working_directory
 
