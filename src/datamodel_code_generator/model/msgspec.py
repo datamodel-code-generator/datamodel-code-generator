@@ -16,6 +16,7 @@ from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
@@ -1135,7 +1136,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     def _shape_meta_keywords(self, data_type: DataType) -> frozenset[str] | None:
         """Return the keywords a mapping, a fixed tuple or a union takes, or None for a type of another shape."""
         return _applicability.shape_meta_keywords(
-            mapping=data_type.is_dict or data_type.is_mapping,
+            mapping=data_type in MAPPINGS,
             unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
         )
 

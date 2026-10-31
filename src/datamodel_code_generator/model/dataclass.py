@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from typing_extensions import final, override
 
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -127,7 +128,7 @@ def _nested_dataclass_sources(data_type: DataType) -> tuple[DataClass, ...]:
 
 def _mapping_annotation(data_type: DataType) -> bool:
     """Return whether the annotation is a mapping, or a union with a mapping member, which a mapping default fits."""
-    return any(member.is_dict or member.is_mapping for member in (data_type, *data_type.data_types))
+    return any(member in MAPPINGS for member in (data_type, *data_type.data_types))
 
 
 def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass]:

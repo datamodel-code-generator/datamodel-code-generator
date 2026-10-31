@@ -22,6 +22,7 @@ from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._container_kinds import MAPPINGS, UNHASHABLE_CONTAINERS
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
@@ -1193,7 +1194,7 @@ def collapse_site_facts(
         constrained_root_field=isinstance(constraints := root_field.constraints, ConstraintsBase)
         and bool(constraints.has_constraints),
         constrained_root=constrained_root,
-        root_type_is_map=root_data_type.is_dict or root_data_type.is_mapping,
+        root_type_is_map=root_data_type in MAPPINGS,
         root_type_names_model=root_data_type.reference is not None,
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
         holder_has_container=field_constraints
@@ -2416,13 +2417,9 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
     root_type = root_field.data_type
     keywords = _root_constraint_keywords(root_field)
     string_type = parser.data_type_manager.get_data_type(Types.string)
-    if any((
-        root_type.is_dict,
-        root_type.is_mapping,
-        root_type.is_list,
-        root_type.is_sequence,
-        root_type.is_set,
-    )) or (keywords and (root_type.type, root_type.import_) != (string_type.type, string_type.import_)):
+    if root_type in UNHASHABLE_CONTAINERS or (
+        keywords and (root_type.type, root_type.import_) != (string_type.type, string_type.import_)
+    ):
         return None
     if keywords:
         return parser.data_type_manager.get_data_type(

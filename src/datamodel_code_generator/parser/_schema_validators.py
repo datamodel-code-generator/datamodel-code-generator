@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, schema_positions
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
@@ -1111,7 +1112,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
                     visited,
                     filter_array_branches=False,
                 )
-            case DataType(is_dict=True) | DataType(is_mapping=True):
+            case DataType() if data_type in MAPPINGS:
                 return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
                     data_type.data_types,
                     (*path, UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP),
