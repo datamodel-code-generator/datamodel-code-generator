@@ -56,6 +56,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _named_path,
     _one_of_any_of_applies,
     _parse_all_of_site,
+    _parse_combined_root,
     _ref_applies,
     _VersionSource,
     get_model_by_path,
@@ -64,7 +65,7 @@ from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
 from datamodel_code_generator.types import (
     DataType,
-    EmptyDataType,
+    EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
     build_union,
 )
 from datamodel_code_generator.util import BaseModel
@@ -914,13 +915,6 @@ class OpenAPIParser(JsonSchemaParser):
         self.parse_ref(site.obj, path)
         return data_type
 
-    def _parse_combined_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        obj, name, path = site.obj, site.name, site.path
-        data_type = self.parse_root_type(name, obj, path)
-        if isinstance(data_type, EmptyDataType) and obj.properties:
-            self.parse_object(name, obj, path)
-        return data_type
-
     def _parse_unmodeled_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         self.inline_object_bodies |= is_inline_object_body(site.obj)
         return self.get_data_type(site.obj)
@@ -963,7 +957,7 @@ class OpenAPIParser(JsonSchemaParser):
         (
             Row("array", _array_applies, _build_operation_array),
             Row("all-of", _all_of_applies, _parse_all_of_site),
-            Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_operation_schema),
+            Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_root),
             Row("object", _operation_object_applies, _build_operation_object),
             Row("inline-object-body", _operation_inline_object_body_applies, _build_operation_inline_object_body),
             Row("enum", _operation_enum_applies, _build_operation_enum),

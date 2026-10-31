@@ -66,7 +66,7 @@ from datamodel_code_generator.parser._passes._shared import (
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
+from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, _text_constructor_expression
 from datamodel_code_generator.types import DataType, _copy_data_type
 
 if TYPE_CHECKING:
@@ -484,7 +484,7 @@ def deserialize_decimal_default(
             record_decimal_default_warning(parser, model, field)
             return False
     parser._graph_builder.set_field_default(  # noqa: SLF001
-        field, PythonRuntimeExpression.from_import_call(descriptor.constructor_import, repr(value), value=value)
+        field, _text_constructor_expression(descriptor.constructor_import, value)
     )
     field._set_runtime_expression_imports((descriptor.constructor_import,))  # noqa: SLF001
     parser._register_runtime_expression()  # noqa: SLF001

@@ -130,6 +130,7 @@ from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     _normalize_string,
     _normalized_safe_python_name,
+    _text_constructor_expression,
     represent_python_value,
     represent_untrusted_python_value,
 )
@@ -554,7 +555,7 @@ def _compiled_python_pattern(
     if compiled := prepared.get(pattern):
         return compiled
     # Pydantic >=2.8 uses Python's engine for compiled patterns, even without an enclosing model's config.
-    compiled = PythonRuntimeExpression.from_import_call(_IMPORT_RE_COMPILE, repr(pattern), value=pattern)
+    compiled = _text_constructor_expression(_IMPORT_RE_COMPILE, pattern)
     prepared[pattern] = compiled
     return compiled
 

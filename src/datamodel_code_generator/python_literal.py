@@ -97,6 +97,11 @@ def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
     return _datetime_expression(call_text(f".{kind}.fromisoformat", (repr(text),)))
 
 
+def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:
+    """Return the call of the constructor ``import_`` on the string literal of ``text``, whose value is ``text``."""
+    return PythonRuntimeExpression.from_import_call(import_, repr(text), value=text)
+
+
 _RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
 
 
