@@ -1359,7 +1359,7 @@ class OpenAPIParser(JsonSchemaParser):
             self._register_discriminator_schema(local_ref := f"#/components/schemas/{schema_name}", schema)
 
             all_of = schema.get("allOf")
-            if all_of:
+            if "allOf" in schema:
                 if not isinstance(all_of, list):
                     msg = "`allOf` must be an array"
                     raise SchemaParseError(

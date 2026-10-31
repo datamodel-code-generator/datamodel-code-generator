@@ -657,6 +657,38 @@ def test_cli_input_errors_are_clean(
             "`allOf` must be an array",
             id="openapi-allof-scalar",
         ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\n'
+            "components:\n  schemas:\n    Pet:\n      allOf: 0\n",
+            "openapi",
+            "input.yaml#/components/schemas/Pet/allOf",
+            "`allOf` must be an array",
+            id="openapi-allof-zero",
+        ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\n'
+            "components:\n  schemas:\n    Pet:\n      allOf: false\n",
+            "openapi",
+            "input.yaml#/components/schemas/Pet/allOf",
+            "`allOf` must be an array",
+            id="openapi-allof-false",
+        ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\n'
+            "components:\n  schemas:\n    Pet:\n      allOf:\n",
+            "openapi",
+            "input.yaml#/components/schemas/Pet/allOf",
+            "`allOf` must be an array",
+            id="openapi-allof-null",
+        ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\n'
+            "components:\n  schemas:\n    Pet:\n      allOf: {}\n",
+            "openapi",
+            "input.yaml#/components/schemas/Pet/allOf",
+            "`allOf` must be an array",
+            id="openapi-allof-object",
+        ),
     ],
 )
 def test_wrongly_typed_components_and_allof_name_their_location(
