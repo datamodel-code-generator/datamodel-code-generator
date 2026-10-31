@@ -1248,8 +1248,8 @@ class ModelResolver:  # noqa: PLR0904
         """Return whether ``reference`` still gives its name to references that do not yield."""
         return (entry := self._yielding_names.get(reference.name)) is not None and entry.reference is reference
 
-    def settle_yielding_names(self) -> set[int]:
-        """Keep the current names of yielding references from now on and return the ids of those references.
+    def settle_yielding_names(self) -> set[ModelKey]:
+        """Keep the current names of yielding references from now on and return the model keys of those references.
 
         Model name keys of ``--model-name-map`` that matched no other reference apply to these references by their
         final names. The final names are recorded, and the names of references that changed name since they were
@@ -1271,7 +1271,7 @@ class ModelResolver:  # noqa: PLR0904
             self.final_yielding_names[reference.path] = reference.name, reference.duplicate_name
             if reference.name != entry.created_name:
                 self.yielding_name_changes.update((entry.created_name, reference.name))
-        return {id(entry.reference) for entry in entries}
+        return {model_key_of(entry.reference) for entry in entries}
 
     def _evict_yielding_reference(self, name: str) -> None:
         """Move a yielding reference off ``name`` so that a reference that does not yield can take it.

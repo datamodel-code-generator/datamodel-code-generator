@@ -182,7 +182,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
 
     @property
     def _literal_under_all_enum_reference_ids(self) -> set[int]:
-        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values."""
+        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values.
+
+        Keyed by the identity of the Reference, not by model key, so a deep copy of a type is not among them (#5824).
+        """
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
@@ -197,8 +200,8 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
         """Whether models get the schema validator rules the types cannot express."""
 
     @property
-    def typed_nullable_map_reference_ids(self) -> set[int]:
-        """The ids of the references of the nullable maps whose values the parse typed."""
+    def typed_nullable_map_reference_ids(self) -> set[ModelKey]:
+        """The model keys of the nullable maps whose values the parse typed."""
 
     @property
     def use_msgspec_nullable_enum_alias(self) -> bool:
@@ -1388,7 +1391,7 @@ def record_model_placement(
         or (
             parser.collapse_root_models
             and any(
-                id(model.reference) in parser.typed_nullable_map_reference_ids
+                model_key_of(model.reference) in parser.typed_nullable_map_reference_ids
                 for models in placement.values()
                 for model in models
             )

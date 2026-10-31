@@ -68924,7 +68924,8 @@ over dumped schemas or frozen schema facts, in a pure parser core (`parser/_inte
 `parser/_null_facts.py`, `parser/_model_shapes.py`); the adapter that reads those facts is the only
 code that reads the live objects, and callers are to go through it (readers of the stored `is_optional` move in a later
 step). `scripts/check_architecture_boundaries.py` keeps the package free of concrete backends and the parser cores free
-of everything but the standard library and the leaf tables they read (`_json_schema.py`, `_records`, `_regex_syntax`).
+of everything but the standard library and the leaves they read (`_json_schema.py`, `_model_keys.py`, `_records`,
+`_regex_syntax`).
 A table that `types.py` reads while it is imported is a top-level leaf instead, as the model package imports
 `types.py`: `_requirements.py`, `_constraint_applicability.py` and `_container_kinds.py`.
 

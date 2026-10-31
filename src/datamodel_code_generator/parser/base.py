@@ -939,9 +939,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
-        self.typed_nullable_map_reference_ids: set[int] = set()
+        self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[int] = set()
-        self._site_model_reference_ids: set[int] = set()
+        self._site_model_keys: set[ModelKey] = set()
         self.typed_map_values_may_move_models = False
         self.model_placement: dict[ModulePath, frozenset[str]] = {}
         self.reuse_scope: ReuseScope | None = config.reuse_scope
