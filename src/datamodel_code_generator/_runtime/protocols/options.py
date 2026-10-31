@@ -131,8 +131,8 @@ class StepLock:
         self._lock.release()
 
 
-class StepHandle(StepLock):
-    """A handle that leaving its `with` block closes; while another step runs, the block's error is not masked."""
+class StepHandle:
+    """A mixin for a `StepLock` handle that leaving its `with` block closes; while another step runs, the block's error is not masked."""
 
     __slots__ = ()
 
@@ -141,14 +141,14 @@ class StepHandle(StepLock):
         return self
 
     def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+        self: StepLock, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
         """Close the handle; while another step runs, leave it open rather than mask the block's error."""
         self._close("close", quiet=exc is not None)
 
 
-class AsyncStepHandle(StepLock):
-    """An asyncio handle that leaving its `async with` block closes, as a `StepHandle` does."""
+class AsyncStepHandle:
+    """A mixin for an asyncio `StepLock` handle that leaving its `async with` block closes, as a `StepHandle` does."""
 
     __slots__ = ()
 
@@ -157,7 +157,7 @@ class AsyncStepHandle(StepLock):
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+        self: StepLock, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
         """Close the handle; while another step runs, leave it open rather than mask the block's error."""
         self._close("aclose", quiet=exc is not None)
