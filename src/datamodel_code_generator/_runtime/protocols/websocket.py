@@ -208,9 +208,14 @@ def _upgrade(subprotocols: tuple[str, ...]) -> Mapping[str, str]:
     return headers
 
 
+def _selected(info: ResponseInfo) -> str | None:
+    """Return the subprotocol a handshake's 101 response selected, or None."""
+    return info.headers.get("sec-websocket-protocol")
+
+
 def _negotiated(offered: tuple[str, ...], info: ResponseInfo) -> None:
     """Refuse a 101 that selected no subprotocol the helper offered, or selected one it did not offer."""
-    selected = info.headers.get("sec-websocket-protocol")
+    selected = _selected(info)
     if (selected is None and offered) or (selected is not None and selected not in offered):
         raise APIConnectionError(reason="negotiation_failed")
 
@@ -302,7 +307,7 @@ class _Sockets(Generic[SendT, RecvT]):
     @property
     def subprotocol(self) -> str | None:
         """Return the subprotocol the server selected, or None."""
-        return self._info.headers.get("sec-websocket-protocol")
+        return _selected(self._info)
 
     @property
     def progress(self) -> ProtocolProgress:

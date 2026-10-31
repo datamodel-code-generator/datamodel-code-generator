@@ -28,6 +28,7 @@ from datamodel_code_generator._client.naming import (
     HELPER_KINDS,
     TYPE_EXPORTS,
     VIEW_KEYWORDS,
+    class_prefix,
     header_constant,
     header_decoder,
     helper_classes,
@@ -36,6 +37,7 @@ from datamodel_code_generator._client.naming import (
     pascal_parts,
     resource_class,
     response_alias,
+    twin_name,
 )
 from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
@@ -401,7 +403,7 @@ class _Facades:
     def resource_package(resource: ResourceSpec) -> Templated:
         """Return the initializer of one resource's package, which exports its sync and asyncio classes."""
         sync = sorted(_resource_classes(resource, ""))
-        names = sorted(_resource_classes(resource, "Async"))
+        names = sorted(_resource_classes(resource, class_prefix(asynchronous=True)))
         return facade_module(
             f"resources.{resource.namespace}",
             f"The {resource.namespace} resource.",
@@ -849,6 +851,11 @@ def _mode(*, asynchronous: bool) -> str:
     return "async" if asynchronous else "sync"
 
 
+def _mode_word(*, asynchronous: bool) -> str:
+    """Return the word documentation calls the sync or asyncio side of a package by."""
+    return "asyncio" if asynchronous else "synchronous"
+
+
 def _handle(spec: PollingSpec, prefix: str, python_version: PythonVersion) -> str:
     """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
     return f"{prefix}{pascal_parts(spec.helper.name.split('.'), python_version)}Handle"
@@ -1181,7 +1188,7 @@ class _Typing:
 
     def body_surface(self, module: TargetModule, media: MediaSpec, *, asynchronous: bool) -> str:
         """Return the body type of one request media type in the sync or asyncio client."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         match media.kind, media.use:
             case "binary", _:
                 return _binary_body(module, prefix)
@@ -1290,7 +1297,7 @@ class _Resources(_Typing):
         options = "._runtime.protocols.options"
         names = [("HelperSettings", options), ("HelperOptions", options)]
         if _caches(self.helpers):
-            names.append((f"{'Async' if asynchronous else ''}CacheStore", "._runtime.protocols.caches"))
+            names.append((twin_name("CacheStore", asynchronous=asynchronous), "._runtime.protocols.caches"))
         if _follows(self.helpers):
             names.append(("Origin", "._runtime.protocols.origins"))
         return tuple(names)
@@ -1323,7 +1330,7 @@ class _Resources(_Typing):
             "total_timeout": ("float | None", "None"),
             "max_retries": ("int", "2"),
             "clock": (f"{module.local('options', 'Clock')} | None", "None"),
-            "http_client": (f"{native}.{'Async' if asynchronous else ''}Client | None", "None"),
+            "http_client": (f"{native}.{twin_name('Client', asynchronous=asynchronous)} | None", "None"),
         }
         if compresses(self.plan):
             gzip = subscript_text(module.name("typing", "Literal"), ('"gzip"',))
@@ -1334,7 +1341,7 @@ class _Resources(_Typing):
                 "None",
             )
         if _caches(self.helpers):
-            store = f"{'Async' if asynchronous else ''}CacheStore"
+            store = twin_name("CacheStore", asynchronous=asynchronous)
             stores = subscript_text(module.name("collections.abc", "Mapping"), ("str", store))
             root["cache_stores"] = (f"{stores} | None", "None")
         if _follows(self.helpers):
@@ -1354,7 +1361,7 @@ class _Resources(_Typing):
 
     def client(self, *, asynchronous: bool) -> Templated:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         roots = [
             (
                 resource,
@@ -1388,7 +1395,7 @@ class _Resources(_Typing):
             "client.jinja2",
             client_template.render_with_scope,
             asynchronous=asynchronous,
-            docstring=f"The {'asyncio' if asynchronous else 'synchronous'} client of this package.",
+            docstring=f"The {_mode_word(asynchronous=asynchronous)} client of this package.",
             type_checking=module.name("typing", "TYPE_CHECKING") if lazy else "",
             lazy_imports=[LazyImport(path, name) for name, path in lazy],
             defaults=self.defaults(module),
@@ -1494,7 +1501,7 @@ class _Resources(_Typing):
 
     def resource(self, resource: ResourceSpec, *, asynchronous: bool) -> Templated:
         """Return a resource module: the resource and its metadata, raw, and streaming views of every operation."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         main = resource_class(resource.pascal, prefix)
         views: list[tuple[View, str, str, str]] = [
             (view, attribute, resource_class(resource.pascal, prefix, suffix), doc)
@@ -1530,7 +1537,7 @@ class _Resources(_Typing):
         )
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         overloaded = any(method.overloads for view in classes for method in view.methods)
-        kind = "asyncio" if asynchronous else "synchronous"
+        kind = _mode_word(asynchronous=asynchronous)
         return templated(
             "resource.jinja2",
             resource_template.render_with_scope,
@@ -1796,7 +1803,7 @@ class _Resources(_Typing):
         self, module: TargetModule, spec: OperationSpec, keys: tuple[_Key, ...], *, asynchronous: bool, view: View
     ) -> str:
         """Return what an operation method of a view returns when it answers with one of some success types."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         match view:
             case "metadata":
                 return subscript_text(module.local("responses", "Response"), (self.named(module, spec, keys),))
@@ -2308,10 +2315,7 @@ _HELPER_SETTINGS: Final = {
     "allowed_origins": "allowed_origins",
 }
 _STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
-_HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
-    False: ("first_page", "iterate_pages", "following_page", "resume_pages"),
-    True: ("afirst_page", "aiterate_pages", "afollowing_page", "aresume_pages"),
-}
+_PAGE_CALLS: Final = ("first_page", "iterate_pages", "following_page", "resume_pages")
 _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _STREAMS: Final = "_runtime.protocols.streams"
@@ -2632,7 +2636,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def module(self, *, asynchronous: bool) -> Templated:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         root = f"{prefix}ProtocolHelpers"
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
         named: dict[str, str] = {}
@@ -2685,7 +2689,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             "helpers.jinja2",
             helpers_template.render_with_scope,
             asynchronous=asynchronous,
-            docstring=f"The {'asyncio' if asynchronous else 'synchronous'} protocol helpers of this package, by their "
+            docstring=f"The {_mode_word(asynchronous=asynchronous)} protocol helpers of this package, by their "
             "dotted names.",
             imports=module.imports(),
             core=core,
@@ -2736,9 +2740,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         runtime = "_runtime.protocols.pagination"
         item, page = module.hint(spec.item), _response_type(module, spec.operation)
         page_type = subscript_text(module.local(runtime, "Page"), (item, page))
-        pager = subscript_text(module.local(runtime, "AsyncPager" if asynchronous else "Pager"), (item, page))
+        pager = subscript_text(module.local(runtime, twin_name("Pager", asynchronous=asynchronous)), (item, page))
         plan = _helper_plan(module, "PLAN", index)
-        first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        first, iterate, following, resume = (
+            module.local(runtime, twin_name(name, asynchronous=asynchronous)) for name in _PAGE_CALLS
+        )
         state = _checkpoint(module)
         return [
             shape.function(
@@ -2781,12 +2787,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
-        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        base = module.local(_POLLING, twin_name("LroHandle", asynchronous=asynchronous))
         returns = handle or subscript_text(base, (self.result(module, spec), _response_type(module, spec.poll)))
         plan = _helper_plan(module, "PLAN", index)
         extra = (("handle=", handle),) if handle is not None else ()
-        start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
-        resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
+        start = module.local(_POLLING, twin_name("start_operation", asynchronous=asynchronous))
+        resume = module.local(_POLLING, twin_name("resume_operation", asynchronous=asynchronous))
         state = _checkpoint(module)
         return [
             shape.function(
@@ -2819,7 +2825,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         result = subscript_text(
             module.local("_runtime.protocols.caches", "CacheResult"), (_response_type(module, spec.operation),)
         )
-        fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
+        fetch = module.local(_CACHE, twin_name("fetch", asynchronous=asynchronous))
         docstring = f"Fetch {shape.route} through the helper's cache, revalidating a stale entry."
         return shape.function(plan, "fetch", (), result, docstring, fetch, coroutine=asynchronous)
 
@@ -2827,7 +2833,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """Return a polling helper's own handle class, which also cancels its operation remotely."""
         cancel = spec.cancel
         assert cancel is not None
-        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        base = module.local(_POLLING, twin_name("LroHandle", asynchronous=asynchronous))
         receipt = subscript_text(
             module.local("_runtime.protocols.records", "CancelReceipt"), (_response_type(module, cancel),)
         )
@@ -2898,15 +2904,15 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         size = None if spec.size is None else spec.size.python_name
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, skip=size)
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         handle = subscript_text(
             module.local(_UPLOADS, f"{prefix}UploadHandle"), (_result_type(module, spec.completion),)
         )
         source = Parameter("source", module.name(".", "UploadSource"))
         state = _checkpoint(module)
         plan = _helper_plan(module, "PLAN", index)
-        start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
-        resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
+        start = module.local(_UPLOADS, twin_name("start_upload", asynchronous=asynchronous))
+        resume = module.local(_UPLOADS, twin_name("resume_upload", asynchronous=asynchronous))
         return [
             shape.function(
                 plan,
@@ -3017,9 +3023,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
-        handle = module.local(_STREAMS, "AsyncEventStream" if asynchronous else "EventStream")
+        handle = module.local(_STREAMS, twin_name("EventStream", asynchronous=asynchronous))
         plan = _helper_plan(module, "STREAM", index)
-        opener = module.local(_STREAMS, "aopen_events" if asynchronous else "open_events")
+        opener = module.local(_STREAMS, twin_name("open_events", asynchronous=asynchronous))
         stream = _STREAM_KINDS[spec.helper.kind]
         returns = subscript_text(handle, (self.event_type(module, spec),))
         methods = [
@@ -3034,7 +3040,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             )
         ]
         if spec.reopen is not None:
-            resume = module.local(_STREAMS, "aresume_events" if asynchronous else "resume_events")
+            resume = module.local(_STREAMS, twin_name("resume_events", asynchronous=asynchronous))
             methods.append(
                 shape.function(
                     plan,
@@ -3092,9 +3098,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, body=False)
         runtime = "_runtime.protocols.websocket"
-        session = module.local(runtime, "AsyncWebSocketSession" if asynchronous else "WebSocketSession")
+        session = module.local(runtime, twin_name("WebSocketSession", asynchronous=asynchronous))
         plan = _helper_plan(module, "SOCKET", index)
-        opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
+        opener = module.local(runtime, twin_name("connect_socket", asynchronous=asynchronous))
         sent, received = self.message_types(module, spec)
         returns = subscript_text(session, (sent, received))
         summary = f"Open the WebSocket of {shape.route}, returning once its handshake got a valid 101."

@@ -378,7 +378,7 @@ class _Operation(StepLock, Generic[T, P]):
         if (allowed := limits.max_wait) is not None and required > allowed:
             raise self._waited(required, allowed, "wait")
         waiter = core.waiting(limits.options, self._session, call.operation_id)
-        if (remaining := waiter.remaining()) is not None and required >= remaining:
+        if (remaining := waiter.cut_short(required)) is not None:
             raise self._waited(required, remaining, "deadline")
         return waiter
 

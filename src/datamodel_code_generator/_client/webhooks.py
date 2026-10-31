@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module
+from datamodel_code_generator._client.naming import twin_name
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, _problem, missing_schema
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events, discriminator
@@ -371,9 +372,9 @@ class _Webhooks:
         )
         returns = subscript_text(module.local(_WEBHOOKS, "VerifiedWebhook"), (event,))
         runtime, name = (
-            ("_runtime.protocols.verification", "averify_webhook" if asynchronous else "verify_webhook")
+            ("_runtime.protocols.verification", "verify_webhook")
             if key is not None
-            else ("_runtime.protocols.adapters", "averify_adapted" if asynchronous else "verify_adapted")
+            else ("_runtime.protocols.adapters", "verify_adapted")
         )
         arguments = (
             Keyword("", "_PLAN"),
@@ -390,7 +391,7 @@ class _Webhooks:
             keywords,
             returns,
             "",
-            module.local(runtime, name),
+            module.local(runtime, twin_name(name, asynchronous=asynchronous)),
             arguments,
             coroutine=asynchronous,
         )

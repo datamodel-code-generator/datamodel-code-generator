@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotati
 from dataclasses import dataclass, field
 from datetime import datetime
 from sys import float_info
-from typing import Final, TypeGuard, final
+from typing import Final, Literal, TypeGuard, final
 
 from ..model_codecs.media import json_number
 from ..model_codecs.unset import UNSET
@@ -33,10 +33,17 @@ def seconds(value: object, path: tuple[str, ...]) -> float:
     return number
 
 
-def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
-    """Refuse an option count that is not an integer in its range, including booleans."""
+def checked_count(
+    value: object,
+    path: tuple[str, ...],
+    *,
+    minimum: int = 0,
+    maximum: int | None = None,
+    reason: Literal["out_of_range", "invalid_value"] = "out_of_range",
+) -> None:
+    """Refuse an option count that is not an integer in its range, including booleans, for `reason`."""
     if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
-        raise ConfigurationError(field_path=path, reason="out_of_range")
+        raise ConfigurationError(field_path=path, reason=reason)
 
 
 def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...], *, callables: bool = False) -> None:
@@ -52,8 +59,7 @@ def is_aware(value: object) -> TypeGuard[datetime]:
 
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
-    if type(value) is not int or value < (0 if allow_zero else 1):
-        raise ConfigurationError(field_path=(name,), reason="invalid_value")
+    checked_count(value, (name,), minimum=0 if allow_zero else 1, reason="invalid_value")
 
 
 def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
