@@ -6,7 +6,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
 
 def option_flag(field: str, *, negative: bool = False) -> str:
@@ -26,6 +26,14 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     return [option_flag(field), *(value if isinstance(value, list | tuple) else (value,))]
 
 
+def values_arguments(values: Iterable[tuple[str, object]], *, negative: Callable[[str], str | None]) -> list[Any]:
+    """Return the arguments that set config fields to values, field by field in the given order.
+
+    Each field's arguments are those of ``option_arguments``; a value that no option can express is left out.
+    """
+    return [argument for field, value in values for argument in option_arguments(field, value, negative=negative) or ()]
+
+
 def hyphenated(config: Mapping[str, Any], *, ordered: bool = False) -> dict[str, Any]:
     """Return config values keyed by their hyphenated names, sorted by field name when ordered."""
     return {key.replace("_", "-"): value for key, value in (sorted(config.items()) if ordered else config.items())}
@@ -36,6 +44,11 @@ def toml_value(value: object) -> Any:
     if isinstance(value, Enum):
         return str(value.value)
     return [toml_value(item) for item in value] if isinstance(value, tuple | list) else value
+
+
+def configured_value(config: object, field: str) -> Any:
+    """Return the value a config holds for a field as pyproject.toml spells it, the spelling rule values compare in."""
+    return toml_value(getattr(config, field))
 
 
 def split_external_ref_mapping(item: object) -> tuple[str, str]:

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._json_output import dump_json
 from datamodel_code_generator._option_names import hyphenated, option_flag
-from datamodel_code_generator._recommend._rules import format_text, option_arguments
+from datamodel_code_generator._recommend._rules import format_text, values_arguments
 from datamodel_code_generator._recommend._signals import Signals
 
 if TYPE_CHECKING:
@@ -330,9 +330,7 @@ def _candidate_payload(outcome: CandidateOutcome) -> RecommendCandidatePayload:
         label=candidate.label,
         preset=candidate.preset,
         set=dict(candidate.options),
-        arguments=[
-            argument for name, value in candidate.options.items() for argument in option_arguments(name, value) or ()
-        ],
+        arguments=values_arguments(candidate.options),
         selectable=candidate.selectable,
         error=outcome.error,
         dropped_constraint_warnings=outcome.dropped_constraints,

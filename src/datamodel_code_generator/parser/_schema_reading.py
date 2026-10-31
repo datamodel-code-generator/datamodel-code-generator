@@ -1,15 +1,22 @@
-"""What the concern modules of the JSON Schema parser read alike from schema objects, their dumps and JSON values.
+"""What the concern modules of the JSON Schema parser read alike from schema objects, their dumps and JSON documents.
 
 A module-level helper of ``parser/jsonschema.py`` that the functions of two or more concern modules
 (``parser/_<concern>.py``) use lives here, below them all, so that no concern module imports another or the public
-module. None of them reads the parser. ``parser/jsonschema.py`` imports them too.
+module. None of them reads the parser. ``parser/jsonschema.py`` imports them too, and keeps the public names of the
+JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_json_pointer_segment``) importable.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
+from urllib.parse import unquote
 
-from datamodel_code_generator._json_schema import schema_positions
+from typing_extensions import Sentinel
+
+from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
+from datamodel_code_generator._json_pointer import unescape_token
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_POSITIONS, schema_positions
+from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser._intersection import intersect_keywords
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject, _type_null_sources
@@ -20,6 +27,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.parser._intersection import KeywordIntersection
 
+__all__ = ["get_model_by_path", "split_json_pointer", "unescape_json_pointer_segment"]
 
 _MODELED_SCHEMA_MAPS = schema_positions("modeled", shapes=("map",))
 """The maps of named subschemas ``JsonSchemaObject`` models: ``properties`` and ``patternProperties``."""
@@ -177,3 +185,219 @@ _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
 def _without_contains_keywords(extras: Mapping[str, Any]) -> dict[str, Any]:
     """Return extension keywords without ``contains`` and its bounds (``_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS``)."""
     return {key: value for key, value in extras.items() if key not in _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS}
+
+
+def unescape_json_pointer_segment(segment: str) -> str:
+    """Decode one URI-fragment JSON Pointer token in RFC evaluation order."""
+    return unescape_token(unquote(segment))
+
+
+_MISSING_JSON_POINTER = Sentinel("_MISSING_JSON_POINTER")
+
+
+def get_model_by_path(schema: dict[str, YamlValue] | list[YamlValue], keys: list[str] | list[int]) -> YamlValue:
+    """Retrieve a model from schema by traversing raw JSON Pointer keys."""
+    return _get_model_by_decoded_path(
+        schema, [unescape_json_pointer_segment(key) if isinstance(key, str) else key for key in keys]
+    )
+
+
+def _get_model_by_decoded_path(
+    schema: dict[str, YamlValue] | list[YamlValue], keys: Sequence[str | int], *, or_missing: bool = False
+) -> Any:
+    """Retrieve a model after JSON Pointer tokens have already been decoded.
+
+    Each key's member is read by row ``refusing`` (``_document_reader.member``). A key a dict lacks reads as ``{}``
+    and an index a list lacks raises; under ``or_missing`` both are the sentinel.
+    """
+    if not keys:
+        if isinstance(schema, dict):
+            return schema
+        msg = f"Does not support json pointer to array. schema={schema}, key={keys}"  # pragma: no cover
+        raise NotImplementedError(msg)  # pragma: no cover
+    current: YamlValue = schema
+    for index, key in enumerate(keys):
+        try:
+            value = member(current, str(key), "refusing")
+        except KeyError:
+            value = _MISSING_JSON_POINTER if or_missing else {}
+        except ArrayIndexOutOfRangeError:
+            if not or_missing:
+                raise
+            value = _MISSING_JSON_POINTER
+        if value is _MISSING_JSON_POINTER or index == len(keys) - 1:
+            return value
+        if not isinstance(value, (dict, list)):
+            msg = f"Cannot traverse non-container value. schema={current}, key={keys[index:]}"  # pragma: no cover
+            raise NotImplementedError(msg)  # pragma: no cover
+        current = value
+    raise AssertionError  # pragma: no cover
+
+
+def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False) -> Any:
+    """Return the value a JSON pointer fragment names in a loaded document, the document itself for no fragment."""
+    return (
+        _get_model_by_decoded_path(document, split_json_pointer(document, fragment), or_missing=or_missing)
+        if fragment
+        else document
+    )
+
+
+def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> list[str]:
+    """Split a JSON pointer into path parts, preserving slash-containing dict keys."""
+    return _split_json_pointer(schema, pointer)[0]
+
+
+def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> tuple[list[str], list[str]]:
+    """Split a JSON pointer into lookup and reference path parts."""
+    raw_parts = pointer.lstrip("/").split("/") if pointer else []
+    if "://" not in pointer and "~1" not in pointer:
+        return [unescape_json_pointer_segment(part) for part in raw_parts], raw_parts
+
+    parts: list[str] = []
+    reference_parts: list[str] = []
+    current: YamlValue = schema
+    index = 0
+    while index < len(raw_parts):
+        if isinstance(current, dict):
+            direct_key = unescape_json_pointer_segment(raw_parts[index])
+            if direct_key in current:
+                parts.append(direct_key)
+                reference_parts.append(raw_parts[index])
+                current = current.get(direct_key, {})
+                index += 1
+                continue
+
+            matched_key: str | None = None
+            matched_end = index
+            for end in range(len(raw_parts), index, -1):
+                key = unescape_json_pointer_segment("/".join(raw_parts[index:end]))
+                if key in current:
+                    matched_key = key
+                    matched_end = end
+                    break
+            if matched_key is None:  # pragma: no cover
+                matched_key = unescape_json_pointer_segment(raw_parts[index])
+                matched_end = index + 1
+            parts.append(matched_key)
+            reference_parts.append("/".join(raw_parts[index:matched_end]))
+            current = current.get(matched_key, {})
+            index = matched_end
+            continue
+        part = unescape_json_pointer_segment(raw_parts[index])
+        parts.append(part)
+        reference_parts.append(raw_parts[index])
+        if isinstance(current, list):  # pragma: no branch
+            try:
+                current = member(current, part, "refusing")
+            except ArrayIndexOutOfRangeError:
+                parts.extend(unescape_json_pointer_segment(part) for part in raw_parts[index + 1 :])
+                reference_parts.extend(raw_parts[index + 1 :])
+                return parts, reference_parts
+        index += 1
+    return parts, reference_parts
+
+
+_NON_SCHEMA_KEYWORDS = frozenset({
+    "const",
+    "default",
+    "enum",
+    "example",
+    "examples",
+    "links",
+    "security",
+    "server",
+    "serverVariables",
+    "servers",
+})
+_NAMED_ENTRY_MAP_KEYWORDS = SCHEMA_MAP_KEYS | {
+    "callbacks",
+    "channels",
+    "content",
+    "encoding",
+    "messages",
+    "operations",
+    "parameters",
+    "responses",
+    "webhooks",
+}
+_DocumentEntries = Literal["object", "names", "maps"]
+
+
+def _document_child_entries(
+    entries: _DocumentEntries, key: object, named_entry_maps: frozenset[str]
+) -> _DocumentEntries | None:
+    """Return how the value under a key of a document object is read, or None when it holds no schemas."""
+    if entries == "names":
+        return "object"
+    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key != "x-propertyNames"):
+        return None
+    child: _DocumentEntries = "object"
+    match entries, key:
+        case "maps", _:
+            child = "names"
+        case "object", "components":
+            child = "maps"
+        case "object", str() if key in named_entry_maps:
+            child = "names"
+    return child
+
+
+_RefEdgeEntries = Literal["root", "object", "names", "maps"]
+_REF_EDGE_NAME_MAPS = frozenset({"bindings", "paths"})
+_REF_EDGE_KEYWORDS = (
+    frozenset(SCHEMA_POSITIONS)
+    | _NAMED_ENTRY_MAP_KEYWORDS
+    | _REF_EDGE_NAME_MAPS
+    | {
+        "additionalOperations",
+        "channel",
+        "components",
+        "delete",
+        "get",
+        "head",
+        "headers",
+        "message",
+        "messageTraits",
+        "operationTraits",
+        "options",
+        "patch",
+        "payload",
+        "pathItems",
+        "post",
+        "publish",
+        "put",
+        "query",
+        "reply",
+        "requestBodies",
+        "requestBody",
+        "schema",
+        "schemas",
+        "itemSchema",
+        "subscribe",
+        "trace",
+        "traits",
+        "x-propertyNames",
+    }
+)
+"""The keywords of a schema, path item, operation or message object under which another such object is read."""
+
+
+def _ref_edge_child_entries(
+    entries: _RefEdgeEntries, key: object, named_entry_maps: frozenset[str]
+) -> _DocumentEntries | None:
+    """Return how the value under a key of a document object is read for `$ref` edges, or None for data.
+
+    Below the root, only the keywords that hold schemas or the objects around them are read; names of OAuth scopes,
+    discriminator mappings and unknown keywords are data, so a `$ref` key there is not a reference. The keys of the
+    root are read as written, since a referenced document names its schemas there.
+    """
+    if entries == "object" and key not in _REF_EDGE_KEYWORDS:
+        return None
+    read: _DocumentEntries = "object" if entries == "root" else entries
+    return _document_child_entries(read, key, named_entry_maps | _REF_EDGE_NAME_MAPS)
+
+
+def _is_plain_name_fragment(ref: str) -> bool:
+    """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
+    return ref.startswith("#") and ref[1:2] not in {"", "/"}

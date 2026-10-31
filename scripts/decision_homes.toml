@@ -28,7 +28,7 @@ adapters = [
 [homes.H03.signatures.merge-function]
 kind = "function"
 pattern = "^_?merge"
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py", "parser/_schema_documents.py"]
 exclude = [
     "parser/_all_of_values.py:AllOfValuesHost",
     "parser/_inherited_schemas.py:InheritedSchemasHost",
@@ -67,7 +67,7 @@ mentions = [
     "minimum",
     "multipleOf",
 ]
-paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py"]
+paths = ["parser/jsonschema.py", "parser/_union_tags.py", "parser/_object_maps.py", "parser/openapi.py", "parser/_lightweight_types.py", "parser/_schema_validators.py", "parser/_schema_reading.py", "parser/_value_keywords.py", "parser/_all_of_values.py", "parser/_inherited_schemas.py", "parser/_rw_split.py", "parser/_schema_refs.py", "parser/_schema_documents.py"]
 what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
 audit = "D-L1-16"
 
@@ -1311,6 +1311,42 @@ kind = "name"
 names = ["pyproject_value"]
 what = "spells preset items as pyproject values itself; call preset.py:_pyproject_values"
 audit = "C28-R4"
+
+[homes.Hx-values-arguments]
+decision = "the command-line arguments that set several config fields to values: each field's arguments in the given order, a value that no option can express left out"
+core = ["_option_names.py:values_arguments"]
+adapters = ["_recommend/_rules.py:values_arguments"]
+
+[homes.Hx-values-arguments.signatures.per-value-arguments]
+kind = "call"
+names = ["option_arguments"]
+exclude = ["_recommend/_rules.py:option_arguments", "__main__.py:generate_cli_command", "_recommend/__init__.py:_plan"]
+what = "turns config values into command-line arguments value by value; call _option_names.py:values_arguments"
+audit = "C28-R2"
+
+[homes.Hx-configured-value]
+decision = "the value a configuration holds for a field as pyproject.toml spells it, the spelling rule values are compared in"
+core = ["_option_names.py:configured_value"]
+
+[homes.Hx-configured-value.signatures.attribute-toml-value]
+kind = "call"
+names = ["toml_value"]
+mentions = ["getattr"]
+what = "spells the value a config holds for a field itself; call _option_names.py:configured_value"
+audit = "C28-R3"
+
+[homes.Hx-merged-option-values]
+decision = "the config values recommended options set together: each option's values in order, a later option's value of a field replacing an earlier one's"
+core = ["_recommend/__init__.py:_merged_values"]
+
+[homes.Hx-merged-option-values.signatures.option-values-read]
+kind = "name"
+names = ["values"]
+receivers = ["option"]
+paths = ["_recommend/"]
+exclude = ["_recommend/_report.py:_start_lines", "_recommend/_report.py:_option_payload"]
+what = "merges the values of options itself; call _recommend/__init__.py:_merged_values"
+audit = "C28-R5"
 
 [homes.Hx-remote-lock-plan]
 decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"

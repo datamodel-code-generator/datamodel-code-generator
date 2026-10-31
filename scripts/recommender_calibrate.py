@@ -689,6 +689,11 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
 
 
 def _option(name: str, value: Any) -> list[str]:
+    """Return the options that set a grid value.
+
+    False is always the --no- option, so that argparse rejects a grid point no option can express instead of running
+    the preset's value under its label.
+    """
     flag = name.replace("_", "-")
     if value is True:
         return [f"--{flag}"]

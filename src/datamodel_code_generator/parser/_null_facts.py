@@ -99,7 +99,7 @@ NullSite: TypeAlias = Literal[
   without a const; the parent's and the branches' ``type`` are read as written, without the mark of
   ``legacy-nullable-as-type-list`` (``parser/_value_keywords.py:extract_const_enum_from_combined``).
 * ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
-  whether that value is null (``parser/jsonschema.py:_single_value_enum_as_const``,
+  whether that value is null (``parser/_schema_documents.py:_single_value_enum_as_const``,
   ``JsonSchemaParser._reads_enum_as_const``).
 * ``graphql-field``: a GraphQL field, whose type's ``nullable`` is false under a non-null wrapper
   (``parser/graphql.py:GraphQLParser.parse_field``).
