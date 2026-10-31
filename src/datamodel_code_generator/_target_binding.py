@@ -31,6 +31,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
 )
+from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
@@ -833,15 +834,6 @@ _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=
 def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
     """Decode a reference's JSON pointer fragment, or return None for a named anchor."""
     return fragment_tokens(unquote(ref.partition("#")[2]))
-
-
-def _result_key(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
-    """Return the result key the parser files a module's output under."""
-    normalized = tuple(part.replace("-", "_") for part in module)
-    if not treat_dot_as_module:
-        return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
-    expanded = [token for part in normalized for token in part.split(".")]
-    return (*expanded[:-2], f"{expanded[-2]}.{expanded[-1]}") if len(expanded) > 1 else tuple(expanded)
 
 
 def _schema_use(location: SourceLocation) -> TypeUseId:
@@ -2674,7 +2666,7 @@ class _Models:
     def address(self, module: ModulePath, result: Result) -> ModelArtifactAddress:
         if isinstance(results := self.binder.results, str):
             return ModelArtifactAddress("single", (self.output.name,), self.model_package, ())
-        key = _result_key(module, treat_dot_as_module=self.parser.treat_dot_as_module)
+        key = written_path(module, treat_dot_as_module=self.parser.treat_dot_as_module)
         return ModelArtifactAddress(
             key,
             key,

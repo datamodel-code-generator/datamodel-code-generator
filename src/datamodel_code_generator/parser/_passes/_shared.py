@@ -23,6 +23,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
+from datamodel_code_generator._module_paths import written_name
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
@@ -733,7 +734,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
             from_, import_ = full_path = exact_import(from_, import_, name)
         if row == "legacy-collapse-import-path":
             return ReferenceImportTarget(full_path, from_, import_, from_, row)
-        import_ = import_.replace("-", "_")
+        import_ = written_name(import_)
         current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
         if (  # pragma: no cover
             len(current_module_path) > 1 and current_module_path[-1].count(".") > 0 and not treat_dot_as_module
@@ -1991,14 +1992,6 @@ def _string_or_identifier_pattern(text: str, target_python_version: PythonVersio
         if text.isascii()
         else target_pattern(_STRING_OR_TARGET_IDENTIFIER_SOURCE, target_python_version, re.MULTILINE)
     )
-
-
-def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
-    """Apply the module-key normalization used by the public parser result."""
-    normalized = tuple(part.replace("-", "_") for part in module)
-    if treat_dot_as_module:
-        return normalized
-    return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
 
 
 SPECIAL_PATH_FORMAT: str = _SPECIAL_PATH_FORMAT

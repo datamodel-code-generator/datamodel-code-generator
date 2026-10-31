@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._module_paths import package_path
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
 from datamodel_code_generator.model.base import (
     DataModel,
@@ -727,11 +728,6 @@ def _exported_imports(
     return imported
 
 
-def _expanded_path(module: tuple[str, ...]) -> tuple[str, ...]:
-    """Return the package layout of a module whose dotted names ``treat_dot_as_module`` turns into packages."""
-    return tuple(part for name in module for part in name.split("."))
-
-
 def _failing_import_cycles(
     merges: list[set[tuple[str, ...]]],
     module_graph: GroupGraph[tuple[str, ...]],
@@ -749,7 +745,7 @@ def _failing_import_cycles(
     imports the modules below it that ``exporting`` names, and the ``_internal`` modules, to re-export their names;
     ``dotted`` places a module in the packages that the dots of its name make.
     """
-    place = _expanded_path if dotted else lambda module: module
+    place = package_path if dotted else lambda module: module
     internal_nodes = [(place(compute_internal_module_path(merge, set())), index) for index, merge in enumerate(merges)]
     forwarded = {module: internal_nodes[index] for index, merge in enumerate(merges) for module in merge}
 

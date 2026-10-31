@@ -16,12 +16,12 @@ from typing import TYPE_CHECKING, Final
 
 from typing_extensions import Protocol
 
+from datamodel_code_generator._module_paths import normalized_path
 from datamodel_code_generator._parse_memo import MemoTable
 from datamodel_code_generator.model.base import forget_model_memos
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._model_shapes import stdout_fingerprint
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
-from datamodel_code_generator.parser._passes._shared import _normalize_result_module_path
 from datamodel_code_generator.parser._passes._state import ContextT, ResultT
 from datamodel_code_generator.reference import split_module_name
 
@@ -224,8 +224,8 @@ def inspect_invalid_dotted_stdout(
         getattr(parser, "openapi_include_info_version", False)
         and getattr(parser, "openapi_info_version", None) is not None
         and any(
-            _normalize_result_module_path(module, treat_dot_as_module=parser.treat_dot_as_module)
-            > _normalize_result_module_path(("__init__.py",), treat_dot_as_module=parser.treat_dot_as_module)
+            normalized_path(module, treat_dot_as_module=parser.treat_dot_as_module)
+            > normalized_path(("__init__.py",), treat_dot_as_module=parser.treat_dot_as_module)
             and _TOP_LEVEL_FUTURE_IMPORT_PATTERN.search(result.body)
             for module, result in results.items()
         )

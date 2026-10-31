@@ -18,8 +18,9 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, TypeAl
 from typing_extensions import Self, TypeIs, TypeVar
 
 from ..model_codecs.media import charset, json_value
-from .content import CHUNK
+from .content import CHUNK, pieces
 from .errors import (
+    MAX_ERROR_BODY_BYTES,
     ConfigurationError,
     DecodeError,
     SDKError,
@@ -39,7 +40,6 @@ if TYPE_CHECKING:
     from .operations import ResponseDecoder
     from .responses import ResponseInfo
 
-MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _BINARY: Final[int] = getattr(os, "O_BINARY", 0)
 _UMASK: Final = threading.Lock()
 Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"]
@@ -47,11 +47,6 @@ State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed"
 SourceT = TypeVar("SourceT")
 HandleT = TypeVar("HandleT")
 T = TypeVar("T")
-
-
-def _pieces(data: bytes) -> Generator[bytes, None, None]:
-    for start in range(0, len(data), CHUNK):
-        yield data[start : start + CHUNK]
 
 
 def _temporary(path: Path) -> tuple[int, Path]:
@@ -372,6 +367,11 @@ class _Raw(Generic[SourceT, HandleT]):
         truncated = received.truncated or problem is not None
         return self._failure(self._decoder.failure(self._info, received.content, truncated=truncated, problem=problem))
 
+    async def _write_failed(self, error: BaseException) -> None:
+        """End the stream a failed write of this call left behind, before the failure propagates."""
+        if self._state == "streaming":
+            await self._end("failed", error)
+
     async def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the native connection once."""
         self._state = state
@@ -507,13 +507,12 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             return
         self._downloadable()
         path = Path(target)
-        file, temporary = _created(path, overwrite)
+        created = _created(path, overwrite)
         try:
-            with file:
-                self._write(file.write)
-            _commit(temporary, path, overwrite=overwrite)
+            self._write(created[0].write)
+            _committed(created, b"", path, overwrite)
         except BaseException:
-            temporary.unlink(missing_ok=True)
+            _discarded(created)
             raise
 
     def _write(self, write: Callable[[bytes], object]) -> None:
@@ -523,8 +522,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             for chunk in chunks:
                 write(chunk)
         except BaseException as error:
-            if self._state == "streaming":
-                run_sync(self._end("failed", error))
+            run_sync(self._write_failed(error))
             raise
 
     def raise_for_status(self) -> None:
@@ -560,7 +558,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _iterate(self, *, action: Action, decoded: bool) -> Iterator[bytes]:
         match self._state:
             case "buffered" if decoded:
-                return _pieces(self._body)
+                return pieces(self._body)
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)
@@ -628,11 +626,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._write_failed(error)
             raise
 
-    async def _write_failed(self, error: BaseException) -> None:
-        """End the stream a failed write of this call left behind, before the failure propagates."""
-        if self._state == "streaming":
-            await self._end("failed", error)
-
     async def _download(self, path: Path, *, overwrite: bool) -> None:
         """Write the body to a path through a temporary file, one file call at a time in a thread.
 
@@ -695,7 +688,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     def _iterate(self, *, action: Action, decoded: bool) -> AsyncGenerator[bytes, None] | Ready[bytes]:
         match self._state:
             case "buffered" if decoded:
-                return Ready(_pieces(self._body))
+                return Ready(pieces(self._body))
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)

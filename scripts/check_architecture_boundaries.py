@@ -140,8 +140,8 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
     "module-paths": (
         frozenset({*sys.stdlib_module_names, "typing_extensions"}),
         (
-            "the module a written Python file holds is a leaf that every layer reads: import only the standard library "
-            "and typing_extensions"
+            "the paths of the written modules are a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
         ),
     ),
     "python-syntax": (

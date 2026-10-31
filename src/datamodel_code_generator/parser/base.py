@@ -60,7 +60,13 @@ from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._module_paths import dotted_module, is_package_init
+from datamodel_code_generator._module_paths import (
+    dotted_module,
+    expanded_path,
+    is_package_init,
+    normalized_path,
+    written_names,
+)
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
@@ -175,7 +181,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _hidden_type_names,
     _iter_import_bindings,
     _ModelPositions,
-    _normalize_result_module_path,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
     _string_or_identifier_pattern,
@@ -345,22 +350,6 @@ def dropped_constraints_recorded() -> Generator[DroppedConstraints]:
         yield record
     finally:
         _DROPPED_CONSTRAINTS.reset(token)
-
-
-def _expand_result_module_path(input_tuple: tuple[str, ...]) -> tuple[str, ...]:
-    """Expand dotted result paths without changing result identity or ordering."""
-    r = []
-    for item in input_tuple:
-        p = item.split(".")
-        if len(p) > 1:
-            r.extend(p[:-1])
-            r.append(p[-1])
-        else:
-            r.append(item)
-
-    if len(r) >= 2:  # noqa: PLR2004
-        r = [*r[:-2], f"{r[-2]}.{r[-1]}"]
-    return tuple(r)
 
 
 class ModuleContext(NamedTuple):
@@ -547,7 +536,7 @@ def _resolve_module_file(module_: ModulePath, results: dict[ModulePath, Result])
             results[parent] = Result(body="")
     if (*module_, "__init__.py") in results:
         return (*module_, "__init__.py"), True
-    return tuple(part.replace("-", "_") for part in (*module_[:-1], f"{module_[-1]}.py")), False
+    return written_names((*module_[:-1], f"{module_[-1]}.py")), False
 
 
 def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_code: bool = False) -> str:
@@ -1660,7 +1649,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         cls, results: dict[tuple[str, ...], Result], *, empty_init: bool = False
     ) -> dict[tuple[str, ...], Result]:
 
-        results = {_expand_result_module_path(k): v for k, v in results.items()}
+        results = {expanded_path(k): v for k, v in results.items()}
 
         init_result = Result(body="") if empty_init else next(v for k, v in results.items() if is_package_init(k[-1]))
         folders = {t[:-1] if t[-1].endswith(".py") else t for t in results}
@@ -2032,10 +2021,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         generated_names = binding_context.models_by_name.keys()
         last_model_binding: dict[str, DataModel | None] = {}
         normalized_to_module = {
-            _normalize_result_module_path(
-                module,
-                treat_dot_as_module=binding_context.treat_dot_as_module,
-            ): module
+            normalized_path(module, treat_dot_as_module=binding_context.treat_dot_as_module): module
             for module in results
         }
         for normalized_module in sorted(normalized_to_module):

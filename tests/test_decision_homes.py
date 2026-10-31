@@ -59,6 +59,8 @@ ALLOWED = """
 "sample.name-search" = { home = "sample", count = 3, audit = "X-13" }
 [allow."other.py"."package_files"]
 "sample.init-test" = { home = "sample", count = 2, audit = "X-14" }
+[allow."other.py"."split_names"]
+"sample.dotted-split" = { home = "sample", count = 3, audit = "X-16" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

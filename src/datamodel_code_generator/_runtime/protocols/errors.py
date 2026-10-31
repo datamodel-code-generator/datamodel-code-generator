@@ -9,6 +9,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from ..client.errors import MAX_ERROR_BODY_BYTES as MAX_RAW_PREFIX
 from ..client.errors import ConfigurationError, SDKError
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import ProtocolProgress, RequestTarget, Selector  # noqa: TC001 - Public annotations support get_type_hints().
@@ -32,7 +33,6 @@ __all__ = (
     "data_refusal",
 )
 
-MAX_RAW_PREFIX: Final = 65536
 MAX_CLOSE_REASON: Final = 123
 DataRule: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 Refuse: TypeAlias = "Callable[[Selector, DataRule], ProtocolDataError]"

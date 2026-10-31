@@ -8,6 +8,7 @@ from typing_extensions import TypeIs
 
 from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
+MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _SERVER_ERROR: Final = 500
 _MESSAGE_PREFIX: Final = 500
 
