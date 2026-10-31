@@ -7,12 +7,13 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
-from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
+from urllib.parse import ParseResult, unquote
 
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
+from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
     PATHS_PARAMETERS,
@@ -372,6 +373,17 @@ class ApiOpenAPIParser(OpenAPIParser):
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
         return _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
+
+    def _schema_reference_location(self, holder: str, ref: str) -> SchemaLocation | None:
+        """Return the schema a `$ref` or `$dynamicRef` of a loaded schema names, as the parser resolves it.
+
+        The reference resolves by its edge, or, without one, in ``holder``, the document that holds it, as L1 resolves
+        it. None is a schema in no loaded document.
+        """
+        with self._home_context(holder):
+            document, _, fragment = self._ref_key(ref).key.partition("#")
+        tokens = fragment_tokens(unquote(fragment))
+        return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
         """Use the same object-reference boundary for ordinary parser leaves, resolving in the current context."""

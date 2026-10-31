@@ -13,11 +13,11 @@ from contextlib import suppress
 from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
 from decimal import Decimal
-from functools import cached_property
+from functools import cached_property, partial
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
-from urllib.parse import ParseResult, unquote, urljoin
+from urllib.parse import ParseResult, unquote
 
 from typing_extensions import override
 
@@ -392,7 +392,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             versions=[],
             binary=self._binary_formats(encoded=False),
             encoded=self._binary_formats(encoded=True),
-            anchors=self._anchor_locations,
+            follow=self._schema_reference_location,
         )
 
     def _binary_formats(self, *, encoded: bool) -> frozenset[str]:
@@ -428,26 +428,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             "so a referenced file must be inside the input directory.\n"
             f"Input directory: {base}\nResolved path: {resolved}\n"
             "Move the referenced schemas under the input directory."
-        )
-
-    def _anchor_locations(self, document: str, ref: str, *, dynamic: bool) -> tuple[str, ...]:
-        """Return where a reference by anchor name leads: the anchor it names, and every `$dynamicAnchor` of the name.
-
-        A `$dynamicRef` binds to an anchor of its dynamic scope, which may be any declaration of the name. Each
-        location names its document as the reference's own document names it.
-        """
-        aliases = self._schema_resource_document_aliases
-        physical = aliases.get(document, document)
-        base = self._schema_resource_root_bases.get(physical, physical)
-        found = [] if (lexical := self._schema_resource_locations.get(urljoin(base, ref))) is None else [lexical]
-        if dynamic:
-            name = ref.partition("#")[2]
-            found.extend(location for anchors in self._dynamic_anchors.values() if (location := anchors.get(name)))
-        documents = {location: alias for alias, location in aliases.items()}
-        return tuple(
-            dict.fromkeys(
-                f"{documents.get(path, path)}#{pointer}" for path, _, pointer in (item.partition("#") for item in found)
-            )
         )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
@@ -760,6 +740,7 @@ def _imported_names(imports: Imports) -> Iterator[str]:
 
 
 _Locate: TypeAlias = "Callable[[SchemaLocation], SourceLocation]"
+_Follow: TypeAlias = "Callable[[str, str], SchemaLocation | None]"
 
 
 @dataclass(frozen=True, slots=True)
@@ -2038,10 +2019,11 @@ _Branch: TypeAlias = Literal["reference", "schema", "other"]
 class _SchemaNode:
     """Where a schema declares its members, as the walk read it: its reference, properties, branches and items.
 
-    Each tuple of branches says, item by item, whether it is a schema; None says the keyword holds no list.
+    `target` is where its `$ref` leads, as the parser resolves it. Each tuple of branches says, item by item, whether
+    it is a schema; None says the keyword holds no list.
     """
 
-    ref: str | None = None
+    target: SchemaLocation | None = None
     has_ref: bool = False
     has_properties: bool = False
     properties: tuple[str, ...] = ()
@@ -2058,8 +2040,8 @@ class _SchemaNode:
     one_of: tuple[bool, ...] | None = None
 
     @classmethod
-    def of(cls, value: YamlValue) -> _SchemaNode:
-        """Read a loaded schema's member locations; any value but a mapping declares none."""
+    def of(cls, value: YamlValue, follow: Callable[[str], SchemaLocation | None]) -> _SchemaNode:
+        """Read a loaded schema's member locations, following its `$ref`; any value but a mapping declares none."""
         if not isinstance(value, dict) or not value:
             return _LEAF
         properties = value.get("properties")
@@ -2069,7 +2051,7 @@ class _SchemaNode:
         items = value.get("items")
         prefix = value.get("prefixItems")
         node = cls(
-            ref if isinstance(ref := value.get("$ref"), str) else None,
+            follow(ref) if isinstance(ref := value.get("$ref"), str) else None,
             "$ref" in value,
             "properties" in value,
             tuple(properties) if isinstance(properties, dict) else (),
@@ -2105,14 +2087,13 @@ _LEAF: Final = _SchemaNode()
 
 
 class _SchemaLocations:
-    """Locate schema members through the schema locations the walk recorded, following references as spelled.
+    """Locate schema members through the schema locations the walk recorded, following references where they lead.
 
-    A declaration the walk recorded no location of declares nothing; references resolve into the loaded documents.
+    A declaration the walk recorded no location of declares nothing.
     """
 
-    def __init__(self, nodes: dict[SchemaLocation, _SchemaNode], documents: Container[str]) -> None:
+    def __init__(self, nodes: dict[SchemaLocation, _SchemaNode]) -> None:
         self.nodes = nodes
-        self.documents = documents
 
     def node(self, declaration: SchemaLocation) -> _SchemaNode | None:
         """Return where a schema declares its members, None when the walk found no schema there."""
@@ -2122,24 +2103,11 @@ class _SchemaLocations:
         """Return where a schema declares its members, nothing when the walk found no schema there."""
         return self.node(declaration) or _LEAF
 
-    def target(self, declaration: SchemaLocation, ref: str) -> SchemaLocation | None:
-        """Return the declaration a reference names, or None when no loaded document has it."""
-        document = (
-            urljoin(declaration.document, ref.partition("#")[0]) if not ref.startswith("#") else declaration.document
-        )
-        if document not in self.documents or (tokens := _pointer_tokens(ref)) is None:
-            return None
-        return SchemaLocation(document, tokens)
-
     def resolve(self, declaration: SchemaLocation) -> tuple[SchemaLocation, _SchemaNode]:
         """Follow a schema's reference chain, whatever keywords sit beside them, to the schema it leads to."""
         node = self.at(declaration)
         seen = {declaration}
-        while (
-            (ref := node.ref) is not None
-            and (target := self.target(declaration, ref)) is not None
-            and target not in seen
-        ):
+        while (target := node.target) is not None and target not in seen:
             seen.add(target)
             declaration, node = target, self.at(target)
         return declaration, node
@@ -2163,7 +2131,7 @@ class _SchemaLocations:
             and name in self.at(parent := SchemaLocation(schema.document, schema.tokens[:-2])).properties
         ):
             return parent.child("properties", name)
-        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
+        if (target := node.target) is not None:
             return self.property_location(target, name, active)
         return None
 
@@ -2180,7 +2148,7 @@ class _SchemaLocations:
         for index, branch in reversed(list(enumerate(node.all_of))):
             if branch != "other" and (found := self.additional_owner(schema.child("allOf", str(index)), active)):
                 return found
-        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
+        if (target := node.target) is not None:
             return self.additional_owner(target, active)
         return None
 
@@ -2201,12 +2169,7 @@ class _SchemaLocations:
             for index, branch in enumerate(node.all_of)
         ):
             return True
-        return (
-            inherited
-            and node.ref is not None
-            and (target := self.target(schema, node.ref)) is not None
-            and self.required(target, name, inherited=inherited)
-        )
+        return inherited and (target := node.target) is not None and self.required(target, name, inherited=inherited)
 
     def properties(
         self, schema: SchemaLocation, active: set[SchemaLocation] | None = None
@@ -2221,7 +2184,7 @@ class _SchemaLocations:
         active.add(schema)
         node = self.at(schema)
         found: dict[str, SchemaLocation] = {}
-        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
+        if (target := node.target) is not None:
             found.update(self.properties(target, active))
         for index in range(len(node.all_of)):
             found.update(self.properties(schema.child("allOf", str(index)), active))
@@ -2252,14 +2215,14 @@ class _Reader(_SchemaLocations):
         versions: list[str],
         binary: frozenset[str],
         encoded: frozenset[str],
-        anchors: Callable[..., tuple[str, ...]],
+        follow: _Follow,
     ) -> None:
-        super().__init__(nodes, documents)
+        super().__init__(nodes)
         self.loaded = documents
         self.versions = versions
         self.formats = binary
         self.encoded = encoded
-        self.anchors = anchors
+        self.follow = follow
         self.binaries: dict[SchemaLocation, SchemaLocation | None] = {}
         self.encodings: dict[SchemaLocation, SchemaLocation | None] = {}
 
@@ -2278,7 +2241,7 @@ class _Reader(_SchemaLocations):
             return node
         if (value := self.borrow(declaration) if raw is MISSING else raw) is None:
             return None
-        node = self.nodes[declaration] = _SchemaNode.of(value)
+        node = self.nodes[declaration] = _SchemaNode.of(value, partial(self.follow, declaration.document))
         return node
 
     def whole(self, declaration: SchemaLocation) -> tuple[SchemaLocation, dict[str, YamlValue]]:
@@ -2291,7 +2254,7 @@ class _Reader(_SchemaLocations):
         while (
             (self.legacy or raw.keys() - _IDENTIFIERS == {"$ref"})
             and isinstance(ref := raw.get("$ref"), str)
-            and (target := self.target(declaration, ref)) is not None
+            and (target := self.follow(declaration.document, ref)) is not None
             and target not in seen
         ):
             seen.add(target)
@@ -2446,8 +2409,8 @@ class _Reader(_SchemaLocations):
     def _subschemas(self, declaration: SchemaLocation, raw: dict[str, YamlValue]) -> Iterator[SchemaLocation]:
         """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
         for keyword in ("$ref", "$dynamicRef"):
-            if isinstance(ref := raw.get(keyword), str):
-                yield from self._referenced(declaration, ref, dynamic=keyword == "$dynamicRef")
+            if isinstance(ref := raw.get(keyword), str) and (target := self.follow(declaration.document, ref)):
+                yield target
         if self.legacy and "$ref" in raw:
             return
         for keyword in _VALUE_SCHEMA_LISTS:
@@ -2458,14 +2421,6 @@ class _Reader(_SchemaLocations):
         for keyword in _VALUE_SCHEMAS:
             if isinstance(raw.get(keyword), dict):
                 yield declaration.child(keyword)
-
-    def _referenced(self, declaration: SchemaLocation, ref: str, *, dynamic: bool) -> Iterator[SchemaLocation]:
-        """Yield the schema a JSON pointer reference names, or each schema an anchor reference may lead to."""
-        if (target := self.target(declaration, ref)) is not None:
-            yield target
-        else:
-            anchored = self.anchors(declaration.document, ref, dynamic=dynamic)
-            yield from filter(None, (self.target(declaration, location) for location in anchored))
 
     def encoding(self, schema: SchemaLocation, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.
@@ -2641,7 +2596,7 @@ class _Models:
     ) -> None:
         self.binder = _Binder(parser, results)
         self.documents = _Documents(parser)
-        self.schemas = _SchemaLocations(parser.schema_locations, self.documents.ids)
+        self.schemas = _SchemaLocations(parser.schema_locations)
         self.parser = parser
         self.attempt = attempt
         self.output = output
