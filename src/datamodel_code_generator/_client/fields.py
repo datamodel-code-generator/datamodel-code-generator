@@ -12,6 +12,7 @@ from datamodel_code_generator._runtime.model_codecs.media import normalize_media
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_naming import NameScope, explicit_name
 from datamodel_code_generator._target_operations import CLIENT, declared_by
+from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -54,7 +55,11 @@ class _Fields:
         ):
             return "its schema is not an object model"
         return (
-            tuple(item for item in self.facts.fields(model.id) if not item.read_only)
+            tuple(
+                item
+                for item in self.facts.fields(model.id)
+                if not _rw_variant_flag("request", item.read_only, item.write_only)
+            )
             or "its model has no writable field"
         )
 

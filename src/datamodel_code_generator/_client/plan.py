@@ -85,6 +85,7 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
+from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -889,8 +890,8 @@ class Planner:
                 member,
                 declared[name],
                 facts.type,
-                required=facts.required and not facts.write_only,
-                excluded=facts.write_only,
+                required=facts.required,
+                excluded=_rw_variant_flag("response", facts.read_only, facts.write_only),
             )
             for name, member, facts in members
         ), additional
@@ -906,7 +907,11 @@ class Planner:
         required: bool,
         excluded: bool = False,
     ) -> PartSpec:
-        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use."""
+        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use.
+
+        A member the response leaves out (``excluded``) is not required.
+        """
+        required = required and not excluded
         if part.file:
             return PartSpec(
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
