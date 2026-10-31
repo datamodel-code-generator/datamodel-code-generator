@@ -63,6 +63,8 @@ ALLOWED = """
 "sample.dotted-split" = { home = "sample", count = 3, audit = "X-16" }
 [allow."other.py"."marked"]
 "sample.marker-test" = { home = "sample", count = 2, audit = "X-17" }
+[allow."other.py"."climb"]
+"sample.ancestor-walk" = { home = "sample", count = 2, audit = "X-18" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

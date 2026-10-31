@@ -18,6 +18,7 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
+from datamodel_code_generator._paths import existing_ancestor
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -131,8 +132,7 @@ def _open_target_directory(
 
 def publication_anchor(path: Path) -> PublicationAnchor:
     """Snapshot and hold the deepest existing concrete directory for *path*."""
-    while not path.is_dir():
-        path = path.parent
+    path = existing_ancestor(path, at_root="legacy-unbounded-ancestor-walk")
     if os.name == "nt":  # pragma: no cover - Windows uses checked path fallback
         path_stat = path.stat()
         return PublicationAnchor(path, (path_stat.st_dev, path_stat.st_ino), None)
@@ -163,12 +163,24 @@ def release_all(
     return errors
 
 
-def staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
-    """Create an on-disk staging directory on the target artifact's filesystem."""
-    staging_parent = Path(os.path.abspath(target.expanduser())).parent  # noqa: PTH100
-    while not staging_parent.exists():
-        staging_parent = staging_parent.parent
-    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=staging_parent)
+def staging_directory_for(
+    target: Path, *, cwd: Path | None = None, around: Path | None = None
+) -> tempfile.TemporaryDirectory[str]:
+    """Create a private staging directory beside a target, on the filesystem it is published to.
+
+    A relative target is joined to ``cwd`` (the working directory when omitted). With ``around``, a target inside that
+    output is staged beside the output instead, so a render writes nothing into it. The directory is made in the
+    deepest existing parent, by row ``legacy-staging-parent-may-be-a-file`` of ``existing_ancestor``.
+    """
+    base = Path() if cwd is None else cwd
+    full = base / target.expanduser()
+    location = Path(os.path.abspath(full))  # noqa: PTH100
+    if around is not None and (outer := (base / around.expanduser()).resolve()) in full.resolve().parents:
+        location = outer
+    parent = existing_ancestor(
+        location.parent, test="legacy-staging-parent-may-be-a-file", at_root="legacy-unbounded-ancestor-walk"
+    )
+    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)
 
 
 def stage_artifact(  # noqa: PLR0913
@@ -581,10 +593,9 @@ def _create_directory(directory: Path) -> bool:
 def _create_target_parent(target: Path, created_directories: list[Path]) -> None:
     """Create a target parent while recording only transaction-owned directories."""
     missing_directories: list[Path] = []
-    parent = target.parent
-    while not parent.exists():
-        missing_directories.append(parent)
-        parent = parent.parent
+    existing_ancestor(
+        target.parent, test="exists", at_root="legacy-unbounded-ancestor-walk", missing=missing_directories
+    )
     for directory in reversed(missing_directories):
         if _create_directory(directory):
             created_directories.append(directory)

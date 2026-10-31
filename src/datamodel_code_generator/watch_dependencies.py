@@ -13,6 +13,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._paths import existing_ancestor
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -144,11 +145,7 @@ def _logical_working_directory() -> Path:
 
 
 def _nearest_existing_directory(path: Path) -> Path:
-    while not path.is_dir():
-        if path == path.parent:
-            return path
-        path = path.parent
-    return path
+    return existing_ancestor(path)
 
 
 def _watch_roots(

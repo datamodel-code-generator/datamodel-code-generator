@@ -113,6 +113,12 @@ strings = ["."]
 what = "splits the dotted names of a path itself"
 audit = "X-16"
 
+[homes.sample.signatures.ancestor-walk]
+kind = "ancestor-walk"
+names = ["exists", "is_dir"]
+what = "walks up a path's parents itself"
+audit = "X-18"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

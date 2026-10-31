@@ -151,3 +151,24 @@ def split_names(path, name):
 def marked(path, consts):
     """Test a path for the marker by its name or through a module; another name, a reversed test or == do not count."""
     return MARKER in path, consts.MARKER not in path, OTHER in path, path in MARKER, MARKER == path
+
+
+def climb(path, other, roots):
+    """Walk up to an existing path, directly and through a name; another name, no test or a nested walk do not count."""
+    while not path.exists():
+        path = path.parent
+    current = other
+    while not current.is_dir():
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    while not path.is_file():
+        path = path.parent
+    while not other.exists():
+        other = roots.parent
+    while current != current.parent:
+        current = current.parent
+    while not path.is_dir():
+        roots.append(lambda: path.parent)
+    return path, current

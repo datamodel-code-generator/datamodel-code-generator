@@ -41,6 +41,8 @@ other.py:138:4: decision sample (the sample decision) has its home in core.py; s
 other.py:143:8: decision sample (the sample decision) has its home in core.py; splits the dotted names of a path itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in split_names)
 other.py:153:11: decision sample (the sample decision) has its home in core.py; tests a path for the marker itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in marked)
 other.py:153:27: decision sample (the sample decision) has its home in core.py; tests a path for the marker itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in marked)
+other.py:158:4: decision sample (the sample decision) has its home in core.py; walks up a path's parents itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in climb)
+other.py:161:4: decision sample (the sample decision) has its home in core.py; walks up a path's parents itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in climb)
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
@@ -61,6 +63,7 @@ other.py: Other.method: sample.read-flag
 other.py: Other.method: sample.write-size
 other.py: _merge_values: sample.merge-function
 other.py: _merge_values._merge_inner: sample.merge-function
+other.py: climb: sample.ancestor-walk
 other.py: displays: sample.hand-display
 other.py: fold: sample.fold
 other.py: keywords: sample.hand-keyword

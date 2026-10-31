@@ -1786,6 +1786,28 @@ paths = ["__init__.py", "__main__.py"]
 what = "pairs a staged artifact with its target itself; use _publication.py:StagedOutputs.files"
 audit = "C17-6"
 
+[homes.Hx-staging-directory]
+decision = "where a private staging directory beside a target goes: the deepest existing parent of the target, joined to the caller's directory, or beside the output that contains it"
+core = ["_publication.py:staging_directory_for"]
+
+[homes.Hx-staging-directory.signatures.beside-target]
+kind = "call"
+names = ["TemporaryDirectory"]
+keywords = ["prefix", "dir"]
+exclude = ["_api_generation.py:_stage", "_target_selection.py:_render"]
+what = "places a private staging directory itself; call _publication.py:staging_directory_for"
+audit = "C17-5"
+
+[homes.Hx-existing-ancestor]
+decision = "the deepest existing ancestor of a local path: what counts as existing and what a root that fails gives"
+core = ["_paths.py:existing_ancestor"]
+
+[homes.Hx-existing-ancestor.signatures.ancestor-walk]
+kind = "ancestor-walk"
+names = ["exists", "is_dir"]
+what = "walks up a path's parents itself; call _paths.py:existing_ancestor"
+audit = "C17-3"
+
 [homes.Hx-json-output]
 decision = "the JSON text of a machine-readable output of the command line (payloads, listings, model metadata, the remote lock) and of the JSON Schemas of its outputs and config: indented by two spaces, in the style the output was released with"
 core = ["_json_output.py:dump_json", "_json_output.py:schema_document"]
@@ -2182,6 +2204,14 @@ fix = "#5583"
 [legacy_rows."legacy-api-skips-missing-metadata"]
 home = "Hx-output-staging"
 fix = "#5620"
+
+[legacy_rows."legacy-staging-parent-may-be-a-file"]
+home = "Hx-existing-ancestor"
+fix = "#5618"
+
+[legacy_rows."legacy-unbounded-ancestor-walk"]
+home = "Hx-existing-ancestor"
+fix = "#5722"
 
 [legacy_rows."legacy-predicted-tag-names"]
 home = "H11"
