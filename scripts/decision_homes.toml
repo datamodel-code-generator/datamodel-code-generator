@@ -1,4 +1,4 @@
-# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the homedecision = "what the client runtime reads back from JSON: the builtin values JSON text parses into (rows `constants=\"refuse\"`, NaN and the infinities refused where a saved value holds the result, and `floats=\"decimal\"`, numbers read exactly where a count is), and the value a saved wire value restores through its codec"
+# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the home
 # exist today. Read by scripts/check_decision_homes.py; the design is docs/architecture.md, "One home per decision".
 #
 # [homes.<id>]: `decision` in words, `core` (the pure function or module that decides) and `adapters` (code that reads
