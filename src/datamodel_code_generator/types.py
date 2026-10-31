@@ -545,7 +545,7 @@ def get_optional_type(type_: str, use_union_operator: bool) -> str:  # noqa: FBT
         return NONE
     if use_union_operator:
         return f"{type_} | {NONE}"
-    return f"{OPTIONAL_PREFIX}{type_}]"
+    return subscript_text(OPTIONAL, (type_,))
 
 
 @cache
@@ -1025,7 +1025,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         Output-specific DataType subclasses should override this compatibility
         fallback so their generated syntax remains owned by the output backend.
         """
-        return f"Annotated[{type_}, Field(discriminator={discriminator!r})]"
+        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
 
     _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = (
         "frozen_set",

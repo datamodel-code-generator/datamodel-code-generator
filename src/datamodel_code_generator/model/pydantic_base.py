@@ -15,7 +15,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
     UNDEFINED,
@@ -247,7 +247,7 @@ class DataModelField(DataModelFieldBase):
             return None, None
         if not self.use_annotated or not plan.rendered:
             return plan.assignment, None
-        return plan.assignment, f"Annotated[{self.type_hint}, {plan.rendered}]"
+        return plan.assignment, subscript_text("Annotated", (self.type_hint, plan.rendered))
 
     def _has_field_statement(self) -> bool:
         """Return whether rendering this field will require a Field() call."""
@@ -637,7 +637,7 @@ class DataModelField(DataModelFieldBase):
         else:
             is_class_var = self.is_class_var
         if is_class_var:
-            return f"ClassVar[{super().type_hint}]"
+            return subscript_text("ClassVar", (super().type_hint,))
         return super().type_hint
 
     @property
@@ -648,7 +648,7 @@ class DataModelField(DataModelFieldBase):
             return None
         if not (field := str(self)):
             return None
-        return f"Annotated[{self.type_hint}, {field}]"
+        return subscript_text("Annotated", (self.type_hint, field))
 
     @override
     def _import_state_data_type(self) -> DataType | None:

@@ -137,6 +137,7 @@ from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
@@ -4345,9 +4346,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             item_type = root_type.data_types[0].type_hint or ANY
         else:
             item_type = build_union(self.data_type, root_type.data_types).type_hint or ANY
-        slice_type = root_type.type_hint or f"list[{item_type}]"
+        slice_type = root_type.type_hint or subscript_text("list", (item_type,))
         if "[" not in slice_type:
-            slice_type = f"{slice_type}[{item_type}]"
+            slice_type = subscript_text(slice_type, (item_type,))
         add_sequence_interface(item_type, slice_type)
 
     def _get_root_model_sequence_type(self, data_type: DataType) -> DataType | None:  # noqa: PLR6301

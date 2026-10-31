@@ -400,8 +400,8 @@ class FieldRenderPlan:
     the annotation; a msgspec or stdlib dataclass field with ``bare_default`` writes its default alone after the
     annotation. ``written_type`` is the type a msgspec annotation writes when it writes a copy of the field's type: its
     ``Annotated`` type, or its union with ``UnsetType``; the type writes its text when it is read. It is a ``DataType``,
-    typed ``object`` since importing ``types`` here would close an import cycle. ``qualifiers`` wrap the type hint,
-    innermost first (``TypedDict``'s ``ReadOnly[``, ``NotRequired[``).
+    typed ``object`` since importing ``types`` here would close an import cycle. ``qualifiers`` name the subscripts
+    that wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly``, ``NotRequired``).
     """
 
     annotation_form: AnnotationForm

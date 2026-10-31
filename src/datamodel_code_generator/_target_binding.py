@@ -33,6 +33,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
@@ -1525,7 +1526,7 @@ class _Projector:
                 self.inlined.discard(symbol)
         result: TypeView = GeneratedSymbolType(symbol)
         if serialize_as_any and binding.serialize_as_any:
-            spelled = f"{self.hints.slot(_SERIALIZE_AS_ANY)}[{self.hints.slot(symbol)}]", ()
+            spelled = subscript_text(self.hints.slot(_SERIALIZE_AS_ANY), (self.hints.slot(symbol),)), ()
             result = GenericType(ImportedType(_SERIALIZE_AS_ANY), (result,), hint=self.hints.hint(spelled))
         return result
 
@@ -1840,7 +1841,7 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
         return ("ClassVar",) if field.is_class_var else ()
     qualifiers: list[str] = []
     if requiredness := getattr(field, "_requiredness", ""):
-        qualifiers.append(requiredness.rstrip("[").rpartition(".")[2])
+        qualifiers.append(requiredness)
     if getattr(field, "_read_only", False):
         qualifiers.append("ReadOnly")
     return tuple(qualifiers)
