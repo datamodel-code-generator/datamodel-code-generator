@@ -705,6 +705,18 @@ class ReferenceImportTarget:
         return binding if name == self.import_ else f"{binding}.{name}"
 
 
+def _normalize_import_module_name(module_name: str) -> str:
+    """Return the module name with each part's hyphens replaced by underscores.
+
+    The written output normalizes hyphens in every part of a module path
+    (``_resolve_module_file`` / ``_normalize_result_module_path``), so the
+    module name of a generated file is its path with ``-`` replaced by ``_``.
+    The import must name the same module: normalize the names used to build
+    relative import paths before any comparison or rendering.
+    """
+    return ".".join(part.replace("-", "_") for part in module_name.split("."))
+
+
 def reference_import_target(  # ruff: ignore[too-many-arguments]
     name: str,
     current_module_name: str,
@@ -721,6 +733,9 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
 
     ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
     """
+    name = name.replace("-", "_")
+    current_module_name = _normalize_import_module_name(current_module_name)
+    target_full_name = _normalize_import_module_name(target_full_name)
     if base_class and row == "reference":
         left, right = relative(current_module_name, target_full_name)
         from_ = (
