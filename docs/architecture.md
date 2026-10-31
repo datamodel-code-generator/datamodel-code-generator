@@ -1390,6 +1390,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-lenient-quoted-string` | a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed (control characters included), so a response whose directive quotes one is read as well-formed and stored, where the RFC 9110 quoted-string of a media type's or a Link's parameters refuses it | #5769 |
 | `legacy-header-constant-by-upper` | the constant of an operation's header decoders is its method name upper-cased, which the resource's types module reserves but never claims, so two method names that upper-case alike (`straße`, `strasse`) define one constant twice and the first operation's header accessor decodes with the second one's decoders | #5781 |
 | `legacy-graphql-quote` | the error raised when the `graphql` extra is missing writes the closing backtick of its pip command before the closing quote (`` `$pip install 'datamodel-code-generator[graphql]`' ``), so the command copied from the code span leaves its quote open | #5791 |
+| `legacy-ascii-table-keys` | the notice of the settings a target implied quotes a table key that is no bare key (a job or profile name such as `ジョブ`) with `\u` escapes, where `--generate-pyproject-config` and the recommender write its characters as they are | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
