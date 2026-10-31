@@ -39,7 +39,7 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._format_types import PythonVersion, PythonVersionMin
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
@@ -674,11 +674,18 @@ class EnumFieldNameResolver(FieldNameResolver):
     """Field name resolver for enum members with special handling for reserved names."""
 
     def __init__(self, **kwargs: Any) -> None:
-        """Initialize with version-aware builtin type attributes."""
+        """Initialize with version-aware builtin type attributes.
+
+        A resolver without a target reads the oldest target's table, the same
+        fallback `FieldNameResolver` documents for identifier characters.
+        `_BUILTIN_TYPE_ATTRIBUTES` is captured from the running interpreter, so
+        using it directly here made the generated member names depend on the
+        host Python (a host with `float.from_number` renamed members that a
+        target without it keeps).
+        """
         super().__init__(**kwargs)
-        target = self.target_python_version
-        self._builtin_type_attributes = (
-            _get_builtin_type_attributes_for_target(target) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
+        self._builtin_type_attributes = _get_builtin_type_attributes_for_target(
+            self.target_python_version or PythonVersionMin
         )
 
     @override
