@@ -238,3 +238,14 @@ def subscripts(item, module, other):
         f"{other}[{item}]",
         "Optional[" + "int]",
     )
+
+
+def forms(path, base):
+    """Resolve an expanded path, alone or below a base; a parent between, other calls or a left operand do not count."""
+    return (
+        path.expanduser().resolve(),
+        (base / path.expanduser()).resolve(strict=False),
+        path.expanduser().parent.resolve(),
+        path.absolute().resolve(),
+        (path.expanduser() / base).resolve(),
+    )

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._paths import concrete, existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -85,13 +85,9 @@ _current_collector: ContextVar[_CollectedGeneration | None] = ContextVar("watch_
 _MISSING_PATH_FINGERPRINT = (-1, -1, -1)
 
 
-def _lexical_path(path: Path) -> Path:
-    return Path(os.path.abspath(path.expanduser()))  # noqa: PTH100
-
-
 def _path_variants(path: Path) -> frozenset[Path]:
     """Keep lexical and resolved locations so symlink retargeting remains observable."""
-    lexical_path = _lexical_path(path)
+    lexical_path = lexical(path)
     try:
         parent_resolved_path = concrete(lexical_path)
         resolved_path = lexical_path.resolve(strict=False)
@@ -103,7 +99,7 @@ def _path_variants(path: Path) -> frozenset[Path]:
 def _symlink_event_paths(path: Path) -> frozenset[Path]:
     """Return symlink ancestors and parents whose events can repoint a lexical path."""
     event_paths: set[Path] = set()
-    current = _lexical_path(path)
+    current = lexical(path)
     while current != current.parent:
         try:
             if current.is_symlink():
@@ -118,7 +114,7 @@ def _symlink_event_paths(path: Path) -> frozenset[Path]:
 
 
 def _resolved_path(path: Path) -> Path:
-    return _lexical_path(path).resolve(strict=False)
+    return lexical(path).resolve(strict=False)
 
 
 def _path_fingerprint(path: Path) -> tuple[int, int, int]:

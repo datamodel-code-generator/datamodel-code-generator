@@ -1,4 +1,9 @@
-"""Local filesystem paths: the deepest existing ancestor of a path, and the concrete place a path is published to.
+"""Local filesystem paths: the forms of a spelled path, its deepest existing ancestor and the place it is published to.
+
+A spelled path (an option value or a caller's argument) has two absolute forms: the lexical form expands ``~`` and
+folds ``.`` and ``..`` as written, keeping symlinks; the resolved form expands ``~`` and resolves symlinks. Both join a
+relative spelling to the caller's directory when one is given, else to the working directory. The checks that two
+paths are one, overlap or hold one another compare these forms.
 
 The publication journal anchors, stages and creates parents from the deepest existing ancestor, the remote lock writes
 its temporary file there and the watcher watches there. The callers differ in what counts as existing and in what
@@ -11,15 +16,28 @@ compare with it.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from pathlib import Path
 
 AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Tilde = Literal["expand", "legacy-metadata-tilde-as-written"]
+
+
+def lexical(path: Path, base: Path | None = None) -> Path:
+    """Return the lexical form: ``~`` expanded, joined to ``base`` (or the working directory), dot components folded."""
+    expanded = path.expanduser()
+    return Path(os.path.abspath(expanded if base is None else base / expanded))  # noqa: PTH100
+
+
+def resolved(path: Path, base: Path | None = None) -> Path:
+    """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved."""
+    expanded = path.expanduser()
+    return (expanded if base is None else base / expanded).resolve(strict=False)
 
 
 def existing_ancestor(

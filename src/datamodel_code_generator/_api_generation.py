@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 import tempfile
@@ -24,7 +23,7 @@ from datamodel_code_generator._api_types import (
     OperationRef,
 )
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent
+from datamodel_code_generator._paths import concrete, concrete_parent, lexical, resolved
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -353,7 +352,7 @@ def _root_problem(input_: _GenerationInput) -> tuple[str, str] | None:
 def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     match input_:
         case Path():
-            path = (cwd / input_.expanduser()).resolve()
+            path = resolved(input_, cwd)
             return RootInput(path.as_uri(), path.parent)
         case ParseResult():
             return RootInput(input_.geturl(), cwd)
@@ -372,7 +371,7 @@ def _remote_lock(
 
     if owns_lock_update(config):
         config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
-        package = Path(os.path.abspath(cwd / target.output.expanduser()))  # noqa: PTH100
+        package = lexical(target.output, cwd)
         if any(lockfile.is_relative_to(root) or root.is_relative_to(lockfile) for root in (package, package.resolve())):
             from datamodel_code_generator import Error  # noqa: PLC0415
 
@@ -588,7 +587,7 @@ class _Planner:
         self.generator = generator
         self.cwd = models.cwd
         self.shown_root = self.cwd if shown_root is None else shown_root
-        self.root = (self.cwd / config.output.expanduser()).resolve()
+        self.root = resolved(config.output, self.cwd)
         self.documents = DocumentTable(models.product.batch, models.source)
         self.operations: dict[str, OperationContract] = {}
 
@@ -997,13 +996,13 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         destination = (directory := target.directory(artifact)) or artifact.path
         if (place := places.get(destination)) is None:
             location = cwd / destination
-            resolved = location.resolve() if directory else concrete(location)
-            stack.callback(close_anchor, anchor := publication_anchor(resolved))
+            located = location.resolve() if directory else concrete(location)
+            stack.callback(close_anchor, anchor := publication_anchor(located))
             staging = stack.enter_context(tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=anchor.path))
-            place = places[destination] = (Path(staging), resolved, anchor)
-        staging, resolved, anchor = place
+            place = places[destination] = (Path(staging), located, anchor)
+        staging, located, anchor = place
         (source := staging / str(len(files))).write_bytes(artifact.content)
-        files.append(StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor))
+        files.append(StagedFile(source, cwd / artifact.path, located / artifact.path.relative_to(destination), anchor))
     return files
 
 

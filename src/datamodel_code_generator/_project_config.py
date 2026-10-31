@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._paths import resolved
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
@@ -198,7 +199,7 @@ def load_pyproject_config(
     paths; only explicitly set fields of a GenerateConfig override are merged.
     Without project settings, return the API defaults with any overrides applied.
     """
-    source = Path.cwd() if path is None else Path(path).expanduser().resolve()
+    source = Path.cwd() if path is None else resolved(Path(path))
     if path is not None and source.is_file():
         source = source.parent
     options, pyproject_path = _get_pyproject_toml_config_with_path(source, profile)

@@ -11,7 +11,9 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 them, ``what`` words the message):
 
 * ``name``: a read, write or any use (``ctx`` = ``load`` (default), ``store`` or ``any``) of an attribute or a name
-  in ``names``; ``receivers`` limits an attribute to values whose last name is listed (``reference.name``).
+  in ``names``; ``receivers`` limits an attribute to values whose last name is listed (``reference.name``), and
+  ``receiver_calls`` to values that call a method listed, alone or on the right of a ``/``
+  (``path.expanduser().resolve``, ``(base / path.expanduser()).resolve``).
 * ``call``: a call whose callee ends in one of ``names`` (any callee when omitted), that passes every keyword in
   ``keywords`` and none of ``without`` (a keyword passed a literal ``False`` does not count; a call that unpacks
   ``**`` is skipped when ``without`` is set), whose positional arguments name one of ``mentions`` (when given) and hold
@@ -148,6 +150,7 @@ STRING_OPTIONS = frozenset({
     "strings",
     "values",
     "receivers",
+    "receiver_calls",
     "keys",
     "contains",
     "brackets",
@@ -431,6 +434,13 @@ def _last_name(node: ast.AST) -> str | None:
         case ast.Attribute(attr=name):
             return name
     return None
+
+
+def _calls_one_of(node: ast.AST, names: Iterable[str]) -> bool:
+    """Return whether ``node`` calls a method in ``names``, alone or on the right of a ``/``."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        node = node.right
+    return isinstance(node, ast.Call) and _last_name(node.func) in names
 
 
 def _names_in(nodes: Iterable[ast.AST]) -> Iterator[str]:
@@ -718,9 +728,17 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             ):
                 return False
             if isinstance(node, ast.Attribute):
-                receivers = options.get("receivers")
-                return node.attr in options["names"] and (receivers is None or _last_name(node.value) in receivers)
-            return isinstance(node, ast.Name) and "receivers" not in options and node.id in options["names"]
+                receivers, calls = options.get("receivers"), options.get("receiver_calls")
+                return (
+                    node.attr in options["names"]
+                    and (receivers is None or _last_name(node.value) in receivers)
+                    and (calls is None or _calls_one_of(node.value, calls))
+                )
+            return (
+                isinstance(node, ast.Name)
+                and not {"receivers", "receiver_calls"} & options.keys()
+                and node.id in options["names"]
+            )
         case "call":
             if not isinstance(node, ast.Call):
                 return False

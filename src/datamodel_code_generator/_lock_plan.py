@@ -3,7 +3,7 @@
 The command line, ``generate()`` and the target runs read the lock options here only. They differ in how a lockfile
 spelling becomes a path, and each difference is a named row of ``remote_lock_plan``:
 
-* ``lexical`` (the command line): ``os.path.abspath`` against the working directory, then resolved;
+* ``lexical`` (the command line): the lexical form (``_paths.lexical``) from the working directory, then resolved;
 * ``resolved`` (an update that ``generate()`` publishes with its artifacts): joined to the caller's directory, then
   resolved;
 * ``legacy-api-lockfile-as-written`` (the other ``generate()`` runs): an absolute spelling is opened, checked and
@@ -12,11 +12,13 @@ spelling becomes a path, and each difference is a named row of ``remote_lock_pla
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple
 
+from datamodel_code_generator._paths import lexical
+
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from datamodel_code_generator.base_config import BaseGenerateConfig
 
 LOCKFILE_NAME: Final = "datamodel-codegen.lock"
@@ -48,10 +50,10 @@ def remote_lock_plan(config: BaseGenerateConfig, default_parent: Path, spelling:
     The policy is an update, a locked run, a verification of the file that exists, or inactive. ``resolved`` and the
     legacy row join a relative spelling to ``default_parent``; ``lexical`` reads it from the working directory.
     """
-    path = (config.lockfile or default_parent / LOCKFILE_NAME).expanduser()
+    path = (spelled := config.lockfile or default_parent / LOCKFILE_NAME).expanduser()
     literal = path if path.is_absolute() else default_parent / path
     if spelling == "lexical":
-        literal = Path(os.path.abspath(path))  # noqa: PTH100
+        literal = lexical(spelled)
         canonical = literal.resolve(strict=False)
     elif spelling == "resolved":
         canonical = literal.resolve(strict=False)

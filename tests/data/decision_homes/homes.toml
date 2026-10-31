@@ -142,6 +142,13 @@ kind = "prefix-slice"
 what = "tests whether a path starts with another itself"
 audit = "X-21"
 
+[homes.sample.signatures.expanded-resolve]
+kind = "name"
+names = ["resolve"]
+receiver_calls = ["expanduser"]
+what = "resolves an expanded path itself"
+audit = "X-23"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

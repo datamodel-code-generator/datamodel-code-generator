@@ -13,6 +13,7 @@ from datamodel_code_generator import Error, _validate_alias_generator, _validate
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import split_external_ref_mapping
+from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -184,7 +185,7 @@ def _get_config_class() -> type[Config]:
             """Validate and resolve path."""
             if value is None or isinstance(value, Path):
                 return value  # pragma: no cover
-            return Path(value).expanduser().resolve()
+            return resolved(Path(value))
 
         @field_validator("url", mode="before")
         @classmethod
