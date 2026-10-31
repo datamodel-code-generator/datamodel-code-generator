@@ -198,7 +198,7 @@ keywords = [
     "unevaluatedProperties",
 ]
 min = 4
-paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "input_model.py", "_recommend/"]
+paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "_fastapi/", "input_model.py", "_recommend/"]
 what = "lists the subschema keywords itself; read the table of _json_schema.py"
 audit = "D-X-01"
 
@@ -206,7 +206,7 @@ audit = "D-X-01"
 kind = "keyword-set"
 keywords = ["allOf", "anyOf", "oneOf"]
 min = 3
-paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "_fastapi/", "input_model.py", "_recommend/"]
 what = "lists allOf, anyOf and oneOf itself; read COMBINATOR_POSITIONS of _json_schema.py"
 audit = "D-X-01"
 
@@ -214,7 +214,7 @@ audit = "D-X-01"
 kind = "keyword-set"
 keywords = ["$defs", "definitions"]
 min = 2
-paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "_fastapi/", "input_model.py", "_recommend/"]
 what = "lists $defs and definitions itself; read DEFINITION_KEYS (or a named view) of _json_schema.py"
 audit = "D-X-01"
 
@@ -222,7 +222,7 @@ audit = "D-X-01"
 kind = "keyword-set"
 keywords = ["const", "default", "enum", "example", "examples"]
 min = 4
-paths = ["__init__.py", "parser/", "model/", "input_model.py", "_recommend/"]
+paths = ["__init__.py", "parser/", "model/", "_target_binding.py", "_fastapi/", "input_model.py", "_recommend/"]
 what = "lists the keywords whose values are instance data itself; read INSTANCE_DATA_KEYWORDS of _json_schema.py"
 audit = "D-X-01"
 
@@ -1047,6 +1047,26 @@ paths = [
 ]
 what = "builds a type view itself; freeze the model's TypeExpr or compose text with TargetModule"
 audit = "M-08"
+
+[homes.T-batch]
+decision = "how the targets read one accepted batch: its type uses and symbols by identity, the field bindings of each symbol, the value use of each schema occurrence, and the facts of the value an alias or root model stands for"
+core = [
+    "_target_contract.py:uses_by_id",
+    "_target_contract.py:symbols_by_id",
+    "_target_contract.py:members_by_consumer",
+    "_target_contract.py:wrapped_facts",
+    "_target_contract.py:wrapped_type",
+    "_target_contract.py:schema_uses",
+]
+
+[homes.T-batch.signatures.wrapped-facts]
+kind = "call"
+names = ["next"]
+mentions = ["model_facts"]
+paths = ["_target_types.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", "_client/", "_fastapi/"]
+exclude = ["_openapi_wire_plan.py:LexicalKinds.kept"]
+what = "reads the facts of the value an alias or root model stands for itself; call _target_contract.py:wrapped_facts or wrapped_type"
+audit = "C21-N2"
 
 [homes.T-operation]
 decision = "the operation plan both targets read: groups, names, arguments, defaults, media, bodies, responses, forms, statuses"

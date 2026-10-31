@@ -20,6 +20,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
+from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._url_redaction import redact_reference
 
@@ -84,8 +85,6 @@ _KINDS: Final = {
 }
 _ROLES: Final = {kind: role for role, kind in _KINDS.items()}
 _SINCE: Final = {"pathItems": (3, 1), "mediaTypes": (3, 2)}
-_SCHEMA_MAPS: Final = frozenset({"properties", "patternProperties", "$defs", "definitions", "dependentSchemas"})
-_LITERALS: Final = frozenset({"example", "examples", "default", "enum", "const"})
 _KEPT: Final = "securitySchemes"
 _NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
 _URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
@@ -297,13 +296,15 @@ class SourceDocument:
         """Return one member of a schema: a subschema, a map of them, a discriminator, or literal data."""
         if name == "discriminator" and isinstance(value, dict):
             return self.discriminator(value, document, base, at)
-        if name in _SCHEMA_MAPS and isinstance(value, dict):
+        if name in NAMED_SCHEMA_MAPS and isinstance(value, dict):
             return {
                 str(key): self.copy(item, document, base, (*at, str(key)), "schema")
                 for key, item in value.items()
                 if self.json(item, (*at, str(key)))
             }
-        return self.copy(value, document, base, at, "any" if name in _LITERALS or name.startswith("x-") else "schema")
+        return self.copy(
+            value, document, base, at, "any" if name in INSTANCE_DATA_KEYWORDS or name.startswith("x-") else "schema"
+        )
 
     def members(self, value: YamlValue, document: int, base: str, at: tuple[str, ...], shape: Child) -> JSON:
         """Return one object, or a list or map of objects, of a role, leaving out links to operations not served."""

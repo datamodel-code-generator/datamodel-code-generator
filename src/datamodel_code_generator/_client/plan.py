@@ -53,7 +53,9 @@ from datamodel_code_generator._target_contract import (
     fact,
     label,
     operation_literal,
+    schema_uses,
     type_uses,
+    uses_by_id,
 )
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
 from datamodel_code_generator._target_operations import (
@@ -78,7 +80,7 @@ from datamodel_code_generator._target_types import present
 from datamodel_code_generator._target_unicode import casefold
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic
@@ -362,7 +364,7 @@ class Planner:
         self.config = config
         self.wire = wire
         self.facts = facts
-        self.uses = {use.id: use for use in request.batch.type_uses}
+        self.uses = uses_by_id(request.batch)
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
@@ -1181,15 +1183,6 @@ def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldF
         for name, schema, member in property_members(use)
         if member.exclusion is None and (facts := member.model_facts) is not None
     ]
-
-
-def schema_uses(uses: Iterable[TypeUseBinding]) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
-    """Index the value use of each schema occurrence by its location and the direction whose model it projects."""
-    return {
-        (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use
-        for use in uses
-        if use.id.role == "schema" and use.id.projection == "value"
-    }
 
 
 def schema_use(

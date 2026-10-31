@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, get_args
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping, Sequence
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
@@ -653,6 +653,46 @@ def label(operation: OperationContract) -> str:
 def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     """Return the type uses of a declaration: its own, then those of its children."""
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+
+
+def uses_by_id(batch: GeneratedTypeContractBatch) -> dict[TypeUseId, TypeUseBinding]:
+    """Return a batch's type uses by their identity."""
+    return {use.id: use for use in batch.type_uses}
+
+
+def symbols_by_id(batch: GeneratedTypeContractBatch) -> dict[SymbolId, FinalModelSymbol]:
+    """Return a batch's emitted symbols by their identity."""
+    return {symbol.id: symbol for symbol in batch.symbols}
+
+
+def members_by_consumer(batch: GeneratedTypeContractBatch) -> dict[SymbolId, list[FieldUseBinding]]:
+    """Return a batch's field bindings by the symbol that has them, each in the order its class declares them."""
+    members: dict[SymbolId, list[FieldUseBinding]] = {}
+    for member in batch.fields:
+        members.setdefault(member.consumer, []).append(member)
+    return members
+
+
+def wrapped_facts(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> ModelFieldFacts | None:
+    """Return the facts of the value an alias or root model stands for: those of its one bound member, or None.
+
+    The binder gives such a symbol only the `root_value` member of its one field.
+    """
+    return next((facts for member in members.get(symbol, ()) if (facts := member.model_facts) is not None), None)
+
+
+def wrapped_type(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> TypeView | None:
+    """Return the type an alias or root model stands for, or None when the batch binds none."""
+    return None if (facts := wrapped_facts(members, symbol)) is None else facts.type
+
+
+def schema_uses(uses: Iterable[TypeUseBinding]) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+    """Index the value use of each schema occurrence by its location and the direction whose model it projects."""
+    return {
+        (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use
+        for use in uses
+        if use.id.role == "schema" and use.id.projection == "value"
+    }
 
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]

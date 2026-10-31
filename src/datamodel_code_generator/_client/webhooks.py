@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module, statement
 from datamodel_code_generator._client.naming import folded
-from datamodel_code_generator._client.plan import schema_use, schema_uses
+from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.protocol_plan import _problem
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events
 from datamodel_code_generator._python_syntax import call_text, dict_display, subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._target_contract import OperationId
+from datamodel_code_generator._target_contract import OperationId, schema_uses
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan
 from datamodel_code_generator._target_templates import templated

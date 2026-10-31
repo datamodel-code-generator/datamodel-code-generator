@@ -18,6 +18,7 @@ from datamodel_code_generator._target_contract import (
     ImportedType,
     NoneType,
     UnionType,
+    wrapped_facts,
 )
 from datamodel_code_generator.model._decisions.nullability import imported_name_null, written_annotation_null
 
@@ -88,13 +89,7 @@ def takes_null(
         case GeneratedSymbolType() if (
             value.symbol not in seen
             and symbols[value.symbol].kind in WRAPPER_KINDS
-            and (
-                facts := next(
-                    (found for member in members.get(value.symbol, ()) if (found := member.model_facts) is not None),
-                    None,
-                )
-            )
-            is not None
+            and (facts := wrapped_facts(members, value.symbol)) is not None
         ):
             null = facts.annotation_null or takes_null(facts.type, symbols, members, seen | {value.symbol})
         case _:

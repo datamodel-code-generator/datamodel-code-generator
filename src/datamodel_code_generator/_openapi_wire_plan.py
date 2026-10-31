@@ -50,8 +50,13 @@ from datamodel_code_generator._target_contract import (
     WireDeclaration,
     fact,
     label,
+    members_by_consumer,
     operation_literal,
+    schema_uses,
+    symbols_by_id,
     type_uses,
+    uses_by_id,
+    wrapped_type,
 )
 from datamodel_code_generator._target_types import present
 
@@ -67,6 +72,7 @@ if TYPE_CHECKING:
         FrozenLiteral,
         LeafStep,
         MemberShape,
+        SourceDocumentId,
         SymbolId,
         TypeUseBinding,
         TypeView,
@@ -167,7 +173,7 @@ class _WirePlanner:
         self.kinds = LexicalKinds(batch)
         self.diagnostics: list[CodecDiagnostic] = []
         self.version = batch.openapi
-        self.uses = {use.id: use for use in batch.type_uses}
+        self.uses = uses_by_id(batch)
 
 
 def declared_media(name: str) -> tuple[str, str | None]:
@@ -785,24 +791,16 @@ class LexicalKinds:
         self._batch = batch
 
     @cached_property
-    def _types(self) -> dict[tuple[int, str, Direction], TypeView | None]:
-        return {
-            (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use.type
-            for use in self._batch.type_uses
-            if use.id.role == "schema" and use.id.projection == "value"
-        }
+    def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+        return schema_uses(self._batch.type_uses)
 
     @cached_property
     def _symbols(self) -> dict[SymbolId, FinalModelSymbol]:
-        return {symbol.id: symbol for symbol in self._batch.symbols}
+        return symbols_by_id(self._batch)
 
     @cached_property
-    def _roots(self) -> dict[int, TypeView]:
-        return {
-            member.consumer: facts.type
-            for member in self._batch.fields
-            if member.member_kind == "root_value" and (facts := member.model_facts) is not None
-        }
+    def _members(self) -> dict[SymbolId, list[FieldUseBinding]]:
+        return members_by_consumer(self._batch)
 
     def at(self, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]) -> LexicalKind | None:
         """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
@@ -880,7 +878,8 @@ class LexicalKinds:
     def _reached(
         self, location: SourceLocation, steps: tuple[LeafStep, ...], direction: Direction = "neutral"
     ) -> TypeView | None:
-        return self._stepped(self._types.get((location.document, location.pointer, direction)), steps)
+        use = self._schemas.get((location.document, location.pointer, direction))
+        return self._stepped(None if use is None else use.type, steps)
 
     def _stepped(self, value: TypeView | None, steps: tuple[LeafStep, ...]) -> TypeView | None:
         for step in steps:
@@ -906,7 +905,7 @@ class LexicalKinds:
                 and self._symbols[value.symbol].kind in WRAPPER_KINDS
             ):
                 seen.add(value.symbol)
-                value = self._roots.get(value.symbol)
+                value = wrapped_type(self._members, value.symbol)
             else:
                 return value
 
@@ -956,7 +955,7 @@ class LexicalKinds:
         if symbol.kind == "enum":
             yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
         elif symbol.kind in WRAPPER_KINDS and symbol.id not in seen:
-            yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
+            yield from self._leaves(wrapped_type(self._members, symbol.id), seen | {symbol.id})
         else:
             yield None
 

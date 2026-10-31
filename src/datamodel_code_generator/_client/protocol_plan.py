@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
-from datamodel_code_generator._client.plan import schema_uses
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._target_contract import SourceLocation, fact
+from datamodel_code_generator._target_contract import SourceLocation, fact, schema_uses
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url

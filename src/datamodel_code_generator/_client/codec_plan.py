@@ -220,7 +220,7 @@ class _Planner:
 
     def __init__(self, backend: CodecBackend, facts: ModelFacts) -> None:
         self.backend, self.facts = backend, facts
-        self.symbols, self.members = facts.symbols, facts.members
+        self.symbols = facts.symbols
         self.models: dict[SymbolId, Model] = {}
         self.building: set[SymbolId] = set()
         self.aliases: set[SymbolId] = set()
@@ -305,7 +305,10 @@ class _Planner:
         return None
 
     def root(self, symbol: SymbolId) -> TypeView:
-        return next(member.model_facts.type for member in self.members[symbol] if member.model_facts is not None)
+        """Return the type an alias or root model stands for, which the binder binds for each one a codec reaches."""
+        root = self.facts.root(symbol)
+        assert root is not None
+        return root
 
     def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
