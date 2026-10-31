@@ -1,4 +1,4 @@
-# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the home
+# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the homedecision = "what the client runtime reads back from JSON: the builtin values JSON text parses into (rows `constants=\"refuse\"`, NaN and the infinities refused where a saved value holds the result, and `floats=\"decimal\"`, numbers read exactly where a count is), and the value a saved wire value restores through its codec"
 # exist today. Read by scripts/check_decision_homes.py; the design is docs/architecture.md, "One home per decision".
 #
 # [homes.<id>]: `decision` in words, `core` (the pure function or module that decides) and `adapters` (code that reads
@@ -1151,6 +1151,26 @@ without = ["truncated"]
 paths = ["_runtime/"]
 what = "turns a body's decode failure into the response failure itself; call ResponseDecoder._decoded"
 audit = "C23-K36"
+
+[homes.Hx-json-value]
+decision = "what the client runtime reads back from JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), and the value a saved wire value restores, decoded as its codec decodes JSON"
+core = ["_runtime/model_codecs/media.py:json_value", "_runtime/client/operations.py:_restored"]
+adapters = []
+
+[homes.Hx-json-value.signatures.json-parse]
+kind = "call"
+names = ["loads"]
+paths = ["_runtime/"]
+what = "parses JSON text itself; call model_codecs/media.py:json_value (with its row to refuse NaN and the infinities or to read exact numbers)"
+audit = "C23-K06"
+
+[homes.Hx-json-value.signatures.wire-restore]
+kind = "call"
+names = ["decode"]
+mentions = ["json_bytes", "_json_bytes"]
+paths = ["_runtime/"]
+what = "restores a saved wire value through its codec itself; call client/operations.py:_restored"
+audit = "C23-K02"
 
 [homes.Hx-parameter-key]
 decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime"

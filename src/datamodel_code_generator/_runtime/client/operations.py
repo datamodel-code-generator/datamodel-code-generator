@@ -131,6 +131,11 @@ def request_errors(codec: OutboundModelCodec | None) -> tuple[type[Exception], .
     return (*codecs, *PARSE_ERRORS, ValueError, TypeError)
 
 
+def _restored(codec: OutboundModelCodec | None, wire: JSONValue) -> object:
+    """Return the value that sends a saved wire value: itself without a codec, else as its codec decodes its JSON."""
+    return wire if codec is None else codec.decode(_json_bytes(wire))
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerVariable:
     """One server variable with its default and, when declared, its allowed values."""
@@ -168,7 +173,7 @@ class ParameterSpec:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def path_text(self, wire: JSONValue) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder."""
@@ -290,7 +295,7 @@ class BodyMedia:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def multipart(self, value: object, sent: str) -> tuple[object, str | None]:
         """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts."""

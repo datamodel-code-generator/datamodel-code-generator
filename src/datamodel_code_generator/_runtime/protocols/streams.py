@@ -10,7 +10,6 @@ interruption reopens it as one more child call of the same session when the call
 
 from __future__ import annotations
 
-import json
 import threading
 from contextlib import aclosing
 from dataclasses import dataclass, field, replace
@@ -393,12 +392,12 @@ def _bound(  # noqa: PLR0913, PLR0917
 
 
 def _json(frame: _Frame) -> JSONValue | MISSING:
-    """Return an event's data parsed as JSON, or MISSING when it is not JSON.
+    """Return an event's data parsed as JSON, or MISSING when it is not JSON or holds NaN or an infinity.
 
-    `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
+    A saved cursor could not hold NaN or an infinity.
     """
     try:
-        return cast("JSONValue", json.loads(frame.body, parse_constant=int))
+        return json_value(frame.body, constants="refuse")
     except (ValueError, RecursionError):
         return MISSING
 
