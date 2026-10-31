@@ -110,6 +110,7 @@ from datamodel_code_generator.parser._passes._shared import (
     get_inherited_constructor_info,
     import_references,
     merge_duplicate,
+    merge_duplicate_in_module,
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
@@ -1052,8 +1053,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            parser._graph_builder.redirect_model_reference_users(model, models, cached_model.reference)  # noqa: SLF001
-            parser._graph_builder.retire_model(model)  # noqa: SLF001
+            merge_duplicate_in_module(parser, model, cached_model, models)
             duplicates.append(model)
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
