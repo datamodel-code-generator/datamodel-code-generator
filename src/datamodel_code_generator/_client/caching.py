@@ -77,9 +77,7 @@ class _Caches:
                 message = f"The cacheable status {status} of {name!r} is no declared 2xx success of {label}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
                 continue
-            media = response.media
-            use = media[0].use if len(media) == 1 and media[0].kind == "json" else None
-            if use is None or use.id not in self.pages.codecs:
+            if (use := response.json_use) is None or use.id not in self.pages.codecs:
                 message = (
                     f"The cacheable status {status} of {name!r} has a response other than one natively decoded JSON "
                     "body, which is not supported yet"

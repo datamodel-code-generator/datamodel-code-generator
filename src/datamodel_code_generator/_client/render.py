@@ -60,7 +60,6 @@ from datamodel_code_generator._python_syntax import (
 )
 from datamodel_code_generator._runtime.client.operations import BodyFields, FieldArguments, ServerPlan, ServerVariable
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
-from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
@@ -76,6 +75,7 @@ from datamodel_code_generator._target_render import (
     Plan,
     field_plan,
     parameter_plan,
+    record_plan,
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
@@ -999,6 +999,13 @@ def exports(spec: OperationSpec) -> tuple[str, ...]:
 def _response_type(module: TargetModule, spec: OperationSpec) -> str:
     """Return an operation's response alias as a module spells it, imported from its resource's types package."""
     return module.local(f"types.{spec.resource}", response_alias(spec.pascal))
+
+
+def _result_type(module: TargetModule, operation: OperationSpec | None, value: TypeView | None = None) -> str:
+    """Return the type of a helper's result: its result operation's response, else its inline value's, or None."""
+    if operation is not None:
+        return _response_type(module, operation)
+    return "None" if value is None else module.hint(value)
 
 
 def _operation_plan(operations: str, index: int) -> str:
@@ -1980,41 +1987,29 @@ class _Security:
         module = TargetModule(self.types, {"ROOT_SCHEMES", *self.names.values()}, level=2)
         runtime = "_runtime.client.security"
         final = module.name("typing", "Final")
-        schemes: list[Plan] = []
-        for scheme, name in self.names.items():
-            arguments = [Keyword("name", repr(scheme.name))]
-            kind = "UnavailableSecurityScheme"
-            if isinstance(scheme, SecurityScheme):
-                kind = "SecurityScheme"
-                arguments.extend((
-                    Keyword("kind", repr(scheme.kind)),
-                    Keyword("location", repr(scheme.location)),
-                    Keyword("wire_name", repr(scheme.wire_name)),
-                ))
-            schemes.append(Plan(name, final, module.local(runtime, kind), tuple(arguments)))
+        schemes = [record_plan(module.local, name, final, scheme) for scheme, name in self.names.items()]
         root_annotation = subscript_text(
             final, (subscript_text("tuple", (module.local(runtime, "SecuritySchemeEntry"), "...")),)
         )
-        operations: list[Plan] = []
-        for spec in self.plan.operations:
-            if (binding := spec.security) is None:
-                continue
-            alternatives = tuple_display(
-                tuple_display(
-                    call_text(
-                        module.local(runtime, "SecurityRequirement"),
-                        (f"scheme={self.names[item.scheme]}", f"required_scopes={item.required_scopes!r}"),
+
+        def spelled(name: str, value: Any) -> str:
+            match name:
+                case "scheme":
+                    return self.names[value]
+                case "schemes":
+                    return tuple_display(self.names[scheme] for scheme in value)
+                case "alternatives":
+                    return tuple_display(
+                        tuple_display(runtime_record(module.local, item, spelled) for item in alternative)
+                        for alternative in value
                     )
-                    for item in alternative
-                )
-                for alternative in binding.alternatives
-            )
-            constructor = module.local(runtime, "SecurityBinding")
-            arguments = [
-                Keyword("schemes", tuple_display(self.names[scheme] for scheme in binding.schemes)),
-                Keyword("alternatives", alternatives),
-            ]
-            operations.append(Plan(numbered("OPERATION", spec.index), final, constructor, tuple(arguments)))
+            return repr(value)
+
+        operations = [
+            record_plan(module.local, numbered("OPERATION", spec.index), final, binding, spelled)
+            for spec in self.plan.operations
+            if (binding := spec.security) is not None
+        ]
         return templated(
             "security.jinja2",
             security_template.render_with_scope,
@@ -2357,10 +2352,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     @staticmethod
     def result(module: TargetModule, spec: PollingSpec) -> str:
-        """Return the type of a polling helper's result: the inline value's, the fetch's response, or None."""
-        if spec.fetch is not None:
-            return _response_type(module, spec.fetch)
-        return "None" if spec.value is None else module.hint(spec.value)
+        """Return the type of a polling helper's result: the fetch's response, the inline value's, or None."""
+        return _result_type(module, spec.fetch, spec.value)
 
     def plans(self) -> Templated:
         """Return the module of every helper's accessors and plan, then each stream and WebSocket helper's plan."""
@@ -2847,11 +2840,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             _helper_plan(module, "CANCEL", index),
         )
 
-    @staticmethod
-    def upload_result(module: TargetModule, spec: UploadSpec) -> str:
-        """Return the type of an upload helper's result: the completion operation's response, or None."""
-        return "None" if spec.completion is None else _response_type(module, spec.completion)
-
     def upload(self, module: TargetModule, index: int, spec: UploadSpec) -> Plan:
         """Return an upload helper's plan: its operations, selectors, targets, bindings, and completion.
 
@@ -2897,7 +2885,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 ),
             ))
         plan = module.local(_UPLOADS, "UploadPlan")
-        result = self.upload_result(module, spec)
+        result = _result_type(module, spec.completion)
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (result, _response_type(module, spec.operation))),)
         )
@@ -2911,7 +2899,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, skip=size)
         prefix = "Async" if asynchronous else ""
-        handle = subscript_text(module.local(_UPLOADS, f"{prefix}UploadHandle"), (self.upload_result(module, spec),))
+        handle = subscript_text(
+            module.local(_UPLOADS, f"{prefix}UploadHandle"), (_result_type(module, spec.completion),)
+        )
         source = Parameter("source", module.name(".", "UploadSource"))
         state = _checkpoint(module)
         plan = _helper_plan(module, "PLAN", index)

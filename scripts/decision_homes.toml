@@ -1896,8 +1896,14 @@ what = "lists the WebSocket message codecs itself; read client/protocols.py:MESS
 audit = "C26-3"
 
 [homes.Hx-runtime-record-text]
-decision = "how generated code spells a runtime record the generator holds: its class named from the module of the package's runtime copy that defines it, each field the constructor takes by keyword unless it holds the field's default, a record in a field by its own constructor and a tuple item by item (a parameter plan's members by their positional FieldPlan constructors)"
-core = ["_target_render.py:runtime_record", "_target_render.py:_record_value"]
+decision = "how generated code spells a runtime record the generator holds: its class named from the module of the package's runtime copy that defines it, each field the constructor takes by keyword unless it holds the field's default, a record in a field by its own constructor and a tuple item by item, as a call or as the arguments of a module-level plan constant (a parameter plan's members by their positional FieldPlan constructors, a security record's schemes by their constants)"
+core = [
+    "_target_render.py:runtime_record",
+    "_target_render.py:record_plan",
+    "_target_render.py:_record_arguments",
+    "_target_render.py:_record_class",
+    "_target_render.py:_record_value",
+]
 adapters = []
 
 [homes.Hx-runtime-record-text.signatures.hand-record]
@@ -1920,9 +1926,13 @@ strings = [
     "IdempotencyPlan",
     "BodyFields",
     "FieldArguments",
+    "SecurityScheme",
+    "UnavailableSecurityScheme",
+    "SecurityRequirement",
+    "SecurityBinding",
 ]
 paths = ["_client/", "_fastapi/"]
-what = "spells the constructor of a runtime record by hand; build the record and call _target_render.py:runtime_record"
+what = "spells the constructor of a runtime record by hand; build the record and call _target_render.py:runtime_record (record_plan for a plan constant)"
 audit = "C26-9"
 
 [homes.Hx-helper-schemas]

@@ -30,7 +30,7 @@ from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymb
 from datamodel_code_generator._target_types import admits_none, present
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator
+    from collections.abc import Callable, Container, Iterator
 
     from typing_extensions import TypeIs
 
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
         TypeUseId,
         TypeView,
     )
+    from datamodel_code_generator._target_documents import JSONObject
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
 _SETS: Final = frozenset({"set", "frozenset"})
@@ -68,7 +69,7 @@ class PaginationSpec:
     operation: OperationSpec
     page: TypeUseBinding
     item: TypeView
-    item_schema: Mapping[str, str]
+    item_schema: JSONObject
     steps: tuple[ItemStep, ...]
 
     @property
@@ -330,9 +331,7 @@ class _Pages(HelperPlanner):
         problems: list[Diagnostic] = []
         for index, entry in enumerate(tree["bindings"]):
             if entry["value"].get("source") == "input":
-                message = f"The binding {index} of {name!r} reads the helper's input, which is not supported yet"
-                where = f"{at}.bindings[{index}].value.source"
-                problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
+                problems.append(_reads_input(helper, spec, f"binding {index}", f"{at}.bindings[{index}]"))
         problems.extend(_credentials(helper, spec, self))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
@@ -616,52 +615,91 @@ class _Pages(HelperPlanner):
     def values(
         self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
-        """Check each binding's value against its target, and that no two writes overlap.
+        """Check the bindings of a helper, which screened them before, against the page and its continuation's write."""
+        continuation = helper.tree["continuation"]
+        followed = (kind := continuation["kind"]) in _FOLLOWED
+        return self.bindings(
+            helper,
+            spec,
+            helper.tree["bindings"],
+            f"{helper.at}.bindings",
+            "binding",
+            writes=[] if followed else [(_target_key(continuation["write"]), _WRITES[kind])],
+            read=lambda value, at, what: self.read(helper, spec, body, headers, value["selector"], at, what),
+            followed=continuation if followed else None,
+            screened=True,
+        )
 
-        A binding's null is written, so its target must accept null too, and literals that make a path segment a dot
-        segment are no path values. A followed URL replaces the path and query, and carries a body only when it
-        repeats the request body.
+    def bindings(  # noqa: PLR0913
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        bindings: list[Mapping[str, Any]],
+        at: str,
+        what: str,
+        *,
+        writes: list[tuple[tuple[str, ...], str]],
+        read: Callable[[Mapping[str, Any], str, str], _Types | Diagnostic],
+        followed: Mapping[str, Any] | None = None,
+        screened: bool = False,
+    ) -> Iterator[Diagnostic]:
+        """Check each binding's value against its target, and that no two writes overlap, adding each one to `writes`.
+
+        `writes` holds the targets the helper writes besides, and `read` gives the JSON types a binding's value
+        selector reads. A binding's null is written, so its target must accept null too, and literals that make a path
+        segment a dot segment are no path values. With `followed`, the continuation of a helper that follows URLs,
+        which replace the path and query and carry a body only when they repeat the request body, a binding no request
+        after the first sends is refused. A binding written where a request carries credentials, and one reading the
+        helper's input, are refused here unless the helper `screened` its bindings for both before.
         """
-        tree = helper.tree
-        continuation = tree["continuation"]
-        kind = continuation["kind"]
-        written = [] if kind in _FOLLOWED else [(_target_key(continuation["write"]), f"its {_WRITES[kind]}")]
-        dotted = _dot_literals(spec, tree["bindings"])
-        for index, item in enumerate(tree["bindings"]):
-            at, what, value, target = (
-                f"{helper.at}.bindings[{index}]",
-                f"binding {index}",
-                item["value"],
-                item["target"],
-            )
-            if kind in _FOLLOWED and (unsent := _unsent(target, continuation)) is not None:
-                message = f"The {what} of {helper.name!r} writes {unsent}, which no request after the first sends"
-                yield _problem("E_CONFIG_VALUE", "config", f"{at}.target", message, spec)
+        name = helper.name
+        dotted = _dot_literals(spec, bindings)
+        for index, item in enumerate(bindings):
+            where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
+            if followed is not None and (unsent := _unsent(target, followed)) is not None:
+                message = f"The {owner} of {name!r} writes {unsent}, which no request after the first sends"
+                yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
+                continue
+            if (
+                not screened
+                and (problem := self.credential(helper, spec, target, f"{where}.target", owner)) is not None
+            ):
+                yield problem
                 continue
             key = _target_key(target)
-            if (clash := next(((other, owner) for other, owner in written if _overlaps(key, other)), None)) is not None:
+            if (
+                clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
+            ) is not None:
                 relation = "the same target as" if clash[0] == key else "a target overlapping that of"
-                message = f"The {what} of {helper.name!r} writes {relation} {clash[1]}"
-                yield _problem("E_CONFIG_CONFLICT", "config", f"{at}.target", message, spec)
+                message = f"The {owner} of {name!r} writes {relation} its {clash[1]}"
+                yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
                 continue
-            written.append((key, f"its {what}"))
+            writes.append((key, owner))
             if value.get("source") == "input":
+                if not screened:
+                    yield _reads_input(helper, spec, owner, where)
                 continue
             if "literal" in value:
                 if index in dotted:
                     message = (
-                        f"The {what} of {helper.name!r} gives {value['literal']!r}, which makes the segment of the "
-                        f"path parameter {target['name']!r} of {_label(spec)} a dot segment"
+                        f"The {owner} of {name!r} gives {value['literal']!r}, which makes the segment of the path "
+                        f"parameter {target['name']!r} of {_label(spec)} a dot segment"
                     )
-                    yield _problem("E_CONFIG_VALUE", "config", f"{at}.value.literal", message, spec)
+                    yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue
                 types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
             else:
-                types = self.read(helper, spec, body, headers, value["selector"], f"{at}.value.selector", what)
+                types = read(value, f"{where}.value.selector", owner)
             if isinstance(types, Diagnostic):
                 yield types
                 continue
-            yield from self.fits(helper, spec, target, types, f"{at}.target", what, null=True)
+            yield from self.fits(helper, spec, target, types, f"{where}.target", owner, null=True)
+
+
+def _reads_input(helper: Helper, spec: OperationSpec, owner: str, where: str) -> Diagnostic:
+    """Refuse a binding, `owner` at `where`, that reads the helper's input, which no helper supports yet."""
+    message = f"The {owner} of {helper.name!r} reads the helper's input, which is not supported yet"
+    return _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
 
 
 def _credentials(helper: Helper, spec: OperationSpec, pages: _Pages) -> Iterator[Diagnostic]:
@@ -739,9 +777,7 @@ def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str |
 
 def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     """Return the use of the one JSON media with a schema of the one success response, which has a body, or None."""
-    if len(successes) != 1 or successes[0].bodyless or len(media := successes[0].media) != 1:
-        return None
-    return media[0].use if media[0].kind == "json" else None
+    return None if len(successes) != 1 or successes[0].bodyless else successes[0].json_use
 
 
 def plan_pagination(
