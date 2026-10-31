@@ -71,6 +71,9 @@ if TYPE_CHECKING:
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
+    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root"]
+    """What a field is built for: a property, a required name without one, the typed extra properties or the value of a
+    root model."""
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -335,6 +338,43 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     that two different schema objects reach (colliding parse paths) has none.
     """
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
+
+
+FIELD_ORIGIN_KEY: Final = "_field_origin"
+TYPE_ORIGIN_KEY: Final = "_type_origin"
+
+
+@record
+class FieldOrigin:
+    """Where a field is built: its kind, and the location of the schema object it is built from, if it has one.
+
+    The location is None for a field built from no schema object of its own (a required name, a boolean property
+    schema) or from one without a location.
+    """
+
+    kind: FieldOriginKind
+    location: SchemaLocation | None
+
+
+def field_origin_of(field: object) -> FieldOrigin | None:
+    """Return where a field was built (FIELD_ORIGIN, final after L1); a copy of a field keeps the origin it copies.
+
+    The parser's builders record it when they build the field in L1. A field built later, such as a discriminator tag
+    field the L5 discriminator pass appends, or by no builder that records it, such as a parser extension's, has none.
+    """
+    return field.__dict__.get(FIELD_ORIGIN_KEY)
+
+
+def type_origin_of(data_type: object) -> SchemaLocation | None:
+    """Return the location of the schema object the parser built a type node from (TYPE_ORIGIN, final after L1).
+
+    ``parse_item`` records it on the node it returns for a subschema and on the nodes it built inside that node (a
+    container, the members of a type list), a union member the location of its branch, a property field's type and a
+    root field's type the location of the property or root schema. The innermost build keeps its record, so a node a
+    nested parse returned keeps the location of the nested schema. A copy of a node keeps the origin of the node it
+    copies; a node a later pass builds, and a node built from a schema object without a location, has none.
+    """
+    return data_type.__dict__.get(TYPE_ORIGIN_KEY)
 
 
 def _special_path(keyword: str, path: list[str]) -> list[str]:

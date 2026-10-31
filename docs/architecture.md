@@ -867,6 +867,8 @@ collapse replacing a member of a shared list.
 | class names and reference paths | L6 `change_imported_model_name` |
 | schema resources and anchors of a document (`parser/_schema_graph.py:DocumentResources`, the registry dicts) | the document's load in L0; loading the document again replaces its entries |
 | schema location of a model (`reference.py:location_of`, kept on the `Reference` object, not keyed by its path) | end of L1 |
+| where a field was built (`reference.py:field_origin_of`: its kind and the location of the schema object it is built from) | when the field is built in L1; a copy keeps the origin of the field it copies, and a field a later pass builds has none |
+| where a type node was built (`reference.py:type_origin_of`: the location of the subschema `parse_item` built it from, of the union branch, or of the property or root schema for a field's type; the innermost build keeps its record) | when the node is built in L1; a copy keeps the origin of the node it copies, and a node a later pass builds has none |
 | read/write facts of a schema key (`--read-only-write-only-model-type`: whether the documents it reaches declare a readOnly or writeOnly property, `parser/_rw_split.py:get_ref_schema_rw_model_reference_facts`, `get_ref_schema_rw_model_field_facts`) | the L0 load of the documents it reaches; never read from parsed fields. A model at a special path records its split in L1 before a reference reads it |
 | module membership | L6 unused-model removal |
 | field aliases | the model's own L5 `rename_fields_hiding_types`; validated in L6 |
