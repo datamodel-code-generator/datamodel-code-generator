@@ -66,14 +66,7 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
     @property
     def annotated_base_type(self) -> str:
         """Return the constrained scalar through its current binding, as ``Decimal`` may be aliased."""
-        return next(
-            (
-                import_.binding_name
-                for import_ in self.runtime_expression_imports
-                if import_.import_ == self.constrained_base
-            ),
-            self.constrained_base,
-        )
+        return self._binding(self.constrained_base, self.constrained_base)
 
     @property
     @override

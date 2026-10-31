@@ -829,7 +829,7 @@ core = ["model/_decisions/assignment.py"]
 adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
-decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node); a rendered text is parsed at its own offsets on the running interpreter, a rendered model's fields are the annotated statements of the class of its name, and the names an expression names are its name nodes"
+decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node); a rendered text is parsed at its own offsets on the running interpreter, a rendered model's fields are the annotated statements of the class of its name, and the names an expression names are its name nodes; a type written through its runtime imports names each by the binding of the runtime import of that name"
 core = [
     "imports.py:_import_key",
     "imports.py:_stored_import",
@@ -837,6 +837,7 @@ core = [
     "imports.py:_holds",
     "imports.py:_remove_all",
     "model/_rendered_names.py",
+    "model/pydantic_v2/types.py:_RuntimeAnnotatedDataType._binding",
     "parser/_imports_plan.py",
     "parser/_passes/_shared.py:ReferenceImportTarget",
     "parser/_passes/_shared.py:reference_import_target",

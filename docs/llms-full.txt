@@ -69444,6 +69444,9 @@ bare (the one that aliases module imports named like a builtin by row `legacy-fl
 rendered text at its own offsets (`_parsed`), finds the class of a model's name in it (`_class_bodies`) and the name
 nodes of an expression (`_names_of`), for itself, for the field collisions the IMPORTS pass reads
 (`model/output.py:_model_field_name_collisions`) and for the typing names of an annotation (`model/_field_imports.py`).
+A type that writes its text through its runtime imports (`model/pydantic_v2/types.py:_RuntimeAnnotatedDataType`, the
+`Annotated` constraints and base64 bytes of Pydantic) names each by the binding of the runtime import of that name
+(`_binding`), the constrained base falling back to its own name.
 
 `CodeFormatter` then applies the configured formatter pipeline. The formatter layer supports the built-in formatter,
 black, isort, ruff check, ruff format, and user-supplied custom formatters.
