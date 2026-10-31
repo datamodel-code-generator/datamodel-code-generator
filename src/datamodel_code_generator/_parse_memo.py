@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._graph_links import nearest_field
 
 if TYPE_CHECKING:
@@ -400,8 +401,5 @@ def bump_model(model: object) -> None:
 def rendering_memo() -> Generator[ParseMemo, None, None]:
     """Yield a memo of the rendering's own, current while the block runs; outside a parse, a union rendering uses it."""
     memo = ParseMemo()
-    token = PARSE_MEMO.set(memo)
-    try:
+    with context_values({PARSE_MEMO: memo}):
         yield memo
-    finally:
-        PARSE_MEMO.reset(token)

@@ -138,6 +138,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "import while they import each other: import only the standard library and typing_extensions"
         ),
     ),
+    "context-scope": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the context variable scope is a leaf that the command line, the parser, the model package and the "
+            "reference resolver import: import only the standard library and typing_extensions"
+        ),
+    ),
     "module-paths": (
         frozenset({*sys.stdlib_module_names, "typing_extensions"}),
         (
@@ -1311,6 +1318,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "name-words"
         case ("_graph_links.py",):
             layer = "graph-links"
+        case ("_context_scope.py",):
+            layer = "context-scope"
         case ("_module_paths.py",):
             layer = "module-paths"
         case ("_openapi_paths.py",):

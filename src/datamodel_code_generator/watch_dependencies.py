@@ -12,6 +12,7 @@ from stat import S_ISDIR
 from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._paths import existing_ancestor
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
@@ -372,31 +373,29 @@ class WatchDependencies(_Weakrefable):
         # A completed generation must acknowledge the inputs it observed, not later edits.
         if self._polling_fingerprints_enabled:
             collected.polling_fingerprints = {path: _path_fingerprint(path) for path in self._snapshot.files}
-        token = _current_collector.set(collected)
-        try:
-            yield collected
-        except BaseException:
-            self._fail(collected)
-            raise
-        else:
-            with self._lock:
-                if collected.failed:
-                    self._fail(collected)
-                    return
-                if self._pending_static is not None:
-                    self._static_files = self._pending_static.files
-                    self._static_directories = self._pending_static.directories
-                    self._static_symlink_events = self._pending_static.symlink_events
-                    self._outputs = self._pending_static.outputs
-                    self._pending_static = None
-                self._generation_files = collected.files
-                self._generation_symlink_events = collected.symlink_events
-                self._failed_static = None
-                self._failed_generation_files.clear()
-                self._failed_generation_symlink_events.clear()
-                self._publish()
-        finally:
-            _current_collector.reset(token)
+        with context_values({_current_collector: collected}):
+            try:
+                yield collected
+            except BaseException:
+                self._fail(collected)
+                raise
+            else:
+                with self._lock:
+                    if collected.failed:
+                        self._fail(collected)
+                        return
+                    if self._pending_static is not None:
+                        self._static_files = self._pending_static.files
+                        self._static_directories = self._pending_static.directories
+                        self._static_symlink_events = self._pending_static.symlink_events
+                        self._outputs = self._pending_static.outputs
+                        self._pending_static = None
+                    self._generation_files = collected.files
+                    self._generation_symlink_events = collected.symlink_events
+                    self._failed_static = None
+                    self._failed_generation_files.clear()
+                    self._failed_generation_symlink_events.clear()
+                    self._publish()
 
     def _apply_remote_lock_plans(self, plans: Iterable[Any]) -> tuple[tuple[Any, ...], set[Path]]:
         """Return effective lock plans and intent for the current generation attempt."""

@@ -1907,6 +1907,18 @@ exclude = ["parser/mcp.py:_tool_validation_error"]
 what = "writes the text of a schema location itself; call _url_redaction.py:named_location (the `loc` of a pydantic error is no schema location)"
 audit = "C16"
 
+[homes.Hx-context-scope]
+decision = "how a block runs with context variables set: each set to its value in order before the block, and reset by its token in reverse order after it, also when the block raises"
+core = ["_context_scope.py:context_values"]
+adapters = []
+
+[homes.Hx-context-scope.signatures.token-reset]
+kind = "call"
+names = ["reset"]
+mentions = ["token"]
+what = "resets a context variable by its token itself; run the block inside _context_scope.py:context_values"
+audit = "C16-B6"
+
 [legacy_rows."legacy-exact-ints-as-floats"]
 home = "H07"
 fix = "keep"

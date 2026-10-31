@@ -33,6 +33,7 @@ from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
 from datamodel_code_generator._internal_utils import (
@@ -1302,17 +1303,6 @@ def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) 
         field.nullable = False
 
 
-@contextmanager
-def _context_values(values: Mapping[ContextVar[Any], Any]) -> Generator[None, None, None]:
-    """Set each context variable to its value while the block runs."""
-    tokens = [(variable, variable.set(value)) for variable, value in values.items()]
-    try:
-        yield
-    finally:
-        for variable, token in reversed(tokens):
-            variable.reset(token)
-
-
 _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar(
     "looking_up_required_fields", default=frozenset()
 )
@@ -1321,7 +1311,7 @@ _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar
 
 def _nested_model_required_fields(source: DataModel, key: ModelKey) -> bool:
     """Look up whether ``source`` has required constructor fields, with ``source`` marked as being looked up."""
-    with _context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
+    with context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
         return _nested_model_has_required_constructor_fields(source)
 
 
@@ -1522,7 +1512,7 @@ def ordering_constructor_fields(
     ``legacy-nested-factory-order-before-nullability`` otherwise. ``construction_defaults`` counts the defaults as the
     construction key gives them, for an ordering that runs before the rendered nullability is final.
     """
-    with _context_values({
+    with context_values({
         _ORDERS_CONSTRUCTOR_FIELDS: True,
         _ORDERS_BEFORE_NULLABILITY: before_nullability,
         _ORDERS_BY_CONSTRUCTION_DEFAULTS: construction_defaults,
@@ -1535,7 +1525,7 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
 
     A required check is no constructor ordering: the nested factories it reads are those it would answer anywhere.
     """
-    with _context_values({
+    with context_values({
         _ORDERS_CONSTRUCTOR_FIELDS: False,
         _ORDERS_BEFORE_NULLABILITY: counts,
         _ORDERS_BY_CONSTRUCTION_DEFAULTS: False,
