@@ -160,7 +160,7 @@ class PollingPlan(Generic[T, P, C]):
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
-        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes, written_names  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         phases = {
             canonical_json(value): phase
@@ -177,7 +177,8 @@ class PollingPlan(Generic[T, P, C]):
         fetched = (
             None if fetch is None else targeted_writes(fetch, (binding.written for binding in self.fetch_bindings))
         )
-        others = (*(() if fetched is None else (fetched,)), *(() if self.cancel is None else (self.cancel.targeted,)))
+        cancel = self.cancel
+        headers, queries = written_names(children=(polled, fetched, None if cancel is None else cancel.targeted))
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(
             self,
@@ -186,8 +187,8 @@ class PollingPlan(Generic[T, P, C]):
         )
         object.__setattr__(self, "polled", polled)
         object.__setattr__(self, "fetched", fetched)
-        object.__setattr__(self, "headers", polled.headers.union(*(item.headers for item in others)))
-        object.__setattr__(self, "queries", polled.queries.union(*(item.queries for item in others)))
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
