@@ -2841,6 +2841,27 @@ paths = ["parser/"]
 what = "tests the module a frame runs in itself; call _warning_control.py:is_tracer_frame"
 audit = "C16-B9"
 
+[homes.Hx-english-list]
+decision = "how a message lists items in English: the conjunction before the last item, also after a serial comma from three items on, or between every two items; and the first items of a longer list followed by how many more there are"
+core = ["_message_text.py:english_list", "_message_text.py:listed_with_more"]
+adapters = []
+
+[homes.Hx-english-list.signatures.hand-list]
+kind = "english-list"
+strings = [" or ", " and "]
+what = "writes an English list itself; call _message_text.py:english_list"
+audit = "C16-B1"
+
+[homes.Hx-count-forms]
+decision = "which form a word of a message takes for a count: the one form for exactly one, else the other (by default the word with `s`, or `es` after an `s`), also with the count written before it"
+core = ["_message_text.py:for_count", "_message_text.py:counted"]
+adapters = []
+
+[homes.Hx-count-forms.signatures.count-word]
+kind = "count-form"
+what = "picks the form of a word for a count itself; call _message_text.py:for_count or counted"
+audit = "C16-B3"
+
 [homes.Hx-context-scope]
 decision = "how a block runs with context variables set: each set to its value in order before the block, and reset by its token in reverse order after it, also when the block raises"
 core = ["_context_scope.py:context_values"]

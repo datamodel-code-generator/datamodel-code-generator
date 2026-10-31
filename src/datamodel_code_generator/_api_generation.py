@@ -23,6 +23,7 @@ from datamodel_code_generator._api_types import (
     OperationRef,
 )
 from datamodel_code_generator._fastapi.packages import beside, services_package
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._paths import concrete, concrete_parent, lexical, resolved
 from datamodel_code_generator._target_config import (
@@ -229,7 +230,7 @@ def prepare_target(
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
-        allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
+        allowed = english_list((repr(item.value) for item in DataModelType if item in generator.backends), "or", "each")
         raise config_error(
             code=generator.unsupported_backend,
             option_path="model_config.output_model_type",

@@ -79,6 +79,10 @@ ALLOWED = """
 "sample.hand-display" = { home = "sample", count = 1, audit = "X-11" }
 [allow."other.py"."import_paths"]
 "sample.attribute-join" = { home = "sample", count = 2, audit = "X-24" }
+[allow."other.py"."listed"]
+"sample.hand-list" = { home = "sample", count = 4, audit = "X-25" }
+[allow."other.py"."count_words"]
+"sample.count-word" = { home = "sample", count = 4, audit = "X-26" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

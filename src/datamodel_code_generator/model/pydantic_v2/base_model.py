@@ -23,6 +23,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -764,7 +765,7 @@ class DataModelField(_PydanticBaseDataModelField):
             minimum = REQUIREMENTS["pydantic.encoded_bytes_length"].minimum
             messages.append(
                 f"Pydantic before {minimum} does not check {', '.join(lengths)} on "
-                f"base64 text, so {self._constraint_owner} checks {'it' if len(lengths) == 1 else 'them'} only on "
+                f"base64 text, so {self._constraint_owner} checks {for_count(len(lengths), 'it', 'them')} only on "
                 f"Pydantic {minimum} or later."
             )
         return " ".join(message for message in messages if message) or None

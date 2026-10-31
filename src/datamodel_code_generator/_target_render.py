@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, fields, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
@@ -136,8 +137,14 @@ def pydantic_target_problem(
             f"--use-missing-sentinel{reason} "
             "so that the models import MISSING from pydantic"
         )
-    allowed = " or ".join(
-        repr(item.value) for item in TargetPydanticVersion if pydantic_target_meets("pydantic.api_target_runtime", item)
+    allowed = english_list(
+        (
+            repr(item.value)
+            for item in TargetPydanticVersion
+            if pydantic_target_meets("pydantic.api_target_runtime", item)
+        ),
+        "or",
+        "each",
     )
     return f"needs a target pydantic version of {PYDANTIC_TARGET_MINIMUM} or later; leave it unset or use {allowed}"
 

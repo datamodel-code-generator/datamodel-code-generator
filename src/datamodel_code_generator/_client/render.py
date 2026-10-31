@@ -49,6 +49,7 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import (
     call_text,
     from_import,
@@ -3193,7 +3194,7 @@ class ClientRenderer:
             "readme.jinja2",
             readme_template.render_with_scope,
             package=config.package,
-            public_modules=f"{', '.join(public)}, and response types",
+            public_modules=english_list((*public, "response types"), "and", "serial"),
             reference="_generated_docs/runtime.md",
             example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
             credentials=[CredentialLabel(item.name, _KIND_LABELS[item.scheme.kind]) for item in self.plan.credentials],
@@ -3325,7 +3326,7 @@ class ClientRenderer:
     @cached_property
     def stream_label(self) -> str:
         """Return the kinds of the package's stream helpers, as their documentation names them."""
-        return " or ".join(dict.fromkeys(HELPER_KINDS[spec.helper.kind].label for spec in self.streams))
+        return english_list(dict.fromkeys(HELPER_KINDS[spec.helper.kind].label for spec in self.streams), "or", "each")
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:
         """Return the modules of the package's protocol helpers, none without helpers."""

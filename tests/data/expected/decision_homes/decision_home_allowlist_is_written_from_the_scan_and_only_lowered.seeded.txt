@@ -23,6 +23,9 @@
 [allow."other.py"."climb"]
 "sample.ancestor-walk" = { home = "sample", count = 2, audit = "X-18" }
 
+[allow."other.py"."count_words"]
+"sample.count-word" = { home = "sample", count = 4, audit = "X-26" }
+
 [allow."other.py"."displays"]
 "sample.hand-display" = { home = "sample", count = 5, audit = "X-11" }
 
@@ -46,6 +49,9 @@
 
 [allow."other.py"."keywords"]
 "sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }
+
+[allow."other.py"."listed"]
+"sample.hand-list" = { home = "sample", count = 4, audit = "X-25" }
 
 [allow."other.py"."marked"]
 "sample.marker-test" = { home = "sample", count = 2, audit = "X-17" }

@@ -19,6 +19,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
@@ -70,7 +71,6 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.parser._passes.render_prep import _DECIMAL_WARNING_EXAMPLE_LIMIT
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import union_members, written_union_members
@@ -752,23 +752,17 @@ def warn_about_decimal_defaults(parser: FinishHost) -> None:
     """Emit one actionable warning for all Decimal defaults in this generation."""
     if not (count := parser._decimal_default_warning_count):  # noqa: SLF001
         return
-    examples = ", ".join(parser._decimal_default_warning_examples or ())  # noqa: SLF001
-    remainder = (
-        f" and {count - len(parser._decimal_default_warning_examples or ())} more"  # noqa: SLF001
-        if count > _DECIMAL_WARNING_EXAMPLE_LIMIT
-        else ""
-    )
-    plural = "s" if count != 1 else ""
-    verb = "were" if count != 1 else "was"
+    examples = listed_with_more(parser._decimal_default_warning_examples or (), count)  # noqa: SLF001
+    values, verb = counted(count, "Decimal default value"), for_count(count, "was", "were")
     if DefaultValueType.Decimal in parser.deserialize_default_value_types:
         message = (
-            f"{count} Decimal default value{plural} could not be deserialized and {verb} kept serialized "
-            f"to keep generated modules importable: {examples}{remainder}."
+            f"{values} could not be deserialized and {verb} kept serialized "
+            f"to keep generated modules importable: {examples}."
         )
     else:
         message = (
-            f"{count} Decimal default value{plural} {verb} emitted as serialized data instead of Decimal: "
-            f"{examples}{remainder}. Generated output is unchanged. "
+            f"{values} {verb} emitted as serialized data instead of Decimal: "
+            f"{examples}. Generated output is unchanged. "
             "Use --deserialize-default-values decimal to enable Decimal deserialization."
         )
     parser._decimal_default_warning_count = 0  # noqa: SLF001

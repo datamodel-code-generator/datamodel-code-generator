@@ -156,6 +156,17 @@ names = ["from_", "import_", "import_from"]
 what = "joins an import's module and name itself"
 audit = "X-24"
 
+[homes.sample.signatures.hand-list]
+kind = "english-list"
+strings = [" or ", " and "]
+what = "writes an English list itself"
+audit = "X-25"
+
+[homes.sample.signatures.count-word]
+kind = "count-form"
+what = "picks the form of a word for a count itself"
+audit = "X-26"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"

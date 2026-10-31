@@ -58,6 +58,12 @@ them, ``what`` words the message):
   sequence starts with another.
 * ``attribute-join``: an f-string that writes only ``{x.a}<s>{y.b}``, for a separator ``s`` in ``strings`` and
   attributes ``a`` and ``b`` that ``names`` lists: a value spelled from two fields of a record.
+* ``english-list``: ``s.join(...)`` for a separator ``s`` in ``strings``, or an f-string that writes ``", ".join(...)``
+  and then a text starting with one of ``strings``, or with a comma and one of them (one value may come between): an
+  English list of items written by hand.
+* ``count-form``: a conditional expression whose test compares a value with the integer ``1`` (``==``, ``!=`` or
+  ``>``) and whose branches are string literals, or conditional expressions of them, one of which holds a letter: the
+  form of a word for a count, chosen by hand.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -139,6 +145,8 @@ SIGNATURE_KINDS = frozenset({
     "dotted-join",
     "prefix-slice",
     "attribute-join",
+    "english-list",
+    "count-form",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -174,6 +182,7 @@ REQUIRED_STRINGS = {
     "mapping-guard": "names",
     "dotted-join": "strings",
     "attribute-join": "strings",
+    "english-list": "strings",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 SUBSCRIPT_BRACKETS = re.compile(r"(\w*)\[|\]")
@@ -655,6 +664,49 @@ def _tests_prefix(node: ast.Compare) -> bool:
     return False
 
 
+def _hand_list(node: ast.AST, separators: tuple[str, ...]) -> bool:
+    """Return whether ``node`` writes an English list itself (``english-list``)."""
+    if isinstance(node, ast.Call):
+        match node.func:
+            case ast.Attribute(value=ast.Constant(value=str() as separator), attr="join"):
+                return separator in separators
+        return False
+    parts = _string_parts(node) if isinstance(node, ast.JoinedStr) else []
+    texts = (*separators, *(f",{separator}" for separator in separators))
+    for index, part in enumerate(parts):
+        following = parts[index + 1 : index + 3]
+        if following and not isinstance(following[0], ast.Constant):
+            following = following[1:]
+        match following:
+            case [ast.Constant(value=str() as text), *_] if _is_comma_join(part) and text.startswith(texts):
+                return True
+    return False
+
+
+def _branch_words(node: ast.AST) -> list[str] | None:
+    """Return the string literals a conditional expression of string literals can give, or None for another value."""
+    match node:
+        case ast.Constant(value=str() as text):
+            return [text]
+        case ast.IfExp(body=body, orelse=orelse):
+            if (first := _branch_words(body)) is not None and (second := _branch_words(orelse)) is not None:
+                return [*first, *second]
+    return None
+
+
+def _count_form(node: ast.IfExp) -> bool:
+    """Return whether ``node`` picks the form of a word by whether a count is one (``count-form``)."""
+    match node.test:
+        case ast.Compare(ops=[ast.Eq() | ast.NotEq() | ast.Gt()], left=left, comparators=[right]):
+            if not any(
+                isinstance(side, ast.Constant) and type(side.value) is int and side.value == 1 for side in (left, right)
+            ):
+                return False
+            words = _branch_words(node.body), _branch_words(node.orelse)
+            return None not in words and any(char.isalpha() for texts in words for text in texts or () for char in text)
+    return False
+
+
 def _searches_name(loop: ast.While) -> bool:
     """Return whether ``loop`` tests a name that it builds itself as text (``name-search``)."""
     built: set[str] = set()
@@ -837,6 +889,10 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return isinstance(node, ast.Compare) and _tests_prefix(node)
         case "attribute-join":
             return isinstance(node, ast.JoinedStr) and _joins_attributes(node, options["strings"], options["names"])
+        case "english-list":
+            return _hand_list(node, tuple(options["strings"]))
+        case "count-form":
+            return isinstance(node, ast.IfExp) and _count_form(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -863,6 +919,8 @@ NODE_TYPES = {
     "dotted-join": (ast.IfExp,),
     "prefix-slice": (ast.Compare,),
     "attribute-join": (ast.JoinedStr,),
+    "english-list": (ast.Call, ast.JoinedStr),
+    "count-form": (ast.IfExp,),
 }
 
 

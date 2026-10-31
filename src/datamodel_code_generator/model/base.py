@@ -40,6 +40,7 @@ from datamodel_code_generator._internal_utils import (
     get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
     to_hashable,
 )
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import (
     MemoTable,
@@ -705,7 +706,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out."""
         return (
             f"{reason}; {self._constraint_owner} is generated without "
-            f"{'this constraint' if count == 1 else 'these constraints'}."
+            f"{for_count(count, 'this constraint', 'these constraints')}."
         )
 
     @property

@@ -271,3 +271,33 @@ def import_paths(item, other, module):
         f"{item.from_}.{item.import_}.py",
         f"{item.from_!r}.{item.import_}",
     )
+
+
+def listed(items, last):
+    """Write English lists: a join at a conjunction, a comma join before a conjunction, also after a value or a comma;
+    a comma join before other text, a plain comma join and a conjunction in a text do not count.
+    """
+    return (
+        " or ".join(items),
+        f"{', '.join(items[:-1])} and {last}",
+        f"{', '.join(items[:-1])}{',' if len(items) > 2 else ''} or {last}",
+        f"{', '.join(items)}, and more",
+        f"{', '.join(items)}; then {last}",
+        ", ".join(items),
+        f"a or b {last}",
+    )
+
+
+def count_words(count, words):
+    """Pick the form of a word for a count, also from three words; punctuation, a test against another number and a
+    branch that is no literal do not count.
+    """
+    return (
+        "key" if count == 1 else "keys",
+        f"{count} item{'' if count == 1 else 's'}",
+        "give" if len(words) > 1 else "gives",
+        "" if count == 1 else "es" if words else "s",
+        "," if count > 1 else "",
+        "one" if count == 2 else "two",
+        words[0] if count == 1 else "many",
+    )

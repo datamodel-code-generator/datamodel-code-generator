@@ -17,7 +17,6 @@ from datamodel_code_generator._client.pagination import (
     _fits,
     _json_type,
     _label,
-    _listed,
     _overlaps,
     _page_use,
     _Pages,
@@ -25,6 +24,7 @@ from datamodel_code_generator._client.pagination import (
     _target_key,
 )
 from datamodel_code_generator._client.plan import success_response
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
@@ -145,7 +145,8 @@ class _Polls:
         elif not _fits("string", types):
             spec = created[0].spec
             message = (
-                f"The expiry of {helper.name!r} reads {_listed(sorted(cast('frozenset[str]', types)))} values, where "
+                f"The expiry of {helper.name!r} reads "
+                f"{english_list(sorted(cast('frozenset[str]', types)), 'or', 'serial')} values, where "
                 "only a string gives a date and time"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
