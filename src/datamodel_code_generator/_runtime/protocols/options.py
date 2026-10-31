@@ -131,8 +131,8 @@ class StepLock:
         self._lock.release()
 
 
-class StepHandle(StepLock):
-    """A handle that leaving its `with` block closes; while another step runs, the block's error is not masked."""
+class StepHandle:
+    """A `StepLock` handle mixin: leaving its `with` block closes; while another step runs, the error is not masked."""
 
     __slots__ = ()
 
@@ -144,11 +144,12 @@ class StepHandle(StepLock):
         self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
         """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
+        lock = cast("StepLock", self)
+        lock._close("close", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
-class AsyncStepHandle(StepLock):
-    """An asyncio handle that leaving its `async with` block closes, as a `StepHandle` does."""
+class AsyncStepHandle:
+    """An asyncio `StepLock` handle mixin: leaving its `async with` block closes, as a `StepHandle` does."""
 
     __slots__ = ()
 
@@ -160,7 +161,8 @@ class AsyncStepHandle(StepLock):
         self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
     ) -> None:
         """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
+        lock = cast("StepLock", self)
+        lock._close("aclose", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
