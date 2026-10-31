@@ -9,10 +9,12 @@ with the model generator's configured type class, so its union and collection op
 from __future__ import annotations
 
 from functools import lru_cache
+from itertools import starmap
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._openapi_codec_plan import artifact_module
+from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     GeneratedSymbolType,
@@ -380,8 +382,9 @@ class TargetModule:
         modules: list[str] = []
         grouped: dict[str, list[str]] = {}
         for (module, name), alias in sorted(self.bound.items(), key=lambda item: (item[0][0] or "", item[0][1])):
+            listed = name if alias == name else aliased(name, alias)
             if module is None:
-                modules.append(f"import {name}" if alias == name else f"import {name} as {alias}")
+                modules.append(module_import(listed))
             else:
-                grouped.setdefault(module, []).append(name if alias == name else f"{name} as {alias}")
-        return "\n".join((*modules, *(f"from {module} import {', '.join(names)}" for module, names in grouped.items())))
+                grouped.setdefault(module, []).append(listed)
+        return "\n".join((*modules, *starmap(from_import, grouped.items())))

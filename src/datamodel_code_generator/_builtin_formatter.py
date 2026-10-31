@@ -21,7 +21,7 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import aliased, call_text, from_import, keyword_argument, module_import
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
@@ -221,7 +221,7 @@ def _get_builtin_string_normalization(
 
 def _format_alias(alias: ast.alias) -> str:
     if alias.asname:
-        return f"{alias.name} as {alias.asname}"
+        return aliased(alias.name, alias.asname)
     return alias.name
 
 
@@ -244,7 +244,7 @@ def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_Al
 
 
 def _format_from_import(module: str, aliases: list[str], line_length: int) -> str:
-    line = f"from {module} import {', '.join(aliases)}"
+    line = from_import(module, aliases)
     if len(line) <= line_length and "*" not in aliases:
         return line
     imports = "\n".join(f"    {alias}," for alias in aliases)
@@ -514,7 +514,7 @@ def _build_builtin_import_block(
         if isinstance(node, ast.Import):
             for alias in node.names:
                 category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
-                categorized_lines[category].add(f"import {_format_alias(alias)}")
+                categorized_lines[category].add(module_import(_format_alias(alias)))
             continue
 
         category, import_line = _format_import_node(node, line_length, known_first_party, names)

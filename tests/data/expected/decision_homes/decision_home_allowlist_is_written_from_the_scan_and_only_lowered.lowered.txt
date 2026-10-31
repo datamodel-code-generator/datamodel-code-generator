@@ -37,6 +37,9 @@
 [allow."other.py"."guarded_reads"]
 "sample.mapping-guard" = { home = "sample", count = 6, audit = "X-19" }
 
+[allow."other.py"."import_lines"]
+"sample.hand-display" = { home = "sample", count = 1, audit = "X-11" }
+
 [allow."other.py"."keywords"]
 "sample.hand-keyword" = { home = "sample", count = 2, audit = "X-15" }
 

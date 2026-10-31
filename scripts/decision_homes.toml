@@ -910,7 +910,7 @@ what = "reads a loaded value, or its members, only when it is a dict itself; cal
 audit = "C28-X10"
 
 [homes.Hx-python-syntax]
-decision = "how generated Python spells a call, a subscript, a keyword argument and a tuple, list, set or dict display from the texts of their items: the separator, the () of a subscript without arguments, the comma a lone tuple item needs, the set() of a set without items, the colon of a dict entry and the equals sign of a keyword argument"
+decision = "how generated Python spells a call, a subscript, a keyword argument, a tuple, list, set or dict display and an import statement from the texts of their items: the separator, the () of a subscript without arguments, the comma a lone tuple item needs, the set() of a set without items, the colon of a dict entry, the equals sign of a keyword argument and the words of an import of a module, of names from a module and of a name bound to an alias"
 core = ["_python_syntax.py"]
 adapters = []
 
@@ -920,6 +920,13 @@ brackets = ["(", "[", "{"]
 exclude = ["_runtime/", "__main__.py:_format_toml_value"]
 what = "joins expression texts into a call, a subscript or a tuple, list, set or dict display itself; call _python_syntax.py (a TOML array is not Python)"
 audit = "C13"
+
+[homes.Hx-python-syntax.signatures.hand-import]
+kind = "display"
+brackets = [" import "]
+exclude = ["_runtime/"]
+what = "joins the names of a from-import itself; call _python_syntax.from_import"
+audit = "C22-G6"
 
 [homes.Hx-python-syntax.signatures.hand-subscript]
 kind = "subscript"

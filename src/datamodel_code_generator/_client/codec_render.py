@@ -17,8 +17,13 @@ from datamodel_code_generator._client.codec_plan import (
     Items,
     Values,
 )
-from datamodel_code_generator._client.facade import statement
-from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text, tuple_display
+from datamodel_code_generator._python_syntax import (
+    call_text,
+    from_import,
+    keyword_argument,
+    subscript_text,
+    tuple_display,
+)
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_templates import templated
@@ -148,9 +153,9 @@ class _Renderer:
             )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
         names = sorted({runtime.codec, *self.records})
-        imports = [statement(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
+        imports = [from_import(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
         if self.plan.extras:
-            imports.append(statement(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
+            imports.append(from_import(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
         source = templated(
             "model_bindings.jinja2",
             model_bindings_template.render_with_scope,

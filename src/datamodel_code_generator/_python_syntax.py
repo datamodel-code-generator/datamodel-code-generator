@@ -1,11 +1,12 @@
-"""How generated Python spells a call, a subscript, a keyword argument and a tuple, list, set or dict display.
+"""How generated Python spells a call, a subscript, a keyword argument, a display and an import statement.
 
-Every writer of generated code that joins a variable number of expression texts into one of these, or passes a value
-text under a keyword its data names, goes through this leaf, so the separator, the ``()`` of a subscript without
-arguments, the comma a lone tuple item needs, the `set()` of a set without items, the colon of a dict entry and the
-equals sign of a keyword argument are written once. A value becomes its text first
-(``python_literal.represent_python_value`` or a target's own writer), a type renderer decides which types a subscript
-holds, and a keyword written in a call's source text is that text's own.
+Every writer of generated code that joins a variable number of expression texts into a call, a subscript or a tuple,
+list, set or dict display, passes a value text under a keyword its data names, or imports names, goes through this
+leaf, so the separator, the ``()`` of a subscript without arguments, the comma a lone tuple item needs, the `set()` of
+a set without items, the colon of a dict entry, the equals sign of a keyword argument and the words of an import
+statement are written once. A value becomes its text first (``python_literal.represent_python_value`` or a target's
+own writer), a type renderer decides which types a subscript holds, a keyword written in a call's source text is that
+text's own, and a writer of imports decides which names it imports, in which order, and when one takes another name.
 """
 
 from __future__ import annotations
@@ -51,3 +52,18 @@ def set_display(items: Iterable[str], /) -> str:
 def dict_display(entries: Iterable[tuple[str, str]], /) -> str:
     """Return the dict display of the texts of each entry's key and value."""
     return f"{{{', '.join(f'{key}: {value}' for key, value in entries)}}}"
+
+
+def module_import(name: str, /) -> str:
+    """Return the import statement of a module, ``name`` written as an import statement lists it."""
+    return f"import {name}"
+
+
+def from_import(module: str, names: Iterable[str], /) -> str:
+    """Return the import statement of names from a module, each written as an import statement lists it."""
+    return f"from {module} import {', '.join(names)}"
+
+
+def aliased(name: str, alias: str, /) -> str:
+    """Return an imported module or name as an import statement lists it when the import binds it to ``alias``."""
+    return f"{name} as {alias}"

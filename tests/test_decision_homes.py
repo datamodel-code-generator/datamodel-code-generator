@@ -75,6 +75,8 @@ ALLOWED = """
 "sample.hand-subscript" = { home = "sample", count = 6, audit = "X-22" }
 [allow."other.py"."forms"]
 "sample.expanded-resolve" = { home = "sample", count = 2, audit = "X-23" }
+[allow."other.py"."import_lines"]
+"sample.hand-display" = { home = "sample", count = 1, audit = "X-11" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

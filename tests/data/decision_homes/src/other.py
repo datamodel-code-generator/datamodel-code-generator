@@ -249,3 +249,12 @@ def forms(path, base):
         path.absolute().resolve(),
         (path.expanduser() / base).resolve(),
     )
+
+
+def import_lines(module, names):
+    """Join the names of a from-import; an import of joined modules and another separator do not count."""
+    return (
+        f"from {module} import {', '.join(names)}",
+        f"import {', '.join(names)}",
+        f"from {module} import {'; '.join(names)}",
+    )
