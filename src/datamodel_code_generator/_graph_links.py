@@ -8,8 +8,12 @@ A data type node is held through its ``parent``: by the data type it is a member
 which its model holds. A field is the holder with ``invalidate_semantic_caches``; a model has no ``parent``. A base
 class node has no ``parent``: the models that list it in their ``base_classes`` hold it.
 
-This module adds, drops and reads children and walks the holders without importing `reference`, `types` or `model`,
-which import it.
+A type built only to read facts from, or a tree a holder lets go of, leaves the graph through its tree: every node
+of a data type's tree (``all_data_types``) drops its record as a child (``drop_tree``), or lets go of its ``parent``
+(``clear_parents``).
+
+This module adds, drops and reads children and walks and clears the holders without importing `reference`, `types` or
+`model`, which import it.
 """
 
 from __future__ import annotations
@@ -24,9 +28,11 @@ __all__ = [
     "base_owners",
     "chain_root",
     "clear_children",
+    "clear_parents",
     "data_type_children",
     "drop_child",
     "drop_child_and_detached",
+    "drop_tree",
     "nearest_field",
 ]
 
@@ -49,6 +55,12 @@ def drop_child_and_detached(reference: Any, child: object) -> None:
 def clear_children(reference: Any) -> None:
     """Forget every child of ``reference``, so that a disposed graph keeps no cycle through it."""
     reference.children.clear()
+
+
+def drop_tree(root: Any | None) -> None:
+    """Forget every node of the data-type tree of ``root`` (none for None) as a child of the reference it names."""
+    for node in () if root is None else root.all_data_types:
+        node.unregister_reference()
 
 
 def data_type_children(reference: Any) -> list[Any]:
@@ -77,3 +89,9 @@ def chain_root(node: object) -> Any:
 def base_owners(node: object, models: Iterable[Any]) -> tuple[Any, ...]:
     """Return the models of ``models`` that list ``node`` among their base classes, in their order."""
     return tuple(model for model in models if any(base_class is node for base_class in model.base_classes))
+
+
+def clear_parents(root: Any) -> None:
+    """Let go of the ``parent`` of every node of the data-type tree of ``root``, ``root`` included."""
+    for node in root.all_data_types:
+        node.parent = None

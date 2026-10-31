@@ -2694,8 +2694,9 @@ class _Models:
         projected = (
             projector.project(data_type) if data_type is not None else TypeProjection(None, _NotEmittedError.reason)
         )
-        for item in data_type.all_data_types if data_type is not None else ():
-            item.unregister_reference()
+        from datamodel_code_generator._graph_links import drop_tree  # noqa: PLC0415
+
+        drop_tree(data_type)
         return projected
 
     def variant_direction(self, model: DataModel) -> Direction:

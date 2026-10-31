@@ -17,6 +17,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
@@ -862,8 +863,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             written = self._unset_union_data_type()
         else:
             return None
-        for node in written.all_data_types:
-            node.parent = None
+        clear_parents(written)
         return written
 
     def _get_simple_unset_base_type(self) -> str | None:  # noqa: PLR0911

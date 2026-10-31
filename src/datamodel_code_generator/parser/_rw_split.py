@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator import AllOfMergeMode, Error, ReadOnlyWriteOnlyModelType
+from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
@@ -614,8 +615,7 @@ def unregister_temporary_field_references(
 
 def unregister_temporary_type(parser: RwSplitHost, data_type: DataType | None) -> None:  # noqa: ARG001
     """Keep a type built only to read facts from out of the live reverse-reference graph."""
-    for item in () if data_type is None else data_type.all_data_types:
-        item.unregister_reference()
+    drop_tree(data_type)
 
 
 def temporary_constraint_values(
