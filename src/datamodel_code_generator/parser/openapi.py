@@ -42,9 +42,15 @@ from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     JsonSchemaParser,
+    _all_of_applies,
+    _array_applies,
+    _get_ref_data_type_site,
     _locate,
     _located,
     _named_path,
+    _one_of_any_of_applies,
+    _parse_all_of_site,
+    _ref_applies,
     _VersionSource,
     get_model_by_path,
 )
@@ -926,20 +932,8 @@ class OpenAPIParser(JsonSchemaParser):
         self.inline_object_bodies |= is_inline_object_body(site.obj)
         return self.get_data_type(site.obj)
 
-    def _operation_array_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return site.obj.is_array
-
     def _build_operation_array(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self.parse_array(site.name, site.obj, [*site.path, site.name])
-
-    def _operation_all_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.allOf)
-
-    def _build_operation_all_of(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        return self.parse_all_of(site.name, site.obj, site.path)
-
-    def _operation_one_of_any_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.oneOf or site.obj.anyOf)
 
     def _operation_object_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
         return site.obj.is_object
@@ -972,21 +966,15 @@ class OpenAPIParser(JsonSchemaParser):
     def _build_operation_enum(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
 
-    def _operation_ref_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.ref)
-
-    def _build_operation_ref(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        return self.get_ref_data_type(cast("str", site.obj.ref))
-
     _OPENAPI_OPERATION_TABLE: ClassVar[DispatchTable[OpenAPIParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
-            Row("array", _operation_array_applies, _build_operation_array),
-            Row("all-of", _operation_all_of_applies, _build_operation_all_of),
-            Row("one-of-any-of", _operation_one_of_any_of_applies, _parse_combined_operation_schema),
+            Row("array", _array_applies, _build_operation_array),
+            Row("all-of", _all_of_applies, _parse_all_of_site),
+            Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_operation_schema),
             Row("object", _operation_object_applies, _build_operation_object),
             Row("inline-object-body", _operation_inline_object_body_applies, _build_operation_inline_object_body),
             Row("enum", _operation_enum_applies, _build_operation_enum),
-            Row("ref", _operation_ref_applies, _build_operation_ref),
+            Row("ref", _ref_applies, _get_ref_data_type_site),
         ),
         Default("data-type", _parse_unmodeled_operation_schema),
     )
