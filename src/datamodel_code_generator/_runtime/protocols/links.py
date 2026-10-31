@@ -12,16 +12,15 @@ import re
 import string
 from typing import TYPE_CHECKING, Final
 
-from ..model_codecs.media import TCHARS
+from ..model_codecs.media import QUOTED, TCHARS
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 __all__ = ("related",)
 
-_QUOTED: Final = r'"(?:[\t \x21\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\t \x21-\x7e\x80-\xff])*"'
 _TARGET: Final = re.compile(r"<([^<>]*)>")
-_PARAMETER: Final = re.compile(rf"[ \t]*;[ \t]*({TCHARS})(?:[ \t]*=[ \t]*({TCHARS}|{_QUOTED}))?")
+_PARAMETER: Final = re.compile(rf"[ \t]*;[ \t]*({TCHARS})(?:[ \t]*=[ \t]*({TCHARS}|{QUOTED}))?")
 _END: Final = re.compile(r"[ \t]*(?:,|\Z)")
 _ESCAPED: Final = re.compile(r"\\(.)")
 _LOWER: Final = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)

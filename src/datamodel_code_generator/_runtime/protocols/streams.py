@@ -47,7 +47,7 @@ from .errors import (
 )
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
-from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
+from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
 from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
 
 if TYPE_CHECKING:
@@ -1233,11 +1233,8 @@ def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits)
     the caller gives again.
     """
     resume = cast("StreamResumePlan", plan.resume)
-    position = decoded_state(
-        plan.helper_id, state, partial(_restore, plan, resume, given=given if resume.own else None)
-    )
-    unexpired(plan.helper_id, position.expires_at, limits.clock)
-    return resume, position
+    restore = partial(_restore, plan, resume, given=given if resume.own else None)
+    return resume, restored(plan.helper_id, state, restore, lambda position: position.expires_at, limits.clock)
 
 
 def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, given: _Given | None) -> _Position:

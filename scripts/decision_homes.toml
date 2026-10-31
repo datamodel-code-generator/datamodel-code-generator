@@ -1272,7 +1272,7 @@ what = "decides itself whether a body or response sends JSON null; call _target_
 audit = "C21-A6"
 
 [homes.Hx-http]
-decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, and the ASCII digit run of a count, delay or timestamp a header writes"
+decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, the ASCII digit run of a count, delay or timestamp a header writes, and the token and quoted-string of a header field (row legacy-lenient-quoted-string: a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed)"
 core = ["_runtime/model_codecs/media.py", "_target_operations.py:exact_status", "_target_operations.py:range_start"]
 adapters = ["_runtime/client/media.py:most_specific", "_target_operations.py:response_bodyless"]
 
@@ -1338,6 +1338,20 @@ paths = ["_runtime/"]
 what = "tests a header's ASCII digit run itself; call model_codecs/media.py:ascii_digits"
 audit = "C23-K41"
 
+[homes.Hx-http.signatures.token-class]
+kind = "literal"
+contains = ["^_`|~0-9A-Za-z-"]
+paths = ["_runtime/"]
+what = "spells the characters of an HTTP token itself; read model_codecs/media.py:TCHARS (or TOKEN)"
+audit = "C27-B15"
+
+[homes.Hx-http.signatures.quoted-string]
+kind = "literal"
+contains = ['\x5d-\x7e', '\]-~']
+paths = ["_runtime/"]
+what = "spells an HTTP quoted-string itself; read model_codecs/media.py:QUOTED"
+audit = "C27-B15"
+
 [homes.Hx-codec-failure]
 decision = "what a received model codec's failure says of the data (bytes that are not JSON, or a value the model refuses), the body error each condition becomes, and the response failure a body error becomes"
 core = [
@@ -1363,13 +1377,15 @@ what = "turns a body's decode failure into the response failure itself; call Res
 audit = "C23-K36"
 
 [homes.Hx-json-value]
-decision = "what the runtime reads back from JSON and writes as JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), the value a saved wire value restores, decoded as its codec decodes JSON, the compact JSON text a value writes and the errors it raises (row `legacy-python-json-errors`: the standard library's own), and which values are JSON integers and numbers (a bool is neither)"
+decision = "what the runtime reads back from JSON and writes as JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), the value a saved wire value restores, decoded as its codec decodes JSON, the compact JSON text a value writes and the errors it raises (row `legacy-python-json-errors`: the standard library's own), which values are JSON integers and numbers (a bool is neither), and the canonical JSON that identifies a value (members sorted by name) and the SHA-256 digest of it"
 core = [
     "_runtime/model_codecs/media.py:json_value",
     "_runtime/model_codecs/media.py:json_text",
     "_runtime/model_codecs/media.py:json_integer",
     "_runtime/model_codecs/media.py:json_number",
     "_runtime/client/operations.py:_restored",
+    "_runtime/protocols/records.py:canonical_json",
+    "_runtime/protocols/records.py:json_digest",
 ]
 adapters = []
 
@@ -1408,6 +1424,14 @@ exclude = [
 ]
 what = "tells whether a value is a JSON integer or number, a bool being neither, itself; call model_codecs/media.py:json_integer or json_number"
 audit = "C23-K41"
+
+[homes.Hx-json-value.signatures.json-digest]
+kind = "call"
+names = ["sha256"]
+mentions = ["canonical_json"]
+paths = ["_runtime/"]
+what = "digests the canonical JSON of a value itself; call protocols/records.py:json_digest"
+audit = "C27-B9"
 
 [homes.Hx-parameter-key]
 decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime (row legacy-case-sensitive-parameter-override: the paths scope's walk overrides a path item's parameter by its name as written); and where a parameter of the target contract goes: its declared location and wire name"
@@ -1673,6 +1697,39 @@ paths = ["_runtime/protocols/"]
 exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "names the header or query parameters a helper writes itself; call protocols/writes.py:written_names"
 audit = "C27-B6"
+
+[homes.Hx-response-reads]
+decision = "what a protocol helper reads from a response at a selector: the wire value a body pointer, a header (every occurrence as an array, or one occurrence, a repeated one refused as malformed) or the status gives, one that must be given (a missing value refused), the decoded value a helper returns from a response (a page's items, an operation's result) read by its accessor only after the wire value has the member (a missing or null member, or a None the accessor reads, refused), and the rule an absent, null or mistyped value breaks"
+core = [
+    "_runtime/protocols/values.py:selected",
+    "_runtime/protocols/values.py:read_selector",
+    "_runtime/protocols/values.py:required",
+    "_runtime/protocols/values.py:accessed",
+    "_runtime/protocols/values.py:unfit",
+]
+adapters = []
+
+[homes.Hx-response-reads.signatures.accessed-member]
+kind = "call"
+names = ["absence"]
+paths = ["_runtime/protocols/"]
+# A cursor or next URL that is missing or null may end a traversal, and a stream event's missing or null cursor is kept
+# or cleared by its plan's rows: both decide what absence means before refusing it.
+exclude = ["_runtime/protocols/pagination.py:_ended", "_runtime/protocols/streams.py:_Events._advance"]
+what = "refuses a missing or null member before an accessor reads the decoded value itself; call protocols/values.py:accessed"
+audit = "C27-B7"
+
+[homes.Hx-checkpoint-restore]
+decision = "whether a protocol helper continues from a checkpoint: its state as a plain JSON copy that the helper's decoder reads (a state that is not JSON, or one that does not fit the helper, refused as the state's invalid value), then the server's expiry it saved not past by the client's wall clock (refused as expired)"
+core = ["_runtime/protocols/resume.py:restored"]
+adapters = []
+
+[homes.Hx-checkpoint-restore.signatures.checkpoint-checks]
+kind = "call"
+names = ["decoded_state", "unexpired"]
+paths = ["_runtime/protocols/"]
+what = "decodes a checkpoint or checks its expiry itself; call protocols/resume.py:restored"
+audit = "C27-B10"
 
 [homes.Hx-body-bytes]
 decision = "the bytes the client runtime moves a body in and keeps of one: the 64 KiB slice a body is read, sent, compressed and iterated in, the 64 KiB an error keeps of a received body (or the lower message limit of a WebSocket) and whether it cut them, and how a body written to a path becomes the file or leaves none, the stream a failed write left ended"
@@ -2767,6 +2824,10 @@ fix = "#5747"
 [legacy_rows."legacy-upload-size-query"]
 home = "Hx-helper-writes"
 fix = "#5693"
+
+[legacy_rows."legacy-lenient-quoted-string"]
+home = "Hx-http"
+fix = "#5769"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

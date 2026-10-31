@@ -23,6 +23,7 @@ __all__ = (
     "MalformedStateError",
     "decoded_state",
     "require_state",
+    "restored",
     "saved_expiry",
     "state_array",
     "state_count",
@@ -98,3 +99,19 @@ def unexpired(helper_id: str, expires_at: datetime | None, clock: Clock) -> None
     """Refuse a checkpoint past the server's expiry by the client's wall clock."""
     if expires_at is not None and expires_at.timestamp() <= clock.time():
         raise configuration_error(helper_id, ("state",), "expired")
+
+
+def restored(
+    helper_id: str,
+    state: object,
+    decode: Callable[[JSONValue], V],
+    expiry: Callable[[V], datetime | None],
+    clock: Clock,
+) -> V:
+    """Return what a checkpoint's state decodes to, refusing what `decoded_state` refuses and then an expired one.
+
+    `expiry` reads the server's expiry from the decoded value, which `unexpired` checks by the client's wall clock.
+    """
+    value = decoded_state(helper_id, state, decode)
+    unexpired(helper_id, expiry(value), clock)
+    return value

@@ -22,9 +22,11 @@ from .errors import MalformedError, ParameterEncodingError
 __all__ = (
     "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "LENIENT_QUOTED",
     "NOT_MODIFIED",
     "NO_CONTENT",
     "OK",
+    "QUOTED",
     "REDIRECT_STATUSES",
     "STATUSES",
     "SUCCESS_STATUSES",
@@ -78,6 +80,10 @@ T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
+QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
+LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
+"""Row `legacy-lenient-quoted-string`: any character but a double quote or a backslash, and any escaped one but a line
+feed, between double quotes, as a cache helper reads Cache-Control."""
 STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)
@@ -88,10 +94,7 @@ NO_CONTENT: Final = 204
 NOT_MODIFIED: Final = 304
 BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, NOT_MODIFIED})
 _MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{TCHARS})/(?P<subtype>{TCHARS})[ \t]*")
-_PARAMETER: Final = re.compile(
-    rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|"
-    r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
-)
+_PARAMETER: Final = re.compile(rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|{QUOTED})[ \t]*")
 _MEDIA_ERRORS: Final = (
     "A media type must be a token/token essence",
     "A media type parameter must be a token=value pair",
