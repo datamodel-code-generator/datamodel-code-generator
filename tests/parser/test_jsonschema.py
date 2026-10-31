@@ -483,6 +483,52 @@ def test_schema_validator_property_count_helper_stops_at_visited_ref() -> None:
     assert [source.maxProperties for source in sources] == [None, None, None, 4]
 
 
+def test_schema_validator_property_count_draft7_ignores_ref_sibling_but_keeps_target() -> None:
+    """Draft 7 ignores count siblings but still reads counts on the referenced target."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {"A": {"type": "object", "minProperties": 3}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/definitions/A", "minProperties": 2}]})
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (3, None)
+
+
+def test_schema_validator_property_count_draft202012_keeps_ref_sibling() -> None:
+    """2020-12 reads count siblings beside an allOf member's $ref."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"A": {"type": "object"}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/$defs/A", "minProperties": 2}]})
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
+
+
+def test_schema_validator_property_count_draft7_preserves_inherited_override_sibling() -> None:
+    """An inherited override marker keeps its $ref sibling as an allOf constraint."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$defs": {"A": {"type": "object"}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/$defs/A", "minProperties": 2}]})
+    obj.allOf[0].__dict__["_inherited_override"] = True
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
+
+
 def test_clear_inherited_field_caches_releases_property_count_rules() -> None:
     """Release opt-in property-count aggregation cache with parser-owned temporary state."""
     parser = JsonSchemaParser("", generate_schema_validators=True)
