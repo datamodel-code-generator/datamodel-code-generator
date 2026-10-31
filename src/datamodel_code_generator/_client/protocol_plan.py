@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._target_contract import OperationContract, OperationId
+    from datamodel_code_generator._target_contract import Direction, OperationContract, OperationId, TypeView
 
 _SpecT = TypeVar("_SpecT")
 
@@ -171,6 +171,17 @@ class HelperPlanner:
         location = self.protocols.locations[reference]
         return location if self.request.lease.exists(location) else None
 
+    def schema_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
+        """Return the type a helper's schema is read or sent as in a direction, or say its document has no such pointer.
+
+        None is a schema no model stands for.
+        """
+        from datamodel_code_generator._client.plan import schema_use  # noqa: PLC0415
+
+        if (location := self.location(reference)) is None:
+            return "missing"
+        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
+
     def each(
         self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_SpecT | None, list[Diagnostic]]]
     ) -> tuple[tuple[_SpecT, ...], dict[str, list[Diagnostic]]]:
@@ -186,6 +197,11 @@ class HelperPlanner:
                 if planned is not None:
                     specs.append(planned)
         return tuple(specs), problems
+
+
+def missing_schema(helper: Helper, noun: str, reference: SchemaRef) -> str:
+    """Return the refusal of a helper's schema setting, which `noun` names, whose document has no such pointer."""
+    return f"The {noun} {reference.pointer!r} of {helper.name!r} does not exist in its document"
 
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:

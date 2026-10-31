@@ -42,7 +42,7 @@ from datamodel_code_generator._client.runtime import (
     declared_security,
 )
 from datamodel_code_generator._client.sockets import SocketSpec
-from datamodel_code_generator._client.streams import StreamSpec, stream_only
+from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._python_syntax import (
     call_text,
@@ -51,6 +51,8 @@ from datamodel_code_generator._python_syntax import (
     subscript_text,
     tuple_display,
 )
+from datamodel_code_generator._runtime.client.operations import BodyFields, FieldArguments, ServerPlan, ServerVariable
+from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
@@ -2019,27 +2021,19 @@ class _Registry(_Typing):
     @staticmethod
     def servers(module: TargetModule, specs: tuple[ServerSpec, ...]) -> str:
         """Return the tuple of one operation's servers."""
-        servers: list[str] = []
-        for server in specs:
-            entries: list[tuple[str, str]] = [("url=", repr(server.url))]
-            if server.variables:
-                variable = module.local(_RUNTIME, "ServerVariable")
-                entries.append((
-                    "variables=",
-                    tuple_display(
-                        _call(
-                            variable,
-                            (
-                                ("name=", repr(name)),
-                                ("default=", repr(default)),
-                                *((("enum=", repr(enum)),) if enum else ()),
-                            ),
-                        )
+        return tuple_display(
+            runtime_record(
+                module.local,
+                ServerPlan(
+                    url=server.url,
+                    variables=tuple(
+                        ServerVariable(name=name, default=default, enum=enum)
                         for name, default, enum in server.variables
                     ),
-                ))
-            servers.append(_call(module.local(_RUNTIME, "ServerPlan"), entries))
-        return tuple_display(servers)
+                ),
+            )
+            for server in specs
+        )
 
     def operation(self, module: TargetModule, spec: OperationSpec, servers: str) -> tuple[Keyword, ...]:
         """Return the keywords of the OperationPlan constructor of one operation."""
@@ -2084,10 +2078,7 @@ class _Registry(_Typing):
         if (idempotency := spec.idempotency) is not None:
             entries.append((
                 "idempotency=",
-                _call(
-                    module.local("_runtime.client.retry", "IdempotencyPlan"),
-                    (("header_name=", repr(idempotency.header_name)),),
-                ),
+                runtime_record(module.local, IdempotencyPlan(header_name=idempotency.header_name)),
             ))
         entries.extend(
             (f"{name}=", repr(header))
@@ -2101,27 +2092,16 @@ class _Registry(_Typing):
         """Return the FieldArguments constructor of an operation: each media's fields by their argument positions."""
         names = spec.field_names
         positions = {name: index for index, name in enumerate(names)}
-        media: list[str] = []
-        for branch in spec.fields:
-            entries: list[tuple[str, str]] = [
-                ("media_type=", repr(branch.media_type)),
-                (
-                    "fields=",
-                    tuple_display(
-                        tuple_display((str(positions[field.python_name]), repr(field.wire_name), repr(field.required)))
-                        for field in branch.fields
-                    ),
+        media = tuple(
+            BodyFields(
+                media_type=branch.media_type,
+                fields=tuple(
+                    (positions[field.python_name], field.wire_name, field.required) for field in branch.fields
                 ),
-            ]
-            media.append(_call(module.local(_RUNTIME, "BodyFields"), entries))
-        return _call(
-            module.local(_RUNTIME, "FieldArguments"),
-            (
-                ("method=", repr(spec.name)),
-                ("names=", tuple_display(map(repr, names))),
-                ("media=", tuple_display(media)),
-            ),
+            )
+            for branch in spec.fields
         )
+        return runtime_record(module.local, FieldArguments(method=spec.name, names=names, media=media))
 
     def parameter(self, module: TargetModule, parameter: ParameterSpec) -> str:
         """Return the ParameterSpec constructor of one parameter."""
@@ -2914,11 +2894,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     def event_type(module: TargetModule, spec: StreamSpec) -> str:
         """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
         types = [use.type for _, use in spec.events if use.type is not None]
-        unknown = (
-            (module.local("_runtime.protocols.streams", "UnknownEvent"),)
-            if spec.helper.tree["unknown"] == "raw"
-            else ()
-        )
+        unknown = (module.local("_runtime.protocols.streams", "UnknownEvent"),) if spec.keeps_unknown else ()
         return module.union(_merged(module, types), *unknown)
 
     def stream_plan(self, module: TargetModule, index: int, spec: StreamSpec) -> Plan:
@@ -2935,16 +2911,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *self.linked(module, module.root("_operations"), spec.operation),
             ("media=", repr(spec.media)),
         ]
-        if not isinstance(schema := tree["event_schema"], dict):
+        if (selector := discriminator(helper)) is None:
             entries.append(("event=", codec(module, spec.events[0][1])))
         else:
             entries.append((
                 "routes=",
                 tuple_display(tuple_display((repr(key), codec(module, use))) for key, use in spec.events),
             ))
-            if (selector := schema["discriminator"])["from"] == "body":
+            if selector["from"] == "body":
                 entries.append(("discriminator=", self.selector(module, selector)))
-            if tree["unknown"] == "raw":
+            if spec.keeps_unknown:
                 entries.append(("unknown=", module.local(_STREAMS, "unknown_event")))
         if spec.errors:
             entries.append((
