@@ -1,7 +1,7 @@
 Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: paths)
-  components                       0, 0 operations
+  components                       0, 1 operations
   inline objects / enums           0 / 0, nesting depth 0
   shared property names            0 (none)
   inline names = component names   0

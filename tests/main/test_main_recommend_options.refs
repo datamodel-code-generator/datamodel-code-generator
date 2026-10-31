@@ -89,6 +89,8 @@ paths-scope	main/recommend_options/operations_paths.txt
 pattern-properties	main/recommend_options/deployment.txt
 preset-value	main/recommend_options/api_practical.txt
 redundant-constraints	main/recommend_options/redundant_constraints.txt
+referenced-holders	main/recommend_options/referenced_holders.txt
+referenced-holders-api-scope	main/recommend_options/referenced_holders_api.txt
 root-name-taken	main/recommend_options/order.txt
 swagger	main/recommend_options/swagger.txt
 swagger-definitions	main/recommend_options/swagger_jsonschema.txt

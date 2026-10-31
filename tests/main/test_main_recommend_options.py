@@ -238,6 +238,18 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             "paths_bodies_object_map.txt",
             id="paths-bodies-object-map",
         ),
+        pytest.param(
+            "referenced_holders.yaml",
+            ["--openapi-scopes", "paths", "webhooks"],
+            "referenced_holders.txt",
+            id="referenced-holders",
+        ),
+        pytest.param(
+            "referenced_holders.yaml",
+            ["--openapi-scopes", "api"],
+            "referenced_holders_api.txt",
+            id="referenced-holders-api-scope",
+        ),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -247,7 +259,9 @@ def test_recommend_options_for_schemas(
 
     Optional validation and policy options are listed apart from the command, unless the command sets them.
     Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
-    patternProperties map with one pattern and no other keys needs no validators.
+    patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
+    response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
+    once.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))

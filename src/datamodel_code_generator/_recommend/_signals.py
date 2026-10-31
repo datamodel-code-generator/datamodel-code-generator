@@ -7,6 +7,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
+from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._document_reader import as_mapping, descend
@@ -203,11 +204,18 @@ def _example_text(counter: Counter[str]) -> str:
     return ", ".join(f"{name} x{count}" for name, count in counter.most_common(_EXAMPLE_LIMIT))
 
 
-def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
-    """Return the schema a local JSON Pointer reference points at, or None."""
+def _local_tokens(ref: object) -> tuple[str, ...] | None:
+    """Return the tokens a local JSON Pointer reference names, its fragment percent-decoded as generation reads it."""
     if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
-    return descend(cast("Any", document), pointer_tokens(ref[1:]), "legacy-objects-only")
+    return pointer_tokens(unquote(ref[1:]))
+
+
+def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
+    """Return the node a local JSON Pointer reference points at, or None."""
+    if (tokens := _local_tokens(ref)) is None:
+        return None
+    return descend(cast("Any", document), tokens, "canonical")
 
 
 def _dereferenced(document: Mapping[str, Any], node: object) -> object:
@@ -235,49 +243,74 @@ def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]
     return {key: _unwrap(value) for key, value in as_mapping(components.get("schemas")).items()}
 
 
-def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[str, str]:
-    prefixes = ("#/$defs/", "#/definitions/") if _uses_definitions(kind) else ("#/components/schemas/",)
-    return {f"{prefix}{key}": key for key in components for prefix in prefixes}
+def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[tuple[str, ...], str]:
+    """Return the component each local reference names, by the tokens of its pointer."""
+    prefixes = (("$defs",), ("definitions",)) if _uses_definitions(kind) else (("components", "schemas"),)
+    return {(*prefix, key): key for key in components for prefix in prefixes}
 
 
-def _media_schemas(key: str, container: object) -> Iterator[tuple[str, object]]:
-    """Yield the media type schemas of a request body or response."""
-    for media_type, media in as_mapping(as_mapping(container).get("content")).items():
+def _media_schemas(document: Mapping[str, Any], key: str, container: object) -> Iterator[tuple[str, object]]:
+    """Yield the media type schemas of a request body or response, which may be a local reference."""
+    for media_type, media in as_mapping(as_mapping(_dereferenced(document, container)).get("content")).items():
         yield f"{key} {media_type}", as_mapping(media).get("schema")
+
+
+def _path_items(
+    document: Mapping[str, Any], sections: Iterable[str], include_paths: Sequence[str]
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
+
+    A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read.
+    """
+    for section in sections:
+        for path, item in as_mapping(document.get(section)).items():
+            if section == "webhooks" or path_selected(path, include_paths):
+                yield path, as_mapping(_dereferenced(document, item))
+
+
+def _scoped_schemas(
+    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
+) -> Iterator[tuple[str, object]]:
+    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
+    api = "api" in scopes
+    sections = (section for section in ("paths", "webhooks") if api or section in scopes)
+    for path, item in _path_items(document, sections, include_paths):
+        for method, operation in item.items():
+            yield from _operation_parts(document, f"{path} {method}", operation)
+    components = as_mapping(document.get("components"))
+    bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
+    for name, body in as_mapping(bodies).items():
+        yield from _media_schemas(document, name, body)
 
 
 def _operation_schemas(
     document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
 ) -> Iterator[tuple[str, object]]:
-    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate."""
-    api = "api" in scopes
-    for section in ("paths", "webhooks"):
-        items = document.get(section) if api or section in scopes else None
-        for path, item in as_mapping(items).items():
-            if section == "webhooks" or path_selected(path, include_paths):
-                for method, operation in as_mapping(item).items():
-                    yield from _operation_parts(f"{path} {method}", operation)
-    components = as_mapping(document.get("components"))
-    bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
-    for name, body in as_mapping(bodies).items():
-        yield from _media_schemas(name, body)
+    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate, each node once.
+
+    A response or request body that several operations, or an operation and the request bodies scope, name is one
+    loaded node, and generation writes its inline models once.
+    """
+    walked: dict[int, object] = {}
+    for key, schema in _scoped_schemas(document, scopes, include_paths):
+        if isinstance(schema, dict):
+            if id(schema) in walked:
+                continue
+            walked[id(schema)] = schema
+        yield key, schema
 
 
 def _legacy_body_operations(
     document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
 ) -> Iterator[Mapping[str, Any]]:
-    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions.
-
-    Local path item references resolve as generation resolves them; remote ones are not read.
-    """
-    for section in () if "api" in scopes else ("paths", "webhooks"):
-        for path, item in as_mapping(document.get(section) if section in scopes else None).items():
-            if section == "webhooks" or path_selected(path, include_paths):
-                yield from (
-                    operation
-                    for method, operation in as_mapping(_dereferenced(document, item)).items()
-                    if method in OPERATION_METHODS and isinstance(operation, dict)
-                )
+    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions."""
+    sections = (section for section in ("paths", "webhooks") if "api" not in scopes and section in scopes)
+    for _, item in _path_items(document, sections, include_paths):
+        yield from (
+            operation
+            for method, operation in item.items()
+            if method in OPERATION_METHODS and isinstance(operation, dict)
+        )
 
 
 def _is_inline_object_body(schema: object) -> bool:
@@ -302,21 +335,23 @@ def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str],
         _is_inline_object_body(schema)
         for operation in _legacy_body_operations(document, scopes, include_paths)
         for holder in (operation.get("requestBody"), *as_mapping(operation.get("responses")).values())
-        for _, schema in _media_schemas("", _dereferenced(document, holder))
+        for _, schema in _media_schemas(document, "", holder)
     )
 
 
-def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]]:
+def _operation_parts(document: Mapping[str, Any], key: str, operation: object) -> Iterator[tuple[str, object]]:
     """Yield the request body, response, and parameter schemas of one operation.
+
+    A request body and a response may be a local reference.
 
     Generation parses every parameter's schema of the operations it walks, so inline enums and objects of parameters
     are models whether or not the parameters scope also emits the operation's parameters model.
     """
     if not isinstance(operation, dict) or key.rpartition(" ")[2] not in OPERATION_METHODS:
         return
-    yield from _media_schemas(f"{key} request", operation.get("requestBody"))
+    yield from _media_schemas(document, f"{key} request", operation.get("requestBody"))
     for status, response in as_mapping(operation.get("responses")).items():
-        yield from _media_schemas(f"{key} {status}", response)
+        yield from _media_schemas(document, f"{key} {status}", response)
     fields = {
         name: parameter.get("schema")
         for parameter in operation.get("parameters") or ()
@@ -356,7 +391,7 @@ def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
         return sum(
             method in OPERATION_METHODS
             for item in as_mapping(document.get("paths")).values()
-            for method in as_mapping(item)
+            for method in as_mapping(_dereferenced(document, item))
         )
     return len(as_mapping(document.get("operations"))) + sum(
         isinstance(as_mapping(channel).get(operation), dict)
@@ -414,7 +449,7 @@ def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
 class _Walker:
     """Collect the counts of one document in a single pass over its named schemas."""
 
-    def __init__(self, document: Mapping[str, Any], refs: Mapping[str, str], dialect: _Dialect) -> None:
+    def __init__(self, document: Mapping[str, Any], refs: Mapping[tuple[str, ...], str], dialect: _Dialect) -> None:
         self.document = document
         self.refs = refs
         self.dialect = dialect
@@ -485,7 +520,7 @@ class _Walker:
         """Record a reference to a named schema; return whether the node is a reference."""
         if not isinstance(ref := node.get("$ref"), str):
             return False
-        if (target := self.refs.get(ref)) is not None:
+        if (tokens := _local_tokens(ref)) is not None and (target := self.refs.get(tokens)) is not None:
             self.references[component].add(target)
         return True
 
