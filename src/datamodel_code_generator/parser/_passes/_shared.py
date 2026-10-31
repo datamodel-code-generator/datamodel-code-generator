@@ -838,6 +838,22 @@ def merge_duplicate(
     return users
 
 
+def merge_duplicate_in_module(
+    host: GraphBuilderHost, duplicate: DataModel, canonical: DataModel, models: list[DataModel]
+) -> None:
+    """Hand the users that ``models`` own of a duplicate that leaves the output to the canonical model, and retire it.
+
+    Row ``legacy-module-owned-users``: module-scope reuse removes the model of a typed map value this way, unlike
+    every other duplicate that leaves the output (``merge_duplicate``). A user that no model of ``models`` owns keeps
+    naming the duplicate: a type of a schema validator rule, a type of a model replaced before, a type nothing holds.
+    Each user it hands over records the null of the schema it named, as those of ``merge_duplicate`` do. The caller
+    drops the duplicate from ``models``.
+    """
+    builder = host._graph_builder  # noqa: SLF001
+    builder.redirect_model_reference_users(duplicate, models, canonical.reference)
+    builder.retire_model(duplicate)
+
+
 def normalize_default_value_constraints(
     host: RuntimeExpressionFlags,
     models: list[DataModel],

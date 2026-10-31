@@ -1,4 +1,4 @@
-# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the homedecision = "what the client runtime reads back from JSON: the builtin values JSON text parses into (rows `constants=\"refuse\"`, NaN and the infinities refused where a saved value holds the result, and `floats=\"decimal\"`, numbers read exactly where a count is), and the value a saved wire value restores through its codec"
+# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the home
 # exist today. Read by scripts/check_decision_homes.py; the design is docs/architecture.md, "One home per decision".
 #
 # [homes.<id>]: `decision` in words, `core` (the pure function or module that decides) and `adapters` (code that reads
@@ -511,9 +511,10 @@ what = "renders a dedup key itself; call model/base.py:DataModel._fresh_dedup_ke
 audit = "C08-U15"
 
 [homes.Hx-duplicate-merge]
-decision = "what becomes of a duplicate that deduplication or reuse found: it leaves the output and every user names the equal canonical model, keeping the tags of its unions or not, its children taking their bases once; or it becomes an empty subclass of the canonical model in its place"
+decision = "what becomes of a duplicate that deduplication or reuse found: it leaves the output and every user names the equal canonical model, keeping the tags of its unions or not, its children taking their bases once (row legacy-module-owned-users: module-scope reuse of a typed map value hands over only the users its module's models own); or it becomes an empty subclass of the canonical model in its place"
 core = [
     "parser/_passes/_shared.py:merge_duplicate",
+    "parser/_passes/_shared.py:merge_duplicate_in_module",
     "parser/_passes/_shared.py:_distinct_bases",
     "parser/_passes/_shared.py:removes_reuse_duplicate",
     "parser/_passes/_shared.py:subclass_duplicate",
@@ -527,6 +528,14 @@ keywords = ["merged"]
 paths = ["parser/"]
 exclude = ["parser/generation.py"]
 what = "merges a duplicate into its canonical model itself; call parser/_passes/_shared.py:merge_duplicate"
+audit = "C08-U5"
+
+[homes.Hx-duplicate-merge.signatures.owned-users-redirect]
+kind = "call"
+names = ["redirect_model_reference_users"]
+paths = ["parser/"]
+exclude = ["parser/generation.py"]
+what = "hands the users some models own of a duplicate to another model itself; call parser/_passes/_shared.py:subclass_duplicate or merge_duplicate_in_module"
 audit = "C08-U5"
 
 [homes.Hx-duplicate-merge.signatures.reuse-subclass]
@@ -2175,6 +2184,10 @@ fix = "G06"
 [legacy_rows."legacy-stale-dedup-keys"]
 home = "H12"
 fix = "FIX-9"
+
+[legacy_rows."legacy-module-owned-users"]
+home = "Hx-duplicate-merge"
+fix = "#5733"
 
 [legacy_rows."legacy-graphql-affix-only"]
 home = "H16"
