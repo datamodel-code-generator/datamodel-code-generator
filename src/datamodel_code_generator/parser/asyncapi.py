@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator import Error, InputFileType, SchemaParseError, snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._name_words import (
@@ -314,7 +314,17 @@ class AsyncAPIParser(OpenAPIParser):
     def _collect_discriminator_document(self, raw: dict[str, Any]) -> None:
         """Retain AsyncAPI's component-only policy when reference loading indexes documents."""
         self._discriminator_documents.add(f"{'/'.join(self.model_resolver.current_root)}#")
-        schemas = raw.get("components", {}).get("schemas", {})
+        components = raw.get("components", {})
+        if not isinstance(components, dict):
+            msg = "`components` must be an object"
+            raise SchemaParseError(
+                msg,
+                _named_path(
+                    self._member_location(raw, "components"),
+                    [*self.model_resolver.current_root, "components"],
+                ),
+            )
+        schemas = components.get("schemas", {})
         if not isinstance(schemas, dict):
             return
         for schema_name, schema in schemas.items():
