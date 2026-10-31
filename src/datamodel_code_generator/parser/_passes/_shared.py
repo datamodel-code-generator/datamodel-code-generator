@@ -189,7 +189,7 @@ def _apply_structured_import_aliases(
                 _alias_data_type_structured_imports(builder, data_type, aliased_imports)
         _alias_additional_imports(model, aliased_imports)
     for model in models:
-        _alias_base_class_imports(model, aliased_imports)
+        _alias_base_class_imports(builder, model, aliased_imports)
 
 
 def _alias_field_runtime_expressions(
@@ -288,15 +288,14 @@ def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
 
 
 def _alias_base_class_imports(
+    builder: GraphBuilder,
     model: DataModel,
     aliased_imports: dict[tuple[str | None, str], Import],
 ) -> None:
     """Apply aliased imports to a model's base classes."""
     for base_class in model.base_classes:
-        if (aliased_import := _aliased_import(base_class.import_, aliased_imports)) is None:
-            continue
-        base_class.type = aliased_import.alias
-        base_class.import_ = aliased_import
+        if (aliased_import := _aliased_import(base_class.import_, aliased_imports)) is not None:
+            builder.set_type_expressions(base_class, type_=aliased_import.alias, import_=aliased_import)
 
 
 def _alias_additional_imports(

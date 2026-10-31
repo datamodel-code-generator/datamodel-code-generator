@@ -313,9 +313,10 @@ def test_base_class_aliasing_skips_an_already_canonical_binding() -> None:
     model = BaseModel(reference=Reference(path="model", name="Model"), fields=[], base_classes=[reference])
     model.base_classes[0].import_ = original
 
-    _alias_base_class_imports(model, {("external", "Base"): canonical})
+    builder = GenerationStore().builder()
+    _alias_base_class_imports(builder, model, {("external", "Base"): canonical})
     first = model.base_classes[0].import_
-    _alias_base_class_imports(model, {("external", "Base"): canonical})
+    _alias_base_class_imports(builder, model, {("external", "Base"): canonical})
 
     assert (first, model.base_classes[0].import_, model.base_classes[0].type) == (canonical, canonical, "Base_aliased")
 
