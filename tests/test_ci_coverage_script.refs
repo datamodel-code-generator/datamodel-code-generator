@@ -12,6 +12,10 @@ entrypoint-missing-root	ci_coverage/missing-root.txt
 entrypoint-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 entrypoint-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 entrypoint-record-unknown	ci_coverage/record-unknown.txt
+entrypoint-report-complete	ci_coverage/report-complete.txt
+entrypoint-report-missing-input	ci_coverage/report-missing-input.txt
+entrypoint-report-missing-lines	ci_coverage/report-missing-lines.txt
+entrypoint-report-no-source	ci_coverage/report-no-source.txt
 entrypoint-stale-destination	ci_coverage/stale-destination.txt
 entrypoint-unexpected	ci_coverage/unexpected.txt
 entrypoint-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt
@@ -28,6 +32,10 @@ subprocess-missing-root	ci_coverage/missing-root.txt
 subprocess-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 subprocess-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 subprocess-record-unknown	ci_coverage/record-unknown.txt
+subprocess-report-complete	ci_coverage/report-complete.txt
+subprocess-report-missing-input	ci_coverage/report-missing-input.txt
+subprocess-report-missing-lines	ci_coverage/report-missing-lines.txt
+subprocess-report-no-source	ci_coverage/report-no-source.txt
 subprocess-stale-destination	ci_coverage/stale-destination.txt
 subprocess-unexpected	ci_coverage/unexpected.txt
 subprocess-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt

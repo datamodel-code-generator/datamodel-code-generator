@@ -18,13 +18,46 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "tests/data/ci_coverage"
 EXPECTED = ROOT / "tests/data/expected/ci_coverage"
 CASES = json.loads((DATA / "cases.json").read_text(encoding="utf-8"))
+MODULE = """import sys
 
 
-def _prepare_case(case: str, tmp_path: Path) -> tuple[str, Path]:  # ruff: ignore[too-many-branches]
+def sign(value):
+    if value < 0:
+        return -1
+    return 1
+
+
+print(sign(int(sys.argv[1])), sign(int(sys.argv[2])))
+"""
+
+
+def _report_payload(case: str, tmp_path: Path) -> bytes:
+    """Record real coverage data of a module staged in a git project whose `base` branch lacks it."""
+    git = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
+    (tmp_path / ".coveragerc").write_text("[run]\nbranch = true\nrelative_files = true\nsource = .\n", encoding="utf-8")
+    for command in (["init", "-q", "-b", "base"], ["add", ".coveragerc"], ["commit", "-q", "-m", "base"]):
+        subprocess.run([*git, *command], cwd=tmp_path, check=True)
+    (tmp_path / "sign.py").write_text(MODULE, encoding="utf-8")
+    subprocess.run([*git, "add", "sign.py"], cwd=tmp_path, check=True)
+    data = tmp_path / "seed.coverage"
+    values = ("1", "1") if case == "report-missing-lines" else ("1", "-1")
+    subprocess.run(
+        [sys.executable, "-m", "coverage", "run", f"--data-file={data}", "sign.py", *values],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
+    )
+    payload = data.read_bytes()
+    data.unlink()
+    return payload
+
+
+def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-many-branches]
     """Materialize each artifact fault using actual files."""
     root = tmp_path / "inputs"
     root.mkdir()
-    payload = (DATA / "coverage.txt").read_bytes()
+    report = case.startswith("report-")
+    payload = _report_payload(case, tmp_path) if report else (DATA / "coverage.txt").read_bytes()
     for name in sorted(ci_coverage.EXPECTED_NAMES):
         directory = root / name
         directory.mkdir()
@@ -77,15 +110,25 @@ def _prepare_case(case: str, tmp_path: Path) -> tuple[str, Path]:  # ruff: ignor
                 case _:
                     target = directory / "unknown"
                     target.write_bytes(payload)
-    return action, target
+    if report:
+        ci_coverage.main(["prepare", str(root), "--run-id", "123", "--sha", "abc"])
+        match case:
+            case "report-no-source":
+                (tmp_path / "sign.py").unlink()
+            case "report-missing-input":
+                (tmp_path / name).unlink()
+        return ["report", ".", "--compare-branch", "base"]
+    return [action, str(target), "--run-id", "123", "--sha", "abc"]
 
 
 @pytest.mark.parametrize("case", CASES)
 @pytest.mark.parametrize("subprocess_cli", [False, True], ids=["entrypoint", "subprocess"])
-def test_coverage_artifact_cli(case: str, subprocess_cli: bool, tmp_path: Path) -> None:
-    """Reject incomplete or foreign artifacts before exposing any combine inputs."""
-    action, target = _prepare_case(case, tmp_path)
-    args = [action, str(target), "--run-id", "123", "--sha", "abc"]
+def test_coverage_artifact_cli(
+    case: str, subprocess_cli: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reject incomplete or foreign artifacts before exposing any combine inputs, then combine and report them."""
+    args = _prepare_case(case, tmp_path)
+    monkeypatch.chdir(tmp_path)
     if subprocess_cli:
         result = subprocess.run(
             [sys.executable, str(ROOT / "scripts/ci_coverage.py"), *args],
