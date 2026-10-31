@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
+from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -265,15 +266,7 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
 
 def _is_generic_class_container(data_type: DataType) -> bool:
     """Return whether the type subscripts a generic class, whose arguments mypy resolves eagerly."""
-    return (
-        data_type.is_list
-        or data_type.is_dict
-        or data_type.is_set
-        or data_type.is_frozen_set
-        or data_type.is_mapping
-        or data_type.is_sequence
-        or (data_type.is_tuple and data_type.use_standard_collections)
-    )
+    return data_type in GENERIC_CONTAINERS or (data_type.is_tuple and data_type.use_standard_collections)
 
 
 def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -> Iterator[tuple[DataModel, bool]]:
@@ -390,7 +383,7 @@ def collect_set_item_references(models: list[DataModel]) -> list[Reference]:
         for model in models
         for field in model.fields
         for data_type in field.data_type.all_data_types
-        if data_type.is_set or data_type.is_frozen_set
+        if data_type in SETS
         for item_type in data_type.data_types
         for nested in item_type.all_data_types
         if nested.reference

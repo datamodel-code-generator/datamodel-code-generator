@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile, implementation_text
 from datamodel_code_generator._api_types import Implementation, NextSteps
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -108,7 +109,6 @@ _CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
     ("collections.abc", "Mapping"): "is_mapping",
     ("typing", "Mapping"): "is_mapping",
 }
-_KEYED: Final = frozenset({"is_dict", "is_mapping"})
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
@@ -298,7 +298,7 @@ class Module(TargetModule):
         base = value.base
         identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
         flag = _CONTAINERS[(None, base.name) if isinstance(base, BuiltinType) else identity]
-        if flag in _KEYED:
+        if flag in MAPPINGS.flags:
             return self.container(flag, arguments[-1], key=arguments[0])
         return self.container(flag, arguments[0])
 

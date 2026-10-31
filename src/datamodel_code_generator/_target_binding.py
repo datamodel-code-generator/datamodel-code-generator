@@ -22,6 +22,7 @@ from urllib.parse import ParseResult, unquote, urljoin
 from typing_extensions import override
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, ITEM_CONTAINERS, MAPPINGS, WRITTEN_CONTAINERS
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
@@ -238,18 +239,10 @@ _SEQUENCES: Final = cast(
 _SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
 _PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
 _SLOT: Final = "\x00"
-_CONTAINERS: Final = {
-    "frozen_set": "is_frozen_set",
-    "set": "is_set",
-    "sequence": "is_sequence",
-    "list": "is_list",
-    "mapping": "is_mapping",
-    "dict": "is_dict",
-}
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
-    **dict.fromkeys(_CONTAINERS.values(), False),
+    **dict.fromkeys((CONTAINER_FLAGS[container] for container in WRITTEN_CONTAINERS), False),
     "is_optional": False,
     "dict_key": None,
     "reference": None,
@@ -1683,8 +1676,8 @@ class _Projector:
     def _container(self, data_type: DataType, value: TypeView | None) -> TypeView:
         generic = data_type.use_generic_container
         module = "collections.abc" if data_type.use_standard_collections else "typing"
-        for modifier, flag in _CONTAINERS.items():
-            if not getattr(data_type, flag):
+        for modifier in WRITTEN_CONTAINERS:
+            if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
             match modifier:
                 case "frozen_set":
@@ -1699,7 +1692,7 @@ class _Projector:
                     base = ImportedType(Import(import_="Mapping", from_=module))
                 case _:
                     base = BuiltinType("dict")
-            if modifier in {"mapping", "dict"} and (data_type.dict_key is not None or value is not None):
+            if modifier in MAPPINGS.slots and (data_type.dict_key is not None or value is not None):
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)
                 hint = self.hints.composed(data_type, base=value, key=key, container=flag)
@@ -1992,15 +1985,15 @@ def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
                 return [((keyword, str(index)), child) for index, child in enumerate(inner.data_types)]
     if len(inner.data_types) == 1:
         child = inner.data_types[0]
-        if inner.is_list or inner.is_sequence or inner.is_set or inner.is_frozen_set:
+        if inner in ITEM_CONTAINERS:
             if node.item_schema:
                 return [(("items",), child)]
             if node.prefix_items == 1:
                 return [(("prefixItems", "0"), child)]
             return []
-        if (inner.is_dict or inner.is_mapping) and node.additional == "schema":
+        if inner in MAPPINGS and node.additional == "schema":
             return [(("additionalProperties",), child)]
-        if (inner.is_dict or inner.is_mapping) and len(node.patterns) == 1:
+        if inner in MAPPINGS and len(node.patterns) == 1:
             return [(("patternProperties", node.patterns[0]), child)]
         return []
     for keyword, branches in (("anyOf", node.any_of), ("oneOf", node.one_of)):

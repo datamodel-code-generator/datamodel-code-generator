@@ -33,6 +33,7 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,
     writes_beside_literal,
 )
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
@@ -912,7 +913,7 @@ def dropped_property_counts(parser: ValueKeywordsHost, obj: JsonSchemaObject, da
         "legacy-map-null-left-to-field" in parser._legacy_object_maps  # noqa: SLF001
         or not (obj.patternProperties or obj.propertyNames is not None)
         or _object_map_other_types(obj) is None
-        or not any(member.is_dict or member.is_mapping for member in data_type.data_types)
+        or not any(member in MAPPINGS for member in data_type.data_types)
     ):
         return {}
     return {

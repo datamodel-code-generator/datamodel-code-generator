@@ -21,6 +21,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
+from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._python_syntax import call_text
@@ -1512,9 +1513,7 @@ def _validated_value_hashes(field: DataModelFieldBase) -> bool:
 def _value_hash_facts(data_type: DataType) -> ValueHashFacts:
     """Read the facts of a data type that tell whether the values Pydantic validates for it hash as builtin values."""
     return ValueHashFacts(
-        container=bool(
-            data_type.is_list or data_type.is_sequence or data_type.is_dict or data_type.is_mapping or data_type.is_set
-        ),
+        container=data_type in UNHASHABLE_CONTAINERS,
         opaque=bool(
             data_type.reference
             or data_type.data_types

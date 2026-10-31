@@ -110,6 +110,7 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
     writes_beside_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
@@ -1663,7 +1664,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
         if (
             not skip_constraints
-            and (field_type.is_dict or field_type.is_mapping)
+            and field_type in MAPPINGS
             and (property_count_constraints := _value_keywords.get_property_count_constraints(type(self), field))
         ):
             constraints = constraints or {}
@@ -6137,7 +6138,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints = {}
         elif self.field_constraints and constraint_obj.format == "hostname":
             constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
-        if data_type.is_dict or data_type.is_mapping:
+        if data_type in MAPPINGS:
             constraints.update(_value_keywords.get_property_count_constraints(type(self), constraint_obj))
         fields = [
             self._build_field(

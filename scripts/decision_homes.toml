@@ -296,6 +296,23 @@ mentions = ["literals", "enum_member_literals"]
 what = "copies the lists of a DataType node itself; call types.py:_copied_node, or _copy_data_type for a tree"
 audit = "C05-B08"
 
+[homes.Hx-container-kinds]
+decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, and the kinds of slot a decision treats alike (mappings, item containers, arrays, generic containers, any container, unhashable containers, sets)"
+core = ["_container_kinds.py", "types.py:_container_name"]
+adapters = []
+
+[homes.Hx-container-kinds.signatures.mapping-flags]
+kind = "name"
+names = ["is_mapping"]
+ctx = "load"
+exclude = [
+    "model/_field_imports.py:data_type_import_key",
+    "parser/_field_copies.py:_get_inherited_type_modifiers",
+    "parser/_field_copies.py:_merge_data_type_modifiers",
+]
+what = "tests the flags of a mapping type itself; ask whether the type is in MAPPINGS or another kind of _container_kinds.py (a key, snapshot or merge of every flag is not this decision)"
+audit = "C05-B03"
+
 [homes.Hx-field-copy]
 decision = "how a field is copied: what a copy owns (its data type tree, extras, validation aliases and mutable default) and the names, aliases and other values it is made with"
 core = ["parser/_field_copies.py:_copy_data_model_field"]

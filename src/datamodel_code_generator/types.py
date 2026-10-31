@@ -54,6 +54,7 @@ from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator import imports as generator_imports
+from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS, WRITTEN_CONTAINERS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -1025,14 +1026,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
 
-    _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = (
-        "frozen_set",
-        "set",
-        "sequence",
-        "list",
-        "mapping",
-        "dict",
-    )
+    _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = WRITTEN_CONTAINERS
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
 
     @property
@@ -1097,15 +1091,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     @property
     def _is_container(self) -> bool:
         """Return whether the type is a dict, list, set, frozen set, mapping, sequence or tuple."""
-        return (
-            self.is_dict
-            or self.is_list
-            or self.is_set
-            or self.is_frozen_set
-            or self.is_mapping
-            or self.is_sequence
-            or self.is_tuple
-        )
+        return self in CONTAINERS
 
     @property
     def _is_bare_none(self) -> bool:
@@ -1273,8 +1259,6 @@ own text left out); ``single`` its one nested type or the model it names; ``unio
 ``tuple`` a tuple of them; ``literal`` a ``Literal`` of its values or of its enum members.
 """
 
-_MAPPING_CONTAINERS: Final = frozenset({"mapping", "dict"})
-
 
 @final
 @record
@@ -1403,7 +1387,7 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
     order = data_type._BASE_TYPE_HINT_CONTAINER_ORDER if base else data_type._TYPE_HINT_CONTAINER_ORDER  # noqa: SLF001
     for container in order:
         if (name := _container_name(data_type, container)) is not None:
-            mapping = container in _MAPPING_CONTAINERS
+            mapping = container in MAPPINGS.slots
             key = type_expr_of(data_type.dict_key, base=base) if mapping and data_type.dict_key else None
             return TypeApply(data_type, form, args, name, mapping, key, base)
     return TypeApply(data_type, form, args, base=base)
@@ -1889,15 +1873,7 @@ class DataTypeManager(ABC):
     def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
         """Return the keywords a container or a referenced model takes, or None for any other type."""
         return _applicability.shape_keywords(
-            mapping=data_type.is_dict or data_type.is_mapping,
-            sequence=any((
-                data_type.is_list,
-                data_type.is_set,
-                data_type.is_frozen_set,
-                data_type.is_sequence,
-                data_type.is_tuple,
-            )),
-            reference=bool(data_type.reference),
+            mapping=data_type in MAPPINGS, sequence=data_type in ARRAYS, reference=bool(data_type.reference)
         )
 
     @property

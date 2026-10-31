@@ -26,6 +26,7 @@ Layer: TypeAlias = Literal[
     "free-names",
     "name-words",
     "graph-links",
+    "container-kinds",
     "module-paths",
     "openapi-paths",
     "config",
@@ -136,6 +137,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
             "import while they import each other: import only the standard library and typing_extensions"
+        ),
+    ),
+    "container-kinds": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the container slots and kinds of a type tree node are a leaf that types.py, the model package, the "
+            "parser and the targets read: import only the standard library and typing_extensions"
         ),
     ),
     "context-scope": (
@@ -1318,6 +1326,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "name-words"
         case ("_graph_links.py",):
             layer = "graph-links"
+        case ("_container_kinds.py",):
+            layer = "container-kinds"
         case ("_context_scope.py",):
             layer = "context-scope"
         case ("_module_paths.py",):
