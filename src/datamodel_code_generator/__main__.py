@@ -119,7 +119,7 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
-from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, json_schema_text
+from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
@@ -2211,13 +2211,7 @@ def _run_staged_job(
 
 def _write_batch_json_spool(spool: Any) -> None:
     """Write a batch JSON document from validated, line-delimited job payloads, streaming its jobs array."""
-    sys.stdout.write(dump_json({**OUTPUT_HEAD, "kind": "batch", "jobs": []}, "ordered").removesuffix("]\n}"))
-    for index, line in enumerate(spool):
-        if index:
-            sys.stdout.write(",")
-        sys.stdout.write("\n")
-        sys.stdout.write(dump_json(json.loads(line), "ordered", depth=2))
-    sys.stdout.write("\n  ]\n}\n")
+    write_streamed_json(sys.stdout.write, {**OUTPUT_HEAD, "kind": "batch"}, "jobs", map(json.loads, spool), "ordered")
 
 
 def _run_jobs_json(

@@ -2473,12 +2473,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_identities: Mapping[DataModel, str],
     ) -> tuple[ModelMetadata, tuple[str, ...]]:
         """Return the metadata of the emitted models and, in the same order, their redacted identity paths."""
+        from datamodel_code_generator.model_metadata import model_metadata_payload  # noqa: PLC0415
+
         models = [(model, ctx.module) for ctx in contexts for model in ctx.models if model in model_identities]
         return (
-            {
-                "version": 1,
-                "models": [cls._model_metadata(model, module, model_identities[model]) for model, module in models],
-            },
+            model_metadata_payload([
+                cls._model_metadata(model, module, model_identities[model]) for model, module in models
+            ]),
             tuple(redact_reference(model_identities[model]) for model, _ in models),
         )
 
