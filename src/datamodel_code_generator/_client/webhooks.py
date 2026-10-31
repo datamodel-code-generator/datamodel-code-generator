@@ -13,11 +13,11 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
-from datamodel_code_generator._client.facade import facade_module, statement
+from datamodel_code_generator._client.facade import facade_module
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, _problem, missing_schema
 from datamodel_code_generator._client.render import Function
 from datamodel_code_generator._client.streams import _events, discriminator
-from datamodel_code_generator._python_syntax import call_text, dict_display, subscript_text
+from datamodel_code_generator._python_syntax import call_text, dict_display, from_import, subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
@@ -265,13 +265,13 @@ class _Webhooks:
         return facade_module(
             "webhooks.keys",
             "The key types of this package's webhook signatures.",
-            imports=(statement(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
+            imports=(from_import(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
             exports=sorted(set().union(*modules.values())),
         )
 
     def decoder(self, module: TargetModule, event: WebhookEvent) -> str:
         """Return the runtime decoder of one event type."""
-        codec = f"{module.local('_generated', 'model_bindings')}.{self.accessors[event.use.id].codec}"
+        codec = self.accessors[event.use.id].reference(module)
         return call_text(module.local(_EVENTS, "EventDecoder"), (codec,))
 
     def event(self, module: TargetModule, spec: WebhookSpec) -> tuple[str, str]:

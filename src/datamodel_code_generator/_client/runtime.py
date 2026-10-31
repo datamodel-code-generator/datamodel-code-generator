@@ -155,10 +155,15 @@ def declared_security(plan: ClientPlan) -> frozenset[Security]:
     ))
 
 
+def compresses(plan: ClientPlan) -> bool:
+    """Return whether an operation of the package accepts gzip request bodies, which the clients can then send."""
+    return any("gzip" in spec.accepted_content_encodings for spec in plan.operations)
+
+
 def declared_helpers(kinds: Iterable[str], plan: ClientPlan) -> frozenset[Helper]:
     """Return the helpers of the package's helper kinds and its operations' request codings."""
     found: set[Helper] = {_KINDS[kind] for kind in kinds}
-    if any("gzip" in spec.accepted_content_encodings for spec in plan.operations):
+    if compresses(plan):
         found.add("compression")
     return frozenset(found)
 

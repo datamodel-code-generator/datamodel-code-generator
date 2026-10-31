@@ -33,9 +33,9 @@ them, ``what`` words the message):
   a raw read of a loaded document is invisible to them).
 * ``literal``: a string literal, or an f-string with a literal part, that holds one of ``contains`` (the spelling of a
   value that only its home may write); an f-string is one hit at its own position.
-* ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
-  of ``brackets`` (``(`` a call or tuple display, ``[`` a subscript or list display, ``{`` a set or dict display):
-  Python source spelled by hand.
+* ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after a text ending in
+  one of ``brackets`` (``(`` a call or tuple display, ``[`` a subscript or list display, ``{`` a set or dict display,
+  ``" import "`` the names of a from-import): Python source spelled by hand.
 * ``subscript``: an f-string, or a ``+`` chain of strings, that writes a value inside a ``[`` it opens right after a
   head of ``names`` (``f"Optional[{x}]"``, ``f"dict[str, {x}]"``), or a ``[`` right after a call that names a head by a
   string argument (``f"{module.name('typing', 'Final')}[...]"``): a type subscript spelled by hand. A head held in a
@@ -506,9 +506,9 @@ def _neighbours(node: ast.AST) -> list[tuple[ast.AST, ast.AST]]:
 
 
 def _hand_display(before: ast.AST, part: ast.AST, brackets: Iterable[str]) -> bool:
-    """Return whether ``part`` joins expression texts with ``", "`` right after a bracket that ``before`` opens."""
+    """Return whether ``part`` joins expression texts with ``", "`` right after a bracket that ``before`` ends with."""
     match before:
-        case ast.Constant(value=str() as text) if text and text[-1] in brackets:
+        case ast.Constant(value=str() as text) if text.endswith(tuple(brackets)):
             return _is_comma_join(part)
     return False
 

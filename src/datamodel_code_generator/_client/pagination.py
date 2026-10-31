@@ -76,6 +76,11 @@ class PaginationSpec:
         return self.helper.tree["continuation"]
 
     @property
+    def follows(self) -> bool:
+        """Return whether the helper follows the URLs a server gives: a next-URL or Link continuation."""
+        return self.continuation["kind"] in _FOLLOWED
+
+    @property
     def evidence(self) -> Literal["has_more", "total"]:
         """Return which end evidence an offset or page-number continuation reads."""
         return evidence(self.continuation)

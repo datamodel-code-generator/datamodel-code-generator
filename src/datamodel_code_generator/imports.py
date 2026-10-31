@@ -12,6 +12,7 @@ from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._requirements import backport_path
 
 if TYPE_CHECKING:
@@ -71,15 +72,15 @@ class Imports(defaultdict[str | None, set[str]]):
     def _set_alias(self, from_: str | None, imports: set[str]) -> list[str]:
         """Apply aliases to imports and return sorted list."""
         return [
-            f"{i.partition(' as ')[0]} as {alias}" if (alias := self.alias[from_].get(i)) and i != alias else i
+            aliased(i.partition(" as ")[0], alias) if (alias := self.alias[from_].get(i)) and i != alias else i
             for i in sorted(imports)
         ]
 
     def create_line(self, from_: str | None, imports: set[str]) -> str:
         """Create a single import line from module and names."""
         if from_:
-            return f"from {from_} import {', '.join(self._set_alias(from_, imports))}"
-        return "\n".join(f"import {i}" for i in self._set_alias(from_, imports))
+            return from_import(from_, self._set_alias(from_, imports))
+        return "\n".join(map(module_import, self._set_alias(from_, imports)))
 
     def dump(self) -> str:
         """Render all imports as a string."""
@@ -89,7 +90,7 @@ class Imports(defaultdict[str | None, set[str]]):
     def _storage_key(import_: Import) -> tuple[str | None, str]:
         # A helper alias has its own identity so ordinary imports can be renamed,
         # removed and exported without changing the name used by the helper.
-        name = f"{import_.import_} as {import_.alias}" if import_.keep_unaliased and import_.alias else import_.import_
+        name = aliased(import_.import_, import_.alias) if import_.keep_unaliased and import_.alias else import_.import_
         return (None if "." in import_.import_ else import_.from_), name
 
     def append(self, imports: Import | Iterable[Import] | None) -> None:

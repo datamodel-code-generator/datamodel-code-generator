@@ -80,7 +80,7 @@ audit = "X-10"
 
 [homes.sample.signatures.hand-display]
 kind = "display"
-brackets = ["(", "["]
+brackets = ["(", "[", " import "]
 what = "joins the items of a display itself"
 audit = "X-11"
 
