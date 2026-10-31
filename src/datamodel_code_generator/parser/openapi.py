@@ -30,7 +30,13 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._document_reader import string_key, string_keys
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected, rooted_path
+from datamodel_code_generator._openapi_paths import (
+    OPERATION_METHODS,
+    effective_operation,
+    effective_parameters,
+    path_selected,
+    rooted_path,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -871,35 +877,22 @@ class OpenAPIParser(JsonSchemaParser):
                 for operation_name, raw_operation in methods.items():
                     if operation_name not in OPERATION_NAMES:
                         continue
-                    operation = raw_operation
+                    parameters = None
                     if item_parameters:
-                        operation = operation.copy()
-                        if "parameters" in raw_operation:
-                            operation_parameters = raw_operation["parameters"]
-                            overridden_parameters = {
-                                key
-                                for parameter in operation_parameters
-                                if (key := self._parameter_key(parameter)) is not None
-                            }
-                            operation["parameters"] = [
-                                *operation_parameters,
-                                *(
-                                    parameter
-                                    for parameter in item_parameters
-                                    if self._parameter_key(parameter) not in overridden_parameters
-                                ),
-                            ]
-                        else:
-                            operation["parameters"] = item_parameters.copy()
-                    if security is not None and "security" not in operation:
-                        # fastapi-code-generator depends on inherited global security being materialized here.
-                        if operation is raw_operation:
-                            operation = operation.copy()
-                        operation["security"] = security
+                        parameters = (
+                            effective_parameters(raw_operation["parameters"], item_parameters, self._parameter_key)
+                            if "parameters" in raw_operation
+                            else item_parameters.copy()
+                        )
+                    operation = effective_operation(raw_operation, parameters, security)
                     self.parse_operation(operation, [*path, operation_name], location=self._raw_location(raw_operation))
 
     def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
-        """Return the OpenAPI identity used for operation-level parameter overrides."""
+        """Return the name and location a parameter declares, its reference resolved, or None without both.
+
+        The paths scope's walk overrides a path item's parameter by this pair as written, a header's name too (row
+        ``legacy-case-sensitive-parameter-override``); the API walk identifies a parameter by its ``parameter_key``.
+        """
         if not isinstance(parameter, dict):
             return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
         if isinstance(ref := parameter.get("$ref"), str):

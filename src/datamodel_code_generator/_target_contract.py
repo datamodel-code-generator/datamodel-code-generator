@@ -640,6 +640,20 @@ def fact(declaration: WireDeclaration | OperationContract, name: str) -> object:
     return scalar_fact(declaration.facts, name)
 
 
+def parameter_location(declaration: WireDeclaration) -> ParameterLocation:
+    """Return the location a parameter declaration sends its value in, one of the five the API walk accepts."""
+    return LOCATIONS[fact(declaration, "in")]
+
+
+def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, str]:
+    """Return where a parameter declaration sends its value: its location and its wire name ("" for none).
+
+    Only a querystring has no name. An operation's parameter plans are keyed by this place as declared;
+    ``parameter_key`` gives what identifies the parameter.
+    """
+    return parameter_location(declaration), declaration.name or ""
+
+
 def operation_literal(operation: OperationContract, name: str) -> FrozenLiteral | None:
     """Return one effective wire fact of an operation as recorded, such as its security or servers."""
     return literal_fact(operation.facts, name)

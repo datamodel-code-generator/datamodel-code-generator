@@ -13,7 +13,12 @@ from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
-from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS, QUERY_METHOD
+from datamodel_code_generator._openapi_paths import (
+    PATH_ITEM_METHODS,
+    QUERY_METHOD,
+    effective_operation,
+    effective_parameters,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
@@ -861,9 +866,8 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> None:
         """Process an operation's schema uses before depth-first callbacks and tags."""
         parameters = self._parameter_declarations(operation.get("parameters", []), [*path, "parameters"])
-        overridden = {entry.key for entry in parameters}
         common_parameters = (*common[0], *common[1])
-        effective = [*parameters, *(entry for entry in common_parameters if entry.key not in overridden)]
+        effective = effective_parameters(parameters, common_parameters, lambda entry: entry.key)
         if (querystrings := sum(entry.key[1] == "querystring" for entry in effective)) and (
             querystrings > 1 or any(entry.key[1] == "query" for entry in effective)
         ):
@@ -877,14 +881,6 @@ class ApiOpenAPIParser(OpenAPIParser):
             if self.use_operation_id_as_name
             else self._get_model_name(prefix, path[-1], "")
         )
-        effective_operation = operation
-        if common_parameters:
-            effective_operation = operation.copy()
-            effective_operation["parameters"] = [entry.raw for entry in effective]
-        if self._api_security is not None and "security" not in operation:
-            if effective_operation is operation:
-                effective_operation = operation.copy()
-            effective_operation["security"] = self._api_security
         frame = ApiDeclarationFrame(
             self._declared(operation),
             self.raw_obj,
@@ -900,7 +896,9 @@ class ApiOpenAPIParser(OpenAPIParser):
             tuple(entry.target.declaration for entry in effective),
             engine_path=tuple(path),
             raw_operation=operation,
-            effective_operation=effective_operation,
+            effective_operation=effective_operation(
+                operation, [entry.raw for entry in effective] if common_parameters else None, self._api_security
+            ),
         )
         self.declaration_frames.append(frame)
         try:
