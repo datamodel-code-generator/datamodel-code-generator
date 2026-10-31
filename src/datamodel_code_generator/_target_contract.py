@@ -36,6 +36,7 @@ class FieldSlot:
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
+Projection: TypeAlias = Literal["value", "item_stream_array"]
 TypeUseRole: TypeAlias = Literal[
     "schema",
     "parameter",
@@ -91,7 +92,7 @@ class TypeUseId:
     schema_site: SourceLocation
     declaration: DeclarationId
     direction: Direction
-    projection: Literal["value", "item_stream_array"] = "value"
+    projection: Projection = "value"
     location: str | None = None
     name: str | None = None
     status: str | None = None
