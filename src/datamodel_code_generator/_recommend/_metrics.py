@@ -21,6 +21,7 @@ from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     ITEM_POSITIONS,
     NAMED_SCHEMA_MAPS,
+    json_nodes,
 )
 from datamodel_code_generator.reference import _special_token_pattern
 
@@ -106,21 +107,16 @@ class SchemaVocabulary:
 
 
 def _collect_words(document: object, words: set[str], operation_ids: set[str]) -> None:
-    stack = [document]
-    while stack:
-        match node := stack.pop():
-            case dict():
-                for key, value in node.items():
-                    words.add(_norm(key))
-                    if key in {"title", "operationId"} and isinstance(value, str):
-                        words.add(_norm(value))
-                        if key == "operationId":
-                            operation_ids.add(_norm(value))
-                    if key == "enum" and isinstance(value, list):
-                        words.update(_norm(item) for item in value if isinstance(item, str))
-                    stack.append(value)
-            case list():
-                stack.extend(node)
+    for node in json_nodes(document):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                words.add(_norm(key))
+                if key in {"title", "operationId"} and isinstance(value, str):
+                    words.add(_norm(value))
+                    if key == "operationId":
+                        operation_ids.add(_norm(value))
+                if key == "enum" and isinstance(value, list):
+                    words.update(_norm(item) for item in value if isinstance(item, str))
 
 
 def _component_names(document: Mapping[str, Any]) -> tuple[set[str], set[str]]:

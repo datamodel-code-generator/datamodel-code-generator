@@ -4,12 +4,13 @@
 keyword plays. Every walker reads it, by shape or through a view of its roles (``schema_positions``); a walker that
 visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
 ``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
-data.
+data. ``subschema_entries`` reads the subschemas one keyword holds by its shape, and ``json_nodes`` walks every value of
+a loaded JSON value.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Iterator, Mapping
 from copy import deepcopy
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias
@@ -105,6 +106,40 @@ def schema_positions(
         for keyword, position in SCHEMA_POSITIONS.items()
         if position.roles.issuperset(roles) and (not shapes or position.shape in shapes) and keyword not in without
     )
+
+
+def subschema_entries(keyword: str, value: object) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
+    """Yield each subschema that ``keyword`` holds in its value, by the keyword's shape, with its path in the schema.
+
+    The path is ``(keyword, name)`` in a map (the name as text), ``(keyword, index)`` in a list and ``(keyword,)`` for
+    one subschema, in document order; a member that is no JSON object, and a value of another shape, hold none.
+    """
+    match SCHEMA_SHAPES.get(keyword), value:
+        case "map", dict():
+            for name, child in value.items():
+                if isinstance(child, dict):
+                    yield (keyword, str(name)), child
+        case "sequence" | "single-or-sequence", list():
+            for index, child in enumerate(value):
+                if isinstance(child, dict):
+                    yield (keyword, index), child
+        case "single" | "single-or-sequence", dict():
+            yield (keyword,), value
+
+
+def json_nodes(value: object, *, tuples: bool = False) -> Iterator[object]:
+    """Yield a loaded JSON value and every value inside it, on a stack: the last member of an object or array first.
+
+    The walk takes the members of an object or array when it resumes after yielding it, so a caller may change the
+    object first, or stop. ``tuples`` also walks the items of a tuple (a schema built in Python).
+    """
+    pending = [value]
+    while pending:
+        yield (node := pending.pop())
+        if isinstance(node, dict):
+            pending.extend(node.values())
+        elif isinstance(node, list) or (tuples and isinstance(node, tuple)):
+            pending.extend(node)
 
 
 SCHEMA_MAP_KEYS: frozenset[str] = frozenset(schema_positions(shapes=("map",)))

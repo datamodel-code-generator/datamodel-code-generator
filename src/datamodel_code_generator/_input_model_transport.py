@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
 
+from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator.input_model_result import LoadedInputModelSchema, PythonTypeSchemaAnnotation
 
 _PYTHON_TYPE_TOKEN_PREFIX = "<datamodel-code-generator-python-type:"  # noqa: S105
@@ -47,20 +48,13 @@ def _resolve_python_type_expressions(
     expressions: Mapping[str, PythonTypeExpr],
 ) -> dict[str, object]:
     """Replace surviving build tokens in place without copying the schema tree."""
-    pending: list[object] = [schema]
-    while pending:
-        match pending.pop():
-            case dict() as mapping:
-                if (
-                    isinstance(token := mapping.get("x-python-type"), str)
-                    and (expression := expressions.get(token)) is not None
-                ):
-                    mapping["x-python-type"] = PythonTypeSchemaAnnotation(expression, token)
-                pending.extend(mapping.values())
-            case list() | tuple() as sequence:
-                pending.extend(sequence)
-            case _:
-                continue
+    for node in json_nodes(schema, tuples=True):
+        if (
+            isinstance(node, dict)
+            and isinstance(token := node.get("x-python-type"), str)
+            and (expression := expressions.get(token)) is not None
+        ):
+            node["x-python-type"] = PythonTypeSchemaAnnotation(expression, token)
     return schema
 
 

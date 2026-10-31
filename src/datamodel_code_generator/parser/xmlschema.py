@@ -23,6 +23,7 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
@@ -179,13 +180,7 @@ def is_xml_schema_text(text: str) -> bool:
 
 
 def _schema_dicts(value: Any) -> Iterator[dict[str, Any]]:
-    if isinstance(value, dict):
-        yield value
-        for item in value.values():
-            yield from _schema_dicts(item)
-    elif isinstance(value, list):
-        for item in value:
-            yield from _schema_dicts(item)
+    return (node for node in json_nodes(value) if isinstance(node, dict))
 
 
 def _local_name(tag_or_qname: str) -> str:

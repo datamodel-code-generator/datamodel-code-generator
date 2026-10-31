@@ -34,7 +34,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._json_pointer import escape_token
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -173,21 +173,9 @@ def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | No
         if value.get("$anchor") == anchor:
             return "/" + "/".join(escape_token(part) for part in path)
         for keyword, child in value.items():
-            match SCHEMA_SHAPES.get(keyword), child:
-                case "map", dict():
-                    pending.extend(
-                        (subschema, (*path, keyword, str(name)))
-                        for name, subschema in child.items()
-                        if isinstance(subschema, dict)
-                    )
-                case "sequence" | "single-or-sequence", list():
-                    pending.extend(
-                        (subschema, (*path, keyword, str(index)))
-                        for index, subschema in enumerate(child)
-                        if isinstance(subschema, dict)
-                    )
-                case "single" | "single-or-sequence", dict():
-                    pending.append((child, (*path, keyword)))
+            pending.extend(
+                (subschema, (*path, *map(str, entry))) for entry, subschema in subschema_entries(keyword, child)
+            )
     return None
 
 
@@ -532,17 +520,7 @@ def iter_schema_resource_children(
                 if isinstance(child, dict):
                     yield tuple(path), child
             continue
-        match SCHEMA_SHAPES.get(keyword), value:
-            case "map", dict():
-                for name, child in value.items():
-                    if isinstance(child, dict):
-                        yield (keyword, str(name)), child
-            case "sequence" | "single-or-sequence", list():
-                for index, sequence_child in enumerate(value):
-                    if isinstance(sequence_child, dict):
-                        yield (keyword, index), cast("dict[str, Any]", sequence_child)
-            case "single" | "single-or-sequence", dict():
-                yield (keyword,), value
+        yield from subschema_entries(keyword, value)
 
 
 def schema_resource_identifier(

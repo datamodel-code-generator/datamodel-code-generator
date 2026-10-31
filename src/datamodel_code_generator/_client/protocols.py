@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import helper_name_problem, token
+from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
@@ -128,10 +129,9 @@ def _encodable(text: str) -> bool:
 
 def _literal_problem(value: object) -> str | None:
     """Return why a value is no JSON literal: another type, or text with a lone surrogate."""
-    pending = [value]
-    while pending:
-        match item := pending.pop():
-            case None | bool() | int():
+    for item in json_nodes(value):
+        match item:
+            case None | bool() | int() | list():
                 continue
             case float() if isfinite(item):
                 continue
@@ -139,11 +139,7 @@ def _literal_problem(value: object) -> str | None:
                 if not _encodable(item):
                     return "has text that is not UTF-8"
                 continue
-            case list():
-                pending.extend(item)
-                continue
             case dict() if all(isinstance(key, str) and _encodable(key) for key in item):
-                pending.extend(item.values())
                 continue
             case _:
                 pass
