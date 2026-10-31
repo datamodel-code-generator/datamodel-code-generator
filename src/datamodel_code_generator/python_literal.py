@@ -233,17 +233,6 @@ def _semantic_value_text(value: object) -> str:
     return repr(float(value)) if isinstance(value, _NonFiniteFloat) else str(value)
 
 
-_QUOTE_AND_CONTROL_ESCAPES = {
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-}
-"""The escapes of a single-quoted literal: a Pydantic pattern writes these, a ``TypedDict`` key also the backslash, and
-an enum value also the backslash and the null byte."""
-
 _INTERNAL_TYPE_EXPRESSION_TOKEN = Sentinel("_INTERNAL_TYPE_EXPRESSION_TOKEN")
 _INTERNAL_TYPE_EXPRESSION_ERROR = "internal type expressions must be created by the parser"
 

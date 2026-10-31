@@ -13,11 +13,12 @@ from typing_extensions import Sentinel, override
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
+from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
-from datamodel_code_generator.python_literal import _QUOTE_AND_CONTROL_ESCAPES, _semantic_value_text
+from datamodel_code_generator.python_literal import _semantic_value_text
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ _STR: str = "str"
 _JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
 _JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
 
-escape_characters = str.maketrans({"\u0000": r"\x00", "\\": r"\\", **_QUOTE_AND_CONTROL_ESCAPES})
+escape_characters = SINGLE_QUOTED_ESCAPES
 
 
 class _StructuredEnumMemberValue:

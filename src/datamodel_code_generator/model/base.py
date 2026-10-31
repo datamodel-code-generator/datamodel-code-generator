@@ -292,6 +292,7 @@ def escape_docstring(value: str | None) -> str | None:
     Handles:
     - Backslashes: `\\` -> `\\\\` (must be escaped first)
     - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
+    - Null bytes: written as `\\x00`, as a module cannot hold one
 
     Args:
         value: The string to escape, or None.
@@ -306,7 +307,7 @@ def escape_docstring(value: str | None) -> str | None:
     value = _normalize_string(value)
     # Escape backslashes first, then triple quotes. Retain the original string
     # when no escaping is needed so custom-template fast paths stay allocation-free.
-    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').replace("\0", "\\x00")
     return _EscapedDocstring(escaped) if escaped != value else value
 
 
@@ -321,6 +322,13 @@ def _ends_with_unescaped_quote(value: str) -> bool:
             break
         backslash_count += 1
     return backslash_count % 2 == 0
+
+
+def _single_line_docstring(escaped: str) -> str:
+    """Return the one-line docstring of escaped text, with its last double quote escaped so it cannot close it."""
+    if _ends_with_unescaped_quote(escaped):
+        escaped = f'{escaped[:-1]}\\"'
+    return f'"""{escaped}"""'
 
 
 def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_line_docstring: bool = False) -> str:
@@ -351,10 +359,7 @@ def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_li
     escaped = escape_docstring(value) or ""
 
     if use_single_line_docstring and "\n" not in value and "\r" not in value:
-        if _ends_with_unescaped_quote(escaped):
-            escaped = f'{escaped[:-1]}\\"'
-
-        return f'"""{escaped}"""'
+        return _single_line_docstring(escaped)
 
     indent = max(indent_spaces, 0) * " "
     if indent:
@@ -1083,8 +1088,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self.use_inline_field_description:
             description = self.extras.get("description", None)
             if description is not None and "\n" not in description:
-                escaped = escape_docstring(description)
-                return f'"""{escaped}"""'
+                return _single_line_docstring(escape_docstring(description) or "")
 
         return None
 
