@@ -1456,7 +1456,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
-                    if original_field:  # pragma: no cover
+                    if original_field:
                         # TODO: Improve detection of reference type
                         # Use list instead of set because Import is not hashable
                         excluded_imports = [IMPORT_OPTIONAL, IMPORT_UNION]
