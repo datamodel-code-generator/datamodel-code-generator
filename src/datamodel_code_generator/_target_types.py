@@ -12,7 +12,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._container_kinds import CONTAINER_CLASSES
+from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -75,11 +75,7 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
     (None, "bool"): "boolean",
     (None, "float"): "number",
     (None, "int"): "integer",
-    (None, "dict"): None,
-    (None, "frozenset"): None,
-    (None, "list"): None,
-    (None, "set"): None,
-    (None, "tuple"): None,
+    **dict.fromkeys(((None, name) for name in BUILTIN_CONTAINERS), None),
     **CONSTRAINED_SCALARS,
 }
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})

@@ -11,13 +11,14 @@ from __future__ import annotations
 from functools import cache
 from operator import attrgetter
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, final
+from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias, final
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 __all__ = [
     "ARRAYS",
+    "BUILTIN_CONTAINERS",
     "CONTAINERS",
     "CONTAINER_CLASSES",
     "CONTAINER_FLAGS",
@@ -26,11 +27,15 @@ __all__ = [
     "MAPPINGS",
     "SEQUENCES",
     "SETS",
+    "SLOT_CLASSES",
     "UNHASHABLE_CONTAINERS",
     "WRITTEN_CONTAINERS",
+    "ContainerClass",
     "ContainerKind",
     "ContainerSlot",
     "LegacyKindRow",
+    "abstract_class_module",
+    "written_slot",
 ]
 
 ContainerSlot: TypeAlias = Literal["frozen_set", "set", "sequence", "list", "mapping", "dict", "tuple"]
@@ -50,19 +55,73 @@ CONTAINER_FLAGS: Final[Mapping[ContainerSlot, str]] = MappingProxyType({
 """The flag that puts a node in each slot: the ``WRITTEN_CONTAINERS`` in their order, then the tuple, a form of its
 own."""
 
+
+class ContainerClass(NamedTuple):
+    """The generic class a container slot is written as."""
+
+    name: str
+    """Its name with ``--use-standard-collections`` and in a target's type view: a builtin, or an abstract class."""
+    typing_name: str
+    """Its name without ``--use-standard-collections``: the alias of ``typing``."""
+    abstract: bool
+    """Whether it is an abstract class, imported from ``abstract_class_module``, rather than a builtin."""
+
+    def written(self, *, standard: bool) -> str:
+        """Return the name a type hint writes: ``name`` with ``--use-standard-collections``, else ``typing_name``."""
+        return self.name if standard else self.typing_name
+
+
+SLOT_CLASSES: Final[Mapping[ContainerSlot, ContainerClass]] = MappingProxyType({
+    "frozen_set": ContainerClass("frozenset", "FrozenSet", abstract=False),
+    "set": ContainerClass("set", "Set", abstract=False),
+    "sequence": ContainerClass("Sequence", "Sequence", abstract=True),
+    "list": ContainerClass("list", "List", abstract=False),
+    "mapping": ContainerClass("Mapping", "Mapping", abstract=True),
+    "dict": ContainerClass("dict", "Dict", abstract=False),
+    "tuple": ContainerClass("tuple", "Tuple", abstract=False),
+})
+"""The class each slot is written as."""
+
+_ABSTRACT_CLASS_MODULES: Final = ("collections.abc", "typing")
+
+
+def abstract_class_module(*, standard: bool) -> str:
+    """Return the module an abstract class is imported from.
+
+    It is ``collections.abc`` with ``--use-standard-collections`` (``standard``), else ``typing``.
+    """
+    return _ABSTRACT_CLASS_MODULES[0] if standard else _ABSTRACT_CLASS_MODULES[1]
+
+
+_GENERIC_SLOTS: Final[Mapping[ContainerSlot, ContainerSlot]] = MappingProxyType({
+    "set": "frozen_set",
+    "list": "sequence",
+    "dict": "mapping",
+})
+
+
+def written_slot(slot: ContainerSlot, *, generic: bool) -> ContainerSlot:
+    """Return the slot whose class writes a container of ``slot``.
+
+    Under ``--use-generic-container-types`` (``generic``) a set is written as a frozen set, a list as a ``Sequence`` and
+    a dict as a ``Mapping``; every other slot, and every slot without it, as its own class.
+    """
+    return _GENERIC_SLOTS.get(slot, slot) if generic else slot
+
+
 CONTAINER_CLASSES: Final[Mapping[tuple[str | None, str], ContainerSlot]] = MappingProxyType({
-    (None, "frozenset"): "frozen_set",
-    (None, "set"): "set",
-    ("collections.abc", "Sequence"): "sequence",
-    ("typing", "Sequence"): "sequence",
-    (None, "list"): "list",
-    ("collections.abc", "Mapping"): "mapping",
-    ("typing", "Mapping"): "mapping",
-    (None, "dict"): "dict",
+    (module, SLOT_CLASSES[slot].name): slot
+    for slot in WRITTEN_CONTAINERS
+    for module in (_ABSTRACT_CLASS_MODULES if SLOT_CLASSES[slot].abstract else (None,))
 })
 """The slot of each generic class a target's type view writes a written container as, by its module and name (no
 module for a builtin): a set under ``--use-generic-container-types`` is a frozen set, and a list or dict an abstract
 ``Sequence`` or ``Mapping``, so each class reads as the slot that writes it there."""
+
+BUILTIN_CONTAINERS: Final[Mapping[str, ContainerSlot]] = MappingProxyType({
+    written.name: slot for slot, written in SLOT_CLASSES.items() if not written.abstract
+})
+"""The slot each builtin container class stands for, by its name (``list``, ``tuple``, ...)."""
 
 LegacyKindRow: TypeAlias = Literal[
     "legacy-abstract-containers-as-unions",

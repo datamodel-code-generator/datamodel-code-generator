@@ -628,8 +628,10 @@ class PydanticV2DataType(DataType):
 class _RuntimeAnnotatedDataType(PydanticV2DataType):
     """A type written through its runtime imports, which aliasing reaches, in place of its own import."""
 
-    def _binding(self, name: str) -> str:
-        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
+    def _binding(self, name: str, default: str | None = None) -> str:
+        """Return the name the runtime import of ``name`` is bound to, or ``default`` when given and none imports it."""
+        bindings = (import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
+        return next(bindings) if default is None else next(bindings, default)
 
     @property
     @override
