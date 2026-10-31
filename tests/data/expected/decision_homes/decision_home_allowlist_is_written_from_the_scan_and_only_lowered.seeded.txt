@@ -61,3 +61,6 @@
 
 [allow."other.py"."split_names"]
 "sample.dotted-split" = { home = "sample", count = 3, audit = "X-16" }
+
+[allow."other.py"."subscripts"]
+"sample.hand-subscript" = { home = "sample", count = 6, audit = "X-22" }

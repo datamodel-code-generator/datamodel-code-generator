@@ -34,6 +34,10 @@ them, ``what`` words the message):
 * ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
   of ``brackets`` (``(`` a call or tuple display, ``[`` a subscript or list display, ``{`` a set or dict display):
   Python source spelled by hand.
+* ``subscript``: an f-string, or a ``+`` chain of strings, that writes a value inside a ``[`` it opens right after a
+  head of ``names`` (``f"Optional[{x}]"``, ``f"dict[str, {x}]"``), or a ``[`` right after a call that names a head by a
+  string argument (``f"{module.name('typing', 'Final')}[...]"``): a type subscript spelled by hand. A head held in a
+  variable (``f"{head}[{x}]"``) is written like an index and does not count.
 * ``keyword``: an f-string that writes ``{name}={value}``, a value, the text ``=`` and another value: a keyword
   argument whose keyword is data, spelled by hand.
 * ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
@@ -81,6 +85,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import itertools
 import json
 import re
 import sys
@@ -121,6 +126,7 @@ SIGNATURE_KINDS = frozenset({
     "key",
     "literal",
     "display",
+    "subscript",
     "keyword",
     "branch",
     "name-search",
@@ -156,12 +162,14 @@ REQUIRED_STRINGS = {
     "key": "keys",
     "literal": "contains",
     "display": "brackets",
+    "subscript": "names",
     "branch": "values",
     "ancestor-walk": "names",
     "mapping-guard": "names",
     "dotted-join": "strings",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
+SUBSCRIPT_BRACKETS = re.compile(r"(\w*)\[|\]")
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
 Origin = tuple[str, str]
@@ -475,26 +483,45 @@ def _is_comma_join(node: ast.AST) -> bool:
     return False
 
 
-def _opens_display(parts: list[ast.AST], index: int, brackets: Iterable[str]) -> bool:
-    """Return whether the part before ``parts[index]`` ends with an opening bracket of a display, call or subscript."""
-    match parts[index - 1] if index else None:
+def _neighbours(node: ast.AST) -> list[tuple[ast.AST, ast.AST]]:
+    """Return each part of the f-string or ``+`` chain ``node`` with the part before it.
+
+    A ``+`` operation pairs only its right operand, so a chain counts once, at the operation that writes the pair.
+    """
+    if isinstance(node, ast.BinOp):
+        parts = [*_string_parts(node.left), node.right][-2:] if isinstance(node.op, ast.Add) else []
+    else:
+        parts = _string_parts(node)
+    return list(itertools.pairwise(parts))
+
+
+def _hand_display(before: ast.AST, part: ast.AST, brackets: Iterable[str]) -> bool:
+    """Return whether ``part`` joins expression texts with ``", "`` right after a bracket that ``before`` opens."""
+    match before:
         case ast.Constant(value=str() as text) if text and text[-1] in brackets:
-            return True
+            return _is_comma_join(part)
     return False
 
 
-def _hand_display(node: ast.AST, brackets: Iterable[str]) -> bool:
-    """Return whether ``node`` joins expression texts with ``", "`` right inside a bracket it opens itself.
+def _opens_subscript(text: str, heads: Iterable[str]) -> bool:
+    """Return whether ``text`` leaves open a ``[`` that it writes right after one of ``heads``."""
+    opened: list[str] = []
+    for bracket in SUBSCRIPT_BRACKETS.finditer(text):
+        if bracket[0] == "]":
+            del opened[-1:]
+        else:
+            opened.append(bracket[1])
+    return not set(heads).isdisjoint(opened)
 
-    A ``+`` chain counts at the operation whose right operand is the join, so a chain is one hit.
-    """
-    if isinstance(node, ast.BinOp):
-        if not (isinstance(node.op, ast.Add) and _is_comma_join(node.right)):
-            return False
-        parts = [*_string_parts(node.left), node.right]
-        return _opens_display(parts, len(parts) - 1, brackets)
-    parts = _string_parts(node)
-    return any(_is_comma_join(part) and _opens_display(parts, index, brackets) for index, part in enumerate(parts))
+
+def _hand_subscript(before: ast.AST, part: ast.AST, heads: Iterable[str]) -> bool:
+    """Return whether ``before`` and ``part`` write a subscript of one of ``heads`` by hand (``subscript``)."""
+    match before, part:
+        case ast.Constant(value=str() as text), _ if not isinstance(part, ast.Constant):
+            return _opens_subscript(text, heads)
+        case ast.Call(args=arguments), ast.Constant(value=str() as text) if text.startswith("["):
+            return not set(heads).isdisjoint(_string_arguments(arguments))
+    return False
 
 
 def _hand_keyword(node: ast.AST) -> bool:
@@ -759,7 +786,9 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             ]
             return any(spelling in text for text in texts for spelling in options["contains"])
         case "display":
-            return _hand_display(node, options["brackets"])
+            return any(_hand_display(before, part, options["brackets"]) for before, part in _neighbours(node))
+        case "subscript":
+            return any(_hand_subscript(before, part, options["names"]) for before, part in _neighbours(node))
         case "keyword":
             return _hand_keyword(node)
         case "name-search":
@@ -789,6 +818,7 @@ NODE_TYPES = {
     "key": (ast.Subscript, ast.Call),
     "literal": (ast.Constant, ast.JoinedStr),
     "display": (ast.JoinedStr, ast.BinOp),
+    "subscript": (ast.JoinedStr, ast.BinOp),
     "keyword": (ast.JoinedStr,),
     "branch": (ast.If, ast.IfExp),
     "name-search": (ast.While,),

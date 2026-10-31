@@ -84,6 +84,12 @@ brackets = ["(", "["]
 what = "joins the items of a display itself"
 audit = "X-11"
 
+[homes.sample.signatures.hand-subscript]
+kind = "subscript"
+names = ["Optional", "dict", "Final"]
+what = "writes a type subscript itself"
+audit = "X-22"
+
 [homes.sample.signatures.hand-keyword]
 kind = "keyword"
 what = "spells a keyword argument itself"

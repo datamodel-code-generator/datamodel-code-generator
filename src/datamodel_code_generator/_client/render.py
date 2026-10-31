@@ -65,10 +65,10 @@ from datamodel_code_generator._target_render import (
     Plan,
     field_plan,
     parameter_plan,
+    runtime_files,
     runtime_record,
-    runtime_sources,
 )
-from datamodel_code_generator._target_templates import builtin_role, templated
+from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
 
 if TYPE_CHECKING:
@@ -3134,7 +3134,7 @@ class ClientRenderer:
         self.backend = backend
         self.types = types
         self.dependencies = dependencies
-        self.role: Role = builtin_role if templates is None else templates.role
+        self.role: Role = roles(templates)
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
 
@@ -3413,13 +3413,13 @@ class ClientRenderer:
             )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = (*self.helper_files(resources), *webhooks)
-        runtime = tuple(runtime_sources(capabilities.modules()))
+        runtime = tuple(runtime_files(capabilities.modules()))
         readme = self.readme(
-            capabilities, tuple(path for path, _ in runtime), resources, bodies=bool(facades.body_groups)
+            capabilities, tuple(file.path for file in runtime), resources, bodies=bool(facades.body_groups)
         )
         return (
             *files,
-            *(RenderedFile(path=path, kind="runtime", text=text, verbatim=True) for path, text in runtime),
+            *runtime,
             *helpers,
             self.file(PurePosixPath("README.md"), "readme", readme),
             self.file(

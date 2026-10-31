@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
@@ -62,15 +63,17 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def runtime_sources(modules: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
-    """Yield the declared runtime modules and their packages' initializers, in ascending path order.
+def runtime_files(modules: Iterable[str]) -> Iterator[RenderedFile]:
+    """Yield the copies of the declared runtime modules and their packages' initializers, in ascending path order.
 
-    A target declares every module its capabilities need; the copy never follows the modules' imports.
+    A target declares every module its capabilities need; the copy never follows the modules' imports. The coordinator
+    heads and encodes a copy without formatting it.
     """
     declared = set(modules)
     packages = {(PurePosixPath(module).parent / "__init__.py").as_posix() for module in declared}
     for path in sorted({"__init__.py", *packages, *declared}):
-        yield PurePosixPath("_runtime", path), (RUNTIME / path).read_text(encoding="utf-8")
+        text = (RUNTIME / path).read_text(encoding="utf-8")
+        yield RenderedFile(path=PurePosixPath("_runtime", path), kind="runtime", text=text, verbatim=True)
 
 
 def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:

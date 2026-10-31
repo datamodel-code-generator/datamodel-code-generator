@@ -71,6 +71,8 @@ ALLOWED = """
 "sample.dotted-join" = { home = "sample", count = 2, audit = "X-20" }
 [allow."other.py"."prefixes"]
 "sample.prefix-slice" = { home = "sample", count = 2, audit = "X-21" }
+[allow."other.py"."subscripts"]
+"sample.hand-subscript" = { home = "sample", count = 6, audit = "X-22" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

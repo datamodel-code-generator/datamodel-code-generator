@@ -44,7 +44,7 @@
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
 
 [allow."other.py"."package_files"]
-"sample.init-test" = { home = "sample", count = 1, audit = "X-14" }
+"sample.init-test" = { home = "sample", count = 2, audit = "X-14" }
 
 [allow."other.py"."prefixes"]
 "sample.prefix-slice" = { home = "sample", count = 2, audit = "X-21" }
@@ -60,3 +60,6 @@
 
 [allow."other.py"."split_names"]
 "sample.dotted-split" = { home = "sample", count = 3, audit = "X-16" }
+
+[allow."other.py"."subscripts"]
+"sample.hand-subscript" = { home = "sample", count = 5, audit = "X-22" }

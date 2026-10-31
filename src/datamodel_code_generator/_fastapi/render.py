@@ -62,9 +62,9 @@ from datamodel_code_generator._target_render import (
     Parameter,
     field_plan,
     parameter_plan,
-    runtime_sources,
+    runtime_files,
 )
-from datamodel_code_generator._target_templates import builtin_role, templated
+from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
@@ -575,7 +575,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.config = config
         self.backend = backend
         self.plan = plan
-        self.role: Role = builtin_role if templates is None else templates.role
+        self.role: Role = roles(templates)
         self.document = document
         self.batch = batch
         self.wire = wire
@@ -814,8 +814,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
         extras = _EXTRAS_RUNTIME if any(map(_keeps_extras, self.plan.operations)) else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *extras)):
-            yield RenderedFile(path=path, kind="runtime", text=text, verbatim=True)
+        yield from runtime_files((*_SERVER_RUNTIME, *security, *inputs, *extras))
 
     def application(self) -> Templated:
         """Return the application module, rendered from its builtin template.
