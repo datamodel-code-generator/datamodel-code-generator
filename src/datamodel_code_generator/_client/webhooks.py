@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_documents import JSONObject
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Templated
 
@@ -114,7 +115,7 @@ class WebhookEvent:
 
     name: str | None
     use: TypeUseBinding
-    schema: Mapping[str, str]
+    schema: JSONObject
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

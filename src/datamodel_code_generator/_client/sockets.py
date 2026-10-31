@@ -15,7 +15,7 @@ from datamodel_code_generator._client.pagination import _label, _problem  # pyri
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic, SchemaRef
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._target_contract import TypeUseBinding
+    from datamodel_code_generator._target_documents import JSONObject
 
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
@@ -43,7 +44,7 @@ class SocketSpec:
     operation: OperationSpec
     send: TypeUseBinding | None
     receive: TypeUseBinding | None
-    schemas: tuple[Mapping[str, str], ...]
+    schemas: tuple[JSONObject, ...]
 
     @property
     def uses(self) -> tuple[TypeUseBinding, ...]:
@@ -95,9 +96,7 @@ def socket_uses(
     if protocols is None or not any(helper.enabled and helper.kind == "websocket" for helper in protocols.helpers):
         return (), (), {}
     sockets = _Sockets(protocols, plan, request)
-    specs, problems = sockets.each(("websocket",), sockets.socket)
-    uses = {use.id: use for spec in specs for use in spec.uses}
-    return specs, tuple(uses.values()), problems
+    return sockets.coded(("websocket",), sockets.socket)
 
 
 def plan_sockets(specs: tuple[SocketSpec, ...], problems: dict[str, list[Diagnostic]]) -> tuple[SocketSpec, ...]:

@@ -13,15 +13,12 @@ from typing import TYPE_CHECKING, Any, Final, Literal, cast
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (
-    _dot_literals,
     _fits,
     _json_type,
     _label,
-    _overlaps,
     _page_use,
     _Pages,
     _problem,
-    _target_key,
 )
 from datamodel_code_generator._client.plan import success_response
 from datamodel_code_generator._message_text import english_list
@@ -236,42 +233,18 @@ class _Polls:
         besides, which no binding overlaps, and only a `complete` request, one the bindings and those writes alone
         make, must write every required one; an upload checks what its calls require itself, without `required`.
         """
-        name, label = helper.name, _label(spec)
         writes = list(written)
-        dotted = _dot_literals(spec, bindings)
-        for index, item in enumerate(bindings):
-            where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
-            if (problem := self.pages.credential(helper, spec, target, f"{where}.target", owner)) is not None:
-                yield problem
-                continue
-            key = _target_key(target)
-            if (
-                clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
-            ) is not None:
-                relation = "the same target as" if clash[0] == key else "a target overlapping that of"
-                message = f"The {owner} of {name!r} writes {relation} its {clash[1]}"
-                yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
-                continue
-            writes.append((key, owner))
-            if value.get("source") == "input":
-                message = f"The {owner} of {name!r} reads the helper's input, which is not supported yet"
-                yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
-                continue
-            if "literal" in value:
-                if index in dotted:
-                    message = (
-                        f"The {owner} of {name!r} gives {value['literal']!r}, which makes the segment of the path "
-                        f"parameter {target['name']!r} of {label} a dot segment"
-                    )
-                    yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
-                    continue
-                types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
-            else:
-                types = self.read(helper, sources[value["source"]], value["selector"], f"{where}.value.selector", owner)
-            if isinstance(types, Diagnostic):
-                yield types
-                continue
-            yield from self.pages.fits(helper, spec, target, types, f"{where}.target", owner, null=True)
+        yield from self.pages.bindings(
+            helper,
+            spec,
+            bindings,
+            at,
+            what,
+            writes=writes,
+            read=lambda value, where, owner: self.read(
+                helper, sources[value["source"]], value["selector"], where, owner
+            ),
+        )
         if required:
             yield from self.required(helper, spec, [key for key, _ in writes], at, complete=complete)
 

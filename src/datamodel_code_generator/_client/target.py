@@ -79,6 +79,7 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeView,
     )
+    from datamodel_code_generator._target_documents import JSONObject
 
 HTTPX2: Final = "httpx2>=2.13.0"
 DEPENDENCIES: Final = ("typing-extensions>=4.16",)
@@ -306,7 +307,7 @@ class _HelperDigests:
         kind: str,
         signature: dict[str, object],
         operation: OperationSpec | None,
-        schemas: list[Mapping[str, str]],
+        schemas: list[JSONObject],
         uses: list[object],
     ) -> str:
         """Return the digest of a helper's contract closure from its one signature, operation, schemas, and uses."""

@@ -213,6 +213,12 @@ class ResponseSpec:
     error: bool
     bodyless: bool
 
+    @property
+    def json_use(self) -> TypeUseBinding | None:
+        """Return the use of the response's one media when it is JSON, or None."""
+        media = self.media
+        return media[0].use if len(media) == 1 and media[0].kind == "json" else None
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerSpec:

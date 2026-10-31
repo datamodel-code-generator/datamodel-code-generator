@@ -255,9 +255,7 @@ def stream_uses(
     if protocols is None:
         return (), (), {}
     streams = _Streams(protocols, plan, request)
-    specs, problems = streams.each(_MEDIA, streams.helper)
-    uses = {use.id: use for spec in specs for use in spec.uses}
-    return specs, tuple(uses.values()), problems
+    return streams.coded(_MEDIA, streams.helper)
 
 
 def plan_streams(  # noqa: PLR0913, PLR0917
