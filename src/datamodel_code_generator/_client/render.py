@@ -68,7 +68,7 @@ from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER
-from datamodel_code_generator._target_operations import described
+from datamodel_code_generator._target_operations import coded_use, described
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -2165,7 +2165,7 @@ class _Registry(_Typing):
             form.append(("parts=", tuple_display(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
                 form.append(("additional=", self.sent_plan(module, media.extra)))
-        elif (use := media.use) is not None and use.id in self.accessors and (kind != "binary" or use.checked):
+        elif (use := coded_use(kind, media.use)) is not None and use.id in self.accessors:
             entries.append(("codec=", self.codec(module, use)))
             if kind == "multipart":
                 form.extend((("members=", "True"), *self.multipart_members(module, media)))
@@ -2239,7 +2239,7 @@ class _Registry(_Typing):
         for media in response.media:
             media_type = repr(media.media_type)
             if media.kind == "binary":
-                checked = () if (use := media.use) is None or not use.checked else (("", self.codec(module, use)),)
+                checked = () if (use := coded_use(media.kind, media.use)) is None else (("", self.codec(module, use)),)
                 branches.append(
                     _call(module.local(_RUNTIME, "binary_branch"), (("", status), ("", media_type), *checked))
                 )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._module_paths import dotted_module
@@ -27,6 +28,32 @@ if TYPE_CHECKING:
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 _ALLOW: Final = KnownBackendValue(LiteralScalar(kind="str", value="allow"))
+
+
+@dataclass(frozen=True, slots=True)
+class ExtrasRuntime:
+    """The runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps.
+
+    A client's codecs take its `serializer` and a server's responses dump by its `writer`; a target that uses either
+    copies the module's `path` and imports from its `module`.
+    """
+
+    name: str = "pydantic_extras"
+    serializer: str = "extras_serializer"
+    writer: str = "extras_json"
+
+    @property
+    def path(self) -> str:
+        """Return the module's file below the runtime package, as a target declares its copy."""
+        return f"model_codecs/{self.name}.py"
+
+    @property
+    def module(self) -> str:
+        """Return the module's dotted path below the generated package."""
+        return f"_runtime.model_codecs.{self.name}"
+
+
+EXTRAS: Final = ExtrasRuntime()
 
 
 def artifact_module(artifact: ModelArtifactAddress) -> str:

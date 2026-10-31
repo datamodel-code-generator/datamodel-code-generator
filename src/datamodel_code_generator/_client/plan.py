@@ -69,6 +69,7 @@ from datamodel_code_generator._target_operations import (
     CLIENT,
     alias,
     argument_names,
+    coded_use,
     declared_by,
     declared_media_type,
     derived_name,
@@ -1313,9 +1314,9 @@ def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
         yield from (part.use for item in media for part in member_parts(item) if part.use is not None)
 
 
-def _coded(media: MediaSpec) -> bool:
-    """Return whether a body's codec reads or writes it: any but raw bytes the models leave unconstrained, or parts."""
-    return media.members is None and (media.kind != "binary" or (media.use is not None and media.use.checked))
+def _coded(media: MediaSpec) -> TypeUseBinding | None:
+    """Return the type use whose codec reads or writes a body, unless the body is sent or read as parts."""
+    return None if media.members is not None else coded_use(media.kind, media.use)
 
 
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
@@ -1323,10 +1324,10 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
     for spec in plan.operations:
         yield from (parameter.use.id for parameter in spec.parameters if parameter.use is not None)
         if spec.body is not None:
-            yield from (media.use.id for media in spec.body.media if media.use is not None and _coded(media))
+            yield from (use.id for media in spec.body.media if (use := _coded(media)) is not None)
         for response in spec.responses:
             if not response.bodyless:
-                yield from (media.use.id for media in response.media if media.use is not None and _coded(media))
+                yield from (use.id for media in response.media if (use := _coded(media)) is not None)
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))
 

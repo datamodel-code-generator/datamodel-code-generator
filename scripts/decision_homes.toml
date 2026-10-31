@@ -1379,6 +1379,14 @@ paths = ["_client/", "_fastapi/"]
 what = "decides itself whether a body or response sends JSON null; call _target_operations.py:json_null"
 audit = "C21-A6"
 
+[homes.T-operation.signatures.coded-body]
+kind = "name"
+names = ["checked"]
+receivers = ["use"]
+paths = ["_client/", "_fastapi/"]
+what = "decides itself whether a body's model reads it (raw bytes the models leave unconstrained are not); call _target_operations.py:coded_use"
+audit = "C23-K23"
+
 [homes.Hx-http]
 decision = "the HTTP vocabulary the generator and both generated runtimes read: status classes, named statuses, status keys and the declared response a status selects, which responses carry no content, a media type's essence and kind, media ranges and the declared media type a received one dispatches to, the ASCII digit run of a count, delay or timestamp a header writes, and the token and quoted-string of a header field (row legacy-lenient-quoted-string: a cache helper reads a Cache-Control quoted-string with any character but a double quote or a backslash, and any escaped one but a line feed)"
 core = ["_runtime/model_codecs/media.py", "_target_operations.py:exact_status", "_target_operations.py:range_start"]
@@ -1483,6 +1491,18 @@ without = ["truncated"]
 paths = ["_runtime/"]
 what = "turns a body's decode failure into the response failure itself; call ResponseDecoder._decoded"
 audit = "C23-K36"
+
+[homes.T-codec]
+decision = "how a model use's native codec is chosen and copied, alike in both targets: the runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps (its file a target copies, the module generated code imports from, the serializer a client's codecs take and the JSON writer a server's responses dump by)"
+core = ["_openapi_codec_plan.py:ExtrasRuntime"]
+adapters = []
+
+[homes.T-codec.signatures.extras-module]
+kind = "literal"
+contains = ["pydantic_extras", "extras_serializer", "extras_json"]
+paths = ["_client/", "_fastapi/"]
+what = "names the extras runtime module or one of its functions itself; read _openapi_codec_plan.py:EXTRAS"
+audit = "C23-K19"
 
 [homes.Hx-json-value]
 decision = "what the runtime reads back from JSON and writes as JSON: the builtin values JSON text parses into (row `constants=\"refuse\"`: NaN and the infinities refused where a saved value must hold the result; row `floats=\"decimal\"`: a number with a fraction or an exponent read exactly where a count is), the value a saved wire value restores, decoded as its codec decodes JSON, the compact JSON text a value writes and the errors it raises (row `legacy-python-json-errors`: the standard library's own), which values are JSON integers and numbers (a bool is neither), and the canonical JSON that identifies a value (members sorted by name) and the SHA-256 digest of it"

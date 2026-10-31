@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
 from datamodel_code_generator._client.codec_plan import (
     CODEC_RUNTIMES,
-    EXTRAS,
-    EXTRAS_MODULE,
     Choice,
     Class,
     Fixed,
@@ -18,6 +16,7 @@ from datamodel_code_generator._client.codec_plan import (
     Values,
 )
 from datamodel_code_generator._client.naming import numbered
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     from_import,
@@ -44,7 +43,7 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
-    EXTRAS,
+    EXTRAS.serializer,
     *(runtime.codec for runtime in CODEC_RUNTIMES.values()),
 )
 
@@ -148,7 +147,7 @@ class _Renderer:
                 (self.shape(use.shape), registry) if runtime.mapped else (self.module.hint(use.type, static=False),)
             )
             if use.extras:
-                arguments = (*arguments, EXTRAS)
+                arguments = (*arguments, EXTRAS.serializer)
             final = self.module.name("typing", "Final")
             name = numbered("codec", index)
             entries.append(
@@ -163,7 +162,7 @@ class _Renderer:
         names = sorted({runtime.codec, *self.records})
         imports = [from_import(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
         if self.plan.extras:
-            imports.append(from_import(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
+            imports.append(from_import(f"..{EXTRAS.module}", [EXTRAS.serializer]))
         source = templated(
             "model_bindings.jinja2",
             model_bindings_template.render_with_scope,
