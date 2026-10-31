@@ -96,6 +96,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.reference import Reference
 
 
 # --- Shared Pydantic type helpers ---
@@ -575,6 +576,11 @@ class DataTypeManager(_DataTypeManagerBase):
 # --- Pydantic v2 specific ---
 
 
+def _writes_serialize_as_any(reference: Reference) -> bool:
+    """Return whether ``--use-serialize-as-any`` wraps a type naming ``reference``: a subclass adds fields."""
+    return any(child.fields for child in reference.iter_data_model_children())
+
+
 class PydanticV2DataType(DataType):
     """Pydantic v2-specific DataType with SerializeAsAny support."""
 
@@ -592,7 +598,7 @@ class PydanticV2DataType(DataType):
 
         assert self.reference is not None
 
-        return any(child.fields for child in self.reference.iter_data_model_children())
+        return _writes_serialize_as_any(self.reference)
 
     @override
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:

@@ -116,7 +116,7 @@ from datamodel_code_generator.model.pydantic_v2 import DataModelField as Pydanti
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
 from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
-from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
+from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.generation import GenerationStore
@@ -1186,7 +1186,7 @@ class _Binder:
         return _Reference(
             self.symbols[id(model)],
             model.IS_ALIAS,
-            self.serialize_as_any and any(child.fields for child in model.reference.iter_data_model_children()),
+            self.serialize_as_any and _writes_serialize_as_any(model.reference),
         )
 
     @staticmethod
