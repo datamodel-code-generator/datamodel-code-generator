@@ -82,7 +82,6 @@ if TYPE_CHECKING:
         NativeField,
         OperationSpec,
         ParameterSpec,
-        Requirement,
         SchemeKind,
         SchemeSpec,
         ServerPlan,
@@ -91,6 +90,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
+        Requirement,
         TypeArgument,
         TypeView,
     )

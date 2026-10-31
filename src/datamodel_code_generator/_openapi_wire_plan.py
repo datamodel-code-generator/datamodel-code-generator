@@ -24,6 +24,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     parameter_key,
 )
 from datamodel_code_generator._target_contract import (
+    API_KEY_LOCATIONS,
     WRAPPER_KINDS,
     BindingReason,
     BuiltinType,
@@ -35,9 +36,7 @@ from datamodel_code_generator._target_contract import (
     GenericType,
     ImportedType,
     KindSite,
-    LiteralMapping,
     LiteralScalar,
-    LiteralSequence,
     LiteralType,
     NoneType,
     OperationContract,
@@ -47,14 +46,17 @@ from datamodel_code_generator._target_contract import (
     TypeUseId,
     UnionType,
     WireDeclaration,
+    api_key_place,
     fact,
     is_required,
     label,
     members_by_consumer,
-    operation_literal,
+    operation_schemes,
     parameter_location,
     parameter_place,
     schema_uses,
+    scheme_catalogues,
+    security_requirements,
     symbols_by_id,
     type_uses,
     uses_by_id,
@@ -71,7 +73,6 @@ if TYPE_CHECKING:
         FieldSlot,
         FieldUseBinding,
         FinalModelSymbol,
-        FrozenLiteral,
         LeafStep,
         MemberShape,
         SourceDocumentId,
@@ -560,30 +561,15 @@ def _header(
     return () if plan is None else ((uses[0], plan),)
 
 
-def _requirement_names(value: FrozenLiteral | None) -> list[str]:
-    match value:
-        case LiteralSequence(items=items):
-            return [
-                str(key.value)
-                for item in items
-                if isinstance(item, LiteralMapping)
-                for key, _ in item.entries
-                if isinstance(key, LiteralScalar)
-            ]
-        case _:
-            return []
-
-
 def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
     """Return the locations and names of the apiKey credentials the operation's security requirements send."""
-    document = operation.id.use_site.document
-    schemes = {scheme.name: scheme for scheme in batch.security_schemes if scheme.use_site.document == document}
-    requirements = operation_literal(operation, "security")
+    schemes = operation_schemes(scheme_catalogues(batch), operation)
     return list(
         dict.fromkeys(
-            (fact(scheme, "in"), str(fact(scheme, "name")))
-            for name in _requirement_names(requirements)
-            if (scheme := schemes.get(name)) is not None and fact(scheme, "type") == "apiKey"
+            place
+            for requirement in security_requirements(operation) or ()
+            for name, _ in requirement
+            if (scheme := schemes.get(name)) is not None and (place := api_key_place(scheme)) is not None
         )
     )
 
@@ -629,7 +615,7 @@ def parameter_collisions(
 ) -> tuple[CodecDiagnostic, ...]:
     """Report each location whose expanded parameter names or the `auth` apiKey names collide."""
     found: list[CodecDiagnostic] = []
-    for location in ("query", "header", "cookie"):
+    for location in API_KEY_LOCATIONS.values():
         claimed = [
             *_claimed(plans, location),
             *{parameter_key(location, name)[1] for kind, name in auth if kind == location},

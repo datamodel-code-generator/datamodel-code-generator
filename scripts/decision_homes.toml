@@ -1226,7 +1226,7 @@ what = "builds a type view itself; freeze the model's TypeExpr or compose text w
 audit = "M-08"
 
 [homes.T-batch]
-decision = "how the targets read one accepted batch: its type uses and symbols by identity, the field bindings of each symbol, the value use of each schema occurrence, the facts of the value an alias or root model stands for, and whether a parameter, header or request body is required"
+decision = "how the targets read one accepted batch: its type uses and symbols by identity, the field bindings of each symbol, the value use of each schema occurrence, the facts of the value an alias or root model stands for, whether a parameter, header or request body is required, and the first reference of a declaration that reaches no object"
 core = [
     "_target_contract.py:uses_by_id",
     "_target_contract.py:symbols_by_id",
@@ -1235,6 +1235,7 @@ core = [
     "_target_contract.py:wrapped_type",
     "_target_contract.py:schema_uses",
     "_target_contract.py:is_required",
+    "_target_contract.py:unresolved_reference",
 ]
 
 [homes.T-batch.signatures.wrapped-facts]
@@ -1252,6 +1253,13 @@ names = ["fact"]
 strings = ["required"]
 what = "reads whether a declaration is required itself; call _target_contract.py:is_required"
 audit = "C21-N3"
+
+[homes.T-batch.signatures.unresolved-reference]
+kind = "compare-eq"
+values = ["resolved"]
+paths = ["_target_operations.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", "_client/", "_fastapi/"]
+what = "tests itself whether a declaration's references reach their objects; call _target_contract.py:unresolved_reference"
+audit = "C20-10"
 
 [homes.T-operation]
 decision = "the operation plan both targets read: groups, names, arguments, defaults, media, bodies, responses, forms, statuses"
@@ -1489,11 +1497,12 @@ what = "digests the canonical JSON of a value itself; call protocols/records.py:
 audit = "C27-B9"
 
 [homes.Hx-parameter-key]
-decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime (row legacy-case-sensitive-parameter-override: the paths scope's walk overrides a path item's parameter by its name as written); and where a parameter of the target contract goes: its declared location and wire name"
+decision = "what identifies a parameter of a request: its location and name, a header's name without regard to case (RFC 9110), for the API walk, the targets and the client runtime (row legacy-case-sensitive-parameter-override: the paths scope's walk overrides a path item's parameter by its name as written); and where a parameter or an apiKey credential of the target contract goes: a parameter's declared location and wire name, an apiKey security scheme's location (query, header or cookie) and nonempty name"
 core = [
     "_runtime/model_codecs/parameters.py:parameter_key",
     "_target_contract.py:parameter_location",
     "_target_contract.py:parameter_place",
+    "_target_contract.py:api_key_place",
 ]
 adapters = []
 
@@ -1510,14 +1519,41 @@ audit = "C20-8"
 kind = "call"
 names = ["fact"]
 strings = ["in"]
-# The location of an apiKey security scheme is the scheme's, not a parameter's (C20 security reading).
-exclude = [
-    "_client/security.py:_key_scheme",
-    "_fastapi/plan.py:_scheme",
-    "_openapi_wire_plan.py:auth_names",
-]
-what = "reads where a parameter declaration goes itself; call _target_contract.py:parameter_place (or parameter_location)"
+what = "reads where a parameter declaration or an apiKey credential goes itself; call _target_contract.py:parameter_place (or parameter_location, api_key_place)"
 audit = "C20-8"
+
+[homes.Hx-security-reading]
+decision = "what the security of the target contract says, read alike by the wire plan and both targets: an operation's security requirement alternatives in source order (each piece as declared, and the view that takes only mappings from string scheme names to lists of string scopes), the schemes they name (those the document that uses the operation declares), and the scheme an http security scheme names, in lower case"
+core = [
+    "_target_contract.py:requirement_alternatives",
+    "_target_contract.py:security_requirements",
+    "_target_contract.py:scheme_catalogues",
+    "_target_contract.py:operation_schemes",
+    "_target_contract.py:http_scheme",
+]
+adapters = ["_client/security.py:SecurityPlanner.binding"]
+
+[homes.Hx-security-reading.signatures.security-requirement]
+kind = "call"
+names = ["operation_literal"]
+strings = ["security"]
+what = "reads an operation's security requirement itself; call _target_contract.py:security_requirements (or requirement_alternatives)"
+audit = "C20-9"
+
+[homes.Hx-security-reading.signatures.batch-schemes]
+kind = "name"
+names = ["security_schemes"]
+receivers = ["batch"]
+paths = ["_target_operations.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", "_client/", "_fastapi/"]
+what = "looks up the security schemes of a batch itself; call _target_contract.py:scheme_catalogues and operation_schemes"
+audit = "C20-10"
+
+[homes.Hx-security-reading.signatures.http-scheme]
+kind = "call"
+names = ["fact"]
+strings = ["scheme"]
+what = "reads the scheme of an http security scheme itself; call _target_contract.py:http_scheme"
+audit = "C20-10"
 
 [homes.Hx-openapi-paths]
 decision = "what the keys of an OpenAPI document's paths say: which fields of a path item hold an operation (and the views of the paths scope, the API walk before OpenAPI 3.2 and the recommender), which paths --openapi-include-paths selects, and the operation in effect: the parameters of its path item it does not override and the document's security requirement unless it declares its own"
@@ -3058,9 +3094,6 @@ fix = "#5769"
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_registration"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
-
-[allow."src/datamodel_code_generator/_fastapi/plan.py"."_requirements"]
-"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
 
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."_scheme"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
