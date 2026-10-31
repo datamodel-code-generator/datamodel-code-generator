@@ -21,7 +21,7 @@ from typing_extensions import Unpack
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.python_literal import _safe_non_finite_float
+from datamodel_code_generator.python_literal import _converted_float
 from datamodel_code_generator.util import record_watch_dependency
 
 if TYPE_CHECKING:
@@ -697,7 +697,7 @@ class _ProtobufDescriptorConverter:
             return text_encoding.CUnescape(value)
         if field.type in {TYPE_DOUBLE, TYPE_FLOAT}:
             number = float(value)
-            return _safe_non_finite_float(number) if self.source_safe_non_finite else number
+            return _converted_float(number, source_safe_non_finite=self.source_safe_non_finite)
         if field.type in _INTEGER_TYPES:
             return int(value)
         return value

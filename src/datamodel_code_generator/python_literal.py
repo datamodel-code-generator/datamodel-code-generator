@@ -10,6 +10,7 @@ from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
 from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -84,6 +85,16 @@ class PythonRuntimeExpression:
     def __deepcopy__(self, _memo: dict[int, object]) -> Self:
         """Share immutable parser-owned expression state across copied model graphs."""
         return self
+
+
+def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpression:
+    """Return an expression on the ``datetime`` module, which generated code imports under one alias."""
+    return PythonRuntimeExpression(IMPORT_DATETIME_MODULE, prefix, suffix)
+
+
+def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
+    """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
+    return _datetime_expression(call_text(f".{kind}.fromisoformat", (repr(text),)))
 
 
 _RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
@@ -193,6 +204,11 @@ class _NonFiniteFloat(float):
 def _safe_non_finite_float(value: float) -> float:
     """Preserve regular floats while making non-finite parser values source-safe."""
     return _NonFiniteFloat(value) if not isfinite(value) else value
+
+
+def _converted_float(value: float, *, source_safe_non_finite: bool) -> float:
+    """Return a float of a converted schema, source-safe when the converter's caller writes Python source."""
+    return _safe_non_finite_float(value) if source_safe_non_finite else value
 
 
 def _safe_non_finite_value(value: Any) -> Any:

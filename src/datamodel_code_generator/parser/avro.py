@@ -100,6 +100,7 @@ def _logical_default_expression(kind: str, value: str) -> Any:
     """Build a logical constructor with an import identity that can be aliased."""
     from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
         PythonRuntimeExpression,
+        _isoformat_expression,
     )
 
     if kind == "decimal":
@@ -108,9 +109,7 @@ def _logical_default_expression(kind: str, value: str) -> Any:
         return PythonRuntimeExpression.from_import_call(
             Import(from_="datetime", import_="timedelta"), f"milliseconds={value}"
         )
-    return PythonRuntimeExpression(
-        Import(import_="datetime", alias="datetime_module"), "", f".{kind}.fromisoformat({value!r})"
-    )
+    return _isoformat_expression(kind, value)
 
 
 class _AvroSchemaConverter:

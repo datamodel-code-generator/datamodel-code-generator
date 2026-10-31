@@ -439,6 +439,31 @@ names = ["_end_schema_parsing"]
 what = "ends a schema parse itself; parse inside parser/jsonschema.py:JsonSchemaParser._parsing_session with the parser's resolve row"
 audit = "C18-13"
 
+[homes.Hx-datetime-expressions]
+decision = "how generated code builds a date, time, datetime or timedelta at run time: an expression on the datetime module imported as datetime_module (the binding the builtin formatter lays out like a field call), and for the ISO text of a date, time or datetime its fromisoformat call (Avro logical defaults, XML Schema temporal defaults)"
+# imports.py holds IMPORT_DATETIME_MODULE among the imports generated code names (a place cannot name module level).
+core = ["imports.py", "python_literal.py:_datetime_expression", "python_literal.py:_isoformat_expression"]
+adapters = []
+
+[homes.Hx-datetime-expressions.signatures.datetime-module-text]
+kind = "literal"
+contains = ["datetime_module", ".fromisoformat("]
+# Left out: the formatter's re-export table names its function _is_datetime_module_call.
+exclude = ["format.py:<module>"]
+what = "spells the datetime module's binding or its fromisoformat call itself; use imports.py:IMPORT_DATETIME_MODULE, python_literal.py:_datetime_expression or _isoformat_expression"
+audit = "C18-7b"
+
+[homes.Hx-source-safe-floats]
+decision = "whether a parsed non-finite float is held source-safe (written float('inf'), float('nan')) or as a plain float: each one of a parsed JSON value, and one of a converted schema exactly when the converter's caller writes Python source (row source_safe_non_finite: the parsers and AsyncAPI payloads that convert Protocol Buffers or XML Schema, not the convert_*_schema_data functions)"
+core = ["python_literal.py:_converted_float", "python_literal.py:_safe_non_finite_value"]
+adapters = []
+
+[homes.Hx-source-safe-floats.signatures.source-safe-call]
+kind = "call"
+names = ["_safe_non_finite_float"]
+what = "makes a parsed float source-safe itself; call python_literal.py:_converted_float with the converter's row, or _safe_non_finite_value for a parsed JSON value"
+audit = "C18-7a"
+
 [homes.Hx-module-paths]
 decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py, the dotted name a model has across modules (its module's dotted name and its class name, the class name alone in the root module), and whether a module lies below a package or within it"
 core = ["_module_paths.py"]

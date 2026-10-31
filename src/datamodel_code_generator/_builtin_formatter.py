@@ -30,6 +30,7 @@ from datamodel_code_generator._target_unicode import (
     lower,
     target_pattern,
 )
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
 from datamodel_code_generator.util import _find_pyproject_toml, load_toml
 
 if TYPE_CHECKING:
@@ -814,7 +815,7 @@ def _has_attribute_root(node: ast.AST, name: str) -> bool:
 
 
 def _is_datetime_module_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
-    return isinstance(node, ast.Call) and _has_attribute_root(node.func, "datetime_module")
+    return isinstance(node, ast.Call) and _has_attribute_root(node.func, IMPORT_DATETIME_MODULE.binding_name)
 
 
 def _is_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
