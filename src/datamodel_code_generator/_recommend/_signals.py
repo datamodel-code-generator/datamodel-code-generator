@@ -13,7 +13,7 @@ from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, 
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -280,12 +280,16 @@ def _path_items(
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
     A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
-    key that is no string is an error, as it is in generation.
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item (a
+    specification extension such as ``x-foo``, or the ``parameters`` key) is skipped, as the API walk of generation
+    skips it.
     """
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
             string_key(path, kind, error_path)
+            if section == "paths" and not holds_path_item(path, item):
+                continue
             if section == "webhooks" or path_selected(path, include_paths):
                 yield path, as_mapping(_dereferenced(document, item))
 
@@ -408,11 +412,16 @@ def _operation_message(channel: object, operation: str) -> object:
 
 
 def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
-    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
+    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations.
+
+    A key of ``paths`` that holds no path item (a specification extension such as ``x-foo``, or the ``parameters``
+    key) holds no operations, as the API walk of generation reads it.
+    """
     if kind == "openapi":
         return sum(
             method in OPERATION_METHODS
-            for item in as_mapping(document.get("paths")).values()
+            for path, item in as_mapping(document.get("paths")).items()
+            if holds_path_item(path, item)
             for method in as_mapping(_dereferenced(document, item))
         )
     return len(as_mapping(document.get("operations"))) + sum(

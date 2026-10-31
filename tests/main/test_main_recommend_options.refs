@@ -82,6 +82,7 @@ blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[bla
 draft-07-pattern-map	main/recommend_options/settings.txt
 enums-read-as-their-const	main/recommend_options/enum_const.txt
 explicit-options	main/recommend_options/api_explicit_options.txt
+extension-paths-api-scope	main/main_recommend_options/recommend_options_for_schemas[extension-paths-api-scope].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.10	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt	@formatter=builtin,python=3.11	= main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout@builtin-python3.15.txt
