@@ -1236,7 +1236,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
         self._parameter_models.clear()
-        try:
+        with self._parsing_session(self._resolve_specification_targets):
             for source, path_parts in self._get_context_source_path_parts():
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
@@ -1273,14 +1273,15 @@ class OpenAPIParser(JsonSchemaParser):
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 
-            self._parse_dynamic_specializations()
-            self._resolve_unparsed_json_pointer()
-            if self._parameter_models:
-                self._load_references_of_parameter_models()
-            self._end_schema_parsing()
-        finally:
-            self._clear_inherited_field_caches()
-            self._reset_local_source_cache()
+    def _resolve_specification_targets(self) -> None:
+        """Parse what the specifications leave: the models specialized for a dynamic scope, then the reserved targets.
+
+        Then the models that parameter models use and nothing else loaded (``_load_references_of_parameter_models``).
+        """
+        self._parse_dynamic_specializations()
+        self._resolve_unparsed_json_pointer()
+        if self._parameter_models:
+            self._load_references_of_parameter_models()
 
     def _load_references_of_parameter_models(self) -> None:
         """Load the models parameter models use that nothing else loaded, following only the references types use.

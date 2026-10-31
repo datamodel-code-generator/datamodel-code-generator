@@ -847,7 +847,7 @@ class AsyncAPIParser(OpenAPIParser):
         """Parse AsyncAPI component schemas and message payload/header schemas."""
         parsed_paths: set[tuple[str, ...]] = set()
         context_sources: dict[tuple[str, ...], AsyncAPIContext] = {}
-        try:
+        with self._parsing_session(lambda: self._resolve_asyncapi_unparsed_json_pointer(context_sources)):
             for source, path_parts in self._get_context_source_path_parts():
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
@@ -868,8 +868,3 @@ class AsyncAPIParser(OpenAPIParser):
                             self._parse_file(raw_schema, schema.name, schema.path)
                         else:
                             self._parse_raw_at(schema.name, raw_schema, schema.path, schema.location)
-
-            self._resolve_asyncapi_unparsed_json_pointer(context_sources)
-            self._end_schema_parsing()
-        finally:
-            self._reset_local_source_cache()

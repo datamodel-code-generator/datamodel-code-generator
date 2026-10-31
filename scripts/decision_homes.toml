@@ -378,6 +378,17 @@ contains = ["[A-Za-z0-9]+", "[^A-Za-z0-9]+"]
 what = "splits a text into its ASCII words itself; call _name_words.py:pascal_words with the row of the feature"
 audit = "C18-N2"
 
+[homes.Hx-parse-session]
+decision = "how the parse of the input sources ends: after the parse in its block, the targets the parsed documents leave (row resolve: the targets the sources reserve, OpenAPI's, which parses the models specialized for a dynamic scope first and the models that parameter models use last, or AsyncAPI's, which reads each target in the document of its context), the end of the schema parsing, and on every path the release of the inherited-field state and of the local source cache"
+core = ["parser/jsonschema.py:JsonSchemaParser._parsing_session"]
+adapters = []
+
+[homes.Hx-parse-session.signatures.end-schema-parsing]
+kind = "call"
+names = ["_end_schema_parsing"]
+what = "ends a schema parse itself; parse inside parser/jsonschema.py:JsonSchemaParser._parsing_session with the parser's resolve row"
+audit = "C18-13"
+
 [homes.Hx-module-paths]
 decision = "the paths of the written modules: the path the output writes a module's file at (a name's - as _, and the dots of its names as _ or split into packages by --treat-dot-as-module), and which module a written Python file holds (its path without the file's .py and without a package's __init__) and whether a file is a package's __init__.py"
 core = ["_module_paths.py"]

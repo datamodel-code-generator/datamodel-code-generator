@@ -7604,11 +7604,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _schema_documents.resolve_root_model_name(self, raw_obj)
 
     @contextmanager
-    def _parsing_sources(self) -> Generator[Iterator[tuple[Source, list[str]]], None, None]:
-        """Yield each source with its path parts, then parse the targets the sources reserve, and clear the caches."""
+    def _parsing_session(self, resolve: Callable[[], None] | None = None) -> Generator[None, None, None]:
+        """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and clear the caches."""
         try:
-            yield self._get_context_source_path_parts()
-            self._resolve_unparsed_json_pointer()
+            yield
+            (resolve or self._resolve_unparsed_json_pointer)()
             self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()
@@ -7620,8 +7620,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @override
     def parse_raw(self) -> None:
         """Parse all raw input sources into data models."""
-        with self._parsing_sources() as sources:
-            for source, path_parts in sources:
+        with self._parsing_session():
+            for source, path_parts in self._get_context_source_path_parts():
                 try:
                     raw_obj = self._load_source_dict(source)
                 except TypeError:
