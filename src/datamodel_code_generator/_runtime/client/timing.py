@@ -10,13 +10,14 @@ from datetime import datetime
 from sys import float_info
 from typing import Final, TypeGuard, final
 
+from ..model_codecs.media import json_number
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
 def finite_number(value: object) -> float | None:
     """Return a number as a finite float, or None for booleans, other types, and values no finite float holds."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if not json_number(value):
         return None
     try:
         number = float(value)
@@ -57,14 +58,8 @@ def positive_count(value: object, name: str, *, allow_zero: bool = False) -> Non
 
 def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
-            return
-        case _:
-            pass
-    raise ConfigurationError(field_path=(name,), reason="invalid_value")
+    if not (json_number(value) and 0 <= value <= float_info.max and (allow_zero or value > 0)):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:

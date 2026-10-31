@@ -12,7 +12,7 @@ from math import isfinite
 from typing import Final, Literal, TypeAlias, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import Self, TypeAliasType
+from typing_extensions import Self, TypeAliasType, TypeIs
 
 from .errors import MalformedError, ParameterEncodingError
 
@@ -35,6 +35,7 @@ __all__ = (
     "MediaKind",
     "MediaOrder",
     "Unparsed",
+    "ascii_digits",
     "bodyless",
     "charset",
     "declaring",
@@ -45,6 +46,8 @@ __all__ = (
     "finite",
     "form_encode",
     "json_bytes",
+    "json_integer",
+    "json_number",
     "json_text",
     "json_value",
     "lexical",
@@ -103,6 +106,7 @@ _CIRCULAR: Final = "A wire value must not refer to itself"
 _NON_FINITE: Final = "A wire number must be finite"
 _TOO_LARGE: Final = "A wire integer must not exceed the interpreter's decimal conversion limit"
 _VALUE_ERRORS: Final = (("Circular reference", _CIRCULAR), ("Out of range float", _NON_FINITE))
+_JSON_ERRORS: Final = (RecursionError, TypeError, ValueError)
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,21 +118,31 @@ class FieldPlan:
     repeated: bool = False
 
 
-def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> str:
+def json_text(
+    value: object,
+    *,
+    ascii_only: bool = False,
+    sort_keys: bool = False,
+    errors: Literal["runtime", "legacy-python-json-errors"] = "runtime",
+) -> str:
     """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
 
     The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
     reference, a non-finite number, an integer over the interpreter's decimal conversion limit, or a value nested
-    beyond the recursion limit, and TypeError for a value or key that is not JSON.
+    beyond the recursion limit, and TypeError for a value or key that is not JSON. `errors="legacy-python-json-errors"`
+    lets the standard library's errors through with its messages, as a server writes a body without a model.
     """
+    caught = _JSON_ERRORS if errors == "runtime" else ()
     try:
         return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
-    except RecursionError:
-        raise ValueError(_NESTING) from None
-    except TypeError:
-        raise TypeError(_NOT_JSON) from None
-    except ValueError as error:
-        message = next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+    except caught as error:
+        if isinstance(error, TypeError):
+            raise TypeError(_NOT_JSON) from None
+        message = (
+            _NESTING
+            if isinstance(error, RecursionError)
+            else next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+        )
         raise ValueError(message) from None
 
 
@@ -354,6 +368,16 @@ def finite(value: object) -> None:
             pass
 
 
+def json_integer(value: object) -> TypeIs[int]:
+    """Return whether a value is an integer as JSON reads one: an int that is not a bool."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def json_number(value: object) -> TypeIs[int | float]:
+    """Return whether a value is a number as JSON reads one: an int or a float that is not a bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def lexical(value: object, kind: LexicalKind) -> str:
     """Format one native JSON scalar for a parameter or form field."""
     if (text := _lexical_text(value, kind)) is None:
@@ -397,6 +421,11 @@ def _integer_text(value: int) -> str:
     except ValueError:
         msg = "An integer exceeds the interpreter's decimal conversion limit"
         raise ParameterEncodingError(msg) from None
+
+
+def ascii_digits(text: str) -> bool:
+    """Return whether text is one or more ASCII decimal digits, the DIGIT run of HTTP counts and delays."""
+    return text.isascii() and text.isdigit()
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:

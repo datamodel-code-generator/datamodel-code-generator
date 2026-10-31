@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 from collections.abc import Callable, Coroutine, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Final, Generic, Literal, cast
@@ -17,7 +16,7 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, declaring
+from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, declaring, json_text
 from ..model_codecs.parameters import header_text
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
@@ -172,7 +171,11 @@ def _content(declared: Declared, body: object) -> str | bytes:
     """
     json_media = declared.kind == "json"
     if (adapter := declared.adapter()) is None:
-        payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
+        payload = (
+            json_text(jsonable_encoder(body, by_alias=True, exclude_unset=True), errors="legacy-python-json-errors")
+            if json_media
+            else body
+        )
     else:
         try:
             value = adapter.validate_python(body)
@@ -200,7 +203,3 @@ def _encoded(declared: Declared, text: str) -> bytes:
 def _failure(message: str) -> ResponseValidationError:
     """Return the error for a handler result that no declared response accepts."""
     return ResponseValidationError([{"type": "value_error", "loc": ("response",), "msg": message}])
-
-
-def _json(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))

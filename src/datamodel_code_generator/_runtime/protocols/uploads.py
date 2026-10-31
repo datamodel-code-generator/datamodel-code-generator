@@ -29,7 +29,7 @@ from ..client.errors import (
 )
 from ..client.operations import request_errors
 from ..client.retry import Delivery
-from ..model_codecs.media import SUCCESS_STATUSES
+from ..model_codecs.media import SUCCESS_STATUSES, ascii_digits, json_integer
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
@@ -436,12 +436,12 @@ class _Upload(StepLock, Generic[T]):
         value = required(read, wire, info, refuse)
         if isinstance(read, HeaderSelector) and isinstance(value, str):
             try:
-                if not (value.isascii() and value.isdigit()):
+                if not ascii_digits(value):
                     raise ValueError(value)  # noqa: TRY301 - One refusal covers digits int() cannot convert.
                 return int(value), info
             except ValueError:
                 raise refuse(read, "value") from None
-        if not isinstance(value, int) or isinstance(value, bool):
+        if not json_integer(value):
             raise refuse(read, "null" if value is None else "type")
         if value < 0:
             raise refuse(read, "value")

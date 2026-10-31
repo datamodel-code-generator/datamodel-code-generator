@@ -10,6 +10,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from ..model_codecs.media import ascii_digits
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 from .options import retryable_status
@@ -197,7 +198,7 @@ class ServerDelay:
 
 
 def _integer(value: str) -> float | None:
-    if not value.isascii() or not value.isdecimal():
+    if not ascii_digits(value):
         return None
     result = float(value)
     return result if math.isfinite(result) else None

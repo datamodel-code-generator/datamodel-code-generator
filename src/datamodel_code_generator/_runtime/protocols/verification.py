@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Generic, cast
 
 from typing_extensions import TypeVar
 
+from ..model_codecs.media import ascii_digits
 from .errors import configuration_error
 from .signatures import UnsupportedKeyError, signature_bytes
 from .webhook_events import (
@@ -37,7 +38,7 @@ __all__ = ("WebhookPlan", "averify_webhook", "verify_webhook")
 
 T = TypeVar("T")
 K = TypeVar("K")
-_TIMESTAMP: Final = re.compile(r"[0-9]{1,19}")
+_TIMESTAMP_DIGITS: Final = 19
 _VISIBLE: Final = re.compile(r"[\x21-\x7e]+")
 
 
@@ -155,7 +156,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
         reject("malformed_signature", helper_id)
     moment = None
     if stamp is not None:
-        if not _TIMESTAMP.fullmatch(stamp):
+        if not (ascii_digits(stamp) and len(stamp) <= _TIMESTAMP_DIGITS):
             reject("malformed_signature", helper_id)
         signed = int(stamp) * 1_000_000
         if not within(now_us, signed, limits) or (moment := instant(signed)) is None:

@@ -21,7 +21,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.media import NOT_MODIFIED, normalized
+from ..model_codecs.media import NOT_MODIFIED, ascii_digits, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
@@ -83,7 +83,6 @@ _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], st
 _ITEM: Final = re.compile(
     r"[ \t]*(?:([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?:=([!#$%&'*+.^_`|~0-9A-Za-z-]+|\"(?:[^\"\\]|\\.)*\"))?)?[ \t]*(?:,|\Z)"
 )
-_DELTA: Final = re.compile(r"[0-9]+")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
 _MAX_TTL: Final = 300.0
@@ -149,7 +148,7 @@ def _directives(values: tuple[str, ...]) -> dict[str, str | None] | None:
 
 def _delta(value: str | None) -> int | None:
     """Return delta-seconds, capped at 2**31 as RFC 9111 requires, or None for anything else."""
-    if value is None or not _DELTA.fullmatch(value := value.strip()):
+    if value is None or not ascii_digits(value := value.strip()):
         return None
     return _MAX_DELTA if len(value) > _DELTA_DIGITS else min(int(value), _MAX_DELTA)
 

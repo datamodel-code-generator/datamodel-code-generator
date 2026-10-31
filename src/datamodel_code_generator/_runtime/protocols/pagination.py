@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue, json_value
+from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
@@ -564,8 +564,8 @@ def _integer(value: object) -> int | None:
 
     A float is taken as the integer it holds; a page's JSON number is read from its text instead, by `_exact`.
     """
-    if isinstance(value, int):
-        return None if isinstance(value, bool) else value
+    if json_integer(value):
+        return value
     return int(value) if isinstance(value, float) and value.is_integer() else None
 
 
@@ -593,12 +593,7 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, content:
     A JSON number with a fraction or an exponent counts only when its text is an integer, which is read exactly.
     """
     value = _selected(plan, read, wire, info)
-    if (
-        isinstance(read, HeaderSelector)
-        and isinstance(value, str)
-        and (digits := value.removeprefix("-")).isascii()
-        and digits.isdigit()
-    ):
+    if isinstance(read, HeaderSelector) and isinstance(value, str) and ascii_digits(value.removeprefix("-")):
         try:
             value = int(value)
         except ValueError:
@@ -1012,7 +1007,7 @@ def _restored(
     if state is None:
         return walk
     rule = plan.continuation
-    if isinstance(rule, CountPlan) and (not isinstance(state, int) or isinstance(state, bool) or state < 0):
+    if isinstance(rule, CountPlan) and (not json_integer(state) or state < 0):
         raise configuration_error(plan.helper_id, ("state",))
     if isinstance(rule, (NextUrlPlan, LinkPlan)):
         if not isinstance(state, str):
