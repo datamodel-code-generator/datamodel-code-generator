@@ -44,6 +44,7 @@ _CORE: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
     "model_codecs/parameters.py",
+    "model_codecs/shared.py",
     "model_codecs/unset.py",
 )
 _PROTOCOLS: Final = (
@@ -137,7 +138,7 @@ class Capabilities:
             (self.multipart_requests, _MULTIPART),
             (self.response_headers, _HEADERS),
             (self.multipart_responses, (*_MULTIPART, "client/multipart_responses.py")),
-            (self.extras, (EXTRAS.path,)),
+            (self.extras, EXTRAS.paths),
         ):
             if declared:
                 modules.update(needed)

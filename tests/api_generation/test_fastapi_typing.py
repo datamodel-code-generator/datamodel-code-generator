@@ -10,6 +10,7 @@ import pytest
 from datamodel_code_generator import DataModelType
 from tests.api_generation.support.fastapi_typing import (
     fastapi_bodies_report,
+    fastapi_extras_report,
     fastapi_missing_report,
     fastapi_parameters_report,
     fastapi_typing_report,
@@ -47,6 +48,13 @@ def test_fastapi_typing_bodies(tmp_path: Path) -> None:
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(fastapi_bodies_report(tmp_path), EXPECTED / "bodies.txt")
+
+
+def test_fastapi_typing_extras(tmp_path: Path) -> None:
+    """Check the package of a server that writes the extra members of Pydantic dataclasses, with its copied writer."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(fastapi_extras_report(tmp_path))
 
 
 def test_fastapi_typing_parameters(tmp_path: Path) -> None:

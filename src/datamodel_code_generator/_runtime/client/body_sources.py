@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, cast
 
+from ..model_codecs.shared import identity_cached
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
 from .errors import request_failure
 from .logical import in_thread
@@ -24,15 +25,7 @@ class BodyBindings:
 
     def bind(self, body: object, *, asynchronous: bool = False) -> BinarySource:
         """Reuse a captured input or retain a newly encoded input."""
-        if (entry := self._entries.get(id(body))) is not None:
-            return entry[1]
-        if not is_binary_input(body) and not (asynchronous and is_async_binary_input(body)):
-            raise request_failure(
-                ("body",), cause=TypeError("A binary body must be bytes, a path, a binary file or an iterable of bytes")
-            )
-        source = BinarySource(body)
-        self._entries[id(body)] = body, source
-        return source
+        return identity_cached(self._entries, body, lambda native: _source(native, asynchronous=asynchronous))
 
     def close(self) -> list[OSError]:
         """Close every file this call opened from a path and return the failures."""
@@ -44,6 +37,15 @@ class BodyBindings:
         if any(source.owned for _, source in self._entries.values()):
             return await in_thread(self.close)
         return self.close()
+
+
+def _source(body: object, *, asynchronous: bool) -> BinarySource:
+    """Return the source of a native input a call binds, refusing one that is no binary body of the call's mode."""
+    if not is_binary_input(body) and not (asynchronous and is_async_binary_input(body)):
+        raise request_failure(
+            ("body",), cause=TypeError("A binary body must be bytes, a path, a binary file or an iterable of bytes")
+        )
+    return BinarySource(body)
 
 
 class BoundBody:

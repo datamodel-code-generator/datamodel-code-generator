@@ -797,7 +797,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        extras = (EXTRAS.path,) if any(map(_keeps_extras, self.plan.operations)) else ()
+        extras = EXTRAS.paths if any(map(_keeps_extras, self.plan.operations)) else ()
         yield from runtime_files((*_SERVER_RUNTIME, *security, *inputs, *extras))
 
     def application(self) -> Templated:

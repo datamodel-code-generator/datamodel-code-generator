@@ -6,7 +6,7 @@ other third-party imports anyio pydantic_core
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/client.py: 1679
+  client/client.py: 1675
   client/content.py: 108
   client/errors.py: 349
   client/logical.py: 219
@@ -25,10 +25,11 @@ copied runtime
   model_codecs/errors.py: 18
   model_codecs/media.py: 544
   model_codecs/parameters.py: 390
-  model_codecs/pydantic_adapters.py: 68
+  model_codecs/pydantic_adapters.py: 55
   model_codecs/pydantic_models.py: 31
+  model_codecs/shared.py: 64
   model_codecs/unset.py: 11
-total 24 modules, 6371 lines
+total 25 modules, 6418 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

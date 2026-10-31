@@ -25,6 +25,7 @@ from typing_extensions import Self
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
+from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
 from .content import EncodedAttempt
 from .errors import (
@@ -894,12 +895,7 @@ class Core(Generic[AdapterT, HandleT]):
             return settings.base_url
         if settings.server is not self._settings.server:
             return _server_url(operation, settings.server)
-        servers = operation.servers
-        if (cached := self._urls.get(id(servers))) is not None and cached[0] is servers:
-            return cached[1]
-        url = _server_url(operation, settings.server)
-        self._urls[id(servers)] = (servers, url)
-        return url
+        return identity_cached(self._urls, operation.servers, lambda _: _server_url(operation, settings.server))
 
     @staticmethod
     def _decoder(operation: OperationPlan[T], response_media_type: str | None) -> ResponseDecoder[T]:
