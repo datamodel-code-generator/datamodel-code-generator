@@ -28,11 +28,7 @@ def _decoder(type_: TypeForm[Any]) -> Decoder[Any]:
 class MsgspecCodec(ValidatingCodec[T]):
     """Decode and encode through msgspec; renames, tags and defaults belong to the Struct."""
 
-    __slots__ = ("type",)
-
-    def __init__(self, type_: TypeForm[Any]) -> None:
-        """Keep the generated type; its JSON decoder is built on first use and shared through the module cache."""
-        self.type = type_
+    __slots__ = ()
 
     def decode(self, content: bytes) -> T:
         """Decode JSON through the cached msgspec decoder of the type."""
