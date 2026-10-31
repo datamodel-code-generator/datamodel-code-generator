@@ -1,7 +1,8 @@
 """Helper configuration of a client target: its JSON value and the validation that normalizes it.
 
 The JSON value is an object mapping each helper's name to its definition. Validation gives every diagnostic and the
-normalized metadata of each helper. Selectors and request targets are the runtime records generated helpers use.
+normalized metadata of each helper. Selectors and request targets are the runtime records generated helpers use, which
+`selector_record` and `target_record` build from the metadata.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import partial
 from math import isfinite
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
@@ -24,14 +25,19 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._format_types import PythonVersion
+    from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
+    "MESSAGE_CODECS",
     "Converter",
     "Helper",
     "HelperKind",
     "Link",
+    "MessageCodec",
     "Spec",
     "Tree",
+    "selector_record",
+    "target_record",
     "validate",
 )
 
@@ -57,8 +63,21 @@ _SOURCES: Final = ("input", "initial", "previous")
 _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
-_FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+
+
+class MessageCodec(NamedTuple):
+    """The frame every WebSocket message of a codec takes, None where a helper chooses, and its payload's media kind."""
+
+    frame: str | None
+    media: str
+
+
+MESSAGE_CODECS: Final = {
+    "json": MessageCodec(None, "json"),
+    "utf8": MessageCodec("text", "text"),
+    "bytes": MessageCodec("binary", "binary"),
+}
 
 
 class _Mark(Enum):
@@ -128,6 +147,30 @@ def _literal_problem(value: object) -> str | None:
                 pass
         return "must be a JSON value"
     return None
+
+
+def selector_record(selector: Mapping[str, Any]) -> Selector:
+    """Return the runtime record of a selector's metadata, raising ValueError for a value the record refuses."""
+    from datamodel_code_generator._runtime.protocols import records  # noqa: PLC0415
+
+    match selector["from"]:
+        case "body":
+            return records.BodySelector(pointer=selector["pointer"])
+        case "header":
+            return records.HeaderSelector(name=selector["name"], occurrence=selector["occurrence"])
+    return records.StatusSelector()
+
+
+def target_record(target: Mapping[str, Any]) -> RequestTarget:
+    """Return the runtime record of a request target's metadata, raising ValueError for a value the record refuses."""
+    from datamodel_code_generator._runtime.protocols import records  # noqa: PLC0415
+
+    match location := target["in"]:
+        case "querystring":
+            return records.QuerystringTarget(name=target["name"], pointer=target["pointer"])
+        case "body":
+            return records.BodyTarget(pointer=target["pointer"])
+    return records.ParameterTarget(location=location, name=target["name"])
 
 
 def validate(
@@ -287,8 +330,6 @@ class _Validator:  # noqa: PLR0904
 
     def selector(self, value: object, at: str, *, every: bool = False, body: bool = False) -> object:
         """Convert a selector, which may select every occurrence of a header only in a binding value."""
-        from datamodel_code_generator._runtime.protocols.records import BodySelector, HeaderSelector  # noqa: PLC0415
-
         variants: dict[str, Spec] = {"body": {"pointer": (self.text, REQUIRED)}}
         if not body:
             variants["header"] = {
@@ -301,21 +342,12 @@ class _Validator:  # noqa: PLR0904
         if selected.get("occurrence") == "all" and not every:
             return self.value(f"{at}.occurrence", f"{at}.occurrence can be 'all' only in a binding value")
         try:
-            if selected["from"] == "body":
-                BodySelector(pointer=selected["pointer"])
-            elif selected["from"] == "header":
-                HeaderSelector(name=selected["name"], occurrence=selected["occurrence"])
+            selector_record(selected)
         except ValueError as error:
             return self.value(at, f"{at}: {error}")
         return selected
 
     def target(self, value: object, at: str) -> object:
-        from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
-            BodyTarget,
-            ParameterTarget,
-            QuerystringTarget,
-        )
-
         named: Spec = {"name": (self.text, REQUIRED)}
         selected = self.tagged(
             value,
@@ -334,13 +366,7 @@ class _Validator:  # noqa: PLR0904
         if selected is INVALID:
             return INVALID
         try:
-            match selected["in"]:
-                case "querystring":
-                    QuerystringTarget(name=selected["name"], pointer=selected["pointer"])
-                case "body":
-                    BodyTarget(pointer=selected["pointer"])
-                case _:
-                    ParameterTarget(location=selected["in"], name=selected["name"])
+            target_record(selected)
         except ValueError as error:
             return self.value(at, f"{at}: {error}")
         return selected
@@ -767,13 +793,13 @@ class _Validator:  # noqa: PLR0904
     def message(self, value: object, at: str) -> object:
         """Convert a message definition, giving it the frame its codec defaults to and refusing a mismatched one."""
         spec: Spec = {
-            "codec": (self.choice(*_FRAMES), REQUIRED),
+            "codec": (self.choice(*MESSAGE_CODECS), REQUIRED),
             "frame": (self.choice("text", "binary"), OMITTED),
             "schema": (self.schema, OMITTED),
         }
         if (message := self.record(value, at, spec, "a message definition")) is INVALID:
             return INVALID
-        codec, fixed = message["codec"], _FRAMES[message["codec"]]
+        codec, fixed = message["codec"], MESSAGE_CODECS[message["codec"]].frame
         if (codec == "json") != ("schema" in message):
             where = f"{at}.schema"
             if codec == "json":
