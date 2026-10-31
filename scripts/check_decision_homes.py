@@ -46,6 +46,10 @@ them, ``what`` words the message):
 * ``mapping-guard``: a conditional expression ``v if isinstance(v, C) else e`` (its test may ``and`` more conditions)
   for a class ``C`` in ``names``, whose value is ``v`` itself or a call of a method of ``v`` and whose fallback ``e``
   is ``None`` or an empty ``{}``, ``()`` or ``[]``: a value read as a mapping, or its members, only when it is one.
+* ``dotted-join``: a conditional expression ``f"{m}<s>{n}" if m else n`` for a separator ``s`` in ``strings``: the
+  name ``n`` joined below ``m``, or ``n`` alone when ``m`` is empty.
+* ``prefix-slice``: a comparison ``x[: len(p)] == p`` or ``!=`` (its slice also inside ``tuple(...)``): whether a
+  sequence starts with another.
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -122,6 +126,8 @@ SIGNATURE_KINDS = frozenset({
     "name-search",
     "ancestor-walk",
     "mapping-guard",
+    "dotted-join",
+    "prefix-slice",
 })
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
@@ -153,6 +159,7 @@ REQUIRED_STRINGS = {
     "branch": "values",
     "ancestor-walk": "names",
     "mapping-guard": "names",
+    "dotted-join": "strings",
 }
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
@@ -563,6 +570,38 @@ def _holds_f_string(value: ast.AST) -> bool:
     return False
 
 
+def _joins_below(node: ast.IfExp, separators: Iterable[str]) -> bool:
+    """Return whether ``node`` joins a name below a prefix at a separator, or keeps it alone (``dotted-join``)."""
+    match node.body:
+        case ast.JoinedStr(
+            values=[
+                ast.FormattedValue(value=prefix, conversion=-1, format_spec=None),
+                ast.Constant(value=str() as separator),
+                ast.FormattedValue(value=name, conversion=-1, format_spec=None),
+            ]
+        ):
+            return (
+                separator in separators
+                and ast.unparse(prefix) == ast.unparse(node.test)
+                and ast.unparse(name) == ast.unparse(node.orelse)
+            )
+    return False
+
+
+def _tests_prefix(node: ast.Compare) -> bool:
+    """Return whether ``node`` compares a sequence's start, cut to another's length, with it (``prefix-slice``)."""
+    if len(node.ops) != 1 or not isinstance(node.ops[0], ast.Eq | ast.NotEq):
+        return False
+    sides = (node.left, node.comparators[0])
+    for side, other in (sides, sides[::-1]):
+        sliced = side.args[0] if isinstance(side, ast.Call) and _last_name(side.func) == "tuple" and side.args else side
+        match sliced:
+            case ast.Subscript(slice=ast.Slice(lower=None, upper=ast.Call(func=ast.Name(id="len"), args=[length]))):
+                if ast.unparse(length) == ast.unparse(other):
+                    return True
+    return False
+
+
 def _searches_name(loop: ast.While) -> bool:
     """Return whether ``loop`` tests a name that it builds itself as text (``name-search``)."""
     built: set[str] = set()
@@ -729,6 +768,10 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return isinstance(node, ast.While) and _walks_ancestors(node, options["names"])
         case "mapping-guard":
             return isinstance(node, ast.IfExp) and _guarded_read(node, options["names"])
+        case "dotted-join":
+            return isinstance(node, ast.IfExp) and _joins_below(node, options["strings"])
+        case "prefix-slice":
+            return isinstance(node, ast.Compare) and _tests_prefix(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node, values=options.get("dict_values", False))) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -751,6 +794,8 @@ NODE_TYPES = {
     "name-search": (ast.While,),
     "ancestor-walk": (ast.While,),
     "mapping-guard": (ast.IfExp,),
+    "dotted-join": (ast.IfExp,),
+    "prefix-slice": (ast.Compare,),
 }
 
 

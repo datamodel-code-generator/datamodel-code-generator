@@ -67,6 +67,10 @@ ALLOWED = """
 "sample.ancestor-walk" = { home = "sample", count = 2, audit = "X-18" }
 [allow."other.py"."guarded_reads"]
 "sample.mapping-guard" = { home = "sample", count = 6, audit = "X-19" }
+[allow."other.py"."dotted"]
+"sample.dotted-join" = { home = "sample", count = 2, audit = "X-20" }
+[allow."other.py"."prefixes"]
+"sample.prefix-slice" = { home = "sample", count = 2, audit = "X-21" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]

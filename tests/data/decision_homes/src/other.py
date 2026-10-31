@@ -191,3 +191,29 @@ def guarded_reads(value, other, owner, flag):
         value.get("key") if owner.isinstance(value, dict) else None,
         value.get("key") if flag and (isinstance(value, dict) and owner) else None,
     )
+
+
+def dotted(module, name, other):
+    """Join a name below its module, or keep it alone; another separator, test or fallback does not count."""
+    return (
+        f"{module}.{name}" if module else name,
+        f"{other.module}.{other.name}" if other.module else other.name,
+        f"{module}/{name}" if module else name,
+        f"{module}.{name}" if other else name,
+        f"{module}.{name}" if module else other,
+        f"{module}.{name}.py" if module else name,
+        f"{module!r}.{name}" if module else name,
+    )
+
+
+def prefixes(path, package, other):
+    """Test whether a path starts with another, also through tuple(); another bound, operator or sequence does not count."""
+    return (
+        path[: len(package)] == package,
+        package != tuple(path[: len(package)]),
+        path[: len(package) + 1] == package,
+        path[1 : len(package)] == package,
+        path[: len(package)] == other,
+        path[: len(package)] < package,
+        path[:-1] == package,
+    )

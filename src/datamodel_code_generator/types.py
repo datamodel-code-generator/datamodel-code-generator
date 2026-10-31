@@ -62,6 +62,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._graph_links import add_child, drop_child
 from datamodel_code_generator._model_keys import NodeKey
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
@@ -830,10 +831,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     @property
     def full_name(self) -> str:
         """Return the fully qualified name including module."""
-        module_name = self.module_name
-        if module_name:
-            return f"{module_name}.{self.reference.short_name if self.reference else ''}"
-        return self.reference.short_name if self.reference else ""
+        return dotted_name(self.module_name, self.reference.short_name) if self.reference else ""
 
     @property
     def all_data_types(self) -> Iterator[DataType]:

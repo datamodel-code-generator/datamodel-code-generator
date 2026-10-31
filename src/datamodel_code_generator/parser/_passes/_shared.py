@@ -23,7 +23,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
-from datamodel_code_generator._module_paths import written_name
+from datamodel_code_generator._module_paths import dotted_name, is_below, written_name
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
@@ -376,21 +376,8 @@ def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
         - current="pets", ref="Animal" -> True (root package is immediate parent)
         - current="v0.mammal.canine", ref="Animal" -> True (root package is an ancestor)
     """
-    current_path = current_module.split(".") if current_module else []
     *reference_path, _ = reference.split(".")
-
-    if not current_path:
-        return False
-
-    # Case 1: Direct parent package (includes root package when reference_path is empty)
-    # e.g., current="pets", ref="Animal" -> current_path[:-1]=[] == reference_path=[]
-    if current_path[:-1] == reference_path:
-        return True
-
-    # Case 2: Deeper ancestor package (reference_path must be a proper prefix)
-    # e.g., current="v0.mammal.canine", ref="v0.Animal" -> ["v0"] is prefix of ["v0","mammal","canine"]
-    # An empty reference_path is the root package, which is an ancestor of every nested module.
-    return len(reference_path) < len(current_path) and current_path[: len(reference_path)] == reference_path
+    return is_below(tuple(current_module.split(".")) if current_module else (), tuple(reference_path))
 
 
 def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
@@ -1500,8 +1487,8 @@ def _get_data_type_target_full_name(
     model_path_to_module_name: Mapping[str, str],
 ) -> str:
     if (ref_module_name := _module_name_of(model_path_to_module_name, reference)) is None:
-        ref_module_name = data_type.full_name.rsplit(".", 1)[0] if "." in data_type.full_name else ""
-    return f"{ref_module_name}.{reference.short_name}" if ref_module_name else reference.short_name
+        return data_type.full_name
+    return dotted_name(ref_module_name, reference.short_name)
 
 
 def _context_models(contexts: Iterable[ModuleContextView]) -> list[DataModel]:
