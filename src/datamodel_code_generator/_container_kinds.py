@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ARRAYS",
     "CONTAINERS",
+    "CONTAINER_CLASSES",
     "CONTAINER_FLAGS",
     "GENERIC_CONTAINERS",
     "ITEM_CONTAINERS",
@@ -45,6 +46,20 @@ CONTAINER_FLAGS: Final[Mapping[ContainerSlot, str]] = MappingProxyType({
 })
 """The flag that puts a node in each slot: the ``WRITTEN_CONTAINERS`` in their order, then the tuple, a form of its
 own."""
+
+CONTAINER_CLASSES: Final[Mapping[tuple[str | None, str], ContainerSlot]] = MappingProxyType({
+    (None, "frozenset"): "frozen_set",
+    (None, "set"): "set",
+    ("collections.abc", "Sequence"): "sequence",
+    ("typing", "Sequence"): "sequence",
+    (None, "list"): "list",
+    ("collections.abc", "Mapping"): "mapping",
+    ("typing", "Mapping"): "mapping",
+    (None, "dict"): "dict",
+})
+"""The slot of each generic class a target's type view writes a written container as, by its module and name (no
+module for a builtin): a set under ``--use-generic-container-types`` is a frozen set, and a list or dict an abstract
+``Sequence`` or ``Mapping``, so each class reads as the slot that writes it there."""
 
 
 @final

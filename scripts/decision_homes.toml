@@ -297,9 +297,9 @@ what = "copies the lists of a DataType node itself; call types.py:_copied_node, 
 audit = "C05-B08"
 
 [homes.Hx-container-kinds]
-decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, and the kinds of slot a decision treats alike (mappings, item containers, arrays, generic containers, any container, unhashable containers, sets)"
+decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, the slot of each generic class a target's type view writes a container as, and the kinds of slot a decision treats alike (mappings, item containers, arrays, generic containers, any container, unhashable containers, sets)"
 core = ["_container_kinds.py", "types.py:_container_name"]
-adapters = []
+adapters = ["_target_types.py:container_slot"]
 
 [homes.Hx-container-kinds.signatures.mapping-flags]
 kind = "name"
@@ -312,6 +312,25 @@ exclude = [
 ]
 what = "tests the flags of a mapping type itself; ask whether the type is in MAPPINGS or another kind of _container_kinds.py (a key, snapshot or merge of every flag is not this decision)"
 audit = "C05-B03"
+
+[homes.Hx-container-kinds.signatures.container-classes]
+kind = "keyword-set"
+keywords = [
+    "typing",
+    "collections.abc",
+    "Sequence",
+    "Mapping",
+    "typing.Sequence",
+    "typing.Mapping",
+    "typing.List",
+    "typing.Dict",
+    "collections.abc.Sequence",
+    "collections.abc.Mapping",
+]
+min = 2
+paths = ["_target_operations.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", "_client/", "_fastapi/"]
+what = "lists the generic classes of container slots itself; call _target_types.py:container_slot or read _container_kinds.py:CONTAINER_CLASSES"
+audit = "C23-K27"
 
 [homes.Hx-field-copy]
 decision = "how a field is copied: what a copy owns (its data type tree, extras, validation aliases and mutable default) and the names, aliases and other values it is made with"
@@ -1103,10 +1122,10 @@ what = "a function that decides null itself; call _target_types.admits_none (H23
 audit = "M-01"
 
 [homes.T-kind]
-decision = "the JSON and lexical kind of a model type's values, as text and JSON codecs read them"
-core = ["_openapi_wire_plan.py:LexicalKinds"]
-adapters = ["model/_decisions/enum_kind.py:literal_value_kind"]
-planned = ["_target_types.py:lexical_kind", "_target_types.py:json_kinds"]
+decision = "the JSON and lexical kind of a model type's values, as text and JSON codecs read them, and the kind of each strict or constrained Pydantic scalar type, as both read it"
+core = ["_target_types.py:lexical_kind"]
+adapters = ["model/_decisions/enum_kind.py:literal_value_kind", "_openapi_wire_plan.py:LexicalKinds"]
+planned = ["_target_types.py:json_kinds"]
 
 [homes.T-kind.signatures.kind-table]
 kind = "keyword-set"
@@ -1509,8 +1528,8 @@ what = "turns a body's decode failure into the response failure itself; call Res
 audit = "C23-K36"
 
 [homes.T-codec]
-decision = "how a model use's native codec is chosen and copied, alike in both targets: the runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps (its file a target copies, the module generated code imports from, the serializer a client's codecs take and the JSON writer a server's responses dump by)"
-core = ["_openapi_codec_plan.py:ExtrasRuntime"]
+decision = "how a model use's native codec is chosen and copied, alike in both targets: the file a target copies and the module generated code imports from of each model codec runtime module, and the runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps (its file and module, the serializer a client's codecs take and the JSON writer a server's responses dump by)"
+core = ["_openapi_codec_plan.py:ExtrasRuntime", "_openapi_codec_plan.py:codec_file", "_openapi_codec_plan.py:codec_module"]
 adapters = []
 
 [homes.T-codec.signatures.extras-module]
@@ -3499,9 +3518,6 @@ fix = "#5781"
 
 [allow."src/datamodel_code_generator/_openapi_codec_plan.py"."keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
-
-[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds._leaves"]
-"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds.configured"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }

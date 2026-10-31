@@ -7,6 +7,7 @@ from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
@@ -27,18 +28,12 @@ from datamodel_code_generator._target_contract import (
     API_KEY_LOCATIONS,
     WRAPPER_KINDS,
     BindingReason,
-    BuiltinType,
-    ConstructorType,
     EncodingFacts,
-    GeneratedEnumMember,
     GeneratedSymbolType,
     GeneratedTypeContractBatch,
     GenericType,
-    ImportedType,
     KindSite,
     LiteralScalar,
-    LiteralType,
-    NoneType,
     OperationContract,
     OperationId,
     SourceLocation,
@@ -62,11 +57,12 @@ from datamodel_code_generator._target_contract import (
     uses_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import present
+from datamodel_code_generator._target_types import container_slot, lexical_kind, present, type_identity
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._container_kinds import ContainerKind
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         Direction,
@@ -93,42 +89,7 @@ CodecReason: TypeAlias = (
 
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
 _STRING: Final = frozenset({"string"})
-_LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
-_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
-    (None, "bool"): "boolean",
-    (None, "float"): "number",
-    (None, "int"): "integer",
-    (None, "dict"): None,
-    (None, "frozenset"): None,
-    (None, "list"): None,
-    (None, "set"): None,
-    (None, "tuple"): None,
-    ("pydantic", "StrictBool"): "boolean",
-    ("pydantic", "NegativeFloat"): "number",
-    ("pydantic", "NonNegativeFloat"): "number",
-    ("pydantic", "NonPositiveFloat"): "number",
-    ("pydantic", "PositiveFloat"): "number",
-    ("pydantic", "StrictFloat"): "number",
-    ("pydantic", "NegativeInt"): "integer",
-    ("pydantic", "NonNegativeInt"): "integer",
-    ("pydantic", "NonPositiveInt"): "integer",
-    ("pydantic", "PositiveInt"): "integer",
-    ("pydantic", "StrictInt"): "integer",
-}
-_ARGUMENTS: Final[dict[LeafStep, tuple[int, frozenset[tuple[str | None, str]]]]] = {
-    "items": (
-        1,
-        frozenset({
-            (None, "frozenset"),
-            (None, "list"),
-            (None, "set"),
-            ("collections.abc", "Sequence"),
-            ("typing", "Sequence"),
-        }),
-    ),
-    "values": (2, frozenset({(None, "dict"), ("collections.abc", "Mapping"), ("typing", "Mapping")})),
-}
-_INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
 NO_SCALAR_KIND: Final = "A parameter value needs one unambiguous scalar kind"
 STYLED: Final = ("style", "explode", "allowReserved")
 _BINARY_TEXT: Final = (
@@ -765,13 +726,7 @@ def _field(planner: _WirePlanner, member: MemberShape) -> FieldPlan:
 
 
 class LexicalKinds:
-    """Read the lexical kind of a text leaf from the final type the model generator bound at its schema.
-
-    An int, float or bool leaf has its own kind: as the builtin, a constrained or strict form of it, or the member
-    type of an enum or literal. The text of any other scalar leaf is the model's to read, and so is that of a union
-    with such a leaf. A model, a container, null alone, an enum or literal of several kinds, and a union of several
-    kinds none of which reads text as it is, have no kind.
-    """
+    """Read the lexical kind of a text leaf (`_target_types.lexical_kind`) from the final type bound at its schema."""
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
         """Keep the batch whose schema uses, symbols and root values the first lookups index."""
@@ -796,7 +751,7 @@ class LexicalKinds:
         mapping's values. A leaf no place binds a type for has no kind.
         """
         value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
-        return _one_kind(set(self._leaves(value, frozenset())), mixed=True)
+        return lexical_kind(value, self._symbols, self._members)
 
     @cached_property
     def _extras(self) -> dict[FieldSlot | None, SourceLocation]:
@@ -860,7 +815,7 @@ class LexicalKinds:
         """
         item = self._argument(value, *_ARGUMENTS["items"])
         leaf = value if item is None else item
-        return _one_kind(set(self._leaves(leaf, frozenset())), mixed=True), leaf, item is not None
+        return lexical_kind(leaf, self._symbols, self._members), leaf, item is not None
 
     def _reached(
         self, location: SourceLocation, steps: tuple[LeafStep, ...], direction: Direction = "neutral"
@@ -878,7 +833,7 @@ class LexicalKinds:
 
         A form-data part carries such a value as JSON, as it does one without one kind, while its kind is a string's.
         """
-        return (found := self._unwrapped(value)) is not None and _type_name(found) in _ANY
+        return (found := self._unwrapped(value)) is not None and type_identity(found) in _ANY
 
     def _unwrapped(self, value: TypeView | None) -> TypeView | None:
         """Return the type a type stands for, through aliases, root models and a union with None alone."""
@@ -896,82 +851,11 @@ class LexicalKinds:
             else:
                 return value
 
-    def _argument(
-        self, value: TypeView | None, count: int, containers: frozenset[tuple[str | None, str]]
-    ) -> TypeView | None:
+    def _argument(self, value: TypeView | None, count: int, kind: ContainerKind) -> TypeView | None:
         """Return the last argument of a container type, through aliases, root models and a union with None alone."""
         value = self._unwrapped(value)
         return (
             value.arguments[-1]
-            if isinstance(value, GenericType) and len(value.arguments) == count and _type_name(value.base) in containers
+            if isinstance(value, GenericType) and len(value.arguments) == count and container_slot(value) in kind.slots
             else None
         )
-
-    def _leaves(self, value: TypeView | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
-        match value:
-            case NoneType():
-                pass
-            case ConstructorType():
-                yield from self._leaves(value.callable if value.base is None else value.base, seen)
-            case UnionType():
-                for member in value.members:
-                    yield from self._leaves(member, seen)
-            case LiteralType():
-                yield _one_kind(
-                    {
-                        kind
-                        for item in value.values
-                        for kind in (
-                            self._leaves(GeneratedSymbolType(item.symbol), seen)
-                            if isinstance(item, GeneratedEnumMember)
-                            else _literal_kinds(item)
-                        )
-                    },
-                    mixed=False,
-                )
-            case GeneratedSymbolType():
-                yield from self._symbol(self._symbols[value.symbol], seen)
-            case BuiltinType() | ImportedType():
-                yield _LEXICAL_KINDS.get(_type_name(value), "string")
-            case None | GenericType():
-                yield None
-            case _:
-                yield "string"
-
-    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
-        if symbol.kind == "enum":
-            yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
-        elif symbol.kind in WRAPPER_KINDS and symbol.id not in seen:
-            yield from self._leaves(wrapped_type(self._members, symbol.id), seen | {symbol.id})
-        else:
-            yield None
-
-
-def _type_name(value: TypeView) -> tuple[str | None, str]:
-    """Return the module and name of a builtin or imported type, or no name for any other type."""
-    return (
-        (None, value.name)
-        if isinstance(value, BuiltinType)
-        else (value.import_.from_, value.import_.import_)
-        if isinstance(value, ImportedType)
-        else (None, "")
-    )
-
-
-def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind | None]:
-    """Yield the kind of one literal or enum member value: none for null, and None for one that is no scalar."""
-    if value is None or value.kind != "none":
-        yield None if value is None else _LITERAL_KINDS.get(value.kind, "string")
-
-
-def _one_kind(kinds: set[LexicalKind | None], *, mixed: bool) -> LexicalKind | None:
-    """Return the one kind of a leaf's kinds, taking an int beside a float as a number.
-
-    Several other kinds are the string kind when `mixed` admits them and one of them is the string kind, whose leaf
-    reads the text as it is; the members of one enum or literal admit none. A leaf of null alone has no kind.
-    """
-    if kinds == _INTEGER_NUMBER:
-        return "number"
-    if len(kinds) == 1:
-        return kinds.pop()
-    return "string" if mixed and "string" in kinds and None not in kinds else None

@@ -11,6 +11,8 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BuiltinType,
@@ -28,7 +30,7 @@ from datamodel_code_generator._target_contract import (
     symbols_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import present, without_none
+from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, present, without_none
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
@@ -75,19 +77,8 @@ _NAMED: Final = MappingProxyType({
     "datetime.timedelta": "string",
     "uuid.UUID": "string",
     "decimal.Decimal": "number",
-    "pydantic.PositiveInt": "integer",
-    "pydantic.NegativeInt": "integer",
-    "pydantic.NonPositiveInt": "integer",
-    "pydantic.NonNegativeInt": "integer",
-    "pydantic.StrictInt": "integer",
-    "pydantic.PositiveFloat": "number",
-    "pydantic.NegativeFloat": "number",
-    "pydantic.NonPositiveFloat": "number",
-    "pydantic.NonNegativeFloat": "number",
-    "pydantic.StrictFloat": "number",
-    "pydantic.StrictBool": "boolean",
+    **{dotted_name(*key): kind for key, kind in CONSTRAINED_SCALARS.items()},
 })
-_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping", "typing.Dict"})
 _EXTRAS: Final = "__pydantic_extra__"
 _WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
@@ -306,7 +297,7 @@ class ModelFacts:
             case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
                 types = self.json_types(value.arguments[0], seen)
             case GenericType():
-                types = frozenset({"object" if _name(value.base) in _MAPPINGS else "array"})
+                types = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
             case NoneType():
                 types = _NULL
             case _:

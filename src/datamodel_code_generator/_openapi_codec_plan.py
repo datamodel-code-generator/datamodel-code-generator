@@ -45,15 +45,25 @@ class ExtrasRuntime:
     @property
     def path(self) -> str:
         """Return the module's file below the runtime package, as a target declares its copy."""
-        return f"model_codecs/{self.name}.py"
+        return codec_file(self.name)
 
     @property
     def module(self) -> str:
         """Return the module's dotted path below the generated package."""
-        return f"_runtime.model_codecs.{self.name}"
+        return codec_module(self.name)
 
 
 EXTRAS: Final = ExtrasRuntime()
+
+
+def codec_file(name: str) -> str:
+    """Return the file of a model codec runtime module below the runtime package, as a target declares its copy."""
+    return f"model_codecs/{name}.py"
+
+
+def codec_module(name: str) -> str:
+    """Return the dotted path of a model codec runtime module below the generated package."""
+    return f"_runtime.model_codecs.{name}"
 
 
 def artifact_module(artifact: ModelArtifactAddress) -> str:
