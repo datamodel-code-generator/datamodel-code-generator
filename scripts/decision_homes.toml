@@ -169,7 +169,7 @@ what = "computes components or an order of a graph itself; ask the reference gra
 audit = "D-PP-07"
 
 [homes.Hx-schema-positions]
-decision = "which keywords of a schema hold subschemas, and of which shape; which hold schemas for references only, and which instance data"
+decision = "which keywords of a schema hold subschemas, and of which shape; which hold schemas for references only, and which instance data; the subschemas one keyword holds, read by its shape, and the walk over every value of a loaded JSON value"
 core = ["_json_schema.py"]
 adapters = []
 
