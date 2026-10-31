@@ -460,6 +460,9 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         ("valued public", user(1, **{"cache-control": "public=1, max-age=60"})),
         ("unquoted private", user(1, **{"cache-control": "private=x, max-age=60"})),
         ("bad quoting", user(1, **{"cache-control": 'private="a'})),
+        ("control in quoted value", user(1, **{"cache-control": 'max-age=60, private="a\x01b"'})),
+        ("DEL in quoted value", user(1, **{"cache-control": 'max-age=60, private="a\x7fb"'})),
+        ("escaped control", user(1, **{"cache-control": 'max-age=60, private="a\\\x01b"'})),
         ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"})),
         ("no freshness or validator", user(1)),
     ):
