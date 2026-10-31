@@ -56,6 +56,7 @@ from datamodel_code_generator._constraint_applicability import (
     resplit_overridden_constraints,  # noqa: F401  # Preserve the established parser.base export.
     untaken_minimums,  # noqa: F401  # Preserve the established parser.base export.
 )
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
@@ -214,11 +215,7 @@ from datamodel_code_generator.parser._passes._state import (
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
 from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS, builtin_name_bindings
-from datamodel_code_generator.parser._pipeline import (
-    Runner,
-    anchor_parse_caller,
-    release_parse_caller,
-)
+from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
@@ -345,11 +342,8 @@ def dropped_constraints_recorded() -> Generator[DroppedConstraints]:
     a generation discards, such as a compatibility retry it does not take, adds nothing.
     """
     record = DroppedConstraints()
-    token = _DROPPED_CONSTRAINTS.set(record)
-    try:
+    with context_values({_DROPPED_CONSTRAINTS: record}):
         yield record
-    finally:
-        _DROPPED_CONSTRAINTS.reset(token)
 
 
 class ModuleContext(NamedTuple):
@@ -2275,19 +2269,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         state = _FinalizeState(
             contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules, with_import
         )
-        render_ready = (
-            RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
-            if RENDER_READY.get() is None
-            else None
-        )
-        memo = PARSE_MEMO.set(self.generation_store._memo) if PARSE_MEMO.get() is None else None  # noqa: SLF001
-        try:
+        memo = self.generation_store._memo  # noqa: SLF001
+        current = {RENDER_READY: RenderReady(type(self), memo), PARSE_MEMO: memo}
+        with context_values({variable: value for variable, value in current.items() if variable.get() is None}):
             self.__runner().run_steps(FINALIZE_SEGMENTS, self, state)
-        finally:
-            if memo is not None:
-                PARSE_MEMO.reset(memo)
-            if render_ready is not None:
-                RENDER_READY.reset(render_ready)
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
@@ -2571,17 +2556,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             default_build_code_formatter=Parser._build_code_formatter,
             result_type=Result,
         )
-        token = SCHEMA_GRAPH.set(self._schema_graph)
-        render_ready = RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
-        memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
-        caller = anchor_parse_caller()
-        try:
+        with context_values({
+            SCHEMA_GRAPH: self._schema_graph,
+            RENDER_READY: RenderReady(type(self), self.generation_store._memo),  # noqa: SLF001
+            PARSE_MEMO: self.generation_store._memo,  # noqa: SLF001
+            PARSE_CALLER: parse_caller(),
+        }):
             self.__runner().run_steps(PIPELINE, self, run)
-        finally:
-            release_parse_caller(caller)
-            PARSE_MEMO.reset(memo)
-            RENDER_READY.reset(render_ready)
-            SCHEMA_GRAPH.reset(token)
         return run.output
 
     def __runner(self) -> Runner:

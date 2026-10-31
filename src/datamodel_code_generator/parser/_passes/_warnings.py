@@ -27,7 +27,7 @@ def warn_as_module(module: str, message: str, category: type[Warning], *, stackl
     The file, the line and the registry of the warnings shown once per location are those ``warn()`` takes from the
     frame ``stacklevel`` names; only the module the filters match is ``module``. The frames of the wrappers that
     ``--debug`` puts around the functions of the pass and concern modules (``snooper_to_methods``) are not counted, as
-    ``parser/_pipeline.py:anchor_parse_caller`` does not count them: the wrappers stay once a parse traced them.
+    ``parser/_pipeline.py:parse_caller`` does not count them: the wrappers stay once a parse traced them.
     """
     depth = 1
     for _ in range(stacklevel - 1):

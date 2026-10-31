@@ -15,6 +15,7 @@ from weakref import WeakKeyDictionary
 
 from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, final
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import DataModel
@@ -331,11 +332,8 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
     A parse a generation discards, such as a compatibility retry it does not take, is never read.
     """
     record = PydanticFloors()
-    token = _PYDANTIC_FLOORS.set(record)
-    try:
+    with context_values({_PYDANTIC_FLOORS: record}):
         yield record
-    finally:
-        _PYDANTIC_FLOORS.reset(token)
 
 
 _NO_DECISIONS: Final = DecisionOutcome(())

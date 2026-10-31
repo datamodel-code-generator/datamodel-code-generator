@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._registry_render import (
     _render_registry_json,
     _render_registry_markdown,
@@ -276,11 +277,8 @@ _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli
 @contextmanager
 def cli_migration_warning_scope() -> Generator[None]:
     """Deduplicate migration notices within one CLI invocation, including batch/watch."""
-    token = _CLI_MIGRATION_WARNINGS.set(set())
-    try:
+    with context_values({_CLI_MIGRATION_WARNINGS: set()}):
         yield
-    finally:
-        _CLI_MIGRATION_WARNINGS.reset(token)
 
 
 @lru_cache(maxsize=16)
