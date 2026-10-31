@@ -15,7 +15,7 @@ import httpx2
 
 from ..model_codecs.media import TCHARS
 from ..model_codecs.parameters import cookie_octets, header_text
-from .errors import ConfigurationError, SDKError
+from .errors import ConfigurationError, SDKError, called
 from .positions import cookie_name
 from .security import Credentials
 from .timing import checked_instance
@@ -134,13 +134,8 @@ class SchemeCredentials(Credentials):
         )
 
 
-def provider_failure(error: Exception) -> Exception:
-    """Return the error raised for an application's credential callable or callback that failed.
-
-    It is the callable's own SDK error, or else a `provider_failed` error that keeps the failure as its cause.
-    """
-    if isinstance(error, SDKError):
-        return error
+def provider_failure(error: Exception) -> AuthError:
+    """Return the `provider_failed` error of an application's credential callable or callback, keeping its failure."""
     return AuthError(reason="provider_failed", cause=error)
 
 
@@ -151,14 +146,7 @@ def basic_credentials(user: str, password: str) -> str:
 
 def _called(value: object) -> object:
     """Return a credential's value for this request, calling a callable credential."""
-    if not callable(value):
-        return value
-    try:
-        return value()
-    except Exception as error:
-        if (failure := provider_failure(error)) is error:
-            raise
-        raise failure from None
+    return called(value, provider_failure) if callable(value) else value
 
 
 def _pair(value: object) -> tuple[str, str] | None:

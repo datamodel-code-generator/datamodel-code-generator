@@ -1871,7 +1871,7 @@ what = "splits the name off a query field or a Cookie pair itself; call client/u
 audit = "C24-B30"
 
 [homes.Hx-credential-text]
-decision = "the text of a credential the client places and the error a failing credential source raises: the credentials of the Basic scheme (a basic scheme's and an OAuth client's), the octets a cookie value sent as it is may hold (a cookie credential's and a cookie parameter's), and what the failure of an application's credential callable or callback becomes"
+decision = "the text of a credential the client places and the error a failing credential source raises: the credentials of the Basic scheme (a basic scheme's and an OAuth client's), the octets a cookie value sent as it is may hold (a cookie credential's and a cookie parameter's), and the provider_failed error that the failure of an application's credential callable or callback becomes (Hx-application-failures says which failures)"
 core = [
     "_runtime/client/auth.py:basic_credentials",
     "_runtime/client/auth.py:provider_failure",
@@ -1902,6 +1902,11 @@ paths = ["_runtime/"]
 exclude = ["_runtime/client/oauth.py:_transport"]
 what = "turns the failure of an application's credential callable or callback into an error itself; call client/auth.py:provider_failure"
 audit = "C25-K1"
+
+[homes.Hx-application-failures]
+decision = "what a failure of application code the client runtime calls becomes, so that every feature keeps the application's own SDK error and chains any other exception alike: an SDK error it raises propagates as it is, with its own cause and context, and any other exception is raised as the calling feature's failure, which keeps it as its cause (a credential callable's, an OAuth client secret's and a token callback's provider_failed, a cache store's store_failed)"
+core = ["_runtime/client/errors.py:called", "_runtime/client/errors.py:acalled"]
+adapters = []
 
 [homes.Hx-helper-kinds]
 decision = "what the client generator calls each helper kind: the label its documentation and messages give the kind, the keyword the kind's methods take its options by, and the runtime class of those options"
@@ -2352,7 +2357,7 @@ audit = "C25-K5"
 kind = "call"
 names = ["callable"]
 paths = ["_runtime/client/"]
-# A callable credential is called, not checked (C25 G-3), and a file body is told by its read method.
+# A callable credential is called through client/errors.py:called, not checked, and a file body is told by its read method.
 exclude = ["_runtime/client/auth.py:_called", "_runtime/client/oauth.py:_secret", "_runtime/client/bodies.py:_is_file"]
 what = "accepts a callable in place of an option's types itself; call client/timing.py:checked_instance with callables=True"
 audit = "C25-K6"
