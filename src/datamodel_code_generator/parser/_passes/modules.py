@@ -22,7 +22,13 @@ from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
-from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS, UNHASHABLE_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    BUILTIN_CONTAINERS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    UNHASHABLE_CONTAINERS,
+)
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
@@ -592,21 +598,14 @@ def _named_enum(source: DataModel) -> Enum | None:
 ModelName: TypeAlias = str
 ModelNames: TypeAlias = set[ModelName]
 ModelDeps: TypeAlias = dict[ModelName, set[ModelName]]
-_BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
-    "list": "is_list",
-    "dict": "is_dict",
-    "set": "is_set",
-    "frozenset": "is_frozen_set",
-    "tuple": "is_tuple",
-}
 
 
 def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
     if data_type.type == current_name and not data_type.import_:
         return True
 
-    if flag := _BUILTIN_CONTAINER_COLLISION_FLAGS.get(current_name):
-        return bool(getattr(data_type, flag))
+    if (slot := BUILTIN_CONTAINERS.get(current_name)) is not None:
+        return bool(getattr(data_type, CONTAINER_FLAGS[slot]))
 
     return False
 

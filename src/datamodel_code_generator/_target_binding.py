@@ -22,7 +22,15 @@ from urllib.parse import ParseResult, unquote, urljoin
 from typing_extensions import override
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, ITEM_CONTAINERS, MAPPINGS, WRITTEN_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    CONTAINER_FLAGS,
+    ITEM_CONTAINERS,
+    MAPPINGS,
+    SLOT_CLASSES,
+    WRITTEN_CONTAINERS,
+    abstract_class_module,
+    written_slot,
+)
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
@@ -1587,7 +1595,7 @@ class _Projector:
             )
             if count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * count
-            return GenericType(BuiltinType("tuple"), arguments, "fixed", hint), False
+            return GenericType(_BUILTINS[SLOT_CLASSES["tuple"].name], arguments, "fixed", hint), False
         if len(data_type.data_types) == 1:
             return self._project(data_type.data_types[0]), False
         preserve_order = data_type.preserve_union_member_order
@@ -1686,23 +1694,16 @@ class _Projector:
 
     def _container(self, data_type: DataType, value: TypeView | None) -> TypeView:
         generic = data_type.use_generic_container
-        module = "collections.abc" if data_type.use_standard_collections else "typing"
+        module = abstract_class_module(standard=data_type.use_standard_collections)
         for modifier in WRITTEN_CONTAINERS:
             if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
-            match modifier:
-                case "frozen_set":
-                    base: TypeView = BuiltinType("frozenset")
-                case "set":
-                    base = BuiltinType("frozenset" if generic else "set")
-                case "sequence" | "list" if modifier == "sequence" or generic:
-                    base = ImportedType(Import(import_="Sequence", from_=module))
-                case "list":
-                    base = BuiltinType("list")
-                case "mapping" | "dict" if modifier == "mapping" or generic:
-                    base = ImportedType(Import(import_="Mapping", from_=module))
-                case _:
-                    base = BuiltinType("dict")
+            written = SLOT_CLASSES[written_slot(modifier, generic=generic)]
+            base = (
+                ImportedType(Import(import_=written.name, from_=module))
+                if written.abstract
+                else _BUILTINS[written.name]
+            )
             if modifier in MAPPINGS.slots and (data_type.dict_key is not None or value is not None):
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)

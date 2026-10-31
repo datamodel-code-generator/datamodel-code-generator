@@ -297,7 +297,7 @@ what = "copies the lists of a DataType node itself; call types.py:_copied_node, 
 audit = "C05-B08"
 
 [homes.Hx-container-kinds]
-decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, the slot of each generic class a target's type view writes a container as, and the kinds of slot a decision treats alike (mappings, item containers, sequences, arrays, generic containers, any container, unhashable containers, sets), each without the slots a legacy row leaves out (rows legacy-abstract-containers-as-unions, legacy-frozen-set-not-an-array, legacy-all-of-items-not-in-frozen-sets, legacy-unique-tuple-inside-sequence, legacy-collapse-beside-lists-and-dicts)"
+decision = "which container a node of a type tree is in: the flag of each container slot, the order in which a type hint looks for the slots it writes as a generic class, the class each slot is written as (a builtin or an abstract class, or the typing alias without --use-standard-collections; a set, list or dict as the frozen set, Sequence or Mapping under --use-generic-container-types) and the slot each builtin container class stands for, the slot of each generic class a target's type view writes a container as, and the kinds of slot a decision treats alike (mappings, item containers, sequences, arrays, generic containers, any container, unhashable containers, sets), each without the slots a legacy row leaves out (rows legacy-abstract-containers-as-unions, legacy-frozen-set-not-an-array, legacy-all-of-items-not-in-frozen-sets, legacy-unique-tuple-inside-sequence, legacy-collapse-beside-lists-and-dicts)"
 core = ["_container_kinds.py", "types.py:_container_name"]
 adapters = [
     "_target_types.py:container_slot",
@@ -335,6 +335,36 @@ contains = [
 ]
 what = "asks a kind without the slots a legacy row leaves out; ask the kind itself once the row's issue is fixed"
 audit = "C05-G2b"
+
+[homes.Hx-container-kinds.signatures.builtin-container-views]
+kind = "call"
+names = ["BuiltinType"]
+strings = ["frozenset", "set", "list", "dict", "tuple"]
+# Left out: the FastAPI plan's list-only reads of a query parameter's view, whose answer under
+# --use-generic-container-types (a Sequence) is not verified yet.
+exclude = ["_fastapi/plan.py:Planner.member", "_fastapi/plan.py:Planner.kind"]
+what = "writes a container slot's builtin class into a target's type view itself; read _container_kinds.py:SLOT_CLASSES through written_slot"
+audit = "C05-G2a"
+
+[homes.Hx-container-kinds.signatures.typing-container-names]
+kind = "name"
+names = [
+    "FROZEN_SET",
+    "SET",
+    "SEQUENCE",
+    "LIST",
+    "MAPPING",
+    "DICT",
+    "TUPLE",
+    "STANDARD_FROZEN_SET",
+    "STANDARD_SET",
+    "STANDARD_LIST",
+    "STANDARD_DICT",
+    "STANDARD_TUPLE",
+]
+ctx = "load"
+what = "spells the class a container slot is written as itself; read _container_kinds.py:SLOT_CLASSES (ContainerClass.written)"
+audit = "C05-G2a"
 
 [homes.Hx-container-kinds.signatures.container-classes]
 kind = "keyword-set"
@@ -3823,7 +3853,7 @@ fix = "#5791"
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._container"]
-"T-type.view-construction" = { home = "T-type", count = 10, audit = "M-08" }
+"T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._imports"]
 "T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
@@ -3835,7 +3865,7 @@ fix = "#5791"
 "T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector._structural"]
-"T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
+"T-type.view-construction" = { home = "T-type", count = 4, audit = "M-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Projector.declaration"]
 "T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
