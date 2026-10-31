@@ -55,7 +55,7 @@ from .native import (
 from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import dot_segment, dotted_route, filled, path_segments
-from .positions import cookie_name, positional, protected_positions, secret_names
+from .positions import credentialed, positional, secret_names
 from .raw import AsyncRawResponse, RawResponse, ReceivedBody, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -85,7 +85,6 @@ if TYPE_CHECKING:
         Iterator,
         Mapping,
     )
-    from typing import Protocol, TypeAlias
 
     from typing_extensions import Unpack
 
@@ -93,39 +92,11 @@ if TYPE_CHECKING:
     from .content import AsyncContent, BodyBinder, BodyEntry, BodySource, RequestCoding, SyncContent
     from .operations import OperationPlan, ServerPlan
     from .options import NativeAuth, Pairs, RetryOptions, ServerSelection
-    from .positions import CredentialPosition, Placement
+    from .positions import AsyncSend, CredentialPosition, Credentials, Placement, Send
     from .raw import AnyRaw
     from .retry import RetryDelay
     from .timing import Clock
     from .urls import Origin
-
-    Send: TypeAlias = Callable[[httpx2.Request], httpx2.Response]
-    AsyncSend: TypeAlias = Callable[[httpx2.Request], Awaitable[httpx2.Response]]
-
-    class Credentials(Protocol):
-        """The credentials a generated client was given, by scheme name, which the package's auth module places."""
-
-        @property
-        def values(self) -> Mapping[str, object]:
-            """Return the credentials given, by scheme name."""
-            ...
-
-        def selected(self, binding: Any) -> tuple[Placement, ...] | None:
-            """Return the placements of an operation's first alternative the credentials satisfy, or None."""
-            ...
-
-        def auth(  # noqa: PLR0913
-            self,
-            placements: Any,
-            *,
-            origin: Origin | None,
-            replayable: Callable[[httpx2.Request], bool],
-            challenge_less: bool,
-            send: Send | None = None,
-            async_send: AsyncSend | None = None,
-        ) -> httpx2.Auth:
-            """Return the HTTPX2 Auth that places a call's credentials on its requests."""
-            ...
 
     class _HelperSettings:
         """The protocol settings of a client whose package declares helpers."""
@@ -602,17 +573,6 @@ def _redirects(response: httpx2.Response) -> int:
     return sum(hop.has_redirect_location for hop in response.history)
 
 
-def _credentialed(request: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:
-    """Return whether a request carries a value at a declared scheme's header, query, or cookie, Authorization aside."""
-    headers, query, cookies = protected_positions(schemes)
-    sent = request.headers
-    if any(name in sent for name in headers) or (query and any(name in request.url.params for name in query)):
-        return True
-    return bool(cookies) and any(
-        cookie_name(pair) in cookies for value in sent.get_list("cookie") for pair in value.split(";")
-    )
-
-
 def strip_credentials(
     headers: Iterable[tuple[str, str]], url: str, schemes: tuple[CredentialPosition, ...]
 ) -> tuple[tuple[tuple[str, str], ...], str]:
@@ -797,7 +757,7 @@ class Call(LogicalCallContext):
         which HTTPX2 drops across origins itself, is never redirected, whether the call's credentials put it there or
         a patch or a parameter did; any other takes the call's setting, or else the HTTP client's.
         """
-        if (self.placements and positional(self.placements)) or (schemes and _credentialed(outgoing, schemes)):
+        if (self.placements and positional(self.placements)) or (schemes and credentialed(outgoing, schemes)):
             return False
         return self.settings.follow_redirects
 

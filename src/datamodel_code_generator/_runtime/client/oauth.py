@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
 
 __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 

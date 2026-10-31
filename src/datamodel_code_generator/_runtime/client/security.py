@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     import httpx2
 
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
     from .urls import Origin
 
 

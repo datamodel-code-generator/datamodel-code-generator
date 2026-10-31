@@ -24,7 +24,7 @@ from .urls import request_origin
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Mapping
 
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
     from .security import Placement, SecurityScheme
     from .urls import Origin
 
