@@ -172,3 +172,18 @@ def climb(path, other, roots):
     while not path.is_dir():
         roots.append(lambda: path.parent)
     return path, current
+
+
+def guarded_reads(value, other, owner, flag):
+    """Read a value or its members only when it is a dict; another class, value, fallback or wrapper does not count."""
+    return (
+        value if isinstance(value, dict) else {},
+        value.get("key") if isinstance(value, dict) else None,
+        value.items() if isinstance(value, dict) and flag else (),
+        found if isinstance(found := other.get("key"), dict) else [],
+        owner.value.get("key") if isinstance(owner.value, dict) else None,
+        value.get("key") if isinstance(value, list) else None,
+        other.get("key") if isinstance(value, dict) else None,
+        value if isinstance(value, dict) else other,
+        tuple(value) if isinstance(value, dict) else (),
+    )

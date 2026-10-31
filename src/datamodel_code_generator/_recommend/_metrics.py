@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._json_schema import (
     COMBINATOR_POSITIONS,
@@ -122,21 +123,17 @@ def _collect_words(document: object, words: set[str], operation_ids: set[str]) -
                 stack.extend(node)
 
 
-def _mapping(value: object) -> Mapping[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
 def _component_names(document: Mapping[str, Any]) -> tuple[set[str], set[str]]:
     """Return the keys of every components section and of its schemas; the definitions of a JSON Schema are both.
 
     A section that is not a mapping has no keys, so a document generation rejects still has a vocabulary.
     """
     if "components" not in document:
-        names = set(map(_norm, _mapping(document.get("definitions", document.get("$defs")))))
+        names = set(map(_norm, as_mapping(document.get("definitions", document.get("$defs")))))
         return names, names
-    sections = _mapping(document["components"])
-    components = {_norm(key) for items in sections.values() for key in _mapping(items)}
-    return components, set(map(_norm, _mapping(sections.get("schemas"))))
+    sections = as_mapping(document["components"])
+    components = {_norm(key) for items in sections.values() for key in as_mapping(items)}
+    return components, set(map(_norm, as_mapping(sections.get("schemas"))))
 
 
 def schema_vocabulary(document: Mapping[str, Any] | None) -> SchemaVocabulary:

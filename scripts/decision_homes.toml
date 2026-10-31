@@ -740,6 +740,17 @@ names = ["is_array_index"]
 what = "reads a list item by the JSON Pointer index grammar itself; pick a row of _document_reader.member"
 audit = "C01"
 
+[homes.Hx-loaded-mapping]
+decision = "what a loaded document value that is not a mapping reads as: an empty mapping, so it has no members, keys or items"
+core = ["_document_reader.py:as_mapping"]
+
+[homes.Hx-loaded-mapping.signatures.hand-guard]
+kind = "mapping-guard"
+names = ["dict"]
+paths = ["_recommend/"]
+what = "reads a loaded value, or its members, only when it is a dict itself; call _document_reader.py:as_mapping"
+audit = "C28-X10"
+
 [homes.Hx-python-syntax]
 decision = "how generated Python spells a call, a keyword argument and a tuple, list, set or dict display from the texts of their items: the separator, the comma a lone tuple item needs, the set() of a set without items, the colon of a dict entry and the equals sign of a keyword argument"
 core = ["_python_syntax.py"]

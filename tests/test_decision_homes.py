@@ -65,6 +65,8 @@ ALLOWED = """
 "sample.marker-test" = { home = "sample", count = 2, audit = "X-17" }
 [allow."other.py"."climb"]
 "sample.ancestor-walk" = { home = "sample", count = 2, audit = "X-18" }
+[allow."other.py"."guarded_reads"]
+"sample.mapping-guard" = { home = "sample", count = 5, audit = "X-19" }
 """
 MALFORMED = """
 [allow."other.py"."Other.method"]
