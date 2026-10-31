@@ -6,8 +6,9 @@ import math
 import time as _time
 from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
+from datetime import datetime
 from sys import float_info
-from typing import Final, final
+from typing import Final, TypeGuard, final
 
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
@@ -37,10 +38,15 @@ def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, max
         raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
-def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
-    """Refuse an option value of another type."""
-    if not isinstance(value, kinds):
+def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...], *, callables: bool = False) -> None:
+    """Refuse an option value of another type; with callables, a value that can be called is of the right type too."""
+    if not (isinstance(value, kinds) or (callables and callable(value))):
         raise ConfigurationError(field_path=path, reason="invalid_type")
+
+
+def is_aware(value: object) -> TypeGuard[datetime]:
+    """Return whether a value is a timezone-aware datetime, one whose offset from UTC is not None."""
+    return isinstance(value, datetime) and value.utcoffset() is not None
 
 
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
@@ -104,8 +110,7 @@ class Clock:
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
         for name in ("monotonic", "time", "random", "sleep", "asleep"):
-            if not callable(getattr(self, name)):
-                raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
+            checked_instance(getattr(self, name), (), ("clock", name), callables=True)
 
 
 SYSTEM_CLOCK: Final = Clock()

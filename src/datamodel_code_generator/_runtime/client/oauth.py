@@ -31,7 +31,7 @@ from .auth import (
 )
 from .errors import ConfigurationError
 from .security import SecurityScheme
-from .timing import SYSTEM_CLOCK, Clock, checked_instance
+from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
@@ -75,14 +75,14 @@ def _text(value: object, name: str, *, optional: bool = False) -> None:
 
 def _aware(value: object) -> None:
     """Refuse an expiry that is not None or a timezone-aware datetime."""
-    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+    if value is not None and not is_aware(value):
         raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
 
 
 def _settings(client_secret: object, http_client: object, clock: object) -> None:
     """Refuse a client secret, token client, or clock of another type."""
-    if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
-        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    if client_secret is not None:
+        checked_instance(client_secret, (str,), ("client_secret",), callables=True)
     checked_instance(http_client, (httpx2.Client, httpx2.AsyncClient, type(None)), ("http_client",))
     checked_instance(clock, (Clock, type(None)), ("clock",))
 
@@ -419,8 +419,8 @@ class ClientCredentials(_Provider):
 def _refresh_settings(token_set: object, callback: object) -> None:
     """Refuse a token set of another type and a callback that cannot be called."""
     checked_instance(token_set, (TokenSet,), ("token_set",))
-    if callback is not None and not callable(callback):
-        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
+    if callback is not None:
+        checked_instance(callback, (), ("on_token_refreshed",), callables=True)
 
 
 class RefreshToken(_Provider):

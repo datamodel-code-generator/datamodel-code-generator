@@ -8,7 +8,7 @@ derived from a private key.
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING, Final, final
+from typing import TYPE_CHECKING, Any, Final, final
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -101,15 +101,16 @@ def _verified(verify: Callable[[bytes], None], signatures: tuple[bytes, ...]) ->
     raise UnsupportedKeyError
 
 
-def _ed25519(key: Ed25519Key, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
-    signed, public_key = b"".join(parts), key.public_key
-    return _verified(lambda signature: public_key.verify(signature, signed), signatures)
+def _public_key(*arguments: Any) -> Callable[[Ed25519Key | RSAPSSKey, tuple[bytes, ...], tuple[bytes, ...]], bool]:
+    def matches(key: Ed25519Key | RSAPSSKey, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
+        """Verify the joined parts with the key's public key and the profile's arguments, as `_verified` tries them."""
+        signed, public_key = b"".join(parts), key.public_key
+        return _verified(lambda signature: public_key.verify(signature, signed, *arguments), signatures)
+
+    return matches
 
 
-def _rsa_pss(key: RSAPSSKey, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
-    signed, public_key = b"".join(parts), key.public_key
-    return _verified(lambda signature: public_key.verify(signature, signed, _PSS, _SHA256), signatures)
-
-
-ED25519: Final = SignatureAlgorithm(key_type=Ed25519Key, size=64, key_id=attrgetter("id"), matches=_ed25519)
-RSA_PSS_SHA256: Final = SignatureAlgorithm(key_type=RSAPSSKey, size=None, key_id=attrgetter("id"), matches=_rsa_pss)
+ED25519: Final = SignatureAlgorithm(key_type=Ed25519Key, size=64, key_id=attrgetter("id"), matches=_public_key())
+RSA_PSS_SHA256: Final = SignatureAlgorithm(
+    key_type=RSAPSSKey, size=None, key_id=attrgetter("id"), matches=_public_key(_PSS, _SHA256)
+)

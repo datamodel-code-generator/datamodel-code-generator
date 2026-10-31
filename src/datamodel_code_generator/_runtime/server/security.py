@@ -37,7 +37,7 @@ AsyncAuthorize: TypeAlias = Callable[[RequirementSets, Credentials], Awaitable[P
 def bearer_token(authorization: str | None) -> str | None:
     """Return the ASCII token of a `Bearer` `Authorization` header, matching the scheme case-insensitively, or None."""
     scheme, token = get_authorization_scheme_param(authorization)
-    return token if scheme.lower() == "bearer" and token and token.isascii() else None
+    return _text(token) if scheme.lower() == "bearer" and token else None
 
 
 def _text(credential: str | None) -> str | None:
@@ -64,7 +64,7 @@ class _ASCIIAuthorization(HTTPBase):
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
         """Return the credentials of the scheme's `Authorization` header, or None without ASCII ones."""
         credentials = await super().__call__(request)
-        return credentials if credentials is not None and credentials.credentials.isascii() else None
+        return credentials if credentials is not None and _text(credentials.credentials) is not None else None
 
 
 class ASCIIHTTPBearer(_ASCIIAuthorization, HTTPBearer):

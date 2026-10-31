@@ -18,6 +18,7 @@ from ..model_codecs.parameters import cookie_octets, header_text
 from .errors import ConfigurationError, SDKError
 from .positions import cookie_name
 from .security import Credentials
+from .timing import checked_instance
 from .urls import request_origin
 
 if TYPE_CHECKING:
@@ -110,8 +111,7 @@ class SchemeCredentials(Credentials):
         """Keep the credentials given, leaving out None."""
         super().__init__(values)
         for name, value in self.values.items():
-            if not (isinstance(value, (str, tuple, TokenSource)) or callable(value)):
-                raise ConfigurationError(field_path=(name,), reason="invalid_type")
+            checked_instance(value, (str, tuple, TokenSource), (name,), callables=True)
 
     def auth(  # noqa: PLR0913, PLR6301
         self,

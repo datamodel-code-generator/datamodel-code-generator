@@ -1504,6 +1504,29 @@ exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
 what = "walks the extra headers or query names of a helper call itself; call protocols/client.py:_ProtocolCore.named"
 audit = "C26-29"
 
+[homes.Hx-application-values]
+decision = "the values the client runtime takes from an application: a timezone-aware datetime (a token set's expiry, a webhook's now, a cache entry's times, a saved server expiry read back), and an option of its declared types or, where a callable may stand in for it, one that can be called (a scheme credential, an OAuth client secret and refresh callback, a clock source)"
+core = ["_runtime/client/timing.py:is_aware", "_runtime/client/timing.py:checked_instance"]
+adapters = []
+
+[homes.Hx-application-values.signatures.aware-datetime]
+kind = "call"
+names = ["utcoffset"]
+paths = ["_runtime/client/", "_runtime/protocols/"]
+# A verifier's timestamp is converted to UTC with its offset read once, not checked for awareness.
+exclude = ["_runtime/protocols/adapters.py:_utc"]
+what = "checks that a datetime is timezone-aware itself; call client/timing.py:is_aware"
+audit = "C25-K5"
+
+[homes.Hx-application-values.signatures.value-or-callable]
+kind = "call"
+names = ["callable"]
+paths = ["_runtime/client/"]
+# A callable credential is called, not checked (C25 G-3), and a file body is told by its read method.
+exclude = ["_runtime/client/auth.py:_called", "_runtime/client/oauth.py:_secret", "_runtime/client/bodies.py:_is_file"]
+what = "accepts a callable in place of an option's types itself; call client/timing.py:checked_instance with callables=True"
+audit = "C25-K6"
+
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
 # a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.

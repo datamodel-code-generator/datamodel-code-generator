@@ -9,12 +9,13 @@ from __future__ import annotations
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import is_sequence
 from ..client.operations import codec_condition
+from ..client.timing import is_aware
 from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
@@ -168,10 +169,6 @@ def epoch_microseconds(moment: datetime) -> int:
     return (offset.days * 86400 + offset.seconds) * 1_000_000 + offset.microseconds
 
 
-def _aware(moment: object) -> TypeGuard[datetime]:
-    return isinstance(moment, datetime) and moment.utcoffset() is not None
-
-
 def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
     if options is None:
         return _DEFAULTS
@@ -196,7 +193,7 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
             raise configuration_error(helper_id, (name,))
     if not _instance(keys, KeySet):
         raise configuration_error(helper_id, ("keys",))
-    if not _aware(now):
+    if not is_aware(now):
         raise configuration_error(helper_id, ("now",))
     limits = _limits(options, helper_id)
     return epoch_microseconds(now), limits

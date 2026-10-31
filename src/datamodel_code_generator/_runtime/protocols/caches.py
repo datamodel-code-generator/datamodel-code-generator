@@ -10,6 +10,7 @@ from typing import Final, Generic, Literal, Protocol, TypeAlias
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
+from ..client.timing import is_aware
 from ..model_codecs.media import OK, STATUSES
 
 __all__ = (
@@ -88,7 +89,7 @@ class CacheEntry:
         _range(len(self.vary_values) == len(self.vary), "vary_values must match vary one to one")
         for name in ("request_time", "response_time", "stored_at"):
             _typed(instant := getattr(self, name), datetime, name)
-            _range(instant.utcoffset() is not None, f"{name} must be timezone-aware")
+            _range(is_aware(instant), f"{name} must be timezone-aware")
         for name in ("freshness_seconds", "initial_age_seconds"):
             _typed(seconds := getattr(self, name), (int, float), name)
             _range(isfinite(seconds) and seconds >= 0, f"{name} must be finite and not negative")
