@@ -1,13 +1,15 @@
-"""How the generator's messages write English: lists, counts and install hints.
+"""How the generator's messages write English: lists, counts, install hints and the lines of a paragraph.
 
 A message lists items with a conjunction (``english_list``), names the first items of a longer list and how many more
 there are (``listed_with_more``), writes a word or a counted noun in its form for a number (``for_count``,
-``counted``), and names an extra of the generator or the pip command that installs it (``extra_requirement``,
-``install_command``). The module imports only the standard library, so every layer can import it.
+``counted``), names an extra of the generator or the pip command that installs it (``extra_requirement``,
+``install_command``), and a text report wraps a paragraph into lines (``wrapped_lines``). The module imports only the
+standard library, so every layer can import it.
 """
 
 from __future__ import annotations
 
+from textwrap import wrap
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 if TYPE_CHECKING:
@@ -24,6 +26,7 @@ __all__ = [
     "for_count",
     "install_command",
     "listed_with_more",
+    "wrapped_lines",
 ]
 
 Conjunction: TypeAlias = Literal["and", "or"]
@@ -31,6 +34,8 @@ ListForm: TypeAlias = Literal["final", "serial", "each"]
 InstallPrompt: TypeAlias = Literal["$", "$ ", ""]
 InstallRow: TypeAlias = Literal["code", "plain", "legacy-graphql-quote"]
 """How ``install_command`` writes the command: as a code span, as plain text, or as the GraphQL hint of 0.87.0 does."""
+
+_REPORT_WIDTH = 100
 
 
 def english_list(items: Iterable[str], conjunction: Conjunction, form: ListForm = "final") -> str:
@@ -85,3 +90,12 @@ def install_command(extra: str, *, prompt: InstallPrompt = "$", row: InstallRow 
     if row == "plain":
         return f"{command}'"
     return f"`{command}`'" if row == "legacy-graphql-quote" else f"`{command}'`"
+
+
+def wrapped_lines(text: str, indent: str, subsequent_indent: str | None = None) -> list[str]:
+    """Wrap a paragraph of a text report into lines of at most 100 columns, never broken at a hyphen.
+
+    The first line starts with ``indent``, the others with ``subsequent_indent`` (``indent`` when it is None).
+    """
+    subsequent = indent if subsequent_indent is None else subsequent_indent
+    return wrap(text, width=_REPORT_WIDTH, initial_indent=indent, subsequent_indent=subsequent, break_on_hyphens=False)

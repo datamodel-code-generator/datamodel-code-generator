@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import textwrap
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json
-from datamodel_code_generator._message_text import counted
+from datamodel_code_generator._message_text import counted, wrapped_lines
 from datamodel_code_generator._option_names import hyphenated, option_flag
 from datamodel_code_generator._recommend._rules import format_text, values_arguments
 from datamodel_code_generator._recommend._signals import Signals
@@ -27,7 +26,6 @@ if TYPE_CHECKING:
         RecommendTrialPayload,
     )
 
-_WIDTH = 100
 _DETAIL_INDENT = " " * 6
 _EXAMPLE_INDENT = " " * 8
 _TABLE_COLUMNS: tuple[tuple[str, str], ...] = (
@@ -99,10 +97,6 @@ _ROOT_LINE = ("root schema", "object model {root_is_object}, title words {root_t
 _NO_SIGNALS = Signals(counts={}, facts={})
 
 
-def _wrap(text: str, indent: str = _DETAIL_INDENT) -> list[str]:
-    return textwrap.wrap(text, width=_WIDTH, initial_indent=indent, subsequent_indent=indent, break_on_hyphens=False)
-
-
 def _value_text(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False)
 
@@ -127,16 +121,23 @@ def _effect_lines(option: Option) -> list[str]:
         f"trial: {effect.before} -> {effect.after}: classes {without.types} -> {with_.types}, "
         f"problem names {without.problems} -> {with_.problems}; {_changes_text(effect.changes)}"
     )
-    return [*_wrap(text), *_example_lines(effect.changes)]
+    return [*wrapped_lines(text, _DETAIL_INDENT), *_example_lines(effect.changes)]
 
 
 def _option_lines(option: Option, signals: Signals, *, against: bool = False) -> list[str]:
     rule = option.decision.rule
-    lines = [f"  {' '.join(option.arguments)}   [{rule.id}]", *_wrap(format_text(rule.reason, signals))]
+    lines = [
+        f"  {' '.join(option.arguments)}   [{rule.id}]",
+        *wrapped_lines(format_text(rule.reason, signals), _DETAIL_INDENT),
+    ]
     if against:
-        lines.extend(_wrap(f"against: {format_text(rule.contested_reason, signals)}"))
-    lines.extend(line for caveat in rule.caveats for line in _wrap(f"caveat: {format_text(caveat, signals)}"))
-    lines.extend(line for evidence in rule.evidence for line in _wrap(f"measured: {evidence}"))
+        lines.extend(wrapped_lines(f"against: {format_text(rule.contested_reason, signals)}", _DETAIL_INDENT))
+    lines.extend(
+        line
+        for caveat in rule.caveats
+        for line in wrapped_lines(f"caveat: {format_text(caveat, signals)}", _DETAIL_INDENT)
+    )
+    lines.extend(line for evidence in rule.evidence for line in wrapped_lines(f"measured: {evidence}", _DETAIL_INDENT))
     lines.extend(_effect_lines(option))
     return lines
 
@@ -170,7 +171,7 @@ def _trial_footnotes(trial: Trial, *, stability: bool) -> list[str]:
     notes.append("unconstrained: fields that dcg warns it generates without some of their constraints")
     if stability:
         notes.append("renamed: classes a candidate renames between --diff-against and the input")
-    return [line for note in notes for line in _wrap(note, "  ")]
+    return [line for note in notes for line in wrapped_lines(note, "  ")]
 
 
 def _trial_lines(trial: Trial) -> list[str]:
@@ -210,19 +211,18 @@ def _trial_lines(trial: Trial) -> list[str]:
         lines.extend((
             "",
             f"Changes from the current configuration ({labels})",
-            *_wrap(_changes_text(trial.migration), "  "),
+            *wrapped_lines(_changes_text(trial.migration), "  "),
             *_example_lines(trial.migration, "    "),
         ))
     return lines
 
 
 def _signal_lines(signals: Signals, input_file_type: str | None) -> list[str]:
-    values = {**signals.counts, **{name: value or "none" for name, value in signals.facts.items()}}
     rows = [*_SIGNAL_LINES, _ROOT_LINE] if input_file_type == "jsonschema" else list(_SIGNAL_LINES)
     width = max(len(label) for label, _ in rows)
     scopes = f" (OpenAPI scopes: {signals.facts['scopes']})" if signals.facts["scopes"] else ""
     return [f"Schema  {signals.facts['schema']}{scopes}"] + [
-        f"  {label.ljust(width)}  {template.format_map(values)}" for label, template in rows
+        f"  {label.ljust(width)}  {format_text(template, signals)}" for label, template in rows
     ]
 
 
@@ -293,12 +293,7 @@ def render_text(recommendation: Recommendation, *, command: str | None, pyprojec
         lines.extend(f"  {_disagreement_text(item, recommendation.preset)}" for item in recommendation.disagreements)
     if recommendation.notes:
         lines.extend(("", "Notes"))
-        for note in recommendation.notes:
-            lines.extend(
-                textwrap.wrap(
-                    note, width=_WIDTH, initial_indent="  - ", subsequent_indent="    ", break_on_hyphens=False
-                )
-            )
+        lines.extend(line for note in recommendation.notes for line in wrapped_lines(note, "  - ", "    "))
     if command is not None:
         lines.extend(("", "Command", f"  {command}"))
     if pyproject is not None:

@@ -2600,6 +2600,39 @@ paths = ["_recommend/"]
 what = "tells a rename that changes digits only itself; call _recommend/_metrics.py:_match"
 audit = "C28-R7"
 
+[homes.Hx-candidate-label]
+decision = "how the recommender names a trial candidate next to another configuration: that configuration's label, then `+` or `-` and the decision of the option the candidate adds or removes"
+core = ["_recommend/__init__.py:_label"]
+
+[homes.Hx-candidate-label.signatures.decision-label]
+kind = "name"
+names = ["decision"]
+receivers = ["rule"]
+paths = ["_recommend/__init__.py"]
+what = "names a candidate by the decision of a rule itself; call _recommend/__init__.py:_label"
+audit = "C28-M2"
+
+[homes.Hx-signal-text]
+decision = "how the recommender fills a text with the signals of a schema (a rule's reason, caveats and contested reason, a row of the schema summary): the counts and facts by name, an empty fact written as none"
+core = ["_recommend/_rules.py:format_text"]
+
+[homes.Hx-signal-text.signatures.filled-template]
+kind = "call"
+names = ["format_map"]
+what = "fills a text with values by name itself; call _recommend/_rules.py:format_text"
+audit = "C28-R1"
+
+[homes.Hx-report-paragraph]
+decision = "how a text report of the command line (the recommendation report, the notes of --list-experimental) wraps a paragraph: lines of at most 100 columns, never broken at a hyphen, the first line and the others each after its indent"
+core = ["_message_text.py:wrapped_lines"]
+
+[homes.Hx-report-paragraph.signatures.text-wrap]
+kind = "call"
+names = ["wrap", "fill"]
+keywords = ["width"]
+what = "wraps a paragraph of a text report itself; call _message_text.py:wrapped_lines"
+audit = "C28-R11"
+
 [homes.Hx-remote-lock-plan]
 decision = "where a run's remote lock lives (the lockfile option or datamodel-codegen.lock in the default directory), its literal and canonical paths, and the policy its options and the file give it"
 core = ["_lock_plan.py"]
