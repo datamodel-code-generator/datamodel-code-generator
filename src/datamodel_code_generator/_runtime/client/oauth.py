@@ -125,8 +125,10 @@ def _secret(value: Secret | None) -> str | None:
         return value
     try:
         secret = value()
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise provider_failure(error) from None
+    except Exception as error:
+        if (failure := provider_failure(error)) is error:
+            raise
+        raise failure from None
     return _string(secret)
 
 
@@ -222,13 +224,15 @@ class _Provider(TokenSource):
         raise NotImplementedError
 
     def _notify(self, tokens: TokenSet) -> object:
-        """Hand a refreshed token set to the callback, wrapping what it raises as the provider's failure."""
+        """Hand a refreshed token set to the callback, raising an SDK error as it is and any other as the provider's."""
         if (callback := self._callback) is None:
             return None
         try:
             return callback(tokens)
-        except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-            raise provider_failure(error) from None
+        except Exception as error:
+            if (failure := provider_failure(error)) is error:
+                raise
+            raise failure from None
 
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
@@ -325,8 +329,10 @@ class _Provider(TokenSource):
             if inspect.isawaitable(result := self._notify(tokens)):
                 try:
                     await result
-                except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-                    raise provider_failure(error) from None
+                except Exception as error:
+                    if (failure := provider_failure(error)) is error:
+                        raise
+                    raise failure from None
             return tokens.access_token
 
     def _auth(self) -> SchemeAuth:

@@ -62,6 +62,14 @@ callbacks
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  callback's own error ! ConfigurationError reason=missing_value field_path=('store',) __cause__=KeyError
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  callback's own error keeps the refreshed token = b'ok'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
   coroutine callback in a synchronous call ! ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
@@ -96,3 +104,8 @@ async
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
   async failing callback ! AuthError reason=provider_failed cause=OSError
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
+  > POST https://auth.example.com/refresh
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
+  async callback's own error ! ConfigurationError reason=missing_value field_path=('store',) __cause__=KeyError
