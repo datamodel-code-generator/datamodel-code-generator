@@ -27,7 +27,7 @@ from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError, configuration_error, data_error
-from .options import CacheOptions, checked_options, layered
+from .options import CacheOptions, layered
 from .records import canonical_json
 
 if TYPE_CHECKING:
@@ -494,8 +494,8 @@ def _store_error(cause: Exception | None = None) -> SDKError:
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's."""
-    request = checked_options(plan.helper_id, "cache_options", cache_options, CacheOptions, options)
-    return layered((cache_options, core.helper_defaults(plan.helper_id)), "max_ttl", _MAX_TTL), request
+    request, kinds = core.helper_layers(plan.helper_id, "cache_options", cache_options, CacheOptions, options)
+    return layered(kinds, "max_ttl", _MAX_TTL), request
 
 
 def _checked(valid: bool) -> None:  # noqa: FBT001

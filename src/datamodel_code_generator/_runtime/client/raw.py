@@ -25,6 +25,7 @@ from .errors import (
     DecodeError,
     SDKError,
     add_secondary,
+    bounded_body,
     response_failure,
 )
 from .logical import Ready, in_thread, run_sync
@@ -283,11 +284,8 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
-        body = self._body
-        error = self._decoder.failure(
-            self._info, body[:MAX_ERROR_BODY_BYTES], truncated=len(body) > MAX_ERROR_BODY_BYTES
-        )
-        return self._call.snapshot_error(error)
+        body, truncated = bounded_body(self._body)
+        return self._call.snapshot_error(self._decoder.failure(self._info, body, truncated=truncated))
 
     def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""

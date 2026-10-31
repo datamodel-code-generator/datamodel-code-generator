@@ -1254,7 +1254,7 @@ what = "looks for a read value that makes a path segment a dot segment itself; c
 audit = "C27-B2"
 
 [homes.Hx-body-bytes]
-decision = "the bytes the client runtime moves a body in and keeps of one: the 64 KiB slice a body is read, sent, compressed and iterated in, the 64 KiB an error keeps of a received body, and how a body written to a path becomes the file or leaves none, the stream a failed write left ended"
+decision = "the bytes the client runtime moves a body in and keeps of one: the 64 KiB slice a body is read, sent, compressed and iterated in, the 64 KiB an error keeps of a received body (or the lower message limit of a WebSocket) and whether it cut them, and how a body written to a path becomes the file or leaves none, the stream a failed write left ended"
 core = [
     "_runtime/client/content.py",
     "_runtime/client/errors.py",
@@ -1264,7 +1264,7 @@ core = [
     "_runtime/client/raw.py:_discarded",
     "_runtime/client/raw.py:_Raw._write_failed",
 ]
-adapters = []
+adapters = ["_runtime/client/raw.py:ReceivedBody.add"]
 
 [homes.Hx-body-bytes.signatures.chunk-slices]
 kind = "call"
@@ -1295,6 +1295,46 @@ values = ["streaming"]
 paths = ["_runtime/"]
 what = "ends the stream a failed write left behind itself; call client/raw.py:_Raw._write_failed"
 audit = "C24-B11"
+
+[homes.Hx-body-bytes.signatures.error-prefix]
+kind = "name"
+names = ["MAX_ERROR_BODY_BYTES", "MAX_RAW_PREFIX"]
+paths = ["_runtime/"]
+what = "cuts the bytes an error keeps of a received body itself; call client/errors.py:bounded_body"
+audit = "C26-R3"
+
+[homes.Hx-helper-call-layers]
+decision = "the call layers of a protocol helper: the layers each limit of a helper call is merged from (the call's helper options, then the client's helper defaults, after both the helper options and the request options are checked for their types), and the refusal of a call that fixes an idempotency key of the helper's operations or sends a header or query name the helper writes, in the call's own extra ones or the client's and its views' default ones (a pager's count position in the call's own ones only)"
+core = [
+    "_runtime/protocols/client.py:_ProtocolCore.helper_layers",
+    "_runtime/protocols/client.py:_ProtocolCore.refuse_patched",
+    "_runtime/protocols/client.py:_ProtocolCore.fixed_key",
+    "_runtime/protocols/client.py:_ProtocolCore.named",
+]
+adapters = []
+
+[homes.Hx-helper-call-layers.signatures.limit-layers]
+kind = "call"
+names = ["checked_options", "helper_defaults"]
+paths = ["_runtime/protocols/"]
+what = "checks a helper call's options or reads the client's helper defaults itself; call protocols/client.py:_ProtocolCore.helper_layers"
+audit = "C26-30"
+
+[homes.Hx-helper-call-layers.signatures.patch-refusal]
+kind = "call"
+names = ["patched", "fixed_key", "named"]
+paths = ["_runtime/protocols/"]
+what = "looks for a fixed idempotency key or a header or query name a helper writes among a call's layers itself; call protocols/client.py:_ProtocolCore.refuse_patched"
+audit = "C26-R4"
+
+[homes.Hx-helper-call-layers.signatures.call-layer-names]
+kind = "name"
+names = ["extra_headers", "extra_query"]
+paths = ["_runtime/protocols/"]
+# A cache fetch varies on every header name the call and the client send, not on the first one that matches.
+exclude = ["_runtime/protocols/cache.py:_Fetch.__init__"]
+what = "walks the extra headers or query names of a helper call itself; call protocols/client.py:_ProtocolCore.named"
+audit = "C26-29"
 
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is

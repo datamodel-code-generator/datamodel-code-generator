@@ -27,6 +27,7 @@ from ..client.errors import (
     ConfigurationError,
     DecodeError,
     SDKError,
+    bounded_body,
     is_phase_timeout,
     is_transport,
 )
@@ -39,14 +40,13 @@ from ..model_codecs.media import NO_CONTENT, json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     HELPER_ERRORS,
-    MAX_RAW_PREFIX,
     ProtocolDataError,
     SessionLimitError,
     StreamInterruptedError,
     configuration_error,
     data_refusal,
 )
-from .options import HelperLimits, StreamOptions, checked_options, layered, new_session
+from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
 from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
 from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
@@ -297,8 +297,7 @@ def _limits(
     idempotency key, since each reopen is a child call of its own, and extra headers or query names of a parameter a
     reopen writes.
     """
-    request = checked_options(plan.helper_id, "stream_options", stream_options, StreamOptions, options)
-    kinds = (stream_options, core.helper_defaults(plan.helper_id))
+    request, kinds = core.helper_layers(plan.helper_id, "stream_options", stream_options, StreamOptions, options)
     reconnect = layered(kinds, "reconnect", _DEFAULTS.reconnect)
     if (resume := plan.resume) is None:
         if reconnect:
@@ -331,8 +330,7 @@ def _unpatched(
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
     queried = partial(query_written, resume.call, resume.writes)
-    if (written := core.patched(request, (plan.call, resume.call), resume.headers, queried)) is not None:
-        raise configuration_error(plan.helper_id, written)
+    core.refuse_patched(plan.helper_id, request, (plan.call, resume.call), resume.headers, queried)
 
 
 @dataclass(frozen=True, slots=True)
@@ -852,12 +850,12 @@ class _Events(Generic[T]):
         cause: BaseException | None = None,
     ) -> DecodeError:
         """Return the decode failure of an event, at its sequence and the pointer read, keeping at most 64 KiB of it."""
-        limit = MAX_RAW_PREFIX
+        body, truncated = bounded_body(data)
         return DecodeError(
             reason=condition,
             location=("event", self._sequence, *(() if location is None else (location.pointer,))),
-            body_bytes=data[:limit],
-            truncated=len(data) > limit,
+            body_bytes=body,
+            truncated=truncated,
             cause=cause,
         )
 
