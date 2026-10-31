@@ -14,11 +14,18 @@
       [
         "--profile",
         "3.14",
+        "--write-recipe",
+        "recipe.json"
+      ],
+      [
+        "--profile",
+        "3.14",
         "1",
         "1"
       ]
     ],
-    "dump": "3.14"
+    "dump": "3.14",
+    "recipe": "recipe.json"
   },
   "record-missing-provenance": {
     "runs": [
@@ -120,7 +127,7 @@
   },
   "missing-profile": {
     "weights": {
-      "version": 3,
+      "version": 4,
       "profiles": {
         "3.14": {
           "files": {
@@ -129,7 +136,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         }
       }
     },
@@ -142,7 +150,7 @@
   },
   "invalid-profile": {
     "weights": {
-      "version": 3,
+      "version": 4,
       "profiles": {
         "3.10": {
           "files": {
@@ -151,7 +159,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.11": {
           "files": {
@@ -160,7 +169,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.12": {
           "files": {
@@ -169,7 +179,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.13": {
           "files": {
@@ -178,10 +189,12 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.14": {
-          "files": []
+          "files": [],
+          "fast": {}
         },
         "windows": {
           "files": {
@@ -190,7 +203,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "macos": {
           "files": {
@@ -199,7 +213,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         }
       }
     },
@@ -233,7 +248,7 @@
   },
   "empty-maps": {
     "weights": {
-      "version": 3,
+      "version": 4,
       "profiles": {
         "3.10": {
           "files": {
@@ -242,7 +257,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.11": {
           "files": {
@@ -251,7 +267,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.12": {
           "files": {
@@ -260,7 +277,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.13": {
           "files": {
@@ -269,12 +287,14 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "3.14": {
           "files": {},
           "nodes": {},
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "windows": {
           "files": {
@@ -283,7 +303,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         },
         "macos": {
           "files": {
@@ -292,7 +313,8 @@
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
-          "slow": {}
+          "slow": {},
+          "fast": {}
         }
       }
     },
@@ -330,5 +352,24 @@
         "tests"
       ]
     ]
+  },
+  "record-median": {
+    "runs": [
+      [
+        "--profile",
+        "3.14",
+        "--junit",
+        "junit/default.xml",
+        "--junit",
+        "junit/slower.xml",
+        "--junit",
+        "junit/no-split.xml",
+        "--run-id",
+        "41,42,43",
+        "--sha",
+        "abc123"
+      ]
+    ],
+    "dump": "3.14"
   }
 }

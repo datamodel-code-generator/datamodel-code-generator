@@ -118,25 +118,31 @@ def test_test_part_option_partitions_one_node() -> None:
     )
 
 
-@pytest.mark.parametrize("shard_total", [2, 3])
+@pytest.mark.parametrize("shard_total", [2, 3, 18])
 def test_recipe_round_trip_selects_disjoint_shards(tmp_path: Path, shard_total: int) -> None:
-    """Generated recipes can be read back to select shards without duplicate items."""
+    """The shards of a generated recipe select every item once, or each ``ITEM@INDEX/TOTAL`` part of it once."""
     recipe_path = tmp_path / "recipe.json"
     _run_script("--write-recipe", str(recipe_path))
 
     recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
     expected_nodeids = {item["nodeid"] for item in recipe["items"]}
-    selected_nodeids: list[str] = []
+    parts: dict[str, list[str]] = {}
 
     for shard_index in range(1, shard_total + 1):
         result = _run_script(str(shard_index), str(shard_total), "--recipe", str(recipe_path))
-        selected_nodeids.extend(result.stdout.splitlines())
+        for line in result.stdout.splitlines():
+            part_line = line if select_ci_test_shard.PART_PATTERN.fullmatch(line) else f"{line}@1/1"
+            base, _, part = part_line.rpartition("@")
+            parts.setdefault(base, []).append(part)
 
     assert_output(
         json.dumps(
             {
-                "complete": set(selected_nodeids) == expected_nodeids,
-                "disjoint": len(selected_nodeids) == len(expected_nodeids),
+                "complete": set(parts) == expected_nodeids,
+                "disjoint": all(
+                    sorted(selected) == sorted(f"{index}/{len(selected)}" for index in range(1, len(selected) + 1))
+                    for selected in parts.values()
+                ),
             },
             sort_keys=True,
         )
@@ -245,4 +251,6 @@ def test_weights_cli_validates_external_cases(case: str, tmp_path: Path, monkeyp
     if (profile := data.get("dump")) is not None:
         recorded = json.loads(weights.read_text(encoding="utf-8"))["profiles"][profile]
         output.write(json.dumps(recorded, indent=2, sort_keys=True) + "\n")
+    if (recipe := data.get("recipe")) is not None:
+        output.write((tmp_path / recipe).read_text(encoding="utf-8"))
     assert_output(output.getvalue(), EXPECTED / f"weights-{case}.txt")
