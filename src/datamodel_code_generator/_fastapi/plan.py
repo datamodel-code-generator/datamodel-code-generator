@@ -58,6 +58,7 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     UnionType,
     fact,
+    is_required,
     label,
     members_by_consumer,
     operation_literal,
@@ -919,7 +920,7 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
-        required = fact(declaration, "required") is True
+        required = is_required(declaration)
         spec = ParameterSpec(
             location=location,
             wire_name=name,
@@ -1131,9 +1132,7 @@ class Planner:  # noqa: PLR0904
         media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         for item in media:
             self.bound(item.use)
-        spec = BodySpec(
-            required=fact(declaration, "required") is True, media=media, decision=Decision(transport="adapter")
-        )
+        spec = BodySpec(required=is_required(declaration), media=media, decision=Decision(transport="adapter"))
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
             return replace(spec, decision=Decision(transport="raw_request"))
         if len(media) != 1:

@@ -1171,7 +1171,7 @@ what = "builds a type view itself; freeze the model's TypeExpr or compose text w
 audit = "M-08"
 
 [homes.T-batch]
-decision = "how the targets read one accepted batch: its type uses and symbols by identity, the field bindings of each symbol, the value use of each schema occurrence, and the facts of the value an alias or root model stands for"
+decision = "how the targets read one accepted batch: its type uses and symbols by identity, the field bindings of each symbol, the value use of each schema occurrence, the facts of the value an alias or root model stands for, and whether a parameter, header or request body is required"
 core = [
     "_target_contract.py:uses_by_id",
     "_target_contract.py:symbols_by_id",
@@ -1179,6 +1179,7 @@ core = [
     "_target_contract.py:wrapped_facts",
     "_target_contract.py:wrapped_type",
     "_target_contract.py:schema_uses",
+    "_target_contract.py:is_required",
 ]
 
 [homes.T-batch.signatures.wrapped-facts]
@@ -1189,6 +1190,13 @@ paths = ["_target_types.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", 
 exclude = ["_openapi_wire_plan.py:LexicalKinds.kept"]
 what = "reads the facts of the value an alias or root model stands for itself; call _target_contract.py:wrapped_facts or wrapped_type"
 audit = "C21-N2"
+
+[homes.T-batch.signatures.required-fact]
+kind = "call"
+names = ["fact"]
+strings = ["required"]
+what = "reads whether a declaration is required itself; call _target_contract.py:is_required"
+audit = "C21-N3"
 
 [homes.T-operation]
 decision = "the operation plan both targets read: groups, names, arguments, defaults, media, bodies, responses, forms, statuses"

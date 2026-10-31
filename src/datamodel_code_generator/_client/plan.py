@@ -50,6 +50,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TypeUseBinding,
     fact,
+    is_required,
     label,
     operation_literal,
     parameter_place,
@@ -631,7 +632,7 @@ class Planner:
         )
         specs: list[ParameterSpec] = []
         for (declaration, location, wire_name, plan, _), python_name in zip(declared, python_names, strict=True):
-            required = fact(declaration, "required") is True
+            required = is_required(declaration)
             use = self.use(type_uses(declaration))
             argument = None if use is None or use.type is None else self.facts.argument(use.type)
             specs.append(
@@ -745,7 +746,7 @@ class Planner:
         for encoding in (child for child in declaration.children if child.kind == "encoding"):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
-            if name in members and (headers := self._part_headers(encoding)):
+            if name in members and (headers := self._headers(encoding)):
                 headers_of[name] = headers
             styled = form_styled(encoding, self.wire.version, multipart=True)
             match content_types(encoding):
@@ -775,11 +776,11 @@ class Planner:
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
         return media_of, headers_of
 
-    def _part_headers(self, encoding: WireDeclaration) -> tuple[HeaderSpec, ...]:
-        """Return the headers with a schema an encoding declares, with the plans that read their values."""
+    def _headers(self, declaration: WireDeclaration) -> tuple[HeaderSpec, ...]:
+        """Return the headers with a schema a response or encoding declares, with the plans that read their values."""
         return tuple(
-            HeaderSpec(name=child.name or "", required=fact(child, "required") is True, use=use, plan=plan)
-            for child in encoding.children
+            HeaderSpec(name=child.name or "", required=is_required(child), use=use, plan=plan)
+            for child in declaration.children
             if child.kind == "header"
             and (use := self.use(type_uses(child))) is not None
             and (plan := self.header_plans.get(use.id)) is not None
@@ -954,7 +955,7 @@ class Planner:
             if default not in declared or media_range(default):
                 message = f"The request media type {default!r} of {label(operation)} is not a declared concrete type"
                 self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
-        return BodySpec(required=fact(declaration, "required") is True, media=media, default=default)
+        return BodySpec(required=is_required(declaration), media=media, default=default)
 
     def media_list(
         self, operation: OperationContract, declaration: WireDeclaration, *, request: bool
@@ -979,13 +980,7 @@ class Planner:
     ) -> ResponseSpec:
         """Plan one declared response and classify it as a possible success or error."""
         status = (declaration.name or "default").upper() if declaration.name != "default" else "default"
-        headers = [
-            HeaderSpec(name=child.name or "", required=fact(child, "required") is True, use=use, plan=plan)
-            for child in declaration.children
-            if child.kind == "header"
-            and (use := self.use(type_uses(child))) is not None
-            and (plan := self.header_plans.get(use.id)) is not None
-        ]
+        headers = self._headers(declaration)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
@@ -999,7 +994,7 @@ class Planner:
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
-            headers=tuple(headers),
+            headers=headers,
             success=_success(status, success_statuses),
             error=_error(status),
             bodyless=response_bodyless(CLIENT, operation, exact),

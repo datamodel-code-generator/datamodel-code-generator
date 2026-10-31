@@ -48,6 +48,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     WireDeclaration,
     fact,
+    is_required,
     label,
     members_by_consumer,
     operation_literal,
@@ -653,7 +654,7 @@ def parameter_collisions(
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
     source = declaration.use_site
     location, name = parameter_place(declaration)
-    required = fact(declaration, "required") is True
+    required = is_required(declaration)
     _finite(planner, declaration)
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
