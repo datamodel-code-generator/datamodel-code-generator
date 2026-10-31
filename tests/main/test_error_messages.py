@@ -625,6 +625,63 @@ def test_cli_input_errors_are_clean(
     )
 
 
+@pytest.mark.parametrize(
+    ("document", "input_file_type", "expected_location", "expected_message"),
+    [
+        pytest.param(
+            "asyncapi: 3.0.0\ninfo: {title: t, version: '1'}\ncomponents:\n",
+            "asyncapi",
+            "input.yaml#/components",
+            "`components` must be an object",
+            id="asyncapi-components-null",
+        ),
+        pytest.param(
+            "asyncapi: 3.0.0\ninfo: {title: t, version: '1'}\ncomponents: []\n",
+            "asyncapi",
+            "input.yaml#/components",
+            "`components` must be an object",
+            id="asyncapi-components-list",
+        ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\ncomponents: []\n',
+            "openapi",
+            "input.yaml#/components",
+            "`components` must be an object",
+            id="openapi-components-list",
+        ),
+        pytest.param(
+            'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\npaths: {}\n'
+            "components:\n  schemas:\n    Pet:\n      allOf: 5\n",
+            "openapi",
+            "input.yaml#/components/schemas/Pet/allOf",
+            "`allOf` must be an array",
+            id="openapi-allof-scalar",
+        ),
+    ],
+)
+def test_wrongly_typed_components_and_allof_name_their_location(
+    document: str,
+    input_file_type: InputFileTypeLiteral,
+    expected_location: str,
+    expected_message: str,
+    tmp_path: Path,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Report a wrongly typed components section or allOf as a schema error, not as a raw exception."""
+    input_file = tmp_path / "input.yaml"
+    input_file.write_text(document, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Error at schema path '{expected_location}': {expected_message}",
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize("directory_input", [False, True])
 def test_missing_custom_file_header_is_a_clean_cli_error(
     output_file: Path,

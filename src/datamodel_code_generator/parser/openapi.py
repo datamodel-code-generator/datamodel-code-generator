@@ -1321,7 +1321,26 @@ class OpenAPIParser(JsonSchemaParser):
             return
         self._discriminator_documents.add(document)
         self._register_discriminator_schema("#", raw)
-        schemas: dict[str, Any] = raw.get("components", {}).get("schemas", {})
+        components = raw.get("components", {})
+        if not isinstance(components, dict):
+            msg = "`components` must be an object"
+            raise SchemaParseError(
+                msg,
+                _named_path(
+                    self._member_location(raw, "components"),
+                    [*self.model_resolver.current_root, "components"],
+                ),
+            )
+        schemas = components.get("schemas", {})
+        if not isinstance(schemas, dict):
+            msg = "`schemas` must be an object"
+            raise SchemaParseError(
+                msg,
+                _named_path(
+                    self._member_location(components, "schemas"),
+                    [*self.model_resolver.current_root, "components", "schemas"],
+                ),
+            )
         potential_subtypes: list[tuple[str, dict[str, Any], list[str]]] = []
 
         for schema_name, schema in schemas.items():
@@ -1341,6 +1360,15 @@ class OpenAPIParser(JsonSchemaParser):
 
             all_of = schema.get("allOf")
             if all_of:
+                if not isinstance(all_of, list):
+                    msg = "`allOf` must be an array"
+                    raise SchemaParseError(
+                        msg,
+                        _named_path(
+                            self._member_location(schema, "allOf"),
+                            [*self.model_resolver.current_root, "components", "schemas", schema_name, "allOf"],
+                        ),
+                    )
                 refs = [ref for item in all_of if isinstance(item, dict) and (ref := item.get("$ref"))]
                 if refs:
                     potential_subtypes.append((local_ref, schema, refs))
