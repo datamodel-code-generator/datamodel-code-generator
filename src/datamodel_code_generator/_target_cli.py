@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._paths import names_directory
 from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
@@ -251,7 +252,7 @@ def _shown(path: Path) -> str:
 def _payload_base(project: GeneratedProject, models: Path) -> Path:
     """Return the directory payload paths are relative to, as in the model payload: the model output or its parent."""
     rendered = [artifact.path for artifact in project.artifacts if artifact.kind == "model"]
-    return models.parent if models in rendered or (not rendered and models.suffix) else models
+    return models.parent if models in rendered or (not rendered and not names_directory(models)) else models
 
 
 def _target_payload(

@@ -121,7 +121,7 @@ from datamodel_code_generator._cli_config import (
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
-from datamodel_code_generator._paths import concrete_parent, overlaps, resolved, same_file
+from datamodel_code_generator._paths import concrete_parent, files_under, names_directory, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -1366,8 +1366,7 @@ def _generated_files_from_output(
         ]
     return [
         GeneratedFilePayload(path=path.relative_to(output).as_posix(), content=path.read_text(encoding=encoding))
-        for path in sorted(output.rglob("*.py"))
-        if path.is_file()
+        for path in files_under(output, "*.py")
     ]
 
 
@@ -1603,8 +1602,7 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
     if is_directory_output:
         targets = {
             generated_file: actual_output / generated_file.relative_to(generated_output)
-            for generated_file in sorted(generated_output.rglob("*"))
-            if generated_file.is_file()
+            for generated_file in files_under(generated_output)
         }
     if not targets and generated_output.is_file():
         targets = {generated_output: actual_output}
@@ -2831,7 +2829,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     )
     if config.check or writes_json_output_file or config.diff_against is not None:
         config_output = cast("Path", config.output)
-        is_directory_output = not config_output.suffix
+        is_directory_output = names_directory(config_output)
         temp_context: tempfile.TemporaryDirectory[str] | None = tempfile.TemporaryDirectory()
         temp_dir = Path(temp_context.name)
         if is_directory_output:
