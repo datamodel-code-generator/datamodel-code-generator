@@ -1653,7 +1653,10 @@ apply; `DataModelFieldBase` keeps each of these methods as a delegator.
 A model's rendered text names its module's imports through the bindings the IMPORTS passes give them:
 `model/_rendered_names.py` rewrites the names a field annotation or default loads and every bare load of a
 builtin the module imports under an alias, and tells the two passes that alias builtins which names a text loads
-bare (the one that aliases module imports named like a builtin by row `legacy-flat-bare-loads`).
+bare (the one that aliases module imports named like a builtin by row `legacy-flat-bare-loads`). It parses a
+rendered text at its own offsets (`_parsed`), finds the class of a model's name in it (`_class_bodies`) and the name
+nodes of an expression (`_names_of`), for itself, for the field collisions the IMPORTS pass reads
+(`model/output.py:_model_field_name_collisions`) and for the typing names of an annotation (`model/_field_imports.py`).
 
 `CodeFormatter` then applies the configured formatter pipeline. The formatter layer supports the built-in formatter,
 black, isort, ruff check, ruff format, and user-supplied custom formatters.

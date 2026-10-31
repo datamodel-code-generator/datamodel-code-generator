@@ -802,7 +802,7 @@ core = ["model/_decisions/assignment.py"]
 adapters = ["model/base.py:DataModel._field_assignment_facts"]
 
 [homes.H26]
-decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node)"
+decision = "module imports, bindings and final names, and the names a rendered text loads bare (row scoped: loads no function, lambda or comprehension of the text binds; row legacy-flat-bare-loads: every name node); a rendered text is parsed at its own offsets on the running interpreter, a rendered model's fields are the annotated statements of the class of its name, and the names an expression names are its name nodes"
 core = [
     "imports.py:_import_key",
     "imports.py:_stored_import",
@@ -827,6 +827,20 @@ kind = "literal"
 contains = ["legacy-flat-bare-loads"]
 what = "counts every name node of a rendered text as a bare load; call model/_rendered_names.py:_bare_loads_of with row scoped"
 audit = "C10-K19"
+
+[homes.H26.signatures.rendered-parse]
+kind = "call"
+names = ["host_parsable"]
+what = "parses a rendered text itself; call model/_rendered_names.py:_parsed"
+audit = "C10-K17"
+
+[homes.H26.signatures.class-body]
+kind = "name"
+names = ["ClassDef"]
+receivers = ["ast"]
+paths = ["model/", "parser/"]
+what = "looks up the class statement of a rendered model itself; call model/_rendered_names.py:_class_bodies"
+audit = "C10-K20"
 
 [homes.H26.signatures.stored-alias-split]
 kind = "call"
