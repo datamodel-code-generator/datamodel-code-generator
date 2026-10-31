@@ -81,6 +81,18 @@ def displays(head, items):
     )
 
 
+def keywords(name, value):
+    """Spell keyword arguments whose keyword is data; a fixed keyword, a comparison and a bare keyword do not count."""
+    return (
+        f"{name}={value}",
+        f"call({name}={value!r})",
+        f"key={value}",
+        f"{name}=={value}",
+        f"{name}=",
+        f"{name} = {value}",
+    )
+
+
 def search(name, taken, words, refresh):
     """Search for free names with an f-string, an annotated f-string and a padded string.
 

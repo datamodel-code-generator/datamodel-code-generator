@@ -63,7 +63,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, 
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
-from datamodel_code_generator.parser._model_shapes import REUSE_MODEL, skips_root_model
+from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -106,6 +106,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _rule_data_types,
     _runtime_validation_reference_keys,
     _unique_items_tuple,
+    compared_models,
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
@@ -1035,14 +1036,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         return
     duplicates = []
     updated_models: list[DataModel] = []
-    reuse_candidates = (
-        model
-        for model in parser._reuse_optimization_context.eligible_models(models.copy())  # noqa: SLF001
-        if not (
-            skips_root_model(REUSE_MODEL, collapse_root_models=parser.collapse_root_models)
-            and parser._is_root_model(model)  # noqa: SLF001
-        )
-    )
+    reuse_candidates = compared_models(parser, REUSE_MODEL, models.copy())
     groups = parser._reuse_groups  # noqa: SLF001
     canonical_models: dict[int, DataModel] = {}
     shapes = parser._model_shapes(REUSE_MODEL)  # noqa: SLF001

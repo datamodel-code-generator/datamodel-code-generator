@@ -52,6 +52,7 @@ from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._model_shapes import skips_root_model
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -1183,6 +1184,19 @@ class _ReuseOptimizationContext:
         if not self.constrains:
             return models
         return (model for model in models if self.allows_model(model))
+
+
+def compared_models(host: DeduplicationHost, row: ShapeRow, models: Iterable[DataModel]) -> Iterable[DataModel]:
+    """Return the models that the deduplication or reuse user of a row compares, in their order.
+
+    Reuse leaves the models of type overrides and the stand-ins out (``_ReuseOptimizationContext``), and the row
+    leaves the root models out (``skips_root_model``). The filters run as the result is read, so a caller that changes
+    ``models`` meanwhile passes a copy.
+    """
+    candidates = host._reuse_optimization_context.eligible_models(models)  # noqa: SLF001
+    if skips_root_model(row, collapse_root_models=host.collapse_root_models):
+        return (model for model in candidates if not host._is_root_model(model))  # noqa: SLF001
+    return candidates
 
 
 def _sort_models_by_class_body_references(

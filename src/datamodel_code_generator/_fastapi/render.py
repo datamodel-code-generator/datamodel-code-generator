@@ -31,7 +31,14 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
-from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
+from datamodel_code_generator._python_syntax import (
+    call_text,
+    dict_display,
+    keyword_argument,
+    list_display,
+    set_display,
+    tuple_display,
+)
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind, range_key
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -308,7 +315,7 @@ class Module(TargetModule):
         )
         found: list[str] = []
         if field:
-            found.append(call_text(metadata, (f"{key}={self.argument(keywords[key])}" for key in field)))
+            found.append(call_text(metadata, (keyword_argument(key, self.argument(keywords[key])) for key in field)))
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
@@ -754,8 +761,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
         def arguments(prefix: str) -> str:
             return ", ".join(
-                f"{item.keyword}={prefix}{item.alias}()" if item.base else f"{item.keyword}={item.alias}"
-                for item in owned
+                keyword_argument(item.keyword, f"{prefix}{item.alias}()" if item.base else item.alias) for item in owned
             )
 
         return templated(
@@ -1277,7 +1283,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
     keywords = [f"alias={field.alias!r}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
-    keywords.extend(f"{key}={value!r}" for key, value in field.keywords)
+    keywords.extend(keyword_argument(key, repr(value)) for key, value in field.keywords)
     if field.default is Default.ABSENT:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"

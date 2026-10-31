@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _RuntimeAnnotatedDataType
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -82,7 +82,7 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
         field_keywords, multiple_of = annotated_constraint_metadata(self.constrained_base, self.kwargs or {})
         metadata: list[str] = []
         if field_keywords:
-            keywords = (f"{name}={represent_python_value(value)}" for name, value in field_keywords.items())
+            keywords = (keyword_argument(name, represent_python_value(value)) for name, value in field_keywords.items())
             metadata.append(call_text(self._binding("Field"), keywords))
         if multiple_of is not None:
             metadata.append(f"{self._binding('MultipleOf')}({represent_python_value(multiple_of)})")

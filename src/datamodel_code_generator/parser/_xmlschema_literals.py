@@ -8,6 +8,7 @@ import re
 from decimal import Decimal
 from math import isfinite
 
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
@@ -90,7 +91,11 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
     if not any(duration_match.group("days", "hours", "minutes", "seconds")):
         return None
 
-    arguments = [f"{unit}={int(amount)}" for unit in ("days", "hours", "minutes") if (amount := duration_match[unit])]
+    arguments = [
+        keyword_argument(unit, str(int(amount)))
+        for unit in ("days", "hours", "minutes")
+        if (amount := duration_match[unit])
+    ]
     if seconds := duration_match["seconds"]:
         seconds_in_microseconds = Decimal(seconds) * 1_000_000
         integral_microseconds = seconds_in_microseconds.to_integral_value()
@@ -102,8 +107,7 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
         if microseconds:
             arguments.append(f"microseconds={microseconds}")
 
-    arguments_text = ", ".join(arguments) if arguments else "0"
     return _datetime_expression(
-        f".timedelta({arguments_text})",
+        call_text(".timedelta", arguments or ("0",)),
         prefix="-" if duration_match["sign"] else "",
     )

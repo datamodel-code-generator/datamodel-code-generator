@@ -63,7 +63,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._graph_links import add_child, drop_child
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
@@ -1443,7 +1443,7 @@ def _render_apply(expr: TypeApply) -> str:
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
         return node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
-        return call_text(text, (f"{k}={represent_python_value(v)}" for k, v in node.kwargs.items()))
+        return call_text(text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items()))
     return text
 
 

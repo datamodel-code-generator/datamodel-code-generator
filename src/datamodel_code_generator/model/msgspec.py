@@ -17,7 +17,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._mro import resolve_members
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -216,7 +216,7 @@ class _StructConversion:
 
 def _meta_call_text(call: CallPlan) -> str:
     """Write a ``Meta(...)`` call: its arguments sorted by their text."""
-    return call_text("Meta", sorted(f"{k.name}={represent_python_value(k.value)}" for k in call.kwargs))
+    return call_text("Meta", sorted(keyword_argument(k.name, represent_python_value(k.value)) for k in call.kwargs))
 
 
 class _MetaAnnotatedType(DataType):
@@ -1533,7 +1533,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if beyond:
             reasons.append(
                 "msgspec.Meta takes the number constraints of an int only within the 64-bit range, not "
-                + ", ".join(f"{name}={represent_python_value(value)}" for name, value in sorted(beyond.items()))
+                + ", ".join(
+                    keyword_argument(name, represent_python_value(value)) for name, value in sorted(beyond.items())
+                )
             )
         if inexact is not None:
             reasons.append(

@@ -25,7 +25,7 @@ from datamodel_code_generator.model.base import (
     remember_nested_factory_order_before_nullability,
 )
 from datamodel_code_generator.parser._graph_ids import keyed_models
-from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE, skips_root_model
+from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
@@ -36,6 +36,7 @@ from datamodel_code_generator.parser._passes._shared import (
     TargetPythonVersionHost,
     _parsed_rule_data_types,
     _sort_models_by_class_body_references,
+    compared_models,
     merge_duplicate,
     removes_reuse_duplicate,
     require_update_action,
@@ -354,11 +355,8 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
 
             shapes.memo.clear()
             content_key_to_models: dict[tuple[Any, ...], list[DataModel]] = defaultdict(list)
-            for model in parser._reuse_optimization_context.eligible_models(models):  # noqa: SLF001
-                if model in models_to_remove or (
-                    skips_root_model(shapes.row, collapse_root_models=parser.collapse_root_models)
-                    and parser._is_root_model(model)  # noqa: SLF001
-                ):
+            for model in compared_models(parser, shapes.row, models):
+                if model in models_to_remove:
                     continue
                 content_key_to_models[shapes.key(model)].append(model)
 
@@ -455,9 +453,7 @@ def find_duplicate_models_across_modules(
     different modules can still reference different models that share a name.
     """
     model_modules = {
-        model: module
-        for module, models in module_models
-        for model in parser._reuse_optimization_context.eligible_models(models)  # noqa: SLF001
+        model: module for module, models in module_models for model in compared_models(parser, TREE_SCOPE, models)
     }
     shapes = parser._model_shapes(TREE_SCOPE)  # noqa: SLF001
     return [

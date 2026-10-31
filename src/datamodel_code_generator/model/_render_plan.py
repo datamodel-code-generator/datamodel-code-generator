@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Prot
 
 from typing_extensions import override
 
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator._records import record
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -674,8 +674,8 @@ class _FieldRevision(NamedTuple):
 
 def _field_argument_text(argument: Kwarg) -> str:
     """Write one ``field()`` argument: the default factory as code, any other value as its literal."""
-    value = argument.value if argument.name == "default_factory" else represent_python_value(argument.value)
-    return f"{argument.name}={value}"
+    value = str(argument.value) if argument.name == "default_factory" else represent_python_value(argument.value)
+    return keyword_argument(argument.name, value)
 
 
 def field_call_text(call: CallPlan) -> str:

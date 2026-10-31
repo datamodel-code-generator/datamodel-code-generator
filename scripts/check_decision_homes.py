@@ -30,6 +30,8 @@ them, ``what`` words the message):
 * ``display``: an f-string, or a ``+`` chain of strings, that writes ``", ".join(...)`` right after an opening bracket
   of ``brackets`` (``(`` a call or tuple display, ``[`` a list display): Python source spelled by hand; a ``[`` right
   after a name, a value or a closing bracket opens a subscript and does not count.
+* ``keyword``: an f-string that writes ``{name}={value}``, a value, the text ``=`` and another value: a keyword
+  argument whose keyword is data, spelled by hand.
 * ``branch``: an ``if`` statement or a conditional expression whose test compares with a string in ``values`` and one
   of whose branches calls a callee ending in one of ``names`` (a rule applied only where a value is that string).
 * ``name-search``: a ``while`` loop whose test reads a name that the loop builds itself (its test or body, not a
@@ -105,6 +107,7 @@ SIGNATURE_KINDS = frozenset({
     "key",
     "literal",
     "display",
+    "keyword",
     "branch",
     "name-search",
 })
@@ -476,6 +479,16 @@ def _hand_display(node: ast.AST, brackets: Iterable[str]) -> bool:
     return any(_is_comma_join(part) and _opens_display(parts, index, brackets) for index, part in enumerate(parts))
 
 
+def _hand_keyword(node: ast.AST) -> bool:
+    """Return whether the f-string ``node`` writes a value, the text ``=`` alone and another value."""
+    parts = _string_parts(node)
+    return any(
+        isinstance(part, ast.Constant) and part.value == "=" and not isinstance(before, ast.Constant)
+        for before, part, after in zip(parts, parts[1:], parts[2:], strict=False)
+        if not isinstance(after, ast.Constant)
+    )
+
+
 def _branch_calls(node: ast.AST, values: Iterable[str], names: Iterable[str]) -> bool:
     """Return whether an ``if`` or a conditional expression tests for one of ``values`` and a branch calls ``names``."""
     if not isinstance(node, ast.If | ast.IfExp) or not isinstance(test := node.test, ast.Compare):
@@ -600,6 +613,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             return any(spelling in text for text in texts for spelling in options["contains"])
         case "display":
             return _hand_display(node, options["brackets"])
+        case "keyword":
+            return _hand_keyword(node)
         case "name-search":
             return isinstance(node, ast.While) and _searches_name(node)
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
@@ -618,6 +633,7 @@ NODE_TYPES = {
     "key": (ast.Subscript, ast.Call),
     "literal": (ast.Constant, ast.JoinedStr),
     "display": (ast.JoinedStr, ast.BinOp),
+    "keyword": (ast.JoinedStr,),
     "branch": (ast.If, ast.IfExp),
     "name-search": (ast.While,),
 }

@@ -151,6 +151,9 @@ _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
 _PATH_PARTNER_KEY = "_path_partner_model_key"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
+_REUSE_PATH_SUFFIX: Final = "/reuse"
+"""The suffix of the path of the empty subclass reuse makes of a model (``DataModel.create_reuse_model``): no resolver
+key holds it, and the target binding takes it off to find the schema and the model it replaced."""
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
 _MEMBER_UNTAKEN_CONSTRAINTS_KEY = "_member_untaken_constraints"
 _OVERRIDDEN_CONSTRAINTS_KEY = "_overridden_constraints"
@@ -2704,19 +2707,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         The parse's memo keeps the key per (class_name, use_default) combination, since the key computation involves
         expensive render() and imports calls.
         """
-        render_class_name = class_name if class_name is not None or not use_default else "M"
-
-        def compute() -> tuple[Any, ...]:
-            self._prepare_dedup_key()
-            return self._render_dedup_key(render_class_name)
-
+        render_class_name = self._dedup_key_class_name(class_name, use_default=use_default)
         return memoized(
             MemoTable.DEDUP_KEYS,
             model_key_of(self.reference),
             self,
             (class_name, use_default),
-            compute,
+            lambda: self._fresh_dedup_key(render_class_name),
         )
+
+    @staticmethod
+    def _dedup_key_class_name(class_name: str | None, *, use_default: bool) -> str | None:
+        """Return the class name a dedup key renders the model under: ``M`` stands in for its own one by default."""
+        return class_name if class_name is not None or not use_default else "M"
+
+    def _fresh_dedup_key(self, class_name: str | None) -> tuple[Any, ...]:
+        """Write what rendering the dedup key decides (``_prepare_dedup_key``), then render it under a class name."""
+        self._prepare_dedup_key()
+        return self._render_dedup_key(class_name)
 
     def _prepare_dedup_key(self) -> None:
         """Write what rendering the dedup key decides, so rendering it writes nothing.
@@ -2762,16 +2770,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         None later, so models whose types render alike today stay apart when their None comes from different places.
         """
         return tuple(
-            position
-            for position, data_type in enumerate(
-                data_type for field in self.fields for data_type in field.data_type.all_data_types
-            )
-            if data_type.has_target_null
+            position for position, data_type in enumerate(self._field_type_nodes()) if data_type.has_target_null
         )
 
     def _written_values_by_position(self) -> tuple[tuple[int, tuple[Any, ...]], ...]:
         """Return the values as written that the model and the types of its fields keep, by their position."""
-        holders = chain((self,), (data_type for field in self.fields for data_type in field.data_type.all_data_types))
+        holders = chain((self,), self._field_type_nodes())
         return tuple(
             (position, values)
             for position, holder in enumerate(holders)
@@ -2793,7 +2797,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
         reuse_model = self._derive(
-            reference=Reference(name=self.name, path=self.reference.path + "/reuse"),
+            reference=Reference(name=self.name, path=self.reference.path + _REUSE_PATH_SUFFIX),
             fields=[],
             base_classes=[base_ref],
             description=self.description,
@@ -3134,11 +3138,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Get the full module name for this model."""
         return get_module_name(self.name, self.file_path, treat_dot_as_module=self._treat_dot_as_module)
 
+    def _field_type_nodes(self) -> Iterator[DataType]:
+        """Iterate over the data types of the model's fields, field by field, each type's tree in order."""
+        for field in self.fields:
+            yield from field.data_type.all_data_types
+
     @property
     def all_data_types(self) -> Iterator[DataType]:
         """Iterate over all data types used in this model."""
-        for field in self.fields:
-            yield from field.data_type.all_data_types
+        yield from self._field_type_nodes()
         yield from self.base_classes
 
     @property
