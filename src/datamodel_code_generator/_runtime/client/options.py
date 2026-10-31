@@ -14,7 +14,7 @@ from ..model_codecs.media import ERROR_STATUSES, TOKEN
 from ..model_codecs.parameters import header_text
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
-from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, seconds
+from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, every_phase, seconds
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Iterable
@@ -84,7 +84,7 @@ class NativeTimeout(Protocol):
 
 
 DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=600.0, pool=600.0)
-_UNLIMITED: Final = ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
+_UNLIMITED: Final = every_phase(None)
 
 
 def retryable_status(status: int) -> bool:
@@ -181,7 +181,7 @@ def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeout
         case None:
             return _UNLIMITED
         case int() | float():
-            return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)
+            return every_phase(value)
         case _:
             pass
     return ResolvedTimeoutOptions(connect=value.connect, read=value.read, write=value.write, pool=value.pool)

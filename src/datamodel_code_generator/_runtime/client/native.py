@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 import httpx2
 
 from .errors import APIConnectionError, APITimeoutError, ConfigurationError, response_failure
+from .options import DEFAULT_TIMEOUT
 from .retry import Delivery
 
 if TYPE_CHECKING:
@@ -17,19 +18,36 @@ if TYPE_CHECKING:
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
 
+_UnsentReason: TypeAlias = Literal["connect_error", "connect_timeout", "pool_timeout"]
+
 
 def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
     """Return the per-request timeout extension of an attempt's resolved phases."""
     return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
+def native_phases(phases: ResolvedTimeoutOptions) -> httpx2.Timeout:
+    """Return resolved phases as an HTTPX2 timeout, which a native client or a call's options take."""
+    return httpx2.Timeout(**native_timeout(phases))
+
+
+def _unsent(error: BaseException | None) -> _UnsentReason | None:
+    """Return the retry reason of a native failure that leaves its request unsent, or None for any other failure.
+
+    Only a failure to connect, or to take a connection from the pool, proves that nothing was sent.
+    """
+    if isinstance(error, httpx2.ConnectTimeout):
+        return "connect_timeout"
+    if isinstance(error, httpx2.PoolTimeout):
+        return "pool_timeout"
+    return "connect_error" if isinstance(error, httpx2.ConnectError) else None
+
+
 def delivery(error: BaseException, *, response_started: bool = False) -> Delivery:
     """Classify how far a failed send got, only by the public send boundary and native exception class."""
     if response_started:
         return Delivery.RESPONSE_STARTED
-    if isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
-        return Delivery.NOT_SENT
-    return Delivery.MAYBE_SENT
+    return Delivery.MAYBE_SENT if _unsent(error) is None else Delivery.NOT_SENT
 
 
 def native_error(error: Exception) -> APIConnectionError:
@@ -39,16 +57,9 @@ def native_error(error: Exception) -> APIConnectionError:
     return APIConnectionError(cause=error)
 
 
-def transport_retry_reason(
-    error: APIConnectionError,
-) -> Literal["connect_error", "connect_timeout", "pool_timeout"] | None:
+def transport_retry_reason(error: APIConnectionError) -> _UnsentReason | None:
     """Only the native connection trio can be candidates for a transport retry."""
-    cause = error.cause
-    if isinstance(cause, httpx2.ConnectTimeout):
-        return "connect_timeout"
-    if isinstance(cause, httpx2.PoolTimeout):
-        return "pool_timeout"
-    return "connect_error" if isinstance(cause, httpx2.ConnectError) else None
+    return _unsent(error.cause)
 
 
 def request_fields(request: httpx2.Request) -> list[tuple[str, str]]:
@@ -164,10 +175,10 @@ async def async_response_bytes(response: httpx2.Response, *, decoded: bool = Fal
 
 
 def native_client() -> httpx2.Client:
-    """Create an SDK-owned HTTPX2 client: HTTPX2's defaults, with a 600 second timeout and 5 seconds to connect."""
-    return httpx2.Client(timeout=httpx2.Timeout(600.0, connect=5.0))
+    """Create an SDK-owned HTTPX2 client: HTTPX2's defaults, with the phase timeouts a client's settings start from."""
+    return httpx2.Client(timeout=native_phases(DEFAULT_TIMEOUT))
 
 
 def native_async_client() -> httpx2.AsyncClient:
     """Create an SDK-owned asyncio HTTPX2 client as `native_client` creates a synchronous one."""
-    return httpx2.AsyncClient(timeout=httpx2.Timeout(600.0, connect=5.0))
+    return httpx2.AsyncClient(timeout=native_phases(DEFAULT_TIMEOUT))

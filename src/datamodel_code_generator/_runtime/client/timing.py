@@ -128,6 +128,20 @@ class Budget:
         return max(0.0, self.at - self.clock.monotonic())
 
 
+def total_deadline(total_timeout: float | None, started: float, clock: Clock) -> Budget | None:
+    """Return the deadline a total timeout sets for what started at a monotonic instant, or None without one."""
+    return None if total_timeout is None else Budget(started + total_timeout, clock)
+
+
+def earliest(*budgets: Budget | None) -> Budget | None:
+    """Return the budget that ends first, the first given of those that end together, or None when none is given."""
+    found: Budget | None = None
+    for budget in budgets:
+        if budget is not None and (found is None or budget.at < found.at):
+            found = budget
+    return found
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResolvedTimeoutOptions:
     """The effective timeout of each I/O phase in seconds; None leaves that phase unlimited."""
@@ -136,3 +150,8 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
+
+
+def every_phase(value: float | None) -> ResolvedTimeoutOptions:
+    """Return phase timeouts that give every phase the same seconds, None leaving each unlimited."""
+    return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)

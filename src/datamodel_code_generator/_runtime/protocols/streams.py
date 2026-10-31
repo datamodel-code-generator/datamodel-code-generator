@@ -30,7 +30,7 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
-from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
+from ..client.native import _AsyncHeld, _Held, native_phases  # pyright: ignore[reportPrivateUsage]
 from ..client.operations import codec_condition
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
@@ -305,8 +305,7 @@ def _limits(
         _unpatched(core, plan, resume, request)
     idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
     if idle is not UNSET:
-        phases = core.call_settings(request, plan.call).timeout
-        timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
+        timeout = native_phases(replace(core.call_settings(request, plan.call).timeout, read=idle))
         request = replace(request or RequestOptions(), timeout=timeout)
     return _Limits(
         reconnect=reconnect,

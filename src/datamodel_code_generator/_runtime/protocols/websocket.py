@@ -41,7 +41,7 @@ from ..client.errors import (
 )
 from ..client.operations import codec_condition, request_errors
 from ..client.raw import afinished, finished
-from ..client.timing import Budget
+from ..client.timing import Budget, earliest
 from .errors import (
     HELPER_ERRORS,
     MAX_CLOSE_REASON,
@@ -460,10 +460,8 @@ class _Sockets(Generic[SendT, RecvT]):
 
     def _wait(self, cap: float | None) -> float | None:
         """Return how long a native wait may block: the earlier of a cap and the session's deadline, never negative."""
-        deadline = self._call.deadline
-        if cap is not None:
-            capped = Budget.after(cap, clock=self._call.settings.clock)
-            deadline = capped if deadline is None or capped.at < deadline.at else deadline
+        capped = None if cap is None else Budget.after(cap, clock=self._call.settings.clock)
+        deadline = earliest(self._call.deadline, capped)
         return None if deadline is None else max(0.0, deadline.remaining())
 
     def _checked_close(self, code: object, reason: object) -> None:
