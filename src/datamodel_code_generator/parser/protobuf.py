@@ -828,13 +828,12 @@ class ProtobufParser(JsonSchemaParser):
 
     def parse_raw(self) -> None:
         """Parse all Protocol Buffers input sources into data models."""
-        raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
-        source = next(self.iter_source)
-        source.raw_data = raw_obj
-        self.raw_obj = raw_obj
-        self._parse_file(raw_obj, "Model", [])
-        self._resolve_unparsed_json_pointer()
-        self._end_schema_parsing()
+        with self._parsing_session():
+            raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
+            source = next(self.iter_source)
+            source.raw_data = raw_obj
+            self.raw_obj = raw_obj
+            self._parse_file(raw_obj, "Model", [])
 
 
 __all__ = ["ProtobufParser", "convert_protobuf_schema_data"]
