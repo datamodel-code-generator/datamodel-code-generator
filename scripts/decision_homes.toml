@@ -2897,6 +2897,19 @@ kind = "count-form"
 what = "picks the form of a word for a count itself; call _message_text.py:for_count or counted"
 audit = "C16-B3"
 
+[homes.Hx-install-hint]
+decision = "how a message, a help text or a registry entry names an extra of the generator: its requirement (`datamodel-code-generator[x]`) and the pip command that installs it, after a prompt (`$`, `$ ` or none), as a code span or as plain text"
+core = ["_message_text.py:extra_requirement", "_message_text.py:install_command"]
+adapters = []
+
+[homes.Hx-install-hint.signatures.extra-text]
+kind = "literal"
+contains = ["datamodel-code-generator[", "pip install "]
+# Left out: the module docstring of http.py, which describes the two HTTP extras.
+exclude = ["http.py:<module>"]
+what = "spells the requirement of an extra or the pip command that installs it itself; call _message_text.py:extra_requirement or install_command"
+audit = "C16-B14"
+
 [homes.Hx-context-scope]
 decision = "how a block runs with context variables set: each set to its value in order before the block, and reset by its token in reverse order after it, also when the block raises"
 core = ["_context_scope.py:context_values"]
@@ -3308,6 +3321,10 @@ fix = "#5769"
 [legacy_rows."legacy-header-constant-by-upper"]
 home = "Hx-client-names"
 fix = "#5781"
+
+[legacy_rows."legacy-graphql-quote"]
+home = "Hx-install-hint"
+fix = "#5791"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 

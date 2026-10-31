@@ -9,6 +9,8 @@ from itertools import islice
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator._message_text import install_command
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -23,7 +25,7 @@ def _get_watchfiles() -> Any:
     try:
         import watchfiles  # noqa: PLC0415
     except ImportError as exc:
-        msg = "Please run `pip install 'datamodel-code-generator[watch]'` to use watch mode"
+        msg = f"Please run {install_command('watch', prompt='')} to use watch mode"
         raise Exception(msg) from exc  # noqa: TRY002
     return watchfiles
 

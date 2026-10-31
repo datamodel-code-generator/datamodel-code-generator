@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, cast, get_args
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
 from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
+from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import DeprecationFormat, deprecation_message
@@ -360,8 +361,8 @@ base_options.add_argument(
     "--url",
     help=(
         "Input file URL. `--input` is ignored when `--url` is used. "
-        "For HTTP(S), datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated, while "
-        "datamodel-code-generator[httpx2] is experimental. The default --http-backend auto policy selects stable "
+        f"For HTTP(S), {extra_requirement('http')} remains the stable HTTPX backend and is not deprecated, while "
+        f"{extra_requirement('httpx2')} is experimental. The default --http-backend auto policy selects stable "
         "HTTPX when its client module is installed and selects HTTPX2 only when that module is absent. Select "
         "--http-backend httpx2 to require the experimental backend. Explicit selections and paired dependency "
         "errors do not fall back."
@@ -1281,7 +1282,7 @@ base_options.add_argument(
     "--formatters",
     help="Formatters (current default: black, isort; future default: builtin). "
     "For Ruff projects, use --formatters ruff-check ruff-format "
-    "(install with pip install 'datamodel-code-generator[ruff]'). "
+    f"(install with {install_command('ruff', prompt='', row='plain')}). "
     "Use --formatters builtin when no external formatter is used or generation speed takes priority. "
     "Keep --formatters black isort to preserve existing formatting. "
     "Presets dated 20260909 or later include builtin; explicit formatters override presets. "
@@ -1427,7 +1428,7 @@ general_options.add_argument(
 _flag(
     general_options,
     "--debug",
-    help="show debug message (require \"debug\". `$ pip install 'datamodel-code-generator[debug]'`)",
+    help=f'show debug message (require "debug". {install_command("debug", prompt="$ ")})',
 )
 _flag(general_options, "--disable-warnings", help="disable warnings")
 for _registry, _contents in (
