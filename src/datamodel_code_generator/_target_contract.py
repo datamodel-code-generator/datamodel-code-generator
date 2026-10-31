@@ -654,6 +654,14 @@ def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, st
     return parameter_location(declaration), declaration.name or ""
 
 
+def is_required(declaration: WireDeclaration) -> bool:
+    """Return whether a parameter, header, or request body declaration is required: its `required` fact is true.
+
+    The binder records a path parameter that a placeholder of its path names as required.
+    """
+    return fact(declaration, "required") is True
+
+
 def operation_literal(operation: OperationContract, name: str) -> FrozenLiteral | None:
     """Return one effective wire fact of an operation as recorded, such as its security or servers."""
     return literal_fact(operation.facts, name)
