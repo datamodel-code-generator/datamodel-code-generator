@@ -67,15 +67,17 @@ def _add_upload(
     upload_handler = checked(
         default.upload,
         'The default.upload method of POST /uploads',
-        ('body',),
+        ('pageSize', 'body'),
     )
 
     def upload(
         *,
+        pageSize: Annotated[int, Query(alias='pageSize', title='Page size')] = 20,
         body: Annotated[models.UploadsPostRequest, Depends(contract.Upload.BODY)],
     ) -> object:
         return dispatch(
             upload_handler(
+                pageSize=pageSize,
                 body=body,
             ),
             contract.Upload.RESPONSES,
