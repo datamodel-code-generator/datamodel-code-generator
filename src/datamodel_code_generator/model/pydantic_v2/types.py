@@ -28,6 +28,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TIME,
     IMPORT_ULID,
     IMPORT_UUID,
+    _import_key,
 )
 from datamodel_code_generator.model.pydantic_v2 import imports as pydantic_imports
 from datamodel_code_generator.model.pydantic_v2._output_context import (
@@ -210,8 +211,8 @@ class DataTypeManager(_DataTypeManagerBase):
     )
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.PYDANTIC_OUTPUT.writes_constrained_types
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
-        (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
-        (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     })
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT

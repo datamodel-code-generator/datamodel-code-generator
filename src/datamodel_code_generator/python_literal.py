@@ -10,7 +10,7 @@ from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
 from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
-from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -68,7 +68,7 @@ class PythonRuntimeExpression:
 
     def with_import_aliases(self, aliases: Mapping[tuple[str | None, str], Import]) -> Self:
         """Return self unless module-wide import resolution changed a referenced binding."""
-        if (import_ := aliases.get((self.import_.from_, self.import_.import_))) is None or import_ is self.import_:
+        if (import_ := aliases.get(_import_key(self.import_))) is None or import_ is self.import_:
             return self
         return self.__class__(import_, self.prefix, self.suffix, self._value)
 
@@ -145,12 +145,10 @@ def rewrite_runtime_imports(
     if not aliases:
         return imports
     for index, import_ in enumerate(imports):
-        if (aliased_import := aliases.get((import_.from_, import_.import_))) is None or aliased_import is import_:
+        if (aliased_import := aliases.get(_import_key(import_))) is None or aliased_import is import_:
             continue
         rewritten = [*imports[:index], aliased_import]
-        rewritten.extend(
-            aliases.get((remaining.from_, remaining.import_), remaining) for remaining in imports[index + 1 :]
-        )
+        rewritten.extend(aliases.get(_import_key(remaining), remaining) for remaining in imports[index + 1 :])
         return tuple(rewritten)
     return imports
 

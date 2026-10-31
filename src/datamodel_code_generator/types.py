@@ -85,6 +85,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TUPLE,
     IMPORT_UNION,
     Import,
+    _import_key,
     _import_path,
 )
 from datamodel_code_generator.python_literal import represent_python_value
@@ -1845,7 +1846,7 @@ class DataTypeManager(ABC):
         """Return this backend's semantic descriptor for an emitted scalar import."""
         if (import_ := data_type.import_) is None:
             return None
-        return self.DEFAULT_VALUE_DESCRIPTORS.get((import_.from_, import_.import_))
+        return self.DEFAULT_VALUE_DESCRIPTORS.get(_import_key(import_))
 
     @staticmethod
     def copy_data_type(data_type: DataType) -> DataType:

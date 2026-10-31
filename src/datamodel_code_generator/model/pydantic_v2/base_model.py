@@ -37,7 +37,9 @@ from datamodel_code_generator.imports import (
     IMPORT_DICT,
     IMPORT_UNION,
     Import,
+    _holds,
     _import_bindings,
+    _import_key,
 )
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._decisions.hashability import (
@@ -149,7 +151,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
     )
@@ -159,12 +161,12 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
-_ANNOTATED_CONSTRAINT_BASES: dict[tuple[str | None, str], str] = {
-    (IMPORT_CONSTR.from_, IMPORT_CONSTR.import_): "str",
-    (IMPORT_CONINT.from_, IMPORT_CONINT.import_): "int",
-    (IMPORT_CONFLOAT.from_, IMPORT_CONFLOAT.import_): "float",
-    (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): "Decimal",
-    (IMPORT_CONBYTES.from_, IMPORT_CONBYTES.import_): "bytes",
+_ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
+    _import_key(IMPORT_CONSTR): "str",
+    _import_key(IMPORT_CONINT): "int",
+    _import_key(IMPORT_CONFLOAT): "float",
+    _import_key(IMPORT_CONDECIMAL): "Decimal",
+    _import_key(IMPORT_CONBYTES): "bytes",
 }
 
 
@@ -609,7 +611,7 @@ def _copy_alias_data_type(
         else None
     )
     base = (
-        _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
+        _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
         if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
         else None
     )
@@ -2430,7 +2432,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         imports: Imports,
     ) -> None:
         """Bind external validators consistently across every model in a module."""
-        if IMPORT_FIELD_VALIDATOR.import_ not in imports.get(IMPORT_FIELD_VALIDATOR.from_, ()):
+        if not _holds(imports, IMPORT_FIELD_VALIDATOR):
             return
         models = tuple(models)
         validator_models = [
@@ -2448,7 +2450,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             for import_ in model_imports[model]
             if import_ not in validator_imports
         )
-        validator_import_keys = {(import_.from_, import_.import_) for import_ in validator_imports}
+        validator_import_keys = set(map(_import_key, validator_imports))
         reserved_names.update(binding for key, binding in _import_bindings(imports) if key not in validator_import_keys)
         from datamodel_code_generator.validators import _reserve_validator_name  # noqa: PLC0415
 

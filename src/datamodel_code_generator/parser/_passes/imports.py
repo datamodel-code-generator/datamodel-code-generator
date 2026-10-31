@@ -34,7 +34,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings
+from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings, _import_key
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -312,10 +312,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: 
         return
     reserved_names.update(_iter_import_bindings(imports))
     type_alias_imports = {
-        (import_.from_, import_.import_)
-        for model in models
-        if isinstance(model, TypeAliasBase)
-        for import_ in model.imports
+        _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
     bindings: dict[str, str] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
@@ -1046,7 +1043,7 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
     if (
         not annotated
         or [key for key, binding in bindings.items() if binding == IMPORT_LITERAL.import_]
-        != [(IMPORT_LITERAL.from_, IMPORT_LITERAL.import_)]
+        != [_import_key(IMPORT_LITERAL)]
         or any(IMPORT_LITERAL in field.imports for field in fields if tag_fields.get(id(field)) is not field)
     ):
         return False

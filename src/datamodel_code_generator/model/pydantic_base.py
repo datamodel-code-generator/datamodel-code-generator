@@ -16,7 +16,7 @@ from typing_extensions import override
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
-from datamodel_code_generator.imports import IMPORT_DECIMAL
+from datamodel_code_generator.imports import IMPORT_DECIMAL, _import_key
 from datamodel_code_generator.model import (
     UNDEFINED,
     DataModel,
@@ -314,7 +314,7 @@ class DataModelField(DataModelFieldBase):
         return any(
             data_type.strict
             and (import_ := data_type.import_) is not None
-            and (import_.from_, import_.import_) == (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_)
+            and _import_key(import_) == _import_key(IMPORT_DECIMAL)
             for data_type in (self.data_type, *self.data_type.data_types)
         )
 
