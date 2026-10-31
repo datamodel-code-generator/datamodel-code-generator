@@ -889,7 +889,8 @@
               "name": "api_key",
               "label": "API key"
             }
-          ]
+          ],
+          "retry_statuses": "408, 429, 500, 502, 503, and 504"
         }
       },
       {
@@ -923,7 +924,8 @@
           "capabilities": [],
           "runtime": [],
           "example": null,
-          "credentials": []
+          "credentials": [],
+          "retry_statuses": "408, 429, 500, 502, 503, and 504"
         }
       },
       {
@@ -1053,7 +1055,8 @@
             "secured": false,
             "placeholders": false
           },
-          "credentials": []
+          "credentials": [],
+          "retry_statuses": "408, 429, 500, 502, 503, and 504"
         }
       },
       {
@@ -1181,7 +1184,8 @@
             "secured": false,
             "placeholders": false
           },
-          "credentials": []
+          "credentials": [],
+          "retry_statuses": "408, 429, 500, 502, 503, and 504"
         }
       },
       {
@@ -1308,7 +1312,8 @@
               "name": "bearer",
               "label": "bearer token"
             }
-          ]
+          ],
+          "retry_statuses": "408, 429, 500, 502, 503, and 504"
         }
       }
     ],
@@ -1750,7 +1755,23 @@
             "resumed": true
           },
           "sockets": true,
-          "compression": true
+          "compression": true,
+          "defaults": {
+            "connect": "5",
+            "read": "600",
+            "write": "600",
+            "pool": "600",
+            "initial_delay": "0.5",
+            "max_delay": "8",
+            "max_retry_after": "60",
+            "max_retries": "2",
+            "jitter": "full",
+            "respect_retry_after": "True",
+            "retry_on_pool_timeout": "False",
+            "statuses": "408, 429, 500, 502, 503, 504",
+            "error_prefix": "64",
+            "read_size": "64"
+          }
         }
       },
       {
@@ -1771,7 +1792,23 @@
           "uploads": false,
           "streams": null,
           "sockets": false,
-          "compression": false
+          "compression": false,
+          "defaults": {
+            "connect": "5",
+            "read": "600",
+            "write": "600",
+            "pool": "600",
+            "initial_delay": "0.5",
+            "max_delay": "8",
+            "max_retry_after": "60",
+            "max_retries": "2",
+            "jitter": "full",
+            "respect_retry_after": "True",
+            "retry_on_pool_timeout": "False",
+            "statuses": "408, 429, 500, 502, 503, 504",
+            "error_prefix": "64",
+            "read_size": "64"
+          }
         }
       },
       {
@@ -1809,7 +1846,23 @@
             "resumed": false
           },
           "sockets": false,
-          "compression": false
+          "compression": false,
+          "defaults": {
+            "connect": "5",
+            "read": "600",
+            "write": "600",
+            "pool": "600",
+            "initial_delay": "0.5",
+            "max_delay": "8",
+            "max_retry_after": "60",
+            "max_retries": "2",
+            "jitter": "full",
+            "respect_retry_after": "True",
+            "retry_on_pool_timeout": "False",
+            "statuses": "408, 429, 500, 502, 503, 504",
+            "error_prefix": "64",
+            "read_size": "64"
+          }
         }
       }
     ],
