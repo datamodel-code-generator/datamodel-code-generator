@@ -7,6 +7,7 @@ field names against it, does not load the registry.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal, TypeAlias
 
 PYTHON_BUILTIN_TYPE_NAMES = frozenset({
     "ArithmeticError",
@@ -199,8 +200,25 @@ def target_builtin_names(target_version: tuple[int, int]) -> frozenset[str]:
     )
 
 
+BuiltinRow: TypeAlias = Literal["target", "any-target", "legacy-builtins-of-any-target"]
+"""Whose builtins `is_builtin_type_name` reads.
+
+`target` the target's: a name a later Python adds is free for a user's symbol there (a type override, a bare type
+name); `any-target` every supported target's, where a `builtins.X` path that some target has is told from an unknown
+one; `legacy-builtins-of-any-target` every supported target's where the target's are meant: the import passes that
+alias the builtins a module import or a package's submodule hides.
+"""
+
+
+def is_builtin_type_name(name: str, target_version: tuple[int, int], *, rule: BuiltinRow = "target") -> bool:
+    """Return whether a name is a class or ``None`` of the builtins namespace by the row, as a hint writes it bare."""
+    return name in PYTHON_BUILTIN_TYPE_NAMES and (rule != "target" or is_target_builtin_name(name, target_version))
+
+
 __all__ = [
     "PYTHON_BUILTIN_TYPE_NAMES",
+    "BuiltinRow",
+    "is_builtin_type_name",
     "is_target_builtin_name",
     "is_target_name",
     "target_builtin_names",

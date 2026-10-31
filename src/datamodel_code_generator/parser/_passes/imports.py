@@ -28,7 +28,7 @@ from datamodel_code_generator._module_paths import (
     normalized_path,
     written_path,
 )
-from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
+from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
@@ -39,7 +39,7 @@ from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
-from datamodel_code_generator.model.output import _bare_name_loads, _model_field_name_collisions
+from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
@@ -1151,8 +1151,9 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     ``from . import list``, which names the models of the module ``list`` (``list.Pop``), hides the builtin from the
     whole module. Such an import takes the name the module's resolver gives it once the builtin holds its own name
     (``list_1``), as module imports whose names clash with other names do, and every ``list.X`` the module writes
-    follows. A name is a builtin by the static table of the target (``PYTHON_BUILTIN_TYPE_NAMES``), and the module
-    writes it bare when a rendered model loads it other than as the module of an attribute. The class of an enum
+    follows. A name is a builtin by the static table of every target (row ``legacy-builtins-of-any-target``), and the
+    module writes it bare when a rendered model names it other than as the module of an attribute, a store or a name a
+    function of a custom template binds included (row ``legacy-flat-bare-loads``). The class of an enum
     member literal is written before (``import_enum_member_literal_classes``), so a binding it names keeps its name.
     A package's own submodule keeps its name too: importing it binds the name in the package whatever the import
     is named.
@@ -1160,11 +1161,13 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     references = [
         data_type for model in ctx.models for data_type in _named_data_types(model) if data_type.reference is not None
     ]
+    target = parser.target_python_version.version_key
     if not (
         bindings := {
             binding
             for data_type in references
-            if (binding := _module_binding(data_type.alias)) in PYTHON_BUILTIN_TYPE_NAMES
+            if (binding := _module_binding(data_type.alias)) is not None
+            and is_builtin_type_name(binding, target, rule="legacy-builtins-of-any-target")
         }
     ):
         return
@@ -1187,7 +1190,12 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         return
     ledger = parser._import_ledger  # noqa: SLF001
     aliases: dict[str, str] = {}
-    for binding in sorted(_bare_name_loads(ctx.models, shadowing)):
+    written = {
+        name
+        for model in ctx.models
+        for name in _bare_loads_of(model.render(), shadowing, rule="legacy-flat-bare-loads")
+    }
+    for binding in sorted(written):
         reference = held[binding]
         ledger.release_names(ctx.imports, resolver, {binding})
         ledger.add_name(ctx.imports, resolver, get_special_path("builtin", [binding]), binding)
@@ -1237,10 +1245,15 @@ def _alias_builtins_hidden_by_submodules(
     ``app/list.py`` binds ``list`` in ``app/__init__.py`` once anything imports it, whatever the import is named, so
     ``list[str]`` there would subscript the module. The package imports the builtin as ``list_aliased``, the alias
     form of field-name bindings, and every bare ``list`` its models and module code write follows; ``list.Pop``
-    names the submodule and keeps its name. A builtin is a name of the static table of the target
-    (``PYTHON_BUILTIN_TYPE_NAMES``); the output writes a bare load of one for nothing but the builtin.
+    names the submodule and keeps its name. A builtin is a name of the static table of every target (row
+    ``legacy-builtins-of-any-target``); the output writes a bare load of one for nothing but the builtin.
     """
-    if not (hidden := PYTHON_BUILTIN_TYPE_NAMES.intersection(submodule_names)):
+    target = parser.target_python_version.version_key
+    if not (
+        hidden := {
+            name for name in submodule_names if is_builtin_type_name(name, target, rule="legacy-builtins-of-any-target")
+        }
+    ):
         return
     loads = {model: found for model in ctx.models if (found := _bare_loads_of(model.render(), hidden))}
     module_code = parser.data_model_type.render_module_code(ctx.models)
