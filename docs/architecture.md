@@ -543,7 +543,7 @@ backend builds it: `model/pydantic_base.py:DataModelField` (a Pydantic dataclass
 forced assignment and the plain annotation of a call the dataclass must see, `model/pydantic_v2/dataclass.py`),
 `model/msgspec.py:DataModelField` (`Meta(...)` inside `Annotated`, then `field(...)` or the default alone),
 `model/dataclass.py:DataModelField` (`field(...)` or the default alone) and `model/typed_dict.py:DataModelField` (the
-`ReadOnly[`, `Required[` and `NotRequired[` qualifiers of the key); an enum member is a field of the output's backend,
+`ReadOnly`, `Required` and `NotRequired` qualifiers of the key); an enum member is a field of the output's backend,
 whose plan gives the member's imports. The last render preparation pass freezes one per field in the parse's
 `RenderReady` (B2), and `field`, `annotated`, `type_hint`, `represented_default`, `has_default_factory_in_field`, the
 import collection and the dropped-constraints warnings read the frozen plan; before B2 they read the plan the parse's

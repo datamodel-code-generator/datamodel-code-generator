@@ -17,7 +17,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._mro import resolve_members
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -36,6 +36,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     struct_tag_options,
     struct_tag_refused,
 )
+from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
     CallArguments,
     CallPlan,
@@ -206,7 +207,7 @@ class _StructConversion:
         """Return the factory as the field's call writes it."""
         name = _default_factory_type_name(self.target)
         if self.of_list:
-            type_text = f"list[{name}]"
+            type_text = subscript_text("list", (name,))
         elif self.container is not None:
             type_text = self.container.type_hint.replace(self.target.alias or name, name)
         else:
@@ -232,7 +233,7 @@ class _MetaAnnotatedType(DataType):
     @override
     def type_hint(self) -> str:
         """Write ``Annotated`` over the hint of the copied type, ``None`` when it writes nothing, and the ``Meta()``."""
-        return f"Annotated[{self.data_types[0].type_hint or NONE}, {_meta_call_text(self.meta)}]"
+        return subscript_text("Annotated", (self.data_types[0].type_hint or NONE, _meta_call_text(self.meta)))
 
     @property
     @override
@@ -915,7 +916,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if (type_hint := self._get_simple_unset_base_type()) is None:
             return None
 
-        return f"{type_hint} | UnsetType" if self._use_union_operator else f"Union[{type_hint}, UnsetType]"
+        return join_union((type_hint, "UnsetType"), union_operator=self._use_union_operator)
 
     def _imports_data_type(self, plan: FieldRenderPlan) -> DataType:
         """Return the type imports collect from: the one the annotation of ``plan`` writes, else the field's own.
@@ -1594,8 +1595,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if self.extras.get("is_classvar"):  # pragma: no cover
             meta = self._get_meta_string()
             if self.use_annotated and meta:
-                return f"ClassVar[Annotated[{self.type_hint}, {meta}]]"
-            return f"ClassVar[{self.type_hint}]"
+                return subscript_text("ClassVar", (subscript_text("Annotated", (self.type_hint, meta)),))
+            return subscript_text("ClassVar", (self.type_hint,))
 
         if not self.use_annotated or (plan := self._render_plan()).annotated_call is None:
             return None
