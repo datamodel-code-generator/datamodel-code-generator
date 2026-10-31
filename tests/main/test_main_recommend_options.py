@@ -63,7 +63,7 @@ def _recommend(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     args: Sequence[str],
-    expected: str,
+    expected: str | None,
     *,
     inputs: Mapping[str, Path] | None = None,
     mode: Sequence[str] = ("quick",),
@@ -72,11 +72,21 @@ def _recommend(
     """Run the CLI from a project directory holding copies of the inputs, so paths in the output are relative.
 
     ``mode`` follows --recommend-options; an empty one runs the command without a mode. Without ``expected_stderr``,
-    nothing may be printed to stderr.
+    nothing may be printed to stderr. Without ``expected``, pytest names the stored output after the test.
     """
     for name, source in (inputs or {}).items():
         shutil.copy(source, tmp_path / name)
     with chdir(tmp_path):
+        if expected is None:
+            (name,) = inputs or {}
+            index = list(args).index("--input")
+            run_main_and_assert(
+                input_path=Path(name),
+                extra_args=[*args[:index], *args[index + 2 :], "--recommend-options", *mode],
+                capsys=capsys,
+                assert_no_stderr=True,
+            )
+            return
         run_main_with_args(
             [*args, "--recommend-options", *mode],
             capsys=capsys,
@@ -241,21 +251,27 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param(
             "referenced_holders.yaml",
             ["--openapi-scopes", "paths", "webhooks"],
-            "referenced_holders.txt",
+            None,
             id="referenced-holders",
         ),
         pytest.param(
             "referenced_holders.yaml",
             ["--openapi-scopes", "api"],
-            "referenced_holders_api.txt",
+            None,
             id="referenced-holders-api-scope",
         ),
-        pytest.param("integer_definition_keys.yaml", [], "integer_definition_keys.txt", id="integer-definition-keys"),
-        pytest.param("blank_union_titles.json", [], "blank_union_titles.txt", id="blank-union-titles"),
+        pytest.param("integer_definition_keys.yaml", [], None, id="integer-definition-keys"),
+        pytest.param(
+            "paths_integer_schema_key.yaml",
+            ["--openapi-scopes", "paths"],
+            None,
+            id="paths-scope-integer-schema-key",
+        ),
+        pytest.param("blank_union_titles.json", [], None, id="blank-union-titles"),
     ],
 )
 def test_recommend_options_for_schemas(
-    source: str, args: list[str], expected: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    source: str, args: list[str], expected: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Recommend options for each supported schema format, keeping the options the command sets.
 
@@ -263,7 +279,8 @@ def test_recommend_options_for_schemas(
     Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
-    once. A definition under an integer key is named by its text, and a blank title is no title of a union variant.
+    once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
+    an error, and a blank title is no title of a union variant.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))
@@ -287,7 +304,7 @@ def test_recommend_options_reads_each_container_once(tmp_path: Path, capsys: pyt
         tmp_path,
         capsys,
         ["--input", source.name, "--input-file-type", "openapi", "--target-python-version", "3.14"],
-        "input_cycle_list.txt",
+        None,
         inputs=_inputs(source),
         mode=(),
     )

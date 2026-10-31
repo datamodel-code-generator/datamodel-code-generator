@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Paths with an unused integer schema key
+  version: '1.0'
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          description: Pets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+components:
+  schemas:
+    1:
+      type: string

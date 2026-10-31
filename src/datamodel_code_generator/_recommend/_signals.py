@@ -240,19 +240,21 @@ def _uses_definitions(kind: SchemaKind) -> bool:
     return kind == "jsonschema"
 
 
-def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]:
+def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = True) -> dict[str, Any]:
     """Return the named schemas of a document: $defs and definitions, or components/schemas.
 
     A definition is named by the text of its key, as JSON Schema generation names it; the name of an OpenAPI or AsyncAPI
-    component must be a string, and generation ends in an error at a key that is not.
+    component generation reads must be a string, and generation ends in an error at a key that is not. Components that
+    the selected scopes do not read are named by the text of their key.
     """
     if _uses_definitions(kind):
         return {
             str(key): value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()
         }
     schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
-    string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
-    return {key: _unwrap(value) for key, value in schemas.items()}
+    if read:
+        string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
+    return {str(key): _unwrap(value) for key, value in schemas.items()}
 
 
 def _key_path(pointer: str) -> Callable[[object], list[str]]:
@@ -772,7 +774,8 @@ def measure_signals(
     scope (otherwise only those the operations reference), and request, response, and parameter schemas with the
     path scopes.
     """
-    all_components = _components(document, kind)
+    whole = kind != "openapi" or bool({"schemas", "api"} & openapi_scopes)
+    all_components = _components(document, kind, read=whole)
     walker = _Walker(document, _component_refs(kind, all_components), _dialect(document, kind))
     counts = walker.counts
     extra: list[tuple[str, object]] = []
@@ -783,7 +786,6 @@ def measure_signals(
         extra = list(_message_schemas(document))
     for key, node in extra:
         walker.walk_named(key, node)
-    whole = kind != "openapi" or bool({"schemas", "api"} & openapi_scopes)
     components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
     named = {key: node for key, node in components.items() if isinstance(node, dict)}
     counts["component_enums"] = sum(_is_enum(node) for node in named.values())
