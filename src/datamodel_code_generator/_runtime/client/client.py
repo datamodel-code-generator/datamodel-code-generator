@@ -15,7 +15,7 @@ from contextlib import (
 )
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, TypedDict, TypeVar, cast
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -62,6 +62,7 @@ from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
     Delivery,
+    RetrySafety,
     RetryState,
     RetryTiming,
     bind_retry_headers,
@@ -617,9 +618,7 @@ class Call(LogicalCallContext):
         self.operation = operation
         self.decoder: ResponseDecoder[object] = RAW_DECODER
         self.request_id_header = None if operation is None else operation.request_id_header
-        self.retry_safety: Literal["method_default", "idempotent", "never"] = (
-            "method_default" if operation is None else operation.retry_safety
-        )
+        self.retry_safety: RetrySafety = "method_default" if operation is None else operation.retry_safety
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
         self.key = str(uuid4()) if self.idempotency is not None and key is UNSET else key

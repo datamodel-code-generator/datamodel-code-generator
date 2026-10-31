@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterPlan
     from .positions import SecurityAlternatives
     from .responses import ResponseInfo
-    from .retry import IdempotencyPlan
+    from .retry import IdempotencyPlan, RetrySafety
 
     class FormEncoder(Protocol):
         """How a package that declares form-data bodies writes them."""
@@ -816,7 +816,7 @@ class OperationPlan(Generic[T_co]):
     request_id_header: str | None = None
     response_media_type: str | None = None
     fields: FieldArguments | None = None
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyPlan | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
