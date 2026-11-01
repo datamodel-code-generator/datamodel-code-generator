@@ -229,6 +229,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             ["--openapi-scopes", "api"],
             id="referenced-holders-api-scope",
         ),
+        pytest.param("extension_paths.json", ["--openapi-scopes", "api"], id="extension-paths-api-scope"),
+        pytest.param("extension_paths.json", ["--openapi-scopes", "paths"], id="extension-paths-paths-scope"),
         pytest.param("integer_definition_keys.yaml", [], id="integer-definition-keys"),
         pytest.param(
             "paths_integer_schema_key.yaml",
@@ -248,7 +250,8 @@ def test_recommend_options_for_schemas(
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
-    an error, and a blank title is no title of a union variant.
+    an error, and a blank title is no title of a union variant. A specification extension under ``paths`` (a key such
+    as ``x-foo``) holds no path item, so its operations and inline schemas are not measured.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))

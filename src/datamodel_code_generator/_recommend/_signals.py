@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
+    from datamodel_code_generator._openapi_paths import PathKeyRow
+
 SignalName: TypeAlias = Literal[
     "components",
     "operations",
@@ -276,22 +278,19 @@ def _media_schemas(document: Mapping[str, Any], key: str, container: object) -> 
 
 
 def _path_items(
-    document: Mapping[str, Any], sections: Iterable[str], include_paths: Sequence[str]
+    document: Mapping[str, Any], sections: Iterable[str], include_paths: Sequence[str], row: PathKeyRow
 ) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
     A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
-    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item is skipped as
-    the paths scope skips it (row ``legacy-object-extension-paths``), also for the api scope, whose walk skips an
-    extension key that holds an object too.
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item by ``row`` is
+    skipped, as the walk of generation that ``row`` names skips it.
     """
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
             string_key(path, kind, error_path)
-            if section == "webhooks" or (
-                holds_path_item(path, item, "legacy-object-extension-paths") and path_selected(path, include_paths)
-            ):
+            if section == "webhooks" or (holds_path_item(path, item, row) and path_selected(path, include_paths)):
                 yield path, as_mapping(_dereferenced(document, item))
 
 
@@ -301,7 +300,7 @@ def _scoped_schemas(
     """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
     api = "api" in scopes
     sections = (section for section in ("paths", "webhooks") if api or section in scopes)
-    for path, item in _path_items(document, sections, include_paths):
+    for path, item in _path_items(document, sections, include_paths, _path_key_row(scopes)):
         for method, operation in item.items():
             yield from _operation_parts(document, f"{path} {method}", operation)
     components = as_mapping(document.get("components"))
@@ -332,7 +331,7 @@ def _legacy_body_operations(
 ) -> Iterator[Mapping[str, Any]]:
     """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions."""
     sections = (section for section in ("paths", "webhooks") if "api" not in scopes and section in scopes)
-    for _, item in _path_items(document, sections, include_paths):
+    for _, item in _path_items(document, sections, include_paths, "legacy-object-extension-paths"):
         yield from (
             operation
             for method, operation in item.items()
@@ -412,12 +411,26 @@ def _operation_message(channel: object, operation: str) -> object:
     return as_mapping(as_mapping(channel).get(operation)).get("message")
 
 
-def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
-    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
+def _path_key_row(scopes: AbstractSet[str]) -> PathKeyRow:
+    """Return the row of ``holds_path_item`` that the walk of ``paths`` under the selected OpenAPI scopes reads.
+
+    The api scope reads ``paths`` by the API walk, which skips every extension key; the paths scope reads an extension
+    key that holds an object as a path.
+    """
+    return "openapi" if "api" in scopes else "legacy-object-extension-paths"
+
+
+def _count_operations(document: Mapping[str, Any], kind: SchemaKind, scopes: AbstractSet[str]) -> int:
+    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations.
+
+    A key of ``paths`` that holds no path item for the walk of the selected scopes (``_path_key_row``) holds none.
+    """
     if kind == "openapi":
+        row = _path_key_row(scopes)
         return sum(
             method in OPERATION_METHODS
-            for item in as_mapping(document.get("paths")).values()
+            for path, item in as_mapping(document.get("paths")).items()
+            if holds_path_item(path, item, row)
             for method in as_mapping(_dereferenced(document, item))
         )
     return len(as_mapping(document.get("operations"))) + sum(
@@ -798,7 +811,7 @@ def measure_signals(
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
         root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
-    counts["operations"] = _count_operations(document, kind)
+    counts["operations"] = _count_operations(document, kind, openapi_scopes)
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
