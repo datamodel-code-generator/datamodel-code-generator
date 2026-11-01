@@ -14,7 +14,6 @@ from ..model_codecs.media import (
     NO_CONTENT,
     SUCCESS_STATUSES,
     bodyless,
-    charset,
     declaring,
     decode_form,
     encode_form,
@@ -30,7 +29,7 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
 from .errors import APIStatusError, ConfigurationError, DecodeError, request_failure, response_failure, status_error
-from .media import encode_text, most_specific, with_charset
+from .media import charset_text, encode_text, most_specific, with_charset
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -486,7 +485,7 @@ def _json(body: bytes, _: ResponseInfo) -> JSONValue:
 
 def _text(body: bytes, info: ResponseInfo) -> str:
     try:
-        return body.decode(charset(info.content_type or ""))
+        return charset_text(body, info.content_type)
     except UnicodeDecodeError as error:
         raise InvalidBodyError(error) from None
 

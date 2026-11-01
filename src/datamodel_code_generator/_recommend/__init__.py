@@ -191,19 +191,9 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
     if config.input_model:
         return None, "input-model", None
     if config.url is not None:
-        from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, get_body  # noqa: PLC0415
+        from datamodel_code_generator.http import _get_configured_body  # noqa: PLC0415
 
-        text = get_body(
-            config.url.geturl(),
-            config.http_headers,
-            bool(config.http_ignore_tls),
-            config.http_query_parameters,
-            DEFAULT_HTTP_TIMEOUT if config.http_timeout is None else config.http_timeout,
-            allow_private_network=bool(config.allow_private_network),
-            http_backend=config.http_backend,
-            response_observer=request.response_observer,
-            encoding=config.encoding,
-        )
+        text = _get_configured_body(config.url.geturl(), config, response_observer=request.response_observer)
         return text, "url", Path(config.url.path).stem
     if config.input is not None:
         path = Path(config.input)

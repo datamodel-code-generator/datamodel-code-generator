@@ -2122,22 +2122,11 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         case str():
             input_text: str | None = input_
         case ParseResult():
-            from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, get_body  # noqa: PLC0415
+            from datamodel_code_generator.http import _get_configured_body  # noqa: PLC0415
 
-            timeout = config.http_timeout if config.http_timeout is not None else DEFAULT_HTTP_TIMEOUT
             input_text = remote_text_cache.get_or_put(
                 input_.geturl(),
-                default_factory=lambda url: get_body(
-                    url,
-                    config.http_headers,
-                    config.http_ignore_tls,
-                    config.http_query_parameters,
-                    timeout,
-                    allow_private_network=config.allow_private_network,
-                    http_backend=config.http_backend,
-                    response_observer=response_observer,
-                    encoding=config.encoding,
-                ),
+                default_factory=lambda url: _get_configured_body(url, config, response_observer=response_observer),
             )
         case _:
             input_text = None

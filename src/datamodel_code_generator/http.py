@@ -18,6 +18,7 @@ import socket
 from _thread import allocate_lock  # noqa: PLC2701
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
 from dataclasses import dataclass, field
+from functools import partial
 from ipaddress import IPv4Address, IPv6Address, IPv6Network, ip_address
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, cast
@@ -144,6 +145,37 @@ if TYPE_CHECKING:
             timeout: float,
             verify: bool = True,
         ) -> _HTTPXClient: ...
+
+    class _FetchSettings(Protocol):
+        """The options of a config or a parser that say how a URL input is fetched."""
+
+        @property
+        def http_headers(self) -> Sequence[tuple[str, str]] | None:
+            """The headers each request sends."""
+
+        @property
+        def http_ignore_tls(self) -> bool:
+            """Whether a request skips TLS certificate verification."""
+
+        @property
+        def http_query_parameters(self) -> Sequence[tuple[str, str]] | None:
+            """The query parameters the first request sends."""
+
+        @property
+        def http_timeout(self) -> float | None:
+            """The timeout of a request in seconds, or None for the default one."""
+
+        @property
+        def allow_private_network(self) -> bool:
+            """Whether a URL may name a private network host."""
+
+        @property
+        def http_backend(self) -> HTTPBackend:
+            """The HTTP client stack a request without a session uses."""
+
+        @property
+        def encoding(self) -> str:
+            """The encoding the body is read in."""
 
     class _HTTPXURLJoiner(Protocol):
         def join(self, url: str) -> _HTTPXURLJoiner: ...
@@ -1020,7 +1052,9 @@ def _get_redirect_headers(
     redirect_origin = _get_url_origin(redirect_url)
     if not headers or (current_origin is not None and current_origin == redirect_origin):
         return headers
-    return [(name, value) for name, value in headers if name.lower() not in _SENSITIVE_REDIRECT_HEADERS]
+    from datamodel_code_generator._runtime.model_codecs.media import fields_without  # noqa: PLC0415
+
+    return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
 def get_body(  # noqa: PLR0913
@@ -1061,6 +1095,34 @@ def get_body(  # noqa: PLR0913
         http_backend=http_backend,
         response_observer=response_observer,
         encoding=encoding,
+    )
+
+
+def _get_configured_body(
+    url: str,
+    settings: _FetchSettings,
+    *,
+    session: _HTTPFetchSession | None = None,
+    response_observer: ResponseObserver | None = None,
+) -> str:
+    """Fetch the text of a URL with the HTTP options of a config or a parser, the default timeout where none is set.
+
+    A parser fetches through its session, whose client stack and response observer take the place of the options'
+    backend and of `response_observer`.
+    """
+    fetch = (
+        partial(get_body, http_backend=settings.http_backend, response_observer=response_observer)
+        if session is None
+        else session.get_body
+    )
+    return fetch(
+        url,
+        settings.http_headers,
+        settings.http_ignore_tls,
+        settings.http_query_parameters,
+        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        allow_private_network=settings.allow_private_network,
+        encoding=settings.encoding,
     )
 
 
