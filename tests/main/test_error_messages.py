@@ -659,6 +659,32 @@ def test_remote_lock_modes_are_mutually_exclusive_in_public_config() -> None:
         GenerateConfig(update_lock=True, locked=True)
 
 
+@pytest.mark.parametrize("existing_output", [False, True])
+def test_missing_input_error_with_existing_output(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    existing_output: bool,
+) -> None:
+    """A missing input reports the same clean error and preserves an existing output."""
+    missing_path = tmp_path / "missing.json"
+    output_path = tmp_path / "output.py"
+    original_output = "# Existing models must be preserved.\n"
+    if existing_output:
+        output_path.write_text(original_output, encoding="utf-8")
+
+    run_main_and_assert(
+        input_path=missing_path,
+        output_path=output_path,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"File not found: {missing_path}\n",
+        expected_output=original_output if existing_output else None,
+        output_should_not_exist=not existing_output,
+        skip_code_validation=True,
+    )
+
+
 def test_missing_input_conflict_preserves_missing_file_error(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

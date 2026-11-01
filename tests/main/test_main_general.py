@@ -2628,10 +2628,13 @@ def test_filename_with_various_control_characters(tmp_path: Path) -> None:
         compile(generated_content, str(output_path), "exec")
 
 
-def test_generate_with_nonexistent_file(tmp_path: Path) -> None:
+@pytest.mark.parametrize("existing_output", [False, True])
+def test_generate_with_nonexistent_file(tmp_path: Path, existing_output: bool) -> None:
     """Test that generating from a nonexistent file raises an error."""
     nonexistent_file = tmp_path / "nonexistent.json"
     output_file = tmp_path / "output.py"
+    if existing_output:
+        output_file.write_text("# Existing models.\n", encoding="utf-8")
 
     with pytest.raises(Error, match="File not found"):
         generate(
