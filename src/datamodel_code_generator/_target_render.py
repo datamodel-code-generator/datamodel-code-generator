@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, TargetPydanticVersion, _pydantic_version_key
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 
     from _typeshed import DataclassInstance
 
+    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
@@ -62,10 +64,14 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
-    """Return the FieldPlan constructor of one form or object member, naming it through `local`."""
-    repeated = ", repeated=True" if field.repeated else ""
-    return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
+def member_plan(local: Callable[[str, str], str], plan: FieldPlan | PartPlan) -> str:
+    """Return the constructor of a member's plan: a form or object member's, or a form-data member's read as a part.
+
+    The member's name and kind are passed by position, ``repeated=True`` only when it repeats; the class is named
+    through `local` from the module of the package's runtime copy that defines it.
+    """
+    repeated = (keyword_argument("repeated", "True"),) if plan.repeated else ()
+    return call_text(_record_class(local, plan), (repr(plan.name), repr(plan.kind), *repeated))
 
 
 def runtime_record(
@@ -103,7 +109,7 @@ def _record_arguments(
     )
 
 
-def _record_class(local: Callable[[str, str], str], record: DataclassInstance) -> str:
+def _record_class(local: Callable[[str, str], str], record: object) -> str:
     kind = type(record)
     return local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__)
 
@@ -120,9 +126,9 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
     def spelled(name: str, value: Any) -> str:
         match name:
             case "fields":
-                return tuple_display(field_plan(local, item) for item in value)
+                return tuple_display(member_plan(local, item) for item in value)
             case "additional":
-                return field_plan(local, value)
+                return member_plan(local, value)
         return repr(value)
 
     return runtime_record(local, plan, spelled)
@@ -134,7 +140,7 @@ def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
         dict.fromkeys(
             requirement
             for name, requirement in MODEL_DEPENDENCIES
-            if any(item == name or item.startswith(f"{name}.") for item in imported)
+            if any(is_within_name(item, name) for item in imported)
         )
     )
 

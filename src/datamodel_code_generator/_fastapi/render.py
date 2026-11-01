@@ -68,7 +68,7 @@ from datamodel_code_generator._target_operations import coded_use, described, ta
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
-    field_plan,
+    member_plan,
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
@@ -1373,14 +1373,14 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
-            entries.append(f"fields={tuple_display(field_plan(module.local, plan) for plan in fields)}")
+            entries.append(f"fields={tuple_display(member_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
             entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
         if (additional := item.additional) is not None:
             plan = (
                 _json_part(module, additional)
                 if isinstance(additional, JsonPartSpec)
-                else field_plan(module.local, additional)
+                else member_plan(module.local, additional)
             )
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:

@@ -18,15 +18,15 @@ from enum import Enum
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import pydantic
 from pydantic import BaseModel
-from typing_extensions import Sentinel
 
 from datamodel_code_generator import Error, generate, is_asyncapi, is_openapi
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
+from datamodel_code_generator._process_state import ABSENT, restore_entry
 from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config
 from datamodel_code_generator.enums import DataModelType, InputFileType
 
@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 _dynamic_models_cache: dict[str, dict[str, type]] = {}
 _dynamic_models_lock = threading.Lock()
 _dynamic_module_counter = itertools.count(1)
-_MISSING_MODULE = Sentinel("_MISSING_MODULE")
 
 
 def _evict_dynamic_models_cache_entries(count: int) -> None:
@@ -158,7 +157,7 @@ def _execute_multi_module(
     all_namespaces: dict[str, dict[str, Any]] = {}
 
     def register_module(name: str, module: types.ModuleType) -> None:
-        previous_modules[name] = sys.modules.get(name, _MISSING_MODULE)
+        previous_modules[name] = sys.modules.get(name, ABSENT)
         sys.modules[name] = module
         created_modules.append(name)
 
@@ -174,9 +173,7 @@ def _execute_multi_module(
             module = types.ModuleType(generated_module_name)
             module.__dict__["__builtins__"] = builtins.__dict__
             module.__package__ = (
-                generated_module_name
-                if is_package_init(path_tuple[-1])
-                else ".".join(generated_module_name.split(".")[:-1])
+                generated_module_name if is_package_init(path_tuple[-1]) else generated_module_name.rpartition(".")[0]
             )
             register_module(generated_module_name, module)
             all_namespaces[generated_module_name] = module.__dict__
@@ -204,11 +201,7 @@ def _execute_multi_module(
         return models
     finally:
         for created_module_name in reversed(created_modules):
-            previous_module = previous_modules[created_module_name]
-            if previous_module is _MISSING_MODULE:
-                sys.modules.pop(created_module_name, None)
-            else:
-                sys.modules[created_module_name] = cast("types.ModuleType", previous_module)
+            restore_entry(sys.modules, created_module_name, previous_modules[created_module_name])
 
 
 def _extract_models(namespace: dict[str, Any], *, code: str = "", include_private: bool = False) -> dict[str, type]:

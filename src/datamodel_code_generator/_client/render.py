@@ -41,7 +41,7 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
-from datamodel_code_generator._client.protocols import POLL_INTERVAL
+from datamodel_code_generator._client.protocols import COUNTED_CONTINUATIONS, POLL_INTERVAL
 from datamodel_code_generator._client.runtime import (
     Capabilities,
     compresses,
@@ -84,7 +84,7 @@ from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
     Plan,
-    field_plan,
+    member_plan,
     parameter_plan,
     record_plan,
     runtime_record,
@@ -116,7 +116,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelHint,
@@ -1130,12 +1129,6 @@ def _core_call(
         tuple_display(value(parameter.python_name) for parameter in spec.parameters),
         tuple(arguments),
     )
-
-
-def _part_plan(module: TargetModule, plan: PartPlan) -> str:
-    """Return the PartPlan constructor of one form-data member."""
-    repeated = ", repeated=True" if plan.repeated else ""
-    return f"{module.local('_runtime.client.parts', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
 
 
 class _Typing:
@@ -2247,9 +2240,9 @@ class _Registry(_Typing):
         """Return the member plan keywords of a URL-encoded media type."""
         entries: list[tuple[str, str]] = []
         if media.fields:
-            entries.append(("fields", tuple_display(field_plan(module.local, item) for item in media.fields)))
+            entries.append(("fields", tuple_display(member_plan(module.local, item) for item in media.fields)))
         if media.additional is not None:
-            entries.append(("additional", field_plan(module.local, media.additional)))
+            entries.append(("additional", member_plan(module.local, media.additional)))
         if media.encoded:
             entries.append(("encoded", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
@@ -2259,9 +2252,9 @@ class _Registry(_Typing):
         """Return the keywords of a form-data media type whose members its codec writes: JSON, media, and styles."""
         entries: list[tuple[str, str]] = []
         if media.parts:
-            entries.append(("parts", tuple_display(_part_plan(module, item) for item in media.parts)))
+            entries.append(("parts", tuple_display(member_plan(module.local, item) for item in media.parts)))
         if media.additional_part is not None:
-            entries.append(("additional", _part_plan(module, media.additional_part)))
+            entries.append(("additional", member_plan(module.local, media.additional_part)))
         if media.content_types:
             entries.append(("content_types", tuple_display(repr(pair) for pair in media.content_types)))
         if media.encoded:
@@ -2309,10 +2302,10 @@ class _Registry(_Typing):
                     ("", status),
                     ("", media_type),
                     ("", self.codec(module, media.use)),
-                    ("", tuple_display(_part_plan(module, item) for item in media.parts)),
+                    ("", tuple_display(member_plan(module.local, item) for item in media.parts)),
                 ]
                 if media.additional_part is not None:
-                    entries.append(("", _part_plan(module, media.additional_part)))
+                    entries.append(("", member_plan(module.local, media.additional_part)))
                 branches.append(_call(module.local(_PARTS, "object_branch"), entries))
             else:
                 entries = [
@@ -2544,7 +2537,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         continuation = spec.continuation
         if (kind := continuation["kind"]) == "link":
             plan = pagination.LinkPlan(header=continuation["header"], rel=continuation["rel"])
-        elif kind in {"offset", "page"}:
+        elif kind in COUNTED_CONTINUATIONS:
             read = selector_record(continuation[evidence := spec.evidence])
             plan = pagination.CountPlan(
                 kind=kind,
@@ -3347,7 +3340,9 @@ class ClientRenderer:
             credentials=[CredentialLabel(item.name, _KIND_LABELS[item.scheme.kind]) for item in credentials],
             example=example,
             flows=any(item.flows for item in credentials),
-            pagination=RuntimePagination("cursor" in kinds, bool(kinds & {"offset", "page"}), _follows(self.helpers))
+            pagination=RuntimePagination(
+                "cursor" in kinds, not kinds.isdisjoint(COUNTED_CONTINUATIONS), _follows(self.helpers)
+            )
             if pages
             else None,
             polling=any(isinstance(spec, PollingSpec) for spec in self.helpers),

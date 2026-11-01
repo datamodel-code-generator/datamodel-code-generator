@@ -17,7 +17,9 @@ A name in a module has a dotted name: the module's dotted name and the name, or 
 (``dotted_name``). A model is named across modules by it, which the imports of other modules read, and an import, a
 runtime symbol and a package beside a server package are named by it too. A module lies below a package when
 the package's path starts its own and is shorter (``is_below``), so Python runs the package's ``__init__`` first; it
-lies within the package when it is that package or below it (``is_within``).
+lies within the package when it is that package or below it (``is_within``). A dotted name lies below or within
+another by their parts (``is_below_name``, ``is_within_name``), as a loaded module, an imported name or a helper name
+does.
 
 A module imports a name of another module by a relative import (``relative``): one dot for its own package and one
 more for each package up to the packages both modules share, then the other module's path below them, split into the
@@ -41,8 +43,10 @@ __all__ = [
     "expanded_path",
     "is_ancestor_package_reference",
     "is_below",
+    "is_below_name",
     "is_package_init",
     "is_within",
+    "is_within_name",
     "join_module",
     "module_parts",
     "normalized_path",
@@ -87,6 +91,16 @@ def is_below(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
 def is_within(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
     """Return whether the module path ``module`` is the package ``package`` or lies below it."""
     return module[: len(package)] == package
+
+
+def is_below_name(name: str, package: str) -> bool:
+    """Return whether the dotted name ``name`` lies below the dotted name ``package``, by their parts (``is_below``)."""
+    return is_below(tuple(name.split(".")), tuple(package.split(".")))
+
+
+def is_within_name(name: str, package: str) -> bool:
+    """Return whether the dotted name ``name`` is the dotted name ``package`` or lies below it (``is_within``)."""
+    return is_within(tuple(name.split(".")), tuple(package.split(".")))
 
 
 def relative(
