@@ -172,6 +172,12 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     def _ref_sibling_keywords_enabled(self) -> bool:
         """Whether the sibling keywords of a ``$ref`` apply beside it in the document being parsed."""
 
+    def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
+        """Whether the keywords beside a ``$ref`` are parts of the schema object."""
+
+    def _schema_object_is_root_ref(self, schema: JsonSchemaObject) -> bool:
+        """Whether the located object represents a document root whose schema has a ``$ref``."""
+
     @property
     def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
         """The property-count rule of each schema object, cached for this parse."""
@@ -710,14 +716,26 @@ def iter_property_count_validation_sources(
     visited_refs: frozenset[_TargetNode] = frozenset(),
 ) -> Iterator[JsonSchemaObject]:
     """Yield count constraints from allOf, preserving JSON Schema $ref siblings."""
-    yield obj
+    if not obj.ref or parser._ref_siblings_are_parts_of(obj):  # noqa: SLF001
+        yield obj
+    if obj.ref and (target := parser._unvisited_ref_target(obj.ref, visited_refs)) is not None:  # ruff: ignore[private-member-access]
+        yield from parser._iter_property_count_validation_sources(*target)  # ruff: ignore[private-member-access]
+    if obj.ref and not parser._ref_siblings_are_parts_of(obj):  # ruff: ignore[private-member-access]
+        return
+    if (
+        not obj.ref
+        and parser._schema_object_is_root_ref(obj)  # ruff: ignore[private-member-access]
+        and not parser._ref_siblings_are_parts_of(obj)  # ruff: ignore[private-member-access]
+    ):
+        return
     for item in obj.allOf:
         if not isinstance(item, JsonSchemaObject):
             continue
         if not item.ref:
             yield from parser._iter_property_count_validation_sources(item, visited_refs)  # noqa: SLF001
             continue
-        yield item
+        if parser._ref_siblings_are_parts_of(item):  # noqa: SLF001
+            yield item
         if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
             yield from parser._iter_property_count_validation_sources(*target)  # noqa: SLF001
 

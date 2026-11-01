@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Holder","$defs":{"A":{"type":"object","properties":{"a":{"type":"string"}}}},"allOf":[{"$ref":"#/$defs/A","minProperties":2}]}

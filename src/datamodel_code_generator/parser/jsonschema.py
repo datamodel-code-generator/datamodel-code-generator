@@ -1110,13 +1110,61 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return self._ref_sibling_keywords_enabled_in(self.raw_obj)
 
+    def _schema_resource_cache_for_location(
+        self, location: SchemaLocation
+    ) -> tuple[dict[str, Any], dict[str, Any]] | None:
+        """Return the prepared/raw document pair for a schema location."""
+        document = self._schema_resource_document([location.document])
+        return self._schema_resource_cache.get(document)
+
+    def _schema_root_for_location(self, schema: JsonSchemaObject) -> dict[str, YamlValue] | None:
+        """Return the document or embedded resource root that contains a located schema object."""
+        location = schema.schema_location
+        if location is None or (cached := self._schema_resource_cache_for_location(location)) is None:
+            return None
+        raw = cached[0]
+        dialect_root = raw
+        current: Any = raw
+        if isinstance(current, dict) and "$schema" in current:
+            dialect_root = current
+        for token in location.tokens:
+            if isinstance(current, dict):
+                if "$schema" in current:
+                    dialect_root = current
+                current = current.get(token)
+            elif isinstance(current, list) and str(token).isdigit():
+                index = int(token)
+                current = current[index] if index < len(current) else None
+            else:
+                current = None
+            if current is None:
+                break
+        if isinstance(current, dict) and "$schema" in current:
+            dialect_root = current
+        return dialect_root if isinstance(dialect_root, dict) else raw
+
+    def _schema_object_is_root_ref(self, schema: JsonSchemaObject) -> bool:
+        """Whether a located object is the root schema of a document whose root has a ``$ref``."""
+        location = schema.schema_location
+        if location is not None:
+            if location.tokens:
+                return False
+            root = self._schema_root_for_location(schema)
+            return isinstance(root, dict) and isinstance(root.get("$ref"), str)
+        return isinstance(self.raw_obj, dict) and isinstance(self.raw_obj.get("$ref"), str)
+
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
 
-        They are in a dialect that reads them so, and in every dialect where an inherited property override wrote
-        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part.
+        They are in the dialect of the document containing the schema, and in every dialect where an inherited
+        property override wrote them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an
+        override is an allOf part. Schema objects without a document location fall back to the current document.
         """
-        return self._ref_siblings_are_parts or _INHERITED_OVERRIDE_KEY in schema.__dict__
+        if _INHERITED_OVERRIDE_KEY in schema.__dict__:
+            return True
+        if (root := self._schema_root_for_location(schema)) is not None:
+            return self._ref_sibling_keywords_enabled_in(root)
+        return self._ref_siblings_are_parts
 
     @property
     def root_id(self) -> str | None:
