@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, g
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
@@ -449,13 +449,14 @@ LeafStep: TypeAlias = Literal["items", "values"]
 
 @dataclass(frozen=True, slots=True)
 class KindSite:
-    """Where the lexical kind of a text leaf is read: the places a type may be bound for it, and where none is reported.
+    """Where the lexical kind of a text leaf is read: the model type that holds it, and where none is reported.
 
-    A place is a schema's location and the steps from the type bound there to the leaf.
+    `steps` lead from that type to the leaf: a list's items, then a mapping's values.
     """
 
     source: SourceLocation
-    leaves: tuple[tuple[SourceLocation, tuple[LeafStep, ...]], ...]
+    type: TypeView | None
+    steps: tuple[LeafStep, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -472,9 +473,9 @@ class MemberShape:
 
 @dataclass(frozen=True, slots=True)
 class TextShape:
-    """How a schema's values are written as parameter text or as URL-encoded members, by the JSON types it declares.
+    """How a model type's values are written as parameter text or as URL-encoded members, by the JSON kinds they have.
 
-    A scalar or an array has the kind of its value or items; an object has its properties' members, then any other
+    A scalar or an array has the kind of its value or items; an object has the members of its model, then any other
     property's, none when it allows no others. `problem` is the location and message of why no builtin encoding
     writes the values.
     """
@@ -488,19 +489,19 @@ class TextShape:
 
 @dataclass(frozen=True, slots=True)
 class EncodingFacts:
-    """How the schema of a parameter, a header or a form is written as text, as the parser recorded on acquiring it.
+    """How the type bound for a parameter, a header or a form is written as text, read at bind from that model type.
 
-    `types` are the JSON types it declares, None when it declares none; `value` is its shape as one parameter value,
-    `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the location of the
-    property's schema. `extras` is where a form's object schema types the values of its other properties: in a schema
-    of its own, or in one of a schema it references or combines with allOf. `declared` says that schema allows them
-    as `true` or a schema, where one that leaves them unsaid allows them by default.
+    `types` are the JSON kinds of its values, None when they can be any value; `value` is its shape as one parameter
+    value, `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the property's
+    wire name. `extras` is where a form's model, or a base of it, types the values of its other properties.
+    `declared` says that model's schema allows them as `true` or a schema, where one that leaves them unsaid allows
+    them by default.
     """
 
     types: frozenset[str] | None
     value: TextShape
     form: TextShape
-    members: tuple[tuple[SourceLocation, TextShape], ...] = ()
+    members: tuple[tuple[str, TextShape], ...] = ()
     extras: KindSite | None = None
     declared: bool = False
 
@@ -795,6 +796,13 @@ def members_by_consumer(batch: GeneratedTypeContractBatch) -> dict[SymbolId, lis
     for member in batch.fields:
         members.setdefault(member.consumer, []).append(member)
     return members
+
+
+def property_members(members: Iterable[FieldUseBinding]) -> Iterator[tuple[str, SourceLocation, FieldUseBinding]]:
+    """Yield each property of a model's members, its allOf branches' included, with its wire name and schema."""
+    for member in members:
+        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None:
+            yield member.wire_name, member.schema, member
 
 
 def wrapped_facts(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> ModelFieldFacts | None:

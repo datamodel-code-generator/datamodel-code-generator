@@ -21,7 +21,6 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_extras,
     form_styled,
     parameter_plans,
-    property_members,
 )
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
@@ -54,6 +53,7 @@ from datamodel_code_generator._target_contract import (
     label,
     operation_literal,
     parameter_place,
+    property_members,
     schema_uses,
     type_uses,
     uses_by_id,
@@ -1205,7 +1205,7 @@ def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldF
     """Return the members of a form-data use as its model declares them, allOf branches included."""
     return [
         (name, schema, facts)
-        for name, schema, member in property_members(use)
+        for name, schema, member in property_members(use.members)
         if member.exclusion is None and (facts := member.model_facts) is not None
     ]
 

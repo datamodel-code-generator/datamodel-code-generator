@@ -85,6 +85,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "forms-allof-cycle",
         "forms-member-locations",
         "forms-boolean-properties",
+        "encodings-model-types",
+        "encodings-model-types-errors",
         "server-errors",
         "codec-errors",
         "binary-text",

@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info: {title: Encodings by model types, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /untyped:
+    get:
+      operationId: listUntyped
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            properties:
+              color: {type: string}
+              size: {type: integer}
+      responses:
+        "204": {description: A query object without type.}
+    post:
+      operationId: submitUntyped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              properties:
+                name: {type: string}
+      responses:
+        "204": {description: A URL-encoded object without type.}
+  /merged:
+    get:
+      operationId: listMerged
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Color"}
+              - {type: object, properties: {size: {type: integer}, flag: {type: boolean}}}
+      responses:
+        "204": {description: A query object built by allOf.}
+  /closed:
+    post:
+      operationId: uploadClosed
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Closed"}
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Closed"}
+      responses:
+        "204": {description: Forms closed by a base.}
+components:
+  schemas:
+    Color: {type: object, properties: {color: {type: string}}}
+    Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string}

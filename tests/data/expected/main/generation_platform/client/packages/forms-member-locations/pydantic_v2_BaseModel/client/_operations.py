@@ -37,5 +37,5 @@ OPERATION_1: Final[OperationPlan[SendShapeResponse]] = OperationPlan(
     path='/shapes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_1, form=MultipartForm(members=True, additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_1, form=MultipartForm(members=True, parts=(PartPlan('name', 'string'),), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
 )

@@ -1,9 +1,9 @@
-"""What the client and server targets read from a model type's frozen view: its None, its kind.
+"""What the client and server targets read from a model type's frozen view: its None, its kinds.
 
 The binder writes into each view the None the model renders (``model/_decisions/nullability.py``), as a `NoneType`
 member; these pure functions are the one reading of it, so no target decides by its own walk whether a type takes
-None. The lexical kind of a text leaf, the container slot of a generic class and the kind of a Pydantic scalar type
-are read here too, so no target keeps a kind table of its own.
+None. The JSON kinds of a type's values, the lexical kind of a text leaf, the container slot of a generic class and the
+kind of a Pydantic scalar type are read here too, so no target keeps a kind table of its own.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES
+from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -33,11 +33,12 @@ from datamodel_code_generator.model._decisions.nullability import imported_name_
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._container_kinds import ContainerSlot
+    from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
+        LeafStep,
         LiteralScalar,
         SymbolId,
         TypeView,
@@ -48,10 +49,13 @@ __all__ = [
     "admits_none",
     "container_slot",
     "is_none",
+    "json_kinds",
     "lexical_kind",
     "present",
+    "stepped",
     "takes_null",
     "type_identity",
+    "unwrapped",
     "without_none",
 ]
 
@@ -79,6 +83,42 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
     **CONSTRAINED_SCALARS,
 }
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_NULL: Final = frozenset({"null"})
+_SCALAR_KINDS: Final = MappingProxyType({
+    "none": "null",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+    "decimal": "number",
+    "str": "string",
+    "bytes": "string",
+})
+_JSON_KINDS: Final[Mapping[tuple[str | None, str], str]] = MappingProxyType({
+    (None, "str"): "string",
+    (None, "bytes"): "string",
+    (None, "int"): "integer",
+    (None, "float"): "number",
+    (None, "bool"): "boolean",
+    (None, "dict"): "object",
+    (None, "list"): "array",
+    (None, "tuple"): "array",
+    (None, "set"): "array",
+    (None, "frozenset"): "array",
+    ("types", "NoneType"): "null",
+    ("datetime", "datetime"): "string",
+    ("datetime", "date"): "string",
+    ("datetime", "time"): "string",
+    ("datetime", "timedelta"): "string",
+    ("uuid", "UUID"): "string",
+    ("decimal", "Decimal"): "number",
+    **CONSTRAINED_SCALARS,
+})
+_STEPS: Final[Mapping[LeafStep, tuple[int, ContainerKind]]] = MappingProxyType({
+    "items": (1, ITEM_CONTAINERS),
+    "values": (2, MAPPINGS),
+})
+_ANY: Final = ("typing", "Any")
+_SERIALIZE_AS_ANY: Final = ("pydantic", "SerializeAsAny")
 
 
 def is_none(value: TypeView) -> bool:
@@ -162,6 +202,105 @@ def type_identity(value: TypeView) -> tuple[str | None, str]:
 def container_slot(value: TypeView) -> ContainerSlot | None:
     """Return the container slot whose generic class a type is, or None for a fixed tuple or any other type."""
     return CONTAINER_CLASSES.get(type_identity(value.base)) if isinstance(value, GenericType) else None
+
+
+def unwrapped(
+    value: TypeView | None,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> TypeView | None:
+    """Return the type a type stands for, through aliases, root models and a union with None alone."""
+    seen: set[SymbolId] = set()
+    while True:
+        if isinstance(value, UnionType) and len(found := present(value)) == 1:
+            value = found[0]
+        elif (
+            isinstance(value, GeneratedSymbolType)
+            and value.symbol not in seen
+            and symbols[value.symbol].kind in WRAPPER_KINDS
+        ):
+            seen.add(value.symbol)
+            value = wrapped_type(members, value.symbol)
+        else:
+            return value
+
+
+def stepped(
+    value: TypeView | None,
+    steps: Sequence[LeafStep],
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> TypeView | None:
+    """Return the type the steps from a type lead to: a list's items, a mapping's values, None where a step finds none.
+
+    Each step reads the last argument of a container type, through aliases, root models and a union with None alone.
+    """
+    for step in steps:
+        count, kind = _STEPS[step]
+        value = unwrapped(value, symbols, members)
+        value = (
+            value.arguments[-1]
+            if isinstance(value, GenericType) and len(value.arguments) == count and container_slot(value) in kind.slots
+            else None
+        )
+    return value
+
+
+def _named(value: TypeView) -> tuple[str | None, str] | None:
+    """Return the module and name of a builtin or imported type, None for any other type or a module import."""
+    named = isinstance(value, BuiltinType) or (isinstance(value, ImportedType) and bool(value.import_.from_))
+    return type_identity(value) if named else None
+
+
+def json_kinds(
+    value: TypeView,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+    seen: frozenset[SymbolId] = frozenset(),
+) -> frozenset[str] | None:
+    """Return the JSON kinds the values of a type are, or None when they can be any value.
+
+    An enum's values give its kinds, an alias or root model those of the type it stands for, and an object model is an
+    object.
+    """
+    leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
+    name = _named(leaf)
+    named = None if name is None else _JSON_KINDS.get(name)
+    if named is None and isinstance(value, ImportedType | ConstructorType) and name != _ANY:
+        named = "string"
+    kinds = None if named is None else frozenset({named})
+    match value:
+        case UnionType():
+            found = [json_kinds(member, symbols, members, seen) for member in value.members]
+            kinds = None if None in found else frozenset[str]().union(*(item for item in found if item is not None))
+        case LiteralType():
+            kinds = frozenset[str]().union(
+                *(
+                    json_kinds(GeneratedSymbolType(item.symbol), symbols, members, seen) or ()
+                    if isinstance(item, GeneratedEnumMember)
+                    else {_SCALAR_KINDS[item.kind]}
+                    for item in value.values
+                )
+            )
+        case GeneratedSymbolType() if (symbol := symbols[value.symbol]).kind == "enum":
+            kinds = frozenset(symbol.value_types)
+        case GeneratedSymbolType() if (
+            symbols[value.symbol].kind in WRAPPER_KINDS
+            and value.symbol not in seen
+            and (root := wrapped_type(members, value.symbol)) is not None
+        ):
+            kinds = json_kinds(root, symbols, members, seen | {value.symbol})
+        case GeneratedSymbolType() if symbols[value.symbol].kind == "model":
+            kinds = frozenset({"object"})
+        case GenericType() if _named(value.base) == _SERIALIZE_AS_ANY and len(value.arguments) == 1:
+            kinds = json_kinds(value.arguments[0], symbols, members, seen)
+        case GenericType():
+            kinds = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
+        case NoneType():
+            kinds = _NULL
+        case _:
+            pass
+    return kinds
 
 
 def lexical_kind(

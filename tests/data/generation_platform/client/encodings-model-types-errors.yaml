@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: {title: Encodings by model types that no text writes, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /merged:
+    get:
+      operationId: listMerged
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Color"}
+              - {type: object, properties: {tags: {type: array, items: {type: string}}}}
+      responses:
+        "204": {description: A query object built by allOf with an array member.}
+components:
+  schemas:
+    Color: {type: object, properties: {color: {type: string}}}

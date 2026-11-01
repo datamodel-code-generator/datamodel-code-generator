@@ -1,4 +1,4 @@
-"""Plan the parameter, header and form codecs of an accepted batch from its recorded encoding facts."""
+"""Plan the parameter, header and form codecs of an accepted batch from the encoding facts of its model types."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
@@ -26,12 +25,10 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
 )
 from datamodel_code_generator._target_contract import (
     API_KEY_LOCATIONS,
-    WRAPPER_KINDS,
     BindingReason,
     EncodingFacts,
     GeneratedSymbolType,
     GeneratedTypeContractBatch,
-    GenericType,
     KindSite,
     LiteralScalar,
     OperationContract,
@@ -39,7 +36,6 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TextShape,
     TypeUseId,
-    UnionType,
     WireDeclaration,
     api_key_place,
     fact,
@@ -49,29 +45,25 @@ from datamodel_code_generator._target_contract import (
     operation_schemes,
     parameter_location,
     parameter_place,
-    schema_uses,
+    property_members,
     scheme_catalogues,
     security_requirements,
     symbols_by_id,
     type_uses,
     uses_by_id,
-    wrapped_type,
 )
-from datamodel_code_generator._target_types import container_slot, lexical_kind, present, type_identity
+from datamodel_code_generator._target_types import lexical_kind, stepped, type_identity, unwrapped
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._container_kinds import ContainerKind
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
-        Direction,
         FieldSlot,
         FieldUseBinding,
         FinalModelSymbol,
         LeafStep,
         MemberShape,
-        SourceDocumentId,
         SymbolId,
         TypeUseBinding,
         TypeView,
@@ -89,7 +81,8 @@ CodecReason: TypeAlias = (
 
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
 _STRING: Final = frozenset({"string"})
-_ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
+_ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
+_VALUES: Final[tuple[LeafStep, ...]] = ("values",)
 NO_SCALAR_KIND: Final = "A parameter value needs one unambiguous scalar kind"
 STYLED: Final = ("style", "explode", "allowReserved")
 _BINARY_TEXT: Final = (
@@ -265,7 +258,7 @@ def _form(
         styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
         fields = tuple(_text(member) for member in form_members(planner.kinds, bound) if member.name not in styled)
         additional = _additional(planner, bound)
-        members = {name: schema for name, schema, _ in property_members(use)}
+        members = [name for name, _, _ in property_members(use.members)]
         encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in styled.values())
         encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
     except _PlanError as error:
@@ -280,7 +273,7 @@ def _styles(
     """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
-        members = {name: schema for name, schema, _ in property_members(use)}
+        members = [name for name, _, _ in property_members(use.members)]
         encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in encodings)
         styled = {plan.name for plan in encoded}
         encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
@@ -315,7 +308,7 @@ def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMembe
         for shape in (() if encoding is None else encoding.form.members)
         if shape.kind is not None
     }
-    for name, schema, member in property_members(use):
+    for name, schema, member in property_members(use.members):
         if (facts := member.model_facts) is not None:
             yield FormMember(name, facts.type, *kinds.member(facts.type), recorded.get(name, schema), member)
 
@@ -324,23 +317,15 @@ def form_extras(kinds: LexicalKinds, use: TypeUseBinding) -> FormMember | None:
     """Return how the other properties of a form are written, by the type of their values.
 
     The type is the one the form's model keeps them as, in a field of its own or one it inherits. A model without
-    such a field takes the type its direction binds for their schema, the form's own or one of a schema it combines
-    with allOf, where the schema is or where an owner's mapping holds its values. A form whose model keeps none as a
-    type, and that allows no other properties, has no schema for them, or binds no type for it, has no such member:
-    its other properties are text as they come.
+    such a field takes the type its direction binds for their schema, its own or a base's, or the values of the mapping
+    the form's type is. A form whose model keeps none as a type, and that allows no other properties, has no schema
+    for them, or binds no type for it, has no such member: its other properties are text as they come.
     """
     site = None if (encoding := use.encoding) is None else encoding.extras
     if (kept := kinds.kept(use)) is not None:
         value, declared = kept
         return FormMember("", value, *kinds.member(value), declared if site is None else site.source)
-    value = (
-        None
-        if site is None
-        else kinds.bound(
-            use.id.direction,
-            *((location, tuple(step for step in steps if step != "items")) for location, steps in site.leaves),
-        )
-    )
+    value = None if site is None else kinds.stepped(site.type, tuple(step for step in site.steps if step != "items"))
     return None if site is None or value is None else FormMember("", value, *kinds.member(value), site.source)
 
 
@@ -364,13 +349,6 @@ def _text(member: FormMember) -> FieldPlan:
     if member.kind is None:
         raise _PlanError(member.source, NO_SCALAR_KIND)
     return FieldPlan(member.name, member.kind, repeated=member.repeated)
-
-
-def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation, FieldUseBinding]]:
-    """Yield each property a use's model declares, its allOf branches' included, with its wire name and schema."""
-    for member in use.members:
-        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None:
-            yield member.wire_name, member.schema, member
 
 
 def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tuple[TypeUseId, ...]) -> None:
@@ -429,14 +407,14 @@ def content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
 
 
 def _encoding(
-    planner: _WirePlanner, form: TypeUseBinding, members: Mapping[str, SourceLocation], encoding: WireDeclaration
+    planner: _WirePlanner, form: TypeUseBinding, members: Sequence[str], encoding: WireDeclaration
 ) -> ParameterPlan:
     """Return the query parameter plan of a form member: its style, or its content when only that is named.
 
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
     """
     name, source = encoding.name or "", encoding.use_site
-    if (member := members.get(name)) is None:
+    if name not in members:
         raise _PlanError(source, "An encoding names no member of its form")
     style, explode, reserved, content = (
         fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
@@ -447,7 +425,7 @@ def _encoding(
             if not builtin_content("query", media):
                 raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
-        shape, kind, fields, additional = _shape(planner, _member_shape(form, member))
+        shape, kind, fields, additional = _shape(planner, _member_shape(form, name))
         chosen = str(style or "form")
         return ParameterPlan(
             location="query",
@@ -682,22 +660,21 @@ def _located(use: TypeUseBinding) -> SourceLocation:
 
 
 def _encoded(use: TypeUseBinding) -> EncodingFacts:
-    """Return how a use's schema is written as text, as the walk recorded it on acquiring the schema."""
+    """Return how a use's type is written as text, as the binder read it from the model type."""
     return cast("EncodingFacts", use.encoding)
 
 
-def _member_shape(form: TypeUseBinding, member: SourceLocation) -> TextShape:
-    """Return how one member of a form is written as a parameter value, as the walk recorded it."""
-    found = dict(_encoded(form).members).get(member)
-    return TextShape("scalar", KindSite(member, ((member, ()),))) if found is None else found
+def _member_shape(form: TypeUseBinding, member: str) -> TextShape:
+    """Return how one member of a form is written as a parameter value, as the binder read it from the model type."""
+    return dict(_encoded(form).members)[member]
 
 
 def _kind(planner: _WirePlanner, site: KindSite) -> LexicalKind:
-    """Return the kind of a text leaf by the final type bound for it, at one of its places.
+    """Return the kind of a text leaf by the model type that holds it.
 
-    A leaf bound to no type, to a model or a container, or to values of several kinds no text reaches, is refused.
+    A leaf of no type, of a model or a container, or of values of several kinds no text reaches, is refused.
     """
-    if (kind := planner.kinds.at(*site.leaves)) is None:
+    if (kind := planner.kinds.of(site)) is None:
         raise _PlanError(site.source, NO_SCALAR_KIND)
     return kind
 
@@ -726,15 +703,11 @@ def _field(planner: _WirePlanner, member: MemberShape) -> FieldPlan:
 
 
 class LexicalKinds:
-    """Read the lexical kind of a text leaf (`_target_types.lexical_kind`) from the final type bound at its schema."""
+    """Read the lexical kind of a text leaf (`_target_types.lexical_kind`) from the model type that holds it."""
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
-        """Keep the batch whose schema uses, symbols and root values the first lookups index."""
+        """Keep the batch whose symbols and root values the first lookups index."""
         self._batch = batch
-
-    @cached_property
-    def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
-        return schema_uses(self._batch.type_uses)
 
     @cached_property
     def _symbols(self) -> dict[SymbolId, FinalModelSymbol]:
@@ -744,14 +717,9 @@ class LexicalKinds:
     def _members(self) -> dict[SymbolId, list[FieldUseBinding]]:
         return members_by_consumer(self._batch)
 
-    def at(self, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]) -> LexicalKind | None:
-        """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
-
-        A place is a schema's location and the steps from the type bound there to the leaf: a list's items, then a
-        mapping's values. A leaf no place binds a type for has no kind.
-        """
-        value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
-        return lexical_kind(value, self._symbols, self._members)
+    def of(self, site: KindSite) -> LexicalKind | None:
+        """Return the kind of a text leaf by the type that holds it and the steps from that type to the leaf."""
+        return lexical_kind(self.stepped(site.type, site.steps), self._symbols, self._members)
 
     @cached_property
     def _extras(self) -> dict[FieldSlot | None, SourceLocation]:
@@ -776,7 +744,7 @@ class LexicalKinds:
                 if member.member_kind == "additional_properties"
                 and (facts := member.model_facts) is not None
                 and (schema := member.schema) is not None
-                and (value := self._argument(facts.type, *_ARGUMENTS["values"])) is not None
+                and (value := self.stepped(facts.type, _VALUES)) is not None
             ),
             None,
         )
@@ -787,24 +755,9 @@ class LexicalKinds:
         The type stands for the model through aliases, root models and a union with None alone, and the model takes
         its own setting over the one it inherits.
         """
-        return isinstance(value := self._unwrapped(use.type), GeneratedSymbolType) and keeps_extras(
-            self._symbols, value.symbol
-        )
-
-    def bound(self, direction: Direction, *places: tuple[SourceLocation, tuple[LeafStep, ...]]) -> TypeView | None:
-        """Return the type bound for a value at the first of its places that binds one.
-
-        The places of a direction's own models come first, then those of the models both directions share.
-        """
-        return next(
-            (
-                found
-                for side in dict.fromkeys((direction, "neutral"))
-                for location, steps in places
-                if (found := self._reached(location, steps, side)) is not None
-            ),
-            None,
-        )
+        return isinstance(
+            value := unwrapped(use.type, self._symbols, self._members), GeneratedSymbolType
+        ) and keeps_extras(self._symbols, value.symbol)
 
     def member(self, value: TypeView) -> tuple[LexicalKind | None, TypeView, bool]:
         """Return how a form member of a type is written: the kind of its text, each value's type, and its repeats.
@@ -813,49 +766,17 @@ class LexicalKinds:
         mapping, or a union of text and an object, has no text of its own: a form-data part carries such a value as
         JSON, and a URL-encoded form cannot carry it.
         """
-        item = self._argument(value, *_ARGUMENTS["items"])
+        item = self.stepped(value, _ITEMS)
         leaf = value if item is None else item
         return lexical_kind(leaf, self._symbols, self._members), leaf, item is not None
 
-    def _reached(
-        self, location: SourceLocation, steps: tuple[LeafStep, ...], direction: Direction = "neutral"
-    ) -> TypeView | None:
-        use = self._schemas.get((location.document, location.pointer, direction))
-        return self._stepped(None if use is None else use.type, steps)
-
-    def _stepped(self, value: TypeView | None, steps: tuple[LeafStep, ...]) -> TypeView | None:
-        for step in steps:
-            value = self._argument(value, *_ARGUMENTS[step])
-        return value
+    def stepped(self, value: TypeView | None, steps: Sequence[LeafStep]) -> TypeView | None:
+        """Return the type the steps from a type lead to (``_target_types.stepped``)."""
+        return stepped(value, steps, self._symbols, self._members)
 
     def untyped(self, value: TypeView) -> bool:
         """Return whether a type takes any value, as the type of an untyped schema does.
 
         A form-data part carries such a value as JSON, as it does one without one kind, while its kind is a string's.
         """
-        return (found := self._unwrapped(value)) is not None and type_identity(found) in _ANY
-
-    def _unwrapped(self, value: TypeView | None) -> TypeView | None:
-        """Return the type a type stands for, through aliases, root models and a union with None alone."""
-        seen: set[int] = set()
-        while True:
-            if isinstance(value, UnionType) and len(members := present(value)) == 1:
-                value = members[0]
-            elif (
-                isinstance(value, GeneratedSymbolType)
-                and value.symbol not in seen
-                and self._symbols[value.symbol].kind in WRAPPER_KINDS
-            ):
-                seen.add(value.symbol)
-                value = wrapped_type(self._members, value.symbol)
-            else:
-                return value
-
-    def _argument(self, value: TypeView | None, count: int, kind: ContainerKind) -> TypeView | None:
-        """Return the last argument of a container type, through aliases, root models and a union with None alone."""
-        value = self._unwrapped(value)
-        return (
-            value.arguments[-1]
-            if isinstance(value, GenericType) and len(value.arguments) == count and container_slot(value) in kind.slots
-            else None
-        )
+        return (found := unwrapped(value, self._symbols, self._members)) is not None and type_identity(found) in _ANY

@@ -5493,6 +5493,24 @@
       ]
     ]
   },
+  "encodings-model-types": {
+    "input": "encodings-model-types.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "encodings-model-types-errors": {
+    "input": "encodings-model-types-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
   "fingerprint-nested": {
     "input": "fingerprint-nested.yaml",
     "references": [
