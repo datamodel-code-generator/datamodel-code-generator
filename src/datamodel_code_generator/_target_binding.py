@@ -1,7 +1,7 @@
 """Bind target operations to the emitted models through recorded model replacements.
 
 Only target generation imports this module. A target parser records the two reference redirects of the generation
-store, the API schema acquisitions with their engine keys, the operations and reference objects its walk resolves,
+store, the API schema acquisitions with their engine keys, the objects of each operation where its walk visits them,
 and each emitted module's final models. After parsing, `bind_operations` reads the final model graph and these records
 once, before disposal, and returns an immutable contract batch; it locates members and nested types through the
 parser's origins (``reference.field_origin_of``, ``reference.type_origin_of``) and reads no schema of the loaded
@@ -10,7 +10,7 @@ documents.
 
 from __future__ import annotations
 
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
 from decimal import Decimal
@@ -334,18 +334,38 @@ class _Union:
 
 
 @dataclass(slots=True)
-class _WalkedOperation:
-    """An operation as the target parser walked it, with the parameters in effect in their order."""
+class _WalkedObject:
+    """An object of an operation as the walk visited it, resolved, and what the walk visited in it, in order.
 
-    raw: dict[str, YamlValue]
+    ``key`` names it in its holder: a parameter's name, a response's status key, a media type, an encoding's property,
+    a header's or a callback's name. ``schemas`` are the schemas the walk acquired in it, with their projections; a
+    callback is kept as written, since its metadata follows its references itself.
+    """
+
+    kind: ApiObjectKind | Literal["operation"]
+    key: str
     declaration: SchemaLocation
+    value: dict[str, YamlValue]
+    schemas: dict[SchemaLocation, tuple[Projection, ...]]
+    objects: list[_WalkedObject]
+
+    def below(self, kind: ApiObjectKind) -> Iterator[_WalkedObject]:
+        """Yield the objects of ``kind`` the walk visited in this one, in order."""
+        return (found for found in self.objects if found.kind == kind)
+
+
+@dataclass(slots=True)
+class _WalkedOperation:
+    """An operation as the target parser walked it: the objects the walk visited in it and the parameters in effect."""
+
+    node: _WalkedObject
     use_site: SchemaLocation
     origin: SchemaLocation
     item: _WalkedPathItem
     parent: int | None
     security: YamlValue
     shared: dict[int, SchemaLocation]
-    parameters: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]]
+    parameters: list[tuple[SchemaLocation, _WalkedObject]]
 
 
 class TargetApiOpenAPIParser(ApiOpenAPIParser):
@@ -367,7 +387,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
         self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
-        self.resolutions: dict[SchemaLocation, tuple[SchemaLocation, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
         self.left_out: dict[str, tuple[tuple[DataModelFieldBase, ...], tuple[DataModelFieldBase, ...]]] = {}
@@ -378,6 +397,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
+        self._visits: list[_WalkedObject] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
         self._reader = _Reader(
@@ -422,13 +442,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             "Move the referenced schemas under the input directory."
         )
 
-    def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
-        """Record the declaration a reference object resolves to."""
-        target = super()._resolve_api_object(value, path)
-        if target.value is not value:
-            self.resolutions[self._declared(value)] = (target.declaration, target.value)
-        return target
-
     def _walk_path_item(
         self,
         target: Any,
@@ -457,10 +470,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             shared.update(
                 (id(entry.target), item.origin.child("parameters", entry.occurrence.tokens[-1])) for entry in common[1]
             )
+        node = _WalkedObject("operation", path[-1], self._declared(operation), operation, {}, [])
         self.operations.append(
             _WalkedOperation(
-                operation,
-                self._declared(operation),
+                node,
                 use_site,
                 item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
                 item,
@@ -471,20 +484,34 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             )
         )
         self._walked_operations.append(len(self.operations) - 1)
+        self._visits.append(node)
         super()._walk_api_operation(operation, path, use_site, prefix, common)
+        self._visits.pop()
         self._walked_operations.pop()
 
-    def _walk_parameter(self, name: str, target: Any, *, header: bool = False, role: SchemaRole = "parameter") -> None:
-        """Record each parameter in effect for the operation under the walk at its place in the document."""
-        if self._walked_operations and role == "parameter" and not header:
+    @override
+    @contextmanager
+    def _visiting(self, kind: ApiObjectKind, key: str, target: Any) -> Generator[None, None, None]:
+        """Record an object of the operation under the walk below the object it is in, a parameter at its place."""
+        if not self._visits:
+            yield
+            return
+        declaration, value = (
+            (self._declared(target), target) if isinstance(target, dict) else (target.declaration, target.value)
+        )
+        node = _WalkedObject(kind, key, declaration, value, {}, [])
+        if kind == "parameter":
             operation = self.operations[self._walked_operations[-1]]
             operation.parameters.append((
                 operation.shared.get(id(target))
                 or operation.origin.child("parameters", str(len(operation.parameters))),
-                target.declaration,
-                target.value,
+                node,
             ))
-        super()._walk_parameter(name, target, header=header, role=role)
+        else:
+            self._visits[-1].objects.append(node)
+        self._visits.append(node)
+        yield
+        self._visits.pop()
 
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Keep where the document spells the callback while its path items are walked."""
@@ -597,6 +624,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         documents spell them, since its model types do not say them.
         """
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
+        if self._visits:
+            self._visits[-1].schemas.setdefault(declaration, ("value",))
         super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
         if declaration not in self.schema_records:
             self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
@@ -634,6 +663,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.model_resolver.join_path(tuple(self._media_schema_path(path, from_item_schema=True))),
         )
         super()._acquire_item_schema(name, item, path, projected, declaration=declaration, role=role)
+        if self._visits:
+            self._visits[-1].schemas[declaration] = ("value", "item_stream_array")
         self._free(declaration, "item_stream_array", item, item_path)
 
     def _generate_module_output(  # noqa: PLR0913, PLR0917
@@ -687,7 +718,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs.clear()
         self.model_imports.clear()
         self.operations.clear()
-        self.resolutions.clear()
         self.unions.clear()
         self.copies.clear()
         self.schema_records.clear()
@@ -700,6 +730,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.record_documents.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
+        self._visits.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
@@ -3092,10 +3123,6 @@ class _Contracts(_SchemaUses):
             record.extra,
         )
 
-    def declared(self, declaration: SchemaLocation, raw: YamlValue) -> tuple[SchemaLocation, dict[str, YamlValue]]:
-        """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
-        return self.parser.resolutions.get(declaration) or (declaration, as_mapping(raw))
-
     @staticmethod
     def named(raw: YamlValue, holder: SchemaLocation, kind: str) -> Iterator[tuple[str, YamlValue]]:
         """Yield the members of the object at ``holder`` by the keys that locate them.
@@ -3219,8 +3246,7 @@ class _Contracts(_SchemaUses):
 
     def media(  # noqa: PLR0913
         self,
-        raw: YamlValue,
-        declaration: SchemaLocation,
+        holder: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
@@ -3230,20 +3256,13 @@ class _Contracts(_SchemaUses):
         parameter_location: str | None = None,
     ) -> tuple[WireDeclaration, ...]:
         locate = self.documents.location
+        declaration = holder.declaration
         values: list[WireDeclaration] = []
-        for name, value in as_mapping(raw).items():
-            medium = as_mapping(value)
+        for medium in holder.below("media"):
+            name = medium.key
             media_declaration, media_use = declaration.child("content", name), use_site.child("content", name)
             uses: list[TypeUseId] = []
-            for keyword in ("schema", "itemSchema"):
-                schema = media_declaration.child(keyword)
-                if keyword not in medium or (schema, "value") not in self.parser.acquisitions:
-                    continue
-                projections: tuple[Projection, ...] = (
-                    ("value", "item_stream_array")
-                    if (schema, "item_stream_array") in self.parser.acquisitions
-                    else ("value",)
-                )
+            for schema, projections in medium.schemas.items():
                 uses.extend(
                     self.media_facts(
                         tuple(
@@ -3253,7 +3272,7 @@ class _Contracts(_SchemaUses):
                                 declaration,
                                 use_site,
                                 schema,
-                                media_use.child(keyword),
+                                media_use.child(schema.tokens[-1]),
                                 projection=projection,
                                 name=parameter_name,
                                 location=parameter_location,
@@ -3269,14 +3288,15 @@ class _Contracts(_SchemaUses):
                 )
             encodings: list[WireDeclaration] = []
             encoding_declaration = media_declaration.child("encoding")
-            if "encoding" in medium and encoding_declaration not in self.ignored_declarations:
+            if encoding_declaration not in self.ignored_declarations:
                 header_role: TypeUseRole = (
                     "response_encoding_header" if role.startswith("response") else "request_encoding_header"
                 )
-                for property_name, encoding_value in self.named(
-                    medium.get("encoding"), encoding_declaration, "encoding property name"
+                walked = {encoding.key: encoding for encoding in medium.below("encoding")}
+                for property_name, _ in self.named(
+                    medium.value.get("encoding"), encoding_declaration, "encoding property name"
                 ):
-                    encoding = as_mapping(encoding_value)
+                    encoding = walked[property_name]
                     declared = encoding_declaration.child(property_name)
                     used = media_use.child("encoding", property_name)
                     encodings.append(
@@ -3285,10 +3305,9 @@ class _Contracts(_SchemaUses):
                             property_name,
                             DeclarationId(locate(declared, "declaration")),
                             locate(used, "use"),
-                            _facts(encoding, ("contentType", "style", "explode", "allowReserved"), declared),
+                            _facts(encoding.value, ("contentType", "style", "explode", "allowReserved"), declared),
                             children=self.headers(
-                                encoding.get("headers"),
-                                declared.child("headers"),
+                                encoding,
                                 used.child("headers"),
                                 owner,
                                 header_role,
@@ -3303,7 +3322,7 @@ class _Contracts(_SchemaUses):
                     name,
                     DeclarationId(locate(media_declaration, "declaration")),
                     locate(media_use, "use"),
-                    _facts(medium, ("example", "examples"), media_declaration),
+                    _facts(medium.value, ("example", "examples"), media_declaration),
                     tuple(uses),
                     tuple(encodings),
                 )
@@ -3312,23 +3331,20 @@ class _Contracts(_SchemaUses):
 
     def parameter(  # noqa: PLR0913
         self,
-        declared: SchemaLocation,
-        value: dict[str, YamlValue],
+        walked: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
         *,
-        name: str | None = None,
         status: str | None = None,
         media: str | None = None,
         placeholders: Container[str] = (),
     ) -> WireDeclaration:
         """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
-        wire_name = name if name is not None else str(value.get("name", ""))
+        declared, value, wire_name = walked.declaration, walked.value, walked.key
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
-        if "schema" in value:
-            schema = declared.child("schema")
+        if (schema := next(iter(walked.schemas), None)) is not None:
             use = self.use(
                 owner,
                 role,
@@ -3351,14 +3367,7 @@ class _Contracts(_SchemaUses):
             )
             schemas = (use,)
         children = self.media(
-            value.get("content"),
-            declared,
-            use_site,
-            owner,
-            role,
-            status=status,
-            parameter_name=wire_name,
-            parameter_location=location,
+            walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )
         locate = self.documents.location
         return WireDeclaration(
@@ -3377,8 +3386,7 @@ class _Contracts(_SchemaUses):
 
     def headers(  # noqa: PLR0913
         self,
-        raw: YamlValue,
-        declaration: SchemaLocation,
+        holder: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
@@ -3386,33 +3394,20 @@ class _Contracts(_SchemaUses):
         status: str | None = None,
         media: str | None = None,
     ) -> tuple[WireDeclaration, ...]:
+        """Bind the headers the walk visited in ``holder``; every name of its headers is checked, in order."""
+        walked = {header.key: header for header in holder.below("header")}
         return tuple(
-            self.parameter(
-                *self.declared(declaration.child(name), value),
-                use_site.child(name),
-                owner,
-                role,
-                name=name,
-                status=status,
-                media=media,
-            )
-            for name, value in self.named(raw, declaration, "header name")
-            if declaration.child(name) not in self.ignored_declarations
+            self.parameter(header, use_site.child(name), owner, role, status=status, media=media)
+            for name, _ in self.named(holder.value.get("headers"), holder.declaration.child("headers"), "header name")
+            if (header := walked.get(name)) is not None
         )
 
     def response(
-        self, raw: YamlValue, declaration: SchemaLocation, use_site: SchemaLocation, owner: OperationId, status: str
+        self, walked: _WalkedObject, use_site: SchemaLocation, owner: OperationId, status: str
     ) -> WireDeclaration:
-        declared, value = self.declared(declaration, raw)
-        content = self.media(value.get("content"), declared, use_site, owner, "response_body", status=status)
-        headers = self.headers(
-            value.get("headers"),
-            declared.child("headers"),
-            use_site.child("headers"),
-            owner,
-            "response_header",
-            status=status,
-        )
+        declared, value = walked.declaration, walked.value
+        content = self.media(walked, use_site, owner, "response_body", status=status)
+        headers = self.headers(walked, use_site.child("headers"), owner, "response_header", status=status)
         links = tuple(
             self.metadata("link", name, declared.child("links", name), use_site.child("links", name), link)
             for name, link in self.named(value.get("links"), declared.child("links"), "link name")
@@ -3439,7 +3434,8 @@ class _Contracts(_SchemaUses):
         self, walked: _WalkedOperation, order: int, parent: OperationId | None
     ) -> OperationContract:
         locate = self.documents.location
-        raw, declaration, use_site, item = walked.raw, walked.declaration, walked.use_site, walked.item
+        node, use_site, item = walked.node, walked.use_site, walked.item
+        raw, declaration = node.value, node.declaration
         kind: Literal["path", "webhook", "callback"] = (
             "callback" if parent is not None else "webhook" if use_site.tokens[0] == "webhooks" else "path"
         )
@@ -3451,43 +3447,37 @@ class _Contracts(_SchemaUses):
         )
         placeholders = frozenset(path_placeholders(item.use_site.tokens[-1]))
         parameters = tuple(
-            self.parameter(target, value, used, identity, "parameter", placeholders=placeholders)
-            for used, target, value in walked.parameters
-            if target not in self.ignored_declarations
+            self.parameter(parameter, used, identity, "parameter", placeholders=placeholders)
+            for used, parameter in walked.parameters
+            if parameter.declaration not in self.ignored_declarations
         )
         body: WireDeclaration | None = None
-        if "requestBody" in raw:
+        if (requested := next(node.below("request_body"), None)) is not None:
             used = use_site.child("requestBody")
-            declared, value = self.declared(declaration.child("requestBody"), raw["requestBody"])
             body = WireDeclaration(
                 "request_body",
                 None,
-                DeclarationId(locate(declared, "declaration")),
+                DeclarationId(locate(requested.declaration, "declaration")),
                 locate(used, "use"),
-                _facts(value, ("required", "description"), declared),
-                children=self.media(value.get("content"), declared, used, identity, "request_body"),
+                _facts(requested.value, ("required", "description"), requested.declaration),
+                children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(
-            self.response(
-                value,
-                declaration.child("responses", status),
-                use_site.child("responses", status),
-                identity,
-                status,
-            )
-            for status, value in document_statuses(
-                as_mapping(raw.get("responses")), lambda status: [str(declaration.child("responses", status))]
+            self.response(response, use_site.child("responses", status), identity, status)
+            for status, response in document_statuses(
+                {response.key: response for response in node.below("response")},
+                lambda status: [str(declaration.child("responses", status))],
             ).items()
         )
         callbacks = tuple(
             self.metadata(
                 "callback",
-                name,
-                declaration.child("callbacks", name),
-                use_site.child("callbacks", name),
-                callback,
+                callback.key,
+                declaration.child("callbacks", callback.key),
+                use_site.child("callbacks", callback.key),
+                callback.value,
             )
-            for name, callback in as_mapping(raw.get("callbacks")).items()
+            for callback in node.below("callback")
         )
         root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)
@@ -3619,7 +3609,7 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -3643,5 +3633,5 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
-    from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
+    from datamodel_code_generator.parser.openapi_scope import ApiObjectKind, ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import ModelResolver, Reference, _RwDirection
