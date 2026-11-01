@@ -1078,7 +1078,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _names_none_alias(self, chain: tuple[Reference, ...]) -> bool:
         """Return ``names_none_alias``, following the aliases of ``chain`` once, so aliases that name each other end."""
-        if self.alias or self.type:
+        if self._own_text:
             return False
         reference = self.reference
         if reference is not None and (
@@ -1102,6 +1102,21 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _is_container(self) -> bool:
         """Return whether the type is a dict, list, set, frozen set, mapping, sequence or tuple."""
         return self in CONTAINERS
+
+    @property
+    def _own_text(self) -> str | None:
+        """Return the text the type writes of its own: its alias, else its type; none when its members write it."""
+        return self.alias or self.type
+
+    @property
+    def _writes_nothing_of_its_own(self) -> bool:
+        """Return whether the type writes no text, names no model and is no container, so only its members write."""
+        return not (self._own_text or self.reference or self._is_container)
+
+    @property
+    def _wraps_one_list(self) -> bool:
+        """Return whether the type is not a list and holds one member, which is a list."""
+        return not self.is_list and len(self.data_types) == 1 and self.data_types[0].is_list
 
     @property
     def _is_bare_none(self) -> bool:
@@ -1170,7 +1185,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _iter_hint_member_nulls(self) -> Iterator[bool]:
         """Yield whether the union, as ``type_hint`` renders it, takes the None of its members."""
-        if not (self.alias or self.type) and self._takes_member_null(_nullability_core()):
+        if not self._own_text and self._takes_member_null(_nullability_core()):
             yield _merge_union_members(
                 self, tuple(type_expr_of(member, base=False) for member in self.data_types)
             ).takes_null
@@ -1356,13 +1371,13 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
     The base hint writes a constrained call as the base type the backend's ``_CONSTRAINED_TYPE_TO_BASE`` gives it, or
     as the type hint when it gives none.
     """
-    if base and data_type.is_func and data_type.kwargs and (written := data_type.alias or data_type.type):
+    if base and data_type.is_func and data_type.kwargs and (written := data_type._own_text):  # noqa: SLF001
         if (base_type := data_type._CONSTRAINED_TYPE_TO_BASE.get(written)) is None:  # noqa: SLF001
             return type_expr_of(data_type, base=False)
         return TypeApply(data_type, "base", (TypeLeaf(base_type),), base=True)
     form: TypeForm = "written"
     args: tuple[TypeExpr, ...] = ()
-    if not (data_type.alias or data_type.type):
+    if not data_type._own_text:  # noqa: SLF001
         members = data_type.data_types
         if data_type.is_tuple:
             count = data_type.tuple_item_count
@@ -1401,7 +1416,7 @@ def render_type_expr(expr: TypeExpr, /) -> str:
 def _render_apply(expr: TypeApply) -> str:
     """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call."""
     node = expr.node
-    text = node.alias or node.type
+    text = node._own_text  # noqa: SLF001
     member_null = False
     if expr.form == "base":
         text = render_type_expr(expr.args[0])

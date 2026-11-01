@@ -77,7 +77,7 @@ def _collect_data_type_imports(
             state.collect_ordinary_import(data_type.import_)
             if data_type.type in all_model_field_names:
                 state.ordinary_field_alias_candidates.setdefault(_import_key(data_type.import_), data_type.import_)
-        elif not data_type.python_type and (name := data_type.alias or data_type.type):
+        elif not data_type.python_type and (name := data_type._own_text):  # noqa: SLF001
             state.reserved_names.add(name.partition(".")[0])
             state.used_names.add(name.partition(".")[0])
         if data_type.python_type:

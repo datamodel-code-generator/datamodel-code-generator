@@ -737,7 +737,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return whether the field's type names its model outside a container, through single-member wrappers."""
         data_type = self.data_type
         while not data_type._is_container:  # noqa: SLF001
-            if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
+            if not data_type._writes_nothing_of_its_own or len(data_type.data_types) != 1:  # noqa: SLF001
                 return True
             data_type = data_type.data_types[0]
         return False
