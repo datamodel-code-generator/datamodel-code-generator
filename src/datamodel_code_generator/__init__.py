@@ -61,6 +61,7 @@ from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
 from datamodel_code_generator._url_redaction import redact_path, redact_url
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
@@ -325,7 +326,9 @@ def enable_debug_message() -> None:  # pragma: no cover
         pysnooper.tracer.DISABLED = False
         _pysnooper_default_state_set = True
     except ImportError as err:
-        msg = "Please run `$pip install 'datamodel-code-generator[debug]'` to use debug option"
+        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
+        msg = f"Please run {install_command('debug')} to use debug option"
         raise Exception(msg) from err  # noqa: TRY002
 
 
@@ -516,14 +519,6 @@ class _StructuredOutputUnavailableError(Error):
     """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
 
 
-def _normalized_absolute_path(path: Path, *, resolve_aliases: bool = False) -> Path:
-    """Return a normalized absolute path, resolving aliases only when needed."""
-    expanded_path = path.expanduser()
-    if resolve_aliases:
-        return expanded_path.resolve(strict=False)
-    return Path(os.path.abspath(expanded_path))  # noqa: PTH100
-
-
 def _validate_generation_path_conflicts(  # noqa: PLR0912
     input_: _GenerationInput,
     output: Path | None,
@@ -533,13 +528,10 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
     if output is None and model_metadata is None and lockfile is None:
         return
 
+    from datamodel_code_generator._paths import lexical, overlaps, resolved, same_file  # noqa: PLC0415
+
     targets = [
-        (
-            label,
-            path,
-            _normalized_absolute_path(path),
-            _normalized_absolute_path(path, resolve_aliases=True),
-        )
+        (label, path, lexical(path), resolved(path))
         for label, path in (
             ("Output", output),
             ("Model metadata", model_metadata),
@@ -550,14 +542,11 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
 
     for target_index, (label, _, absolute_path, resolved_path) in enumerate(targets):
         for other_label, _, other_absolute_path, resolved_other_path in targets[target_index + 1 :]:
-            same_path = absolute_path == other_absolute_path
-            if not same_path:
-                same_path = resolved_path == resolved_other_path or (
-                    absolute_path.exists()
-                    and other_absolute_path.exists()
-                    and absolute_path.samefile(other_absolute_path)
-                )
-            if same_path:
+            if (
+                absolute_path == other_absolute_path
+                or resolved_path == resolved_other_path
+                or same_file(absolute_path, other_absolute_path)
+            ):
                 if (label, other_label) == ("Output", "Model metadata"):
                     msg = f"Output and model metadata paths must be different: {absolute_path}"
                 else:
@@ -565,13 +554,7 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                 raise Error(msg)
             if "Remote lock" not in {label, other_label}:
                 continue
-            paths_overlap = (
-                absolute_path.is_relative_to(other_absolute_path)
-                or other_absolute_path.is_relative_to(absolute_path)
-                or resolved_path.is_relative_to(resolved_other_path)
-                or resolved_other_path.is_relative_to(resolved_path)
-            )
-            if paths_overlap:
+            if overlaps(absolute_path, other_absolute_path) or overlaps(resolved_path, resolved_other_path):
                 msg = f"{label} and {other_label} paths must not overlap: {absolute_path}"
                 raise Error(msg)
 
@@ -584,8 +567,8 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
             return
 
     for input_path in input_paths:
-        absolute_input = _normalized_absolute_path(input_path)
-        resolved_input = _normalized_absolute_path(input_path, resolve_aliases=True)
+        absolute_input = lexical(input_path)
+        resolved_input = resolved(input_path)
         input_is_directory = absolute_input.is_dir() or resolved_input.is_dir()
         for label, _, target, resolved_target in targets:
             if input_is_directory:
@@ -596,7 +579,9 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                     raise Error(msg)
                 continue
             target_exists = target.exists()
-            if (target == absolute_input and input_path.exists()) or (target_exists and target.samefile(input_path)):
+            if (target == absolute_input and input_path.exists()) or (
+                target_exists and same_file(target, input_path, missing="legacy-missing-input-raises")
+            ):
                 msg = f"{label} path must not overwrite an input path: {target}"
                 raise Error(msg)
 
@@ -1872,6 +1857,7 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
+    from datamodel_code_generator._paths import concrete_parent, resolved  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
         publish_staged_files,
@@ -1891,9 +1877,9 @@ def _generate_with_atomic_remote_update(
             output,
             metadata,
             (
-                None if output is None else output.expanduser().resolve(strict=False),
-                None if output is None else output.parent.expanduser().resolve(strict=False),
-                None if metadata is None else metadata.parent.expanduser().resolve(strict=False),
+                None if output is None else resolved(output),
+                None if output is None else concrete_parent(output),
+                None if metadata is None else concrete_parent(metadata),
             ),
             contexts,
             anchors,
@@ -2006,6 +1992,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     if not isinstance(input_, Path) or not input_.is_dir():
         return config
 
+    from datamodel_code_generator._paths import concrete  # noqa: PLC0415
     from datamodel_code_generator._source import DirectoryInputFilter  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -2016,7 +2003,11 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     for target, is_directory in ((output, output is not None and not output.suffix), (metadata, False)):
         if target is None:
             continue
-        paths = (target.resolve(),) if is_directory else (target.parent.resolve() / target.name, target.resolve())
+        paths = (
+            (target.resolve(),)
+            if is_directory
+            else (concrete(target, tilde="legacy-metadata-tilde-as-written"), target.resolve())
+        )
         for resolved in paths:
             if not resolved.is_relative_to(input_root):
                 continue
@@ -2110,15 +2101,15 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         )
         raise Error(msg)  # pragma: no cover
 
+    from datamodel_code_generator._paths import resolved  # noqa: PLC0415
+
     match input_:
         case Path() as input_path if not input_path.is_absolute():
-            input_ = (caller_cwd / input_path.expanduser()).resolve()
+            input_ = resolved(input_path, caller_cwd)
         case [Path(), *_] as input_paths if input_file_type != InputFileType.MCPTools:
             input_paths = cast("list[Path]", input_paths)
             if any(not path.is_absolute() for path in input_paths):
-                input_ = [
-                    path if path.is_absolute() else (caller_cwd / path.expanduser()).resolve() for path in input_paths
-                ]
+                input_ = [path if path.is_absolute() else resolved(path, caller_cwd) for path in input_paths]
 
     remote_lock_resolved = config.remote_lock_resolved
     config = _resolve_generation_remote_lock(input_, config, caller_cwd)
@@ -2336,9 +2327,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry.
     """
     remote_text_cache, reference_cache, base_path = caches
-    with warnings.catch_warnings() if ignored_warnings is not None else contextlib.nullcontext():
-        if ignored_warnings is not None:
-            warnings.simplefilter("ignore", ignored_warnings)
+    with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
         data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
             _prepare_parser_common_options(
                 input_,

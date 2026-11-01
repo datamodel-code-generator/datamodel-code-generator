@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
 
 from typing_extensions import Self, TypeVar
 
@@ -16,6 +15,7 @@ from ..model_codecs.media import (
     TOKEN,
     JSONValue,
     json_bytes,
+    json_value,
 )
 
 if TYPE_CHECKING:
@@ -95,7 +95,7 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
 
 def plain_copy(value: object) -> JSONValue:
     """Copy a JSON value through its UTF-8 JSON text, refusing what `canonical_json` refuses."""
-    return cast("JSONValue", json.loads(json_bytes(value)))
+    return json_value(json_bytes(value))
 
 
 def canonical_json(value: object) -> bytes:
@@ -105,6 +105,16 @@ def canonical_json(value: object) -> bytes:
     decimal conversion limit raises ValueError, and a value that is not JSON raises TypeError.
     """
     return json_bytes(value, sort_keys=True)
+
+
+def json_digest(value: object) -> bytes:
+    """Return the SHA-256 digest of a JSON value's canonical JSON, which identifies the value as `canonical_json` does.
+
+    It refuses what `canonical_json` refuses.
+    """
+    from hashlib import sha256  # noqa: PLC0415 - Only a pager and a cache helper digest values, as they use them.
+
+    return sha256(canonical_json(value)).digest()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

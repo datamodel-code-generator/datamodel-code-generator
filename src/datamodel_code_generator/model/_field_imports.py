@@ -23,6 +23,7 @@ from datamodel_code_generator._internal_utils import to_hashable
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
+from datamodel_code_generator.model._rendered_names import _names_of
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -95,9 +96,7 @@ def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
     except SyntaxError:
         return frozenset()
 
-    return frozenset(
-        node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and node.id in _TYPING_IMPORT_NAMES
-    )
+    return frozenset(node.id for node in _names_of(tree) if node.id in _TYPING_IMPORT_NAMES)
 
 
 class _ReferenceView(Protocol):

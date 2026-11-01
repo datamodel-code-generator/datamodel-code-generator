@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, final
 
 from typing_extensions import Protocol, TypeVar
 
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
@@ -133,7 +134,7 @@ REUSE_MODEL: ShapeRow = ShapeRow(
 
 
 class _Referenced(Protocol):
-    """A model as the reuse groups plan reads it: by the identity of its reference."""
+    """A model as the reuse groups plan reads it: by the model key of its reference."""
 
     @property
     def reference(self) -> object:
@@ -156,14 +157,14 @@ class ReuseGroups:
     user.
     """
 
-    site_models: frozenset[int] = frozenset()
-    """The ids of the references of the site models, which same-name deduplication orders after the others."""
-    typed_map_values: frozenset[int] = frozenset()
-    """The ids of the references whose names yield, which every other user orders after the others."""
+    site_models: frozenset[ModelKey] = frozenset()
+    """The model keys of the site models, which same-name deduplication orders after the others."""
+    typed_map_values: frozenset[ModelKey] = frozenset()
+    """The model keys of the models whose names yield, which every other user orders after the others."""
 
     def is_typed_map_value(self, model: _Referenced) -> bool:
         """Return whether a model yields the canonical place to the models that do not."""
-        return id(model.reference) in self.typed_map_values
+        return model_key_of(model.reference) in self.typed_map_values
 
     def site_models_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
         """Order the site models after the others, which then stay canonical in same-name deduplication."""
@@ -182,10 +183,10 @@ class ReuseGroups:
         return (duplicate, first) if self.yields_to(first, duplicate) else (first, duplicate)
 
 
-def _yielding_last(models: list[ReferencedT], yielding: frozenset[int]) -> list[ReferencedT]:
-    """Order the models whose references' ids are in ``yielding`` after the others, each part keeping its order."""
+def _yielding_last(models: list[ReferencedT], yielding: frozenset[ModelKey]) -> list[ReferencedT]:
+    """Order the models whose model keys are in ``yielding`` after the others, each part keeping its order."""
     if yielding:
-        return sorted(models, key=lambda model: id(model.reference) in yielding)
+        return sorted(models, key=lambda model: model_key_of(model.reference) in yielding)
     return models
 
 
@@ -393,7 +394,9 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         A reference to anything other than a model matches only itself, so it stands for itself.
         """
         return tuple(
-            self.shape(source)[0] if (source := self.source.model_of(reference)) is not None else id(reference)
+            self.shape(source)[0]
+            if (source := self.source.model_of(reference)) is not None
+            else model_key_of(reference)
             for reference in self._compared_references(model)
         )
 

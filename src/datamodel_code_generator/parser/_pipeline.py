@@ -6,8 +6,9 @@ named as its declaration in ``scripts/pass_decls.py``; a ``ForEachModule`` runs 
 one phase, entering the phase first. The ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is
 false and runs every other one. A ``DecisionPhase`` runs the decision passes of the parser's registry
 (``parser/_phases.py``) in registry order. ``scripts/check_pass_pipeline.py`` checks the tables and the registries
-against the declarations and the order rule. ``anchor_parse_caller`` and ``stacklevel_at_parse_caller`` let a warning
-name the code that called ``Parser.parse()`` however deep in the pipeline it is emitted.
+against the declarations and the order rule. ``PARSE_CALLER``, set to ``parse_caller()``, and
+``stacklevel_at_parse_caller`` let a warning name the code that called ``Parser.parse()`` however deep in the pipeline
+it is emitted.
 """
 
 from __future__ import annotations
@@ -19,16 +20,17 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
 from typing_extensions import ParamSpec, final
 
 from datamodel_code_generator._records import record
+from datamodel_code_generator._warning_control import is_tracer_frame
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-    from contextvars import Token
     from types import FrameType
 
     from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, FinalFacts
 
 __all__ = [
+    "PARSE_CALLER",
     "DecisionPhase",
     "ForEachModule",
     "HookCall",
@@ -36,9 +38,8 @@ __all__ = [
     "Runner",
     "Segment",
     "StepLike",
-    "anchor_parse_caller",
     "late",
-    "release_parse_caller",
+    "parse_caller",
     "stacklevel_at_parse_caller",
 ]
 
@@ -179,24 +180,16 @@ class Runner:
             step.execute(self, parser, state)
 
 
-_PARSE_CALLER: Final[ContextVar[FrameType | None]] = ContextVar("parse_caller", default=None)
-"""The frame that called the running ``Parser.parse()``."""
+PARSE_CALLER: Final[ContextVar[FrameType | None]] = ContextVar("parse_caller", default=None)
+"""The frame that called the running ``Parser.parse()``, which sets it to ``parse_caller()`` while its pipeline runs."""
 
 
-def anchor_parse_caller() -> Token[FrameType | None]:
-    """Remember the frame that called the ``Parser.parse()`` calling this, past the wrapper frames of ``--debug``.
-
-    ``release_parse_caller`` with the returned token forgets it again.
-    """
+def parse_caller() -> FrameType | None:
+    """Return the frame that called the ``Parser.parse()`` calling this, past the wrapper frames of ``--debug``."""
     frame = sys._getframe(2)  # noqa: SLF001
-    while frame is not None and frame.f_globals.get("__name__", "").startswith("pysnooper"):
+    while frame is not None and is_tracer_frame(frame):
         frame = frame.f_back
-    return _PARSE_CALLER.set(frame)
-
-
-def release_parse_caller(token: Token[FrameType | None]) -> None:
-    """Forget the frame ``anchor_parse_caller`` remembered."""
-    _PARSE_CALLER.reset(token)
+    return frame
 
 
 def stacklevel_at_parse_caller() -> int:
@@ -204,7 +197,7 @@ def stacklevel_at_parse_caller() -> int:
 
     Outside ``Parser.parse()`` there is no such caller, and the warning names the outermost frame.
     """
-    anchor = _PARSE_CALLER.get()
+    anchor = PARSE_CALLER.get()
     frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
     level = 1
     while frame is not None and frame is not anchor:

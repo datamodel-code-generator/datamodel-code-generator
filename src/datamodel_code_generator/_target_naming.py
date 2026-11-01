@@ -16,11 +16,12 @@ from __future__ import annotations
 
 import re
 from copy import copy
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, target_pattern
+from datamodel_code_generator._runtime.model_codecs.parameters import PLACEHOLDER as PATH_PLACEHOLDER
+from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
@@ -32,16 +33,16 @@ if TYPE_CHECKING:
 __all__ = (
     "WINDOWS_DEVICES",
     "Candidate",
+    "FoldRule",
     "NameScope",
     "TargetNames",
     "explicit_name",
+    "fold_key",
     "operation_basis",
     "path_placeholders",
     "windows_device",
 )
 
-PATH_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-"""A placeholder of a path or server URL template, ``{name}``, with its name as the group."""
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
 _PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
@@ -53,6 +54,7 @@ WINDOWS_DEVICES: Final = frozenset({
     *(f"com{index}" for index in range(1, 10)),
     *(f"lpt{index}" for index in range(1, 10)),
 })
+FoldRule: TypeAlias = Literal["nfc", "legacy-fold-without-nfc"]
 
 
 def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
@@ -65,9 +67,19 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
     )
 
 
+def fold_key(text: str, target_python_version: PythonVersion | None, *, rule: FoldRule = "nfc") -> str:
+    """Return the key two names or paths of generated files compare in, as case-insensitive file systems compare them.
+
+    Row `nfc` normalizes the text to NFC, then case-folds it, as the target does; `legacy-fold-without-nfc` only
+    case-folds it (the folded name scopes and the client's resource namespaces).
+    """
+    normalized = nfc(text, target_python_version) if rule == "nfc" else text
+    return casefold(normalized, target_python_version)
+
+
 def windows_device(name: str, target_python_version: PythonVersion) -> bool:
-    """Return whether a name is a Windows device name, case-folded as the target folds it."""
-    return casefold(name, target_python_version) in WINDOWS_DEVICES
+    """Return whether a name is a Windows device name, compared as file names compare."""
+    return fold_key(name, target_python_version) in WINDOWS_DEVICES
 
 
 def path_placeholders(path: str) -> list[str]:
@@ -114,7 +126,7 @@ class NameScope:
         self._taken = {self._key(name) for name in reserved}
 
     def _key(self, name: str) -> str:
-        return casefold(name, self._target_python_version) if self._folded else name
+        return fold_key(name, self._target_python_version, rule="legacy-fold-without-nfc") if self._folded else name
 
     def __contains__(self, name: object) -> bool:
         """Return whether the scope already holds a name."""
@@ -177,9 +189,11 @@ class TargetNames:
         """Capture the naming rules of a parser's model resolver."""
         from datamodel_code_generator.reference import ModelType  # noqa: PLC0415
 
-        suffixes = model_resolver.duplicate_name_suffix_map
-        suffix = suffixes.get("model", suffixes.get("default")) or model_resolver.duplicate_name_suffix
-        return cls(model_resolver.field_name_resolvers[ModelType.CLASS], suffix, model_resolver.naming_strategy)
+        return cls(
+            model_resolver.field_name_resolvers[ModelType.CLASS],
+            model_resolver._duplicate_name_suffix("model"),  # noqa: SLF001
+            model_resolver.naming_strategy,
+        )
 
     def function(self, text: str) -> str:
         """Return the snake_case name of a method, handler, resource, or module."""

@@ -54,6 +54,15 @@ from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator import imports as generator_imports
+from datamodel_code_generator._container_kinds import (
+    ARRAYS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    SLOT_CLASSES,
+    WRITTEN_CONTAINERS,
+    written_slot,
+)
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -62,8 +71,9 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._graph_links import add_child, drop_child
 from datamodel_code_generator._model_keys import NodeKey
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
@@ -83,6 +93,8 @@ from datamodel_code_generator.imports import (
     IMPORT_TUPLE,
     IMPORT_UNION,
     Import,
+    _import_key,
+    _import_path,
 )
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.reference import Reference, _BaseModel
@@ -533,7 +545,7 @@ def _remove_none_from_union(type_: str, *, use_union_operator: bool) -> str:  # 
     if use_union_operator:
         return UNION_OPERATOR_DELIMITER.join(parts)
 
-    return f"{UNION_PREFIX}{UNION_DELIMITER.join(parts)}]"
+    return subscript_text(UNION, parts)
 
 
 @lru_cache(maxsize=4096)
@@ -545,7 +557,7 @@ def get_optional_type(type_: str, use_union_operator: bool) -> str:  # noqa: FBT
         return NONE
     if use_union_operator:
         return f"{type_} | {NONE}"
-    return f"{OPTIONAL_PREFIX}{type_}]"
+    return subscript_text(OPTIONAL, (type_,))
 
 
 @cache
@@ -830,10 +842,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     @property
     def full_name(self) -> str:
         """Return the fully qualified name including module."""
-        module_name = self.module_name
-        if module_name:
-            return f"{module_name}.{self.reference.short_name if self.reference else ''}"
-        return self.reference.short_name if self.reference else ""
+        return dotted_name(self.module_name, self.reference.short_name) if self.reference else ""
 
     @property
     def all_data_types(self) -> Iterator[DataType]:
@@ -1025,16 +1034,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         Output-specific DataType subclasses should override this compatibility
         fallback so their generated syntax remains owned by the output backend.
         """
-        return f"Annotated[{type_}, Field(discriminator={discriminator!r})]"
+        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
 
-    _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = (
-        "frozen_set",
-        "set",
-        "sequence",
-        "list",
-        "mapping",
-        "dict",
-    )
+    _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = WRITTEN_CONTAINERS
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
 
     @property
@@ -1099,15 +1101,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     @property
     def _is_container(self) -> bool:
         """Return whether the type is a dict, list, set, frozen set, mapping, sequence or tuple."""
-        return (
-            self.is_dict
-            or self.is_list
-            or self.is_set
-            or self.is_frozen_set
-            or self.is_mapping
-            or self.is_sequence
-            or self.is_tuple
-        )
+        return self in CONTAINERS
 
     @property
     def _is_bare_none(self) -> bool:
@@ -1275,8 +1269,6 @@ own text left out); ``single`` its one nested type or the model it names; ``unio
 ``tuple`` a tuple of them; ``literal`` a ``Literal`` of its values or of its enum members.
 """
 
-_MAPPING_CONTAINERS: Final = frozenset({"mapping", "dict"})
-
 
 @final
 @record
@@ -1329,35 +1321,18 @@ def _writes_none_alone(field: Any, chain: tuple[Reference, ...]) -> bool:
 
 def _container_name(data_type: DataType, container: str) -> str | None:
     """Return the name the data type's container ``container`` is written as, or None when it is not in one."""
-    standard = data_type.use_standard_collections
-    frozen_set = STANDARD_FROZEN_SET if standard else FROZEN_SET
-    name: str | None = None
-    match container:
-        case "frozen_set" if data_type.is_frozen_set:
-            name = frozen_set
-        case "set" if data_type.is_set:
-            name = frozen_set if data_type.use_generic_container else STANDARD_SET if standard else SET
-        case "sequence" if data_type.is_sequence:
-            name = SEQUENCE
-        case "list" if data_type.is_list:
-            name = SEQUENCE if data_type.use_generic_container else STANDARD_LIST if standard else LIST
-        case "mapping" if data_type.is_mapping:
-            name = MAPPING
-        case "dict" if data_type.is_dict:
-            name = MAPPING if data_type.use_generic_container else STANDARD_DICT if standard else DICT
-    return name
+    if container not in WRITTEN_CONTAINERS or not getattr(data_type, CONTAINER_FLAGS[container]):
+        return None
+    written = SLOT_CLASSES[written_slot(container, generic=data_type.use_generic_container)]
+    return written.written(standard=data_type.use_standard_collections)
 
 
 _CONTAINER_IMPORT_ORDER: Final = ("frozen_set", "mapping", "sequence", "list", "set", "dict")
 _TYPING_CONTAINER_IMPORTS: Final = {
-    FROZEN_SET: IMPORT_FROZEN_SET,
-    MAPPING: IMPORT_MAPPING,
-    SEQUENCE: IMPORT_SEQUENCE,
-    LIST: IMPORT_LIST,
-    SET: IMPORT_SET,
-    DICT: IMPORT_DICT,
+    import_.import_: import_
+    for import_ in (IMPORT_FROZEN_SET, IMPORT_MAPPING, IMPORT_SEQUENCE, IMPORT_LIST, IMPORT_SET, IMPORT_DICT)
 }
-_STANDARD_CONTAINER_IMPORTS: Final = {MAPPING: IMPORT_ABC_MAPPING, SEQUENCE: IMPORT_ABC_SEQUENCE}
+_STANDARD_CONTAINER_IMPORTS: Final = {import_.import_: import_ for import_ in (IMPORT_ABC_MAPPING, IMPORT_ABC_SEQUENCE)}
 
 
 def type_expr_of(data_type: DataType, *, base: bool = False) -> TypeExpr:
@@ -1405,7 +1380,7 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
     order = data_type._BASE_TYPE_HINT_CONTAINER_ORDER if base else data_type._TYPE_HINT_CONTAINER_ORDER  # noqa: SLF001
     for container in order:
         if (name := _container_name(data_type, container)) is not None:
-            mapping = container in _MAPPING_CONTAINERS
+            mapping = container in MAPPINGS.slots
             key = type_expr_of(data_type.dict_key, base=base) if mapping and data_type.dict_key else None
             return TypeApply(data_type, form, args, name, mapping, key, base)
     return TypeApply(data_type, form, args, base=base)
@@ -1435,9 +1410,9 @@ def _render_apply(expr: TypeApply) -> str:
     if (container := expr.container) is not None:
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
-            text = f"{container}[{key}, {text or ANY}]" if expr.key is not None or text else container
+            text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container
         else:
-            text = f"{container}[{text}]" if text else container
+            text = subscript_text(container, (text,)) if text else container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = repr(text) if '"' in text or "\\" in text else f'"{text}"'
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
@@ -1454,12 +1429,12 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
     member_null = False
     match expr.form:
         case "tuple":
-            tuple_type = STANDARD_TUPLE if node.use_standard_collections else TUPLE
+            tuple_type = SLOT_CLASSES["tuple"].written(standard=node.use_standard_collections)
             if (count := node.tuple_item_count) is not None:
                 items: Iterable[str] = repeat((render_type_expr(expr.args[0]) or ANY) if expr.args else ANY, count)
             else:
                 items = (render_type_expr(item) or ANY for item in expr.args)
-            text = f"{tuple_type}[{', '.join(items) or '()'}]"
+            text = subscript_text(tuple_type, items)
         case "union":
             text, member_null = _render_union(node, expr.args, discriminated=not expr.base)
         case "single":
@@ -1470,7 +1445,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
                 if node.enum_member_literals
                 else [repr(literal) for literal in node.literals]
             )
-            text = f"{node._literal_name}[{', '.join(parts)}]"  # noqa: SLF001
+            text = subscript_text(node._literal_name, parts)  # noqa: SLF001
     return text, member_null
 
 
@@ -1701,7 +1676,7 @@ def _annotation_base_path(expression: PythonTypeExpr, target_version: tuple[int,
 
     base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
     return base, _standard_type_path(
-        f"{base.import_from}.{base.import_name}"
+        dotted_name(base.import_from, base.import_name)
         if isinstance(base, PythonTypeBoundName) and base.import_from
         else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base),
         target_version,
@@ -1722,9 +1697,9 @@ def _qualified_type_path(expression: PythonTypeExpr, target_version: tuple[int, 
 
 @cache
 def _import_paths(module: ModuleType) -> frozenset[str]:
-    """Return the import path of every type or name a generator imports module declares."""
+    """Return the import path of every type or name a generator imports module declares (a module import names none)."""
     return frozenset(
-        f"{import_.from_}.{import_.import_}" for import_ in vars(module).values() if isinstance(import_, Import)
+        _import_path(import_) for import_ in vars(module).values() if isinstance(import_, Import) and import_.from_
     )
 
 
@@ -1862,7 +1837,7 @@ class DataTypeManager(ABC):
         """Return this backend's semantic descriptor for an emitted scalar import."""
         if (import_ := data_type.import_) is None:
             return None
-        return self.DEFAULT_VALUE_DESCRIPTORS.get((import_.from_, import_.import_))
+        return self.DEFAULT_VALUE_DESCRIPTORS.get(_import_key(import_))
 
     @staticmethod
     def copy_data_type(data_type: DataType) -> DataType:
@@ -1891,15 +1866,7 @@ class DataTypeManager(ABC):
     def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
         """Return the keywords a container or a referenced model takes, or None for any other type."""
         return _applicability.shape_keywords(
-            mapping=data_type.is_dict or data_type.is_mapping,
-            sequence=any((
-                data_type.is_list,
-                data_type.is_set,
-                data_type.is_frozen_set,
-                data_type.is_sequence,
-                data_type.is_tuple,
-            )),
-            reference=bool(data_type.reference),
+            mapping=data_type in MAPPINGS, sequence=data_type in ARRAYS, reference=bool(data_type.reference)
         )
 
     @property
@@ -1957,7 +1924,7 @@ class DataTypeManager(ABC):
         if data_type.python_type is None:
             import_ = data_type.import_
             return cls.type_constraint_keywords(
-                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or "",
+                _import_path(import_) if import_ and import_.from_ else data_type.type or "",
                 target_version,
                 number_values=number_values,
                 target_model_version=target_model_version,

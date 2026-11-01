@@ -11,7 +11,14 @@ from typing import TYPE_CHECKING, Final, TypeVar
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._openapi_wire_plan import declared_media
 from datamodel_code_generator._runtime.model_codecs.media import bodyless
-from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence, fact, label, operation_literal
+from datamodel_code_generator._target_contract import (
+    LiteralScalar,
+    LiteralSequence,
+    fact,
+    label,
+    operation_literal,
+    parameter_location,
+)
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 from datamodel_code_generator._target_types import takes_null
 
@@ -217,6 +224,14 @@ def json_null(
     return kind == "json" and takes_null(None if use is None else use.type, symbols, members)
 
 
+def coded_use(kind: MediaKind, use: TypeUseBinding | None) -> TypeUseBinding | None:
+    """Return the type use whose model reads and writes a body of a media kind, or None for raw unconstrained bytes.
+
+    A binary body's model reads it only when the models constrain its bytes; a body of any other kind is read whole.
+    """
+    return None if use is None or (kind == "binary" and not use.checked) else use
+
+
 def tags(operation: OperationContract) -> tuple[str, ...]:
     """Return an operation's tags in declaration order."""
     if not isinstance(value := operation_literal(operation, "tags"), LiteralSequence):
@@ -318,6 +333,6 @@ def placeholder_problems(
             yield policy.problem(policy.path_code, message, operation.id.use_site)
     template = path_placeholders(operation.path)
     for declaration in operation.parameters:
-        if fact(declaration, "in") == "path" and declaration.name not in template:
+        if parameter_location(declaration) == "path" and declaration.name not in template:
             message = f"The path parameter {declaration.name!r} of {label(operation)} names no path placeholder"
             yield policy.problem(policy.path_code, message, declaration.use_site)

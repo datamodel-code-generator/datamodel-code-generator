@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, get_args
+from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping, Sequence
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.types import DataType
 
+SchemeT = TypeVar("SchemeT")
 SourceDocumentId = NewType("SourceDocumentId", int)
 GraphObjectId = NewType("GraphObjectId", int)
 SymbolId = NewType("SymbolId", int)
@@ -35,6 +36,7 @@ class FieldSlot:
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
+Projection: TypeAlias = Literal["value", "item_stream_array"]
 TypeUseRole: TypeAlias = Literal[
     "schema",
     "parameter",
@@ -90,7 +92,7 @@ class TypeUseId:
     schema_site: SourceLocation
     declaration: DeclarationId
     direction: Direction
-    projection: Literal["value", "item_stream_array"] = "value"
+    projection: Projection = "value"
     location: str | None = None
     name: str | None = None
     status: str | None = None
@@ -632,7 +634,12 @@ class GeneratedTypeContractBatch:
         return str(version.value) if isinstance(version, LiteralScalar) else ""
 
 
+ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
+Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
+RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
+
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
+API_KEY_LOCATIONS: Final[dict[object, ApiKeyLocation]] = {location: location for location in get_args(ApiKeyLocation)}
 
 
 def fact(declaration: WireDeclaration | OperationContract, name: str) -> object:
@@ -640,9 +647,113 @@ def fact(declaration: WireDeclaration | OperationContract, name: str) -> object:
     return scalar_fact(declaration.facts, name)
 
 
+def parameter_location(declaration: WireDeclaration) -> ParameterLocation:
+    """Return the location a parameter declaration sends its value in, one of the five the API walk accepts."""
+    return LOCATIONS[fact(declaration, "in")]
+
+
+def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, str]:
+    """Return where a parameter declaration sends its value: its location and its wire name ("" for none).
+
+    Only a querystring has no name. An operation's parameter plans are keyed by this place as declared;
+    ``parameter_key`` gives what identifies the parameter.
+    """
+    return parameter_location(declaration), declaration.name or ""
+
+
+def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | None:
+    """Return where an apiKey security scheme sends its credential: its location and its name.
+
+    None when the declaration is not an apiKey scheme, or names no location of query, header or cookie or no nonempty
+    string name.
+    """
+    location, name = API_KEY_LOCATIONS.get(fact(declaration, "in")), fact(declaration, "name")
+    if fact(declaration, "type") != "apiKey" or location is None or not isinstance(name, str) or not name:
+        return None
+    return location, name
+
+
+def is_required(declaration: WireDeclaration) -> bool:
+    """Return whether a parameter, header, or request body declaration is required: its `required` fact is true.
+
+    The binder records a path parameter that a placeholder of its path names as required.
+    """
+    return fact(declaration, "required") is True
+
+
 def operation_literal(operation: OperationContract, name: str) -> FrozenLiteral | None:
     """Return one effective wire fact of an operation as recorded, such as its security or servers."""
     return literal_fact(operation.facts, name)
+
+
+def requirement_alternatives(value: FrozenLiteral) -> tuple[tuple[RequirementEntry, ...] | None, ...] | None:
+    """Return the alternatives of a declared security requirement list in source order, or None when it is not a list.
+
+    An alternative that is not a mapping is None. Each entry of one holds the scheme name its key gives (the key's
+    scalar value, None for a key that is not a scalar) and the scopes it lists (None unless a list of strings).
+    """
+    if not isinstance(value, LiteralSequence):
+        return None
+    return tuple(
+        tuple((key.value if isinstance(key, LiteralScalar) else None, _texts(scopes)) for key, scopes in item.entries)
+        if isinstance(item, LiteralMapping)
+        else None
+        for item in value.items
+    )
+
+
+def _texts(value: FrozenLiteral) -> tuple[str, ...] | None:
+    if not isinstance(value, LiteralSequence):
+        return None
+    texts = tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
+    return texts if len(texts) == len(value.items) else None
+
+
+def security_requirements(operation: OperationContract) -> tuple[Requirement, ...] | None:
+    """Return an operation's security requirement alternatives in source order, each scheme name with its scopes.
+
+    They are empty when the operation declares no security, and None when its security is not a list of mappings from
+    string names to lists of string scopes.
+    """
+    if (value := operation_literal(operation, "security")) is None:
+        return ()
+    if (alternatives := requirement_alternatives(value)) is None:
+        return None
+    requirements: list[Requirement] = []
+    for alternative in alternatives:
+        if alternative is None:
+            return None
+        entries = tuple((name, scopes) for name, scopes in alternative if isinstance(name, str) and scopes is not None)
+        if len(entries) != len(alternative):
+            return None
+        requirements.append(entries)
+    return tuple(requirements)
+
+
+def scheme_catalogues(batch: GeneratedTypeContractBatch) -> dict[SourceDocumentId, dict[str, WireDeclaration]]:
+    """Return the security schemes each loaded document declares, by name, in the order the batch binds them."""
+    catalogues: dict[SourceDocumentId, dict[str, WireDeclaration]] = {}
+    for declaration in batch.security_schemes:
+        catalogues.setdefault(declaration.use_site.document, {})[declaration.name or ""] = declaration
+    return catalogues
+
+
+def operation_schemes(
+    catalogues: Mapping[SourceDocumentId, Mapping[str, SchemeT]], operation: OperationContract
+) -> Mapping[str, SchemeT]:
+    """Return the schemes the security requirements of an operation name: those of the document that uses it."""
+    return catalogues.get(operation.id.use_site.document, {})
+
+
+def http_scheme(declaration: WireDeclaration) -> str | None:
+    """Return the scheme an http security scheme names, in lower case, or None when it is not one or names none."""
+    scheme = fact(declaration, "scheme")
+    return scheme.lower() if fact(declaration, "type") == "http" and isinstance(scheme, str) and scheme else None
+
+
+def unresolved_reference(declaration: WireDeclaration) -> SourceReference | None:
+    """Return the first reference of a declaration that reaches no object or whose document does not load, or None."""
+    return next((item for item in declaration.references if item.state != "resolved"), None)
 
 
 def label(operation: OperationContract) -> str:
@@ -653,6 +764,46 @@ def label(operation: OperationContract) -> str:
 def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     """Return the type uses of a declaration: its own, then those of its children."""
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+
+
+def uses_by_id(batch: GeneratedTypeContractBatch) -> dict[TypeUseId, TypeUseBinding]:
+    """Return a batch's type uses by their identity."""
+    return {use.id: use for use in batch.type_uses}
+
+
+def symbols_by_id(batch: GeneratedTypeContractBatch) -> dict[SymbolId, FinalModelSymbol]:
+    """Return a batch's emitted symbols by their identity."""
+    return {symbol.id: symbol for symbol in batch.symbols}
+
+
+def members_by_consumer(batch: GeneratedTypeContractBatch) -> dict[SymbolId, list[FieldUseBinding]]:
+    """Return a batch's field bindings by the symbol that has them, each in the order its class declares them."""
+    members: dict[SymbolId, list[FieldUseBinding]] = {}
+    for member in batch.fields:
+        members.setdefault(member.consumer, []).append(member)
+    return members
+
+
+def wrapped_facts(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> ModelFieldFacts | None:
+    """Return the facts of the value an alias or root model stands for: those of its one bound member, or None.
+
+    The binder gives such a symbol only the `root_value` member of its one field.
+    """
+    return next((facts for member in members.get(symbol, ()) if (facts := member.model_facts) is not None), None)
+
+
+def wrapped_type(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> TypeView | None:
+    """Return the type an alias or root model stands for, or None when the batch binds none."""
+    return None if (facts := wrapped_facts(members, symbol)) is None else facts.type
+
+
+def schema_uses(uses: Iterable[TypeUseBinding]) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+    """Index the value use of each schema occurrence by its location and the direction whose model it projects."""
+    return {
+        (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use
+        for use in uses
+        if use.id.role == "schema" and use.id.projection == "value"
+    }
 
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]

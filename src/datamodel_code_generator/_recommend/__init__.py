@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
@@ -171,6 +172,11 @@ class _Plan:
     optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     blocked: list[tuple[Decision, str, OptionValue]] = field(default_factory=list)
+
+
+def _diff_against_label(config: Any) -> str:
+    """Name the --diff-against file in a message: the option and the file's name."""
+    return f"--diff-against {Path(config.diff_against).name}"
 
 
 def _read_file(path: Path, encoding: str, what: str) -> str:
@@ -423,11 +429,11 @@ def _mode(request: RecommendRequest, analysed: _Input, previous: str | None) -> 
     else:
         estimates = [analysed.signals.counts["estimated_models"]]
         if previous is not None:
-            document = _document(previous, analysed.kind, f"--diff-against {Path(request.config.diff_against).name}")
+            document = _document(previous, analysed.kind, _diff_against_label(request.config))
             estimates.append(_measure(document, analysed.kind, request.config).counts["estimated_models"])
         if sum(estimates) <= limit:
             return "full", None
-        inputs = "the input and --diff-against are" if len(estimates) > 1 else "the schema is"
+        inputs = for_count(len(estimates), "the schema is", "the input and --diff-against are")
         reason = f"{inputs} estimated at {sum(estimates)} models, more than the {limit} compared by default"
     return "quick", (
         f"Candidates were not compared: {reason}. Run --recommend-options full to generate each candidate "
@@ -509,6 +515,11 @@ def _key(options: Sequence[Option], *, on_preset: bool = True) -> _CandidateKey:
     return on_preset, frozenset(option.decision.rule.id for option in options)
 
 
+def _label(base: str, option: Option, *, removed: bool) -> str:
+    """Name a candidate by the configuration it starts from and the decision of the option it removes or adds."""
+    return f"{base} {'-' if removed else '+'} {option.decision.rule.decision}"
+
+
 def _candidates(
     delta: Sequence[Option], consider: Sequence[Option], *, configured: bool
 ) -> tuple[list[_Candidate], int]:
@@ -525,12 +536,12 @@ def _candidates(
         _Candidate(base, on_preset=True, options=()),
         _Candidate(recommended, on_preset=True, options=tuple(delta)),
         *(
-            _Candidate(f"{recommended} + {option.decision.rule.decision}", on_preset=True, options=(*delta, option))
+            _Candidate(_label(recommended, option, removed=False), on_preset=True, options=(*delta, option))
             for option in consider
         ),
         *(
             _Candidate(
-                f"recommended - {option.decision.rule.decision}",
+                _label("recommended", option, removed=True),
                 on_preset=True,
                 options=tuple(other for other in delta if other is not option),
             )
@@ -562,7 +573,7 @@ def _remeasure(selected: _Candidate, pairs: Sequence[_Pair], known: AbstractSet[
     missing: dict[_CandidateKey, _Candidate] = {}
     for option, before, after in pairs:
         kept = option.decision.rule.id in chosen_rules
-        label = f"{selected.label} {'-' if kept else '+'} {option.decision.rule.decision}"
+        label = _label(selected.label, option, removed=kept)
         if (key := _key(options := before if kept else after)) not in known:
             missing.setdefault(key, _Candidate(label, on_preset=True, options=options, selectable=False))
     return list(missing.values())
@@ -721,7 +732,7 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
     if trial.dropped:
         recommendation.notes.append(
             f"The trial compares at most {_MAX_CANDIDATES} candidates, so {trial.dropped} "
-            f"{'was' if trial.dropped == 1 else 'were'} left out; the options they would measure show no trial result."
+            f"{for_count(trial.dropped, 'was', 'were')} left out; the options they would measure show no trial result."
         )
     if trial.selected is None:
         recommendation.notes.append(
@@ -774,7 +785,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     previous = (
         None
         if config.diff_against is None
-        else _read_file(Path(config.diff_against), config.encoding, f"--diff-against {Path(config.diff_against).name}")
+        else _read_file(Path(config.diff_against), config.encoding, _diff_against_label(config))
     )
     mode, mode_note = _mode(request, analysed, previous)
     recommendation = Recommendation(

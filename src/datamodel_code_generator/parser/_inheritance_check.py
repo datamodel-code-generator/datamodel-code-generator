@@ -2,7 +2,7 @@
 
 ``check_model_inheritance`` rejects, with an ``Error``, the builtin classes Python would refuse to create: an
 inheritance cycle, a local base written after its subclass, and bases whose method resolution orders conflict, which
-it reads through the H14 core (``_mro.py:c3_merge``, rule ``python``). It takes the parser through
+it reads through the MRO core (``_mro.py:c3_merge``, rule ``python``). It takes the parser through
 ``InheritanceCheckHost``, which ``Parser`` satisfies structurally, and ``Parser._check_model_inheritance`` stays the
 hook the pipeline calls and subclasses override.
 """
@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._mro import c3_merge
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator.imports import _override_module
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -127,7 +128,7 @@ def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[Mod
                 parent.class_name
                 if ctx_index == parent_ctx_index
                 else (imported.alias or imported.import_)
-                if imported is not None and imported.import_ not in overrides
+                if imported is not None and _override_module(overrides, imported.from_, imported.import_) is None
                 else None
             )
             if base.type_hint != binding:

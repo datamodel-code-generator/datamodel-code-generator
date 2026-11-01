@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 from typing_extensions import final
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator.imports import Import, Imports
+from datamodel_code_generator.imports import Import, Imports, _ImportKey, _stored_import
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Iterable, Iterator, Mapping, Sequence
@@ -261,13 +261,10 @@ def _as_imports(items: Import | Iterable[Import]) -> tuple[Import, ...]:
     return (items,) if isinstance(items, Import) else tuple(items)
 
 
-_ImportKey: TypeAlias = tuple[str | None, str]
-
-
 def _key_import(key: _ImportKey, alias: str | None = None) -> Import:
     """Return an import stored under the key: a name ``X as Y`` is an alias kept apart from the ordinary import."""
     module, name = key
-    import_, _, kept_alias = name.partition(" as ")
+    import_, kept_alias = _stored_import(name)
     return Import(from_=module, import_=import_, alias=kept_alias or alias, keep_unaliased=bool(kept_alias))
 
 

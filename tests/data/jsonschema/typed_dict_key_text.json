@@ -1,0 +1,12 @@
+{
+  "title": "Keys",
+  "type": "object",
+  "properties": {
+    "a\u0000b": {"type": "string"},
+    "it's": {"type": "integer"},
+    "tab\there": {"type": "integer"},
+    "back\\slash": {"type": "integer"},
+    "ok": {"type": "integer"}
+  },
+  "required": ["a\u0000b"]
+}

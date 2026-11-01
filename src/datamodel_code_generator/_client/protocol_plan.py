@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
-from datamodel_code_generator._client.plan import schema_uses
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._target_contract import SourceLocation, fact
+from datamodel_code_generator._target_contract import SourceLocation, parameter_place, schema_uses
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url
@@ -25,9 +25,26 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._target_contract import OperationContract, OperationId
+    from datamodel_code_generator._target_contract import (
+        Direction,
+        OperationContract,
+        OperationId,
+        TypeUseBinding,
+        TypeView,
+    )
+    from datamodel_code_generator._target_documents import JSONObject
+
+
+class _Coding(Protocol):
+    """A planned helper that codes some type uses."""
+
+    @property
+    def uses(self) -> tuple[TypeUseBinding, ...]:
+        """Return the type uses the helper codes."""
+
 
 _SpecT = TypeVar("_SpecT")
+_CodingT = TypeVar("_CodingT", bound=_Coding)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -43,7 +60,7 @@ class Protocols:
     locations: Mapping[SchemaRef, SourceLocation]
     python_version: PythonVersion
 
-    def source(self, reference: SchemaRef) -> dict[str, str]:
+    def source(self, reference: SchemaRef) -> JSONObject:
         """Return the source reference of a schema reference: its document's pointer and its own."""
         return {"document": self.documents[reference], "pointer": reference.pointer}
 
@@ -172,6 +189,17 @@ class HelperPlanner:
         location = self.protocols.locations[reference]
         return location if self.request.lease.exists(location) else None
 
+    def schema_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
+        """Return the type a helper's schema is read or sent as in a direction, or say its document has no such pointer.
+
+        None is a schema no model stands for.
+        """
+        from datamodel_code_generator._client.plan import schema_use  # noqa: PLC0415
+
+        if (location := self.location(reference)) is None:
+            return "missing"
+        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
+
     def each(
         self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_SpecT | None, list[Diagnostic]]]
     ) -> tuple[tuple[_SpecT, ...], dict[str, list[Diagnostic]]]:
@@ -188,10 +216,25 @@ class HelperPlanner:
                     specs.append(planned)
         return tuple(specs), problems
 
+    def coded(
+        self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_CodingT | None, list[Diagnostic]]]
+    ) -> tuple[tuple[_CodingT, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
+        """Check every enabled helper of some kinds as `each` does, returning the planned ones, uses, and problems.
+
+        Each use appears once, however many helpers code it.
+        """
+        specs, problems = self.each(kinds, check)
+        return specs, tuple({use.id: use for spec in specs for use in spec.uses}.values()), problems
+
+
+def missing_schema(helper: Helper, noun: str, reference: SchemaRef) -> str:
+    """Return the refusal of a helper's schema setting, which `noun` names, whose document has no such pointer."""
+    return f"The {noun} {reference.pointer!r} of {helper.name!r} does not exist in its document"
+
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:
     """Return why an operation cannot take a request target: an undeclared parameter, querystring, or body."""
-    declared = [(fact(item, "in"), item.name or "") for item in operation.parameters]
+    declared = [parameter_place(item) for item in operation.parameters]
     querystrings = {name for location, name in declared if location == "querystring"}
     location, name = target["in"], target.get("name", "")
     if location == "body":
@@ -233,7 +276,7 @@ def helper_problems(
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
             message = (
-                f"The {helper.kind} helper {helper.name!r} reserves the argument{'s' if len(taken) > 1 else ''} "
+                f"The {helper.kind} helper {helper.name!r} reserves the {for_count(len(taken), 'argument')} "
                 f"{', '.join(map(repr, taken))} of "
                 f"{_label(spec.contract)}; rename them with the operation's parameter_names or body_field_names in "
                 "--client-operations"
@@ -270,7 +313,7 @@ def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict
 
     def refer(reference: OperationRef | SchemaRef) -> JSONValue:
         if isinstance(reference, SchemaRef):
-            return {"document": protocols.documents[reference], "pointer": reference.pointer}
+            return protocols.source(reference)
         return request.documents.operation(protocols.operations[reference].id)
 
     return {helper.name: portable(helper.tree, refer) for helper in protocols.helpers}

@@ -57,7 +57,11 @@ _NO_PARENT = Sentinel("_NO_PARENT")
 
 
 def get_most_of_parent(value: Any, type_: type[T] | None = None) -> T | None:
-    """Traverse parent chain to find the outermost matching parent."""
+    """Return the nearest ``type_`` instance up the ``parent`` chain of ``value``, ``value`` included, or ``None``.
+
+    Without ``type_``, follow ``parent`` up to the first object that has no ``parent`` attribute and return it, so a
+    chain that ends at ``parent=None`` returns ``None``.
+    """
     parent = getattr(value, "parent", _NO_PARENT)
     match (parent is not _NO_PARENT, type_ is None, type_ is not None and isinstance(value, type_)):
         case (True, True, _) | (True, False, False):

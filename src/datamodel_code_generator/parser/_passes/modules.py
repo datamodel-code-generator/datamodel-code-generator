@@ -22,8 +22,16 @@ from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._container_kinds import (
+    BUILTIN_CONTAINERS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    UNHASHABLE_CONTAINERS,
+)
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -110,6 +118,7 @@ from datamodel_code_generator.parser._passes._shared import (
     get_inherited_constructor_info,
     import_references,
     merge_duplicate,
+    merge_duplicate_in_module,
     module_members,
     names_left_by_replaced_roots,
     record_renamed_type,
@@ -589,21 +598,14 @@ def _named_enum(source: DataModel) -> Enum | None:
 ModelName: TypeAlias = str
 ModelNames: TypeAlias = set[ModelName]
 ModelDeps: TypeAlias = dict[ModelName, set[ModelName]]
-_BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
-    "list": "is_list",
-    "dict": "is_dict",
-    "set": "is_set",
-    "frozenset": "is_frozen_set",
-    "tuple": "is_tuple",
-}
 
 
 def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
     if data_type.type == current_name and not data_type.import_:
         return True
 
-    if flag := _BUILTIN_CONTAINER_COLLISION_FLAGS.get(current_name):
-        return bool(getattr(data_type, flag))
+    if (slot := BUILTIN_CONTAINERS.get(current_name)) is not None:
+        return bool(getattr(data_type, CONTAINER_FLAGS[slot]))
 
     return False
 
@@ -1052,8 +1054,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            parser._graph_builder.redirect_model_reference_users(model, models, cached_model.reference)  # noqa: SLF001
-            parser._graph_builder.retire_model(model)  # noqa: SLF001
+            merge_duplicate_in_module(parser, model, cached_model, models)
             duplicates.append(model)
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
@@ -1192,12 +1193,15 @@ def collapse_site_facts(
         constrained_root_field=isinstance(constraints := root_field.constraints, ConstraintsBase)
         and bool(constraints.has_constraints),
         constrained_root=constrained_root,
-        root_type_is_map=root_data_type.is_dict or root_data_type.is_mapping,
+        root_type_is_map=root_data_type in MAPPINGS,
         root_type_names_model=root_data_type.reference is not None,
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
         holder_has_container=field_constraints
         and constrained_root
-        and any(member.is_dict or member.is_union or member.is_list for member in model_field.data_type.all_data_types),
+        and any(
+            member.is_union or member in CONTAINERS.without("legacy-collapse-beside-lists-and-dicts")
+            for member in model_field.data_type.all_data_types
+        ),
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
         collapses_list_items=parser._collapses_list_item_root_models,  # noqa: SLF001
     )
@@ -1451,7 +1455,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
-                    if original_field:  # pragma: no cover
+                    if original_field:
                         # TODO: Improve detection of reference type
                         # Use list instead of set because Import is not hashable
                         excluded_imports = [IMPORT_OPTIONAL, IMPORT_UNION]
@@ -1674,7 +1678,7 @@ def import_collapsed_inner_models(  # noqa: PLR0913, PLR0917
             parser,
             data_type,
             holder_module_name,
-            f"{inner_module_name}.{reference.short_name}" if inner_module_name else reference.short_name,
+            dotted_name(inner_module_name, reference.short_name),
             imports,
             scoped_model_resolver,
             same_module=inner_module_name == holder_module_name,
@@ -2415,13 +2419,9 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
     root_type = root_field.data_type
     keywords = _root_constraint_keywords(root_field)
     string_type = parser.data_type_manager.get_data_type(Types.string)
-    if any((
-        root_type.is_dict,
-        root_type.is_mapping,
-        root_type.is_list,
-        root_type.is_sequence,
-        root_type.is_set,
-    )) or (keywords and (root_type.type, root_type.import_) != (string_type.type, string_type.import_)):
+    if root_type in UNHASHABLE_CONTAINERS or (
+        keywords and (root_type.type, root_type.import_) != (string_type.type, string_type.import_)
+    ):
         return None
     if keywords:
         return parser.data_type_manager.get_data_type(

@@ -22,9 +22,32 @@ from .media import (
     media_kind,
 )
 
+__all__ = (
+    "OWS",
+    "PATH_SAFE",
+    "PLACEHOLDER",
+    "ParameterLocation",
+    "ParameterPlan",
+    "ValueShape",
+    "builtin_content",
+    "cookie_octets",
+    "header_text",
+    "pairs",
+    "parameter_key",
+    "part_pairs",
+    "path_text",
+    "percent_encoded",
+    "query_pairs",
+    "querystring",
+)
+
 ParameterLocation: TypeAlias = Literal["path", "query", "querystring", "header", "cookie"]
 ValueShape: TypeAlias = Literal["scalar", "array", "object"]
 
+PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+"""A placeholder of a path or server URL template, `{name}`, with its name as the group."""
+PATH_SAFE: Final = "/:@!$&'()*+,;="
+"""The characters besides unreserved ones that the literal text of a path keeps: `/` and those of RFC 3986's pchar."""
 _RESERVED: Final = ":/?#[]@!$&'()*+,;="
 _PATH_KEPT: Final = "/?#[],;="
 _QUERY_KEPT: Final = "#&+=[],"
@@ -137,13 +160,16 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
     raise ParameterEncodingError(msg)
 
 
+def percent_encoded(text: str, safe: str) -> str:
+    """Return a text percent-encoded but for unreserved and safe characters, keeping its percent-encoded octets."""
+    return "".join(part if index % 2 else quote(part, safe=safe) for index, part in enumerate(_TRIPLET.split(text)))
+
+
 def _percent(plan: ParameterPlan, kept: str) -> Callable[[str], str]:
     if not plan.allow_reserved:
         return lambda text: quote(text, safe="")
     safe = "".join(char for char in _RESERVED if char not in kept)
-    return lambda text: "".join(
-        part if index % 2 else quote(part, safe=safe) for index, part in enumerate(_TRIPLET.split(text))
-    )
+    return lambda text: percent_encoded(text, safe)
 
 
 def _encoded(entries: list[_Entry], encode: Callable[[str], str]) -> list[_Entry]:

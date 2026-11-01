@@ -10,6 +10,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from ..model_codecs.media import ascii_digits
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 from .options import retryable_status
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from .responses import HeadersView
 
 RetryReason: TypeAlias = Literal["status", "connect_timeout", "connect_error", "pool_timeout", "read_error"]
+RetrySafety: TypeAlias = Literal["method_default", "idempotent", "never"]
+"""Whether an operation may be sent again: by its method, always (`idempotent`), or never."""
 _StopReason: TypeAlias = Literal[
     "unknown_delivery",
     "status_not_retryable",
@@ -114,7 +117,7 @@ class RetryState:
     failure_kind: Literal["status", "transport"]
     reason: RetryReason | None
     method: str
-    retry_safety: Literal["method_default", "idempotent", "never"]
+    retry_safety: RetrySafety
     idempotency: IdempotencyPlan | None
     delivery: Delivery
     delivered_before: bool
@@ -125,7 +128,7 @@ class RetryState:
 
 def replay_safe(
     method: str,
-    retry_safety: Literal["method_default", "idempotent", "never"],
+    retry_safety: RetrySafety,
     idempotency: IdempotencyPlan | None,
 ) -> bool:
     """Check payload-independent safety after the operation-never gate has passed."""
@@ -134,7 +137,7 @@ def replay_safe(
 
 def body_replay_safe(
     method: str,
-    retry_safety: Literal["method_default", "idempotent", "never"],
+    retry_safety: RetrySafety,
     idempotency: IdempotencyPlan | None,
 ) -> bool:
     """Return whether a request may send its body again with its method, as a 307 or 308 redirect does."""
@@ -197,7 +200,7 @@ class ServerDelay:
 
 
 def _integer(value: str) -> float | None:
-    if not value.isascii() or not value.isdecimal():
+    if not ascii_digits(value):
         return None
     result = float(value)
     return result if math.isfinite(result) else None

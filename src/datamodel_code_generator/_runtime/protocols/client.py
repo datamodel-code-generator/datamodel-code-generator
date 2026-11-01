@@ -30,7 +30,7 @@ from ..client.positions import secret_names
 from ..client.raw import AsyncRawResponse, RawResponse, ReceivedBody, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
-from ..client.timing import ResolvedTimeoutOptions
+from ..client.timing import earliest, every_phase
 from ..client.urls import absolute_target, query_field, request_origin, strip_query
 from ..model_codecs.media import NOT_MODIFIED, SWITCHING_PROTOCOLS
 from ..model_codecs.unset import UNSET
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from ..client.positions import CredentialPosition
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
-    from ..client.timing import Budget
+    from ..client.timing import Budget, ResolvedTimeoutOptions
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .options import HelperSettings
@@ -200,9 +200,7 @@ class _SessionCall(Call):
         super().__init__(settings, operation)
         self.session = session
         self.url = ""
-        for limit in (session.deadline, bound):
-            if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
-                self.deadline = limit
+        self.deadline = earliest(self.deadline, session.deadline, bound)
 
     def prepared(self, request: httpx2.Request) -> httpx2.Request:
         """Prepare the request as an ordinary call does, keeping its URL."""
@@ -247,8 +245,7 @@ class _SocketCall(_SessionCall):
             )
             if value is not None
         ]
-        cap = min(limits) if limits else None
-        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=cap)
+        return every_phase(min(limits) if limits else None)
 
     def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:  # noqa: ARG002, PLR6301
         """Never follow a redirect of the handshake: a refused upgrade is terminal."""
@@ -277,8 +274,7 @@ class _SessionWait(LogicalCallContext):
         """Bind the wait to its session and the operation it comes before."""
         super().__init__(settings, operation_id)
         self.session = session
-        if (limit := session.deadline) is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
-            self.deadline = limit
+        self.deadline = earliest(self.deadline, session.deadline)
 
 
 class _ProtocolCore(Core[AdapterT, HandleT]):

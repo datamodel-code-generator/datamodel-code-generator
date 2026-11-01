@@ -24,6 +24,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TIME,
     IMPORT_TIMEDELTA,
     IMPORT_UUID,
+    _import_key,
 )
 from datamodel_code_generator.types import DECIMAL_DEFAULT_VALUE_DESCRIPTOR, DataType, StrictTypes, Types
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManager
@@ -108,7 +109,7 @@ class DataTypeManager(_DataTypeManager):
     """Base type manager for model modules."""
 
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
-        (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     })
 
     def __init__(  # noqa: PLR0913, PLR0917

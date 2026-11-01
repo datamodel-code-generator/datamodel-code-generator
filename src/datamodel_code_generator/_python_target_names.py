@@ -7,6 +7,7 @@ field names against it, does not load the registry.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal, TypeAlias
 
 PYTHON_BUILTIN_TYPE_NAMES = frozenset({
     "ArithmeticError",
@@ -176,6 +177,73 @@ _PYTHON_BUILTIN_INTRODUCED_IN: dict[str, tuple[int, int]] = {
 _PYTHON_NAME_REMOVED_IN: dict[tuple[str, str], tuple[int, int]] = {
     ("pathlib", "DirEntryInfo"): (3, 15),
 }
+_BUILTIN_TYPE_ATTRIBUTE_NAMES = frozenset({
+    "as_integer_ratio",
+    "bit_count",
+    "bit_length",
+    "capitalize",
+    "casefold",
+    "center",
+    "conjugate",
+    "count",
+    "decode",
+    "denominator",
+    "encode",
+    "endswith",
+    "expandtabs",
+    "find",
+    "format",
+    "format_map",
+    "from_bytes",
+    "from_number",
+    "fromhex",
+    "hex",
+    "imag",
+    "index",
+    "is_integer",
+    "isalnum",
+    "isalpha",
+    "isascii",
+    "isdecimal",
+    "isdigit",
+    "isidentifier",
+    "islower",
+    "isnumeric",
+    "isprintable",
+    "isspace",
+    "istitle",
+    "isupper",
+    "join",
+    "ljust",
+    "lower",
+    "lstrip",
+    "maketrans",
+    "numerator",
+    "partition",
+    "real",
+    "removeprefix",
+    "removesuffix",
+    "replace",
+    "rfind",
+    "rindex",
+    "rjust",
+    "rpartition",
+    "rsplit",
+    "rstrip",
+    "split",
+    "splitlines",
+    "startswith",
+    "strip",
+    "swapcase",
+    "title",
+    "to_bytes",
+    "translate",
+    "upper",
+    "zfill",
+})
+_BUILTIN_TYPE_ATTRIBUTE_INTRODUCED_IN: dict[str, tuple[int, int]] = {
+    "from_number": (3, 14),
+}
 
 
 def is_target_name(module: str, name: str, introduced: tuple[int, int], target_version: tuple[int, int]) -> bool:
@@ -199,9 +267,37 @@ def target_builtin_names(target_version: tuple[int, int]) -> frozenset[str]:
     )
 
 
+@lru_cache(maxsize=16)
+def target_builtin_type_attributes(target_version: tuple[int, int]) -> frozenset[str]:
+    """Return the public attributes of ``str``, ``int``, ``float`` and ``bytes`` on the target, which members avoid."""
+    return frozenset(
+        name
+        for name in _BUILTIN_TYPE_ATTRIBUTE_NAMES
+        if is_target_name("builtins", name, _BUILTIN_TYPE_ATTRIBUTE_INTRODUCED_IN.get(name, (3, 10)), target_version)
+    )
+
+
+BuiltinRow: TypeAlias = Literal["target", "any-target", "legacy-builtins-of-any-target"]
+"""Whose builtins `is_builtin_type_name` reads.
+
+`target` the target's: a name a later Python adds is free for a user's symbol there (a type override, a bare type
+name); `any-target` every supported target's, where a `builtins.X` path that some target has is told from an unknown
+one; `legacy-builtins-of-any-target` every supported target's where the target's are meant: the import passes that
+alias the builtins a module import or a package's submodule hides.
+"""
+
+
+def is_builtin_type_name(name: str, target_version: tuple[int, int], *, rule: BuiltinRow = "target") -> bool:
+    """Return whether a name is a class or ``None`` of the builtins namespace by the row, as a hint writes it bare."""
+    return name in PYTHON_BUILTIN_TYPE_NAMES and (rule != "target" or is_target_builtin_name(name, target_version))
+
+
 __all__ = [
     "PYTHON_BUILTIN_TYPE_NAMES",
+    "BuiltinRow",
+    "is_builtin_type_name",
     "is_target_builtin_name",
     "is_target_name",
     "target_builtin_names",
+    "target_builtin_type_attributes",
 ]

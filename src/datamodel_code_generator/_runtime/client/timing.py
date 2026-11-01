@@ -6,16 +6,18 @@ import math
 import time as _time
 from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
+from datetime import datetime
 from sys import float_info
-from typing import Final, final
+from typing import Final, Literal, TypeGuard, final
 
+from ..model_codecs.media import json_number
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
 def finite_number(value: object) -> float | None:
     """Return a number as a finite float, or None for booleans, other types, and values no finite float holds."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if not json_number(value):
         return None
     try:
         number = float(value)
@@ -31,34 +33,39 @@ def seconds(value: object, path: tuple[str, ...]) -> float:
     return number
 
 
-def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
-    """Refuse an option count that is not an integer in its range, including booleans."""
+def checked_count(
+    value: object,
+    path: tuple[str, ...],
+    *,
+    minimum: int = 0,
+    maximum: int | None = None,
+    reason: Literal["out_of_range", "invalid_value"] = "out_of_range",
+) -> None:
+    """Refuse an option count that is not an integer in its range, including booleans, for `reason`."""
     if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
-        raise ConfigurationError(field_path=path, reason="out_of_range")
+        raise ConfigurationError(field_path=path, reason=reason)
 
 
-def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
-    """Refuse an option value of another type."""
-    if not isinstance(value, kinds):
+def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...], *, callables: bool = False) -> None:
+    """Refuse an option value of another type; with callables, a value that can be called is of the right type too."""
+    if not (isinstance(value, kinds) or (callables and callable(value))):
         raise ConfigurationError(field_path=path, reason="invalid_type")
+
+
+def is_aware(value: object) -> TypeGuard[datetime]:
+    """Return whether a value is a timezone-aware datetime, one whose offset from UTC is not None."""
+    return isinstance(value, datetime) and value.utcoffset() is not None
 
 
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
-    if type(value) is not int or value < (0 if allow_zero else 1):
-        raise ConfigurationError(field_path=(name,), reason="invalid_value")
+    checked_count(value, (name,), minimum=0 if allow_zero else 1, reason="invalid_value")
 
 
 def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
-            return
-        case _:
-            pass
-    raise ConfigurationError(field_path=(name,), reason="invalid_value")
+    if not (json_number(value) and 0 <= value <= float_info.max and (allow_zero or value > 0)):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
@@ -104,8 +111,7 @@ class Clock:
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
         for name in ("monotonic", "time", "random", "sleep", "asleep"):
-            if not callable(getattr(self, name)):
-                raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
+            checked_instance(getattr(self, name), (), ("clock", name), callables=True)
 
 
 SYSTEM_CLOCK: Final = Clock()
@@ -128,6 +134,20 @@ class Budget:
         return max(0.0, self.at - self.clock.monotonic())
 
 
+def total_deadline(total_timeout: float | None, started: float, clock: Clock) -> Budget | None:
+    """Return the deadline a total timeout sets for what started at a monotonic instant, or None without one."""
+    return None if total_timeout is None else Budget(started + total_timeout, clock)
+
+
+def earliest(*budgets: Budget | None) -> Budget | None:
+    """Return the budget that ends first, the first given of those that end together, or None when none is given."""
+    found: Budget | None = None
+    for budget in budgets:
+        if budget is not None and (found is None or budget.at < found.at):
+            found = budget
+    return found
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResolvedTimeoutOptions:
     """The effective timeout of each I/O phase in seconds; None leaves that phase unlimited."""
@@ -136,3 +156,8 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
+
+
+def every_phase(value: float | None) -> ResolvedTimeoutOptions:
+    """Return phase timeouts that give every phase the same seconds, None leaving each unlimited."""
+    return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)

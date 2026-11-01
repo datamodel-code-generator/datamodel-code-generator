@@ -18,7 +18,6 @@ from ..client.errors import ConfigurationError
 from .errors import configuration_error
 from .webhook_events import (
     EventPlan,
-    Facts,
     epoch_microseconds,
     local_arguments,
     received,
@@ -69,8 +68,8 @@ def _utc(value: object) -> datetime | None:
     return moment
 
 
-def _kept(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime | None, str] | None:
-    """Return a result's delivery id, UTC timestamp, and matched key id, each read once, or None for a broken contract.
+def _kept(plan: AdapterPlan[T], signature: object) -> VerifiedSignature | None:
+    """Return a result's facts, each read once and the timestamp in UTC, or None for a broken contract.
 
     The result must be exactly a VerifiedSignature whose matched_key_id is a nonempty str, whose declared facts are a
     nonempty str and an aware datetime, and whose undeclared facts are None.
@@ -80,13 +79,16 @@ def _kept(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime
     delivery_id, timestamp, matched_key_id = signature.delivery_id, signature.timestamp, signature.matched_key_id
     if not _text(matched_key_id) or not (_text(delivery_id) if plan.delivery_id else delivery_id is None):
         return None
-    if not plan.timestamp:
-        return None if timestamp is not None else (delivery_id, None, matched_key_id)
-    moment = _utc(timestamp)
-    return None if moment is None else (delivery_id, moment, matched_key_id)
+    if plan.timestamp:
+        timestamp = _utc(timestamp)
+        if timestamp is None:
+            return None
+    elif timestamp is not None:
+        return None
+    return VerifiedSignature(delivery_id=delivery_id, timestamp=timestamp, matched_key_id=matched_key_id)
 
 
-def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime | None, str]:
+def _fenced(plan: AdapterPlan[T], signature: object) -> VerifiedSignature:
     """Return a verifier's facts when it keeps the contract, or raise ConfigurationError with nothing sent.
 
     A coroutine result is closed unawaited. The error is raised outside any handler, so it keeps no context.
@@ -107,17 +109,17 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     verifier: Verifier[K],
     now: datetime,
     options: object,
-) -> Facts:
+) -> VerifiedSignature:
     """Run every stage before decoding; return the verified facts."""
     helper_id = plan.helper_id
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     if not callable(verify := getattr(verifier, "verify", None)):
         raise configuration_error(helper_id, ("verifier",), "wrong_capability")
     size(limits.max_keys, len(keys.keys), helper_id)
-    delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
-    if timestamp is not None and not within(now_us, epoch_microseconds(timestamp), limits):
+    facts = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
+    if facts.timestamp is not None and not within(now_us, epoch_microseconds(facts.timestamp), limits):
         reject("timestamp_window", helper_id)
-    return Facts(delivery_id, timestamp, matched_key_id)
+    return facts
 
 
 def verify_adapted(  # ruff: ignore[too-many-arguments]

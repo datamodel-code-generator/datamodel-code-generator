@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -42,6 +44,7 @@ _CORE: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
     "model_codecs/parameters.py",
+    "model_codecs/shared.py",
     "model_codecs/unset.py",
 )
 _PROTOCOLS: Final = (
@@ -135,7 +138,7 @@ class Capabilities:
             (self.multipart_requests, _MULTIPART),
             (self.response_headers, _HEADERS),
             (self.multipart_responses, (*_MULTIPART, "client/multipart_responses.py")),
-            (self.extras, ("model_codecs/pydantic_extras.py",)),
+            (self.extras, EXTRAS.paths),
         ):
             if declared:
                 modules.update(needed)
@@ -155,10 +158,15 @@ def declared_security(plan: ClientPlan) -> frozenset[Security]:
     ))
 
 
+def compresses(plan: ClientPlan) -> bool:
+    """Return whether an operation of the package accepts gzip request bodies, which the clients can then send."""
+    return any("gzip" in spec.accepted_content_encodings for spec in plan.operations)
+
+
 def declared_helpers(kinds: Iterable[str], plan: ClientPlan) -> frozenset[Helper]:
     """Return the helpers of the package's helper kinds and its operations' request codings."""
     found: set[Helper] = {_KINDS[kind] for kind in kinds}
-    if any("gzip" in spec.accepted_content_encodings for spec in plan.operations):
+    if compresses(plan):
         found.add("compression")
     return frozenset(found)
 

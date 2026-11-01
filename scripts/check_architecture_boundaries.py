@@ -26,6 +26,9 @@ Layer: TypeAlias = Literal[
     "free-names",
     "name-words",
     "graph-links",
+    "container-kinds",
+    "warning-control",
+    "message-text",
     "module-paths",
     "openapi-paths",
     "config",
@@ -138,6 +141,34 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "import while they import each other: import only the standard library and typing_extensions"
         ),
     ),
+    "container-kinds": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the container slots and kinds of a type tree node are a leaf that types.py, the model package, the "
+            "parser and the targets read: import only the standard library and typing_extensions"
+        ),
+    ),
+    "context-scope": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the context variable scope is a leaf that the command line, the parser, the model package and the "
+            "reference resolver import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "warning-control": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "how the generator's own warnings are shown is a leaf that the entry point, the recommender, the parser "
+            "and its passes import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "message-text": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "how the generator's messages write English is a leaf that the command line, the recommender, the parser, "
+            "the model package and the targets import: import only the standard library and typing_extensions"
+        ),
+    ),
     "module-paths": (
         frozenset({*sys.stdlib_module_names, "typing_extensions"}),
         (
@@ -163,12 +194,14 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._message_text",
             "datamodel_code_generator._records",
             "datamodel_code_generator.enums",
         }),
         (
             "the requirement table is a leaf: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._records and datamodel_code_generator.enums"
+            "datamodel_code_generator._message_text, datamodel_code_generator._records and "
+            "datamodel_code_generator.enums"
         ),
     ),
     "constraints": (
@@ -206,13 +239,14 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             *sys.stdlib_module_names,
             "typing_extensions",
             "datamodel_code_generator._json_schema",
+            "datamodel_code_generator._model_keys",
             "datamodel_code_generator._records",
             "datamodel_code_generator._regex_syntax",
         }),
         (
             "a pure parser core computes from the dumped schemas it is given: import only the standard library, "
-            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._records and "
-            "datamodel_code_generator._regex_syntax"
+            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._model_keys, "
+            "datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
         ),
     ),
 }
@@ -1311,6 +1345,14 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "name-words"
         case ("_graph_links.py",):
             layer = "graph-links"
+        case ("_container_kinds.py",):
+            layer = "container-kinds"
+        case ("_context_scope.py",):
+            layer = "context-scope"
+        case ("_warning_control.py",):
+            layer = "warning-control"
+        case ("_message_text.py",):
+            layer = "message-text"
         case ("_module_paths.py",):
             layer = "module-paths"
         case ("_openapi_paths.py",):

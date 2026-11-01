@@ -121,8 +121,20 @@ def _callbacks(package: ModuleType, auth: ModuleType, exchange: Exchange, lines:
     async def pending(tokens: object) -> None:  # noqa: RUF029
         del tokens
 
+    errors = importlib.import_module(f"{package.__name__}.errors")
+
+    def refused(tokens: object) -> None:  # noqa: ARG001
+        try:
+            {}["store"]
+        except KeyError as error:
+            raise errors.ConfigurationError(field_path=("store",), reason="missing_value") from error
+
     clock = _Clock(importlib.import_module(f"{package.__name__}.options"))
-    for label, callback in (("failing callback", failed), ("coroutine callback in a synchronous call", pending)):
+    for label, callback in (
+        ("failing callback", failed),
+        ("callback's own error", refused),
+        ("coroutine callback in a synchronous call", pending),
+    ):
         provider = auth.OauthRefreshToken(
             _expiring(auth, "access-0", "refresh-0", 3600),
             client_id="pets-app",
@@ -184,18 +196,27 @@ async def _async_refresh(package: ModuleType, auth: ModuleType, lines: list[str]
         msg = "store unavailable"
         raise OSError(msg)
 
-    provider = auth.OauthRefreshToken(
-        _expiring(auth, "access-0", "refresh-0", 3600),
-        client_id="pets-app",
-        on_token_refreshed=failed,
-        clock=clock.clock,
-    )
-    async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
-        exchange.respond(_INVALID, issued("access-1"))
+    errors = importlib.import_module(f"{package.__name__}.errors")
+
+    async def refused(tokens: Any) -> None:  # noqa: ARG001, RUF029
         try:
-            await api.auth.oauth_read()
-        except Exception as error:  # noqa: BLE001
-            lines.append(f"  async failing callback ! {failure_line(error)}")
+            {}["store"]
+        except KeyError as error:
+            raise errors.ConfigurationError(field_path=("store",), reason="missing_value") from error
+
+    for label, callback in (("async failing callback", failed), ("async callback's own error", refused)):
+        provider = auth.OauthRefreshToken(
+            _expiring(auth, "access-0", "refresh-0", 3600),
+            client_id="pets-app",
+            on_token_refreshed=callback,
+            clock=clock.clock,
+        )
+        async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
+            exchange.respond(_INVALID, issued("access-1"))
+            try:
+                await api.auth.oauth_read()
+            except Exception as error:  # noqa: BLE001
+                lines.append(f"  {label} ! {failure_line(error)}")
 
 
 def oauth_refresh(package: ModuleType, lines: list[str]) -> None:

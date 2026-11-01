@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
-from datamodel_code_generator._client.plan import schema_use
-from datamodel_code_generator._client.protocol_plan import HelperPlanner
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._json_pointer import pointer_tokens
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
@@ -30,7 +30,7 @@ from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymb
 from datamodel_code_generator._target_types import admits_none, present
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator
+    from collections.abc import Callable, Container, Iterator
 
     from typing_extensions import TypeIs
 
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
         TypeUseId,
         TypeView,
     )
+    from datamodel_code_generator._target_documents import JSONObject
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
 _SETS: Final = frozenset({"set", "frozenset"})
@@ -68,13 +69,18 @@ class PaginationSpec:
     operation: OperationSpec
     page: TypeUseBinding
     item: TypeView
-    item_schema: Mapping[str, str]
+    item_schema: JSONObject
     steps: tuple[ItemStep, ...]
 
     @property
     def continuation(self) -> Mapping[str, Any]:
         """Return the helper's normalized continuation."""
         return self.helper.tree["continuation"]
+
+    @property
+    def follows(self) -> bool:
+        """Return whether the helper follows the URLs a server gives: a next-URL or Link continuation."""
+        return self.continuation["kind"] in _FOLLOWED
 
     @property
     def evidence(self) -> Literal["has_more", "total"]:
@@ -166,10 +172,6 @@ def _json_type(value: object) -> str:
     return "object" if isinstance(value, Mapping) else "array"
 
 
-def _listed(kinds: list[str]) -> str:
-    return kinds[0] if len(kinds) == 1 else f"{', '.join(kinds[:-1])}{',' if len(kinds) > 2 else ''} or {kinds[-1]}"  # noqa: PLR2004
-
-
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
     return accepted is None or kind in accepted or (kind == "integer" and "number" in accepted)
 
@@ -256,15 +258,6 @@ class _Pages(HelperPlanner):
             else self.facts.field_types(member.model_facts)
         )
 
-    def item_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
-        """Return the type a helper's item schema is read as in a direction, or say its document has no such pointer.
-
-        None is a schema no model stands for.
-        """
-        if (location := self.location(reference)) is None:
-            return "missing"
-        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
-
     def read_as(self, expected: TypeView) -> tuple[TypeView, ...]:
         """Return the types an item schema's type is read as, without None and through aliases.
 
@@ -314,8 +307,8 @@ class _Pages(HelperPlanner):
 
         A value is read as a schema when it is the schema's type, through None and aliases.
         """
-        if (expected := self.item_type(reference, direction)) == "missing":
-            message = f"The {noun} {reference.pointer!r} of {helper.name!r} does not exist in its document"
+        if (expected := self.schema_type(reference, direction)) == "missing":
+            message = missing_schema(helper, noun, reference)
         elif value is None or expected is None or self.present(value) not in self.read_as(expected):
             message = f"The {noun} {reference.pointer!r} of {helper.name!r} is not {mismatch}"
         else:
@@ -338,9 +331,7 @@ class _Pages(HelperPlanner):
         problems: list[Diagnostic] = []
         for index, entry in enumerate(tree["bindings"]):
             if entry["value"].get("source") == "input":
-                message = f"The binding {index} of {name!r} reads the helper's input, which is not supported yet"
-                where = f"{at}.bindings[{index}].value.source"
-                problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
+                problems.append(_reads_input(helper, spec, f"binding {index}", f"{at}.bindings[{index}]"))
         problems.extend(_credentials(helper, spec, self))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
@@ -530,7 +521,10 @@ class _Pages(HelperPlanner):
             yield types
             return
         if types is not None and (others := sorted(types - _URL_TYPES)):
-            message = f"The next URL of {name!r} reads {_listed(others)} values, where only string values fit"
+            message = (
+                f"The next URL of {name!r} reads {english_list(others, 'or', 'serial')} values, "
+                "where only string values fit"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
         yield from self.ends(helper, spec, types, "next URL")
 
@@ -578,7 +572,10 @@ class _Pages(HelperPlanner):
         if isinstance(types, Diagnostic):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
-            message = f"The {chosen} of {name!r} reads {_listed(others)} values, where only {expected} values fit"
+            message = (
+                f"The {chosen} of {name!r} reads {english_list(others, 'or', 'serial')} values, "
+                f"where only {expected} values fit"
+            )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
 
     def fits(  # noqa: PLR0913, PLR0917
@@ -609,58 +606,100 @@ class _Pages(HelperPlanner):
             kind for kind in types or () if (null or kind != "null") and not all(_fits(kind, item) for item in schemas)
         ):
             verb = "reads" if what == "cursor" else "gives"
-            message = f"The {what} of {helper.name!r} {verb} {_listed(refused)} values, which {place} does not accept"
+            message = (
+                f"The {what} of {helper.name!r} {verb} {english_list(refused, 'or', 'serial')} values, "
+                f"which {place} does not accept"
+            )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def values(
         self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
-        """Check each binding's value against its target, and that no two writes overlap.
+        """Check the bindings of a helper, which screened them before, against the page and its continuation's write."""
+        continuation = helper.tree["continuation"]
+        followed = (kind := continuation["kind"]) in _FOLLOWED
+        return self.bindings(
+            helper,
+            spec,
+            helper.tree["bindings"],
+            f"{helper.at}.bindings",
+            "binding",
+            writes=[] if followed else [(_target_key(continuation["write"]), _WRITES[kind])],
+            read=lambda value, at, what: self.read(helper, spec, body, headers, value["selector"], at, what),
+            followed=continuation if followed else None,
+            screened=True,
+        )
 
-        A binding's null is written, so its target must accept null too, and literals that make a path segment a dot
-        segment are no path values. A followed URL replaces the path and query, and carries a body only when it
-        repeats the request body.
+    def bindings(  # noqa: PLR0913
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        bindings: list[Mapping[str, Any]],
+        at: str,
+        what: str,
+        *,
+        writes: list[tuple[tuple[str, ...], str]],
+        read: Callable[[Mapping[str, Any], str, str], _Types | Diagnostic],
+        followed: Mapping[str, Any] | None = None,
+        screened: bool = False,
+    ) -> Iterator[Diagnostic]:
+        """Check each binding's value against its target, and that no two writes overlap, adding each one to `writes`.
+
+        `writes` holds the targets the helper writes besides, and `read` gives the JSON types a binding's value
+        selector reads. A binding's null is written, so its target must accept null too, and literals that make a path
+        segment a dot segment are no path values. With `followed`, the continuation of a helper that follows URLs,
+        which replace the path and query and carry a body only when they repeat the request body, a binding no request
+        after the first sends is refused. A binding written where a request carries credentials, and one reading the
+        helper's input, are refused here unless the helper `screened` its bindings for both before.
         """
-        tree = helper.tree
-        continuation = tree["continuation"]
-        kind = continuation["kind"]
-        written = [] if kind in _FOLLOWED else [(_target_key(continuation["write"]), f"its {_WRITES[kind]}")]
-        dotted = _dot_literals(spec, tree["bindings"])
-        for index, item in enumerate(tree["bindings"]):
-            at, what, value, target = (
-                f"{helper.at}.bindings[{index}]",
-                f"binding {index}",
-                item["value"],
-                item["target"],
-            )
-            if kind in _FOLLOWED and (unsent := _unsent(target, continuation)) is not None:
-                message = f"The {what} of {helper.name!r} writes {unsent}, which no request after the first sends"
-                yield _problem("E_CONFIG_VALUE", "config", f"{at}.target", message, spec)
+        name = helper.name
+        dotted = _dot_literals(spec, bindings)
+        for index, item in enumerate(bindings):
+            where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
+            if followed is not None and (unsent := _unsent(target, followed)) is not None:
+                message = f"The {owner} of {name!r} writes {unsent}, which no request after the first sends"
+                yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
+                continue
+            if (
+                not screened
+                and (problem := self.credential(helper, spec, target, f"{where}.target", owner)) is not None
+            ):
+                yield problem
                 continue
             key = _target_key(target)
-            if (clash := next(((other, owner) for other, owner in written if _overlaps(key, other)), None)) is not None:
+            if (
+                clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
+            ) is not None:
                 relation = "the same target as" if clash[0] == key else "a target overlapping that of"
-                message = f"The {what} of {helper.name!r} writes {relation} {clash[1]}"
-                yield _problem("E_CONFIG_CONFLICT", "config", f"{at}.target", message, spec)
+                message = f"The {owner} of {name!r} writes {relation} its {clash[1]}"
+                yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
                 continue
-            written.append((key, f"its {what}"))
+            writes.append((key, owner))
             if value.get("source") == "input":
+                if not screened:
+                    yield _reads_input(helper, spec, owner, where)
                 continue
             if "literal" in value:
                 if index in dotted:
                     message = (
-                        f"The {what} of {helper.name!r} gives {value['literal']!r}, which makes the segment of the "
-                        f"path parameter {target['name']!r} of {_label(spec)} a dot segment"
+                        f"The {owner} of {name!r} gives {value['literal']!r}, which makes the segment of the path "
+                        f"parameter {target['name']!r} of {_label(spec)} a dot segment"
                     )
-                    yield _problem("E_CONFIG_VALUE", "config", f"{at}.value.literal", message, spec)
+                    yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue
                 types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
             else:
-                types = self.read(helper, spec, body, headers, value["selector"], f"{at}.value.selector", what)
+                types = read(value, f"{where}.value.selector", owner)
             if isinstance(types, Diagnostic):
                 yield types
                 continue
-            yield from self.fits(helper, spec, target, types, f"{at}.target", what, null=True)
+            yield from self.fits(helper, spec, target, types, f"{where}.target", owner, null=True)
+
+
+def _reads_input(helper: Helper, spec: OperationSpec, owner: str, where: str) -> Diagnostic:
+    """Refuse a binding, `owner` at `where`, that reads the helper's input, which no helper supports yet."""
+    message = f"The {owner} of {helper.name!r} reads the helper's input, which is not supported yet"
+    return _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
 
 
 def _credentials(helper: Helper, spec: OperationSpec, pages: _Pages) -> Iterator[Diagnostic]:
@@ -738,9 +777,7 @@ def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str |
 
 def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     """Return the use of the one JSON media with a schema of the one success response, which has a body, or None."""
-    if len(successes) != 1 or successes[0].bodyless or len(media := successes[0].media) != 1:
-        return None
-    return media[0].use if media[0].kind == "json" else None
+    return None if len(successes) != 1 or successes[0].bodyless else successes[0].json_use
 
 
 def plan_pagination(

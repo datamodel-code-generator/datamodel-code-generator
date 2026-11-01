@@ -8,8 +8,9 @@ from functools import cached_property
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._api_generation import RenderedFile, implementation_text
+from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
+from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -21,6 +22,12 @@ from datamodel_code_generator._fastapi._compiled_templates import readme as read
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import security as security_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
+from datamodel_code_generator._fastapi.packages import (
+    SERVICES,
+    implementations_docstring,
+    server_docstring,
+    services_package,
+)
 from datamodel_code_generator._fastapi.plan import (
     Default,
     JsonPartSpec,
@@ -31,12 +38,16 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     dict_display,
+    escape_docstring,
+    format_docstring,
     keyword_argument,
     list_display,
     set_display,
+    subscript_text,
     tuple_display,
 )
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind, range_key
@@ -55,18 +66,16 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import described, tags
+from datamodel_code_generator._target_operations import coded_use, described, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
     field_plan,
     parameter_plan,
-    runtime_sources,
 )
-from datamodel_code_generator._target_templates import builtin_role, templated
-from datamodel_code_generator._target_types import admits_none
+from datamodel_code_generator._target_templates import roles, templated
+from datamodel_code_generator._target_types import admits_none, type_identity
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
 if TYPE_CHECKING:
@@ -81,7 +90,6 @@ if TYPE_CHECKING:
         NativeField,
         OperationSpec,
         ParameterSpec,
-        Requirement,
         SchemeKind,
         SchemeSpec,
         ServerPlan,
@@ -90,6 +98,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
+        Requirement,
         TypeArgument,
         TypeView,
     )
@@ -97,17 +106,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
 _METADATA: Final = frozenset({"Field", "StringConstraints"})
-_CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "list"): "is_list",
-    (None, "set"): "is_set",
-    (None, "frozenset"): "is_frozen_set",
-    (None, "dict"): "is_dict",
-    ("collections.abc", "Sequence"): "is_sequence",
-    ("typing", "Sequence"): "is_sequence",
-    ("collections.abc", "Mapping"): "is_mapping",
-    ("typing", "Mapping"): "is_mapping",
-}
-_KEYED: Final = frozenset({"is_dict", "is_mapping"})
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
@@ -164,8 +162,6 @@ _SERVER_RUNTIME: Final = (
     "server/responses.py",
 )
 _SECURITY_RUNTIME: Final = ("server/security.py",)
-_EXTRAS_MODULE: Final = "_runtime.model_codecs.pydantic_extras"
-_EXTRAS_RUNTIME: Final = ("model_codecs/pydantic_extras.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/parameter_reads.py",
     "model_codecs/unset.py",
@@ -270,7 +266,7 @@ class Module(TargetModule):
         base, own = self.parts(value)
         if not (items := (*own, *metadata)):
             return base
-        return f"{self.name('typing', 'Annotated')}[{base}, {', '.join(items)}]"
+        return subscript_text(self.name("typing", "Annotated"), (base, *items))
 
     def parts(self, value: TypeView) -> tuple[str, tuple[str, ...]]:
         """Return a type's validating base and the Annotated metadata that constrains a constrained scalar."""
@@ -294,10 +290,8 @@ class Module(TargetModule):
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
-        base = value.base
-        identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
-        flag = _CONTAINERS[(None, base.name) if isinstance(base, BuiltinType) else identity]
-        if flag in _KEYED:
+        flag = CONTAINER_FLAGS[CONTAINER_CLASSES[type_identity(value.base)]]
+        if flag in MAPPINGS.flags:
             return self.container(flag, arguments[-1], key=arguments[0])
         return self.container(flag, arguments[0])
 
@@ -533,7 +527,7 @@ class Owned:
     @property
     def path(self) -> PurePosixPath:
         """Return the module's file relative to the directory that holds the server package."""
-        return PurePosixPath("services", f"{self.stem}.py")
+        return PurePosixPath(SERVICES, f"{self.stem}.py")
 
     @property
     def file(self) -> str:
@@ -574,7 +568,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.config = config
         self.backend = backend
         self.plan = plan
-        self.role: Role = builtin_role if templates is None else templates.role
+        self.role: Role = roles(templates)
         self.document = document
         self.batch = batch
         self.wire = wire
@@ -612,8 +606,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     @property
     def services_package(self) -> str:
         """Return the package of the user's implementations: `services`, beside the server package."""
-        parent = self.config.package.rpartition(".")[0]
-        return f"{parent}.services" if parent else "services"
+        return services_package(self.config.package)
 
     @cached_property
     def owned(self) -> tuple[Owned, ...]:
@@ -627,7 +620,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         for group in self.plan.groups:
             name = _implementation(group)
             alias = scope.claim(name)
-            base = f"{group.service}[object]" if group.secured else group.service
+            base = subscript_text(group.service, ("object",)) if group.secured else group.service
             source = self.stub(group, name).render(self.role)
             owned.append(Owned(f"{services}.{group.stem}", name, alias, group.stem, base, source))
         if self.plan.schemes:
@@ -651,7 +644,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             services=f"{package}.services",
             entrypoint=f"{package}.main",
             name=name,
-            base=f"{protocol}[object]" if group.secured else protocol,
+            base=subscript_text(protocol, ("object",)) if group.secured else protocol,
             methods="every operation" if self.config.layout == "single" else f"the {group.stem} operations",
             protocol_methods=[self.method(module, spec, "object") for spec in group.operations],
             imports=module.imports(),
@@ -675,26 +668,20 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """Return the user modules `main.py` imports, with stubs, and their package, beside the server package."""
         if not (owned := self.owned):
             return ()
-        docstring = (
-            f"Your implementations of {self.config.package}, which {self.config.package}.main imports.\n\n"
-            "datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it."
-        )
+        docstring = implementations_docstring(self.config.package)
         return (
-            self.file(
-                PurePosixPath("services", "__init__.py"), "package", self.facade(self.services_package, docstring)
-            ),
+            self.file(PurePosixPath(SERVICES, "__init__.py"), "package", self.facade(self.services_package, docstring)),
             *(RenderedFile(path=item.path, kind="implementation", text=item.source) for item in owned),
         )
 
     def next_steps(self) -> NextSteps:
         """Return the README, the entrypoint and its application, and the implementations it imports."""
-        services = self.services_package.rpartition(".")[2]
         return NextSteps(
             readme=Path("README.md"),
             app=f"{self.config.package}.main:app",
             entrypoint=Path("main.py"),
             implementations=tuple(
-                Implementation(module=item.module, name=item.name, path=Path(services, f"{item.stem}.py"))
+                Implementation(module=item.module, name=item.name, path=Path(SERVICES, f"{item.stem}.py"))
                 for item in self.owned
             ),
         )
@@ -745,8 +732,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             *(module.local("application", name) for name in names),
             module.local("_runtime.server.responses", "HTTPResult"),
         ))
-        docstring = f"FastAPI server package {self.config.package}, generated by datamodel-code-generator."
-        return self.facade("", docstring, module.imports(), exported)
+        return self.facade("", server_docstring(self.config.package), module.imports(), exported)
 
     @staticmethod
     def openapi() -> Templated:
@@ -812,9 +798,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        extras = _EXTRAS_RUNTIME if any(map(_keeps_extras, self.plan.operations)) else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *extras)):
-            yield RenderedFile(path=path, kind="runtime", text=text, verbatim=True)
+        extras = EXTRAS.paths if any(map(_keeps_extras, self.plan.operations)) else ()
+        yield from runtime_files((*_SERVER_RUNTIME, *security, *inputs, *extras))
 
     def application(self) -> Templated:
         """Return the application module, rendered from its builtin template.
@@ -830,7 +815,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         routes = [*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules)]
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
-        options = f"dict[str, {module.name('typing', 'Any')}]"
+        options = subscript_text("dict", ("str", module.name("typing", "Any")))
         info = dict_display((repr(key), repr(value)) for key, value in self.plan.info)
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
@@ -952,7 +937,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         accepted = ""
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
-            parameters.append(Parameter(record, f"{annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]"))
+            parameters.append(
+                Parameter(record, subscript_text(annotated, (f"{plan}.Parameters", f"{depends}({plan}.PARAMETERS)")))
+            )
             accepted = module.local("_runtime.server.requests", "accepted")
         call = Call(
             module.local("_runtime.server.responses", "dispatch"),
@@ -964,7 +951,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             router=names["router"],
             wiring=names["wiring"],
             service=names["service"],
-            protocol=f"{service}[object]" if group.secured else service,
+            protocol=subscript_text(service, ("object",)) if group.secured else service,
             group=repr(group.stem),
             handler=handler,
             lookup=lookup,
@@ -997,7 +984,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             local = names[scheme] = scope.claim(self.scheme_names[scheme])
             arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
             kind = _credential_type(module, schemes[scheme])
-            parameters.append(Parameter(local, f"{annotated}[{kind}, {depends}({arguments})]"))
+            parameters.append(Parameter(local, subscript_text(annotated, (kind, f"{depends}({arguments})"))))
         challenge = ", ".join(
             dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
         )
@@ -1031,7 +1018,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             return Parameter("request", module.name("fastapi", "Request"))
         if argument.kind == "principal":
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
-            return Parameter("principal", f"{annotated}[object, {depends}({principal})]")
+            return Parameter("principal", subscript_text(annotated, ("object", f"{depends}({principal})")))
         if argument.native is not None:
             return _native(module, argument.name, argument.native)
         body = spec.body
@@ -1040,16 +1027,17 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         if body.decision.transport == "fastapi_native":
             media = body.media[0]
             api = module.name("fastapi", "Form" if body.form else "Body")
-            annotation = (
-                f"{annotated}[{_body(module, media, required=body.required)}, {api}(media_type={media.media_type!r})]"
+            annotation = subscript_text(
+                annotated, (_body(module, media, required=body.required), f"{api}(media_type={media.media_type!r})")
             )
             return Parameter(argument.name, annotation, "" if body.required else "None")
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
             media_type = module.optional("str")
-            return Parameter(argument.name, f"{annotated}[tuple[{media_type}, {kind}], {depends}({plan}.BODY.receive)]")
-        return Parameter(argument.name, f"{annotated}[{kind}, {depends}({plan}.BODY)]")
+            received = (subscript_text("tuple", (media_type, kind)), f"{depends}({plan}.BODY.receive)")
+            return Parameter(argument.name, subscript_text(annotated, received))
+        return Parameter(argument.name, subscript_text(annotated, (kind, f"{depends}({plan}.BODY)")))
 
     def body_type(self, module: Module, body: BodySpec) -> str:
         """Return the type the handler receives for a body, with None for an optional one."""
@@ -1077,7 +1065,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         protocols = [
             Service(
                 name=group.service,
-                base=f"{protocol}[PrincipalT_contra]" if group.secured else protocol,
+                base=subscript_text(protocol, ("PrincipalT_contra",)) if group.secured else protocol,
                 docstring=f"Implement {'every operation' if single else f'the {group.stem} operations'}: "
                 "subclass this Protocol, or give an object its methods.",
                 methods=tuple(self.method(module, spec) for spec in group.operations),
@@ -1146,7 +1134,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             for response in spec.responses
             if _body_status(spec, response.status) and (media := default_media(response)) is not None
         )
-        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{module.union(*payloads) or 'None'}]"
+        result = subscript_text(
+            module.local("_runtime.server.responses", "HTTPResult"), (module.union(*payloads) or "None",)
+        )
         return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
@@ -1254,7 +1244,7 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
         if (value := _checked(media)) is not None:
             entries.append(f"model={module.annotation(value)}")
         if media.extras:
-            entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
+            entries.append(f"dump={module.local(EXTRAS.module, EXTRAS.writer)}")
         if null:
             entries.append("null=True")
     return call_text(module.local("_runtime.server.responses", "Declared"), entries)
@@ -1292,14 +1282,12 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
     declaration = call_text(module.name("fastapi", field.api), keywords)
-    return Parameter(name, f"{module.name('typing', 'Annotated')}[{', '.join((*parts, declaration))}]", default)
+    return Parameter(name, subscript_text(module.name("typing", "Annotated"), (*parts, declaration)), default)
 
 
 def _checked(media: MediaSpec) -> TypeView | None:
     """Return the model type that validates a media's body: any but raw bytes the models leave unconstrained."""
-    if (use := media.use) is None or (media.kind == "binary" and not use.checked):
-        return None
-    return use.type
+    return None if (use := coded_use(media.kind, media.use)) is None else use.type
 
 
 def _payload(media: MediaSpec) -> TypeView | None:
@@ -1398,7 +1386,7 @@ def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
     for item in body.media:
-        entries = [f"media_type={item.media_type!r}", f"kind={_request_kind(item)!r}"]
+        entries = [f"media_type={item.media_type!r}", f"kind={item.kind!r}"]
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
@@ -1413,7 +1401,8 @@ def _body_media(module: Module, body: BodySpec) -> str:
             )
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:
-            entries.append(f"checked={module.name('pydantic', 'TypeAdapter')}(dict[str, {module.annotation(checked)}])")
+            type_adapter = module.name("pydantic", "TypeAdapter")
+            entries.append(f"checked={type_adapter}({subscript_text('dict', ('str', module.annotation(checked)))})")
         if encoded := item.encoded:
             entries.append(f"encoded={tuple_display(parameter_plan(module.local, plan) for plan in encoded)}")
         media.append(call_text(module.local("_runtime.server.requests", "BodyMedia"), entries))
@@ -1523,7 +1512,9 @@ def _builder(  # ruff: ignore[too-many-arguments]
 
 def _service(module: Module, group: GroupSpec) -> str:
     service = module.local("services", group.service)
-    return f"{service}[{module.local('_runtime.server.security', 'PrincipalT')}]" if group.secured else service
+    return (
+        subscript_text(service, (module.local("_runtime.server.security", "PrincipalT"),)) if group.secured else service
+    )
 
 
 def _security(module: Module) -> Parameter:
@@ -1532,11 +1523,11 @@ def _security(module: Module) -> Parameter:
         module.local("_runtime.server.security", "Authorize"),
         module.local("_runtime.server.security", "AsyncAuthorize"),
     )
-    return Parameter("authorize", _chain(module, [f"{item}[{principal}]" for item in authorizers]))
+    return Parameter("authorize", _chain(module, [subscript_text(item, (principal,)) for item in authorizers]))
 
 
 def _dependency_sequence(module: Module) -> str:
-    return f"{module.name('collections.abc', 'Sequence')}[{module.name('fastapi', 'params')}.Depends]"
+    return subscript_text(module.name("collections.abc", "Sequence"), (f"{module.name('fastapi', 'params')}.Depends",))
 
 
 def _credential_type(module: Module, scheme: SchemeSpec) -> str:
@@ -1577,7 +1568,3 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
 
 def _requirement(requirement: Requirement) -> str:
     return tuple_display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
-
-
-def _request_kind(media: MediaSpec) -> str:
-    return media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"

@@ -11,8 +11,14 @@ The dotted name of the module a file holds is that path without the file's ``.py
 without a file name (``("pets", "dog")``) reads the same. The parser's module files, result keys and module names, the
 imported module names, the ``--all-exports-scope`` exports, the submodules a package binds, the packages of the import
 cycles, the targets' result keys and model imports and the modules the dynamic models run in all read them here, so
-that they name the modules the output writes. This module imports only the standard library, so every layer may use
-it.
+that they name the modules the output writes.
+
+A name in a module has a dotted name: the module's dotted name and the name, or the name alone without a module
+(``dotted_name``). A model is named across modules by it, which the imports of other modules read, and an import, a
+runtime symbol and a package beside a server package are named by it too. A module lies below a package when
+the package's path starts its own and is shorter (``is_below``), so Python runs the package's ``__init__`` first; it
+lies within the package when it is that package or below it (``is_within``). This module imports only the standard
+library, so every layer may use it.
 """
 
 from __future__ import annotations
@@ -24,8 +30,11 @@ if TYPE_CHECKING:
 
 __all__ = [
     "dotted_module",
+    "dotted_name",
     "expanded_path",
+    "is_below",
     "is_package_init",
+    "is_within",
     "module_parts",
     "normalized_path",
     "package_path",
@@ -53,6 +62,21 @@ def dotted_module(path: Sequence[str], package: str | None = None) -> str:
     """Return the dotted name of the module at ``path``, below ``package`` when one is given."""
     parts = module_parts(path)
     return ".".join(parts if package is None else (package, *parts))
+
+
+def dotted_name(module: str | None, name: str) -> str:
+    """Return the dotted name of ``name`` in the module ``module``: ``module.name``, or ``name`` without a module."""
+    return f"{module}.{name}" if module else name
+
+
+def is_below(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
+    """Return whether the module path ``module`` lies below the package ``package``, not being the package itself."""
+    return len(module) > len(package) and module[: len(package)] == package
+
+
+def is_within(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
+    """Return whether the module path ``module`` is the package ``package`` or lies below it."""
+    return module[: len(package)] == package
 
 
 def written_name(name: str) -> str:

@@ -8,8 +8,16 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
-from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    call_text,
+    dict_display,
+    list_display,
+    set_display,
+    tuple_display,
+)
 from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -67,7 +75,7 @@ class PythonRuntimeExpression:
 
     def with_import_aliases(self, aliases: Mapping[tuple[str | None, str], Import]) -> Self:
         """Return self unless module-wide import resolution changed a referenced binding."""
-        if (import_ := aliases.get((self.import_.from_, self.import_.import_))) is None or import_ is self.import_:
+        if (import_ := aliases.get(_import_key(self.import_))) is None or import_ is self.import_:
             return self
         return self.__class__(import_, self.prefix, self.suffix, self._value)
 
@@ -84,6 +92,21 @@ class PythonRuntimeExpression:
     def __deepcopy__(self, _memo: dict[int, object]) -> Self:
         """Share immutable parser-owned expression state across copied model graphs."""
         return self
+
+
+def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpression:
+    """Return an expression on the ``datetime`` module, which generated code imports under one alias."""
+    return PythonRuntimeExpression(IMPORT_DATETIME_MODULE, prefix, suffix)
+
+
+def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
+    """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
+    return _datetime_expression(call_text(f".{kind}.fromisoformat", (repr(text),)))
+
+
+def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:
+    """Return the call of the constructor ``import_`` on the string literal of ``text``, whose value is ``text``."""
+    return PythonRuntimeExpression.from_import_call(import_, repr(text), value=text)
 
 
 _RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
@@ -129,12 +152,10 @@ def rewrite_runtime_imports(
     if not aliases:
         return imports
     for index, import_ in enumerate(imports):
-        if (aliased_import := aliases.get((import_.from_, import_.import_))) is None or aliased_import is import_:
+        if (aliased_import := aliases.get(_import_key(import_))) is None or aliased_import is import_:
             continue
         rewritten = [*imports[:index], aliased_import]
-        rewritten.extend(
-            aliases.get((remaining.from_, remaining.import_), remaining) for remaining in imports[index + 1 :]
-        )
+        rewritten.extend(aliases.get(_import_key(remaining), remaining) for remaining in imports[index + 1 :])
         return tuple(rewritten)
     return imports
 
@@ -195,6 +216,11 @@ def _safe_non_finite_float(value: float) -> float:
     return _NonFiniteFloat(value) if not isfinite(value) else value
 
 
+def _converted_float(value: float, *, source_safe_non_finite: bool) -> float:
+    """Return a float of a converted schema, source-safe when the converter's caller writes Python source."""
+    return _safe_non_finite_float(value) if source_safe_non_finite else value
+
+
 def _safe_non_finite_value(value: Any) -> Any:
     """Make every non-finite float of a parsed JSON value source-safe, copying only containers that hold one."""
     match value:
@@ -213,17 +239,6 @@ def _semantic_value_text(value: object) -> str:
     """Return parser-internal text without source-literal replacements."""
     return repr(float(value)) if isinstance(value, _NonFiniteFloat) else str(value)
 
-
-_QUOTE_AND_CONTROL_ESCAPES = {
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-}
-"""The escapes of a single-quoted literal: a Pydantic pattern writes these, a ``TypedDict`` key also the backslash, and
-an enum value also the backslash and the null byte."""
 
 _INTERNAL_TYPE_EXPRESSION_TOKEN = Sentinel("_INTERNAL_TYPE_EXPRESSION_TOKEN")
 _INTERNAL_TYPE_EXPRESSION_ERROR = "internal type expressions must be created by the parser"
@@ -268,11 +283,6 @@ def _make_internal_type_expression(value: str, code: str | None = None) -> _Inte
 def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeExpression:
     """Mark the type hint of ``source`` so that it can be rendered again once class names are final."""
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
-
-
-def _normalize_string(value: str) -> str:
-    """Return the underlying built-in string without invoking subclass overrides."""
-    return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
 
 
 def _normalized_safe_python_name(value: object, *, dotted: bool = False) -> str | None:

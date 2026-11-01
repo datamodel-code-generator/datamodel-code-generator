@@ -3,7 +3,7 @@
 The functions read only their arguments and change none of them (a mapping passed in is read, never copied).
 ``field_tag`` and ``variant_tags`` ask read-only views (``FieldTagFacts``, ``VariantTagFacts``) for the facts their
 rows need, in their order, as an Enum lookup or a variant's mapped tags cost more than the decision. The adapters
-that read the facts from the live objects are listed under H11 in ``scripts/decision_homes.toml``.
+that read the facts from the live objects are listed in ``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
 its row (G05): ``legacy-literal-only`` (``FieldTagSite``),

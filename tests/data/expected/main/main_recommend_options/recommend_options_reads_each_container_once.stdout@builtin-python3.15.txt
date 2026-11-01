@@ -1,0 +1,44 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
+  components                       0, 1 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261027
+
+Add  nothing on top of the preset
+
+Trial  2 candidates generated in memory without formatting; nothing written
+  candidate  classes  problems  numbered  long  doubled  displaced  median  unconstrained
+  current          0  0 (0.0%)         0     0        0          0       0              0
+  preset           0  0 (0.0%)         0     0        0          0       0              0   selected
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> preset)
+  0 of 0 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --formatters builtin --input input-cycle-list.yaml --input-file-type openapi --preset standard-py314-20261027 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  formatters = ["builtin"]
+  input = "input-cycle-list.yaml"
+  input-file-type = "openapi"
+  preset = "standard-py314-20261027"
+  target-python-version = "3.14"

@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._model_keys import keyed_or_path
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import enum_tag_as_values
 from datamodel_code_generator.model.base import (
@@ -253,11 +254,7 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
 
 def renamed_types_of(parser: CrossModuleHost, reference: Reference) -> list[_RenamedType] | None:
     """Return the class names that the model ``reference`` names had before it was renamed, or None."""
-    return (
-        parser._renamed_type_paths.get(reference.path)  # noqa: SLF001
-        if reference.source is None
-        else parser._renamed_types.get(model_key_of(reference))  # noqa: SLF001
-    )
+    return keyed_or_path(reference, parser._renamed_types, parser._renamed_type_paths)  # noqa: SLF001
 
 
 def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
@@ -310,7 +307,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
 def _module_qualified_name(reference: Reference, model_path_to_module_name: Mapping[str, str]) -> str:
     """Return the name of the referenced model qualified by its module, or its short name in the root module."""
     module_name = _get_model_module_name(cast("DataModel", reference.source), model_path_to_module_name)
-    return f"{module_name}.{reference.short_name}" if module_name else reference.short_name
+    return dotted_name(module_name, reference.short_name)
 
 
 def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModuleRun) -> None:

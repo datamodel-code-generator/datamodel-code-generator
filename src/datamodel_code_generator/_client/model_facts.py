@@ -11,6 +11,8 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BuiltinType,
@@ -24,8 +26,12 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     NoneType,
     UnionType,
+    members_by_consumer,
+    symbols_by_id,
+    wrapped_type,
 )
-from datamodel_code_generator._target_types import present, without_none
+from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, present, without_none
+from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -71,19 +77,8 @@ _NAMED: Final = MappingProxyType({
     "datetime.timedelta": "string",
     "uuid.UUID": "string",
     "decimal.Decimal": "number",
-    "pydantic.PositiveInt": "integer",
-    "pydantic.NegativeInt": "integer",
-    "pydantic.NonPositiveInt": "integer",
-    "pydantic.NonNegativeInt": "integer",
-    "pydantic.StrictInt": "integer",
-    "pydantic.PositiveFloat": "number",
-    "pydantic.NegativeFloat": "number",
-    "pydantic.NonPositiveFloat": "number",
-    "pydantic.NonNegativeFloat": "number",
-    "pydantic.StrictFloat": "number",
-    "pydantic.StrictBool": "boolean",
+    **{dotted_name(*key): kind for key, kind in CONSTRAINED_SCALARS.items()},
 })
-_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping", "typing.Dict"})
 _EXTRAS: Final = "__pydantic_extra__"
 _WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
@@ -153,10 +148,8 @@ class ModelFacts:
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
         """Index the batch's symbols by identity and its field bindings by consuming symbol."""
-        self.symbols = {symbol.id: symbol for symbol in batch.symbols}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
+        self.symbols = symbols_by_id(batch)
+        self.members = members_by_consumer(batch)
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
@@ -199,9 +192,7 @@ class ModelFacts:
 
     def root(self, symbol: SymbolId) -> TypeView | None:
         """Return the type an alias or root symbol stands for, or None when the batch binds none."""
-        return next(
-            (facts.type for member in self.members.get(symbol, ()) if (facts := member.model_facts) is not None), None
-        )
+        return wrapped_type(self.members, symbol)
 
     def argument(
         self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()
@@ -306,7 +297,7 @@ class ModelFacts:
             case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
                 types = self.json_types(value.arguments[0], seen)
             case GenericType():
-                types = frozenset({"object" if _name(value.base) in _MAPPINGS else "array"})
+                types = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
             case NoneType():
                 types = _NULL
             case _:
@@ -327,7 +318,7 @@ class ModelFacts:
 
 
 def _name(value: TypeView) -> str | None:
-    """Return the dotted name of a builtin or imported type, or None for any other type."""
+    """Return the dotted name of a builtin or imported type, or None for any other type, a module import included."""
     if isinstance(value, BuiltinType):
         return value.name
-    return f"{value.import_.from_}.{value.import_.import_}" if isinstance(value, ImportedType) else None
+    return _import_path(value.import_) if isinstance(value, ImportedType) and value.import_.from_ else None

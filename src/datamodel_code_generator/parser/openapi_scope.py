@@ -7,13 +7,21 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
-from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
+from urllib.parse import ParseResult, unquote
 
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import string_key
-from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS, QUERY_METHOD
+from datamodel_code_generator._json_pointer import fragment_tokens
+from datamodel_code_generator._openapi_paths import (
+    PATH_ITEM_METHODS,
+    PATHS_PARAMETERS,
+    QUERY_METHOD,
+    effective_operation,
+    effective_parameters,
+    holds_path_item,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
@@ -365,6 +373,17 @@ class ApiOpenAPIParser(OpenAPIParser):
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
         return _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
+
+    def _schema_reference_location(self, holder: str, ref: str) -> SchemaLocation | None:
+        """Return the schema a `$ref` or `$dynamicRef` of a loaded schema names, as the parser resolves it.
+
+        The reference resolves by its edge, or, without one, in ``holder``, the document that holds it, as L1 resolves
+        it. None is a schema in no loaded document.
+        """
+        with self._home_context(holder):
+            document, _, fragment = self._ref_key(ref).key.partition("#")
+        tokens = fragment_tokens(unquote(fragment))
+        return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
         """Use the same object-reference boundary for ordinary parser leaves, resolving in the current context."""
@@ -742,14 +761,12 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> None:
         """Retain literal route keys and parameter declaration indices during traversal."""
         global_parameters = (
-            self._parameter_declarations(items.get("parameters", []), [*base_path, "parameters"])
+            self._parameter_declarations(items.get(PATHS_PARAMETERS, []), [*base_path, PATHS_PARAMETERS])
             if scope == "paths"
             else []
         )
         for item_name, value in items.items():
-            if scope == "paths" and (
-                self._key_name(items, item_name, base_path, "path") == "parameters" or item_name.startswith("x-")
-            ):
+            if scope == "paths" and not holds_path_item(self._key_name(items, item_name, base_path, "path"), value):
                 continue
             if scope == "paths" and not self._matches_path_pattern(item_name):
                 continue
@@ -861,9 +878,8 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> None:
         """Process an operation's schema uses before depth-first callbacks and tags."""
         parameters = self._parameter_declarations(operation.get("parameters", []), [*path, "parameters"])
-        overridden = {entry.key for entry in parameters}
         common_parameters = (*common[0], *common[1])
-        effective = [*parameters, *(entry for entry in common_parameters if entry.key not in overridden)]
+        effective = effective_parameters(parameters, common_parameters, lambda entry: entry.key)
         if (querystrings := sum(entry.key[1] == "querystring" for entry in effective)) and (
             querystrings > 1 or any(entry.key[1] == "query" for entry in effective)
         ):
@@ -877,14 +893,6 @@ class ApiOpenAPIParser(OpenAPIParser):
             if self.use_operation_id_as_name
             else self._get_model_name(prefix, path[-1], "")
         )
-        effective_operation = operation
-        if common_parameters:
-            effective_operation = operation.copy()
-            effective_operation["parameters"] = [entry.raw for entry in effective]
-        if self._api_security is not None and "security" not in operation:
-            if effective_operation is operation:
-                effective_operation = operation.copy()
-            effective_operation["security"] = self._api_security
         frame = ApiDeclarationFrame(
             self._declared(operation),
             self.raw_obj,
@@ -900,7 +908,9 @@ class ApiOpenAPIParser(OpenAPIParser):
             tuple(entry.target.declaration for entry in effective),
             engine_path=tuple(path),
             raw_operation=operation,
-            effective_operation=effective_operation,
+            effective_operation=effective_operation(
+                operation, [entry.raw for entry in effective] if common_parameters else None, self._api_security
+            ),
         )
         self.declaration_frames.append(frame)
         try:

@@ -19,26 +19,28 @@ from typing_extensions import Protocol
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
+    dotted_name,
     expanded_path,
     module_parts,
     normalized_path,
     written_path,
 )
-from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
+from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings
+from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings, _import_key
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
-from datamodel_code_generator.model.output import _bare_name_loads, _model_field_name_collisions
+from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
@@ -69,7 +71,6 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.parser._passes.render_prep import _DECIMAL_WARNING_EXAMPLE_LIMIT
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import union_members, written_union_members
@@ -181,7 +182,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
 
     @property
     def _literal_under_all_enum_reference_ids(self) -> set[int]:
-        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values."""
+        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values.
+
+        Keyed by the identity of the Reference, not by model key, so a deep copy of a type is not among them (#5824).
+        """
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
@@ -196,8 +200,8 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
         """Whether models get the schema validator rules the types cannot express."""
 
     @property
-    def typed_nullable_map_reference_ids(self) -> set[int]:
-        """The ids of the references of the nullable maps whose values the parse typed."""
+    def typed_nullable_map_reference_ids(self) -> set[ModelKey]:
+        """The model keys of the nullable maps whose values the parse typed."""
 
     @property
     def use_msgspec_nullable_enum_alias(self) -> bool:
@@ -311,10 +315,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: 
         return
     reserved_names.update(_iter_import_bindings(imports))
     type_alias_imports = {
-        (import_.from_, import_.import_)
-        for model in models
-        if isinstance(model, TypeAliasBase)
-        for import_ in model.imports
+        _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
     bindings: dict[str, str] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
@@ -398,11 +399,10 @@ def _released_name_imports(  # noqa: PLR0914
             ):
                 continue
             released_module, released_name = released_placement.get(final, final)
-            released_module_name = dotted_module(released_module)
             target = reference_import_target(
                 released_name,
                 module_name,
-                f"{released_module_name}.{released_name}" if released_module_name else released_name,
+                dotted_name(dotted_module(released_module), released_name),
                 use_exact=ctx.imports.use_exact,
                 init=ctx.is_init,
                 internal_modules=forwarder.released_internal_modules,
@@ -752,23 +752,17 @@ def warn_about_decimal_defaults(parser: FinishHost) -> None:
     """Emit one actionable warning for all Decimal defaults in this generation."""
     if not (count := parser._decimal_default_warning_count):  # noqa: SLF001
         return
-    examples = ", ".join(parser._decimal_default_warning_examples or ())  # noqa: SLF001
-    remainder = (
-        f" and {count - len(parser._decimal_default_warning_examples or ())} more"  # noqa: SLF001
-        if count > _DECIMAL_WARNING_EXAMPLE_LIMIT
-        else ""
-    )
-    plural = "s" if count != 1 else ""
-    verb = "were" if count != 1 else "was"
+    examples = listed_with_more(parser._decimal_default_warning_examples or (), count)  # noqa: SLF001
+    values, verb = counted(count, "Decimal default value"), for_count(count, "was", "were")
     if DefaultValueType.Decimal in parser.deserialize_default_value_types:
         message = (
-            f"{count} Decimal default value{plural} could not be deserialized and {verb} kept serialized "
-            f"to keep generated modules importable: {examples}{remainder}."
+            f"{values} could not be deserialized and {verb} kept serialized "
+            f"to keep generated modules importable: {examples}."
         )
     else:
         message = (
-            f"{count} Decimal default value{plural} {verb} emitted as serialized data instead of Decimal: "
-            f"{examples}{remainder}. Generated output is unchanged. "
+            f"{values} {verb} emitted as serialized data instead of Decimal: "
+            f"{examples}. Generated output is unchanged. "
             "Use --deserialize-default-values decimal to enable Decimal deserialization."
         )
     parser._decimal_default_warning_count = 0  # noqa: SLF001
@@ -1052,7 +1046,7 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
     if (
         not annotated
         or [key for key, binding in bindings.items() if binding == IMPORT_LITERAL.import_]
-        != [(IMPORT_LITERAL.from_, IMPORT_LITERAL.import_)]
+        != [_import_key(IMPORT_LITERAL)]
         or any(IMPORT_LITERAL in field.imports for field in fields if tag_fields.get(id(field)) is not field)
     ):
         return False
@@ -1151,8 +1145,9 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     ``from . import list``, which names the models of the module ``list`` (``list.Pop``), hides the builtin from the
     whole module. Such an import takes the name the module's resolver gives it once the builtin holds its own name
     (``list_1``), as module imports whose names clash with other names do, and every ``list.X`` the module writes
-    follows. A name is a builtin by the static table of the target (``PYTHON_BUILTIN_TYPE_NAMES``), and the module
-    writes it bare when a rendered model loads it other than as the module of an attribute. The class of an enum
+    follows. A name is a builtin by the static table of every target (row ``legacy-builtins-of-any-target``), and the
+    module writes it bare when a rendered model names it other than as the module of an attribute, a store or a name a
+    function of a custom template binds included (row ``legacy-flat-bare-loads``). The class of an enum
     member literal is written before (``import_enum_member_literal_classes``), so a binding it names keeps its name.
     A package's own submodule keeps its name too: importing it binds the name in the package whatever the import
     is named.
@@ -1160,11 +1155,13 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     references = [
         data_type for model in ctx.models for data_type in _named_data_types(model) if data_type.reference is not None
     ]
+    target = parser.target_python_version.version_key
     if not (
         bindings := {
             binding
             for data_type in references
-            if (binding := _module_binding(data_type.alias)) in PYTHON_BUILTIN_TYPE_NAMES
+            if (binding := _module_binding(data_type.alias)) is not None
+            and is_builtin_type_name(binding, target, rule="legacy-builtins-of-any-target")
         }
     ):
         return
@@ -1187,7 +1184,12 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         return
     ledger = parser._import_ledger  # noqa: SLF001
     aliases: dict[str, str] = {}
-    for binding in sorted(_bare_name_loads(ctx.models, shadowing)):
+    written = {
+        name
+        for model in ctx.models
+        for name in _bare_loads_of(model.render(), shadowing, rule="legacy-flat-bare-loads")
+    }
+    for binding in sorted(written):
         reference = held[binding]
         ledger.release_names(ctx.imports, resolver, {binding})
         ledger.add_name(ctx.imports, resolver, get_special_path("builtin", [binding]), binding)
@@ -1237,10 +1239,15 @@ def _alias_builtins_hidden_by_submodules(
     ``app/list.py`` binds ``list`` in ``app/__init__.py`` once anything imports it, whatever the import is named, so
     ``list[str]`` there would subscript the module. The package imports the builtin as ``list_aliased``, the alias
     form of field-name bindings, and every bare ``list`` its models and module code write follows; ``list.Pop``
-    names the submodule and keeps its name. A builtin is a name of the static table of the target
-    (``PYTHON_BUILTIN_TYPE_NAMES``); the output writes a bare load of one for nothing but the builtin.
+    names the submodule and keeps its name. A builtin is a name of the static table of every target (row
+    ``legacy-builtins-of-any-target``); the output writes a bare load of one for nothing but the builtin.
     """
-    if not (hidden := PYTHON_BUILTIN_TYPE_NAMES.intersection(submodule_names)):
+    target = parser.target_python_version.version_key
+    if not (
+        hidden := {
+            name for name in submodule_names if is_builtin_type_name(name, target, rule="legacy-builtins-of-any-target")
+        }
+    ):
         return
     loads = {model: found for model in ctx.models if (found := _bare_loads_of(model.render(), hidden))}
     module_code = parser.data_model_type.render_module_code(ctx.models)
@@ -1384,7 +1391,7 @@ def record_model_placement(
         or (
             parser.collapse_root_models
             and any(
-                id(model.reference) in parser.typed_nullable_map_reference_ids
+                model_key_of(model.reference) in parser.typed_nullable_map_reference_ids
                 for models in placement.values()
                 for model in models
             )

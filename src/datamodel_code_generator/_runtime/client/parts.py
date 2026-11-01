@@ -8,30 +8,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import media_range, normalized
+from ..model_codecs.media import LexicalKind, media_range, normalized
 from .media import most_specific, with_charset
 
 if TYPE_CHECKING:
-    from typing import Any, Protocol
-
     from ..model_codecs.parameters import ParameterPlan
-
-    class PartCodec(Protocol):
-        """The codec of a sent member's values, as the generated operation registry binds it."""
-
-        def dump(self, value: Any) -> object:
-            """Return the JSON value of a value."""
-            ...
-
-        @property
-        def errors(self) -> tuple[type[Exception], ...]:
-            """Return the failures of the codec's backend."""
-            ...
+    from .operations import OutboundModelCodec
 
 
 __all__ = ("MEDIA_OUTSIDE_ENCODING", "PartKind", "PartPlan")
 
-PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
+PartKind: TypeAlias = Literal[LexicalKind, "json"]
 MEDIA_OUTSIDE_ENCODING: Final = "A part's media type must fall within its member's encoding"
 
 
@@ -53,7 +40,7 @@ class PartPlan:
         kind: PartKind = "string",
         *,
         repeated: bool = False,
-        codec: PartCodec | None = None,
+        codec: OutboundModelCodec | None = None,
         content_types: tuple[str, ...] = (),
         style: ParameterPlan | None = None,
     ) -> None:

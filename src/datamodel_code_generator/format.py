@@ -860,7 +860,9 @@ class CodeFormatter:
             return str(ruff_in_venv)
         if ruff_path := shutil.which("ruff"):
             return ruff_path
-        msg = "Ruff executable was not found. Install it with `pip install 'datamodel-code-generator[ruff]'`."
+        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
+        msg = f"Ruff executable was not found. Install it with {install_command('ruff', prompt='')}."
         raise RuntimeError(msg)
 
     def apply_isort(self, code: str) -> str:

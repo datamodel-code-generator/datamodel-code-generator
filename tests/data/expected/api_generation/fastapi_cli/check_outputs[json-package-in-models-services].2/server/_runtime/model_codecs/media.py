@@ -15,16 +15,18 @@ from math import isfinite
 from typing import Final, Literal, TypeAlias, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import Self, TypeAliasType
+from typing_extensions import Self, TypeAliasType, TypeIs
 
 from .errors import MalformedError, ParameterEncodingError
 
 __all__ = (
     "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "LENIENT_QUOTED",
     "NOT_MODIFIED",
     "NO_CONTENT",
     "OK",
+    "QUOTED",
     "REDIRECT_STATUSES",
     "STATUSES",
     "SUCCESS_STATUSES",
@@ -32,12 +34,14 @@ __all__ = (
     "TCHARS",
     "TOKEN",
     "FieldPlan",
+    "JSONKind",
     "JSONScalar",
     "JSONValue",
     "LexicalKind",
     "MediaKind",
     "MediaOrder",
     "Unparsed",
+    "ascii_digits",
     "bodyless",
     "charset",
     "declaring",
@@ -47,7 +51,10 @@ __all__ = (
     "essence",
     "finite",
     "form_encode",
+    "form_pairs",
     "json_bytes",
+    "json_integer",
+    "json_number",
     "json_text",
     "json_value",
     "lexical",
@@ -63,11 +70,13 @@ __all__ = (
     "split_form",
     "status_key",
     "typed",
+    "unquoted",
 )
 
 JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
 JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
+JSONKind = Literal["object", "array", "string", "number", "boolean"]
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
 MediaOrder: TypeAlias = Literal["specific", "declared"]
@@ -75,6 +84,11 @@ T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
+QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
+LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
+"""A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
+quote or a backslash, and any escaped one but a line feed, between double quotes. Row `legacy-lenient-quoted-string`: a
+cache helper reads Cache-Control with it too."""
 STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)
@@ -85,10 +99,7 @@ NO_CONTENT: Final = 204
 NOT_MODIFIED: Final = 304
 BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, NOT_MODIFIED})
 _MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{TCHARS})/(?P<subtype>{TCHARS})[ \t]*")
-_PARAMETER: Final = re.compile(
-    rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|"
-    r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
-)
+_PARAMETER: Final = re.compile(rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|{QUOTED})[ \t]*")
 _MEDIA_ERRORS: Final = (
     "A media type must be a token/token essence",
     "A media type parameter must be a token=value pair",
@@ -96,6 +107,7 @@ _MEDIA_ERRORS: Final = (
 _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
+_ESCAPED: Final = re.compile(r"\\(.)")
 _FORM_SAFE: Final = "*-._"
 _SCALARS: Final = frozenset({bool, int, float, str, type(None)})
 
@@ -106,6 +118,7 @@ _CIRCULAR: Final = "A wire value must not refer to itself"
 _NON_FINITE: Final = "A wire number must be finite"
 _TOO_LARGE: Final = "A wire integer must not exceed the interpreter's decimal conversion limit"
 _VALUE_ERRORS: Final = (("Circular reference", _CIRCULAR), ("Out of range float", _NON_FINITE))
+_JSON_ERRORS: Final = (RecursionError, TypeError, ValueError)
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,21 +130,31 @@ class FieldPlan:
     repeated: bool = False
 
 
-def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> str:
+def json_text(
+    value: object,
+    *,
+    ascii_only: bool = False,
+    sort_keys: bool = False,
+    errors: Literal["runtime", "legacy-python-json-errors"] = "runtime",
+) -> str:
     """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
 
     The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
     reference, a non-finite number, an integer over the interpreter's decimal conversion limit, or a value nested
-    beyond the recursion limit, and TypeError for a value or key that is not JSON.
+    beyond the recursion limit, and TypeError for a value or key that is not JSON. `errors="legacy-python-json-errors"`
+    lets the standard library's errors through with its messages, as a server writes a body without a model.
     """
+    caught = _JSON_ERRORS if errors == "runtime" else ()
     try:
         return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
-    except RecursionError:
-        raise ValueError(_NESTING) from None
-    except TypeError:
-        raise TypeError(_NOT_JSON) from None
-    except ValueError as error:
-        message = next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+    except caught as error:
+        if isinstance(error, TypeError):
+            raise TypeError(_NOT_JSON) from None
+        message = (
+            _NESTING
+            if isinstance(error, RecursionError)
+            else next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+        )
         raise ValueError(message) from None
 
 
@@ -147,9 +170,26 @@ def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = Fal
         raise ValueError(_SURROGATES) from None
 
 
-def json_value(content: str | bytes) -> JSONValue:
-    """Parse ordinary JSON into its builtin values without model validation."""
-    return cast("JSONValue", json.loads(content))
+def json_value(
+    content: str | bytes,
+    *,
+    constants: Literal["accept", "refuse"] = "accept",
+    floats: Literal["float", "decimal"] = "float",
+) -> JSONValue:
+    """Parse ordinary JSON into its builtin values without model validation.
+
+    `constants="refuse"` raises ValueError for NaN and the infinities, which a saved value could not hold (`int` of
+    their names refuses them); `floats="decimal"` reads a number with a fraction or an exponent as the Decimal its
+    text spells, where a float may have rounded it.
+    """
+    return cast(
+        "JSONValue",
+        json.loads(
+            content,
+            parse_constant=int if constants == "refuse" else None,
+            parse_float=Decimal if floats == "decimal" else None,
+        ),
+    )
 
 
 class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
@@ -224,6 +264,11 @@ def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[st
         parameters.append((parameter["name"].lower(), parameter["value"]))
         position = parameter.end()
     return essence["type"].lower(), essence["subtype"].lower(), parameters
+
+
+def unquoted(value: str) -> str:
+    """Return the text of a parameter value: a quoted string without its quotes and escapes, a token as written."""
+    return _ESCAPED.sub(r"\1", value[1:-1]) if value.startswith('"') else value
 
 
 def normalize_media_type(value: str) -> str:
@@ -340,6 +385,16 @@ def finite(value: object) -> None:
             pass
 
 
+def json_integer(value: object) -> TypeIs[int]:
+    """Return whether a value is an integer as JSON reads one: an int that is not a bool."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def json_number(value: object) -> TypeIs[int | float]:
+    """Return whether a value is a number as JSON reads one: an int or a float that is not a bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def lexical(value: object, kind: LexicalKind) -> str:
     """Format one native JSON scalar for a parameter or form field."""
     if (text := _lexical_text(value, kind)) is None:
@@ -383,6 +438,11 @@ def _integer_text(value: int) -> str:
     except ValueError:
         msg = "An integer exceeds the interpreter's decimal conversion limit"
         raise ParameterEncodingError(msg) from None
+
+
+def ascii_digits(text: str) -> bool:
+    """Return whether text is one or more ASCII decimal digits, the DIGIT run of HTTP counts and delays."""
+    return text.isascii() and text.isdigit()
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:
@@ -462,14 +522,18 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
     return tuple((name, value) for name, _, value in (part.partition(b"=") for part in raw.split(b"&") if part))
 
 
+def form_pairs(raw: bytes) -> tuple[tuple[str, str], ...]:
+    """Split URL-encoded bytes into ordered name/value pairs, each percent-decoded with a plus sign as a space."""
+    return tuple((percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(raw))
+
+
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> JSONValue:
     """Split URL-encoded text for native model conversion: repeated fields as lists, a single value by its last."""
     declared = {field.name: field for field in fields}
     result: dict[str, JSONValue] = {}
-    for raw_name, raw_value in split_form(raw):
-        name = percent_decode(raw_name, plus=True)
+    for name, text in form_pairs(raw):
         field = declared.get(name, additional)
-        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
+        value = typed(text, "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)

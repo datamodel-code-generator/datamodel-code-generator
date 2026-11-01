@@ -12,7 +12,9 @@ from stat import S_ISDIR
 from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, same_file
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -83,15 +85,11 @@ _current_collector: ContextVar[_CollectedGeneration | None] = ContextVar("watch_
 _MISSING_PATH_FINGERPRINT = (-1, -1, -1)
 
 
-def _lexical_path(path: Path) -> Path:
-    return Path(os.path.abspath(path.expanduser()))  # noqa: PTH100
-
-
 def _path_variants(path: Path) -> frozenset[Path]:
     """Keep lexical and resolved locations so symlink retargeting remains observable."""
-    lexical_path = _lexical_path(path)
+    lexical_path = lexical(path)
     try:
-        parent_resolved_path = lexical_path.parent.resolve(strict=False) / lexical_path.name
+        parent_resolved_path = concrete(lexical_path)
         resolved_path = lexical_path.resolve(strict=False)
     except (OSError, ValueError):
         return frozenset({lexical_path})
@@ -101,7 +99,7 @@ def _path_variants(path: Path) -> frozenset[Path]:
 def _symlink_event_paths(path: Path) -> frozenset[Path]:
     """Return symlink ancestors and parents whose events can repoint a lexical path."""
     event_paths: set[Path] = set()
-    current = _lexical_path(path)
+    current = lexical(path)
     while current != current.parent:
         try:
             if current.is_symlink():
@@ -116,7 +114,7 @@ def _symlink_event_paths(path: Path) -> frozenset[Path]:
 
 
 def _resolved_path(path: Path) -> Path:
-    return _lexical_path(path).resolve(strict=False)
+    return lexical(path).resolve(strict=False)
 
 
 def _path_fingerprint(path: Path) -> tuple[int, int, int]:
@@ -138,17 +136,15 @@ def _logical_working_directory() -> Path:
     working_directory = Path.cwd()
     logical_working_directory = Path(os.environ.get("PWD", working_directory)).expanduser()
     try:
-        return logical_working_directory if logical_working_directory.samefile(working_directory) else working_directory
+        return (
+            logical_working_directory if same_file(logical_working_directory, working_directory) else working_directory
+        )
     except OSError:
         return working_directory
 
 
 def _nearest_existing_directory(path: Path) -> Path:
-    while not path.is_dir():
-        if path == path.parent:
-            return path
-        path = path.parent
-    return path
+    return existing_ancestor(path)
 
 
 def _watch_roots(
@@ -375,31 +371,29 @@ class WatchDependencies(_Weakrefable):
         # A completed generation must acknowledge the inputs it observed, not later edits.
         if self._polling_fingerprints_enabled:
             collected.polling_fingerprints = {path: _path_fingerprint(path) for path in self._snapshot.files}
-        token = _current_collector.set(collected)
-        try:
-            yield collected
-        except BaseException:
-            self._fail(collected)
-            raise
-        else:
-            with self._lock:
-                if collected.failed:
-                    self._fail(collected)
-                    return
-                if self._pending_static is not None:
-                    self._static_files = self._pending_static.files
-                    self._static_directories = self._pending_static.directories
-                    self._static_symlink_events = self._pending_static.symlink_events
-                    self._outputs = self._pending_static.outputs
-                    self._pending_static = None
-                self._generation_files = collected.files
-                self._generation_symlink_events = collected.symlink_events
-                self._failed_static = None
-                self._failed_generation_files.clear()
-                self._failed_generation_symlink_events.clear()
-                self._publish()
-        finally:
-            _current_collector.reset(token)
+        with context_values({_current_collector: collected}):
+            try:
+                yield collected
+            except BaseException:
+                self._fail(collected)
+                raise
+            else:
+                with self._lock:
+                    if collected.failed:
+                        self._fail(collected)
+                        return
+                    if self._pending_static is not None:
+                        self._static_files = self._pending_static.files
+                        self._static_directories = self._pending_static.directories
+                        self._static_symlink_events = self._pending_static.symlink_events
+                        self._outputs = self._pending_static.outputs
+                        self._pending_static = None
+                    self._generation_files = collected.files
+                    self._generation_symlink_events = collected.symlink_events
+                    self._failed_static = None
+                    self._failed_generation_files.clear()
+                    self._failed_generation_symlink_events.clear()
+                    self._publish()
 
     def _apply_remote_lock_plans(self, plans: Iterable[Any]) -> tuple[tuple[Any, ...], set[Path]]:
         """Return effective lock plans and intent for the current generation attempt."""

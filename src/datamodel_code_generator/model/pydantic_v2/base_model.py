@@ -21,7 +21,11 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
+from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._graph_links import clear_parents, drop_tree
+from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._python_syntax import call_text
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -34,7 +38,9 @@ from datamodel_code_generator.imports import (
     IMPORT_DICT,
     IMPORT_UNION,
     Import,
+    _holds,
     _import_bindings,
+    _import_key,
 )
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._decisions.hashability import (
@@ -44,6 +50,8 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
+    DEFAULT_VALUE,
+    MISSING_DEFAULT,
     CallPlan,
     FieldDefault,
     FieldRenderPlan,
@@ -127,6 +135,7 @@ from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     _normalize_string,
     _normalized_safe_python_name,
+    _text_constructor_expression,
     represent_python_value,
     represent_untrusted_python_value,
 )
@@ -143,7 +152,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
     )
@@ -153,12 +162,12 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
-_ANNOTATED_CONSTRAINT_BASES: dict[tuple[str | None, str], str] = {
-    (IMPORT_CONSTR.from_, IMPORT_CONSTR.import_): "str",
-    (IMPORT_CONINT.from_, IMPORT_CONINT.import_): "int",
-    (IMPORT_CONFLOAT.from_, IMPORT_CONFLOAT.import_): "float",
-    (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): "Decimal",
-    (IMPORT_CONBYTES.from_, IMPORT_CONBYTES.import_): "bytes",
+_ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
+    _import_key(IMPORT_CONSTR): "str",
+    _import_key(IMPORT_CONINT): "int",
+    _import_key(IMPORT_CONFLOAT): "float",
+    _import_key(IMPORT_CONDECIMAL): "Decimal",
+    _import_key(IMPORT_CONBYTES): "bytes",
 }
 
 
@@ -303,8 +312,6 @@ _SERIALIZATION_ALIAS_FROM_ALIAS = Why(
 )
 _JSON_SCHEMA_EXTRA = Why(RuleId("D11.pydantic.json-schema-extra"))
 _NULL_DEFAULT = Why(RuleId("D4.default.pydantic-null-type"), keyword="default")
-_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
-_MISSING_DEFAULT = Why(RuleId("D4.default.missing-sentinel"), option="--use-missing-sentinel")
 _LEGACY_PYDANTIC_EXTRA_TEMPLATE_PATTERN = re.compile(
     r"{%-?\s*(?:if|elif)\s+(?:not\s+)?field\.use_pydantic_extra_annotation_assignment\b"
 )
@@ -427,7 +434,7 @@ def _config_dict_items(config: Any) -> list[tuple[str, Any]]:
     if not dump:
         return []
     values = dump(exclude_unset=True)
-    return list(values.items()) if isinstance(values, dict) else []
+    return list(as_mapping(values).items())
 
 
 def _decode_legacy_quoted_config_string(value: str) -> str:
@@ -553,7 +560,7 @@ def _compiled_python_pattern(
     if compiled := prepared.get(pattern):
         return compiled
     # Pydantic >=2.8 uses Python's engine for compiled patterns, even without an enclosing model's config.
-    compiled = PythonRuntimeExpression.from_import_call(_IMPORT_RE_COMPILE, repr(pattern), value=pattern)
+    compiled = _text_constructor_expression(_IMPORT_RE_COMPILE, pattern)
     prepared[pattern] = compiled
     return compiled
 
@@ -605,7 +612,7 @@ def _copy_alias_data_type(
         else None
     )
     base = (
-        _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
+        _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
         if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
         else None
     )
@@ -762,7 +769,7 @@ class DataModelField(_PydanticBaseDataModelField):
             minimum = REQUIREMENTS["pydantic.encoded_bytes_length"].minimum
             messages.append(
                 f"Pydantic before {minimum} does not check {', '.join(lengths)} on "
-                f"base64 text, so {self._constraint_owner} checks {'it' if len(lengths) == 1 else 'them'} only on "
+                f"base64 text, so {self._constraint_owner} checks {for_count(len(lengths), 'it', 'them')} only on "
                 f"Pydantic {minimum} or later."
             )
         return " ".join(message for message in messages if message) or None
@@ -851,7 +858,7 @@ class DataModelField(_PydanticBaseDataModelField):
         ):
             return self._field_render_plan(
                 None,
-                FieldDefault(self.default, missing, _MISSING_DEFAULT if missing else _DEFAULT),
+                FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE),
                 has_default_factory_in_field=False,
                 omitted=tuple(self._warned_omissions()[0]),
             )
@@ -1512,9 +1519,7 @@ def _validated_value_hashes(field: DataModelFieldBase) -> bool:
 def _value_hash_facts(data_type: DataType) -> ValueHashFacts:
     """Read the facts of a data type that tell whether the values Pydantic validates for it hash as builtin values."""
     return ValueHashFacts(
-        container=bool(
-            data_type.is_list or data_type.is_sequence or data_type.is_dict or data_type.is_mapping or data_type.is_set
-        ),
+        container=data_type in UNHASHABLE_CONTAINERS,
         opaque=bool(
             data_type.reference
             or data_type.data_types
@@ -2204,9 +2209,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if (dict_key := data_type.dict_key) is not None and (
             (capability := cls._TYPED_EXTRA_DICT_KEY_CAPABILITY) is None or not capability(dict_key)
         ):
-            for nested_data_type in dict_key.all_data_types:
-                nested_data_type.unregister_reference()
-                nested_data_type.parent = None
+            drop_tree(dict_key)
+            clear_parents(dict_key)
             data_type.dict_key = None
 
         return field_model(
@@ -2429,7 +2433,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         imports: Imports,
     ) -> None:
         """Bind external validators consistently across every model in a module."""
-        if IMPORT_FIELD_VALIDATOR.import_ not in imports.get(IMPORT_FIELD_VALIDATOR.from_, ()):
+        if not _holds(imports, IMPORT_FIELD_VALIDATOR):
             return
         models = tuple(models)
         validator_models = [
@@ -2447,7 +2451,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             for import_ in model_imports[model]
             if import_ not in validator_imports
         )
-        validator_import_keys = {(import_.from_, import_.import_) for import_ in validator_imports}
+        validator_import_keys = set(map(_import_key, validator_imports))
         reserved_names.update(binding for key, binding in _import_bindings(imports) if key not in validator_import_keys)
         from datamodel_code_generator.validators import _reserve_validator_name  # noqa: PLC0415
 

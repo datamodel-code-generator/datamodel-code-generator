@@ -9,10 +9,14 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._registry_render import (
-    _render_registry_json,
+    _RegistryPage,
+    _render_registry,
+    _render_registry_entries_json,
     _render_registry_markdown,
     _render_registry_table,
+    _render_release_notes,
 )
 
 if TYPE_CHECKING:
@@ -276,11 +280,8 @@ _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli
 @contextmanager
 def cli_migration_warning_scope() -> Generator[None]:
     """Deduplicate migration notices within one CLI invocation, including batch/watch."""
-    token = _CLI_MIGRATION_WARNINGS.set(set())
-    try:
+    with context_values({_CLI_MIGRATION_WARNINGS: set()}):
         yield
-    finally:
-        _CLI_MIGRATION_WARNINGS.reset(token)
 
 
 @lru_cache(maxsize=16)
@@ -345,7 +346,7 @@ def deprecation_as_dict(deprecation: Deprecation) -> dict[str, str | None]:
 
 def render_deprecations_json() -> str:
     """Render all deprecations as JSON."""
-    return _render_registry_json(deprecation_as_dict(deprecation) for deprecation in iter_deprecations())
+    return _render_registry_entries_json(iter_deprecations())
 
 
 def _cells(item: Deprecation) -> list[str]:
@@ -374,32 +375,29 @@ def _details(item: Deprecation) -> list[tuple[str, str | None]]:
     ]
 
 
+_PAGE = _RegistryPage(
+    title="Deprecations",
+    script="build_deprecation_docs.py",
+    intro="This page lists deprecations and scheduled breaking changes.",
+    columns=_COLUMNS,
+    cells=_cells,
+    details=_details,
+)
+
+
 def render_deprecations_table() -> str:
     """Render all deprecations as a plain text table."""
-    return _render_registry_table([list(_COLUMNS), *map(_cells, iter_deprecations())])
+    return _render_registry_table(iter_deprecations(), _PAGE)
 
 
 def render_deprecations_markdown(*, include_header: bool = True) -> str:
     """Render all deprecations as Markdown."""
-    return _render_registry_markdown(
-        iter_deprecations(),
-        title="Deprecations",
-        script="build_deprecation_docs.py",
-        intro="This page lists deprecations and scheduled breaking changes.",
-        columns=_COLUMNS,
-        cells=_cells,
-        details=_details,
-        include_header=include_header,
-    )
+    return _render_registry_markdown(iter_deprecations(), _PAGE, include_header=include_header)
 
 
 def render_deprecations(format_: DeprecationFormat) -> str:
     """Render deprecations in the requested format."""
-    if format_ == "json":
-        return render_deprecations_json() + "\n"
-    if format_ == "markdown":
-        return render_deprecations_markdown()
-    return render_deprecations_table()
+    return _render_registry(iter_deprecations(), _PAGE, format_)
 
 
 def render_release_note_deprecations(version: str) -> str:
@@ -417,28 +415,25 @@ def render_release_note_deprecations(version: str) -> str:
         if item.removal_version == version:
             removals.append(item)
 
-    lines: list[str] = []
-    if warning_started:
-        lines.extend(["## Deprecations", ""])
-        lines.extend(
-            f"- `{item.target}` now emits `{item.warning_category}`. Planned removal: {_format_removal_version(item)}. "
-            f"{item.message}"
-            for item in warning_started
-        )
-        lines.append("")
-
-    if scheduled_changes:
-        lines.extend(["## Scheduled Breaking Changes", ""])
-        lines.extend(
-            f"- `{item.target}` is registered without a runtime warning. "
-            f"Planned removal: {_format_removal_version(item)}. {item.message}"
-            for item in scheduled_changes
-        )
-        lines.append("")
-
-    if removals:
-        lines.extend(["## Removed Deprecated Features", ""])
-        lines.extend(f"- `{item.target}` was scheduled for removal in {version}. {item.message}" for item in removals)
-        lines.append("")
-
-    return "\n".join(lines)
+    return _render_release_notes((
+        (
+            "Deprecations",
+            (
+                f"`{item.target}` now emits `{item.warning_category}`. "
+                f"Planned removal: {_format_removal_version(item)}. {item.message}"
+                for item in warning_started
+            ),
+        ),
+        (
+            "Scheduled Breaking Changes",
+            (
+                f"`{item.target}` is registered without a runtime warning. "
+                f"Planned removal: {_format_removal_version(item)}. {item.message}"
+                for item in scheduled_changes
+            ),
+        ),
+        (
+            "Removed Deprecated Features",
+            (f"`{item.target}` was scheduled for removal in {version}. {item.message}" for item in removals),
+        ),
+    ))

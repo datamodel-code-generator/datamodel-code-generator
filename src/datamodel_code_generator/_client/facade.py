@@ -47,11 +47,6 @@ class Subclass:
     attributes: tuple[Attribute, ...]
 
 
-def statement(module: str, names: Iterable[str]) -> str:
-    """Return one import statement of names from a module."""
-    return f"from {module} import {', '.join(names)}"
-
-
 def name_set(values: Iterable[str]) -> str:
     """Return the set literal of names, in the order given."""
     return set_display(map(repr, values))

@@ -15,12 +15,12 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, overload
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_refusal
-from .options import HelperLimits, PollOptions, StepLock, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, PollOptions, StepHandle, StepLock, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import (
     BodySelector,
@@ -30,13 +30,12 @@ from .records import (
     canonical_json,
     plain_copy,
 )
-from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
-from .values import MISSING, absence, read_expiry, required, resolve
+from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
+from .values import MISSING, accessed, read_expiry, required
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
@@ -160,7 +159,7 @@ class PollingPlan(Generic[T, P, C]):
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
-        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes, written_names  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         phases = {
             canonical_json(value): phase
@@ -177,7 +176,8 @@ class PollingPlan(Generic[T, P, C]):
         fetched = (
             None if fetch is None else targeted_writes(fetch, (binding.written for binding in self.fetch_bindings))
         )
-        others = (*(() if fetched is None else (fetched,)), *(() if self.cancel is None else (self.cancel.targeted,)))
+        cancel = self.cancel
+        headers, queries = written_names(children=(polled, fetched, None if cancel is None else cancel.targeted))
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(
             self,
@@ -186,8 +186,8 @@ class PollingPlan(Generic[T, P, C]):
         )
         object.__setattr__(self, "polled", polled)
         object.__setattr__(self, "fetched", fetched)
-        object.__setattr__(self, "headers", polled.headers.union(*(item.headers for item in others)))
-        object.__setattr__(self, "queries", polled.queries.union(*(item.queries for item in others)))
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -231,16 +231,6 @@ def _limits(
     if ((allowed := limits.max_wait) is not None and interval > allowed) or (total is not None and interval >= total):
         raise configuration_error(plan.helper_id, ("poll_options", "interval"))
     return limits
-
-
-def _result(
-    read: Callable[[V], T | None], selector: BodySelector | None, data: V, wire: JSONValue, refuse: Refuse
-) -> T:
-    """Return the result a response carries, refusing a missing or null one before its accessor reads it."""
-    assert selector is not None
-    if (found := resolve(wire, selector.pointer)) is MISSING or found is None or (value := read(data)) is None:
-        raise refuse(selector, absence(found))
-    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -387,7 +377,7 @@ class _Operation(StepLock, Generic[T, P]):
         if (allowed := limits.max_wait) is not None and required > allowed:
             raise self._waited(required, allowed, "wait")
         waiter = core.waiting(limits.options, self._session, call.operation_id)
-        if (remaining := waiter.remaining()) is not None and required >= remaining:
+        if (remaining := waiter.cut_short(required)) is not None:
             raise self._waited(required, remaining, "deadline")
         return waiter
 
@@ -443,7 +433,8 @@ class _Operation(StepLock, Generic[T, P]):
             return _Step(_Phase.PENDING, not_before, bound=bound, seed=seed, cancel=cancel, expires_at=expires_at)
         if status in plan.immediate_statuses:
             assert plan.immediate is not None
-            result = _result(plan.immediate, plan.immediate_selector, data, wire, refuse)
+            assert plan.immediate_selector is not None
+            result = accessed(plan.immediate, plan.immediate_selector, data, wire, refuse)
             return _Step(_Phase.SUCCEEDED, not_before, result=result)
         raise refuse(StatusSelector(), "value")
 
@@ -480,7 +471,8 @@ class _Operation(StepLock, Generic[T, P]):
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         if (inline := plan.inline) is not None:
-            return (), _result(inline, plan.inline_selector, data, wire, refuse)
+            assert plan.inline_selector is not None
+            return (), accessed(inline, plan.inline_selector, data, wire, refuse)
         if (fetched := plan.fetched) is not None:
             return targeted_values(fetched, plan.fetch_bindings, wire, info, refuse, self._seed), MISSING
         return (), cast("T", None)
@@ -592,7 +584,7 @@ def _kept(data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url:
     return data
 
 
-class LroHandle(_Operation[T, P]):
+class LroHandle(_Operation[T, P], StepHandle):
     """A long-running operation a helper created: `status` polls it once, and `wait` polls until it settles.
 
     `close` only stops local polling; the remote operation goes on. Polling from two threads at once raises
@@ -701,18 +693,8 @@ class LroHandle(_Operation[T, P]):
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
 
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
-
-class AsyncLroHandle(_Operation[T, P]):
+class AsyncLroHandle(_Operation[T, P], AsyncStepHandle):
     """A long-running operation an asyncio helper created: `status` polls it once, and `wait` until it settles.
 
     `aclose` only stops local polling; the remote operation goes on. Polling from two tasks at once raises
@@ -821,16 +803,6 @@ class AsyncLroHandle(_Operation[T, P]):
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
 
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
-
 
 def _restored(
     plan: PollingPlan[T, P, C],
@@ -844,8 +816,7 @@ def _restored(
     past the server's expiry by the client's wall clock.
     """
     handle = make(new_session(limits))
-    decoded_state(plan.helper_id, state, handle._restore)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    unexpired(plan.helper_id, handle._expires_at, limits.clock)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    restored(plan.helper_id, state, handle._restore, lambda _: handle._expires_at, limits.clock)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 

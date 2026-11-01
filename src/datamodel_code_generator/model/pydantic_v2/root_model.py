@@ -10,6 +10,8 @@ from typing import Any, ClassVar
 from typing_extensions import override
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, SETS
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.pydantic_v2.base_model import (
@@ -275,7 +277,7 @@ class RootModel(BaseModel):
     def _set_sequence_template_data(self, item_type: str, slice_type: str) -> None:
         """Store the sequence base class, item type and slice type the template writes."""
         for key, value in zip(
-            _SEQUENCE_TEMPLATE_DATA_KEYS, (f"Sequence[{item_type}]", item_type, slice_type), strict=True
+            _SEQUENCE_TEMPLATE_DATA_KEYS, (subscript_text("Sequence", (item_type,)), item_type, slice_type), strict=True
         ):
             self._set_internal_template_data(key, value)
 
@@ -285,9 +287,9 @@ class RootModel(BaseModel):
         if _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY not in self._internal_template_data:
             return
         root_type = self.fields[0].data_type
-        if not (root_type.is_list or root_type.is_sequence or root_type.is_set):
+        if root_type not in ITEM_CONTAINERS:
             root_type = root_type.data_types[0]
-        if root_type.is_set:
+        if root_type in SETS:
             for import_ in _sequence_imports(self._internal_template_data[_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY]):
                 self._additional_imports.remove(import_)
             for key in _SEQUENCE_TEMPLATE_DATA_KEYS:
@@ -299,7 +301,7 @@ class RootModel(BaseModel):
         slice_type = root_type.type_hint
         _, bracket, item_hint = slice_type.partition("[")
         item_type = item_hint[:-1] if bracket else "Any"
-        self._set_sequence_template_data(item_type, slice_type if bracket else f"{slice_type}[{item_type}]")
+        self._set_sequence_template_data(item_type, slice_type if bracket else subscript_text(slice_type, (item_type,)))
 
     @override
     def render(self, *, class_name: str | None = None) -> str:

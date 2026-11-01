@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, NewType, TypeAlias, final
 
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
@@ -96,8 +97,8 @@ def position_step(data_type: DataType) -> PositionStep:
         return "tuple"
     if len(data_type.data_types) > 1:
         return "member"
-    if data_type.is_dict or data_type.is_mapping:
+    if data_type in MAPPINGS:
         return "value"
-    if data_type.is_list or data_type.is_set or data_type.is_frozen_set or data_type.is_sequence:
+    if data_type in ITEM_CONTAINERS:
         return "item"
     return "member"

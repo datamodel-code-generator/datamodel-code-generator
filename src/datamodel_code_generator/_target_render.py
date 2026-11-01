@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from pathlib import Path, PurePosixPath
+from dataclasses import dataclass, fields, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable
+
+    from _typeshed import DataclassInstance
 
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
-RUNTIME: Final = Path(__file__).parent / "_runtime"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
     ("pydantic.NameEmail", "email-validator>=2.3"),
@@ -60,21 +61,56 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def runtime_sources(modules: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
-    """Yield the declared runtime modules and their packages' initializers, in ascending path order.
-
-    A target declares every module its capabilities need; the copy never follows the modules' imports.
-    """
-    declared = set(modules)
-    packages = {(PurePosixPath(module).parent / "__init__.py").as_posix() for module in declared}
-    for path in sorted({"__init__.py", *packages, *declared}):
-        yield PurePosixPath("_runtime", path), (RUNTIME / path).read_text(encoding="utf-8")
-
-
 def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
     """Return the FieldPlan constructor of one form or object member, naming it through `local`."""
     repeated = ", repeated=True" if field.repeated else ""
     return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
+
+
+def runtime_record(
+    local: Callable[[str, str], str], record: DataclassInstance, spelled: Callable[[str, Any], str] | None = None
+) -> str:
+    """Return the constructor of a runtime record, naming its class through `local`; defaults are left out.
+
+    Each field the constructor takes is passed by keyword unless it holds its default, spelled by `spelled` when given,
+    else a runtime record by its own constructor, a tuple item by item, and any other value by its repr. The class is
+    named from the module of the package's runtime copy that defines it.
+    """
+    arguments = _record_arguments(local, record, spelled)
+    return call_text(_record_class(local, record), (keyword_argument(item.keyword, item.value) for item in arguments))
+
+
+def record_plan(
+    local: Callable[[str, str], str],
+    name: str,
+    annotation: str,
+    record: DataclassInstance,
+    spelled: Callable[[str, Any], str] | None = None,
+) -> Plan:
+    """Return the module-level plan constant `name` holding a runtime record, its constructor as `runtime_record`'s."""
+    arguments = _record_arguments(local, record, spelled)
+    return Plan(name, annotation, _record_class(local, record), arguments)
+
+
+def _record_arguments(
+    local: Callable[[str, str], str], record: DataclassInstance, spelled: Callable[[str, Any], str] | None
+) -> tuple[Keyword, ...]:
+    return tuple(
+        Keyword(item.name, _record_value(local, value) if spelled is None else spelled(item.name, value))
+        for item in fields(record)
+        if item.init and (value := getattr(record, item.name)) != item.default
+    )
+
+
+def _record_class(local: Callable[[str, str], str], record: DataclassInstance) -> str:
+    kind = type(record)
+    return local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__)
+
+
+def _record_value(local: Callable[[str, str], str], value: object) -> str:
+    if type(value) is tuple:
+        return tuple_display(_record_value(local, item) for item in value)
+    return runtime_record(local, value) if is_dataclass(value) and not isinstance(value, type) else repr(value)
 
 
 def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str:
@@ -88,12 +124,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
                 return field_plan(local, value)
         return repr(value)
 
-    entries = [
-        keyword_argument(item.name, spelled(item.name, value))
-        for item in fields(plan)
-        if (value := getattr(plan, item.name)) != item.default
-    ]
-    return call_text(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
+    return runtime_record(local, plan, spelled)
 
 
 def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
@@ -128,8 +159,14 @@ def pydantic_target_problem(
             f"--use-missing-sentinel{reason} "
             "so that the models import MISSING from pydantic"
         )
-    allowed = " or ".join(
-        repr(item.value) for item in TargetPydanticVersion if pydantic_target_meets("pydantic.api_target_runtime", item)
+    allowed = english_list(
+        (
+            repr(item.value)
+            for item in TargetPydanticVersion
+            if pydantic_target_meets("pydantic.api_target_runtime", item)
+        ),
+        "or",
+        "each",
     )
     return f"needs a target pydantic version of {PYDANTIC_TARGET_MINIMUM} or later; leave it unset or use {allowed}"
 

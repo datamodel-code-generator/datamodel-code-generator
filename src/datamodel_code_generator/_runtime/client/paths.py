@@ -5,14 +5,16 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Final
 
+from ..model_codecs.parameters import PLACEHOLDER
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 __all__ = ("PLACEHOLDER", "dot_segment", "dotted_route", "filled", "path_segments")
 
-PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-_DOT_SEGMENT: Final = re.compile(r"(?:\.|%2[Ee]){1,2}")
-_DOTTED_ROUTE: Final = re.compile(r"/(?:\.|%2[Ee]){1,2}(?=/|$)")
+_DOTS: Final = r"(?:\.|%2[Ee]){1,2}"
+_DOT_SEGMENT: Final = re.compile(_DOTS)
+_DOTTED_ROUTE: Final = re.compile(rf"/{_DOTS}(?=/|$)")
 
 
 def path_segments(template: str) -> tuple[tuple[str, tuple[str, ...]], ...]:

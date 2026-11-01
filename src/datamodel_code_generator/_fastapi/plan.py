@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
     EXPORTED_NAMES,
@@ -45,7 +46,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalized,
 )
 from datamodel_code_generator._target_contract import (
-    LOCATIONS,
     WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
@@ -57,13 +57,25 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralSequence,
     LiteralType,
+    Requirement,
     UnionType,
+    api_key_place,
     fact,
+    http_scheme,
+    is_required,
     label,
-    operation_literal,
+    members_by_consumer,
+    operation_schemes,
+    parameter_place,
+    scheme_catalogues,
+    security_requirements,
+    symbols_by_id,
     type_uses,
+    unresolved_reference,
+    uses_by_id,
+    wrapped_facts,
 )
-from datamodel_code_generator._target_naming import NameScope, windows_device
+from datamodel_code_generator._target_naming import NameScope, fold_key, windows_device
 from datamodel_code_generator._target_operations import (
     SERVER,
     UNSPELLABLE,
@@ -88,7 +100,6 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
-from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -104,7 +115,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
-        FieldUseBinding,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
@@ -124,7 +134,6 @@ ArgumentLocation: TypeAlias = Literal[
 Transport: TypeAlias = Literal["fastapi_native", "adapter", "raw_request"]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
 SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "digest", "oauth2", "openid", "custom"]
-Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
@@ -181,7 +190,6 @@ _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
 _CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
 _FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
-_API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
 _INFO: Final = (
     ("info", "title", "title", "text"),
     ("info", "summary", "summary", "text"),
@@ -435,12 +443,12 @@ class ServerPlan:
 
 def _file_stem_conflict(stem: str, target_python_version: PythonVersion) -> bool:
     """Return whether a file stem is reserved by the package layout or by Windows device names, folded as the target."""
-    return casefold(stem, target_python_version) == "__init__" or windows_device(stem, target_python_version)
+    return fold_key(stem, target_python_version) == "__init__" or windows_device(stem, target_python_version)
 
 
 def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnostic | None:
     """Return the problem of a declaration whose reference reaches no object, or whose document does not load."""
-    if (item := next((item for item in declaration.references if item.state != "resolved"), None)) is None:
+    if (item := unresolved_reference(declaration)) is None:
         return None
     reason = (
         "whose document could not be loaded" if item.state == "document_not_observed" else f"which reaches no {kind}"
@@ -612,22 +620,12 @@ class Planner:  # noqa: PLR0904
         self.wire = wire
         self.types = types
         self.unspelled: set[TypeUseId] = set()
-        self.uses = {use.id: use for use in request.batch.type_uses}
-        self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in request.batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
-        self.facts: dict[SymbolId, ModelFieldFacts] = {
-            member.consumer: member.model_facts
-            for member in reversed(request.batch.fields)
-            if member.model_facts is not None
-        }
+        self.uses = uses_by_id(request.batch)
+        self.symbols = symbols_by_id(request.batch)
+        self.members = members_by_consumer(request.batch)
         self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
-        self.scheme_declarations = {
-            (declaration.use_site.document, declaration.name): declaration
-            for declaration in request.batch.security_schemes
-        }
+        self.scheme_catalogues = scheme_catalogues(request.batch)
         self.schemes: dict[str, SchemeSpec] = {}
         assert request.batch.names is not None
         self.target_names = request.batch.names
@@ -820,8 +818,7 @@ class Planner:  # noqa: PLR0904
 
     def security(self, operation: OperationContract) -> SecuritySpec | None:
         """Return the operation's effective security alternatives, or None when none of them names a scheme."""
-        value = operation_literal(operation, "security")
-        if (requirements := _requirements(value)) is None:
+        if (requirements := security_requirements(operation)) is None:
             message = f"The security of {label(operation)} is not a list of security requirement objects"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
             return None
@@ -835,7 +832,7 @@ class Planner:  # noqa: PLR0904
         """Record a scheme the first time an operation requires it, or report one the document does not declare."""
         if name in self.schemes:
             return
-        if (declaration := self.scheme_declarations.get((operation.id.use_site.document, name))) is None:
+        if (declaration := operation_schemes(self.scheme_catalogues, operation).get(name)) is None:
             message = f"{label(operation)} requires the undeclared security scheme {name!r}"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
         elif (unresolved := _unresolved("F_SECURITY_INVALID", "security scheme", declaration)) is not None:
@@ -909,8 +906,7 @@ class Planner:  # noqa: PLR0904
         self, operation: OperationContract, declaration: WireDeclaration, repeated: set[str]
     ) -> ParameterSpec:
         """Decide how the server receives one effective parameter: natively when FastAPI reads its style and type."""
-        location = LOCATIONS[fact(declaration, "in")]
-        name = declaration.name or ""
+        location, name = parameter_place(declaration)
         use = self.bound(self.use(type_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)
@@ -925,7 +921,7 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
-        required = fact(declaration, "required") is True
+        required = is_required(declaration)
         spec = ParameterSpec(
             location=location,
             wire_name=name,
@@ -966,7 +962,7 @@ class Planner:  # noqa: PLR0904
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
             and self.symbols[value.symbol].kind in WRAPPER_KINDS
-            and (facts := self.facts.get(value.symbol)) is not None
+            and (facts := wrapped_facts(self.members, value.symbol)) is not None
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
@@ -982,7 +978,7 @@ class Planner:  # noqa: PLR0904
         if factory is not None and literal is None and default is Default.ABSENT:
             value = factory
         if isinstance(value, GeneratedSymbolType) and self.symbols[value.symbol].kind == "root":
-            wrapped = self.facts.get(value.symbol)
+            wrapped = wrapped_facts(self.members, value.symbol)
             return value, RootDefault(
                 value, literal
             ) if not null and wrapped is not None and wrapped.has_default else default
@@ -1032,7 +1028,7 @@ class Planner:  # noqa: PLR0904
             case GeneratedSymbolType() if (
                 value.symbol not in seen
                 and self.symbols[value.symbol].kind == "alias"
-                and (facts := self.facts.get(value.symbol)) is not None
+                and (facts := wrapped_facts(self.members, value.symbol)) is not None
                 and (plain := self.plain(value.symbol, facts, seen)) is not None
             ):
                 return plain
@@ -1083,9 +1079,9 @@ class Planner:  # noqa: PLR0904
             case GeneratedSymbolType() if (
                 value.symbol not in seen
                 and self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and value.symbol in self.facts
+                and (facts := wrapped_facts(self.members, value.symbol)) is not None
             ):
-                return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
+                return self.strict_bytes(facts.type, seen | {value.symbol})
             case _:
                 pass
         return False
@@ -1137,9 +1133,7 @@ class Planner:  # noqa: PLR0904
         media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         for item in media:
             self.bound(item.use)
-        spec = BodySpec(
-            required=fact(declaration, "required") is True, media=media, decision=Decision(transport="adapter")
-        )
+        spec = BodySpec(required=is_required(declaration), media=media, decision=Decision(transport="adapter"))
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
             return replace(spec, decision=Decision(transport="raw_request"))
         if len(media) != 1:
@@ -1509,36 +1503,16 @@ def _text(value: FrozenLiteral) -> str | None:
     return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
 
 
-def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
-    if value is None:
-        return ()
-    return _all(value.items, _requirement) if isinstance(value, LiteralSequence) else None
-
-
-def _requirement(value: FrozenLiteral) -> Requirement | None:
-    return _all(value.entries, _entry) if isinstance(value, LiteralMapping) else None
-
-
-def _entry(entry: tuple[FrozenLiteral, FrozenLiteral]) -> tuple[str, tuple[str, ...]] | None:
-    key, item = entry
-    return None if (name := _text(key)) is None or (scopes := _scopes(item)) is None else (name, scopes)
-
-
-def _scopes(value: FrozenLiteral) -> tuple[str, ...] | None:
-    return _all(value.items, _text) if isinstance(value, LiteralSequence) else None
-
-
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
-    match fact(declaration, "type"), fact(declaration, "in"), fact(declaration, "name"), fact(declaration, "scheme"):
-        case "apiKey", str() as location, str() as parameter, _ if parameter and location in _API_KEY_LOCATIONS:
-            return SchemeSpec(
-                name=name, kind="api_key", declaration=declaration, location=location, parameter=parameter
-            )
-        case "http", _, _, str() as scheme if scheme:
-            return SchemeSpec(name=name, kind=_HTTP_SCHEMES.get(scheme.lower(), "custom"), declaration=declaration)
-        case "mutualTLS", _, _, _:
+    if (place := api_key_place(declaration)) is not None:
+        location, parameter = place
+        return SchemeSpec(name=name, kind="api_key", declaration=declaration, location=location, parameter=parameter)
+    match fact(declaration, "type"), http_scheme(declaration):
+        case "http", str() as scheme:
+            return SchemeSpec(name=name, kind=_HTTP_SCHEMES.get(scheme, "custom"), declaration=declaration)
+        case "mutualTLS", _:
             return SchemeSpec(name=name, kind="custom", declaration=declaration)
-        case kind, _, _, _ if kind in _FLOWS:
+        case kind, _ if kind in _FLOWS:
             return SchemeSpec(name=name, kind=_FLOWS[kind], declaration=declaration)
         case _:
             pass
@@ -1575,7 +1549,7 @@ def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
 
 def _member(source: object, key: str) -> JSONValue | None:
     """Return a recorded JSON member of an info source, or None when it has none."""
-    return source.get(key) if isinstance(source, dict) else None
+    return as_mapping(source).get(key)
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:

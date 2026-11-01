@@ -9,8 +9,8 @@ backend class, which hashes frozen instances by their values, or hashes by ident
 model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes`` decide whether the values Pydantic
 validates for a field hash as builtin values.
 
-Every input is an immutable fact; the adapters read them from the live objects and are listed under H15 in
-``scripts/decision_homes.toml``.
+Every input is an immutable fact; the adapters read them from the live objects and are listed in
+``docs/architecture.md``.
 """
 
 from __future__ import annotations

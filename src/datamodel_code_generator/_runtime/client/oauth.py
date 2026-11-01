@@ -19,7 +19,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import SUCCESS_STATUSES
+from ..model_codecs.media import SUCCESS_STATUSES, json_number
 from .auth import (
     OAUTH_ERROR_CODES,
     AuthError,
@@ -29,9 +29,9 @@ from .auth import (
     basic_credentials,
     provider_failure,
 )
-from .errors import ConfigurationError
+from .errors import ConfigurationError, acalled, called
 from .security import SecurityScheme
-from .timing import SYSTEM_CLOCK, Clock, checked_instance
+from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
 
 __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
@@ -75,14 +75,14 @@ def _text(value: object, name: str, *, optional: bool = False) -> None:
 
 def _aware(value: object) -> None:
     """Refuse an expiry that is not None or a timezone-aware datetime."""
-    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+    if value is not None and not is_aware(value):
         raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
 
 
 def _settings(client_secret: object, http_client: object, clock: object) -> None:
     """Refuse a client secret, token client, or clock of another type."""
-    if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
-        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    if client_secret is not None:
+        checked_instance(client_secret, (str,), ("client_secret",), callables=True)
     checked_instance(http_client, (httpx2.Client, httpx2.AsyncClient, type(None)), ("http_client",))
     checked_instance(clock, (Clock, type(None)), ("clock",))
 
@@ -123,11 +123,7 @@ def _secret(value: Secret | None) -> str | None:
     """Return the client secret for one token request, calling a callable secret."""
     if not callable(value):
         return value
-    try:
-        secret = value()
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise provider_failure(error) from None
-    return _string(secret)
+    return _string(called(value, provider_failure))
 
 
 def _string(value: object) -> str:
@@ -142,7 +138,7 @@ def _expiry(fields: dict[str, object], received: float) -> float | None:
     if "expires_in" not in fields:
         return None
     seconds = fields["expires_in"]
-    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not 0 < seconds < float("inf"):
+    if not json_number(seconds) or not 0 < seconds < float("inf"):
         raise AuthError(reason="invalid_expiry")
     return received + seconds
 
@@ -222,13 +218,10 @@ class _Provider(TokenSource):
         raise NotImplementedError
 
     def _notify(self, tokens: TokenSet) -> object:
-        """Hand a refreshed token set to the callback, wrapping what it raises as the provider's failure."""
+        """Hand a refreshed token set to the callback, raising an SDK error as it is and any other as the provider's."""
         if (callback := self._callback) is None:
             return None
-        try:
-            return callback(tokens)
-        except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-            raise provider_failure(error) from None
+        return called(partial(callback, tokens), provider_failure)
 
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
@@ -323,10 +316,7 @@ class _Provider(TokenSource):
                     raise
                 return kept
             if inspect.isawaitable(result := self._notify(tokens)):
-                try:
-                    await result
-                except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-                    raise provider_failure(error) from None
+                await acalled(lambda: result, provider_failure)
             return tokens.access_token
 
     def _auth(self) -> SchemeAuth:
@@ -419,8 +409,8 @@ class ClientCredentials(_Provider):
 def _refresh_settings(token_set: object, callback: object) -> None:
     """Refuse a token set of another type and a callback that cannot be called."""
     checked_instance(token_set, (TokenSet,), ("token_set",))
-    if callback is not None and not callable(callback):
-        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
+    if callback is not None:
+        checked_instance(callback, (), ("on_token_refreshed",), callables=True)
 
 
 class RefreshToken(_Provider):

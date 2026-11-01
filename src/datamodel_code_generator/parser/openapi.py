@@ -30,7 +30,15 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._document_reader import string_key, string_keys
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected, rooted_path
+from datamodel_code_generator._openapi_paths import (
+    OPERATION_METHODS,
+    PATHS_PARAMETERS,
+    effective_operation,
+    effective_parameters,
+    holds_path_item,
+    path_selected,
+    rooted_path,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -42,9 +50,16 @@ from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     JsonSchemaParser,
+    _all_of_applies,
+    _array_applies,
+    _get_ref_data_type_site,
     _locate,
     _located,
     _named_path,
+    _one_of_any_of_applies,
+    _parse_all_of_site,
+    _parse_combined_root,
+    _ref_applies,
     _VersionSource,
     get_model_by_path,
 )
@@ -52,7 +67,7 @@ from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
 from datamodel_code_generator.types import (
     DataType,
-    EmptyDataType,
+    EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
     build_union,
 )
 from datamodel_code_generator.util import BaseModel
@@ -465,7 +480,7 @@ class OpenAPIParser(JsonSchemaParser):
             # Resolve $ref in global parameter list
             global_parameters = [
                 self._get_ref_body(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
-                for p in paths.get("parameters", [])
+                for p in paths.get(PATHS_PARAMETERS, [])
                 if isinstance(p, dict)
             ]
             self._process_path_items(paths, path_parts, "paths", global_parameters, security)
@@ -838,6 +853,8 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
+                continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
             item_ref = methods_.get("$ref")
@@ -865,35 +882,22 @@ class OpenAPIParser(JsonSchemaParser):
                 for operation_name, raw_operation in methods.items():
                     if operation_name not in OPERATION_NAMES:
                         continue
-                    operation = raw_operation
+                    parameters = None
                     if item_parameters:
-                        operation = operation.copy()
-                        if "parameters" in raw_operation:
-                            operation_parameters = raw_operation["parameters"]
-                            overridden_parameters = {
-                                key
-                                for parameter in operation_parameters
-                                if (key := self._parameter_key(parameter)) is not None
-                            }
-                            operation["parameters"] = [
-                                *operation_parameters,
-                                *(
-                                    parameter
-                                    for parameter in item_parameters
-                                    if self._parameter_key(parameter) not in overridden_parameters
-                                ),
-                            ]
-                        else:
-                            operation["parameters"] = item_parameters.copy()
-                    if security is not None and "security" not in operation:
-                        # fastapi-code-generator depends on inherited global security being materialized here.
-                        if operation is raw_operation:
-                            operation = operation.copy()
-                        operation["security"] = security
+                        parameters = (
+                            effective_parameters(raw_operation["parameters"], item_parameters, self._parameter_key)
+                            if "parameters" in raw_operation
+                            else item_parameters.copy()
+                        )
+                    operation = effective_operation(raw_operation, parameters, security)
                     self.parse_operation(operation, [*path, operation_name], location=self._raw_location(raw_operation))
 
     def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
-        """Return the OpenAPI identity used for operation-level parameter overrides."""
+        """Return the name and location a parameter declares, its reference resolved, or None without both.
+
+        The paths scope's walk overrides a path item's parameter by this pair as written, a header's name too (row
+        ``legacy-case-sensitive-parameter-override``); the API walk identifies a parameter by its ``parameter_key``.
+        """
         if not isinstance(parameter, dict):
             return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
         if isinstance(ref := parameter.get("$ref"), str):
@@ -915,31 +919,12 @@ class OpenAPIParser(JsonSchemaParser):
         self.parse_ref(site.obj, path)
         return data_type
 
-    def _parse_combined_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        obj, name, path = site.obj, site.name, site.path
-        data_type = self.parse_root_type(name, obj, path)
-        if isinstance(data_type, EmptyDataType) and obj.properties:
-            self.parse_object(name, obj, path)
-        return data_type
-
     def _parse_unmodeled_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         self.inline_object_bodies |= is_inline_object_body(site.obj)
         return self.get_data_type(site.obj)
 
-    def _operation_array_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return site.obj.is_array
-
     def _build_operation_array(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self.parse_array(site.name, site.obj, [*site.path, site.name])
-
-    def _operation_all_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.allOf)
-
-    def _build_operation_all_of(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        return self.parse_all_of(site.name, site.obj, site.path)
-
-    def _operation_one_of_any_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.oneOf or site.obj.anyOf)
 
     def _operation_object_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
         return site.obj.is_object
@@ -972,21 +957,15 @@ class OpenAPIParser(JsonSchemaParser):
     def _build_operation_enum(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
 
-    def _operation_ref_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
-        return bool(site.obj.ref)
-
-    def _build_operation_ref(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        return self.get_ref_data_type(cast("str", site.obj.ref))
-
     _OPENAPI_OPERATION_TABLE: ClassVar[DispatchTable[OpenAPIParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
-            Row("array", _operation_array_applies, _build_operation_array),
-            Row("all-of", _operation_all_of_applies, _build_operation_all_of),
-            Row("one-of-any-of", _operation_one_of_any_of_applies, _parse_combined_operation_schema),
+            Row("array", _array_applies, _build_operation_array),
+            Row("all-of", _all_of_applies, _parse_all_of_site),
+            Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_root),
             Row("object", _operation_object_applies, _build_operation_object),
             Row("inline-object-body", _operation_inline_object_body_applies, _build_operation_inline_object_body),
             Row("enum", _operation_enum_applies, _build_operation_enum),
-            Row("ref", _operation_ref_applies, _build_operation_ref),
+            Row("ref", _ref_applies, _get_ref_data_type_site),
         ),
         Default("data-type", _parse_unmodeled_operation_schema),
     )
@@ -1236,7 +1215,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
         self._parameter_models.clear()
-        try:
+        with self._parsing_session(self._resolve_specification_targets):
             for source, path_parts in self._get_context_source_path_parts():
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
@@ -1257,11 +1236,13 @@ class OpenAPIParser(JsonSchemaParser):
                                 encoding=self.encoding,
                             )
                         except ImportError:  # pragma: no cover
+                            from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
                             warn(
                                 "Warning: Validation was skipped for OpenAPI. "
                                 "`prance` or `openapi-spec-validator` are not installed.\n"
                                 "To use --validation option after datamodel-code-generator 0.24.0, "
-                                "Please run `$pip install 'datamodel-code-generator[validation]'`.\n",
+                                f"Please run {install_command('validation')}.\n",
                                 stacklevel=2,
                             )
 
@@ -1273,14 +1254,15 @@ class OpenAPIParser(JsonSchemaParser):
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 
-            self._parse_dynamic_specializations()
-            self._resolve_unparsed_json_pointer()
-            if self._parameter_models:
-                self._load_references_of_parameter_models()
-            self._end_schema_parsing()
-        finally:
-            self._clear_inherited_field_caches()
-            self._reset_local_source_cache()
+    def _resolve_specification_targets(self) -> None:
+        """Parse what the specifications leave: the models specialized for a dynamic scope, then the reserved targets.
+
+        Then the models that parameter models use and nothing else loaded (``_load_references_of_parameter_models``).
+        """
+        self._parse_dynamic_specializations()
+        self._resolve_unparsed_json_pointer()
+        if self._parameter_models:
+            self._load_references_of_parameter_models()
 
     def _load_references_of_parameter_models(self) -> None:
         """Load the models parameter models use that nothing else loaded, following only the references types use.

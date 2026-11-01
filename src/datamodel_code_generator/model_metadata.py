@@ -43,13 +43,14 @@ class ModelMetadata(TypedDict, closed=True):
     models: list[GeneratedModelMetadata]
 
 
-_EMPTY_MODEL_METADATA: ModelMetadata = {"version": 1, "models": []}
+def model_metadata_payload(models: list[GeneratedModelMetadata]) -> ModelMetadata:
+    """Return the --emit-model-metadata payload of the generated models: its version, then the models."""
+    return {"version": 1, "models": models}
 
 
 def dump_model_metadata(metadata: ModelMetadata | None) -> str:
     """Serialize model metadata as pretty JSON."""
-    payload = metadata if metadata is not None else _EMPTY_MODEL_METADATA
-    return dump_json(payload, "ordered")
+    return dump_json(metadata if metadata is not None else model_metadata_payload([]), "ordered")
 
 
 def model_metadata_json_schema() -> str:

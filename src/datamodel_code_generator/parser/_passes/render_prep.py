@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
+from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -65,7 +66,7 @@ from datamodel_code_generator.parser._passes._shared import (
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
+from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, _text_constructor_expression
 from datamodel_code_generator.types import DataType, _copy_data_type
 
 if TYPE_CHECKING:
@@ -265,15 +266,7 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
 
 def _is_generic_class_container(data_type: DataType) -> bool:
     """Return whether the type subscripts a generic class, whose arguments mypy resolves eagerly."""
-    return (
-        data_type.is_list
-        or data_type.is_dict
-        or data_type.is_set
-        or data_type.is_frozen_set
-        or data_type.is_mapping
-        or data_type.is_sequence
-        or (data_type.is_tuple and data_type.use_standard_collections)
-    )
+    return data_type in GENERIC_CONTAINERS or (data_type.is_tuple and data_type.use_standard_collections)
 
 
 def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -> Iterator[tuple[DataModel, bool]]:
@@ -390,7 +383,7 @@ def collect_set_item_references(models: list[DataModel]) -> list[Reference]:
         for model in models
         for field in model.fields
         for data_type in field.data_type.all_data_types
-        if data_type.is_set or data_type.is_frozen_set
+        if data_type in SETS
         for item_type in data_type.data_types
         for nested in item_type.all_data_types
         if nested.reference
@@ -491,7 +484,7 @@ def deserialize_decimal_default(
             record_decimal_default_warning(parser, model, field)
             return False
     parser._graph_builder.set_field_default(  # noqa: SLF001
-        field, PythonRuntimeExpression.from_import_call(descriptor.constructor_import, repr(value), value=value)
+        field, _text_constructor_expression(descriptor.constructor_import, value)
     )
     field._set_runtime_expression_imports((descriptor.constructor_import,))  # noqa: SLF001
     parser._register_runtime_expression()  # noqa: SLF001

@@ -63,7 +63,7 @@ def _recommend(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     args: Sequence[str],
-    expected: str,
+    expected: str | None,
     *,
     inputs: Mapping[str, Path] | None = None,
     mode: Sequence[str] = ("quick",),
@@ -72,11 +72,21 @@ def _recommend(
     """Run the CLI from a project directory holding copies of the inputs, so paths in the output are relative.
 
     ``mode`` follows --recommend-options; an empty one runs the command without a mode. Without ``expected_stderr``,
-    nothing may be printed to stderr.
+    nothing may be printed to stderr. Without ``expected``, pytest names the stored output after the test.
     """
     for name, source in (inputs or {}).items():
         shutil.copy(source, tmp_path / name)
     with chdir(tmp_path):
+        if expected is None:
+            (name,) = inputs or {}
+            index = list(args).index("--input")
+            run_main_and_assert(
+                input_path=Path(name),
+                extra_args=[*args[:index], *args[index + 2 :], "--recommend-options", *mode],
+                capsys=capsys,
+                assert_no_stderr=True,
+            )
+            return
         run_main_with_args(
             [*args, "--recommend-options", *mode],
             capsys=capsys,
@@ -238,16 +248,39 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             "paths_bodies_object_map.txt",
             id="paths-bodies-object-map",
         ),
+        pytest.param(
+            "referenced_holders.yaml",
+            ["--openapi-scopes", "paths", "webhooks"],
+            None,
+            id="referenced-holders",
+        ),
+        pytest.param(
+            "referenced_holders.yaml",
+            ["--openapi-scopes", "api"],
+            None,
+            id="referenced-holders-api-scope",
+        ),
+        pytest.param("integer_definition_keys.yaml", [], None, id="integer-definition-keys"),
+        pytest.param(
+            "paths_integer_schema_key.yaml",
+            ["--openapi-scopes", "paths"],
+            None,
+            id="paths-scope-integer-schema-key",
+        ),
+        pytest.param("blank_union_titles.json", [], None, id="blank-union-titles"),
     ],
 )
 def test_recommend_options_for_schemas(
-    source: str, args: list[str], expected: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    source: str, args: list[str], expected: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Recommend options for each supported schema format, keeping the options the command sets.
 
     Optional validation and policy options are listed apart from the command, unless the command sets them.
     Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
-    patternProperties map with one pattern and no other keys needs no validators.
+    patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
+    response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
+    once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
+    an error, and a blank title is no title of a union variant.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))
@@ -262,6 +295,63 @@ def test_recommend_options_quotes_arguments(tmp_path: Path, capsys: pytest.Captu
         "quoted_input_json.txt",
         inputs={"schema's.yaml": INPUT_PATH / "titled_variants.yaml"},
     )
+
+
+def test_recommend_options_reads_each_container_once(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Return the report of a document that holds a YAML alias to the list that contains it."""
+    source = DATA_PATH / "generation_platform" / "targets" / "spec" / "input-cycle-list.yaml"
+    _recommend(
+        tmp_path,
+        capsys,
+        ["--input", source.name, "--input-file-type", "openapi", "--target-python-version", "3.14"],
+        None,
+        inputs=_inputs(source),
+        mode=(),
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "args", "expected_stderr"),
+    [
+        pytest.param(
+            "integer_component_schema.yaml",
+            [],
+            "Error at schema path '#/components/schemas/1': component name 1 is not a string\n",
+            id="component",
+        ),
+        pytest.param(
+            "integer_path.yaml",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path '#/paths/1': path 1 is not a string\n",
+            id="path",
+        ),
+        pytest.param(
+            "integer_webhook.yaml",
+            ["--openapi-scopes", "webhooks"],
+            "Error at schema path '#/webhooks/1': webhook name 1 is not a string\n",
+            id="webhook",
+        ),
+        pytest.param(
+            "integer_asyncapi_component.yaml",
+            [],
+            "Error at schema path '#/components/schemas/1': name 1 is not a string\n",
+            id="asyncapi-component",
+        ),
+    ],
+)
+def test_recommend_options_rejects_keys_that_are_no_strings(
+    source: str, args: list[str], expected_stderr: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """End in the error generation gives for a component, path or webhook name that is no string."""
+    shutil.copy(DATA_PATH / "malformed" / source, tmp_path / source)
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", source, *args, "--recommend-options"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr=expected_stderr,
+            use_builtin_default_formatter=False,
+        )
 
 
 def test_recommend_options_rejects_unknown_modes(capsys: pytest.CaptureFixture[str]) -> None:

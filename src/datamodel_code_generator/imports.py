@@ -10,17 +10,46 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from functools import lru_cache
 from itertools import starmap
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
+from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._requirements import backport_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
+_ImportKey: TypeAlias = tuple[str | None, str]
+"""A module and a name: an import's identity (``_import_key``) or where ``Imports`` counts it (``_storage_key``)."""
+
+
+def _import_key(import_: Import) -> _ImportKey:
+    """Return the module and name an import names: its identity when a module gives it an alias."""
+    return import_.from_, import_.import_
+
+
+def _stored_import(name: str) -> tuple[str, str]:
+    """Return the name and the kept alias of a name ``Imports`` stores: ``X as Y`` keeps ``Y`` apart from ``X``."""
+    import_, _, kept_alias = name.partition(" as ")
+    return import_, kept_alias
+
+
+def _override_module(overrides: Mapping[str, str], from_: str | None, name: str) -> str | None:
+    """Return the module ``--import-overrides`` moves an imported name to, if any; ``__future__`` names stay."""
+    return None if from_ == "__future__" else overrides.get(name)
+
 
 def _bound_name(from_: str | None, name: str, alias: str | None) -> str:
     """Return the name an import binds: its alias, else the first part of a module import or the imported name."""
     return alias or (name.partition(".")[0] if from_ is None else name)
+
+
+def _import_path(import_: Import) -> str:
+    """Return the dotted path an import names: its module's and its name's, or the module alone for ``import m``.
+
+    ``Import.from_full_path`` splits such a path back into its import.
+    """
+    return dotted_name(import_.from_, import_.import_)
 
 
 @dataclass(frozen=True)
@@ -63,7 +92,7 @@ class Imports(defaultdict[str | None, set[str]]):
         """Initialize empty import collection."""
         super().__init__(set)
         self.alias: defaultdict[str | None, dict[str, str]] = defaultdict(dict)
-        self.counter: dict[tuple[str | None, str], int] = defaultdict(int)
+        self.counter: dict[_ImportKey, int] = defaultdict(int)
         self.reference_paths: dict[str, Import] = {}
         self.use_exact: bool = use_exact
         self._exports: set[str] | None = None
@@ -71,25 +100,25 @@ class Imports(defaultdict[str | None, set[str]]):
     def _set_alias(self, from_: str | None, imports: set[str]) -> list[str]:
         """Apply aliases to imports and return sorted list."""
         return [
-            f"{i.partition(' as ')[0]} as {alias}" if (alias := self.alias[from_].get(i)) and i != alias else i
+            aliased(_stored_import(i)[0], alias) if (alias := self.alias[from_].get(i)) and i != alias else i
             for i in sorted(imports)
         ]
 
     def create_line(self, from_: str | None, imports: set[str]) -> str:
         """Create a single import line from module and names."""
         if from_:
-            return f"from {from_} import {', '.join(self._set_alias(from_, imports))}"
-        return "\n".join(f"import {i}" for i in self._set_alias(from_, imports))
+            return from_import(from_, self._set_alias(from_, imports))
+        return "\n".join(map(module_import, self._set_alias(from_, imports)))
 
     def dump(self) -> str:
         """Render all imports as a string."""
         return "\n".join(starmap(self.create_line, self.items()))
 
     @staticmethod
-    def _storage_key(import_: Import) -> tuple[str | None, str]:
+    def _storage_key(import_: Import) -> _ImportKey:
         # A helper alias has its own identity so ordinary imports can be renamed,
         # removed and exported without changing the name used by the helper.
-        name = f"{import_.import_} as {import_.alias}" if import_.keep_unaliased and import_.alias else import_.import_
+        name = aliased(import_.import_, import_.alias) if import_.keep_unaliased and import_.alias else import_.import_
         return (None if "." in import_.import_ else import_.from_), name
 
     def append(self, imports: Import | Iterable[Import] | None) -> None:
@@ -132,9 +161,8 @@ class Imports(defaultdict[str | None, set[str]]):
         remapped_keys = {
             source_key: (module, source_key[1])
             for source_key in self.counter
-            if source_key[0] != "__future__"
-            and (module := import_overrides.get(source_key[1].partition(" as ")[0])) is not None
-            and source_key[0] != module
+            if (module := _override_module(import_overrides, source_key[0], _stored_import(source_key[1])[0]))
+            not in {None, source_key[0]}
         }
         effective_names = {
             target_key: self.alias.get(target_key[0], {}).get(target_key[1], target_key[1])
@@ -166,11 +194,8 @@ class Imports(defaultdict[str | None, set[str]]):
                     del self.alias[source_module]
 
         for reference_path, import_ in self.reference_paths.items():
-            if (
-                not import_.is_future
-                and (module := import_overrides.get(import_.import_)) is not None
-                and import_.from_ != module
-            ):
+            module = _override_module(import_overrides, import_.from_, import_.import_)
+            if module not in {None, import_.from_}:
                 self.reference_paths[reference_path] = replace(import_, from_=module)
 
     def remove_referenced_imports(self, reference_path: str) -> None:
@@ -240,18 +265,29 @@ class Imports(defaultdict[str | None, set[str]]):
         """
         unused = [key for key, binding in _import_bindings(self) if binding not in used_names]
         # Build reverse lookup dict for O(1) access instead of O(n) linear scan per import
-        reverse_lookup: dict[tuple[str | None, str], str | None] = {
+        reverse_lookup: dict[_ImportKey, str | None] = {
             self._storage_key(imp): path for path, imp in self.reference_paths.items()
         }
         for from_, import_ in unused:
             alias = self.alias.get(from_, {}).get(import_)
             reference_path = reverse_lookup.get((from_, import_))
-            import_obj = Import(from_=from_, import_=import_, alias=alias, reference_path=reference_path)
-            while self.counter.get((from_, import_), 0) > 0:
-                self.remove(import_obj)
+            _remove_all(self, Import(from_=from_, import_=import_, alias=alias, reference_path=reference_path))
 
 
-def _import_bindings(imports: Imports) -> Iterator[tuple[tuple[str | None, str], str]]:
+def _holds(imports: Imports, import_: Import) -> bool:
+    """Return whether ``imports`` holds ``import_``."""
+    module, name = Imports._storage_key(import_)  # noqa: SLF001
+    return name in imports.get(module, ())
+
+
+def _remove_all(imports: Imports, import_: Import) -> None:
+    """Remove every count of ``import_`` from ``imports``."""
+    key = Imports._storage_key(import_)  # noqa: SLF001
+    while imports.counter.get(key, 0) > 0:
+        imports.remove(import_)
+
+
+def _import_bindings(imports: Imports) -> Iterator[tuple[_ImportKey, str]]:
     """Yield the module and name of each import with the name it binds (``Imports.get_effective_name``)."""
     for from_, names in imports.items():
         for name in names:
@@ -283,6 +319,7 @@ IMPORT_DECIMAL = Import.from_full_path("decimal.Decimal")
 IMPORT_DATE = Import.from_full_path("datetime.date")
 IMPORT_DATETIME = Import.from_full_path("datetime.datetime")
 IMPORT_TIMEDELTA = Import.from_full_path("datetime.timedelta")
+IMPORT_DATETIME_MODULE = Import(import_="datetime", alias="datetime_module")
 IMPORT_PATH = Import.from_full_path("pathlib.Path")
 IMPORT_TIME = Import.from_full_path("datetime.time")
 IMPORT_UUID = Import.from_full_path("uuid.UUID")

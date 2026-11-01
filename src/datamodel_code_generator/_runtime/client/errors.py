@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal, TypeGuard
+from typing import TYPE_CHECKING, Final, Literal, TypeGuard, TypeVar
 
 from typing_extensions import TypeIs
 
 from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+T = TypeVar("T")
 
 MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _SERVER_ERROR: Final = 500
@@ -82,6 +87,29 @@ def kept_primary(primary: BaseException, failure: BaseException) -> BaseExceptio
         return failure
     add_secondary(primary, failure)
     return primary
+
+
+def called(run: Callable[[], T], failure: Callable[[Exception], SDKError]) -> T:
+    """Return what application code returns: an SDK error it raises propagates as it is, with its own cause and context.
+
+    Any other exception is raised as the calling feature's failure built from it, which keeps it as its cause.
+    """
+    try:
+        return run()
+    except SDKError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        raise failure(error) from None
+
+
+async def acalled(run: Callable[[], Awaitable[T]], failure: Callable[[Exception], SDKError]) -> T:
+    """Return what awaited application code returns, raising its failures as `called` does."""
+    try:
+        return await run()
+    except SDKError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        raise failure(error) from None
 
 
 def is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:

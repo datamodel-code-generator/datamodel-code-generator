@@ -20,11 +20,10 @@ from ..model_codecs.media import (
     encode_form,
     finite,
     form_encode,
+    form_pairs,
     json_value,
     media_range,
     normalized,
-    percent_decode,
-    split_form,
     status_key,
 )
 from ..model_codecs.media import json_bytes as _json_bytes
@@ -39,22 +38,15 @@ if TYPE_CHECKING:
 
     from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
+    from .positions import SecurityAlternatives
     from .responses import ResponseInfo
-    from .retry import IdempotencyPlan
+    from .retry import IdempotencyPlan, RetrySafety
 
     class FormEncoder(Protocol):
         """How a package that declares form-data bodies writes them."""
 
         def encode(self, value: object, sent: str) -> tuple[object, str | None]:
             """Return a form-data body and the media type it is sent in."""
-            ...
-
-    class SecurityAlternatives(Protocol):
-        """An operation's declared security: its OR alternatives of AND requirements."""
-
-        @property
-        def alternatives(self) -> tuple[tuple[object, ...], ...]:
-            """Return the alternatives in their order; an empty one is anonymous."""
             ...
 
 
@@ -131,6 +123,11 @@ def request_errors(codec: OutboundModelCodec | None) -> tuple[type[Exception], .
     return (*codecs, *PARSE_ERRORS, ValueError, TypeError)
 
 
+def _restored(codec: OutboundModelCodec | None, wire: JSONValue) -> object:
+    """Return the value that sends a saved wire value: itself without a codec, else as its codec decodes its JSON."""
+    return wire if codec is None else codec.decode(_json_bytes(wire))
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerVariable:
     """One server variable with its default and, when declared, its allowed values."""
@@ -168,7 +165,7 @@ class ParameterSpec:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def path_text(self, wire: JSONValue) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder."""
@@ -290,7 +287,7 @@ class BodyMedia:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def multipart(self, value: object, sent: str) -> tuple[object, str | None]:
         """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts."""
@@ -494,14 +491,8 @@ def _text(body: bytes, info: ResponseInfo) -> str:
         raise InvalidBodyError(error) from None
 
 
-def _form_pairs(body: bytes) -> FormData:
-    return tuple(
-        (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
-    )
-
-
 def _pairs(body: bytes, _: ResponseInfo) -> FormData:
-    return _parsed(_form_pairs, body)
+    return _parsed(form_pairs, body)
 
 
 def _bytes(body: bytes, _: ResponseInfo) -> bytes:
@@ -825,7 +816,7 @@ class OperationPlan(Generic[T_co]):
     request_id_header: str | None = None
     response_media_type: str | None = None
     fields: FieldArguments | None = None
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyPlan | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None

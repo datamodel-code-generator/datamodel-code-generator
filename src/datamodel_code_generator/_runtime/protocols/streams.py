@@ -10,7 +10,6 @@ interruption reopens it as one more child call of the same session when the call
 
 from __future__ import annotations
 
-import json
 import threading
 from contextlib import aclosing
 from dataclasses import dataclass, field, replace
@@ -31,7 +30,7 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
-from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
+from ..client.native import _AsyncHeld, _Held, native_phases  # pyright: ignore[reportPrivateUsage]
 from ..client.operations import codec_condition
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
@@ -45,10 +44,11 @@ from .errors import (
     StreamInterruptedError,
     configuration_error,
     data_refusal,
+    state_error,
 )
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
-from .resume import decoded_state, require_state, saved_expiry, state_array, state_expiry, state_fields, unexpired
+from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
 from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
 
 if TYPE_CHECKING:
@@ -306,8 +306,7 @@ def _limits(
         _unpatched(core, plan, resume, request)
     idle: float | UNSET | None = layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout)
     if idle is not UNSET:
-        phases = core.call_settings(request, plan.call).timeout
-        timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
+        timeout = native_phases(replace(core.call_settings(request, plan.call).timeout, read=idle))
         request = replace(request or RequestOptions(), timeout=timeout)
     return _Limits(
         reconnect=reconnect,
@@ -393,12 +392,12 @@ def _bound(  # noqa: PLR0913, PLR0917
 
 
 def _json(frame: _Frame) -> JSONValue | MISSING:
-    """Return an event's data parsed as JSON, or MISSING when it is not JSON.
+    """Return an event's data parsed as JSON, or MISSING when it is not JSON or holds NaN or an infinity.
 
-    `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
+    A saved cursor could not hold NaN or an infinity.
     """
     try:
-        return cast("JSONValue", json.loads(frame.body, parse_constant=int))
+        return json_value(frame.body, constants="refuse")
     except (ValueError, RecursionError):
         return MISSING
 
@@ -682,7 +681,7 @@ class _Events(Generic[T]):
         """
         resume = cast("StreamResumePlan", self._resume)
         waiter = self._client.waiting(self._limits.options, self._session, resume.call.operation_id)
-        if (remaining := waiter.remaining()) is not None and reconnect.delay >= remaining:
+        if waiter.cut_short(reconnect.delay) is not None:
             raise reconnect.failure
         return waiter
 
@@ -742,7 +741,7 @@ class _Events(Generic[T]):
         return held
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
+        return state_error(self._plan.helper_id, action, state)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
         """Give a failure of the stream the helper's context, the stream call's operation, and its measurements."""
@@ -1235,11 +1234,8 @@ def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits)
     the caller gives again.
     """
     resume = cast("StreamResumePlan", plan.resume)
-    position = decoded_state(
-        plan.helper_id, state, partial(_restore, plan, resume, given=given if resume.own else None)
-    )
-    unexpired(plan.helper_id, position.expires_at, limits.clock)
-    return resume, position
+    restore = partial(_restore, plan, resume, given=given if resume.own else None)
+    return resume, restored(plan.helper_id, state, restore, lambda position: position.expires_at, limits.clock)
 
 
 def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, given: _Given | None) -> _Position:

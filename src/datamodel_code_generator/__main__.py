@@ -119,8 +119,9 @@ from datamodel_code_generator._cli_config import (
     is_url,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
-from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, json_schema_text
+from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
+from datamodel_code_generator._paths import concrete_parent, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -476,7 +477,7 @@ def _validate_remote_lock_artifacts(
             ("model metadata", config.emit_model_metadata),
         ):
             if path is not None:
-                artifacts.append((name, kind, path.expanduser().resolve(strict=False)))
+                artifacts.append((name, kind, resolved(path)))
     for (name, _, _), plan in planned_entries:
         if not plan.active:
             continue
@@ -707,22 +708,15 @@ def _get_job_config(  # noqa: PLR0913
 
 def _resolved_artifact_paths(path: Path | None) -> tuple[Path | None, Path | None]:
     """Resolve an artifact path and its parent, the root and anchor its staged publication binds to."""
-    if path is None:
-        return None, None
-    return path.expanduser().resolve(strict=False), path.expanduser().parent.resolve(strict=False)
-
-
-def _paths_overlap(first: Path, second: Path) -> bool:
-    """Return whether two output artifacts share a path or ancestor."""
-    return first == second or first in second.parents or second in first.parents
+    return (None, None) if path is None else (resolved(path), concrete_parent(path))
 
 
 def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
     """Return whether paths overlap or existing files refer to the same inode."""
-    if _paths_overlap(first, second):
+    if overlaps(first, second):
         return True
     try:
-        return first.exists() and second.exists() and first.samefile(second)
+        return same_file(first, second)
     except OSError:  # pragma: no cover - a raced path is handled by generation or publication
         return False
 
@@ -744,10 +738,10 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
             msg = f"Job '{plan.name}' input does not exist: {config.input}"
             raise Error(msg)
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
-        inputs.append((plan.name, config.input.expanduser().resolve()))
+        inputs.append((plan.name, resolved(config.input)))
         artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
         if (target := _target_output(config)) is not None:
-            artifacts.append((plan.name, target[0], target[1].expanduser().resolve(strict=False)))
+            artifacts.append((plan.name, target[0], resolved(target[1])))
         if plan.resolved_model_metadata_root is not None:
             artifacts.append((plan.name, "model metadata", plan.resolved_model_metadata_root))
 
@@ -1740,9 +1734,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
+    from datamodel_code_generator._message_text import english_list, for_count  # noqa: PLC0415
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _TARGET_SELECTORS,
-        _option_list,
         _selected_target,
         _target_options_error,
     )
@@ -1761,7 +1755,7 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         for selector, prefix in unselected
     ]
     if errors := [
-        f"{_option_list(flags)} {'requires' if len(flags) == 1 else 'require'} {selector}"
+        f"{english_list(flags, 'and')} {for_count(len(flags), 'requires', 'require')} {selector}"
         for selector, flags in given
         if flags
     ]:
@@ -2049,14 +2043,14 @@ def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
     for staged_plan in staged_plans:
         metadata = None if staged_plan.staging is None else staged_plan.staging.metadata
         for file in _staged_files(staged_plan):
-            concrete_target = file.target.expanduser().resolve(strict=False)
+            concrete_target = resolved(file.target)
             artifact_root = cast(
                 "Path",
                 staged_plan.plan.resolved_model_metadata_root
                 if metadata is not None and file.staged_file == metadata.staged
                 else staged_plan.plan.resolved_output_root,
             )
-            if concrete_target != artifact_root and artifact_root not in concrete_target.parents:
+            if not concrete_target.is_relative_to(artifact_root):
                 msg = (
                     f"Job '{staged_plan.plan.name}' generated file escapes its output path: "
                     f"{file.target} resolves outside {artifact_root}"
@@ -2211,13 +2205,7 @@ def _run_staged_job(
 
 def _write_batch_json_spool(spool: Any) -> None:
     """Write a batch JSON document from validated, line-delimited job payloads, streaming its jobs array."""
-    sys.stdout.write(dump_json({**OUTPUT_HEAD, "kind": "batch", "jobs": []}, "ordered").removesuffix("]\n}"))
-    for index, line in enumerate(spool):
-        if index:
-            sys.stdout.write(",")
-        sys.stdout.write("\n")
-        sys.stdout.write(dump_json(json.loads(line), "ordered", depth=2))
-    sys.stdout.write("\n  ]\n}\n")
+    write_streamed_json(sys.stdout.write, {**OUTPUT_HEAD, "kind": "batch"}, "jobs", map(json.loads, spool), "ordered")
 
 
 def _run_jobs_json(
@@ -2470,6 +2458,11 @@ def _print_command_output(
     return Exit.OK
 
 
+def _print_registry(kind: CommandOutputKind, render: Callable[[Any], str], format_: str) -> Exit:
+    """Print a registry in the listing format, or with ``--output-format json`` its JSON entries as the items."""
+    return _print_command_output(kind, render(format_), lambda: {"items": json.loads(render("json"))}, end="")
+
+
 def _repairs_invalid_dotted_stdout(config: Config, namespace: Namespace, output: Path | None) -> bool:
     """Return whether a run printing text to stdout repairs dotted module names it cannot print as modules."""
     return (
@@ -2702,21 +2695,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
 
     if config.list_deprecations:
-        return _print_command_output(
-            "deprecations",
-            render_deprecations(cast("Any", config.list_deprecations)),
-            lambda: {"items": json.loads(render_deprecations("json"))},
-            end="",
-        )
+        return _print_registry("deprecations", render_deprecations, config.list_deprecations)
     if config.list_experimental:
         from datamodel_code_generator.experimental import render_experimental_features  # noqa: PLC0415
 
-        return _print_command_output(
-            "experimental",
-            render_experimental_features(cast("Any", config.list_experimental)),
-            lambda: {"items": json.loads(render_experimental_features("json"))},
-            end="",
-        )
+        return _print_registry("experimental", render_experimental_features, config.list_experimental)
 
     if diff_error := _diff_against_validation_error(config, namespace):
         print(diff_error, file=sys.stderr)  # noqa: T201

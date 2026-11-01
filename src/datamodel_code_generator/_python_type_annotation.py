@@ -6,7 +6,8 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._python_syntax import list_display, tuple_display
+from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
 from datamodel_code_generator._target_unicode import is_python_name
 
 if TYPE_CHECKING:
@@ -229,8 +230,7 @@ def python_type_name(value: str) -> PythonTypeName:
 
 
 def _runtime_symbol_name(symbol: PythonTypeRuntimeSymbol) -> str:
-    name = ".".join(symbol.qualname_parts)
-    return f"{symbol.module}.{name}" if symbol.module else name
+    return dotted_name(symbol.module, ".".join(symbol.qualname_parts))
 
 
 def _unchanged(rewritten: tuple[PythonTypeExpr, ...], original: tuple[PythonTypeExpr, ...]) -> bool:
@@ -252,8 +252,7 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
             rendered_base = render_python_type_expr(expression.base)
             if isinstance(expression.base, PythonTypeUnion):
                 rendered_base = f"({rendered_base})"
-            arguments = ", ".join(map(render_python_type_expr, expression.arguments)) or "()"
-            return f"{rendered_base}[{arguments}]"
+            return subscript_text(rendered_base, map(render_python_type_expr, expression.arguments))
         case PythonTypeModelField():
             member = "model_fields" if expression.pydantic else "__annotations__"
             result = f"{render_python_type_expr(expression.model)}.{member}[{expression.field_name!r}]"

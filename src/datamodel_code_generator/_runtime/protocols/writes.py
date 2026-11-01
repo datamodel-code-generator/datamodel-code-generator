@@ -7,7 +7,7 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Generic, TypeAlias
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeAlias
 
 from typing_extensions import TypeVar
 
@@ -62,6 +62,7 @@ __all__ = (
     "refuse_dotted",
     "targeted",
     "targeted_writes",
+    "written_names",
 )
 
 T = TypeVar("T")
@@ -141,13 +142,12 @@ def targeted(
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
     value, or no position with a pointer into the JSON body, every media of which is JSON. The header and query names
-    written follow, which a call's options must not patch. The values written skip their codecs, since the server
-    chose them.
+    written follow (`written_names`), which a call's options must not patch. The values written skip their codecs,
+    since the server chose them.
     """
     parameters = list(call.parameters)
     writes: list[tuple[int | None, str | None]] = []
-    headers: set[str] = set()
-    queries: set[str] = set()
+    targets = tuple(targets)
     patched = False
     for target in targets:
         if isinstance(target, BodyTarget):
@@ -158,11 +158,6 @@ def targeted(
             index, pointer = position(call, "querystring", target.name), target.pointer
         else:
             index, pointer = position(call, target.location, target.name), None
-            location, key = parameter_key(target.location, target.name)
-            if location == "header":
-                headers.add(key)
-            elif location == "query":
-                queries.add(key)
         spec = parameters[index]
         parameters[index] = (
             replace(spec, codec=None)
@@ -180,7 +175,38 @@ def targeted(
             ),
         )
     called = replace(call, parameters=tuple(parameters), body=body)
-    return called, tuple(writes), frozenset(headers), frozenset(queries)
+    headers, queries = written_names(targets)
+    return called, tuple(writes), headers, queries
+
+
+def written_names(
+    targets: Iterable[RequestTarget] = (),
+    children: Iterable[Targeted[Any] | None] = (),
+    *,
+    row: Literal["named", "legacy-upload-size-query"] = "named",
+) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the header names, in lower case, and the query names a helper writes, which call options must not patch.
+
+    A header or query parameter target names its parameter; a path or cookie parameter, a querystring and the body name
+    none. Each child operation adds the names it writes, and None stands for one the helper does not declare. Row
+    `legacy-upload-size-query` names a parameter target in any location but a header as a query, as an upload helper
+    names the target its create call writes the content's size into.
+    """
+    headers: set[str] = set()
+    queries: set[str] = set()
+    for target in targets:
+        if not isinstance(target, ParameterTarget):
+            continue
+        location, key = parameter_key(target.location, target.name)
+        if location == "header":
+            headers.add(key)
+        elif location == "query" or row == "legacy-upload-size-query":
+            queries.add(key)
+    for child in children:
+        if child is not None:
+            headers.update(child.headers)
+            queries.update(child.queries)
+    return frozenset(headers), frozenset(queries)
 
 
 def query_written(call: OperationPlan[T], writes: Writes, name: str) -> bool:

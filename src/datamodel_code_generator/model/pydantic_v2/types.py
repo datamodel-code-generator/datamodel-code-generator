@@ -14,7 +14,12 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import (
+    RAW_SINGLE_QUOTED_ESCAPES,
+    call_text,
+    keyword_argument,
+    subscript_text,
+)
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -28,6 +33,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TIME,
     IMPORT_ULID,
     IMPORT_UUID,
+    _import_key,
 )
 from datamodel_code_generator.model.pydantic_v2 import imports as pydantic_imports
 from datamodel_code_generator.model.pydantic_v2._output_context import (
@@ -75,7 +81,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.types import standard_primitive_type_map_factory
 from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
-from datamodel_code_generator.python_literal import _QUOTE_AND_CONTROL_ESCAPES, PythonCode, represent_python_value
+from datamodel_code_generator.python_literal import PythonCode, represent_python_value
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -96,6 +102,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.reference import Reference
 
 
 # --- Shared Pydantic type helpers ---
@@ -173,7 +180,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = str.maketrans(_QUOTE_AND_CONTROL_ESCAPES)
+escape_characters = RAW_SINGLE_QUOTED_ESCAPES
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 
@@ -209,8 +216,8 @@ class DataTypeManager(_DataTypeManagerBase):
     )
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.PYDANTIC_OUTPUT.writes_constrained_types
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
-        (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
-        (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+        _import_key(IMPORT_CONDECIMAL): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     })
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
@@ -575,6 +582,11 @@ class DataTypeManager(_DataTypeManagerBase):
 # --- Pydantic v2 specific ---
 
 
+def _writes_serialize_as_any(reference: Reference) -> bool:
+    """Return whether ``--use-serialize-as-any`` wraps a type naming ``reference``: a subclass adds fields."""
+    return any(child.fields for child in reference.iter_data_model_children())
+
+
 class PydanticV2DataType(DataType):
     """Pydantic v2-specific DataType with SerializeAsAny support."""
 
@@ -584,7 +596,7 @@ class PydanticV2DataType(DataType):
     @staticmethod
     @override
     def _wrap_discriminator_type_hint(type_: str, discriminator: str) -> str:
-        return f"Annotated[{type_}, Field(discriminator={discriminator!r})]"
+        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
 
     def _should_wrap_with_serialize_as_any(self) -> bool:
         if not self.use_serialize_as_any:
@@ -592,12 +604,12 @@ class PydanticV2DataType(DataType):
 
         assert self.reference is not None
 
-        return any(child.fields for child in self.reference.iter_data_model_children())
+        return _writes_serialize_as_any(self.reference)
 
     @override
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:
         if self._should_wrap_with_serialize_as_any():
-            return f"SerializeAsAny[{type_}]"
+            return subscript_text("SerializeAsAny", (type_,))
 
         return type_
 
@@ -621,8 +633,10 @@ class PydanticV2DataType(DataType):
 class _RuntimeAnnotatedDataType(PydanticV2DataType):
     """A type written through its runtime imports, which aliasing reaches, in place of its own import."""
 
-    def _binding(self, name: str) -> str:
-        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
+    def _binding(self, name: str, default: str | None = None) -> str:
+        """Return the name the runtime import of ``name`` is bound to, or ``default`` when given and none imports it."""
+        bindings = (import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
+        return next(bindings) if default is None else next(bindings, default)
 
     @property
     @override
@@ -655,7 +669,11 @@ class EncodedBytesDataType(_RuntimeAnnotatedDataType):
         keywords = (
             keyword_argument(name, represent_python_value(value)) for name, value in (self.kwargs or {}).items()
         )
-        return (
-            f"{self._binding('Annotated')}[bytes, {call_text(self._binding('Field'), keywords)}, "
-            f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})]"
+        return subscript_text(
+            self._binding("Annotated"),
+            (
+                "bytes",
+                call_text(self._binding("Field"), keywords),
+                f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})",
+            ),
         )

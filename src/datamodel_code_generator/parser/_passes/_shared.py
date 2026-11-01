@@ -19,16 +19,18 @@ from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS
+from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
-from datamodel_code_generator._module_paths import written_name
+from datamodel_code_generator._module_paths import dotted_name, is_below, written_name
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, type_override_classes
-from datamodel_code_generator.imports import Import, _import_bindings
+from datamodel_code_generator.imports import Import, _import_bindings, _import_key, _override_module
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -64,7 +66,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import (
-    PythonRuntimeExpression,
+    _text_constructor_expression,
     rewrite_runtime_expressions,
     rewrite_runtime_imports,
 )
@@ -80,7 +82,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -136,12 +138,9 @@ def iter_models_field_data_types(
                 yield model, field, data_type
 
 
-_PythonTypeImportKey: TypeAlias = tuple[str | None, str]
-
-
-def _aliased_import(import_: Import | None, aliased_imports: Mapping[_PythonTypeImportKey, Import]) -> Import | None:
+def _aliased_import(import_: Import | None, aliased_imports: Mapping[_ImportKey, Import]) -> Import | None:
     """Return the import that aliases ``import_``, or None when it has none other than itself."""
-    if import_ is None or (aliased := aliased_imports.get((import_.from_, import_.import_))) is import_:
+    if import_ is None or (aliased := aliased_imports.get(_import_key(import_))) is import_:
         return None
     return aliased
 
@@ -149,9 +148,9 @@ def _aliased_import(import_: Import | None, aliased_imports: Mapping[_PythonType
 def _ordinary_field_shadow_aliases(
     models: list[DataModel],
     all_model_field_names: set[str],
-) -> tuple[dict[_PythonTypeImportKey, Import], bool, bool]:
+) -> tuple[dict[_ImportKey, Import], bool, bool]:
     """Run the narrow fast path and report whether structured imports exist."""
-    aliases: dict[_PythonTypeImportKey, Import] = {}
+    aliases: dict[_ImportKey, Import] = {}
     has_python_type = False
     has_runtime_expressions = False
     for model in models:
@@ -164,7 +163,7 @@ def _ordinary_field_shadow_aliases(
                 if not has_runtime_expressions and data_type.runtime_expression_imports:
                     has_runtime_expressions = True
                 if data_type.import_ and data_type.type in all_model_field_names:
-                    key = (data_type.import_.from_, data_type.import_.import_)
+                    key = _import_key(data_type.import_)
                     aliases.setdefault(
                         key,
                         Import(
@@ -180,7 +179,7 @@ def _ordinary_field_shadow_aliases(
 def _apply_structured_import_aliases(
     builder: GraphBuilder,
     models: list[DataModel],
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Rewrite every identity-carrying structured consumer of selected imports."""
     for model in models:
@@ -196,7 +195,7 @@ def _apply_structured_import_aliases(
 def _alias_field_runtime_expressions(
     builder: GraphBuilder,
     field: DataModelFieldBase,
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Rewrite a field only when its producer registered a runtime expression."""
     imports = field.runtime_expression_imports
@@ -210,7 +209,7 @@ def _alias_field_runtime_expressions(
 def _alias_data_type_structured_imports(
     builder: GraphBuilder,
     data_type: DataType,
-    aliased_imports: dict[_PythonTypeImportKey, Import],
+    aliased_imports: dict[_ImportKey, Import],
 ) -> None:
     """Apply aliases to type, annotation, and producer-registered kwargs expressions."""
     if (aliased_import := _aliased_import(data_type.import_, aliased_imports)) is not None:
@@ -376,21 +375,8 @@ def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
         - current="pets", ref="Animal" -> True (root package is immediate parent)
         - current="v0.mammal.canine", ref="Animal" -> True (root package is an ancestor)
     """
-    current_path = current_module.split(".") if current_module else []
     *reference_path, _ = reference.split(".")
-
-    if not current_path:
-        return False
-
-    # Case 1: Direct parent package (includes root package when reference_path is empty)
-    # e.g., current="pets", ref="Animal" -> current_path[:-1]=[] == reference_path=[]
-    if current_path[:-1] == reference_path:
-        return True
-
-    # Case 2: Deeper ancestor package (reference_path must be a proper prefix)
-    # e.g., current="v0.mammal.canine", ref="v0.Animal" -> ["v0"] is prefix of ["v0","mammal","canine"]
-    # An empty reference_path is the root package, which is an ancestor of every nested module.
-    return len(reference_path) < len(current_path) and current_path[: len(reference_path)] == reference_path
+    return is_below(tuple(current_module.split(".")) if current_module else (), tuple(reference_path))
 
 
 def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
@@ -411,15 +397,12 @@ def _join_module(from_: str, name: str) -> str:
 def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
     """Break parent cycles on a deferred field that is about to be discarded."""
     field.parent = None
-    for data_type in field.data_type.all_data_types:
-        data_type.parent = None
+    clear_parents(field.data_type)
     match field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY):
         case DataType() as deferred_type:
-            for data_type in deferred_type.all_data_types:
-                data_type.parent = None
+            clear_parents(deferred_type)
         case _InheritedTypeModifiers(list_wrapper=DataType() as list_wrapper):
-            for data_type in list_wrapper.all_data_types:
-                data_type.parent = None
+            clear_parents(list_wrapper)
 
 
 def _restore_inherited_field_names_for_unique_aliases(
@@ -838,6 +821,22 @@ def merge_duplicate(
     return users
 
 
+def merge_duplicate_in_module(
+    host: GraphBuilderHost, duplicate: DataModel, canonical: DataModel, models: list[DataModel]
+) -> None:
+    """Hand the users that ``models`` own of a duplicate that leaves the output to the canonical model, and retire it.
+
+    Row ``legacy-module-owned-users``: module-scope reuse removes the model of a typed map value this way, unlike
+    every other duplicate that leaves the output (``merge_duplicate``). A user that no model of ``models`` owns keeps
+    naming the duplicate: a type of a schema validator rule, a type of a model replaced before, a type nothing holds.
+    Each user it hands over records the null of the schema it named, as those of ``merge_duplicate`` do. The caller
+    drops the duplicate from ``models``.
+    """
+    builder = host._graph_builder  # noqa: SLF001
+    builder.redirect_model_reference_users(duplicate, models, canonical.reference)
+    builder.retire_model(duplicate)
+
+
 def normalize_default_value_constraints(
     host: RuntimeExpressionFlags,
     models: list[DataModel],
@@ -869,11 +868,7 @@ def normalize_default_value_constraints(
                 continue
             if kwargs is data_type.kwargs:
                 kwargs = kwargs.copy()
-            kwargs[key] = PythonRuntimeExpression.from_import_call(
-                descriptor.constructor_import,
-                repr(str(value)),
-                value=str(value),
-            )
+            kwargs[key] = _text_constructor_expression(descriptor.constructor_import, str(value))
         if kwargs is data_type.kwargs:
             continue
         host._graph_builder.set_type_expressions(  # noqa: SLF001
@@ -903,7 +898,10 @@ def has_import_override(import_overrides: dict[str, str] | None, *imports: Impor
     """Avoid changing generated defaults when an import policy redirects their bindings."""
     if not import_overrides:
         return False
-    return any(import_overrides.get(import_.import_, import_.from_) != import_.from_ for import_ in imports)
+    return any(
+        _override_module(import_overrides, import_.from_, import_.import_) not in {None, import_.from_}
+        for import_ in imports
+    )
 
 
 def apply_inherited_field_default(
@@ -1484,8 +1482,8 @@ def _get_data_type_target_full_name(
     model_path_to_module_name: Mapping[str, str],
 ) -> str:
     if (ref_module_name := _module_name_of(model_path_to_module_name, reference)) is None:
-        ref_module_name = data_type.full_name.rsplit(".", 1)[0] if "." in data_type.full_name else ""
-    return f"{ref_module_name}.{reference.short_name}" if ref_module_name else reference.short_name
+        return data_type.full_name
+    return dotted_name(ref_module_name, reference.short_name)
 
 
 def _context_models(contexts: Iterable[ModuleContextView]) -> list[DataModel]:
@@ -1663,7 +1661,7 @@ def _unique_items_tuple(data_type: DataType) -> DataType | None:
     """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
     if data_type.is_tuple:
         return data_type
-    if data_type.is_list or data_type.is_set or data_type.is_frozen_set:
+    if data_type in ITEM_CONTAINERS.without("legacy-unique-tuple-inside-sequence"):
         return None
     return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
 

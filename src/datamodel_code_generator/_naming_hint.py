@@ -4,8 +4,9 @@ A command line invocation opens a scope with ``naming_hint_scope``. A generation
 collecting with ``collect_class_names``; its parse then keeps the final class names of its models, the generation
 records those of the parse it keeps, and the command line warns at most once per invocation, also when a watch
 regenerates the models. Outside a scope, as for ``generate()`` callers, and in runs that do not collect, such as the
-candidate runs of ``--recommend-options``, nothing is counted. The module imports from the package only the leaf
-``_free_names``, which numbers the names, so the parser and the generation pipeline can import it.
+candidate runs of ``--recommend-options``, nothing is counted. The module imports from the package only the leaves
+``_free_names``, which numbers the names, and ``_context_scope``, so the parser and the generation pipeline can import
+it.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._free_names import is_numbered
 
 if TYPE_CHECKING:
@@ -98,11 +100,8 @@ _NAMING_HINT: ContextVar[NamingHint | None] = ContextVar("naming_hint", default=
 @contextmanager
 def naming_hint_scope() -> Generator[None]:
     """Show the naming hint at most once within one command line invocation, including its watch regenerations."""
-    token = _NAMING_HINT.set(NamingHint())
-    try:
+    with context_values({_NAMING_HINT: NamingHint()}):
         yield
-    finally:
-        _NAMING_HINT.reset(token)
 
 
 def collect_class_names(*, wanted: bool) -> NamingHint | None:

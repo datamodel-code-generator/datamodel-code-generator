@@ -38,11 +38,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001  # Preserve the established reference export.
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
+from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
 from datamodel_code_generator._target_unicode import (
     is_identifier,
@@ -383,7 +385,20 @@ def _source_path(path: str) -> str:
     return variant[0] if (variant := _rw_variant_of(path)) else path
 
 
+def _rw_direction(suffix: Literal["Request", "Response"]) -> _RwDirection:
+    """Return the direction of the read or write variant whose class name ends in ``suffix``."""
+    return "request" if suffix == "Request" else "response"
+
+
 T = TypeVar("T")
+
+
+def _rw_variant_flag(direction: _RwDirection, read_only: T, write_only: T) -> T:
+    """Return, of a property's readOnly and writeOnly values, the one by which the variant in ``direction`` drops it.
+
+    A request variant leaves out the read-only properties, a response variant the write-only ones.
+    """
+    return read_only if direction == "request" else write_only
 
 
 @contextmanager
@@ -400,22 +415,7 @@ def context_variable(setter: Callable[[T], None], current_value: T, new_value: T
 _BUILTIN_TYPE_ATTRIBUTES: frozenset[str] = frozenset(
     name for cls in (str, int, float, bytes) for name in dir(cls) if not name.startswith("_")
 )
-
-_BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN: dict[PythonVersion, frozenset[str]] = {
-    PythonVersion.PY_314: frozenset({"from_number"}),
-}
-
-
-def _get_builtin_type_attributes_for_target(target: PythonVersion) -> frozenset[str]:
-    """Get builtin type attributes adjusted for the target Python version."""
-    attrs = set(_BUILTIN_TYPE_ATTRIBUTES)
-    target_key = target.version_key
-    for ver, names in _BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN.items():
-        if target_key >= ver.version_key:
-            attrs.update(names)
-        else:
-            attrs.difference_update(names)
-    return frozenset(attrs)
+"""The running interpreter's attributes of the builtin types, read only by a resolver without a target (API only)."""
 
 
 class FieldNameResolver:
@@ -664,7 +664,7 @@ class EnumFieldNameResolver(FieldNameResolver):
         super().__init__(**kwargs)
         target = self.target_python_version
         self._builtin_type_attributes = (
-            _get_builtin_type_attributes_for_target(target) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
+            target_builtin_type_attributes(target.version_key) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
         )
 
     @override
@@ -881,11 +881,8 @@ def unmatched_model_name_keys_unreported() -> Generator[None, None, None]:
 
     A comparison generates its baseline input inside, so the keys are reported for the current input alone.
     """
-    token = _UNMATCHED_MODEL_NAME_KEYS_REPORTED.set(False)
-    try:
+    with context_values({_UNMATCHED_MODEL_NAME_KEYS_REPORTED: False}):
         yield
-    finally:
-        _UNMATCHED_MODEL_NAME_KEYS_REPORTED.reset(token)
 
 
 class ModelResolver:  # noqa: PLR0904
@@ -1237,8 +1234,8 @@ class ModelResolver:  # noqa: PLR0904
         """Return whether ``reference`` still gives its name to references that do not yield."""
         return (entry := self._yielding_names.get(reference.name)) is not None and entry.reference is reference
 
-    def settle_yielding_names(self) -> set[int]:
-        """Keep the current names of yielding references from now on and return the ids of those references.
+    def settle_yielding_names(self) -> set[ModelKey]:
+        """Keep the current names of yielding references from now on and return the model keys of those references.
 
         Model name keys of ``--model-name-map`` that matched no other reference apply to these references by their
         final names. The final names are recorded, and the names of references that changed name since they were
@@ -1260,7 +1257,7 @@ class ModelResolver:  # noqa: PLR0904
             self.final_yielding_names[reference.path] = reference.name, reference.duplicate_name
             if reference.name != entry.created_name:
                 self.yielding_name_changes.update((entry.created_name, reference.name))
-        return {id(entry.reference) for entry in entries}
+        return {model_key_of(entry.reference) for entry in entries}
 
     def _evict_yielding_reference(self, name: str) -> None:
         """Move a yielding reference off ``name`` so that a reference that does not yield can take it.
@@ -2023,11 +2020,7 @@ class ModelResolver:  # noqa: PLR0904
         prefix: str = "",
         yields: bool = False,
     ) -> str:
-        # Determine the suffix to use
-        suffix = self._get_suffix_for_model_type(model_type)
-        if not suffix and self.duplicate_name_suffix:
-            suffix = self.duplicate_name_suffix
-
+        suffix = self._duplicate_name_suffix(model_type)
         numbering: Numbering = "joined" if camel else "underscore"
         if yields:
             return self._get_yielding_unique_name(name, suffix, numbering, prefix)
@@ -2085,6 +2078,10 @@ class ModelResolver:  # noqa: PLR0904
     def _get_suffix_for_model_type(self, model_type: str) -> str:
         """Get the suffix for a given model type from the suffix map."""
         return self.duplicate_name_suffix_map.get(model_type, self.duplicate_name_suffix_map.get("default", ""))
+
+    def _duplicate_name_suffix(self, model_type: str) -> str | None:
+        """Return the suffix a duplicate name of a model type takes: its suffix map entry, else the lone suffix."""
+        return self._get_suffix_for_model_type(model_type) or self.duplicate_name_suffix
 
     @classmethod
     def validate_name(cls, name: str, target_python_version: PythonVersion | None = None) -> bool:

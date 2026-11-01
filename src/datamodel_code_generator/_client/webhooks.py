@@ -13,16 +13,16 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
-from datamodel_code_generator._client.facade import facade_module, statement
-from datamodel_code_generator._client.naming import folded
-from datamodel_code_generator._client.plan import schema_use, schema_uses
-from datamodel_code_generator._client.protocol_plan import _problem
+from datamodel_code_generator._client.facade import facade_module
+from datamodel_code_generator._client.naming import twin_name
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, _problem, missing_schema
 from datamodel_code_generator._client.render import Function
-from datamodel_code_generator._client.streams import _events
-from datamodel_code_generator._python_syntax import call_text, dict_display
+from datamodel_code_generator._client.streams import _events, discriminator
+from datamodel_code_generator._python_syntax import call_text, dict_display, from_import, subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan
 from datamodel_code_generator._target_templates import templated
 
@@ -33,10 +33,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.codec_render import UseAccessors
+    from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_documents import JSONObject
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Templated
 
@@ -114,7 +116,7 @@ class WebhookEvent:
 
     name: str | None
     use: TypeUseBinding
-    schema: Mapping[str, str]
+    schema: JSONObject
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -130,13 +132,13 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
     spellings: dict[str, str] = {}
     for helper in helpers:
         parts = helper.name.split(".")
-        if folded(parts[0], target_python_version) == "keys":
+        if fold_key(parts[0], target_python_version) == "keys":
             message = f"The webhook helper name {helper.name!r} is taken by the module of the webhook key types"
             yield helper, _problem("E_NAME_COLLISION", "target", helper.at, message)
             continue
         for index in range(1, len(parts)):
             package = ".".join(parts[:index])
-            if (spelled := spellings.setdefault(folded(package, target_python_version), package)) != package:
+            if (spelled := spellings.setdefault(fold_key(package, target_python_version), package)) != package:
                 message = (
                     f"The webhook helper name {helper.name!r} gives the package {package!r}, which differs from "
                     f"{spelled!r} only in case"
@@ -146,7 +148,7 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
 
 
 def webhook_uses(
-    protocols: Protocols | None, request: TargetRequest
+    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
 ) -> tuple[tuple[WebhookSpec, ...], dict[str, list[Diagnostic]]]:
     """Return each enabled webhook helper with its events' request-body uses, and each such helper's problems.
 
@@ -172,15 +174,15 @@ def webhook_uses(
         and use.type is not None
         and media_kind(use.id.media or "") == "json"
     ]
-    schemas = schema_uses(request.batch.type_uses)
+    planner = HelperPlanner(protocols, plan, request)
 
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
-        if not request.lease.exists(location := protocols.locations[reference]):
-            message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
-            problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
+        if (expected := planner.schema_type(reference, "request")) == "missing":
+            problems[helper.name].append(
+                _problem("E_CONFIG_VALUE", "config", at, missing_schema(helper, "event_schema", reference))
+            )
             return None
-        expected = None if (bound := schema_use(schemas, location, "request")) is None else bound.type
         if expected is None or (use := next((item for item in candidates if item.type == expected), None)) is None:
             message = (
                 f"The event_schema {reference.pointer!r} of {helper.name!r} is not the schema of a JSON request body "
@@ -265,13 +267,13 @@ class _Webhooks:
         return facade_module(
             "webhooks.keys",
             "The key types of this package's webhook signatures.",
-            imports=(statement(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
+            imports=(from_import(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
             exports=sorted(set().union(*modules.values())),
         )
 
     def decoder(self, module: TargetModule, event: WebhookEvent) -> str:
         """Return the runtime decoder of one event type."""
-        codec = f"{module.local('_generated', 'model_bindings')}.{self.accessors[event.use.id].codec}"
+        codec = self.accessors[event.use.id].reference(module)
         return call_text(module.local(_EVENTS, "EventDecoder"), (codec,))
 
     def event(self, module: TargetModule, spec: WebhookSpec) -> tuple[str, str]:
@@ -280,10 +282,9 @@ class _Webhooks:
         for event in spec.events:
             assert event.use.type is not None
             types[module.hint(event.use.type)] = None
-        first = spec.events[0]
-        if first.name is None:
-            return module.union(*types), self.decoder(module, first)
-        pointer = spec.helper.tree["event_schema"]["discriminator"]["pointer"]
+        if (selector := discriminator(spec.helper)) is None:
+            return module.union(*types), self.decoder(module, spec.events[0])
+        pointer = selector["pointer"]
         mapping = dict_display((repr(event.name), self.decoder(module, event)) for event in spec.events)
         return module.union(*types), call_text(module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), mapping))
 
@@ -293,7 +294,7 @@ class _Webhooks:
         helper = spec.helper
         signature = helper.tree["signature"]
         kind = signature["kind"]
-        key, arguments, entries = None, event, list[Keyword]()
+        key, arguments, entries = None, (event,), list[Keyword]()
         if kind == "none":
             plan = module.local(_EVENTS, "EventPlan")
         elif kind == "adapter":
@@ -306,7 +307,7 @@ class _Webhooks:
             algorithm = _algorithm(signature)
             key = module.local(algorithm.key_module, algorithm.key)
             plan = module.local("_runtime.protocols.verification", "WebhookPlan")
-            arguments = f"{event}, {key}"
+            arguments = (event, key)
             standard = kind == "standard_webhooks"
             entries = [
                 Keyword("kind", repr(kind)),
@@ -315,7 +316,7 @@ class _Webhooks:
                 Keyword("encoding", repr(signature.get("encoding", "base64" if standard else "hex"))),
                 Keyword("prefix", repr(signature.get("prefix", "v1," if standard else ""))),
             ]
-        annotation = f"{module.name('typing', 'Final')}[{plan}[{arguments}]]"
+        annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, arguments),))
         values = (Keyword("helper_id", repr(helper.name)), *entries, Keyword("event", decoder))
         return key, Plan("_PLAN", annotation, plan, values)
 
@@ -354,22 +355,26 @@ class _Webhooks:
     def function(module: TargetModule, event: str, key: str | None, *, asynchronous: bool) -> Function:
         """Return the sync or asyncio verify function of a builtin helper, or of an adapter one without a key."""
         keys = module.local(_WEBHOOKS, "KeySet")
-        verifier = () if key is not None else (Parameter("verifier", f"{module.local(_WEBHOOKS, 'Verifier')}[K]"),)
+        verifier = (
+            ()
+            if key is not None
+            else (Parameter("verifier", subscript_text(module.local(_WEBHOOKS, "Verifier"), ("K",))),)
+        )
         positional = (
             Parameter("raw_body", "bytes"),
-            Parameter("headers", f"{module.name('collections.abc', 'Sequence')}[tuple[str, str]]"),
-            Parameter("keys", f"{keys}[{'K' if key is None else key}]"),
+            Parameter("headers", subscript_text(module.name("collections.abc", "Sequence"), ("tuple[str, str]",))),
+            Parameter("keys", subscript_text(keys, ("K" if key is None else key,))),
         )
         keywords = (
             *verifier,
             Parameter("now", module.name("datetime", "datetime")),
             Parameter("options", module.optional(module.local(_WEBHOOKS, "WebhookOptions")), "None"),
         )
-        returns = f"{module.local(_WEBHOOKS, 'VerifiedWebhook')}[{event}]"
+        returns = subscript_text(module.local(_WEBHOOKS, "VerifiedWebhook"), (event,))
         runtime, name = (
-            ("_runtime.protocols.verification", "averify_webhook" if asynchronous else "verify_webhook")
+            ("_runtime.protocols.verification", "verify_webhook")
             if key is not None
-            else ("_runtime.protocols.adapters", "averify_adapted" if asynchronous else "verify_adapted")
+            else ("_runtime.protocols.adapters", "verify_adapted")
         )
         arguments = (
             Keyword("", "_PLAN"),
@@ -386,7 +391,7 @@ class _Webhooks:
             keywords,
             returns,
             "",
-            module.local(runtime, name),
+            module.local(runtime, twin_name(name, asynchronous=asynchronous)),
             arguments,
             coroutine=asynchronous,
         )

@@ -33,8 +33,10 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,
     writes_beside_literal,
 )
+from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
-from datamodel_code_generator.imports import IMPORT_ANY
+from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.parser._intersection import declared_types, inherited_positional_tail
@@ -142,7 +144,7 @@ def _validation_keywords(
 
     keywords: dict[str, Any] = {}
     extras = value.get(JsonSchemaObject.__extra_key__)
-    for key, item in {**(extras if isinstance(extras, dict) else {}), **value}.items():
+    for key, item in {**as_mapping(extras), **value}.items():
         if key in _NON_ASSERTING_KEYWORDS or key == JsonSchemaObject.__extra_key__ or key.startswith("x-"):
             continue
         if key == "$ref" and isinstance(item, str):
@@ -188,7 +190,7 @@ def _literal_met(
 
 def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
     """Return the keywords that a type, or a member of a union it is, consumed itself, which its field leaves out."""
-    if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
+    if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
         return data_type._consumed_constraints  # noqa: SLF001
     return data_type._consumed_constraints.union(  # noqa: SLF001
         *(member._consumed_constraints for member in data_type.data_types)  # noqa: SLF001
@@ -201,7 +203,7 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
     A union yields its members' leaves, a container its own leaf without a class name, the ``Literal`` of a const
     or an enum its values and another type its class name.
     """
-    if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
+    if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
         yield None, ()
     elif members := [member for member in data_type.data_types if member.type != NONE or member.data_types]:
         for member in members:
@@ -215,7 +217,7 @@ def _imported_type_paths(data_type: DataType) -> Iterator[str]:
     for nested in data_type.all_data_types:
         for import_ in (nested.import_, *(nested.python_type.imports if nested.python_type else ())):
             if import_ is not None and import_.from_:
-                yield f"{import_.from_}.{import_.import_}"
+                yield _import_path(import_)
 
 
 _NULL_TYPE_SOURCES: Final[NullSources] = NullSources(type_null=True)
@@ -912,7 +914,7 @@ def dropped_property_counts(parser: ValueKeywordsHost, obj: JsonSchemaObject, da
         "legacy-map-null-left-to-field" in parser._legacy_object_maps  # noqa: SLF001
         or not (obj.patternProperties or obj.propertyNames is not None)
         or _object_map_other_types(obj) is None
-        or not any(member.is_dict or member.is_mapping for member in data_type.data_types)
+        or not any(member in MAPPINGS for member in data_type.data_types)
     ):
         return {}
     return {

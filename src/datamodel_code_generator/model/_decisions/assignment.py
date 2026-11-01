@@ -2,7 +2,7 @@
 
 Every input is an immutable fact of ``AssignmentInputs``, so ``classify_assignment`` reads nothing else. The output
 model names its row (``AssignmentRow``) and the field's backend reports what it writes (``WrittenAssignment``). The
-adapters are listed under H24 in ``scripts/decision_homes.toml``. The public hooks
+adapters are listed in ``docs/architecture.md``. The public hooks
 ``FIELD_ASSIGNMENT_CHECKER``, ``FIELD_DEFAULT_CLASSIFIER``, ``FIELD_PARTICIPATES_IN_CONSTRUCTOR``,
 ``FIELD_CONSTRUCTION_ORDER_KEY`` and ``DataModel.field_binds_class_attribute`` of the built-in outputs are views of
 the same rows.

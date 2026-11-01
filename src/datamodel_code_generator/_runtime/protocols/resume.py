@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import TypeVar
 
+from ..client.timing import is_aware
+from ..model_codecs.media import json_integer
 from .errors import configuration_error
 from .records import plain_copy
 
@@ -21,6 +23,7 @@ __all__ = (
     "MalformedStateError",
     "decoded_state",
     "require_state",
+    "restored",
     "saved_expiry",
     "state_array",
     "state_count",
@@ -57,9 +60,7 @@ def state_array(value: JSONValue) -> list[JSONValue]:
 
 def state_count(value: JSONValue, limit: int | None = None) -> int:
     """Return a saved nonnegative integer no larger than any limit, refusing any other value."""
-    require_state(
-        isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
-    )
+    require_state(json_integer(value) and value >= 0 and (limit is None or value <= limit))
     return cast("int", value)
 
 
@@ -82,7 +83,7 @@ def state_expiry(value: JSONValue) -> datetime | None:
         expires_at = datetime.fromisoformat(text)
     except ValueError:
         raise MalformedStateError from None
-    require_state(expires_at.utcoffset() is not None and expires_at.isoformat() == text)
+    require_state(is_aware(expires_at) and expires_at.isoformat() == text)
     return expires_at
 
 
@@ -98,3 +99,19 @@ def unexpired(helper_id: str, expires_at: datetime | None, clock: Clock) -> None
     """Refuse a checkpoint past the server's expiry by the client's wall clock."""
     if expires_at is not None and expires_at.timestamp() <= clock.time():
         raise configuration_error(helper_id, ("state",), "expired")
+
+
+def restored(
+    helper_id: str,
+    state: object,
+    decode: Callable[[JSONValue], V],
+    expiry: Callable[[V], datetime | None],
+    clock: Clock,
+) -> V:
+    """Return what a checkpoint's state decodes to, refusing what `decoded_state` refuses and then an expired one.
+
+    `expiry` reads the server's expiry from the decoded value, which `unexpired` checks by the client's wall clock.
+    """
+    value = decoded_state(helper_id, state, decode)
+    unexpired(helper_id, expiry(value), clock)
+    return value

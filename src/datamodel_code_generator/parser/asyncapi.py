@@ -15,7 +15,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
-from datamodel_code_generator._document_reader import string_keys
+from datamodel_code_generator._document_reader import as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._name_words import (
     ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
@@ -138,7 +138,7 @@ class MultiFormatSchemaObject(BaseModel):
 
 
 def _iter_mapping_items(value: Any) -> list[tuple[str, Any]]:
-    return list(value.items()) if isinstance(value, dict) else []
+    return list(as_mapping(value).items())
 
 
 def _iter_trait_items(traits: Any, path: list[str]) -> Iterator[tuple[dict[str, Any], list[str]]]:
@@ -789,7 +789,7 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> list[AsyncAPISchema]:
         """Return the schemas of a document: its component schemas, then those of each of its maps, in that order."""
         components = specification.get("components", {})
-        components = components if isinstance(components, dict) else {}
+        components = as_mapping(components)
         component_schemas = components.get("schemas")
         schemas = [
             schema
@@ -847,7 +847,7 @@ class AsyncAPIParser(OpenAPIParser):
         """Parse AsyncAPI component schemas and message payload/header schemas."""
         parsed_paths: set[tuple[str, ...]] = set()
         context_sources: dict[tuple[str, ...], AsyncAPIContext] = {}
-        try:
+        with self._parsing_session(lambda: self._resolve_asyncapi_unparsed_json_pointer(context_sources)):
             for source, path_parts in self._get_context_source_path_parts():
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
@@ -868,8 +868,3 @@ class AsyncAPIParser(OpenAPIParser):
                             self._parse_file(raw_schema, schema.name, schema.path)
                         else:
                             self._parse_raw_at(schema.name, raw_schema, schema.path, schema.location)
-
-            self._resolve_asyncapi_unparsed_json_pointer(context_sources)
-            self._end_schema_parsing()
-        finally:
-            self._reset_local_source_cache()

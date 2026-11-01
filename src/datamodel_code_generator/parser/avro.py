@@ -22,7 +22,7 @@ from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
+from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
@@ -100,6 +100,7 @@ def _logical_default_expression(kind: str, value: str) -> Any:
     """Build a logical constructor with an import identity that can be aliased."""
     from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
         PythonRuntimeExpression,
+        _isoformat_expression,
     )
 
     if kind == "decimal":
@@ -108,9 +109,7 @@ def _logical_default_expression(kind: str, value: str) -> Any:
         return PythonRuntimeExpression.from_import_call(
             Import(from_="datetime", import_="timedelta"), f"milliseconds={value}"
         )
-    return PythonRuntimeExpression(
-        Import(import_="datetime", alias="datetime_module"), "", f".{kind}.fromisoformat({value!r})"
-    )
+    return _isoformat_expression(kind, value)
 
 
 class _AvroSchemaConverter:
@@ -222,22 +221,11 @@ class _AvroSchemaConverter:
                 self._collect_named_schemas(schema.get("values"), namespace)
 
     def _prepare_definition_names(self) -> None:
-        fullnames_by_local: dict[str, list[str]] = {}
-        for fullname, name_info in self.names.items():
-            fullnames_by_local.setdefault(name_info.name.rsplit(".", maxsplit=1)[-1], []).append(fullname)
-
-        used_names: set[str] = set()
-        for local, fullnames in sorted(fullnames_by_local.items()):
-            for fullname in sorted(fullnames):
-                name_info = self.names[fullname]
-                name = (
-                    first_upper(local)
-                    if len(fullnames) == 1
-                    else f"{_namespace_name(name_info.namespace, first_upper)}{first_upper(local)}"
-                )
-                candidate = _unique_name(name, used_names)
-                self.definition_names[fullname] = candidate
-                used_names.add(candidate)
+        qualified_names = {
+            fullname: ("", name_info.namespace, name_info.name.rsplit(".", maxsplit=1)[-1])
+            for fullname, name_info in sorted(self.names.items())
+        }
+        self.definition_names.update(_name_definitions(qualified_names, first_upper, lone="titled"))
 
     def _convert_schema(
         self,
@@ -433,6 +421,19 @@ class _AvroSchemaConverter:
         converted["x-avro-fullname"] = fullname
         return converted
 
+    @staticmethod
+    def _schema_below(schema: list[Any] | dict[str, Any]) -> Any:
+        """Return the schema a default is read against below ``schema``: a union's first branch or an object's type.
+
+        None when ``schema`` has neither: the default is kept as written.
+        """
+        match schema:
+            case [first, *_]:
+                return first
+            case {"type": nested_schema}:
+                return nested_schema
+        return None
+
     def _convert_default(
         self, value: Any, schema: Any, namespace: str | None, type_override: Import | None = None
     ) -> Any:
@@ -445,8 +446,6 @@ class _AvroSchemaConverter:
             )
         while isinstance(schema, list | dict):
             match schema:
-                case [first, *_]:
-                    schema = first
                 case {"type": "array", "items": item_schema} if isinstance(value, list):
                     converted = value
                     for index, item in enumerate(value):
@@ -464,24 +463,18 @@ class _AvroSchemaConverter:
                     "logicalType": "duration",
                 } if self._convert_logical_defaults:
                     return self._convert_logical_bytes_default(value, schema, namespace, type_override)
-                case {"type": nested_schema}:
-                    schema = nested_schema
-                case _:
-                    return value
+            if (schema := self._schema_below(schema)) is None:
+                return value
         return self._convert_default_type(value, schema, namespace, type_override)
 
     def _convert_integer_default(self, value: int, schema: Any, type_override: Import | None = None) -> Any:
         """Inspect only integer defaults for temporal logical types."""
         while isinstance(schema, list | dict):
             match schema:
-                case [first, *_]:
-                    schema = first
                 case {"type": "int" | "long" as avro_type, "logicalType": str() as logical_type}:
                     return self._convert_temporal_default(value, avro_type, logical_type, type_override)
-                case {"type": nested_schema}:
-                    schema = nested_schema
-                case _:
-                    return value
+            if (schema := self._schema_below(schema)) is None:
+                return value
         return value
 
     def _convert_temporal_default(
@@ -899,15 +892,15 @@ class AvroParser(JsonSchemaParser):
         if not self.type_mappings:
             return True
         mapped_type = self._get_type_with_mappings("string", format_)
-        return (
-            mapped_type == self._data_formats["string"][format_]
-            or self.data_type_manager.get_data_type(mapped_type).type == "str"
-        )
+        return mapped_type == self._data_formats["string"][format_] or self._maps_to_str(format_)
+
+    def _maps_to_str(self, format_: str) -> bool:
+        """Return whether the backend writes the type the type mappings give a string of ``format_`` as ``str``."""
+        return self.data_type_manager.get_data_type(self._get_type_with_mappings("string", format_)).type == "str"
 
     def _logical_default(self, kind: str, format_: str, value: str) -> Any:
         """Keep defaults compatible with the backend's existing mapping of the logical type's ``format_``."""
-        logical_type_kind = self._get_type_with_mappings("string", format_)
-        if self.data_type_manager.get_data_type(logical_type_kind).type == "str":
+        if self._maps_to_str(format_):
             return value
         self._register_runtime_expression()
         return _logical_default_expression(kind, value)

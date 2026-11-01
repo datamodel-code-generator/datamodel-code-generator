@@ -13,7 +13,7 @@ functions (``parser/jsonschema.py``), and these functions call them through the 
 ``_get_ref_body_from_remote``, the frames the warning of ``_resolve_local_ref_path`` names;
 ``_load_ref_data_from_path``, which reads ``load_data_from_path`` of ``parser/jsonschema.py``;
 ``_init_schema_resources``, which declares the attributes of the parser; the context managers ``root_id_context``
-and ``_parsing_sources``, which ``--debug`` traces as parser methods; the override ``_source_from_path``, which calls
+and ``_parsing_session``, which ``--debug`` traces as parser methods; the override ``_source_from_path``, which calls
 ``super()``; the static ``_schema_object_raw_key_sets``; and ``_is_version_definition_namespace_name``, the one
 reader of the ``re`` import that ``parser/jsonschema.py`` keeps. They read a loaded document by JSON pointer with the
 walk of ``parser/_schema_reading.py``, which the reference reading (``parser/_schema_refs.py``) shares.
@@ -34,7 +34,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._json_pointer import escape_token
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -173,21 +173,9 @@ def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | No
         if value.get("$anchor") == anchor:
             return "/" + "/".join(escape_token(part) for part in path)
         for keyword, child in value.items():
-            match SCHEMA_SHAPES.get(keyword), child:
-                case "map", dict():
-                    pending.extend(
-                        (subschema, (*path, keyword, str(name)))
-                        for name, subschema in child.items()
-                        if isinstance(subschema, dict)
-                    )
-                case "sequence" | "single-or-sequence", list():
-                    pending.extend(
-                        (subschema, (*path, keyword, str(index)))
-                        for index, subschema in enumerate(child)
-                        if isinstance(subschema, dict)
-                    )
-                case "single" | "single-or-sequence", dict():
-                    pending.append((child, (*path, keyword)))
+            pending.extend(
+                (subschema, (*path, *map(str, entry))) for entry, subschema in subschema_entries(keyword, child)
+            )
     return None
 
 
@@ -337,8 +325,8 @@ class SchemaDocumentsHost(Protocol):
     ) -> None:
         """Parse a file containing JSON Schema definitions and references."""
 
-    def _parsing_sources(self) -> AbstractContextManager[Iterator[tuple[Source, list[str]]]]:
-        """Yield each source with its path parts, then parse the targets the sources reserve, and clear the caches."""
+    def _parsing_session(self) -> AbstractContextManager[None]:
+        """Parse in the block, then the targets the sources reserve, end the schema parsing and clear the caches."""
 
     def _ref_reading(self, root: Literal["root", "object"]) -> RefReading:
         """Return how ``SchemaGraphBuilder.with_ref_edges`` reads a document (``root``) or a schema (``object``)."""
@@ -532,17 +520,7 @@ def iter_schema_resource_children(
                 if isinstance(child, dict):
                     yield tuple(path), child
             continue
-        match SCHEMA_SHAPES.get(keyword), value:
-            case "map", dict():
-                for name, child in value.items():
-                    if isinstance(child, dict):
-                        yield (keyword, str(name)), child
-            case "sequence" | "single-or-sequence", list():
-                for index, sequence_child in enumerate(value):
-                    if isinstance(sequence_child, dict):
-                        yield (keyword, index), cast("dict[str, Any]", sequence_child)
-            case "single" | "single-or-sequence", dict():
-                yield (keyword,), value
+        yield from subschema_entries(keyword, value)
 
 
 def schema_resource_identifier(
@@ -891,8 +869,8 @@ def parse_source(parser: SchemaDocumentsHost, source: Source, raw_obj: dict[str,
 
 
 def parse_converted_sources(parser: SchemaDocumentsHost, make_converter: Callable[[], Any]) -> None:
-    with parser._parsing_sources() as sources:  # noqa: SLF001
-        for source, path_parts in sources:
+    with parser._parsing_session():  # noqa: SLF001
+        for source, path_parts in get_context_source_path_parts(parser):
             raw_obj = source.raw_data = make_converter().convert(source)
             parse_source(parser, source, raw_obj, path_parts)
 

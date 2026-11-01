@@ -1,3 +1,0 @@
-('other.py', 'Other.method', 'sample.null-test')
-('other.py', 'package_files', 'sample.init-test')
-unchanged: True

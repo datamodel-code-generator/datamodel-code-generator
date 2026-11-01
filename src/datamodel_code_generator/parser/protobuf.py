@@ -19,9 +19,10 @@ from warnings import warn
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
+from datamodel_code_generator._message_text import extra_requirement
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.python_literal import _safe_non_finite_float
+from datamodel_code_generator.python_literal import _converted_float
 from datamodel_code_generator.util import record_watch_dependency
 
 if TYPE_CHECKING:
@@ -163,7 +164,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
         import grpc_tools  # noqa: PLC0415
         from grpc_tools import protoc  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = "protobuf input requires grpcio-tools. Install datamodel-code-generator[protobuf]."
+        msg = f"protobuf input requires grpcio-tools. Install {extra_requirement('protobuf')}."
         raise Error(msg) from exc
     return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
@@ -172,7 +173,7 @@ def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = "protobuf input requires google.protobuf. Install datamodel-code-generator[protobuf]."
+        msg = f"protobuf input requires google.protobuf. Install {extra_requirement('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
 
@@ -697,7 +698,7 @@ class _ProtobufDescriptorConverter:
             return text_encoding.CUnescape(value)
         if field.type in {TYPE_DOUBLE, TYPE_FLOAT}:
             number = float(value)
-            return _safe_non_finite_float(number) if self.source_safe_non_finite else number
+            return _converted_float(number, source_safe_non_finite=self.source_safe_non_finite)
         if field.type in _INTEGER_TYPES:
             return int(value)
         return value
@@ -828,13 +829,12 @@ class ProtobufParser(JsonSchemaParser):
 
     def parse_raw(self) -> None:
         """Parse all Protocol Buffers input sources into data models."""
-        raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
-        source = next(self.iter_source)
-        source.raw_data = raw_obj
-        self.raw_obj = raw_obj
-        self._parse_file(raw_obj, "Model", [])
-        self._resolve_unparsed_json_pointer()
-        self._end_schema_parsing()
+        with self._parsing_session():
+            raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
+            source = next(self.iter_source)
+            source.raw_data = raw_obj
+            self.raw_obj = raw_obj
+            self._parse_file(raw_obj, "Model", [])
 
 
 __all__ = ["ProtobufParser", "convert_protobuf_schema_data"]

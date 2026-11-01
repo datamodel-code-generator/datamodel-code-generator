@@ -1,1 +1,0 @@
-signature a.s: paths must be a list of strings

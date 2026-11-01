@@ -14338,6 +14338,33 @@ def test_main_openapi_include_paths_without_leading_slash(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        pytest.param(["--openapi-scopes", "schemas", "paths", "parameters"], id="paths"),
+        pytest.param(
+            ["--openapi-scopes", "schemas", "paths", "parameters", "--openapi-include-paths", "*"],
+            id="paths-include-all",
+        ),
+        pytest.param(["--openapi-scopes", "schemas", "api"], id="api"),
+    ],
+)
+def test_main_openapi_paths_keys_that_are_not_path_items(output_file: Path, scope_args: list[str]) -> None:
+    """Skip the ``parameters`` list and an ``x-`` extension that holds no object under ``paths``.
+
+    The ``parameters`` list applies to every path, as with ``--openapi-include-paths`` leaving the key out, and neither
+    key is walked as a path item under any scope or ``--openapi-include-paths`` pattern. An ``x-`` key that holds an
+    object is still read as a path by the paths scope, not by the API scope.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_non_path_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_include_paths_warning_without_paths_scope() -> None:
     """Warn when --openapi-include-paths used without paths scope."""
     import warnings

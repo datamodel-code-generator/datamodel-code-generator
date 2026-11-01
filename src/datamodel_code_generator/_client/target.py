@@ -47,6 +47,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -78,6 +79,7 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeView,
     )
+    from datamodel_code_generator._target_documents import JSONObject
 
 HTTPX2: Final = "httpx2>=2.13.0"
 DEPENDENCIES: Final = ("typing-extensions>=4.16",)
@@ -116,7 +118,7 @@ class ClientTarget:
             plan = Planner(request, config, wire, facts, helping).plan()
         except PlanError as error:
             raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
-        events, hooked = webhook_uses(protocols, request)
+        events, hooked = webhook_uses(protocols, plan, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
         streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
         opened, messages, socket_problems = socket_uses(protocols, plan, request)
@@ -305,7 +307,7 @@ class _HelperDigests:
         kind: str,
         signature: dict[str, object],
         operation: OperationSpec | None,
-        schemas: list[Mapping[str, str]],
+        schemas: list[JSONObject],
         uses: list[object],
     ) -> str:
         """Return the digest of a helper's contract closure from its one signature, operation, schemas, and uses."""
@@ -327,9 +329,9 @@ class _HelperDigests:
         """
         match value:
             case GenericType():
-                arguments = ", ".join(self.spelled(item) for item in value.arguments)
+                arguments = [self.spelled(item) for item in value.arguments]
                 base = self.spelled(value.base)
-                return f"{base}[{arguments or '()'}]" if arguments or value.tuple_form == "fixed" else base
+                return subscript_text(base, arguments) if arguments or value.tuple_form == "fixed" else base
             case UnionType():
                 return " | ".join(self.spelled(member) for member in value.members)
             case _:

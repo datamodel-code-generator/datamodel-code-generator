@@ -40,7 +40,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
-    LOCATIONS,
     BuiltinType,
     ConstructorType,
     LiteralScalar,
@@ -51,15 +50,26 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TypeUseBinding,
     fact,
+    is_required,
     label,
     operation_literal,
+    parameter_place,
+    schema_uses,
     type_uses,
+    uses_by_id,
 )
-from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope, path_placeholders, windows_device
+from datamodel_code_generator._target_naming import (
+    PATH_PLACEHOLDER,
+    NameScope,
+    fold_key,
+    path_placeholders,
+    windows_device,
+)
 from datamodel_code_generator._target_operations import (
     CLIENT,
     alias,
     argument_names,
+    coded_use,
     declared_by,
     declared_media_type,
     derived_name,
@@ -75,10 +85,10 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
-from datamodel_code_generator._target_unicode import casefold
+from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic
@@ -91,6 +101,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.retry import RetrySafety
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -204,6 +215,12 @@ class ResponseSpec:
     error: bool
     bodyless: bool
 
+    @property
+    def json_use(self) -> TypeUseBinding | None:
+        """Return the use of the response's one media when it is JSON, or None."""
+        media = self.media
+        return media[0].use if len(media) == 1 and media[0].kind == "json" else None
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerSpec:
@@ -267,7 +284,7 @@ class OperationSpec:
     body_field_names: tuple[BodyFieldName, ...] = ()
     fields: tuple[FieldBranch, ...] = ()
     body_only: tuple[tuple[str, str], ...] = ()
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
@@ -299,7 +316,7 @@ class ResourceSpec:
     @property
     def parts(self) -> tuple[str, ...]:
         """Return the namespace's dotted parts."""
-        return tuple(self.namespace.split("."))
+        return _namespace_parts(self.namespace)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -362,7 +379,7 @@ class Planner:
         self.config = config
         self.wire = wire
         self.facts = facts
-        self.uses = {use.id: use for use in request.batch.type_uses}
+        self.uses = uses_by_id(request.batch)
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
@@ -418,7 +435,7 @@ class Planner:
         setting = self.settings.get(operation.id.use_site.pointer)
         name = self.method(operation, setting)
         resource = self.resource(operation, setting)
-        scopes = (*resource.split("."), name)
+        scopes = (*_namespace_parts(resource), name)
         parameters = self.parameters(operation, setting, scopes)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
@@ -552,7 +569,7 @@ class Planner:
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.resource, []).append(spec)
-        namespaces = {".".join(parts[:size]) for parts in map(_parts_of, members) for size in range(1, len(parts) + 1)}
+        namespaces = {namespace for resource in members for namespace in _opened(resource)}
         named = list(specs)
         for namespace, operations in members.items():
             scope = NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace)
@@ -563,7 +580,7 @@ class Planner:
                     self.problems.append(_problem("E_NAME_COLLISION", message))
             for name in RESERVED_MEMBERS:
                 scope.take(name)
-            parts = tuple(namespace.split("."))
+            parts = _namespace_parts(namespace)
             derived = [spec for spec in operations if spec.index not in explicit]
             claimed = dict(
                 zip(
@@ -573,7 +590,7 @@ class Planner:
                 )
             )
             methods = [claimed.get(spec.index, spec.name) for spec in operations]
-            prefix = ("".join(map(self.names.pascal, parts)),)
+            prefix = (self._resource_pascal(namespace),)
             pascals = type_names(
                 self.names, ((name, spec.contract, prefix) for spec, name in zip(operations, methods, strict=True))
             )
@@ -596,8 +613,7 @@ class Planner:
         declared: list[tuple[WireDeclaration, ParameterLocation, str, ParameterPlan, str | None]] = []
         scope = NameScope()
         for declaration in operation.parameters:
-            location = LOCATIONS[fact(declaration, "in")]
-            wire_name = declaration.name or ""
+            location, wire_name = parameter_place(declaration)
             if (plan := plans.get((location, wire_name))) is None:
                 continue
             given = explicit.pop((location, wire_name), None) or alias(
@@ -625,7 +641,7 @@ class Planner:
         )
         specs: list[ParameterSpec] = []
         for (declaration, location, wire_name, plan, _), python_name in zip(declared, python_names, strict=True):
-            required = fact(declaration, "required") is True
+            required = is_required(declaration)
             use = self.use(type_uses(declaration))
             argument = None if use is None or use.type is None else self.facts.argument(use.type)
             specs.append(
@@ -739,7 +755,7 @@ class Planner:
         for encoding in (child for child in declaration.children if child.kind == "encoding"):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
-            if name in members and (headers := self._part_headers(encoding)):
+            if name in members and (headers := self._headers(encoding)):
                 headers_of[name] = headers
             styled = form_styled(encoding, self.wire.version, multipart=True)
             match content_types(encoding):
@@ -769,11 +785,11 @@ class Planner:
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
         return media_of, headers_of
 
-    def _part_headers(self, encoding: WireDeclaration) -> tuple[HeaderSpec, ...]:
-        """Return the headers with a schema an encoding declares, with the plans that read their values."""
+    def _headers(self, declaration: WireDeclaration) -> tuple[HeaderSpec, ...]:
+        """Return the headers with a schema a response or encoding declares, with the plans that read their values."""
         return tuple(
-            HeaderSpec(name=child.name or "", required=fact(child, "required") is True, use=use, plan=plan)
-            for child in encoding.children
+            HeaderSpec(name=child.name or "", required=is_required(child), use=use, plan=plan)
+            for child in declaration.children
             if child.kind == "header"
             and (use := self.use(type_uses(child))) is not None
             and (plan := self.header_plans.get(use.id)) is not None
@@ -875,8 +891,8 @@ class Planner:
                 member,
                 declared[name],
                 facts.type,
-                required=facts.required and not facts.write_only,
-                excluded=facts.write_only,
+                required=facts.required,
+                excluded=_rw_variant_flag("response", facts.read_only, facts.write_only),
             )
             for name, member, facts in members
         ), additional
@@ -892,7 +908,11 @@ class Planner:
         required: bool,
         excluded: bool = False,
     ) -> PartSpec:
-        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use."""
+        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use.
+
+        A member the response leaves out (``excluded``) is not required.
+        """
+        required = required and not excluded
         if part.file:
             return PartSpec(
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
@@ -948,7 +968,7 @@ class Planner:
             if default not in declared or media_range(default):
                 message = f"The request media type {default!r} of {label(operation)} is not a declared concrete type"
                 self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
-        return BodySpec(required=fact(declaration, "required") is True, media=media, default=default)
+        return BodySpec(required=is_required(declaration), media=media, default=default)
 
     def media_list(
         self, operation: OperationContract, declaration: WireDeclaration, *, request: bool
@@ -973,13 +993,7 @@ class Planner:
     ) -> ResponseSpec:
         """Plan one declared response and classify it as a possible success or error."""
         status = (declaration.name or "default").upper() if declaration.name != "default" else "default"
-        headers = [
-            HeaderSpec(name=child.name or "", required=fact(child, "required") is True, use=use, plan=plan)
-            for child in declaration.children
-            if child.kind == "header"
-            and (use := self.use(type_uses(child))) is not None
-            and (plan := self.header_plans.get(use.id)) is not None
-        ]
+        headers = self._headers(declaration)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
@@ -993,7 +1007,7 @@ class Planner:
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
-            headers=tuple(headers),
+            headers=headers,
             success=_success(status, success_statuses),
             error=_error(status),
             bodyless=response_bodyless(CLIENT, operation, exact),
@@ -1059,13 +1073,16 @@ class Planner:
             resolved.append(spec)
         return tuple(resolved)
 
+    def _resource_pascal(self, namespace: str) -> str:
+        """Return the PascalCase name of a resource namespace: the class name of each of its parts, joined."""
+        return "".join(map(self.names.pascal, _namespace_parts(namespace)))
+
     def resources(self, specs: tuple[OperationSpec, ...]) -> tuple[ResourceSpec, ...]:
         """Group operations by namespace, with every parent namespace, and check the names each resource holds."""
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
-            parts = spec.resource.split(".")
-            for size in range(1, len(parts) + 1):
-                members.setdefault(".".join(parts[:size]), [])
+            for namespace in _opened(spec.resource):
+                members.setdefault(namespace, [])
             members[spec.resource].append(spec)
         children: dict[str, list[str]] = {namespace: [] for namespace in members}
         for namespace in members:
@@ -1073,7 +1090,9 @@ class Planner:
                 children[namespace.rpartition(".")[0]].append(namespace)
         folded: dict[str, list[str]] = {}
         for namespace in members:
-            folded.setdefault(casefold(namespace, self.names.python_version), []).append(namespace)
+            folded.setdefault(
+                fold_key(namespace, self.names.python_version, rule="legacy-fold-without-nfc"), []
+            ).append(namespace)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
@@ -1088,14 +1107,22 @@ class Planner:
                 namespace=namespace,
                 operations=tuple(operations),
                 children=tuple(children[namespace]),
-                pascal="".join(self.names.pascal(part) for part in namespace.split(".")),
+                pascal=self._resource_pascal(namespace),
             )
             for namespace, operations in members.items()
         )
 
 
-def _parts_of(namespace: str) -> list[str]:
-    return namespace.split(".")
+def _namespace_parts(namespace: str) -> tuple[str, ...]:
+    """Return the names of a dotted resource namespace."""
+    return tuple(namespace.split("."))
+
+
+def _opened(namespace: str) -> Iterator[str]:
+    """Yield each namespace a resource namespace opens, its outermost first and itself last."""
+    parts = _namespace_parts(namespace)
+    for size in range(1, len(parts) + 1):
+        yield ".".join(parts[:size])
 
 
 def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:
@@ -1181,15 +1208,6 @@ def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldF
         for name, schema, member in property_members(use)
         if member.exclusion is None and (facts := member.model_facts) is not None
     ]
-
-
-def schema_uses(uses: Iterable[TypeUseBinding]) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
-    """Index the value use of each schema occurrence by its location and the direction whose model it projects."""
-    return {
-        (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use
-        for use in uses
-        if use.id.role == "schema" and use.id.projection == "value"
-    }
 
 
 def schema_use(
@@ -1308,9 +1326,9 @@ def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
         yield from (part.use for item in media for part in member_parts(item) if part.use is not None)
 
 
-def _coded(media: MediaSpec) -> bool:
-    """Return whether a body's codec reads or writes it: any but raw bytes the models leave unconstrained, or parts."""
-    return media.members is None and (media.kind != "binary" or (media.use is not None and media.use.checked))
+def _coded(media: MediaSpec) -> TypeUseBinding | None:
+    """Return the type use whose codec reads or writes a body, unless the body is sent or read as parts."""
+    return None if media.members is not None else coded_use(media.kind, media.use)
 
 
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
@@ -1318,10 +1336,10 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
     for spec in plan.operations:
         yield from (parameter.use.id for parameter in spec.parameters if parameter.use is not None)
         if spec.body is not None:
-            yield from (media.use.id for media in spec.body.media if media.use is not None and _coded(media))
+            yield from (use.id for media in spec.body.media if (use := _coded(media)) is not None)
         for response in spec.responses:
             if not response.bodyless:
-                yield from (media.use.id for media in response.media if media.use is not None and _coded(media))
+                yield from (use.id for media in response.media if (use := _coded(media)) is not None)
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))
 

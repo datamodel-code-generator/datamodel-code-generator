@@ -15,7 +15,7 @@ from contextlib import (
 )
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, TypedDict, TypeVar, cast
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -25,6 +25,7 @@ from typing_extensions import Self
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
+from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
 from .content import EncodedAttempt
 from .errors import (
@@ -55,12 +56,13 @@ from .native import (
 from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import dot_segment, dotted_route, filled, path_segments
-from .positions import cookie_name, positional, protected_positions, secret_names
+from .positions import credentialed, positional, secret_names
 from .raw import AsyncRawResponse, RawResponse, ReceivedBody, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
     Delivery,
+    RetrySafety,
     RetryState,
     RetryTiming,
     bind_retry_headers,
@@ -85,7 +87,6 @@ if TYPE_CHECKING:
         Iterator,
         Mapping,
     )
-    from typing import Protocol, TypeAlias
 
     from typing_extensions import Unpack
 
@@ -93,39 +94,11 @@ if TYPE_CHECKING:
     from .content import AsyncContent, BodyBinder, BodyEntry, BodySource, RequestCoding, SyncContent
     from .operations import OperationPlan, ServerPlan
     from .options import NativeAuth, Pairs, RetryOptions, ServerSelection
-    from .positions import CredentialPosition, Placement
+    from .positions import AsyncSend, CredentialPosition, Credentials, Placement, Send
     from .raw import AnyRaw
     from .retry import RetryDelay
     from .timing import Clock
     from .urls import Origin
-
-    Send: TypeAlias = Callable[[httpx2.Request], httpx2.Response]
-    AsyncSend: TypeAlias = Callable[[httpx2.Request], Awaitable[httpx2.Response]]
-
-    class Credentials(Protocol):
-        """The credentials a generated client was given, by scheme name, which the package's auth module places."""
-
-        @property
-        def values(self) -> Mapping[str, object]:
-            """Return the credentials given, by scheme name."""
-            ...
-
-        def selected(self, binding: Any) -> tuple[Placement, ...] | None:
-            """Return the placements of an operation's first alternative the credentials satisfy, or None."""
-            ...
-
-        def auth(  # noqa: PLR0913
-            self,
-            placements: Any,
-            *,
-            origin: Origin | None,
-            replayable: Callable[[httpx2.Request], bool],
-            challenge_less: bool,
-            send: Send | None = None,
-            async_send: AsyncSend | None = None,
-        ) -> httpx2.Auth:
-            """Return the HTTPX2 Auth that places a call's credentials on its requests."""
-            ...
 
     class _HelperSettings:
         """The protocol settings of a client whose package declares helpers."""
@@ -602,17 +575,6 @@ def _redirects(response: httpx2.Response) -> int:
     return sum(hop.has_redirect_location for hop in response.history)
 
 
-def _credentialed(request: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:
-    """Return whether a request carries a value at a declared scheme's header, query, or cookie, Authorization aside."""
-    headers, query, cookies = protected_positions(schemes)
-    sent = request.headers
-    if any(name in sent for name in headers) or (query and any(name in request.url.params for name in query)):
-        return True
-    return bool(cookies) and any(
-        cookie_name(pair) in cookies for value in sent.get_list("cookie") for pair in value.split(";")
-    )
-
-
 def strip_credentials(
     headers: Iterable[tuple[str, str]], url: str, schemes: tuple[CredentialPosition, ...]
 ) -> tuple[tuple[tuple[str, str], ...], str]:
@@ -656,9 +618,7 @@ class Call(LogicalCallContext):
         self.operation = operation
         self.decoder: ResponseDecoder[object] = RAW_DECODER
         self.request_id_header = None if operation is None else operation.request_id_header
-        self.retry_safety: Literal["method_default", "idempotent", "never"] = (
-            "method_default" if operation is None else operation.retry_safety
-        )
+        self.retry_safety: RetrySafety = "method_default" if operation is None else operation.retry_safety
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
         self.key = str(uuid4()) if self.idempotency is not None and key is UNSET else key
@@ -797,7 +757,7 @@ class Call(LogicalCallContext):
         which HTTPX2 drops across origins itself, is never redirected, whether the call's credentials put it there or
         a patch or a parameter did; any other takes the call's setting, or else the HTTP client's.
         """
-        if (self.placements and positional(self.placements)) or (schemes and _credentialed(outgoing, schemes)):
+        if (self.placements and positional(self.placements)) or (schemes and credentialed(outgoing, schemes)):
             return False
         return self.settings.follow_redirects
 
@@ -934,12 +894,7 @@ class Core(Generic[AdapterT, HandleT]):
             return settings.base_url
         if settings.server is not self._settings.server:
             return _server_url(operation, settings.server)
-        servers = operation.servers
-        if (cached := self._urls.get(id(servers))) is not None and cached[0] is servers:
-            return cached[1]
-        url = _server_url(operation, settings.server)
-        self._urls[id(servers)] = (servers, url)
-        return url
+        return identity_cached(self._urls, operation.servers, lambda _: _server_url(operation, settings.server))
 
     @staticmethod
     def _decoder(operation: OperationPlan[T], response_media_type: str | None) -> ResponseDecoder[T]:

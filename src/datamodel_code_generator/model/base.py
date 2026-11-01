@@ -33,10 +33,15 @@ from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
-from datamodel_code_generator._graph_links import add_child, data_type_children
-from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
-from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
+from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
+from datamodel_code_generator._internal_utils import (
+    get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
+    to_hashable,
+)
+from datamodel_code_generator._message_text import for_count
+from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of, names_by_path
 from datamodel_code_generator._parse_memo import (
     MemoTable,
     bump_deep,
@@ -45,6 +50,14 @@ from datamodel_code_generator._parse_memo import (
     forget,
     memoized,
     note_reads,
+)
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    _single_line_docstring,
+    comment_safe,  # noqa: F401  # Preserve the established model.base export.
+    escape_docstring,
+    format_docstring,
+    inline_comment_safe,
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -81,6 +94,8 @@ from datamodel_code_generator.model._field_imports import (
     _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
 )
 from datamodel_code_generator.model._render_plan import (
+    DEFAULT_VALUE,
+    PLAIN_ANNOTATION,
     RENDER_READY,
     AssignmentFacts,
     FieldDefault,
@@ -98,7 +113,6 @@ from datamodel_code_generator.model._rendered_names import (
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
-    _normalize_string,
     represent_python_value,
 )
 from datamodel_code_generator.reference import Reference, _BaseModel
@@ -271,111 +285,6 @@ class _MissingCustomTemplateState:
 
 
 _missing_custom_template_state = _MissingCustomTemplateState()
-
-
-class _EscapedDocstring(str):  # noqa: FURB189
-    """Marker for values already escaped for a generated Python docstring."""
-
-    __slots__ = ()
-
-
-def escape_docstring(value: str | None) -> str | None:
-    r"""Escape special characters in a docstring to prevent syntax errors.
-
-    Handles:
-    - Backslashes: `\\` -> `\\\\` (must be escaped first)
-    - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
-
-    Args:
-        value: The string to escape, or None.
-
-    Returns:
-        The escaped string, or None if input was None.
-    """
-    if value is None:
-        return None
-    if type(value) is _EscapedDocstring:
-        return value
-    value = _normalize_string(value)
-    # Escape backslashes first, then triple quotes. Retain the original string
-    # when no escaping is needed so custom-template fast paths stay allocation-free.
-    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
-    return _EscapedDocstring(escaped) if escaped != value else value
-
-
-def _ends_with_unescaped_quote(value: str) -> bool:
-    """Return whether *value* ends with a double quote that is not escaped."""
-    if not value.endswith('"'):
-        return False
-
-    backslash_count = 0
-    for char in reversed(value[:-1]):
-        if char != "\\":
-            break
-        backslash_count += 1
-    return backslash_count % 2 == 0
-
-
-def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_line_docstring: bool = False) -> str:
-    """Format *value* as a docstring as per PEP 257.
-
-    PEP 257 recommends that docstrings that can fit on one line should be formatted on a
-    single line, for consistency and readability. When use_single_line_docstring is
-    false, docstrings retain the historical multi-line formatting. It is assumed that
-    the opening triple-quotes are indented appropriately in the template. If it's a
-    multi-line docstring, each line including the closing triple-quotes will be indented
-    as per indent_spaces.
-
-    Args:
-        value: docstring text
-        indent_spaces: Spaces to indent for all lines after the opening triple-quotes
-        use_single_line_docstring: Use one-line docstrings when possible
-
-    Returns:
-        Empty string when `value` is falsy; otherwise the docstring block.
-    """
-    if value is None:
-        return ""
-    if type(value) is not _EscapedDocstring:
-        value = _normalize_string(value)
-    if not value.strip():
-        return ""
-
-    escaped = escape_docstring(value) or ""
-
-    if use_single_line_docstring and "\n" not in value and "\r" not in value:
-        if _ends_with_unescaped_quote(escaped):
-            escaped = f'{escaped[:-1]}\\"'
-
-        return f'"""{escaped}"""'
-
-    indent = max(indent_spaces, 0) * " "
-    if indent:
-        escaped = "\n".join(f"{indent}{line}" if line else "" for line in escaped.split("\n"))
-        return f'"""\n{escaped}\n{indent}"""'
-    return f'"""\n{escaped}\n"""'
-
-
-def comment_safe(value: str | None) -> str | None:
-    """Normalize line endings before rendering text in Python comments.
-
-    Built-in union templates already prefix LF continuation lines with ``# ``.
-    This helper converts CRLF and bare CR into LF so that existing template
-    behavior keeps the whole description inside the comment block.
-    """
-    if value is None:
-        return None
-    value = _normalize_string(value)
-    # Collapse CRLF before converting lone CR.
-    return value.replace("\r\n", "\n").replace("\r", "\n")
-
-
-def inline_comment_safe(value: str | None) -> str | None:
-    """Make a value safe for a generated inline Python comment."""
-    if value is None:
-        return None
-    safe_value = comment_safe(value) or ""
-    return safe_value.replace("\v", "\n").replace("\f", "\n").replace("\n", "\n# ")
 
 
 def _safe_extra_template_data(
@@ -699,7 +608,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out."""
         return (
             f"{reason}; {self._constraint_owner} is generated without "
-            f"{'this constraint' if count == 1 else 'these constraints'}."
+            f"{for_count(count, 'this constraint', 'these constraints')}."
         )
 
     @property
@@ -1076,8 +985,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self.use_inline_field_description:
             description = self.extras.get("description", None)
             if description is not None and "\n" not in description:
-                escaped = escape_docstring(description)
-                return f'"""{escaped}"""'
+                return _single_line_docstring(escape_docstring(description) or "")
 
         return None
 
@@ -1153,11 +1061,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return FieldRenderPlan(
             annotation_form="plain",
             call=None,
-            default=FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT_VALUE),
+            default=FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE),
             has_default_factory_in_field=False,
             omitted=(),
             symbol_imports=(),
-            why=_PLAIN_ANNOTATION,
+            why=PLAIN_ANNOTATION,
         )
 
     def _written_assignment(self) -> WrittenAssignment:
@@ -1299,17 +1207,6 @@ def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) 
         field.nullable = False
 
 
-@contextmanager
-def _context_values(values: Mapping[ContextVar[Any], Any]) -> Generator[None, None, None]:
-    """Set each context variable to its value while the block runs."""
-    tokens = [(variable, variable.set(value)) for variable, value in values.items()]
-    try:
-        yield
-    finally:
-        for variable, token in reversed(tokens):
-            variable.reset(token)
-
-
 _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar(
     "looking_up_required_fields", default=frozenset()
 )
@@ -1318,7 +1215,7 @@ _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar
 
 def _nested_model_required_fields(source: DataModel, key: ModelKey) -> bool:
     """Look up whether ``source`` has required constructor fields, with ``source`` marked as being looked up."""
-    with _context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
+    with context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
         return _nested_model_has_required_constructor_fields(source)
 
 
@@ -1435,12 +1332,6 @@ def _holds_render_inputs(value: object) -> bool:
     return isinstance(value, _HOLDERS) and not isinstance(value, Reference)
 
 
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
-"""The annotation is the field's type alone."""
-_DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
-"""The field's default, as its schema or the parser gives it."""
-
-
 @final
 @record(eq=False)
 class _ValueFactory:
@@ -1519,7 +1410,7 @@ def ordering_constructor_fields(
     ``legacy-nested-factory-order-before-nullability`` otherwise. ``construction_defaults`` counts the defaults as the
     construction key gives them, for an ordering that runs before the rendered nullability is final.
     """
-    with _context_values({
+    with context_values({
         _ORDERS_CONSTRUCTOR_FIELDS: True,
         _ORDERS_BEFORE_NULLABILITY: before_nullability,
         _ORDERS_BY_CONSTRUCTION_DEFAULTS: construction_defaults,
@@ -1532,7 +1423,7 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
 
     A required check is no constructor ordering: the nested factories it reads are those it would answer anywhere.
     """
-    with _context_values({
+    with context_values({
         _ORDERS_CONSTRUCTOR_FIELDS: False,
         _ORDERS_BEFORE_NULLABILITY: counts,
         _ORDERS_BY_CONSTRUCTION_DEFAULTS: False,
@@ -2851,23 +2742,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
         for child in data_type_children(self.reference):
-            owner_model = get_most_of_parent(child, DataModel)
-            if isinstance(owner_model, DataModel):
+            field = nearest_field(child)
+            if isinstance(owner_model := chain_root(child), DataModel):
                 if owner_model not in models:
                     continue
                 owner_models = (owner_model,)
             else:
-                owner_models = tuple(
-                    model for model in models if any(base_class is child for base_class in model.base_classes)
-                )
+                owner_models = base_owners(child, models)
             if not owner_models:
                 continue
             child.replace_reference(new_ref)
-            current: DataType | DataModelFieldBase = child
-            while isinstance(parent := current.parent, DataType):
-                current = parent
-            if isinstance(parent, DataModelFieldBase):
-                parent.invalidate_semantic_caches(invalidate_parent=False)
+            if field is not None:
+                field.invalidate_semantic_caches(invalidate_parent=False)
             for owner_model in owner_models:
                 owner_model.invalidate_render_caches()
 
@@ -3562,9 +3448,9 @@ def _reference_names_model(reference: Reference, model: DataModel) -> bool:
     to the model that shares the path of ``model`` since collapse replaced one by the other names it too
     (`_share_path_identity`).
     """
-    if reference.source is None:
+    if names_by_path(reference):
         return reference.path == model.path
-    return model_key_of(reference) in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
+    return model_key_of(reference) in _path_identity_keys(model)
 
 
 def sort_data_models_for_mro(

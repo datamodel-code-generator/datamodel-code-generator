@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PythonConstruct
@@ -118,6 +118,8 @@ class PythonVersion(Enum):
 
 
 PythonVersionMin = PythonVersion.PY_310
+NEWEST_TARGET: Final = max(PythonVersion, key=lambda version: version.version_key)
+"""The newest target: the default on an interpreter newer than every target; its rules accept every identifier."""
 
 
 class Formatter(Enum):
@@ -159,6 +161,7 @@ __all__ = [
     "LONG_TARGET_PREFIX_LENGTH",
     "MAX_SHORT_DEFAULT_OVERFLOW",
     "MAX_TOP_LEVEL_BLANK_LINES",
+    "NEWEST_TARGET",
     "STRING_PREFIX_PATTERN",
     "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "DateClassType",

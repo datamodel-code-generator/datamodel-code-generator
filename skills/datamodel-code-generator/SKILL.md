@@ -30,7 +30,7 @@ Do not hand-write generated models first.
 Check one-shot execution first:
 
 ```bash
-uvx datamodel-codegen --help
+uvx --from datamodel-code-generator datamodel-codegen --help
 ```
 
 If `uvx` is unavailable:
@@ -129,7 +129,7 @@ Before choosing the output type, inspect `pyproject.toml`, `requirements.txt`, `
 ## Canonical command
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input spec.yaml \
   --input-file-type openapi \
   --output models.py \

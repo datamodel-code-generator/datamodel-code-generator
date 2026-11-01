@@ -6,21 +6,22 @@ use only one of them never loads the other's dependencies. Errors keep no key, s
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import is_sequence
 from ..client.operations import codec_condition
+from ..client.timing import is_aware
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
 from .values import resolve, unfit
-from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
+from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedSignature, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -31,7 +32,6 @@ if TYPE_CHECKING:
 __all__ = (
     "EventDecoder",
     "EventPlan",
-    "Facts",
     "MappedEventDecoder",
     "decode_unsigned",
     "epoch_microseconds",
@@ -64,7 +64,7 @@ class _Failed(Enum):
 def _parsed(raw_body: bytes, helper_id: str) -> JSONValue:
     """Return a body's JSON value, raising ProtocolDataError with no trace of the body when it does not parse."""
     try:
-        wire: JSONValue | _Failed = json.loads(raw_body)
+        wire: JSONValue | _Failed = json_value(raw_body)
     except (ValueError, UnicodeDecodeError, RecursionError):
         wire = _Failed.MALFORMED
     if isinstance(wire, _Failed):
@@ -128,15 +128,6 @@ class EventPlan(Generic[T]):
     event: EventDecoder[T] | MappedEventDecoder[T]
 
 
-@dataclass(frozen=True, slots=True)
-class Facts:
-    """The authenticated facts of a delivery."""
-
-    delivery_id: str | None
-    timestamp: datetime | None
-    matched_key_id: str
-
-
 def reject(
     condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
     helper_id: str,
@@ -168,10 +159,6 @@ def epoch_microseconds(moment: datetime) -> int:
     return (offset.days * 86400 + offset.seconds) * 1_000_000 + offset.microseconds
 
 
-def _aware(moment: object) -> TypeGuard[datetime]:
-    return isinstance(moment, datetime) and moment.utcoffset() is not None
-
-
 def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
     if options is None:
         return _DEFAULTS
@@ -196,7 +183,7 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
             raise configuration_error(helper_id, (name,))
     if not _instance(keys, KeySet):
         raise configuration_error(helper_id, ("keys",))
-    if not _aware(now):
+    if not is_aware(now):
         raise configuration_error(helper_id, ("now",))
     limits = _limits(options, helper_id)
     return epoch_microseconds(now), limits
@@ -223,7 +210,7 @@ def within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     return (now - timestamp) * past_scale <= past * 1_000_000 and (timestamp - now) * future_scale <= future * 1_000_000
 
 
-def received(plan: EventPlan[T], raw_body: bytes, facts: Facts) -> VerifiedWebhook[T]:
+def received(plan: EventPlan[T], raw_body: bytes, facts: VerifiedSignature) -> VerifiedWebhook[T]:
     """Decode an authenticated event and return its facts without retaining delivery state."""
     return VerifiedWebhook(
         data=plan.event.decode(raw_body, plan.helper_id),

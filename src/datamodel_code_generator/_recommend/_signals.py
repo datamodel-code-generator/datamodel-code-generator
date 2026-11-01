@@ -7,15 +7,16 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
+from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
-from datamodel_code_generator._document_reader import descend
+from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
 SignalName: TypeAlias = Literal[
@@ -165,7 +166,7 @@ def _unmodeled_pattern_properties(node: Mapping[str, Any]) -> bool:
     """
     if not isinstance(patterns := node.get("patternProperties"), dict) or not patterns:
         return False
-    if isinstance(properties := node.get("properties"), dict) and properties:
+    if _is_object(node):
         return True
     if isinstance(additional := node.get("additionalProperties"), dict) and additional:
         return False
@@ -178,6 +179,11 @@ def _types(node: Mapping[str, Any]) -> frozenset[str]:
     return frozenset(
         name for name in (declared if isinstance(declared, list) else (declared,)) if isinstance(name, str)
     )
+
+
+def _title(node: Mapping[str, Any]) -> str:
+    """Return a schema's title without surrounding whitespace; empty when it has none or the title is blank."""
+    return title.strip() if isinstance(title := node.get("title"), str) else ""
 
 
 def _subschemas(node: Mapping[str, Any]) -> Iterator[object]:
@@ -203,20 +209,23 @@ def _example_text(counter: Counter[str]) -> str:
     return ", ".join(f"{name} x{count}" for name, count in counter.most_common(_EXAMPLE_LIMIT))
 
 
-def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
-    """Return the schema a local JSON Pointer reference points at, or None."""
+def _local_tokens(ref: object) -> tuple[str, ...] | None:
+    """Return the tokens a local JSON Pointer reference names, its fragment percent-decoded as generation reads it."""
     if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
-    return descend(cast("Any", document), pointer_tokens(ref[1:]), "legacy-objects-only")
+    return pointer_tokens(unquote(ref[1:]))
+
+
+def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
+    """Return the node a local JSON Pointer reference points at, or None."""
+    if (tokens := _local_tokens(ref)) is None:
+        return None
+    return descend(cast("Any", document), tokens, "canonical")
 
 
 def _dereferenced(document: Mapping[str, Any], node: object) -> object:
     """Return the local object a ``$ref`` node points at, or the node itself when it has no ``$ref``."""
     return _resolve_local(document, node["$ref"]) if isinstance(node, dict) and "$ref" in node else node
-
-
-def _items(value: object) -> Iterable[tuple[str, Any]]:
-    return value.items() if isinstance(value, dict) else ()
 
 
 def _unwrap(node: object) -> object:
@@ -231,63 +240,103 @@ def _uses_definitions(kind: SchemaKind) -> bool:
     return kind == "jsonschema"
 
 
-def _components(document: Mapping[str, Any], kind: SchemaKind) -> dict[str, Any]:
-    """Return the named schemas of a document: $defs and definitions, or components/schemas."""
+def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = True) -> dict[str, Any]:
+    """Return the named schemas of a document: $defs and definitions, or components/schemas.
+
+    A definition is named by the text of its key, as JSON Schema generation names it; the name of an OpenAPI or AsyncAPI
+    component generation reads must be a string, and generation ends in an error at a key that is not. Components that
+    the selected scopes do not read are named by the text of their key.
+    """
     if _uses_definitions(kind):
-        return {key: value for keyword in DEFINITION_KEYS for key, value in _items(document.get(keyword))}
-    components = document.get("components")
-    return {
-        key: _unwrap(value)
-        for key, value in _items(components.get("schemas") if isinstance(components, dict) else None)
-    }
+        return {
+            str(key): value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()
+        }
+    schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
+    if read:
+        string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
+    return {str(key): _unwrap(value) for key, value in schemas.items()}
 
 
-def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[str, str]:
-    prefixes = ("#/$defs/", "#/definitions/") if _uses_definitions(kind) else ("#/components/schemas/",)
-    return {f"{prefix}{key}": key for key in components for prefix in prefixes}
+def _key_path(pointer: str) -> Callable[[object], list[str]]:
+    """Return how an error locates a key of the map at a pointer."""
+    return lambda key: [pointer, str(key)]
 
 
-def _media_schemas(key: str, container: object) -> Iterator[tuple[str, object]]:
-    """Yield the media type schemas of a request body or response."""
-    content = container.get("content") if isinstance(container, dict) else None
-    for media_type, media in _items(content):
-        yield f"{key} {media_type}", media.get("schema") if isinstance(media, dict) else None
+def _component_refs(kind: SchemaKind, components: Iterable[str]) -> dict[tuple[str, ...], str]:
+    """Return the component each local reference names, by the tokens of its pointer."""
+    prefixes = (("$defs",), ("definitions",)) if _uses_definitions(kind) else (("components", "schemas"),)
+    return {(*prefix, key): key for key in components for prefix in prefixes}
+
+
+def _media_schemas(document: Mapping[str, Any], key: str, container: object) -> Iterator[tuple[str, object]]:
+    """Yield the media type schemas of a request body or response, which may be a local reference."""
+    for media_type, media in as_mapping(as_mapping(_dereferenced(document, container)).get("content")).items():
+        yield f"{key} {media_type}", as_mapping(media).get("schema")
+
+
+def _path_items(
+    document: Mapping[str, Any], sections: Iterable[str], include_paths: Sequence[str]
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
+
+    A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item is skipped as
+    the paths scope skips it (row ``legacy-object-extension-paths``), also for the api scope, whose walk skips an
+    extension key that holds an object too.
+    """
+    for section in sections:
+        kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
+        for path, item in as_mapping(document.get(section)).items():
+            string_key(path, kind, error_path)
+            if section == "webhooks" or (
+                holds_path_item(path, item, "legacy-object-extension-paths") and path_selected(path, include_paths)
+            ):
+                yield path, as_mapping(_dereferenced(document, item))
+
+
+def _scoped_schemas(
+    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
+) -> Iterator[tuple[str, object]]:
+    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
+    api = "api" in scopes
+    sections = (section for section in ("paths", "webhooks") if api or section in scopes)
+    for path, item in _path_items(document, sections, include_paths):
+        for method, operation in item.items():
+            yield from _operation_parts(document, f"{path} {method}", operation)
+    components = as_mapping(document.get("components"))
+    bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
+    for name, body in as_mapping(bodies).items():
+        yield from _media_schemas(document, name, body)
 
 
 def _operation_schemas(
     document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
 ) -> Iterator[tuple[str, object]]:
-    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate."""
-    api = "api" in scopes
-    for section in ("paths", "webhooks"):
-        items = document.get(section) if api or section in scopes else None
-        for path, item in _items(items):
-            if section == "webhooks" or path_selected(path, include_paths):
-                for method, operation in _items(item):
-                    yield from _operation_parts(f"{path} {method}", operation)
-    components = document.get("components")
-    bodies = (
-        components.get("requestBodies") if isinstance(components, dict) and (api or "requestbodies" in scopes) else None
-    )
-    for name, body in _items(bodies):
-        yield from _media_schemas(name, body)
+    """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate, each node once.
+
+    A response or request body that several operations, or an operation and the request bodies scope, name is one
+    loaded node, and generation writes its inline models once.
+    """
+    walked: dict[int, object] = {}
+    for key, schema in _scoped_schemas(document, scopes, include_paths):
+        if isinstance(schema, dict):
+            if id(schema) in walked:
+                continue
+            walked[id(schema)] = schema
+        yield key, schema
 
 
 def _legacy_body_operations(
     document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
 ) -> Iterator[Mapping[str, Any]]:
-    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions.
-
-    Local path item references resolve as generation resolves them; remote ones are not read.
-    """
-    for section in () if "api" in scopes else ("paths", "webhooks"):
-        for path, item in _items(document.get(section) if section in scopes else None):
-            if section == "webhooks" or path_selected(path, include_paths):
-                yield from (
-                    operation
-                    for method, operation in _items(_dereferenced(document, item))
-                    if method in OPERATION_METHODS and isinstance(operation, dict)
-                )
+    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions."""
+    sections = (section for section in ("paths", "webhooks") if "api" not in scopes and section in scopes)
+    for _, item in _path_items(document, sections, include_paths):
+        yield from (
+            operation
+            for method, operation in item.items()
+            if method in OPERATION_METHODS and isinstance(operation, dict)
+        )
 
 
 def _is_inline_object_body(schema: object) -> bool:
@@ -311,22 +360,24 @@ def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str],
     return sum(
         _is_inline_object_body(schema)
         for operation in _legacy_body_operations(document, scopes, include_paths)
-        for holder in (operation.get("requestBody"), *dict(_items(operation.get("responses"))).values())
-        for _, schema in _media_schemas("", _dereferenced(document, holder))
+        for holder in (operation.get("requestBody"), *as_mapping(operation.get("responses")).values())
+        for _, schema in _media_schemas(document, "", holder)
     )
 
 
-def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]]:
+def _operation_parts(document: Mapping[str, Any], key: str, operation: object) -> Iterator[tuple[str, object]]:
     """Yield the request body, response, and parameter schemas of one operation.
+
+    A request body and a response may be a local reference.
 
     Generation parses every parameter's schema of the operations it walks, so inline enums and objects of parameters
     are models whether or not the parameters scope also emits the operation's parameters model.
     """
     if not isinstance(operation, dict) or key.rpartition(" ")[2] not in OPERATION_METHODS:
         return
-    yield from _media_schemas(f"{key} request", operation.get("requestBody"))
-    for status, response in _items(operation.get("responses")):
-        yield from _media_schemas(f"{key} {status}", response)
+    yield from _media_schemas(document, f"{key} request", operation.get("requestBody"))
+    for status, response in as_mapping(operation.get("responses")).items():
+        yield from _media_schemas(document, f"{key} {status}", response)
     fields = {
         name: parameter.get("schema")
         for parameter in operation.get("parameters") or ()
@@ -337,38 +388,40 @@ def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]
 
 def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]]:
     """Yield the payload and header schemas of AsyncAPI messages in components and channels."""
-    components = document.get("components")
-    components = components if isinstance(components, dict) else {}
-    messages = list(_items(components.get("messages")))
-    for name, channel in [*_items(document.get("channels")), *_items(components.get("channels"))]:
+    components = as_mapping(document.get("components"))
+    messages: list[tuple[str, object]] = list(as_mapping(components.get("messages")).items())
+    for name, channel in [
+        *as_mapping(document.get("channels")).items(),
+        *as_mapping(components.get("channels")).items(),
+    ]:
         messages.extend(
             (f"{name} {operation}", _operation_message(channel, operation)) for operation in ("publish", "subscribe")
         )
-        messages.extend((f"{name} {key}", message) for key, message in _items(_get(channel, "messages")))
+        messages.extend(
+            (f"{name} {key}", message) for key, message in as_mapping(as_mapping(channel).get("messages")).items()
+        )
     for name, message in messages:
-        variants = _get(message, "oneOf")
+        variants = as_mapping(message).get("oneOf")
         for index, variant in enumerate(variants if isinstance(variants, list) else [message]):
             for part in ("payload", "headers"):
-                yield f"{name} {index} {part}", _unwrap(_get(variant, part))
-
-
-def _get(node: object, key: str) -> object:
-    return node.get(key) if isinstance(node, dict) else None
+                yield f"{name} {index} {part}", _unwrap(as_mapping(variant).get(part))
 
 
 def _operation_message(channel: object, operation: str) -> object:
-    return _get(_get(channel, operation), "message")
+    return as_mapping(as_mapping(channel).get(operation)).get("message")
 
 
 def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
     """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
     if kind == "openapi":
         return sum(
-            method in OPERATION_METHODS for _, item in _items(document.get("paths")) for method, _ in _items(item)
+            method in OPERATION_METHODS
+            for item in as_mapping(document.get("paths")).values()
+            for method in as_mapping(_dereferenced(document, item))
         )
-    return len(dict(_items(document.get("operations")))) + sum(
-        isinstance(_get(channel, operation), dict)
-        for _, channel in _items(document.get("channels"))
+    return len(as_mapping(document.get("operations"))) + sum(
+        isinstance(as_mapping(channel).get(operation), dict)
+        for channel in as_mapping(document.get("channels")).values()
         for operation in ("publish", "subscribe")
     )
 
@@ -422,7 +475,7 @@ def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
 class _Walker:
     """Collect the counts of one document in a single pass over its named schemas."""
 
-    def __init__(self, document: Mapping[str, Any], refs: Mapping[str, str], dialect: _Dialect) -> None:
+    def __init__(self, document: Mapping[str, Any], refs: Mapping[tuple[str, ...], str], dialect: _Dialect) -> None:
         self.document = document
         self.refs = refs
         self.dialect = dialect
@@ -444,8 +497,8 @@ class _Walker:
         if isinstance(node, dict):
             key = tuple(
                 (name, self.shape(value))
-                for name, value in sorted(node.items())
-                if name not in _SHAPE_IGNORED_KEYWORDS and not name.startswith("x-")
+                for name, value in sorted(node.items(), key=lambda item: str(item[0]))
+                if (text := str(name)) not in _SHAPE_IGNORED_KEYWORDS and not text.startswith("x-")
             )
         elif isinstance(node, list):
             key = ("l", *(self.shape(value) for value in node))
@@ -493,7 +546,7 @@ class _Walker:
         """Record a reference to a named schema; return whether the node is a reference."""
         if not isinstance(ref := node.get("$ref"), str):
             return False
-        if (target := self.refs.get(ref)) is not None:
+        if (tokens := _local_tokens(ref)) is not None and (target := self.refs.get(tokens)) is not None:
             self.references[component].add(target)
         return True
 
@@ -530,9 +583,9 @@ class _Walker:
             self.counts["inline_objects"] += 1
             self.record_name(name, parent, self.object_name_parents)
             self.object_shapes[self.shape(node)] += 1
-            if isinstance(title := node.get("title"), str) and title.strip():
+            if title := _title(node):
                 self.counts["inline_titled_objects"] += 1
-                self.inline_titles[title.strip()] += 1
+                self.inline_titles[title] += 1
             depth += 1
             self.max_depth = max(self.max_depth, depth)
             parent = f"{parent}/{name}"
@@ -541,8 +594,7 @@ class _Walker:
     def walk_children(self, node: Mapping[str, Any], *, parent: str, name: str, depth: int, component: str) -> None:
         """Walk the subschemas of one schema object."""
         for keyword in _SCHEMA_MAP_KEYWORDS:
-            members = node.get(keyword)
-            for member_name, member in members.items() if isinstance(members, dict) else ():
+            for member_name, member in as_mapping(node.get(keyword)).items():
                 self.walk(
                     member,
                     parent=parent,
@@ -568,7 +620,7 @@ class _Walker:
                     continue
                 self.counts["inline_union_variants"] += 1
                 self.counts["parent_copy_union_branches"] += self.copies_parent(node, branch)
-                self.counts["inline_titled_union_variants"] += isinstance(branch.get("title"), str)
+                self.counts["inline_titled_union_variants"] += bool(_title(branch))
                 is_object = _is_object(branch) or isinstance(branch.get("allOf"), list)
                 self.counts["inline_object_union_variants" if is_object else "inline_scalar_union_variants"] += 1
         self.count_tags([branch for branch in branches if "$ref" not in branch])
@@ -602,11 +654,10 @@ class _Walker:
 
         Generation copies the holder's properties into a model for each such branch.
         """
-        parent_properties = node.get("properties")
+        parent_properties = as_mapping(node.get("properties"))
         properties = branch.get("properties", {})
         return (
-            isinstance(parent_properties, dict)
-            and bool(parent_properties)
+            _is_object(node)
             and branch.keys() <= _CONSTRAINT_ONLY_KEYWORDS
             and ("required" in branch or "properties" in branch)
             and isinstance(properties, dict)
@@ -616,10 +667,9 @@ class _Walker:
     @staticmethod
     def tags(branch: Mapping[str, Any]) -> dict[str, tuple[str, object]]:
         """Return the literal tag properties declared directly on one schema."""
-        properties = branch.get("properties")
         return {
             name: literal
-            for name, value in (properties.items() if isinstance(properties, dict) else ())
+            for name, value in as_mapping(branch.get("properties")).items()
             if (literal := _single_literal(value)) is not None
         }
 
@@ -663,9 +713,8 @@ def _reference_cycles(references: Mapping[str, set[str]]) -> int:
     return sum(len(group) > 1 for group in groups)
 
 
-def _count_titles(counts: Counter[str], titles: Mapping[str, str], components: Iterable[str]) -> Counter[str]:
-    """Count component titles that collide or repeat keys; return the shared titles with their group sizes."""
-    keys = {normalize_name(key) for key in components}
+def _count_titles(counts: Counter[str], titles: Mapping[str, str], keys: AbstractSet[str]) -> Counter[str]:
+    """Count component titles that collide or repeat the normalized component ``keys``; return the shared titles."""
     groups = Counter(normalize_name(title) for title in titles.values())
     shared = {title: count for title, count in groups.items() if count > 1}
     counts["titled_components"] = len(titles)
@@ -683,9 +732,8 @@ def _count_titles(counts: Counter[str], titles: Mapping[str, str], components: I
     })
 
 
-def _count_names(counts: Counter[str], walker: _Walker, components: Iterable[str]) -> Counter[str]:
-    """Count inline model names shared by parents or taken by components; return the shared names."""
-    keys = {normalize_name(key) for key in components}
+def _count_names(counts: Counter[str], walker: _Walker, keys: AbstractSet[str]) -> Counter[str]:
+    """Count inline model names shared by parents or taken by the normalized component ``keys``; return the shared."""
     shared = Counter({name: len(parents) for name, parents in walker.name_parents.items() if len(parents) > 1})
     counts["shared_inline_names"] = len(shared)
     counts["shared_inline_object_names"] = sum(len(parents) > 1 for parents in walker.object_name_parents.values())
@@ -730,7 +778,8 @@ def measure_signals(
     scope (otherwise only those the operations reference), and request, response, and parameter schemas with the
     path scopes.
     """
-    all_components = _components(document, kind)
+    whole = kind != "openapi" or bool({"schemas", "api"} & openapi_scopes)
+    all_components = _components(document, kind, read=whole)
     walker = _Walker(document, _component_refs(kind, all_components), _dialect(document, kind))
     counts = walker.counts
     extra: list[tuple[str, object]] = []
@@ -741,29 +790,25 @@ def measure_signals(
         extra = list(_message_schemas(document))
     for key, node in extra:
         walker.walk_named(key, node)
-    whole = kind != "openapi" or bool({"schemas", "api"} & openapi_scopes)
     components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
     named = {key: node for key, node in components.items() if isinstance(node, dict)}
     counts["component_enums"] = sum(_is_enum(node) for node in named.values())
-    titles = {
-        key: title.strip()
-        for key, node in named.items()
-        if isinstance(title := node.get("title"), str) and title.strip()
-    }
+    titles = {key: title for key, node in named.items() if (title := _title(node))}
     root_title = ""
     if kind == "jsonschema":
         root = {key: value for key, value in document.items() if key not in DEFINITION_KEYS}
         walker.count_keywords(root)
         walker.walk_children(root, parent="#", name="", depth=0, component="")
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
-        root_title = title.strip() if isinstance(title := root.get("title"), str) else ""
+        root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
     counts["operations"] = _count_operations(document, kind)
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
-    shared_names = _count_names(counts, walker, components)
-    shared_titles = _count_titles(counts, titles, components)
+    keys = {normalize_name(key) for key in components}
+    shared_names = _count_names(counts, walker, keys)
+    shared_titles = _count_titles(counts, titles, keys)
     counts["inline_title_max_repeat"] = max(walker.inline_titles.values(), default=0)
     dotted = [key for key in components if "." in key]
     counts["dotted_keys"] = len(dotted)

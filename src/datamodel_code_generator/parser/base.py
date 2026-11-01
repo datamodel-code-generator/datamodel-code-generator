@@ -56,6 +56,8 @@ from datamodel_code_generator._constraint_applicability import (
     resplit_overridden_constraints,  # noqa: F401  # Preserve the established parser.base export.
     untaken_minimums,  # noqa: F401  # Preserve the established parser.base export.
 )
+from datamodel_code_generator._container_kinds import CONTAINERS
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
@@ -63,6 +65,7 @@ from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
     expanded_path,
+    is_below,
     is_package_init,
     normalized_path,
     written_names,
@@ -101,6 +104,7 @@ from datamodel_code_generator._user_keys import (
     mapped_base_class,
     model_level_type_override,
 )
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
     DefaultValueType,
@@ -180,6 +184,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _has_root_field_constraints,
     _hidden_type_names,
     _iter_import_bindings,
+    _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
@@ -214,11 +219,7 @@ from datamodel_code_generator.parser._passes._state import (
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
 from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS, builtin_name_bindings
-from datamodel_code_generator.parser._pipeline import (
-    Runner,
-    anchor_parse_caller,
-    release_parse_caller,
-)
+from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
@@ -345,11 +346,8 @@ def dropped_constraints_recorded() -> Generator[DroppedConstraints]:
     a generation discards, such as a compatibility retry it does not take, adds nothing.
     """
     record = DroppedConstraints()
-    token = _DROPPED_CONSTRAINTS.set(record)
-    try:
+    with context_values({_DROPPED_CONSTRAINTS: record}):
         yield record
-    finally:
-        _DROPPED_CONSTRAINTS.reset(token)
 
 
 class ModuleContext(NamedTuple):
@@ -941,9 +939,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
-        self.typed_nullable_map_reference_ids: set[int] = set()
+        self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[int] = set()
-        self._site_model_reference_ids: set[int] = set()
+        self._site_model_keys: set[ModelKey] = set()
         self.typed_map_values_may_move_models = False
         self.model_placement: dict[ModulePath, frozenset[str]] = {}
         self.reuse_scope: ReuseScope | None = config.reuse_scope
@@ -1466,7 +1464,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         root_data_type: DataType,
         models_set: set[DataModel],
     ) -> Reference | None:
-        if not (root_reference := root_data_type.reference) or root_data_type.is_dict or root_data_type.is_list:
+        if not (root_reference := root_data_type.reference) or root_data_type in CONTAINERS:
             return None
         if root_reference.source not in models_set or (
             self.config.use_site_models_for_constrained_refs and _has_root_field_constraints(model.fields[0])
@@ -1793,13 +1791,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         package = (*original_module, "__init__") if is_init else original_module
         imports = Imports()
         for source, name, bound_name in sorted(names, key=operator.itemgetter(2)):
-            if len(source) < len(package) and package[: len(source)] == source:
+            if is_below(package, source):
                 from_ = "." * (len(package) - len(source))
             else:
                 left, right = relative(
                     original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
                 )
-                from_ = f"{left}{right}" if left.endswith(".") else f"{left}.{right}"
+                from_ = _join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"
@@ -2275,19 +2273,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         state = _FinalizeState(
             contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules, with_import
         )
-        render_ready = (
-            RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
-            if RENDER_READY.get() is None
-            else None
-        )
-        memo = PARSE_MEMO.set(self.generation_store._memo) if PARSE_MEMO.get() is None else None  # noqa: SLF001
-        try:
+        memo = self.generation_store._memo  # noqa: SLF001
+        current = {RENDER_READY: RenderReady(type(self), memo), PARSE_MEMO: memo}
+        with context_values({variable: value for variable, value in current.items() if variable.get() is None}):
             self.__runner().run_steps(FINALIZE_SEGMENTS, self, state)
-        finally:
-            if memo is not None:
-                PARSE_MEMO.reset(memo)
-            if render_ready is not None:
-                RENDER_READY.reset(render_ready)
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
@@ -2488,12 +2477,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_identities: Mapping[DataModel, str],
     ) -> tuple[ModelMetadata, tuple[str, ...]]:
         """Return the metadata of the emitted models and, in the same order, their redacted identity paths."""
+        from datamodel_code_generator.model_metadata import model_metadata_payload  # noqa: PLC0415
+
         models = [(model, ctx.module) for ctx in contexts for model in ctx.models if model in model_identities]
         return (
-            {
-                "version": 1,
-                "models": [cls._model_metadata(model, module, model_identities[model]) for model, module in models],
-            },
+            model_metadata_payload([
+                cls._model_metadata(model, module, model_identities[model]) for model, module in models
+            ]),
             tuple(redact_reference(model_identities[model]) for model, _ in models),
         )
 
@@ -2537,10 +2527,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _run_with_suppressed_warnings(self, callback: Callable[[], None]) -> None:  # noqa: PLR6301
         """Invoke one retry hook without repeating user-visible warnings."""
-        import warnings  # noqa: PLC0415
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with quiet():
             callback()
 
     def parse(  # noqa: PLR0913, PLR0917
@@ -2571,17 +2558,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             default_build_code_formatter=Parser._build_code_formatter,
             result_type=Result,
         )
-        token = SCHEMA_GRAPH.set(self._schema_graph)
-        render_ready = RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
-        memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
-        caller = anchor_parse_caller()
-        try:
+        with context_values({
+            SCHEMA_GRAPH: self._schema_graph,
+            RENDER_READY: RenderReady(type(self), self.generation_store._memo),  # noqa: SLF001
+            PARSE_MEMO: self.generation_store._memo,  # noqa: SLF001
+            PARSE_CALLER: parse_caller(),
+        }):
             self.__runner().run_steps(PIPELINE, self, run)
-        finally:
-            release_parse_caller(caller)
-            PARSE_MEMO.reset(memo)
-            RENDER_READY.reset(render_ready)
-            SCHEMA_GRAPH.reset(token)
         return run.output
 
     def __runner(self) -> Runner:

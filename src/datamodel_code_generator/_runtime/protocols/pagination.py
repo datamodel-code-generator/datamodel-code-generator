@@ -7,22 +7,18 @@ read, decoded, and closed inside its own child call, so abandoning a pager holds
 from __future__ import annotations
 
 import re
-import threading
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
-from enum import Enum
-from hashlib import sha256
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
-from ..model_codecs.parameters import parameter_key
+from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, PaginationOptions, layered, new_session
+from .options import HelperLimits, PaginationOptions, StepLock, layered, new_session
 from .records import (
     AsyncSteps,
     BodySelector,
@@ -34,16 +30,16 @@ from .records import (
     Selector,
     Steps,
     canonical_json,
+    json_digest,
     plain_copy,
     record_instance,
 )
-from .values import MISSING, absence, read_selector, required, resolve, unfit, written
+from .values import MISSING, absence, accessed, read_selector, required, resolve, unfit, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
     from types import TracebackType
 
-    from ..client.errors import ConfigurationError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
@@ -90,6 +86,11 @@ _REFERENCE: Final = re.compile(
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
 
 
+def _end_digests(values: tuple[JSONValue, ...]) -> frozenset[bytes]:
+    """Return the canonical JSON of each value that ends a traversal, as a cursor or next URL plan keeps it."""
+    return frozenset(canonical_json(value) for value in values)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CursorPlan:
@@ -110,7 +111,7 @@ class CursorPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
@@ -153,7 +154,7 @@ class NextUrlPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
@@ -294,20 +295,20 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
         sources = tuple(binding.written for binding in self.bindings)
         if isinstance(rule, (CursorPlan, CountPlan)):
             sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
-        continued, writes, headers, queries = targeted(self.call, (target for target, _ in sources))
+        targeted = targeted_writes(self.call, sources)
         object.__setattr__(self, "follows", follows)
-        object.__setattr__(self, "writes", writes)
-        object.__setattr__(self, "headers", headers)
-        object.__setattr__(self, "queries", queries)
-        object.__setattr__(self, "dotted", read_paths(self.call, sources))
-        object.__setattr__(self, "continued", _later(rule, continued))
+        object.__setattr__(self, "writes", targeted.writes)
+        object.__setattr__(self, "headers", targeted.headers)
+        object.__setattr__(self, "queries", targeted.queries)
+        object.__setattr__(self, "dotted", targeted.dotted)
+        object.__setattr__(self, "continued", _later(rule, targeted.call))
 
 
 def _later(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan, continued: OperationPlan[P]) -> OperationPlan[P]:
@@ -453,10 +454,13 @@ def _limits(
     The client's and a view's default of a count's header or query position is the first request's position instead,
     so only the call's own one is refused.
     """
+    from .writes import written_names  # noqa: PLC0415 - A plan loaded the operation runtime.
+
     request, kinds = core.helper_layers(
         plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options
     )
-    header, query = _started(plan.continuation)
+    rule = plan.continuation
+    header, query = written_names((rule.write,) if isinstance(rule, CountPlan) else ())
     headers, queries = plan.headers - header, plan.queries - query
     core.refuse_patched(plan.helper_id, request, (plan.call,), headers, queries.__contains__, (header, query))
     return _Limits(
@@ -466,14 +470,6 @@ def _limits(
         options=request,
         clock=core.clock,
     )
-
-
-def _started(rule: CursorPlan | CountPlan | NextUrlPlan | LinkPlan) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the header, by its lowercase name, or the query name of a count's position a first request reads."""
-    if not isinstance(rule, CountPlan) or not isinstance(target := rule.write, ParameterTarget):
-        return frozenset(), frozenset()
-    location, key = parameter_key(target.location, target.name)
-    return frozenset({key} if location == "header" else ()), frozenset({key} if location == "query" else ())
 
 
 def _data_error(
@@ -564,8 +560,8 @@ def _integer(value: object) -> int | None:
 
     A float is taken as the integer it holds; a page's JSON number is read from its text instead, by `_exact`.
     """
-    if isinstance(value, int):
-        return None if isinstance(value, bool) else value
+    if json_integer(value):
+        return value
     return int(value) if isinstance(value, float) and value.is_integer() else None
 
 
@@ -583,9 +579,7 @@ def _exact(plan: PaginationPlan[T, P], read: Selector, content: bytes, info: Res
 
     The parsed page holds the number as a float, which may have rounded it, so it is read once more as a Decimal.
     """
-    import json  # noqa: PLC0415 - Only a total spelled with a fraction or an exponent is read again.
-
-    number = cast("Decimal", _selected(plan, read, json.loads(content, parse_float=Decimal), info))
+    number = cast("Decimal", _selected(plan, read, json_value(content, floats="decimal"), info))
     return int(number) if number == number.to_integral_value() else None
 
 
@@ -595,12 +589,7 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, content:
     A JSON number with a fraction or an exponent counts only when its text is an integer, which is read exactly.
     """
     value = _selected(plan, read, wire, info)
-    if (
-        isinstance(read, HeaderSelector)
-        and isinstance(value, str)
-        and (digits := value.removeprefix("-")).isascii()
-        and digits.isdigit()
-    ):
+    if isinstance(read, HeaderSelector) and isinstance(value, str) and ascii_digits(value.removeprefix("-")):
         try:
             value = int(value)
         except ValueError:
@@ -698,10 +687,6 @@ class _Walk(Generic[T, P]):
         return SessionLimitError(
             reason=kind, limit=limit, progress=self.progress(), helper_id=plan.helper_id, operation=plan.operation
         )
-
-    def state_error(self, action: str, state: str) -> ConfigurationError:
-        """Return the refusal of an action the pager's state forbids."""
-        return configuration_error(self.plan.helper_id, (action, state), "invalid_state")
 
     def ready(self) -> OperationSession | None:
         """Return the session the next page is fetched in, or None when no page remains.
@@ -878,7 +863,7 @@ class _Walk(Generic[T, P]):
             from ..client.urls import absolute_target, strip_query  # noqa: PLC0415 - Only a followed URL is parsed.
 
             first = strip_query(absolute_target(url).url, stripped)
-            self.seed = sha256(canonical_json(first)).digest()
+            self.seed = json_digest(first)
         reference = _linked(plan, rule, info) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
         if reference is MISSING:
             return reference
@@ -898,14 +883,8 @@ class _Walk(Generic[T, P]):
         encoded is refused.
         """
         plan = self.plan
-        selector = plan.items_selector
-        if (
-            (selected := resolve(wire, selector.pointer)) is MISSING
-            or selected is None
-            or (native := plan.items(data)) is None
-        ):
-            raise _data_error(plan, info, absence(selected), selector)
-        items = tuple(native)
+        refuse = data_refusal(plan.helper_id, plan.operation, info)
+        items = tuple(accessed(plan.items, plan.items_selector, data, wire, refuse))
         rule = plan.continuation
         if isinstance(rule, CursorPlan):
             cursor = _ended(plan, rule, wire, info)
@@ -928,7 +907,7 @@ class _Walk(Generic[T, P]):
         """
         previous = self.previous = self.link
         index = 0 if previous is None else previous.index + 1
-        digest = None if cursor is MISSING else sha256(canonical_json(cursor)).digest()
+        digest = None if cursor is MISSING else json_digest(cursor)
         history = _line(previous)
         if (seed := self.seed) is not None and previous is None:
             history.seen[seed] = 0
@@ -1014,7 +993,7 @@ def _restored(
     if state is None:
         return walk
     rule = plan.continuation
-    if isinstance(rule, CountPlan) and (not isinstance(state, int) or isinstance(state, bool) or state < 0):
+    if isinstance(rule, CountPlan) and (not json_integer(state) or state < 0):
         raise configuration_error(plan.helper_id, ("state",))
     if isinstance(rule, (NextUrlPlan, LinkPlan)):
         if not isinstance(state, str):
@@ -1023,7 +1002,7 @@ def _restored(
         stripped = core.follow_query()
         state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
-        digest = sha256(canonical_json(state)).digest()
+        digest = json_digest(state)
     except (TypeError, ValueError):
         raise configuration_error(plan.helper_id, ("state",)) from None
     walk.seed = digest
@@ -1032,23 +1011,19 @@ def _restored(
     return walk
 
 
-class _State(Enum):
-    READY = "ready"
-    FAILED = "failed"
-    CLOSED = "closed"
-
-
-class _Traversal(Generic[T, P]):
+class _Traversal(StepLock, Generic[T, P]):
     """What the synchronous and asyncio pagers share: their state, mode, buffered page, and walk."""
 
-    __slots__ = ("_items", "_lock", "_mode", "_position", "_state", "_walk")
+    __slots__ = ("_failed", "_items", "_mode", "_position", "_walk")
+
+    _busy = "fetching"
 
     def __init__(self, walk: _Walk[T, P]) -> None:
         """Keep the walk; nothing is sent until the first page is requested."""
+        super().__init__(walk.plan.helper_id)
         self._walk = walk
-        self._lock = threading.Lock()
         self._mode: Literal["items", "pages"] | None = None
-        self._state = _State.READY
+        self._failed = False
         self._items: tuple[T, ...] = ()
         self._position = 0
 
@@ -1057,24 +1032,24 @@ class _Traversal(Generic[T, P]):
         """Return the pages fetched, the items delivered, and the session's sends so far."""
         return self._walk.progress()
 
-    def _enter(self, mode: Literal["items", "pages"], action: str) -> None:
+    def _refused(self) -> str | None:
+        """Return the state that refuses every step of the pager: closed, failed, or None."""
+        return "closed" if self._closed else "failed" if self._failed else None
+
+    def _step(self, mode: Literal["items", "pages"], action: str) -> None:
         """Take the pager for one step in a mode, fixing the mode on first use.
 
         A concurrent step, a closed or failed pager, and then a step in the other mode are refused, in that order.
         """
-        if not self._lock.acquire(blocking=False):
-            raise self._walk.state_error(action, "fetching")
-        if (state := self._state) is not _State.READY:
-            self._lock.release()
-            raise self._walk.state_error(action, state.value)
+        self._enter(action)
         if (current := self._mode) is not None and current != mode:
             self._lock.release()
-            raise self._walk.state_error(action, current)
+            raise self._state_error(action, current)
         self._mode = mode
 
     def _select(self, mode: Literal["items", "pages"], action: str) -> None:
         """Fix the pager's mode without stepping it."""
-        self._enter(mode, action)
+        self._step(mode, action)
         self._lock.release()
 
     def _ready(self) -> OperationSession | None:
@@ -1082,14 +1057,14 @@ class _Traversal(Generic[T, P]):
         try:
             return self._walk.ready()
         except (SessionLimitError, ProtocolDataError):
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     def _take(self) -> T:
         """Return the next buffered item, refusing it once the delivered items reached the item limit."""
         walk = self._walk
         if (limit := walk.limits.max_items) is not None and walk.delivered >= limit:
-            self._state = _State.FAILED
+            self._failed = True
             raise walk.limit(limit, "items")
         walk.delivered += 1
         self._position += 1
@@ -1107,20 +1082,11 @@ class _Traversal(Generic[T, P]):
         """
         action = "checkpoint"
         if not self._lock.acquire(blocking=False):
-            raise self._walk.state_error(action, "fetching")
+            raise self._state_error(action, self._busy)
         try:
             return self._walk.checkpoint(len(self._items) - self._position)
         finally:
             self._lock.release()
-
-    def _close(self, action: str, *, quiet: bool = False) -> None:
-        """Close the pager, refusing a running step unless an error is already leaving its block."""
-        if not self._lock.acquire(blocking=False):
-            if quiet:
-                return
-            raise self._walk.state_error(action, "fetching")
-        self._state = _State.CLOSED
-        self._lock.release()
 
 
 @final
@@ -1145,7 +1111,7 @@ class Pager(_Traversal[T, P]):
 
     def __next__(self) -> T:
         """Return the next item, fetching the next page once the current one is consumed."""
-        self._enter("items", "next")
+        self._step("items", "next")
         try:
             while self._position >= len(self._items):
                 if (session := self._ready()) is None:
@@ -1161,7 +1127,7 @@ class Pager(_Traversal[T, P]):
         return Steps(self._page)
 
     def _page(self) -> Page[T, P]:
-        self._enter("pages", "next")
+        self._step("pages", "next")
         try:
             if (session := self._ready()) is None:
                 raise StopIteration
@@ -1176,7 +1142,7 @@ class Pager(_Traversal[T, P]):
         try:
             return walk.record(*_fetch(self._core, walk, session))
         except BaseException:
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     def close(self) -> None:
@@ -1216,7 +1182,7 @@ class AsyncPager(_Traversal[T, P]):
 
     async def __anext__(self) -> T:
         """Return the next item, fetching the next page once the current one is consumed."""
-        self._enter("items", "anext")
+        self._step("items", "anext")
         try:
             while self._position >= len(self._items):
                 if (session := self._ready()) is None:
@@ -1232,7 +1198,7 @@ class AsyncPager(_Traversal[T, P]):
         return AsyncSteps(self._page)
 
     async def _page(self) -> Page[T, P]:
-        self._enter("pages", "anext")
+        self._step("pages", "anext")
         try:
             if (session := self._ready()) is None:
                 raise StopAsyncIteration
@@ -1247,7 +1213,7 @@ class AsyncPager(_Traversal[T, P]):
         try:
             return walk.record(*await _afetch(self._core, walk, session))
         except BaseException:
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     async def aclose(self) -> None:

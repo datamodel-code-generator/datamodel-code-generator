@@ -16,7 +16,7 @@ from io import SEEK_END
 from types import CoroutineType, MappingProxyType
 from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, final
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from ..client.content import CHUNK
 from ..client.errors import (
@@ -29,23 +29,21 @@ from ..client.errors import (
 )
 from ..client.operations import request_errors
 from ..client.retry import Delivery
-from ..model_codecs.media import SUCCESS_STATUSES
-from ..model_codecs.parameters import parameter_key
+from ..model_codecs.media import SUCCESS_STATUSES, ascii_digits, json_integer
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, StepLock, UploadOptions, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, StepHandle, StepLock, UploadOptions, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
-    decoded_state,
     require_state,
+    restored,
     saved_expiry,
     state_array,
     state_count,
     state_expiry,
     state_fields,
     state_text,
-    unexpired,
 )
 from .sources import UploadProgress
 from .values import read_expiry, required
@@ -53,7 +51,6 @@ from .values import read_expiry, required
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
@@ -156,7 +153,7 @@ class UploadPlan(Generic[T, C]):
         """Derive the operations writing the bindings and each chunk's offset, length, and checksum, and the size."""
         from dataclasses import replace  # noqa: PLC0415
 
-        from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import position, targeted_writes, written_names  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
         extra = tuple(target for target in (self.offset, self.length, self.checksum) if target is not None)
@@ -168,17 +165,16 @@ class UploadPlan(Generic[T, C]):
             if completion is None
             else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
         )
-        children = (probed, appended, *(() if completed is None else (completed,)))
-        headers, queries = set[str](), set[str]()
-        if (size := self.size) is not None:
-            (headers if size.location == "header" else queries).add(parameter_key(size.location, size.name)[1])
+        size = self.size
+        sized = () if size is None else (size,)
+        headers, queries = written_names(sized, (probed, appended, completed), row="legacy-upload-size-query")
         size_position = None if size is None else position(self.create, size.location, size.name)
         object.__setattr__(self, "size_position", size_position)
         object.__setattr__(self, "probed", probed)
         object.__setattr__(self, "appended", appended)
         object.__setattr__(self, "completed", completed)
-        object.__setattr__(self, "headers", frozenset(headers.union(*(item.headers for item in children))))
-        object.__setattr__(self, "queries", frozenset(queries.union(*(item.queries for item in children))))
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -436,12 +432,12 @@ class _Upload(StepLock, Generic[T]):
         value = required(read, wire, info, refuse)
         if isinstance(read, HeaderSelector) and isinstance(value, str):
             try:
-                if not (value.isascii() and value.isdigit()):
+                if not ascii_digits(value):
                     raise ValueError(value)  # noqa: TRY301 - One refusal covers digits int() cannot convert.
                 return int(value), info
             except ValueError:
                 raise refuse(read, "value") from None
-        if not isinstance(value, int) or isinstance(value, bool):
+        if not json_integer(value):
             raise refuse(read, "null" if value is None else "type")
         if value < 0:
             raise refuse(read, "value")
@@ -592,7 +588,7 @@ def _probed_again(error: Exception) -> bool:
 
 
 @final
-class UploadHandle(_Upload[T]):
+class UploadHandle(_Upload[T], StepHandle):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
 
     `close` only stops local uploading; the remote upload stays. Uploading from two threads at once raises
@@ -732,19 +728,9 @@ class UploadHandle(_Upload[T]):
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
 
 @final
-class AsyncUploadHandle(_Upload[T]):
+class AsyncUploadHandle(_Upload[T], AsyncStepHandle):
     """A resumable upload an asyncio helper created or resumed: `advance` appends one chunk, `run` uploads the rest.
 
     `aclose` only stops local uploading; the remote upload stays. Uploading from two tasks at once raises
@@ -884,16 +870,6 @@ class AsyncUploadHandle(_Upload[T]):
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("aclose")
 
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
-
 
 def _ignored(
     _data: object, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -1011,8 +987,7 @@ def _resume_start(
     exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory; the refusal names the option
     that set the call's size. Saved values are encoded as the server's are when each request is built.
     """
-    saved = decoded_state(plan.helper_id, state, partial(_decoded, plan))
-    unexpired(plan.helper_id, saved.expires_at, limits.clock)
+    saved = restored(plan.helper_id, state, partial(_decoded, plan), lambda saved: saved.expires_at, limits.clock)
     if saved.chunk > limits.chunk_bytes:
         raise configuration_error(plan.helper_id, limits.chunk_path)
     from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.

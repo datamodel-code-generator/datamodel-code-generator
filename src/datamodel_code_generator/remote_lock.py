@@ -21,7 +21,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
-from datamodel_code_generator._json_output import dump_json
+from datamodel_code_generator._document_reader import as_mapping
+from datamodel_code_generator._json_output import write_streamed_json
+from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -149,7 +151,7 @@ def _read_entries(path: Path) -> dict[str, RemoteLockEntry]:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         msg = f"Unable to read remote lock {path}: {exc}"
         raise RemoteLockError(msg) from exc
-    version = data.get("version") if isinstance(data, dict) else None
+    version = as_mapping(data).get("version")
     if not isinstance(data, dict) or type(version) is not int or version != _LOCK_VERSION:
         msg = f"Invalid remote lock {path}: expected version {_LOCK_VERSION}"
         raise RemoteLockError(msg)
@@ -201,13 +203,11 @@ def _staged_lock(
 
 def _nearest_existing_directory(path: Path) -> Path:
     """Return an existing ancestor without creating target lock directories."""
-    while not path.is_dir():
-        parent = path.parent
-        if parent == path:
-            msg = f"Unable to find an existing directory for remote lock: {path}"
-            raise RemoteLockError(msg)
-        path = parent
-    return path
+    return existing_ancestor(path, error=_missing_lock_directory)
+
+
+def _missing_lock_directory(root: Path) -> RemoteLockError:
+    return RemoteLockError(f"Unable to find an existing directory for remote lock: {root}")
 
 
 @dataclass(slots=True)
@@ -270,17 +270,7 @@ class RemoteReferenceLock:
     def _write_staged_content(self, file: TextIO) -> None:
         """Stream one deterministic lock document without retaining a second full payload."""
         entries = sorted(self._seen.values(), key=lambda entry: entry.request_sha256)
-        file.write('{\n  "resources": ')
-        if not entries:
-            file.write("[]")
-        else:
-            file.write("[\n")
-            for index, entry in enumerate(entries):
-                if index:
-                    file.write(",\n")
-                file.write(dump_json(asdict(entry), "sorted", depth=2))
-            file.write("\n  ]")
-        file.write(f',\n  "version": {_LOCK_VERSION}\n}}\n')
+        write_streamed_json(file.write, {"version": _LOCK_VERSION}, "resources", map(asdict, entries), "sorted")
 
     def stage(self, staging_directory: StagingDirectory | Path | None = None) -> StagedFile | Path | None:
         """Write the updated lock into a pre-existing private staging directory.
@@ -373,8 +363,7 @@ class RemoteReferenceLock:
         anchor = None
         staging_directory = None
         try:
-            target = self.path if self.path.is_absolute() else Path.cwd() / self.path
-            target = target.expanduser().parent.resolve(strict=False) / target.name
+            target = concrete(self.path if self.path.is_absolute() else Path.cwd() / self.path)
             anchor, staging_directory = _open_lock_staging(target.parent)
             publish_staged_files((_staged_lock(self, staging_directory, anchor, target),))
         except OSError as exc:

@@ -15,8 +15,8 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
-from datamodel_code_generator.imports import IMPORT_DECIMAL
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
+from datamodel_code_generator.imports import IMPORT_DECIMAL, _import_key
 from datamodel_code_generator.model import (
     UNDEFINED,
     DataModel,
@@ -27,8 +27,15 @@ from datamodel_code_generator.model import ConstraintsBase as _ConstraintsBase
 from datamodel_code_generator.model._constraints import Constraints
 from datamodel_code_generator.model._constraints import PatternConstraints as _PatternConstraints
 from datamodel_code_generator.model._pydantic_imports import IMPORT_ANYURL, IMPORT_FIELD
-from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model._render_plan import (
+    ANNOTATED_ANNOTATION,
+    DEFAULT_VALUE,
+    EXPLICIT_ALIAS,
+    MISSING_DEFAULT,
+    NESTED_MODEL_FACTORY,
+    PLAIN_ANNOTATION,
+    REQUIRED_FIELD,
+    UNTAKEN_BY_TYPE,
     CallPlan,
     FieldDefault,
     FieldRenderPlan,
@@ -39,6 +46,7 @@ from datamodel_code_generator.model._render_plan import (
     Why,
     frozen_render_plan,
 )
+from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model.base import (
     _nested_model_factory,
     _NestedModelFactory,
@@ -74,26 +82,16 @@ _FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = _constraint_arguments(Constraints)
 
 _FIELD_CALL = Why(RuleId("D11.pydantic.field-call"))
 """The field writes a ``Field()`` call: an argument, a default factory or a required ``None`` needs one."""
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
-_ANNOTATED = Why(RuleId("D11.annotation.annotated"), option="--use-annotated")
 _CLASS_VAR = Why(RuleId("D11.class-var"), keyword="x-is-classvar")
-_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
-_MISSING_DEFAULT = Why(RuleId("D4.default.missing-sentinel"), option="--use-missing-sentinel")
 _DEFAULT_ARGUMENT = Why(RuleId("D4.default.field-argument"), keyword="default")
-_REQUIRED = Why(RuleId("D4.default.required"), keyword="required")
 _REQUIRED_NULLABLE = Why(RuleId("D3.render.required-nullable"), keyword="nullable")
 _NONE_VALUE = Why(RuleId("D11.pydantic.none-unset"))
-_ALIAS = Why(RuleId("D9.alias.explicit"), keyword="alias")
 _STRICT_DECIMAL = Why(RuleId("D2.pydantic.strict-decimal"), keyword="strict")
 _USE_FIELD_DESCRIPTION = Why(
     RuleId("D11.description.docstring"), keyword="description", option="--use-field-description"
 )
 _DECLARED_FACTORY = Why(RuleId("D4.default.declared-factory"), keyword="default_factory")
-_NESTED_MODEL_FACTORY = Why(
-    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
-)
 _FACTORY_NOT_APPLICABLE = Why(RuleId("D4.default.factory-of-required-or-valued"), keyword="default_factory")
-_UNTAKEN = RuleId("D2.untaken-by-type")
 _OVERRIDE = Why(RuleId("D2.type-override"), option="--type-overrides")
 _ANYURL = RuleId("legacy-anyurl-keeps-string-keywords")
 _CONSTRAINT = RuleId("D2.pydantic.constraint")
@@ -247,7 +245,7 @@ class DataModelField(DataModelFieldBase):
             return None, None
         if not self.use_annotated or not plan.rendered:
             return plan.assignment, None
-        return plan.assignment, f"Annotated[{self.type_hint}, {plan.rendered}]"
+        return plan.assignment, subscript_text("Annotated", (self.type_hint, plan.rendered))
 
     def _has_field_statement(self) -> bool:
         """Return whether rendering this field will require a Field() call."""
@@ -316,7 +314,7 @@ class DataModelField(DataModelFieldBase):
         return any(
             data_type.strict
             and (import_ := data_type.import_) is not None
-            and (import_.from_, import_.import_) == (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_)
+            and _import_key(import_) == _import_key(IMPORT_DECIMAL)
             for data_type in (self.data_type, *self.data_type.data_types)
         )
 
@@ -372,7 +370,7 @@ class DataModelField(DataModelFieldBase):
             self._takes_nested_model_factory()
             and (nested := self._get_default_factory_for_optional_nested_model()) is not None
         ):
-            return Kwarg("default_factory", nested, _NESTED_MODEL_FACTORY)
+            return Kwarg("default_factory", nested, NESTED_MODEL_FACTORY)
         return None
 
     def _get_effective_default_factory(self) -> Any:
@@ -413,7 +411,12 @@ class DataModelField(DataModelFieldBase):
         untaken, minimums = self.untaken_constraints
         omitted.extend(
             Omitted(
-                f"untaken:{key}", value, "untaken-by-type", Why(_UNTAKEN, key), warns=True, detail=minimums.get(key)
+                f"untaken:{key}",
+                value,
+                "untaken-by-type",
+                Why(UNTAKEN_BY_TYPE, key),
+                warns=True,
+                detail=minimums.get(key),
             )
             for key, value in untaken.items()
         )
@@ -458,7 +461,7 @@ class DataModelField(DataModelFieldBase):
         for key, value in {k: v for k, v in self.extras.items() if k not in self._EXCLUDE_FIELD_KEYS}.items():
             args.put(key, value, Why(_EXTRA, key), (f"extra:{key}",))
         if self.alias is not None:
-            args.put("alias", self.alias, _ALIAS, ("alias",))
+            args.put("alias", self.alias, EXPLICIT_ALIAS, ("alias",))
         if self.constraints is not None and not anyurl:
             if (blocked := self._constraints_blocked_by()) is not None:
                 args.omitted.extend(
@@ -502,7 +505,7 @@ class DataModelField(DataModelFieldBase):
             return FieldRenderPlan(
                 annotation_form="classvar",
                 call=None,
-                default=FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT),
+                default=FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE),
                 has_default_factory_in_field=False,
                 omitted=tuple(omitted),
                 symbol_imports=(),
@@ -517,7 +520,7 @@ class DataModelField(DataModelFieldBase):
                 kwargs.append(argument)
         factory = self._call_default_factory(args)
         missing = self._uses_missing_sentinel(factory_present=args.factory is not None)
-        default = FieldDefault(self.default, missing, _MISSING_DEFAULT if missing else _DEFAULT)
+        default = FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE)
         call: CallPlan | None = None
         if kwargs or factory is not None:
             positional: Positional | None = None
@@ -529,7 +532,7 @@ class DataModelField(DataModelFieldBase):
                 and factory is None
                 and not self.extras.get("validate_default")
             ):
-                positional = Positional("required", _REQUIRED)
+                positional = Positional("required", REQUIRED_FIELD)
             elif (
                 factory is None and self.represented_default and not self.should_strip_default_none(keep_optional=True)
             ):
@@ -566,7 +569,7 @@ class DataModelField(DataModelFieldBase):
             has_default_factory_in_field,
             omitted,
             () if call is None else ((IMPORT_FIELD, call.why),),
-            _ANNOTATED if annotated else _PLAIN_ANNOTATION,
+            ANNOTATED_ANNOTATION if annotated else PLAIN_ANNOTATION,
         )
 
     def _uses_missing_sentinel(self, *, factory_present: bool) -> bool:  # noqa: ARG002, PLR6301
@@ -637,7 +640,7 @@ class DataModelField(DataModelFieldBase):
         else:
             is_class_var = self.is_class_var
         if is_class_var:
-            return f"ClassVar[{super().type_hint}]"
+            return subscript_text("ClassVar", (super().type_hint,))
         return super().type_hint
 
     @property
@@ -648,7 +651,7 @@ class DataModelField(DataModelFieldBase):
             return None
         if not (field := str(self)):
             return None
-        return f"Annotated[{self.type_hint}, {field}]"
+        return subscript_text("Annotated", (self.type_hint, field))
 
     @override
     def _import_state_data_type(self) -> DataType | None:

@@ -16,8 +16,11 @@ from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._document_reader import as_mapping
+from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._mro import resolve_members
-from datamodel_code_generator._python_syntax import call_text, keyword_argument
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -36,7 +39,17 @@ from datamodel_code_generator.model._decisions.tag_value import (
     struct_tag_options,
     struct_tag_refused,
 )
+from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
+    ANNOTATED_ANNOTATION,
+    BARE_DEFAULT,
+    DEFAULT_VALUE,
+    EXPLICIT_ALIAS,
+    MUTABLE_FACTORY,
+    NESTED_MODEL_FACTORY,
+    PLAIN_ANNOTATION,
+    REQUIRED_FIELD,
+    UNTAKEN_BY_TYPE,
     CallArguments,
     CallPlan,
     FieldDefault,
@@ -148,8 +161,6 @@ def _admits_integers_of(constraints: tuple[tuple[str, Any], ...], other: tuple[t
     )
 
 
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
-_ANNOTATED = Why(RuleId("D11.annotation.annotated"), option="--use-annotated")
 _CLASS_VAR = Why(RuleId("D7.tag.class-var"), keyword="discriminator")
 """A tag field of a tagged Struct: msgspec writes the tag itself, and the built-in template skips the field."""
 _FIELD_CALL = Why(RuleId("D11.msgspec.field-call"))
@@ -157,26 +168,16 @@ _FIELD_CALL = Why(RuleId("D11.msgspec.field-call"))
 _META_CALL = Why(RuleId("D11.msgspec.meta"), option="--use-annotated")
 _FIELD_ARGUMENT = RuleId("D11.msgspec.field-argument")
 _META_ARGUMENT = RuleId("D11.msgspec.meta-argument")
-_ALIAS = Why(RuleId("D9.alias.explicit"), keyword="alias")
-_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
-_BARE_DEFAULT = Why(RuleId("D4.default.bare"), keyword="default")
-"""The field writes its default alone after the annotation."""
 _UNSET_DEFAULT = Why(RuleId("D4.default.msgspec-unset"), keyword="required")
 """An optional field without a default writes ``UNSET``, or ``None`` when it is nullable: a Struct always writes one."""
 _NONE_DEFAULT = Why(RuleId("D4.default.msgspec-none"), keyword="nullable")
-_REQUIRED = Why(RuleId("D4.default.required"), keyword="required")
 _STRUCT_CONVERSION = Why(RuleId("D4.default.msgspec-convert"), keyword="default")
 """A default holding Structs is written as a factory that converts it with ``msgspec.convert``."""
-_MUTABLE_FACTORY = Why(RuleId("D4.default.mutable-factory"), keyword="default")
-_NESTED_MODEL_FACTORY = Why(
-    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
-)
 _CONSTRAINT = RuleId("D2.msgspec.constraint")
 _NON_FINITE = RuleId("D2.msgspec.non-finite-bound")
 _MULTIPLE_OF_ONE = RuleId("D2.msgspec.integer-multiple-of-one")
 _STRONGER_BOUND = RuleId("D2.msgspec.stronger-bound")
 _ITEMS_AS_LENGTH = RuleId("D2.msgspec.items-as-length")
-_UNTAKEN = RuleId("D2.untaken-by-type")
 _LITERAL_DECIDED = RuleId("D2.msgspec.literal-decided")
 """The values of the field's ``Literal`` decide the constraint (``_applicability.literal_check``)."""
 _INEXACT = RuleId("D2.msgspec.inexact-float-divisor")
@@ -206,7 +207,7 @@ class _StructConversion:
         """Return the factory as the field's call writes it."""
         name = _default_factory_type_name(self.target)
         if self.of_list:
-            type_text = f"list[{name}]"
+            type_text = subscript_text("list", (name,))
         elif self.container is not None:
             type_text = self.container.type_hint.replace(self.target.alias or name, name)
         else:
@@ -232,7 +233,7 @@ class _MetaAnnotatedType(DataType):
     @override
     def type_hint(self) -> str:
         """Write ``Annotated`` over the hint of the copied type, ``None`` when it writes nothing, and the ``Meta()``."""
-        return f"Annotated[{self.data_types[0].type_hint or NONE}, {_meta_call_text(self.meta)}]"
+        return subscript_text("Annotated", (self.data_types[0].type_hint or NONE, _meta_call_text(self.meta)))
 
     @property
     @override
@@ -290,7 +291,7 @@ def _user_struct_option_items(model: DataModel) -> Iterable[tuple[str, Any]]:
 
 def _user_struct_options(model: DataModel) -> dict[str, Any]:
     """Return the struct options that template data gives a model, which builtin templates read only from a dict."""
-    return options if isinstance(options := model.extra_template_data.get("base_class_kwargs"), dict) else {}
+    return as_mapping(model.extra_template_data.get("base_class_kwargs"))
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:
@@ -863,8 +864,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             written = self._unset_union_data_type()
         else:
             return None
-        for node in written.all_data_types:
-            node.parent = None
+        clear_parents(written)
         return written
 
     def _get_simple_unset_base_type(self) -> str | None:  # noqa: PLR0911
@@ -915,7 +915,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if (type_hint := self._get_simple_unset_base_type()) is None:
             return None
 
-        return f"{type_hint} | UnsetType" if self._use_union_operator else f"Union[{type_hint}, UnsetType]"
+        return join_union((type_hint, "UnsetType"), union_operator=self._use_union_operator)
 
     def _imports_data_type(self, plan: FieldRenderPlan) -> DataType:
         """Return the type imports collect from: the one the annotation of ``plan`` writes, else the field's own.
@@ -940,16 +940,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 args.put(key, value, Why(_FIELD_ARGUMENT, key), (f"extra:{key}",))
         converts = False
         if self.alias is not None:
-            args.put("name", self.alias, _ALIAS, ("alias",))
+            args.put("name", self.alias, EXPLICIT_ALIAS, ("alias",))
 
         if self.default is not UNDEFINED and self.default is not None:
-            args.put("default", self.default, _DEFAULT)
+            args.put("default", self.default, DEFAULT_VALUE)
         elif self._not_required and "default_factory" not in args:
             args.put("default", None if self.nullable else UNSET, _NONE_DEFAULT if self.nullable else _UNSET_DEFAULT)
 
         if self.required and not self.use_default_with_required:
-            args.pop("default", "factory-not-applicable", _REQUIRED)
-            args.pop("default_factory", "factory-not-applicable", _REQUIRED)
+            args.pop("default", "factory-not-applicable", REQUIRED_FIELD)
+            args.pop("default_factory", "factory-not-applicable", REQUIRED_FIELD)
         elif (
             self.default is not UNDEFINED
             and self.default is not None
@@ -966,15 +966,15 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             and "default_factory" not in args
         ):
             args.take("default")
-            args.put("default_factory", _ValueFactory(entry.value), _MUTABLE_FACTORY, entry.items)
+            args.put("default_factory", _ValueFactory(entry.value), MUTABLE_FACTORY, entry.items)
 
         if (
             self._takes_nested_model_factory()
             and "default_factory" not in args
             and (nested := self._get_default_factory_for_optional_nested_model()) is not None
         ):
-            args.put("default_factory", nested, _NESTED_MODEL_FACTORY)
-            args.pop("default", "superseded", _NESTED_MODEL_FACTORY)
+            args.put("default_factory", nested, NESTED_MODEL_FACTORY)
+            args.pop("default", "superseded", NESTED_MODEL_FACTORY)
         return args, converts
 
     @override
@@ -999,10 +999,10 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         meta = self._build_meta_call(omitted)
         kwargs = args.kwargs()
         call: CallPlan | None = None
-        default = FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT)
+        default = FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE)
         bare_default = False
         if len(kwargs) == 1 and kwargs[0].name == "default":
-            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=_BARE_DEFAULT, items=kwargs[0].items)
+            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=BARE_DEFAULT, items=kwargs[0].items)
             bare_default = True
         elif kwargs:
             call = CallPlan(None, None, kwargs, default_keyword=False, why=_FIELD_CALL, callee="field")
@@ -1019,9 +1019,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         form, why = (
             ("classvar", _CLASS_VAR)
             if self.is_class_var
-            else ("plain", _PLAIN_ANNOTATION)
+            else ("plain", PLAIN_ANNOTATION)
             if meta is None
-            else ("annotated", _ANNOTATED)
+            else ("annotated", ANNOTATED_ANNOTATION)
         )
         return FieldRenderPlan(
             annotation_form=form,
@@ -1137,7 +1137,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     def _shape_meta_keywords(self, data_type: DataType) -> frozenset[str] | None:
         """Return the keywords a mapping, a fixed tuple or a union takes, or None for a type of another shape."""
         return _applicability.shape_meta_keywords(
-            mapping=data_type.is_dict or data_type.is_mapping,
+            mapping=data_type in MAPPINGS,
             unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
         )
 
@@ -1193,7 +1193,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             if name in untaken:
                 literal = name in decided
                 reason: OmitReason = "consumed-by-type" if literal else "untaken-by-type"
-                why = Why(_LITERAL_DECIDED if literal else _UNTAKEN, name)
+                why = Why(_LITERAL_DECIDED if literal else UNTAKEN_BY_TYPE, name)
                 warns = not literal
             else:
                 reason, why, warns = "inexact-float-divisor", Why(_INEXACT, name), True
@@ -1594,8 +1594,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if self.extras.get("is_classvar"):  # pragma: no cover
             meta = self._get_meta_string()
             if self.use_annotated and meta:
-                return f"ClassVar[Annotated[{self.type_hint}, {meta}]]"
-            return f"ClassVar[{self.type_hint}]"
+                return subscript_text("ClassVar", (subscript_text("Annotated", (self.type_hint, meta)),))
+            return subscript_text("ClassVar", (self.type_hint,))
 
         if not self.use_annotated or (plan := self._render_plan()).annotated_call is None:
             return None

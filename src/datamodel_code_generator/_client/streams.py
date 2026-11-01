@@ -16,14 +16,14 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (  # pyright: ignore[reportPrivateUsage]
     _label,
-    _listed,
     _Pages,
     _problem,
     _target_key,
 )
 from datamodel_code_generator._client.plan import schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._client.protocol_plan import HelperPlanner
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._target_contract import Direction, SourceLocation
 
-__all__ = ("StreamSpec", "plan_streams", "stream_only", "stream_uses")
+__all__ = ("StreamSpec", "discriminator", "plan_streams", "stream_only", "stream_uses")
 
 _MEDIA: Final = {
     "sse": ("text/event-stream",),
@@ -85,15 +85,26 @@ class StreamSpec:
         """Return the use of every event and error schema, in order."""
         return (*(use for _, use in self.events), *(use for _, use in self.errors))
 
+    @property
+    def keeps_unknown(self) -> bool:
+        """Return whether the helper gives an event of a type its mapping lacks as an UnknownEvent, not an error."""
+        return self.helper.tree["unknown"] == "raw"
+
+
+def discriminator(helper: Helper) -> Mapping[str, Any] | None:
+    """Return the selector an SSE, NDJSON, or webhook helper routes its events by, None for one event schema."""
+    schema = helper.tree["event_schema"]
+    return schema["discriminator"] if isinstance(schema, dict) else None
+
 
 def _events(helper: Helper) -> Iterator[tuple[str, str | None, SchemaRef]]:
     """Yield where each event schema of a helper is set, its discriminator value, None for the only one, and itself."""
-    at = helper.at
-    if isinstance(schema := helper.tree["event_schema"], dict):
-        for key, reference in schema["mapping"].items():
-            yield f"{at}.event_schema.mapping[{key!r}]", key, reference
-    else:
-        yield f"{at}.event_schema", None, schema
+    at, schema = f"{helper.at}.event_schema", helper.tree["event_schema"]
+    if discriminator(helper) is None:
+        yield at, None, schema
+        return
+    for key, reference in schema["mapping"].items():
+        yield f"{at}.mapping[{key!r}]", key, reference
 
 
 def _errors(helper: Helper) -> Iterator[tuple[str, str, SchemaRef]]:
@@ -124,7 +135,7 @@ def _media_problem(helper: Helper) -> str | None:
     media, accepted = helper.tree["media"], _MEDIA[helper.kind]
     if essence(media) in accepted:
         return None
-    expected = accepted[0] if len(accepted) == 1 else f"one of {_listed(list(accepted))}"
+    expected = accepted[0] if len(accepted) == 1 else f"one of {english_list(accepted, 'or', 'serial')}"
     return f"The media type {media!r} of {helper.name!r} is not {expected}"
 
 
@@ -142,7 +153,7 @@ class _Streams(HelperPlanner):
         locations: dict[str, SourceLocation] = {}
         for key, where, reference in references:
             if (location := self.location(reference)) is None:
-                message = f"The schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
+                message = missing_schema(helper, "schema", reference)
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
             else:
                 locations[key] = location
@@ -223,13 +234,11 @@ class _Streams(HelperPlanner):
     @staticmethod
     def terminal(helper: Helper, spec: OperationSpec) -> Iterator[Diagnostic]:
         """Refuse a completion event type that the event type discriminator also maps to an event or an error."""
-        tree = helper.tree
-        completion, schema = tree["completion"], tree["event_schema"]
-        discriminator = schema["discriminator"]["from"] if isinstance(schema, dict) else None
-        if completion["kind"] != "event_type" or discriminator != "event_type":
+        completion, selector = helper.tree["completion"], discriminator(helper)
+        if completion["kind"] != "event_type" or selector is None or selector["from"] != "event_type":
             return
-        value = completion["value"]
-        for setting, keys in (("event_schema.mapping", schema["mapping"]), ("error_events", tree["error_events"])):
+        value, events = completion["value"], {key for _, key, _ in _events(helper)}
+        for setting, keys in (("event_schema.mapping", events), ("error_events", helper.tree["error_events"])):
             if value in keys:
                 where = f"{helper.at}.completion.value"
                 message = f"The completion event type {value!r} of {helper.name!r} is also a key of its {setting}"
@@ -246,9 +255,7 @@ def stream_uses(
     if protocols is None:
         return (), (), {}
     streams = _Streams(protocols, plan, request)
-    specs, problems = streams.each(_MEDIA, streams.helper)
-    uses = {use.id: use for spec in specs for use in spec.uses}
-    return specs, tuple(uses.values()), problems
+    return streams.coded(_MEDIA, streams.helper)
 
 
 def plan_streams(  # noqa: PLR0913, PLR0917
@@ -381,8 +388,7 @@ def _read(
 
 def _discriminated(helper: Helper, spec: StreamSpec, pages: _Pages) -> Iterator[Diagnostic]:
     """Refuse a schema that does not declare its body discriminator as a property whose values can be strings."""
-    schema = helper.tree["event_schema"]
-    if not isinstance(schema, dict) or (selector := schema["discriminator"])["from"] != "body":
+    if (selector := discriminator(helper)) is None or selector["from"] != "body":
         return
     pointer, where = selector["pointer"], f"{helper.at}.event_schema.discriminator.pointer"
     for location, value in {use.schema: use.type for use in spec.uses if use.schema is not None}.items():
@@ -392,7 +398,7 @@ def _discriminated(helper: Helper, spec: StreamSpec, pages: _Pages) -> Iterator[
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
         elif types is not None and "string" not in types:
             message = (
-                f"The discriminator of {helper.name!r} reads {_listed(sorted(types))} values from {label!r}, where "
-                "only string values fit"
+                f"The discriminator of {helper.name!r} reads {english_list(sorted(types), 'or', 'serial')} values "
+                f"from {label!r}, where only string values fit"
             )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
