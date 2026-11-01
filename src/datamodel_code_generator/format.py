@@ -443,6 +443,25 @@ def _get_isort() -> Any:
     return _isort
 
 
+def _is_formatter_available(formatter: Formatter) -> bool:
+    """Return True if the external package required by *formatter* can be imported."""
+    if formatter.value == "black":
+        try:
+            import black  # noqa: F401, PLC0415
+        except ModuleNotFoundError as exc:
+            if exc.name != "black":
+                raise
+            return False
+    elif formatter.value == "isort":
+        try:
+            import isort  # noqa: F401, PLC0415
+        except ModuleNotFoundError as exc:
+            if exc.name != "isort":
+                raise
+            return False
+    return True
+
+
 def apply_builtin_formatter(  # noqa: PLR0913
     code: str,
     *,
@@ -554,12 +573,35 @@ class CodeFormatter:
                 settings_path = Path.cwd()  # pragma: no cover
 
         self.settings_path: str = str(settings_path)
-        self.formatters = formatters
         self.defer_formatting = defer_formatting
         self.encoding = encoding
         self.use_type_checking_imports = use_type_checking_imports
         self.python_version = python_version
         self._formatting_generated_code = False
+
+        missing_formatters = [
+            formatter
+            for formatter in (Formatter.BLACK, Formatter.ISORT)
+            if formatter in formatters and not _is_formatter_available(formatter)
+        ]
+        if missing_formatters:
+            if len(missing_formatters) == 1:
+                formatter_name = missing_formatters[0].value
+                msg = (
+                    f"{formatter_name} is not installed but was requested as an output formatter. "
+                    f"Install {formatter_name}, or use the built-in formatter with --formatters builtin "
+                    "(formatters=[Formatter.BUILTIN] in the Python API)."
+                )
+            else:
+                formatter_names = " and ".join(formatter.value for formatter in missing_formatters)
+                msg = (
+                    f"{formatter_names} are not installed but were requested as output formatters. "
+                    f"Install {formatter_names}, or use the built-in formatter with --formatters builtin "
+                    "(formatters=[Formatter.BUILTIN] in the Python API)."
+                )
+            raise ImportError(msg)
+
+        self.formatters = formatters
 
         has_external_formatter = bool(EXTERNAL_FORMATTERS.intersection(formatters))
         if Formatter.BUILTIN in formatters and has_external_formatter:
