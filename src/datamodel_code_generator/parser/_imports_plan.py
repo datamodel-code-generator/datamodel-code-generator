@@ -108,7 +108,7 @@ ImportPass: TypeAlias = Literal[
   by ``_get_module_future_imports`` (L7).
 * ``change-from-import``: ``change_from_import`` (L5 prepare), the imports of each model and the models of other
   modules that it references.
-* ``collapse-root-models``: ``collapse_root_models_in_scope`` and ``import_collapsed_inner_models`` (L5), the
+* ``collapse-root-models``: ``collapse_root_models_in_scope`` and ``reimport_module_references`` (L5), the
   imports of inlined root types and of the inner models that holders are redirected to, without those of the roots.
 * ``discriminator``: ``apply_discriminator_type`` (L5), the imports of tag fields.
 * ``const-narrowed-values``: ``__type_const_narrowed_values`` (L5), the imports of the types a const gives its values.

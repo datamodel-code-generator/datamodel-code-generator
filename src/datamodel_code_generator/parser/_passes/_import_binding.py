@@ -3,8 +3,9 @@
 The rule of the import (``reference_import_target``, under an ``ImportPathRow``), the import it adds through the
 module's import ledger (``register_reference_import``), the module that imports the generated base class
 (``_generic_base_class_module``) and the writes of the expression a data type names its model by
-(``set_reference_expression``, ``set_reference_expressions``, ``import_references``), through the generation store.
-The import path text is ``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
+(``set_reference_expression``, ``set_reference_expressions``, ``import_references``), through the generation store, and
+importing again what a module imported under a stale import (``reimport_references``, under a ``ReimportRow``). The
+import path text is ``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator._module_paths import (
+    dotted_name,
     exact_import,
     is_ancestor_package_reference,
     join_module,
@@ -21,18 +23,26 @@ from datamodel_code_generator._module_paths import (
     written_name,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator.imports import Import
+from datamodel_code_generator.imports import Import, _iter_import_bindings
 from datamodel_code_generator.model.base import BaseClassDataType
-from datamodel_code_generator.parser._passes._shared import _get_data_type_target_full_name, _get_model_module_name
+from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._passes._shared import (
+    ReplacedRootsHost,
+    _get_data_type_target_full_name,
+    _get_model_module_name,
+    module_members,
+    names_left_by_replaced_roots,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping
+    from collections.abc import Collection, Iterable, Mapping, Sequence
 
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._graph_ids import KeyedModels
-    from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
-    from datamodel_code_generator.parser._passes._shared import ModuleNamesView
+    from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
+    from datamodel_code_generator.parser._passes._shared import ModuleNamesView, ModuleScopeView
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
@@ -307,3 +317,160 @@ def import_references(  # noqa: PLR0913, PLR0917
             row=row,
         )
     return changed
+
+
+ReimportRow: TypeAlias = Literal["collapse-root-models", "import-renamed-types", "import-removed-reuse-canonicals"]
+"""How a module imports again the models that its data types name under stale imports (``reimport_references``).
+
+Each row is the pass that does it, which the imports are recorded under (``ImportProducer``).
+
+* ``collapse-root-models``: holders that collapse redirected to the inner model of a root model; their module drops
+  the imports of the root model at once, releases the names that no import binds any more, and imports the inner model
+  from the module whose live model list holds it (``emitting_module_name``), the holder's own module writing it by
+  its class name.
+* ``import-renamed-types``: data types whose module imported a renamed type by an old name; each stale import is
+  dropped for its model, every name the stale imports bound is released, and the type is imported by its path
+  (``import_references``).
+* ``import-removed-reuse-canonicals``: data types whose module imported a duplicate that reuse removed; each stale
+  import is dropped for its model, no name is released, and the canonical is imported by its path, a model of
+  ``members`` written by its class name.
+
+The releasing rows also release the names that the module's roots replaced by their inner models leave
+(``names_left_by_replaced_roots``).
+"""
+
+
+class EmittingModulesHost(Protocol):
+    """The live model lists of the output modules, which ``emitting_module_name`` reads and remembers models in."""
+
+    @property
+    def _emitting_module_lists(self) -> list[tuple[str, list[DataModel]]]:
+        """The live model list of each output module, by module name."""
+
+    @property
+    def _emitting_module_names(self) -> dict[int, str]:
+        """The module that emits each model found in the live lists, by model id."""
+
+
+class ReimportHost(ReferenceExpressionHost, ReplacedRootsHost, EmittingModulesHost, Protocol):
+    """What importing again the models a module imported under stale imports reads of the parser."""
+
+
+def emitting_module_name(
+    parser: EmittingModulesHost, model: DataModel, model_path_to_module_name: dict[str, str]
+) -> str:
+    """Return the name of the module whose live model list holds a model, found by identity.
+
+    A model that a module's processing puts into its list after modules are structured, such as a reuse subclass,
+    is looked up in the live lists and remembered.
+    """
+    if (module_name := parser._emitting_module_names.get(id(model))) is not None:  # noqa: SLF001
+        return module_name
+    for module_name, module_models in parser._emitting_module_lists:  # noqa: SLF001
+        if any(module_model is model for module_model in module_models):
+            parser._emitting_module_names[id(model)] = module_name  # noqa: SLF001
+            return module_name
+    return _get_model_module_name(model, model_path_to_module_name)
+
+
+def reimport_references(  # noqa: PLR0913
+    host: ReimportHost,
+    ctx: ModuleContextView,
+    naming: ModuleScopeView,
+    stale_users: Sequence[tuple[DataModel, DataType, Import | None]],
+    *,
+    row: ReimportRow,
+    members: KeyedModels | None = None,
+) -> None:
+    """Import again into the module of ``ctx`` what the ``stale_users`` name, under ``row`` (``ReimportRow``).
+
+    ``reimport_module_references`` with the module's models, imports and resolver taken from ``ctx`` and its module
+    names from ``naming``.
+    """
+    reimport_module_references(
+        host,
+        ctx.models,
+        stale_users,
+        ctx.imports,
+        ctx.scoped_model_resolver,
+        naming.model_path_to_module_name,
+        init=ctx.is_init,
+        internal_modules=naming.internal_modules,
+        row=row,
+        members=members,
+    )
+
+
+def reimport_module_references(  # noqa: PLR0913, PLR0917
+    host: ReimportHost,
+    models: list[DataModel],
+    stale_users: Sequence[tuple[DataModel, DataType, Import | None]],
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    model_path_to_module_name: dict[str, str],
+    *,
+    init: bool,
+    internal_modules: set[ModulePath],
+    row: ReimportRow,
+    members: KeyedModels | None = None,
+) -> None:
+    """Drop the stale imports of a module, release the names they leave and write how each data type names its model.
+
+    The module's ``models`` give the names its replaced roots leave; ``row`` (``ReimportRow``) says for whom the
+    imports are dropped, which names are released and where the models are imported from.
+    """
+    if not stale_users:
+        return
+    ledger = host._import_ledger  # noqa: SLF001
+    stale = [(model, stale_import) for model, _, stale_import in stale_users if stale_import is not None]
+    if row == "collapse-root-models":
+        ledger.remove(imports, [stale_import for _, stale_import in stale], ImportProducer(row))
+    else:
+        for model, stale_import in stale:
+            ledger.remove(imports, stale_import, ImportProducer(row, model))
+    if row != "import-removed-reuse-canonicals":
+        released = {stale_import.binding_name for _, stale_import in stale}
+        if row == "collapse-root-models":
+            released.difference_update(_iter_import_bindings(imports))
+        ledger.release_names(
+            imports,
+            scoped_model_resolver,
+            released.union(
+                names_left_by_replaced_roots(host, models, keyed_models(module_members(host, models), "module members"))
+            ),
+        )
+    for model, data_type, _ in stale_users:
+        producer = ImportProducer(row, model)
+        if row != "collapse-root-models":
+            import_references(
+                host,
+                model,
+                (data_type,),
+                imports,
+                scoped_model_resolver,
+                model_path_to_module_name,
+                init=init,
+                internal_modules=internal_modules,
+                members=members,
+                producer=producer,
+            )
+            continue
+        reference = cast("Reference", data_type.reference)
+        holder_module_name = _get_model_module_name(model, model_path_to_module_name)
+        inner_module_name = (
+            holder_module_name
+            if (inner_model := reference.source) is None
+            else emitting_module_name(host, cast("DataModel", inner_model), model_path_to_module_name)
+        )
+        set_reference_expression(
+            host,
+            data_type,
+            holder_module_name,
+            dotted_name(inner_module_name, reference.short_name),
+            imports,
+            scoped_model_resolver,
+            same_module=inner_module_name == holder_module_name,
+            init=init,
+            internal_modules=internal_modules,
+            producer=producer,
+        )

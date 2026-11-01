@@ -24,21 +24,20 @@ from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
-    ReferenceExpressionHost,
+    ReimportHost,
     _generic_base_class_module,
     register_reference_import,
+    reimport_references,
     set_reference_expressions,
 )
 from datamodel_code_generator.parser._passes._shared import (
     GraphBuilderHost,
     ModuleScopeView,
     RenamedTypesHost,
-    ReplacedRootsHost,
     _context_models,
     _get_model_module_name,
     _named_data_types,
     module_members,
-    names_left_by_replaced_roots,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
@@ -67,7 +66,7 @@ __all__ = [
 ]
 
 
-class CrossModuleHost(ReferenceExpressionHost, RenamedTypesHost, ReplacedRootsHost, GraphBuilderHost, Protocol):
+class CrossModuleHost(ReimportHost, RenamedTypesHost, GraphBuilderHost, Protocol):
     """The options, run state and hooks of the parser that the cross-module passes read and write."""
 
     _generic_base_model: DataModel | None
@@ -249,9 +248,14 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
                     stale_import := next(filter(None, map(stale_imports.get, paths)), None)
                 ):
                     continue
-                producer = ImportProducer("import-removed-reuse-canonicals", model)
-                parser._import_ledger.remove(ctx.imports, stale_import, producer)  # noqa: SLF001
-                set_reference_expressions(parser, ctx, run, model, (data_type,), members=members, producer=producer)
+                reimport_references(
+                    parser,
+                    ctx,
+                    run,
+                    [(model, data_type, stale_import)],
+                    row="import-removed-reuse-canonicals",
+                    members=members,
+                )
 
 
 def renamed_types_of(parser: CrossModuleHost, reference: Reference) -> list[_RenamedType] | None:
@@ -275,7 +279,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
         members = module_members(parser, ctx.models)
         keyed_members = keyed_models(members, "module members")
         stale_users = [
-            (data_type, model, import_)
+            (model, data_type, import_)
             for model in members
             for data_type in _named_data_types(model)
             if (reference := data_type.reference) is not None
@@ -283,27 +287,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
             and keyed_members.key_of(reference) not in keyed_members.models
             and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
         ]
-        if not stale_users:
-            continue
-        for _, model, import_ in stale_users:
-            parser._import_ledger.remove(ctx.imports, import_, ImportProducer("import-renamed-types", model))  # noqa: SLF001
-        parser._import_ledger.release_names(  # noqa: SLF001
-            ctx.imports,
-            ctx.scoped_model_resolver,
-            {import_.binding_name for *_, import_ in stale_users}.union(
-                names_left_by_replaced_roots(parser, ctx.models, keyed_members)
-            ),
-        )
-        for data_type, model, _ in stale_users:
-            set_reference_expressions(
-                parser,
-                ctx,
-                run,
-                model,
-                (data_type,),
-                members=None,
-                producer=ImportProducer("import-renamed-types", model),
-            )
+        reimport_references(parser, ctx, run, stale_users, row="import-renamed-types")
 
 
 def _module_qualified_name(reference: Reference, model_path_to_module_name: Mapping[str, str]) -> str:

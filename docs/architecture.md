@@ -515,9 +515,11 @@ of its module hides it (`_aliased_name`, each caller numbering it by its release
 import that binds the identity under it (`_aliased_as`). How a module imports a model of another module and writes
 the expression that names it is `parser/_passes/_import_binding.py`: the rule (`reference_import_target`, under an
 `ImportPathRow`), the import it adds (`register_reference_import`) and the writes through the generation store
-(`set_reference_expression`, `set_reference_expressions`, `import_references`); the relative import text it writes,
-which the forwarders of `parser/base.py` write too, is `_module_paths.py` (`relative`, `join_module`, `exact_import`,
-`is_ancestor_package_reference`). The aliases imports take where a field name of the module hides the names they bind
+(`set_reference_expression`, `set_reference_expressions`, `import_references`), and the re-import of what a module
+imported under a stale import (`reimport_references`: drop it, release the names it leaves, write the expression again,
+under a `ReimportRow` named after the pass: collapsed holders, renamed types, removed reuse duplicates); the
+relative import text it writes, which the forwarders of `parser/base.py` write too, is `_module_paths.py` (`relative`,
+`join_module`, `exact_import`, `is_ancestor_package_reference`). The aliases imports take where a field name of the module hides the names they bind
 are `parser/_passes/_import_aliases.py` (`alias_shadowed_imports`), which writes them into every type, runtime
 expression, additional import and base class that carries the import.
 The import block that `_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
