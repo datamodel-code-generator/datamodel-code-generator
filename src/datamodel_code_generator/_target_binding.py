@@ -107,7 +107,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import admits_none, is_none, present
-from datamodel_code_generator.enums import DataclassArguments
+from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -572,9 +572,16 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
-        """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
+        """Record the OpenAPI version, info, tags and servers of each walked document before walking it.
+
+        The reader reads a document at the version `--schema-version` sets, as the models do, else at the one the
+        document declares.
+        """
         self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
-        self._reader.versions.append(str(specification.get("openapi", "")))
+        configured = self.config.openapi_version
+        self._reader.versions.append(
+            configured.value if configured not in {None, OpenAPIVersion.Auto} else str(specification.get("openapi", ""))
+        )
         super()._parse_specification(specification, path_parts)
 
     def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]

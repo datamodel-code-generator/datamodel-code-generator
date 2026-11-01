@@ -1508,3 +1508,42 @@ def test_client_cli_implied_settings(
         f"{notice}models equal those of a model-only run given {' '.join(given)}: {same}\n",
         EXPECTED / "cli" / "implied" / f"{backend}.txt",
     )
+
+
+def test_client_cli_schema_version_reads_ref_siblings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Read the siblings of a parameter's `$ref` at the version `--schema-version` sets, as the models do.
+
+    An OpenAPI 3.1 document read with `--schema-version 3.0` gives the client of the same document declaring 3.0.3,
+    whose `$ref` ignores the `default` beside it.
+    """
+    document = (
+        "info: {title: t, version: '1'}\n"
+        "servers: [{url: 'https://example.com'}]\n"
+        "paths:\n"
+        "  /a:\n"
+        "    get:\n"
+        "      operationId: getA\n"
+        "      parameters:\n"
+        "        - name: q\n"
+        "          in: query\n"
+        "          schema: {$ref: '#/components/schemas/Q', default: 7}\n"
+        "      responses:\n"
+        "        '200': {description: ok}\n"
+        "components:\n"
+        "  schemas:\n"
+        "    Q: {type: integer}\n"
+    )
+    clients: dict[str, str] = {}
+    for name, version, arguments in (("configured", "3.1.0", ["--schema-version", "3.0"]), ("declared", "3.0.3", [])):
+        (root := tmp_path / name).mkdir()
+        (root / "api.yaml").write_text(f"openapi: {version}\n{document}", encoding="utf-8")
+        monkeypatch.chdir(root)
+        run_main_with_args([
+            *("--input", "api.yaml", "--input-file-type", "openapi", "--output", "models.py"),
+            *OPTIONS,
+            *CLIENT,
+            *arguments,
+        ])
+        clients[name] = (root / "client/resources/default/_sync.py").read_text(encoding="utf-8")
+    assert clients["configured"] == clients["declared"]
+    assert "q: int | UNSET = UNSET," in clients["configured"]
