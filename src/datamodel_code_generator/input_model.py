@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
-from typing_extensions import Self, Sentinel
+from typing_extensions import Self, Sentinel, TypeIs
 
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._free_names import first_free
@@ -560,13 +560,18 @@ def _get_input_model_json_schema_class(
     return LegacyIdentifiedInputModelJsonSchema
 
 
+def _plain_class(tp: object) -> TypeIs[type]:
+    """Return whether an annotation names a class itself, not a generic alias or another special form."""
+    return get_origin(tp) is None and isinstance(tp, type)
+
+
 def _collect_core_type_identities(models: Iterable[type], core_types: dict[str, type]) -> None:
     """Recover legacy core-ref identities without discarding same-name types."""
     pending: list[Any] = list(models)
     visited: set[type] = set()
     while pending:
         annotation = pending.pop()
-        if get_origin(annotation) is None and isinstance(annotation, type):
+        if _plain_class(annotation):
             if annotation in visited:
                 continue
             visited.add(annotation)
@@ -860,7 +865,7 @@ def _collect_nested_models(model: type, visited: set[type] | None = None) -> dic
 
 def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type]) -> None:
     """Recursively find BaseModel, Enum, dataclass, TypedDict, and msgspec in a type annotation."""
-    if get_origin(tp) is None and isinstance(tp, type) and tp not in visited:
+    if _plain_class(tp) and tp not in visited:
         if issubclass(tp, BaseModel):
             result[tp.__name__] = tp
             result.update(_collect_nested_models(tp, visited))
@@ -1008,7 +1013,7 @@ def _qualified_type_export(nested_type: type) -> str | None:
 
 def _pydantic_generic_metadata(tp: object) -> dict[str, Any] | None:
     """Read specialization metadata without executing a metaclass attribute hook."""
-    if get_origin(tp) is None and isinstance(tp, type):
+    if _plain_class(tp):
         metadata = type.__dict__["__dict__"].__get__(tp).get("__pydantic_generic_metadata__")
         if metadata and metadata.get("origin") is not None:
             return metadata
@@ -1131,7 +1136,7 @@ def _native_generic_field_paths(models: Sequence[type]) -> dict[type, dict[str, 
                 }
                 if _pydantic_generic_metadata(annotation):
                     paths.setdefault(cast("type", annotation), field_path)
-                if get_origin(annotation) is None and isinstance(annotation, type):
+                if _plain_class(annotation):
                     found.append((annotation, field_path))
                 else:
                     args = get_args(annotation)
@@ -1166,7 +1171,7 @@ def _exported_runtime_symbol(tp: object, modules: list[str]) -> PythonTypeRuntim
                         exported = None
                     if exported is tp:
                         return PythonTypeRuntimeSymbol(module_name, (name,))
-    if get_origin(tp) is None and isinstance(tp, type) and (qualname := _qualified_type_export(tp)):
+    if _plain_class(tp) and (qualname := _qualified_type_export(tp)):
         return PythonTypeRuntimeSymbol(tp.__module__, tuple(qualname.split(".")))
     return None
 
