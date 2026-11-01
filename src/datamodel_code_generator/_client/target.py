@@ -46,6 +46,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
@@ -353,14 +354,11 @@ class _HelperDigests:
         wire name, member kind, exclusion, requiredness, nullability, direction, type and emitted default, so a schema
         change that changes any reached model changes the digest.
         """
-        pending = list(() if use.type is None else _named(use.type))
         models: dict[str, object] = {}
-        while pending:
-            symbol = pending.pop()
-            if (name := self.spelling.symbol(symbol)) in models:
-                continue
+
+        def visit(symbol: SymbolId) -> list[SymbolId]:
             found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
-            models[name] = {
+            models[self.spelling.symbol(symbol)] = {
                 "kind": found.kind,
                 "values": [None if value is None else repr(value.value) for value in found.values],
                 "fields": [
@@ -368,9 +366,9 @@ class _HelperDigests:
                     for member in members
                 ],
             }
-            pending.extend(
-                symbol for member in members if member.model_facts for symbol in _named(member.model_facts.type)
-            )
+            return [named for member in members if member.model_facts for named in _named(member.model_facts.type)]
+
+        reach(() if use.type is None else _named(use.type), visit, key=self.spelling.symbol)
         return {"type": self.type(use), "models": models}
 
     def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:

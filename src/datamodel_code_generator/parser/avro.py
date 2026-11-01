@@ -18,6 +18,7 @@ from datamodel_code_generator._avro_detection import NAMED_TYPES, PRIMITIVE_TYPE
 from datamodel_code_generator._avro_detection import (
     is_avro_schema_data as _is_avro_schema_data,
 )
+from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key
@@ -763,7 +764,7 @@ class _AvroSchemaConverter:
         return name
 
     def _ref(self, fullname: str) -> str:
-        return f"#/definitions/{self.definition_names[fullname]}"
+        return definition_ref("definitions", self.definition_names[fullname])
 
 
 class AvroParser(JsonSchemaParser):

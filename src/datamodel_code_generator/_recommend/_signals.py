@@ -11,6 +11,7 @@ from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
@@ -691,14 +692,7 @@ class _Walker:
 
 
 def _reachable(start: str, edges: Mapping[str, set[str]]) -> set[str]:
-    seen: set[str] = set()
-    stack = [start]
-    while stack:
-        for target in edges.get(stack.pop(), ()):
-            if target not in seen:
-                seen.add(target)
-                stack.append(target)
-    return seen
+    return set(reach(edges.get(start, ()), lambda target: edges.get(target, ())))
 
 
 def _reference_cycles(references: Mapping[str, set[str]]) -> int:
@@ -757,11 +751,13 @@ def _walk_components(walker: _Walker, components: Mapping[str, Any], roots: Iter
         else sorted({target for root in roots for target in walker.references[root]})
     )
     walked: dict[str, Any] = {}
-    while pending:
-        if (key := pending.pop()) not in walked:
-            walked[key] = components[key]
-            walker.walk_named(key, components[key])
-            pending.extend(sorted(walker.references[key] - walked.keys()))
+
+    def visit(key: str) -> list[str]:
+        walked[key] = components[key]
+        walker.walk_named(key, components[key])
+        return sorted(walker.references[key] - walked.keys())
+
+    reach(pending, visit)
     return dict(sorted(walked.items()))
 
 

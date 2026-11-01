@@ -23,7 +23,7 @@ from typing_extensions import Unpack
 from datamodel_code_generator import Error
 from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._format_types import DatetimeClassType
-from datamodel_code_generator._json_schema import json_nodes
+from datamodel_code_generator._json_schema import definition_ref, json_nodes
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
@@ -1045,7 +1045,7 @@ class _XMLSchemaConverter:
         if (simple_type := _first_xsd_child(child, "simpleType")) is not None:
             return self._convert_simple_type(simple_type)
         if (ref := value_schema.get("$ref")) and (
-            resolved := self._definitions.get(ref.removeprefix("#/definitions/"))
+            resolved := self._definitions.get(ref.removeprefix(definition_ref("definitions")))
         ) is not None:
             value_schema = _copy_schema(resolved)
             value_schema.pop("title", None)
@@ -1360,7 +1360,7 @@ class _XMLSchemaConverter:
         return self._definition_names.get(key, key[2])
 
     def _ref(self, key: DefinitionKey) -> str:
-        return f"#/definitions/{self._definition_name(key)}"
+        return definition_ref("definitions", self._definition_name(key))
 
     def _element_ref(self, key: QNameKey) -> str:
         return self._ref(self._element_definition_key(key))

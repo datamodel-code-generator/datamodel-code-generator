@@ -18,6 +18,7 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
+from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import (
     ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
 )
@@ -257,11 +258,13 @@ def _move_json_schema_definitions_to_components(
     if isinstance(definitions := schema.pop("definitions", None), dict):
         schema["components"] = {"schemas": definitions}
 
+    definitions_ref = definition_ref("definitions")
+
     def update_refs(value: YamlValue) -> None:
         match value:
             case dict():
-                if (ref := value.get("$ref")) and isinstance(ref, str) and ref.startswith("#/definitions/"):
-                    value["$ref"] = f"{ref_prefix}/{ref.removeprefix('#/definitions/')}"
+                if (ref := value.get("$ref")) and isinstance(ref, str) and ref.startswith(definitions_ref):
+                    value["$ref"] = f"{ref_prefix}/{ref.removeprefix(definitions_ref)}"
                 else:
                     for item in value.values():
                         update_refs(item)

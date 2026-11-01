@@ -114,6 +114,7 @@ __all__ = [
     "prepared_ref_document",
     "push_ref_cycle_frame",
     "read_as_schema",
+    "ref_file_document",
     "ref_key",
     "ref_path",
     "ref_target_dump",
@@ -472,12 +473,15 @@ def get_ref_raw_schema(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, Y
     return read_ref_value(parser, resolved_ref)
 
 
+def ref_file_document(parser: SchemaRefsHost, file_part: str) -> dict[str, YamlValue]:
+    """Return the loaded document the file part of a reference key names: the document being parsed when it is empty."""
+    return parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
+
+
 def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
     """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    return parser._read_as_schema(  # noqa: SLF001
-        _fragment_value(parser._get_ref_body(file_part) if file_part else parser.raw_obj, fragment)  # noqa: SLF001
-    )
+    return parser._read_as_schema(_fragment_value(ref_file_document(parser, file_part), fragment))  # noqa: SLF001
 
 
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
@@ -500,8 +504,7 @@ def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefR
 def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     """Return whether a resolved JSON pointer identifies a source schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
-    return _fragment_value(raw_doc, fragment, or_missing=True) is not _MISSING_JSON_POINTER
+    return _fragment_value(ref_file_document(parser, file_part), fragment, or_missing=True) is not _MISSING_JSON_POINTER
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
@@ -1244,7 +1247,7 @@ def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[o
     """Yield the value ref_to_check names, resolving references relative to its document until closed."""
     file_part, _, fragment = ref_to_check.partition("#")
     with parser._ref_file_context(file_part):  # noqa: SLF001
-        raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
+        raw_doc = ref_file_document(parser, file_part)
         yield get_model_by_path(raw_doc, [p for p in fragment.split("/") if p]) if fragment else raw_doc
 
 
