@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Hashable, Iterable
 from heapq import heappop, heappush
 from typing import TypeVar
@@ -30,6 +30,18 @@ def reach(
             order.append(node)
             pending.extend(visit(node))
     return order
+
+
+def reaching(seeds: Iterable[TNode], edges: Iterable[tuple[TNode, Iterable[TNode]]]) -> set[TNode]:
+    """Return ``seeds`` and every node from which an edge, or a chain of edges, leads to one of them.
+
+    ``edges`` pairs a node with the nodes its edges lead to; a node may be paired more than once.
+    """
+    sources: defaultdict[TNode, list[TNode]] = defaultdict(list)
+    for node, targets in edges:
+        for target in targets:
+            sources[target].append(node)
+    return set(reach(seeds, lambda node: sources.get(node, ())))
 
 
 def stable_toposort(
@@ -89,4 +101,4 @@ def stable_toposort(
     return result
 
 
-__all__ = ["reach", "stable_toposort"]
+__all__ = ["reach", "reaching", "stable_toposort"]

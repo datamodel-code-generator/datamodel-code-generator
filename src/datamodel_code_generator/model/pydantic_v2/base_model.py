@@ -24,6 +24,7 @@ from datamodel_code_generator._alias_generators import generate_alias as _genera
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
@@ -1459,17 +1460,13 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
     ]
     if not pending:
         return set()
-    referrers: defaultdict[int, list[DataModel]] = defaultdict(list)
-    for model in models:
-        for reference in _model_references(model, model.base_classes):
-            referrers[id(reference.source)].append(model)
-    reached = {id(model) for model in pending}
-    while pending:
-        for referrer in referrers.get(id(pending.pop()), ()):
-            if id(referrer) not in reached:
-                reached.add(id(referrer))
-                pending.append(referrer)
-    return reached
+    return reaching(
+        map(id, pending),
+        (
+            (id(model), (id(reference.source) for reference in _model_references(model, model.base_classes)))
+            for model in models
+        ),
+    )
 
 
 def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str) -> bool:

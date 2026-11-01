@@ -58,6 +58,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
@@ -1831,20 +1832,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if name in refs or any(module_positions.get(r, -1) > pos for r in refs):
                     forward_needed.add(key)
 
-            # Propagate requirement through inheritance.
-            changed = True
-            required_filtered = set(forward_needed)
-            while changed:
-                changed = False
-                for model in models:
-                    if (key := model_key_of(model.reference)) in required_filtered:
-                        continue
-                    base_keys = {keyed.key_of(b.reference) for b in model.base_classes if b.reference}
-                    if base_keys & required_filtered:
-                        required_filtered.add(key)
-                        changed = True
-
-            required_keys_in_module = required_filtered
+            required_keys_in_module = reaching(
+                forward_needed,
+                (
+                    (
+                        model_key_of(model.reference),
+                        (keyed.key_of(b.reference) for b in model.base_classes if b.reference),
+                    )
+                    for model in models
+                ),
+            )
 
         return [
             "\n",

@@ -19,7 +19,12 @@ from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
-from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS, MODELED_SCHEMA_MAPS, schema_positions
+from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
+    MODELED_SCHEMA_MAPS,
+    admitted_types,
+    schema_positions,
+)
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.imports import IMPORT_ANY
@@ -907,10 +912,7 @@ def is_inherited_type_narrowing(
     parent_types: frozenset[str],
 ) -> bool:
     """Return whether explicit child JSON types are contained by the inherited types."""
-    if not parent_types:
-        return True
-    compatible_parent_types = parent_types | (frozenset(("integer",)) if "number" in parent_types else frozenset())
-    return child_types <= compatible_parent_types
+    return not parent_types or child_types <= admitted_types(parent_types)
 
 
 def is_partial_inherited_property(
