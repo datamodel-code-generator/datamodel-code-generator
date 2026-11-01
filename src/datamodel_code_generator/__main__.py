@@ -89,7 +89,6 @@ import tempfile
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import nullcontext, redirect_stdout, suppress
-from datetime import datetime, timezone
 from enum import IntEnum
 from functools import partial
 from pathlib import Path
@@ -118,6 +117,7 @@ from datamodel_code_generator._cli_config import (
 )
 from datamodel_code_generator._config_fields import JSON_FIELDS, MODEL_JSON_FIELDS, TARGET_SELECTORS
 from datamodel_code_generator._format_types import Formatter, PythonVersion
+from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
     CONFIG_TABLE,
@@ -2849,9 +2849,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if compare_output is not None:
             from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
 
-            comparison_context = GenerationRunContext(
-                generation_timestamp=datetime.now(timezone.utc).replace(microsecond=0).isoformat(), **run_options
-            )
+            comparison_context = GenerationRunContext(generation_timestamp=current_timestamp(), **run_options)
             with unmatched_model_name_keys_unreported():
                 comparison_context.run(cast("Path", config.diff_against), compare_output, input_filename="<input>")
             result = comparison_context.run(input_, generate_output, input_filename="<input>")
