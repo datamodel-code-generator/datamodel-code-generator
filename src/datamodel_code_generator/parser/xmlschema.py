@@ -25,6 +25,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._name_words import first_upper
+from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
@@ -1433,9 +1434,8 @@ class XMLSchemaParser(JsonSchemaParser):
         match self.source:
             case Path() as path:
                 if path.is_dir():  # pragma: no cover
-                    for file_path in sorted(path.rglob("*"), key=lambda item: item.name):
-                        if file_path.is_file():
-                            yield self._source_from_xml_path(file_path)
+                    for file_path in files_under(path, order="name"):
+                        yield self._source_from_xml_path(file_path)
                 else:
                     yield self._source_from_xml_path(path)
             case list() as paths:  # pragma: no cover

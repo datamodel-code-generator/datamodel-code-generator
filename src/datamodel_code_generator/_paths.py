@@ -18,12 +18,14 @@ Two paths relate as written, without the filesystem: one lies inside the other w
 they reach one inode; the callers decide which forms they compare and what an error of the filesystem means.
 
 An output path names a directory, a package of modules, when it has no suffix. The files a generation stages or
-copies are the files below that directory, listed in path order.
+copies are the files below that directory, listed in path order. The files of a directory input are listed by file
+name, files of one name in the order the directory walk meets them.
 """
 
 from __future__ import annotations
 
 import os
+from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -34,6 +36,7 @@ AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-fi
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Tilde = Literal["expand", "legacy-metadata-tilde-as-written"]
 Missing = Literal["none", "legacy-missing-input-raises"]
+FileOrder = Literal["path", "name"]
 
 
 def lexical(path: Path, base: Path | None = None) -> Path:
@@ -114,6 +117,10 @@ def names_directory(path: Path) -> bool:
     return not path.suffix
 
 
-def files_under(directory: Path, pattern: str = "*") -> list[Path]:
-    """Return the files below a directory whose names match ``pattern``, in path order; none below a file."""
-    return sorted(path for path in directory.rglob(pattern) if path.is_file())
+def files_under(directory: Path, pattern: str = "*", *, order: FileOrder = "path") -> list[Path]:
+    """Return the files below a directory whose names match ``pattern``, in path or file-name order; none below a file.
+
+    The name order keeps files of one name in the order ``Path.rglob`` yields them.
+    """
+    files = (path for path in directory.rglob(pattern) if path.is_file())
+    return sorted(files, key=attrgetter("name")) if order == "name" else sorted(files)

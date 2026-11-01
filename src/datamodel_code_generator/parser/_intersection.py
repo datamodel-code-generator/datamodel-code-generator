@@ -582,6 +582,14 @@ def intersect_keywords(  # noqa: PLR0913
     )
 
 
+def intersects_all_of_constraints(merge_mode: str) -> bool:
+    """Return whether the members of an allOf that merge into one schema intersect their constraints.
+
+    They do unless ``--allof-merge-mode none``.
+    """
+    return merge_mode != "none"
+
+
 def inherits_keyword(merge_mode: str, keyword: str) -> bool:
     """Return whether a property that overrides an inherited one takes ``keyword`` from it where it declares none.
 

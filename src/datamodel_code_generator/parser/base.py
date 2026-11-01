@@ -76,6 +76,7 @@ from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
+from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
@@ -1339,15 +1340,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 yield Source.from_dict(self.source)
             case Path() as path:
                 if path.is_dir():
+                    files = files_under(path, order="name")
                     if (input_filter := self._source_context.directory_input_filter) is not None:
-                        for source_path, data in input_filter.iter_files(
-                            sorted(path.rglob("*"), key=lambda p: p.name), self.encoding
-                        ):
+                        for source_path, data in input_filter.iter_files(files, self.encoding):
                             yield self._source_from_path(source_path, data=data)
                         return
-                    for p in sorted(path.rglob("*"), key=lambda p: p.name):
-                        if p.is_file():
-                            yield self._source_from_path(p)
+                    for p in files:
+                        yield self._source_from_path(p)
                 else:
                     yield self._source_from_path(path)
             case list() as paths:  # pragma: no cover

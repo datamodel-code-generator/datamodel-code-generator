@@ -441,6 +441,17 @@ _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
 _UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
 
 
+def customizes_models(config: JSONSchemaParserConfig) -> bool:
+    """Return whether the run customizes the models: a base class, a base class map, custom templates or template data.
+
+    The validators that rewrite a model's rules keep the generic helpers then.
+    """
+    return (
+        any((config.base_class, config.base_class_map, config.custom_template_dir))
+        or config.extra_template_data is not None
+    )
+
+
 def _schema_keywords(schema: object) -> dict[str, Any] | None:
     """Return the dumped keywords of a schema that assert something (``true`` as ``{}``), or None for ``false``."""
     if schema is True:
@@ -1592,10 +1603,7 @@ def add_pattern_properties_validator(  # noqa: PLR0913, PLR0917
     names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
     declared_names = tuple(sorted({name for names in names_by_property.values() for name in names}))
     rule_type = PatternPropertiesRule
-    helpers_kept = (
-        any((parser.config.base_class, parser.config.base_class_map, parser.config.custom_template_dir))
-        or parser.config.extra_template_data is not None
-    )
+    helpers_kept = customizes_models(parser.config)
     declared_witness = "legacy-validated-pattern-maps" in parser._legacy_object_maps  # noqa: SLF001
     intersection = (
         None
@@ -1714,8 +1722,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     if (
         not parser.force_optional_for_required_fields
         and not obj.custom_base_path
-        and not any((parser.config.base_class, parser.config.base_class_map, parser.config.custom_template_dir))
-        and parser.config.extra_template_data is None
+        and not customizes_models(parser.config)
         and (missing_required := [name for name in obj.required if name not in names_by_property])
     ):
         parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)  # noqa: SLF001

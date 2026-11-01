@@ -46,7 +46,7 @@ from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion,
 from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
-from datamodel_code_generator.parser._schema_object import _located_model_schema
+from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -317,12 +317,7 @@ def is_object_map_body(obj: JsonSchemaObject) -> bool:
     That is an ``is_object`` body without ``properties`` whose ``patternProperties`` or ``propertyNames`` make a map,
     other than one that ``_is_closed_pattern_map_body`` gives that model by default.
     """
-    return (
-        obj.is_object
-        and not obj.properties
-        and bool(obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False))
-        and not _is_closed_pattern_map_body(obj)
-    )
+    return obj.is_object and not obj.properties and _has_map_key_keywords(obj) and not _is_closed_pattern_map_body(obj)
 
 
 def _missing_operation_id(path_name: str) -> Error:

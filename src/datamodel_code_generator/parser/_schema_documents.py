@@ -35,6 +35,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
+from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -803,9 +804,7 @@ def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:
         return
     match parser.source:
         case Path() as path if path.is_dir():
-            yield from (
-                file_path for file_path in sorted(path.rglob("*"), key=lambda item: item.name) if file_path.is_file()
-            )
+            yield from files_under(path, order="name")
         case list() as paths:
             yield from ((parser.base_path / path) for path in paths)
 

@@ -19,6 +19,7 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
 from datamodel_code_generator._message_text import extra_requirement
+from datamodel_code_generator._paths import files_under
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import _converted_float
@@ -390,8 +391,10 @@ class _ProtoInputPreparer:
         source = self.parser.source
         if isinstance(source, Path):
             if source.is_dir():
-                paths = sorted((path for path in source.rglob("*.proto") if path.is_file()), key=lambda path: path.name)
-                return [self._write_sanitized_file(path, temp_path, source) for path in paths]
+                return [
+                    self._write_sanitized_file(path, temp_path, source)
+                    for path in files_under(source, "*.proto", order="name")
+                ]
             return [self._write_sanitized_file(source, temp_path, self.parser.base_path)]
         if isinstance(source, list):
             return [self._write_sanitized_file(path, temp_path, self.parser.base_path) for path in source]
