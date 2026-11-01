@@ -18,6 +18,7 @@ from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._json_pointer import pointer_tokens
+from datamodel_code_generator._json_schema import admitted_types
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
@@ -173,7 +174,7 @@ def _json_type(value: object) -> str:
 
 
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
-    return accepted is None or kind in accepted or (kind == "integer" and "number" in accepted)
+    return accepted is None or kind in admitted_types(accepted)
 
 
 def _branches(value: TypeView) -> bool:

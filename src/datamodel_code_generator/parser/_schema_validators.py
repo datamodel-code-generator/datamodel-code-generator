@@ -19,7 +19,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
-from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, schema_positions
+from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, admitted_types, schema_positions
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
@@ -564,13 +564,12 @@ def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tu
         return None
     if item.type is None:
         return values
-    schema_types = declared_types(item.type)
+    schema_types = admitted_types(declared_types(item.type))
     return (
         tuple(
             value
             for value in values
-            if (value_type := _get_json_value_type(value)) in schema_types
-            or (value_type == "integer" and "number" in schema_types)
+            if _get_json_value_type(value) in schema_types
             or (isinstance(value, float) and value.is_integer() and "integer" in schema_types)
         )
         or None

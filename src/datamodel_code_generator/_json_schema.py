@@ -5,12 +5,12 @@ keyword plays. Every walker reads it, by shape or through a view of its roles (`
 visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
 ``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
 data. ``subschema_entries`` reads the subschemas one keyword holds by its shape, and ``json_nodes`` walks every value of
-a loaded JSON value.
+a loaded JSON value. ``admitted_types`` reads what the types a ``type`` keyword lists admit.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from copy import deepcopy
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias
@@ -195,6 +195,12 @@ REF_PRE_PASS_POSITIONS: Final = tuple(
 
 In the legacy order it meets references in, which the names of the references it registers follow.
 """
+
+
+def admitted_types(types: Iterable[str]) -> frozenset[str]:
+    """Return the JSON types a ``type`` keyword admits: the ones it lists, and ``integer`` where it lists ``number``."""
+    listed = frozenset(types)
+    return listed | {"integer"} if "number" in listed else listed
 
 
 def definition_ref(key: DefinitionKey, name: str = "") -> str:
