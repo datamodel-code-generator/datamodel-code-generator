@@ -5487,6 +5487,9 @@ def test_profile_extends_circular_error(tmp_path: Path, capsys: pytest.CaptureFi
 extends = "b"
 
 [tool.datamodel-codegen.profiles.b]
+extends = "c"
+
+[tool.datamodel-codegen.profiles.c]
 extends = "a"
 """
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
@@ -5500,7 +5503,7 @@ extends = "a"
             ["--input", str(input_file), "--output", str(output_file), "--profile", "a"],
             expected_exit=Exit.ERROR,
         )
-        assert_error_message(capsys, "Circular extends detected")
+        assert_error_message(capsys, "Circular extends detected: a -> b -> c -> a")
 
 
 def test_profile_extends_not_found_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
