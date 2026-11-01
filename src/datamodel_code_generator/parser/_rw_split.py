@@ -30,6 +30,7 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._intersection import inherits_keyword
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
@@ -602,7 +603,11 @@ def collect_inherited_fields_for_request_response(
         for field in result:
             if _field_source_name(field) in required_names:
                 field.required = True
-                field.use_default_with_required = parser.apply_default_values_for_required_fields and field.has_default
+                field.use_default_with_required = uses_default_with_required(
+                    required=field.required,
+                    has_default=field.has_default,
+                    use_default=parser.apply_default_values_for_required_fields,
+                )
     return result
 
 
@@ -820,7 +825,11 @@ def get_raw_inherited_fields(
         for field in result:
             if _field_source_name(field) in required_names:
                 field.required = True
-                field.use_default_with_required = parser.apply_default_values_for_required_fields and field.has_default
+                field.use_default_with_required = uses_default_with_required(
+                    required=field.required,
+                    has_default=field.has_default,
+                    use_default=parser.apply_default_values_for_required_fields,
+                )
             parser.data_model_type.finalize_required_inherited_field(field)
 
     parser._raw_inherited_fields_cache[resolved_ref] = tuple(result)  # noqa: SLF001

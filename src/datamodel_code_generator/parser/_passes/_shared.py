@@ -56,6 +56,7 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import skips_root_model
 from datamodel_code_generator.parser._passes._keys import (
@@ -575,7 +576,9 @@ def apply_inherited_field_default(
         match field.default:
             case dict() | list() | set():
                 field.default = deepcopy(field.default)
-    field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
+    field.use_default_with_required = uses_default_with_required(
+        required=field.required, has_default=field.has_default, use_default=apply_default_values_for_required_fields
+    )
 
 
 def placeholder_identity(placeholder: DataModelFieldBase) -> FieldIdentity:

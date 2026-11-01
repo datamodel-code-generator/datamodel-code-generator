@@ -236,6 +236,7 @@ from datamodel_code_generator.parser._all_of_values import (
     _ALL_OF_VALUE_ITEM_KEYWORDS,
     _DERIVED_FROM_REF_KEY,
 )
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._inherited_schemas import (
     _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY,
@@ -4156,7 +4157,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if field := field_name_to_field.get(required_name):
                     field.required = True
-                    if self.apply_default_values_for_required_fields and field.has_default:
+                    if uses_default_with_required(
+                        required=field.required,
+                        has_default=field.has_default,
+                        use_default=self.apply_default_values_for_required_fields,
+                    ):
                         field.use_default_with_required = True
                     continue
                 field = self._build_missing_required_field(
