@@ -245,9 +245,13 @@ def _long_options() -> tuple[str, ...]:
     """Return every long option the command line parser accepts."""
     from datamodel_code_generator.arguments import arg_parser  # noqa: PLC0415
 
-    return tuple({
-        option for action in arg_parser._actions for option in action.option_strings if option.startswith("--")
-    })
+    options = {
+        option
+        for action in arg_parser._actions  # noqa: SLF001 - argparse keeps the option table in a private attribute
+        for option in action.option_strings
+        if option.startswith("--")
+    }
+    return tuple(sorted(options))
 
 
 def _resolved_option(option: str) -> str:
