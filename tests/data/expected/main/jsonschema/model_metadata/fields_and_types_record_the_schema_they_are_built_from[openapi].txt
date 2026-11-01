@@ -4,9 +4,15 @@ Pet
 Cat
   meow: property /components/schemas/Cat/allOf/1/properties/meow {"type": "boolean"}
     .: /components/schemas/Cat/allOf/1/properties/meow {"type": "boolean"}
-  kind: None None
+  kind: tag None
     .: None
+Dog
+  kind: property /components/schemas/Dog/allOf/1/properties/kind {"type": "string"}
+    .: None
+  bark: property /components/schemas/Dog/allOf/1/properties/bark {"type": "boolean"}
+    .: /components/schemas/Dog/allOf/1/properties/bark {"type": "boolean"}
 Owner
   pet: property /components/schemas/Owner/properties/pet {"$ref": "#/components/schemas/Pet"}
     .: /components/schemas/Owner/properties/pet {"$ref": "#/components/schemas/Pet"}
     /0: /components/schemas/Owner/properties/pet {"$ref": "#/components/schemas/Pet"}
+    /1: /components/schemas/Owner/properties/pet {"$ref": "#/components/schemas/Pet"}

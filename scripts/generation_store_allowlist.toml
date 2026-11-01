@@ -194,7 +194,7 @@ kwargs = 1
 'kwargs[...]' = 1
 tuple_item_count = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
+["src/datamodel_code_generator/parser/_passes/_import_aliases.py"."_alias_additional_imports"]
 '_additional_imports[...]' = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."apply_inherited_field_default"]

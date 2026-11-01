@@ -4775,7 +4775,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         module_name: Optional[str] = None,  # noqa: UP045
         class_name: Optional[str] = None,  # noqa: UP045
     ) -> list[DataModelFieldBase]:
-        """Parse object properties into a list of data model fields."""
+        """Parse object properties into a list of data model fields.
+
+        A field of a boolean property schema records where ``obj`` declares it, ``properties/<name>``, as its origin.
+        """
         properties: dict[str, JsonSchemaObject | bool] = {} if obj.properties is None else obj.properties
         requires: set[str] = {*()} if obj.required is None else {*obj.required}
         fields: list[DataModelFieldBase] = []
@@ -4804,7 +4807,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     required=False if self.force_optional_for_required_fields else original_field_name in requires,
                     original_name=original_field_name,
                 )
-                fields.append(with_field_origin(boolean_field, "property", None))
+                declaration = (
+                    None
+                    if (location := obj.schema_location) is None
+                    else location.child("properties", original_field_name)
+                )
+                fields.append(with_field_origin(boolean_field, "property", declaration))
                 continue
 
             field = self._site_schema(field, merge_ref_siblings=True)  # noqa: PLW2901

@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info: {title: Form members spelled through cycles and branches, version: "1"}
+servers: [{url: "https://example.com"}]
+paths:
+  /loops:
+    post:
+      operationId: sendLoop
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/LoopA'}
+      responses:
+        "204": {description: sent}
+  /shapes:
+    post:
+      operationId: sendShape
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/Shape/anyOf/0'}
+      responses:
+        "204": {description: sent}
+components:
+  schemas:
+    LoopA:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/LoopC'
+        - $ref: '#/components/schemas/LoopB'
+      properties:
+        a: {type: string}
+        responseOnly: {type: string, readOnly: true}
+    LoopB:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/LoopA'
+      properties:
+        d: {type: integer}
+    LoopC:
+      type: object
+      properties:
+        c: {type: string}
+    Named:
+      type: object
+      properties:
+        name: {type: string}
+    Shape:
+      type: object
+      properties:
+        name: {type: string, format: binary}
+      anyOf:
+        - $ref: '#/components/schemas/Named'
+        - {type: object, properties: {size: {type: integer}}}
