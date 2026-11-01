@@ -1508,3 +1508,52 @@ def test_client_cli_implied_settings(
         f"{notice}models equal those of a model-only run given {' '.join(given)}: {same}\n",
         EXPECTED / "cli" / "implied" / f"{backend}.txt",
     )
+
+
+@pytest.mark.parametrize(
+    ("declared", "configured", "parameter"),
+    [("3.1.0", "3.0", "q: int | UNSET = UNSET,"), ("3.0.3", "3.1", "q: int = 7,")],
+    ids=["3.0", "3.1"],
+)
+def test_client_cli_schema_version_reads_ref_siblings(
+    declared: str, configured: str, parameter: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Read the siblings of a parameter's `$ref` at the version `--schema-version` sets, as the models do.
+
+    A document read with `--schema-version` gives the client of the same document declaring that version: 3.0 ignores
+    the `default` beside the `$ref`, 3.1 keeps it.
+    """
+    document = (
+        "info: {title: t, version: '1'}\n"
+        "servers: [{url: 'https://example.com'}]\n"
+        "paths:\n"
+        "  /a:\n"
+        "    get:\n"
+        "      operationId: getA\n"
+        "      parameters:\n"
+        "        - name: q\n"
+        "          in: query\n"
+        "          schema: {$ref: '#/components/schemas/Q', default: 7}\n"
+        "      responses:\n"
+        "        '200': {description: ok}\n"
+        "components:\n"
+        "  schemas:\n"
+        "    Q: {type: integer}\n"
+    )
+    clients: dict[str, str] = {}
+    for name, version, arguments in (
+        ("configured", declared, ["--schema-version", configured]),
+        ("declared", f"{configured}.0", []),
+    ):
+        (root := tmp_path / name).mkdir()
+        (root / "api.yaml").write_text(f"openapi: {version}\n{document}", encoding="utf-8")
+        monkeypatch.chdir(root)
+        run_main_with_args([
+            *("--input", "api.yaml", "--input-file-type", "openapi", "--output", "models.py"),
+            *OPTIONS,
+            *CLIENT,
+            *arguments,
+        ])
+        clients[name] = (root / "client/resources/default/_sync.py").read_text(encoding="utf-8")
+    assert clients["configured"] == clients["declared"]
+    assert parameter in clients["configured"]
