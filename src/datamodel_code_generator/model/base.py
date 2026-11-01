@@ -10,7 +10,7 @@ import ast  # noqa: F401  # Preserve the established model.base export.
 import re
 import sys
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
@@ -32,6 +32,7 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, _mro, cached_path_exists
+from datamodel_code_generator._caches import BoundedLru
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
@@ -278,7 +279,7 @@ class _MissingCustomTemplateState:
     def reset(self) -> None:
         """Forget every remembered missing path, signature and dependency."""
         self.paths: dict[Path, tuple[Path, ...]] = {}
-        self.signatures: OrderedDict[Path, _CustomTemplateSignature] = OrderedDict()
+        self.signatures: BoundedLru[Path, _CustomTemplateSignature] = BoundedLru()
         self.dependencies: dict[Path, _CustomTemplateDependencies] = {}
         self.count = 0
         self.overflow = False
@@ -1854,15 +1855,11 @@ def _refresh_custom_template_paths(custom_template_dir: Path) -> None:
         ):
             _missing_custom_template_state.signatures.move_to_end(custom_template_dir)
             return
-        if (
-            custom_template_dir not in _missing_custom_template_state.signatures
-            and len(_missing_custom_template_state.signatures) >= _MAX_CUSTOM_TEMPLATE_SIGNATURES
-        ):
-            evicted, _ = _missing_custom_template_state.signatures.popitem(last=False)
-            _missing_custom_template_state.dependencies.pop(evicted, None)
         _clear_custom_template_render_caches()
-        _missing_custom_template_state.signatures[custom_template_dir] = signature
-        _missing_custom_template_state.signatures.move_to_end(custom_template_dir)
+        for evicted, _ in _missing_custom_template_state.signatures.put(
+            custom_template_dir, signature, _MAX_CUSTOM_TEMPLATE_SIGNATURES
+        ):
+            _missing_custom_template_state.dependencies.pop(evicted, None)
         _missing_custom_template_state.dependencies[custom_template_dir] = _CustomTemplateDependencies()
 
 

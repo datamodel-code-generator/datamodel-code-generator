@@ -11,7 +11,6 @@ import contextlib
 import io
 import re
 import warnings
-from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from pathlib import Path
@@ -22,6 +21,7 @@ from xml.etree import ElementTree as ET  # noqa: S405
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._name_words import first_upper
@@ -93,8 +93,8 @@ class _XMLSchemaDataCacheEntry(NamedTuple):
     dependencies: tuple[tuple[Path, str], ...]
 
 
-_xml_schema_data_cache: OrderedDict[_XMLSchemaDataCacheKey, _XMLSchemaDataCacheEntry] = OrderedDict()
-_xml_schema_data_seen_keys: OrderedDict[_XMLSchemaDataSeenKey, None] = OrderedDict()
+_xml_schema_data_cache: BoundedLru[_XMLSchemaDataCacheKey, _XMLSchemaDataCacheEntry] = BoundedLru()
+_xml_schema_data_seen_keys: SeenKeys[_XMLSchemaDataSeenKey] = SeenKeys()
 _xml_schema_data_cache_lock = RLock()
 
 
@@ -312,11 +312,7 @@ def _load_xml_schema_data_from_path(  # noqa: PLR0913
     options = (xmlschema_version, schema_version_mode, use_xmlschema_datetime_default, source_safe_non_finite)
     seen_key = (resolved_path, resolved_base_path, encoding, *options)
     with _xml_schema_data_cache_lock:
-        use_cache = seen_key in _xml_schema_data_seen_keys
-        _xml_schema_data_seen_keys[seen_key] = None
-        _xml_schema_data_seen_keys.move_to_end(seen_key)
-        while len(_xml_schema_data_seen_keys) > _XML_SCHEMA_DATA_CACHE_MAX_SIZE:
-            _xml_schema_data_seen_keys.popitem(last=False)
+        use_cache = _xml_schema_data_seen_keys.mark(seen_key, _XML_SCHEMA_DATA_CACHE_MAX_SIZE)
 
     converter = _XMLSchemaConverter(
         base_path=base_path,
@@ -331,20 +327,17 @@ def _load_xml_schema_data_from_path(  # noqa: PLR0913
 
     cache_key = (resolved_path, resolved_base_path, _digest_path(resolved_path), encoding, *options)
     with _xml_schema_data_cache_lock:
-        if (entry := _xml_schema_data_cache.get(cache_key)) is not None and _xml_schema_cache_entry_is_fresh(entry):
-            _xml_schema_data_cache.move_to_end(cache_key)
+        if (entry := _xml_schema_data_cache.recent(cache_key, _xml_schema_cache_entry_is_fresh)) is not None:
             return _copy_schema(entry.data)
 
     data = converter.convert(Source(path=path.relative_to(base_path), text=_read_xml_text(path, encoding)))
     dependencies = _xml_schema_cache_dependencies(converter.loaded_source_paths)
     with _xml_schema_data_cache_lock:
-        _xml_schema_data_cache[cache_key] = _XMLSchemaDataCacheEntry(
-            data=_copy_schema(data),
-            dependencies=dependencies,
+        _xml_schema_data_cache.put(
+            cache_key,
+            _XMLSchemaDataCacheEntry(data=_copy_schema(data), dependencies=dependencies),
+            _XML_SCHEMA_DATA_CACHE_MAX_SIZE,
         )
-        _xml_schema_data_cache.move_to_end(cache_key)
-        while len(_xml_schema_data_cache) > _XML_SCHEMA_DATA_CACHE_MAX_SIZE:
-            _xml_schema_data_cache.popitem(last=False)
     return data
 
 
