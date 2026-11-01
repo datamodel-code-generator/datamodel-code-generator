@@ -1413,23 +1413,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _get_text_from_url(self, url: str) -> str:
         def fetch(remote_url: str) -> str:
-            from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, _HTTPFetchSession  # noqa: PLC0415
+            from datamodel_code_generator.http import _get_configured_body, _HTTPFetchSession  # noqa: PLC0415
 
             if (session := self._http_fetch_session) is None:
                 self._http_fetch_session = session = _HTTPFetchSession(
                     self.http_backend,
                     response_observer=self._remote_response_observer,
                 )
-            timeout = self.http_timeout if self.http_timeout is not None else DEFAULT_HTTP_TIMEOUT
-            return session.get_body(
-                remote_url,
-                self.http_headers,
-                self.http_ignore_tls,
-                self.http_query_parameters,
-                timeout,
-                allow_private_network=self.allow_private_network,
-                encoding=self.encoding,
-            )
+            return _get_configured_body(remote_url, self, session=session)
 
         return self.remote_text_cache.get_or_put(
             url,
