@@ -1,0 +1,116 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Server forms of models with subclasses",
+  "version": "1"
+ },
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "paths": {
+  "/search": {
+   "get": {
+    "operationId": "searchOwners",
+    "parameters": [
+     {
+      "name": "filter",
+      "in": "query",
+      "style": "deepObject",
+      "explode": true,
+      "schema": {
+       "$ref": "#/components/schemas/Owner"
+      }
+     },
+     {
+      "name": "alias",
+      "in": "query",
+      "style": "deepObject",
+      "explode": true,
+      "schema": {
+       "$ref": "#/components/schemas/OwnerAlias"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Query objects typed as a model with a subclass",
+      "and as an alias of it.": null
+     }
+    }
+   }
+  },
+  "/list": {
+   "get": {
+    "operationId": "listPages",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "style": "form",
+      "explode": true,
+      "schema": {
+       "$ref": "#/components/schemas/Page"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "A form-style query object typed as a model with a subclass."
+     }
+    }
+   }
+  },
+  "/forms": {
+   "post": {
+    "operationId": "submitOwner",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/Owner"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Forms typed as a model with a subclass."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Owner": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "age": {
+      "type": "integer"
+     },
+     "name": {
+      "type": "string"
+     }
+    }
+   },
+   "OwnerAlias": {
+    "$ref": "#/components/schemas/Owner"
+   },
+   "Page": {
+    "type": "object",
+    "properties": {
+     "limit": {
+      "type": "integer"
+     },
+     "size": {
+      "type": "number"
+     }
+    }
+   }
+  }
+ }
+}

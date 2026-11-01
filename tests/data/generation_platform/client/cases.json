@@ -894,6 +894,57 @@
       ]
     ]
   },
+  "forms-serialize-as-any": {
+    "input": "forms-serialize-as-any.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "strict_types": [
+        "int"
+      ],
+      "use_serialize_as_any": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-extensions-any": {
+    "input": "forms-extensions-any.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "import_overrides": {
+        "Any": "typing_extensions"
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-patterns-reused": {
+    "input": "forms-patterns-reused.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    }
+  },
+  "multipart-any-errors": {
+    "input": "multipart-any-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
   "header-names": {
     "input": "header-names.yaml"
   },

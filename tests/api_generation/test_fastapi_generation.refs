@@ -29,6 +29,12 @@ empty	main/generation_platform/fastapi/empty.txt
 empty	main/generation_platform/fastapi/packages/empty/
 encoding	main/generation_platform/fastapi/encoding.txt
 encoding	main/generation_platform/fastapi/packages/encoding/
+forms-extensions-any	main/generation_platform/fastapi/forms-extensions-any.txt
+forms-extensions-any	main/generation_platform/fastapi/packages/forms-extensions-any/
+forms-patterns-reused	main/generation_platform/fastapi/forms-patterns-reused.txt
+forms-patterns-reused	main/generation_platform/fastapi/packages/forms-patterns-reused/	= main/generation_platform/fastapi/packages/info/
+forms-serialize-as-any	main/generation_platform/fastapi/forms-serialize-as-any.txt
+forms-serialize-as-any	main/generation_platform/fastapi/packages/forms-serialize-as-any/
 group-errors	main/generation_platform/fastapi/group-errors.txt
 group-errors	main/generation_platform/fastapi/packages/group-errors/
 header-names	main/generation_platform/fastapi/header-names.txt	= main/generation_platform/client/header-names.txt

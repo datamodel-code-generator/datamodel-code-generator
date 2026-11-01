@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info: {title: Parts of bodies that are no object though the models type them as any value, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /list-parts:
+    post:
+      operationId: uploadList
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Names"}
+      responses:
+        "204": {description: An array body sent as parts.}
+  /text-parts:
+    post:
+      operationId: uploadText
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Text"}
+      responses:
+        "204": {description: A string body sent as parts.}
+components:
+  schemas:
+    Names:
+      type: array
+      items: {type: string}
+      x-python-import: {module: typing, name: Any}
+    Text:
+      type: string
+      x-python-import: {module: typing, name: Any}

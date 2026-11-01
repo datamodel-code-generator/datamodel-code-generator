@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "ANY_TYPES",
     "CONSTRAINED_SCALARS",
     "admits_none",
     "container_slot",
@@ -117,7 +118,8 @@ _STEPS: Final[Mapping[LeafStep, tuple[int, ContainerKind]]] = MappingProxyType({
     "items": (1, ITEM_CONTAINERS),
     "values": (2, MAPPINGS),
 })
-_ANY: Final = ("typing", "Any")
+ANY_TYPES: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
+"""The module and name of each type that takes any value: the Any of the typing module and of typing_extensions."""
 _SERIALIZE_AS_ANY: Final = ("pydantic", "SerializeAsAny")
 
 
@@ -204,16 +206,33 @@ def container_slot(value: TypeView) -> ContainerSlot | None:
     return CONTAINER_CLASSES.get(type_identity(value.base)) if isinstance(value, GenericType) else None
 
 
+def _named(value: TypeView) -> tuple[str | None, str] | None:
+    """Return the module and name of a builtin or imported type, None for any other type or a module import."""
+    named = isinstance(value, BuiltinType) or (isinstance(value, ImportedType) and bool(value.import_.from_))
+    return type_identity(value) if named else None
+
+
+def _serialized(value: TypeView | None) -> TypeView | None:
+    """Return the type a ``SerializeAsAny`` wrapper marks for serialization, or None for any other type."""
+    return (
+        value.arguments[0]
+        if isinstance(value, GenericType) and _named(value.base) == _SERIALIZE_AS_ANY and len(value.arguments) == 1
+        else None
+    )
+
+
 def unwrapped(
     value: TypeView | None,
     symbols: Mapping[SymbolId, FinalModelSymbol],
     members: Mapping[SymbolId, Sequence[FieldUseBinding]],
 ) -> TypeView | None:
-    """Return the type a type stands for, through aliases, root models and a union with None alone."""
+    """Return the type a type stands for, through aliases, root models, SerializeAsAny and a union with None alone."""
     seen: set[SymbolId] = set()
     while True:
         if isinstance(value, UnionType) and len(found := present(value)) == 1:
             value = found[0]
+        elif (inner := _serialized(value)) is not None:
+            value = inner
         elif (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
@@ -246,12 +265,6 @@ def stepped(
     return value
 
 
-def _named(value: TypeView) -> tuple[str | None, str] | None:
-    """Return the module and name of a builtin or imported type, None for any other type or a module import."""
-    named = isinstance(value, BuiltinType) or (isinstance(value, ImportedType) and bool(value.import_.from_))
-    return type_identity(value) if named else None
-
-
 def json_kinds(
     value: TypeView,
     symbols: Mapping[SymbolId, FinalModelSymbol],
@@ -266,7 +279,7 @@ def json_kinds(
     leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
     name = _named(leaf)
     named = None if name is None else _JSON_KINDS.get(name)
-    if named is None and isinstance(value, ImportedType | ConstructorType) and name != _ANY:
+    if named is None and isinstance(value, ImportedType | ConstructorType) and name not in ANY_TYPES:
         named = "string"
     kinds = None if named is None else frozenset({named})
     match value:
@@ -292,8 +305,8 @@ def json_kinds(
             kinds = json_kinds(root, symbols, members, seen | {value.symbol})
         case GeneratedSymbolType() if symbols[value.symbol].kind == "model":
             kinds = frozenset({"object"})
-        case GenericType() if _named(value.base) == _SERIALIZE_AS_ANY and len(value.arguments) == 1:
-            kinds = json_kinds(value.arguments[0], symbols, members, seen)
+        case GenericType() if (inner := _serialized(value)) is not None:
+            kinds = json_kinds(inner, symbols, members, seen)
         case GenericType():
             kinds = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
         case NoneType():

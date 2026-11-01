@@ -1,0 +1,64 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Server forms of models typed as any value by typing_extensions",
+  "version": "1"
+ },
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "paths": {
+  "/anything": {
+   "post": {
+    "operationId": "submitAnything",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/Shaped"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "A form whose object schema the models type as any value."
+     }
+    }
+   }
+  },
+  "/search": {
+   "get": {
+    "operationId": "searchAnything",
+    "parameters": [
+     {
+      "name": "filter",
+      "in": "query",
+      "style": "form",
+      "explode": true,
+      "schema": {
+       "$ref": "#/components/schemas/Shaped"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "A query object whose schema the models type as any value."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Shaped": {
+    "const": {
+     "a": 1
+    }
+   }
+  }
+ }
+}

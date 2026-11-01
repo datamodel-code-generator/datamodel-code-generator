@@ -2824,22 +2824,17 @@ class _SchemaUses(_Models):
             return projector.project(data_type)
         return self.lightweight(declaration, direction, inline=inline)
 
-    def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
-        """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
-        if isinstance(value, UnionType):
-            members = present(value)
-            value = members[0] if len(members) == 1 else None
-        symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
-        members = () if symbol is None else self.members.get(symbol, ())
-        root = next(
-            (
-                facts.type
-                for member in members
-                if member.member_kind == "root_value" and (facts := member.model_facts) is not None
-            ),
-            None,
+    def held(self, value: TypeView | None) -> SymbolId | None:
+        """Return the model a type is, or holds through aliases, root models, SerializeAsAny and a None union.
+
+        A root model or alias that only stands for itself holds none.
+        """
+        return (
+            found.symbol
+            if isinstance(found := unwrapped(value, self.symbol_table, self.members), GeneratedSymbolType)
+            and self.symbol_table[found.symbol].kind not in WRAPPER_KINDS
+            else None
         )
-        return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
 
     def members_at(
         self, symbol: SymbolId, schema: SchemaLocation | None, direction: Direction
@@ -3131,6 +3126,18 @@ class _Encodings(_SchemaUses):
         """Return where the schema of a type's values is: the schema of the model it names, else ``source``."""
         return source if (location := self.located(value)) is None else self.documents.location(location, "schema")
 
+    def said(
+        self, symbol: SymbolId | None, anchor: SchemaLocation | None
+    ) -> Iterator[tuple[SchemaLocation, _ObjectSchema]]:
+        """Yield what the schemas say of an object, where a use reads it (``anchor``) and then where its model is.
+
+        An equal schema the model stands for may say more than the model's own, so the use's comes first.
+        """
+        own = None if symbol is None else self.locations.get(symbol)
+        for place in dict.fromkeys(found for found in (anchor, own) if found is not None):
+            if (said := self.parser.object_schemas.get(place)) is not None:
+                yield place, said
+
     def additional(
         self, symbol: SymbolId, anchor: SchemaLocation | None = None
     ) -> tuple[SymbolId, SchemaLocation, _AdditionalSaid] | None:
@@ -3140,9 +3147,8 @@ class _Encodings(_SchemaUses):
         model stands for may say more than the model's own; else the model's own, else the last base's that does, as
         a model takes the configuration of its last base; a class has no cycle of bases.
         """
-        location = self.locations.get(symbol)
-        for place in dict.fromkeys(found for found in (anchor, location) if found is not None):
-            if (said := self.parser.object_schemas.get(place)) is not None and said.additional != "absent":
+        for place, said in self.said(symbol, anchor):
+            if said.additional != "absent":
                 return symbol, place, said.additional
         return next(
             (
@@ -3244,9 +3250,10 @@ class _Encodings(_SchemaUses):
                 else TextShape("scalar", KindSite(location, value))
             )
         held = self.held_members(value, schema, direction)
-        owner = self.locations.get(held[0]) if held[0] is not None else self.located(value) or schema
-        if owner is not None and (said := self.parser.object_schemas.get(owner)) is not None and said.patterns:
-            return TextShape("object", problem=(location, _PATTERNS))
+        anchor = held[1] if held[0] is not None else self.located(value) or schema
+        for place, said in self.said(held[0], anchor):
+            if said.patterns:
+                return TextShape("object", problem=(self.documents.location(place, "schema"), _PATTERNS))
         return TextShape(
             "object",
             members=tuple(
@@ -3315,16 +3322,22 @@ class _Contracts(_Encodings):
         return cast("_SchemaRecord", _relocated(self.parser.schema_records.get(schema, _UNRECORDED), self.relocations))
 
     def parts(
-        self, binding: TypeUseBinding, record: _PartsRecord, model: SymbolId | None, anchor: SchemaLocation
+        self,
+        binding: TypeUseBinding,
+        record: _PartsRecord,
+        model: SymbolId | None,
+        anchor: SchemaLocation,
+        schema: SchemaLocation,
     ) -> PartFacts:
         """Return how a multipart body's schema encodes the parts of its use's members.
 
-        Its type says whether it is an object, or any value, and no union of several types. The model it holds allows
+        Its type says whether it is an object, or any value, and no union of several types; a type that takes any
+        value is an object where the media's schema ``schema`` says it is (``kinds``). The model it holds allows
         no other parts when the schema that says what its other properties are, the one it is read at (``anchor``),
         its own or a base's, closes it (``additional``), and allows them when that schema says anything else.
         """
         value = binding.type
-        kinds = self.kinds(value)
+        kinds = self.kinds(value, self.documents.location(schema, "schema"))
         union = unwrapped(value, self.symbol_table, self.members)
         declared = dict(record.members)
         said = None if model is None or (owner := self.additional(model, anchor)) is None else owner[2]
@@ -3438,7 +3451,7 @@ class _Contracts(_Encodings):
             binary = record.binary if textual or parts is None else parts.binary
             self.uses[use] = replace(
                 binding,
-                parts=None if parts is None else self.parts(binding, parts, model, anchor),
+                parts=None if parts is None else self.parts(binding, parts, model, anchor, schema),
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=self.encoding(binding, schema, members=kind in _FORMS)

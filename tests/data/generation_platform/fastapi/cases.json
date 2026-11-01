@@ -105,6 +105,30 @@
     },
     "package_snapshots": []
   },
+  "forms-serialize-as-any": {
+    "input": "forms-serialize-as-any.yaml",
+    "model": {
+      "strict_types": [
+        "int"
+      ],
+      "use_serialize_as_any": true
+    }
+  },
+  "forms-extensions-any": {
+    "input": "forms-extensions-any.yaml",
+    "model": {
+      "import_overrides": {
+        "Any": "typing_extensions"
+      }
+    }
+  },
+  "forms-patterns-reused": {
+    "input": "forms-patterns-reused.yaml",
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    }
+  },
   "route-errors": {
     "input": "route-errors.yaml"
   },

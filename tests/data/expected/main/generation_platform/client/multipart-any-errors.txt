@@ -1,0 +1,3 @@
+# multipart-any-errors
+render pydantic_v2.BaseModel
+  Error: /paths/~1list-parts/post/requestBody/content/multipart~1form-data: The multipart/form-data media of POST /list-parts needs an object schema to be sent as parts; /paths/~1text-parts/post/requestBody/content/multipart~1form-data: The multipart/form-data media of POST /text-parts needs an object schema to be sent as parts

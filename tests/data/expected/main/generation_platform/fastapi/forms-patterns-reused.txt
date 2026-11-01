@@ -1,0 +1,3 @@
+# forms-patterns-reused
+render pydantic_v2.BaseModel
+  Error: /paths/~1patterned/post/requestBody/content/application~1x-www-form-urlencoded/schema: Pattern properties have no builtin parameter encoding

@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info: {title: Forms whose schema declares pattern properties and the models reuse one that does not, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /plain:
+    get:
+      operationId: listPlain
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema: {$ref: "#/components/schemas/Color"}
+      responses:
+        "204": {description: The component.}
+  /patterned:
+    get:
+      operationId: listPatterned
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties: {color: {type: string}}
+            patternProperties: {"^x-": {type: string}}
+      responses:
+        "204": {description: An equal schema that declares pattern properties.}
+    post:
+      operationId: submitPatterned
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {color: {type: string}}
+              patternProperties: {"^x-": {type: string}}
+      responses:
+        "204": {description: A form of an equal schema that declares pattern properties.}
+components:
+  schemas:
+    Color: {type: object, properties: {color: {type: string}}}

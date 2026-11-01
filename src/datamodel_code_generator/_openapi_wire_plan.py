@@ -52,7 +52,7 @@ from datamodel_code_generator._target_contract import (
     type_uses,
     uses_by_id,
 )
-from datamodel_code_generator._target_types import lexical_kind, stepped, type_identity, unwrapped
+from datamodel_code_generator._target_types import ANY_TYPES, lexical_kind, stepped, type_identity, unwrapped
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
@@ -89,7 +89,6 @@ _BINARY_TEXT: Final = (
     "carries a binary string as text; declare it with format: byte for base64 text, optionally with "
     "--type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part"
 )
-_ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 
 
 @dataclass(frozen=True, slots=True)
@@ -779,4 +778,5 @@ class LexicalKinds:
 
         A form-data part carries such a value as JSON, as it does one without one kind, while its kind is a string's.
         """
-        return (found := unwrapped(value, self._symbols, self._members)) is not None and type_identity(found) in _ANY
+        found = unwrapped(value, self._symbols, self._members)
+        return found is not None and type_identity(found) in ANY_TYPES
