@@ -342,6 +342,7 @@ def location_of(reference: Reference) -> SchemaLocation | None:
 
 FIELD_ORIGIN_KEY: Final = "_field_origin"
 TYPE_ORIGIN_KEY: Final = "_type_origin"
+BINARY_CONTENT_KEY: Final = "_binary_content"
 
 
 @record
@@ -376,6 +377,17 @@ def type_origin_of(data_type: object) -> SchemaLocation | None:
     copies; a node a later pass builds, and a node built from a schema object without a location, has none.
     """
     return data_type.__dict__.get(TYPE_ORIGIN_KEY)
+
+
+def binary_content_of(data_type: object) -> bool:
+    """Return whether the parser reads the string a type node is built for as raw octets (BINARY_CONTENT, L1).
+
+    The type mapping records it when it builds the node, from the schema as the specification reads it, whatever
+    the model type: a format that maps to bytes other than bytes mapped from base64 text, or in OpenAPI 3.1 and later
+    a content media type without a content encoding. A copy of a node keeps it; an enum or const of such strings, and
+    a node a later pass builds, has none.
+    """
+    return BINARY_CONTENT_KEY in data_type.__dict__
 
 
 def _special_path(keyword: str, path: list[str]) -> list[str]:

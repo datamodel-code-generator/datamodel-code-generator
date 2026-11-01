@@ -45,6 +45,10 @@ Model
     .: /properties/keyed {"additionalProperties": {"type": "string"}, "propertyNames": {"pattern": "^a"}, "type": "object"}
     /0: /properties/keyed/additionalProperties {"type": "string"}
     /key: /properties/keyed/propertyNames {"pattern": "^a"}
+  blob: property /properties/blob {"format": "binary", "type": "string"}
+    .: binary /properties/blob {"format": "binary", "type": "string"}
+  media: property /properties/media {"contentMediaType": "image/png", "type": "string"}
+    .: /properties/media {"contentMediaType": "image/png", "type": "string"}
   flag: property /properties/flag true
     .: None
   base: property /properties/base {"$ref": "#/$defs/Base"}

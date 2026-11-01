@@ -14,7 +14,7 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.reference import field_origin_of, type_origin_of
+from datamodel_code_generator.reference import binary_content_of, field_origin_of, type_origin_of
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
@@ -297,6 +297,8 @@ _ORIGINS_JSON_SCHEMA: dict[str, Any] = {
         "either": {"type": ["string", "integer"]},
         "fixed": {"const": "x"},
         "keyed": {"type": "object", "propertyNames": {"pattern": "^a"}, "additionalProperties": {"type": "string"}},
+        "blob": {"type": "string", "format": "binary"},
+        "media": {"type": "string", "contentMediaType": "image/png"},
         "flag": True,
         "base": {"$ref": "#/$defs/Base"},
         "ids": {"$ref": "#/$defs/Ids"},
@@ -308,6 +310,23 @@ _ORIGINS_JSON_SCHEMA: dict[str, Any] = {
     "additionalProperties": {"type": "number"},
     "propertyNames": {"maxLength": 9},
 }
+_BINARY_SCHEMAS: dict[str, Any] = {
+    "Upload": {
+        "type": "object",
+        "properties": {
+            "raw": {"type": "string", "format": "binary"},
+            "maybe": {"type": ["string", "null"], "format": "binary"},
+            "mapped": {"type": "string", "format": "x-bin"},
+            "media": {"type": "string", "contentMediaType": "image/png"},
+            "medias": {"type": "array", "items": {"type": "string", "contentMediaType": "image/png"}},
+            "encoded": {"type": "string", "contentMediaType": "image/png", "contentEncoding": "base64"},
+            "byte": {"type": "string", "format": "byte"},
+            "stage": {"type": "string", "format": "binary", "enum": ["draft", "final"]},
+            "fixed": {"type": "string", "format": "binary", "const": "draft"},
+        },
+    }
+}
+_BINARY_TYPE_MAPPING = "string+x-bin=binary"
 _ORIGINS_OPENAPI: dict[str, Any] = {
     "openapi": "3.1.0",
     "info": {"title": "origins", "version": "1"},
@@ -336,8 +355,15 @@ _ORIGINS_OPENAPI: dict[str, Any] = {
                 ]
             },
             "Owner": {"type": "object", "properties": {"pet": {"$ref": "#/components/schemas/Pet"}}},
+            **_BINARY_SCHEMAS,
         }
     },
+}
+_ORIGINS_OPENAPI_30: dict[str, Any] = {
+    "openapi": "3.0.3",
+    "info": {"title": "origins", "version": "1"},
+    "paths": {},
+    "components": {"schemas": _BINARY_SCHEMAS},
 }
 
 
@@ -353,7 +379,8 @@ def _schema_at(document: Any, location: SchemaLocation | None) -> str:
 
 def _type_origin_lines(data_type: DataType, position: str, document: Any) -> list[str]:
     """Return the origin of a type node and of the nodes it holds, each under its position in the type tree."""
-    lines = [f"    {position or '.'}: {_schema_at(document, type_origin_of(data_type))}"]
+    binary = " binary" if binary_content_of(data_type) else ""
+    lines = [f"    {position or '.'}:{binary} {_schema_at(document, type_origin_of(data_type))}"]
     for index, member in enumerate(data_type.data_types):
         lines.extend(_type_origin_lines(member, f"{position}/{index}", document))
     if data_type.dict_key is not None:
@@ -377,14 +404,20 @@ def _origin_lines(models: list[DataModel], document: Any) -> str:
 
 
 @pytest.mark.parametrize(
-    ("parser_class", "document"),
+    ("parser_class", "document", "type_mappings"),
     [
-        pytest.param(JsonSchemaParser, _ORIGINS_JSON_SCHEMA, id="jsonschema"),
-        pytest.param(OpenAPIParser, _ORIGINS_OPENAPI, id="openapi"),
+        pytest.param(JsonSchemaParser, _ORIGINS_JSON_SCHEMA, None, id="jsonschema"),
+        pytest.param(OpenAPIParser, _ORIGINS_OPENAPI, [_BINARY_TYPE_MAPPING], id="openapi"),
+        pytest.param(
+            OpenAPIParser,
+            _ORIGINS_OPENAPI_30,
+            [_BINARY_TYPE_MAPPING, "string+byte=binary"],
+            id="openapi-3.0-type-mappings",
+        ),
     ],
 )
 def test_fields_and_types_record_the_schema_they_are_built_from(
-    tmp_path: Path, parser_class: type[JsonSchemaParser], document: dict[str, Any]
+    tmp_path: Path, parser_class: type[JsonSchemaParser], document: dict[str, Any], type_mappings: list[str] | None
 ) -> None:
     """Each field and type node records the schema object it is built from, which the dump shows beside its pointer.
 
@@ -395,8 +428,13 @@ def test_fields_and_types_record_the_schema_they_are_built_from(
     node records the subschema it is parsed from (items, prefixItems, additionalProperties, patternProperties,
     propertyNames, anyOf and oneOf branches, a merged allOf property its part); a container, a type list member and a
     const the field types itself record the schema they are built from.
+
+    A string node marked ``binary`` holds raw octets as the specification reads it: a format that maps to bytes
+    (``binary``, a format ``--type-mappings`` maps to ``binary``), not bytes mapped from base64 text, and in OpenAPI
+    3.1 a content media type without a content encoding, which neither JSON Schema nor OpenAPI 3.0 reads so; an enum
+    or const of binary strings holds text.
     """
     (input_path := tmp_path / "schema.json").write_text(json.dumps(document), encoding="utf-8")
-    parser = parser_class(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
+    parser = parser_class(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN], type_mappings=type_mappings)
     parser.parse()
     assert_output(_origin_lines(parser.results, document))
