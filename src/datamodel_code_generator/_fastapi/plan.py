@@ -65,6 +65,7 @@ from datamodel_code_generator._target_contract import (
     http_scheme,
     is_required,
     label,
+    literal_text,
     members_by_consumer,
     operation_schemes,
     parameter_place,
@@ -465,7 +466,7 @@ def _link_operation_problem(link: WireDeclaration) -> str | None:
     if len(named) > 1:
         return f"The link {link.name!r} names its operation with both operationRef and operationId"
     key, value = named[0]
-    if isinstance(value, LiteralScalar) and isinstance(value.value, str):
+    if literal_text(value) is not None:
         return None
     return f"The link {link.name!r} has an {key} that is not a string"
 
@@ -1499,10 +1500,6 @@ def _all(items: Sequence[ItemT], read: Callable[[ItemT], ReadT | None]) -> tuple
     return found if len(found) == len(items) else None
 
 
-def _text(value: FrozenLiteral) -> str | None:
-    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
-
-
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     if (place := api_key_place(declaration)) is not None:
         location, parameter = place
@@ -1527,7 +1524,10 @@ def json_literal(value: FrozenLiteral) -> JSONValue:
     """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
     if isinstance(value, LiteralSequence):
         return [json_literal(item) for item in value.items]
-    if isinstance(value, LiteralMapping) and (names := _all(value.entries, lambda entry: _text(entry[0]))) is not None:
+    if (
+        isinstance(value, LiteralMapping)
+        and (names := _all(value.entries, lambda entry: literal_text(entry[0]))) is not None
+    ):
         return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
     if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
         return scalar

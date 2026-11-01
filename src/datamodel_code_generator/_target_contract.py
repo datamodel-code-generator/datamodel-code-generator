@@ -135,6 +135,11 @@ def scalar_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> object
     return next((value.value for key, value in facts if key == name and isinstance(value, LiteralScalar)), None)
 
 
+def literal_text(value: object) -> str | None:
+    """Return the text a recorded literal holds: the value of a string scalar, or None for any other literal."""
+    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
+
+
 @dataclass(frozen=True, slots=True)
 class SourceExpression:
     """Retain unexecuted source explicitly supplied by an existing code producer."""
@@ -718,7 +723,7 @@ def requirement_alternatives(value: FrozenLiteral) -> tuple[tuple[RequirementEnt
 def _texts(value: FrozenLiteral) -> tuple[str, ...] | None:
     if not isinstance(value, LiteralSequence):
         return None
-    texts = tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
+    texts = tuple(text for item in value.items if (text := literal_text(item)) is not None)
     return texts if len(texts) == len(value.items) else None
 
 
