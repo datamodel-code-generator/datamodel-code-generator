@@ -120,10 +120,13 @@ from datamodel_code_generator._cli_config import (
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
+    CONFIG_TABLE,
     TomlValue,
+    config_table,
     hyphenated,
     option_arguments,
     option_flag,
+    shell_command,
     toml_table,
     toml_text,
     values_arguments,
@@ -268,7 +271,7 @@ def _redact_command_args(args: Sequence[str]) -> list[str]:
 
 
 def _command_header(args: Sequence[str]) -> str:
-    return shlex.join(["datamodel-codegen", *_redact_command_args(args)])
+    return shell_command(_redact_command_args(args))
 
 
 signal.signal(signal.SIGINT, sig_int_handler)
@@ -1007,9 +1010,7 @@ def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
     return hyphenated(_cli_config_values(args))
 
 
-def _format_pyproject_config(
-    config_data: Mapping[str, TomlValue], table: tuple[str, ...] = ("tool", "datamodel-codegen")
-) -> str:
+def _format_pyproject_config(config_data: Mapping[str, TomlValue], table: tuple[str, ...] = CONFIG_TABLE) -> str:
     lines: list[str] = [toml_table(table)]
     for key, value in config_data.items():
         lines.append(f"{key} = {toml_text(value)}")
@@ -1491,7 +1492,7 @@ def _run_recommend_options(  # noqa: PLR0913
     cli_config_args: Mapping[str, _RawConfigValue],
     pyproject_path: Path | None,
     *,
-    table: tuple[str, ...] = ("tool", "datamodel-codegen"),
+    table: tuple[str, ...] = CONFIG_TABLE,
     selector: tuple[str, ...] = (),
 ) -> Exit:
     """Print option recommendations for the resolved configuration (experimental).
@@ -1544,7 +1545,7 @@ def _run_recommend_options(  # noqa: PLR0913
         if recommendation.runnable
         else []
     )
-    command = shlex.join(["datamodel-codegen", *arguments]) if recommendation.runnable else None
+    command = shell_command(arguments) if recommendation.runnable else None
     pyproject = (
         None
         if recommendation.config_values is None
@@ -2571,7 +2572,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 job_plan.raw_config,
                 job_plan.cli_config_args,
                 job_plan.pyproject_path,
-                table=("tool", "datamodel-codegen", "jobs", job_plan.name),
+                table=config_table("jobs", job_plan.name),
                 selector=("--job", job_plan.name),
             )
         if not batch_plan.watch:
@@ -2697,9 +2698,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             cli_config_args,
             pyproject_path,
             selector=() if namespace.profile is None else ("--profile", namespace.profile),
-            table=("tool", "datamodel-codegen")
-            if namespace.profile is None
-            else ("tool", "datamodel-codegen", "profiles", namespace.profile),
+            table=CONFIG_TABLE if namespace.profile is None else config_table("profiles", namespace.profile),
         )
 
     if config.url and config.allow_remote_refs is None:

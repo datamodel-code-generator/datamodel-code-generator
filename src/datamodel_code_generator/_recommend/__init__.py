@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._option_names import configured_value, option_flag
+from datamodel_code_generator._option_names import CONFIG_TABLE, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
     OptionValue,
@@ -44,7 +44,6 @@ _DOCUMENT_NAMES: dict[SchemaKind, str] = {
     "jsonschema": "a JSON Schema",
     "asyncapi": "an AsyncAPI",
 }
-_DEFAULT_TABLE = ("tool", "datamodel-codegen")
 _SENSITIVE_FIELDS = frozenset({"http_headers", "http_query_parameters"})
 _MAX_CANDIDATES = 8
 _CandidateKey: TypeAlias = tuple[bool, frozenset[str]]
@@ -71,7 +70,7 @@ class RecommendRequest:
     preset_on_command_line: bool
     read_stdin: Callable[[], str]
     generation_config: Callable[[Mapping[str, Any]], Any]
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
     selector: tuple[str, ...] = ()
     mode: RecommendMode | None = None
     response_observer: Callable[[str, Any, Any, bytes], None] | None = None
@@ -156,7 +155,7 @@ class Recommendation:
     command_selector: tuple[str, ...] = ()
     config_values: dict[str, Any] | None = None
     config_complete: bool = True
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
 
 
 @dataclass(slots=True)
