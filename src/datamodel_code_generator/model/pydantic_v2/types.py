@@ -616,7 +616,7 @@ class PydanticV2DataType(DataType):
     def _needs_serialize_as_any_import(self) -> bool:
         if not self.use_serialize_as_any:
             return False
-        if self.alias or self.type or self.reference is None:
+        if self._own_text or self.reference is None:
             return False
         return self._should_wrap_with_serialize_as_any()
 
