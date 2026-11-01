@@ -13,9 +13,9 @@ from tests.conftest import assert_output
 EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "validators"
 
 
-def assert_validation_error_message(error: ValidationError, expected_file: Path) -> None:
+def assert_validation_error_message(error: ValidationError) -> None:
     """Assert the formatted validation error message matches expected output."""
-    assert_output(f"{format_validation_error(error)}\n", expected_file)
+    assert_output(f"{format_validation_error(error)}\n")
 
 
 def test_format_validation_error_without_location_returns_message() -> None:
@@ -32,7 +32,7 @@ def test_format_validation_error_without_location_returns_message() -> None:
         ],
     )
 
-    assert_validation_error_message(error, EXPECTED_PATH / "format_validation_error_without_location.txt")
+    assert_validation_error_message(error)
 
 
 @pytest.mark.allow_direct_assert

@@ -70063,7 +70063,7 @@ it then appears in every JSON report, so record the changed expected reports.
    issue or pull request numbers or list known bugs in it.
 2. A test fixture: a small schema under `tests/data/recommend_options/` that fires the rule, added as a
    `pytest.param` to `test_recommend_options_for_schemas`. Run the test to record its expected report under
-   `tests/data/expected/main/recommend_options/`, accept the changed reports of other fixtures with
+   `tests/data/expected/main/main_recommend_options/`, accept the changed reports of other fixtures with
    `--inline-snapshot=fix`, and check that each change is one the rule should make.
 3. A registry entry: list the rule id in `options.<field>.rules` for every field it sets (see
    [Step 4](#step-4-register-the-option-in-the-recommender-required)).
