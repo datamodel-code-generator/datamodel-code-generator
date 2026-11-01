@@ -29,10 +29,10 @@ from datamodel_code_generator.parser._passes import (
     settle,
     structure,
 )
+from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
     _context_models,
-    alias_shadowed_imports,
     override_required_field,
 )
 from datamodel_code_generator.parser._pipeline import (

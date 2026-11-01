@@ -39,11 +39,12 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001  # Preserve the established reference export.
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
+from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
 from datamodel_code_generator._target_unicode import (
     is_identifier,
@@ -70,6 +71,9 @@ if TYPE_CHECKING:
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
+    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root", "tag"]
+    """What a field is built for: a property, a required name without one, the typed extra properties, the value of a
+    root model or the tag a discriminated union gives a variant without a field of that name."""
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -336,6 +340,44 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
 
 
+FIELD_ORIGIN_KEY: Final = "_field_origin"
+TYPE_ORIGIN_KEY: Final = "_type_origin"
+
+
+@record
+class FieldOrigin:
+    """Where a field is built: its kind, and the location of the schema object it is built from, if it has one.
+
+    The location is None for a field built from no schema object of its own (a required name) or from one without a
+    location; a boolean property schema is located where its object declares it.
+    """
+
+    kind: FieldOriginKind
+    location: SchemaLocation | None
+
+
+def field_origin_of(field: object) -> FieldOrigin | None:
+    """Return where a field was built (FIELD_ORIGIN, final after L5); a copy of a field keeps the origin it copies.
+
+    The parser's builders record it when they build the field in L1, and the L5 discriminator pass when it appends a
+    tag field (kind ``tag``, without a location). A field built by no builder that records it, such as a parser
+    extension's, has none.
+    """
+    return field.__dict__.get(FIELD_ORIGIN_KEY)
+
+
+def type_origin_of(data_type: object) -> SchemaLocation | None:
+    """Return the location of the schema object the parser built a type node from (TYPE_ORIGIN, final after L1).
+
+    ``parse_item`` records it on the node it returns for a subschema and on the nodes it built inside that node (a
+    container, the members of a type list), a union member the location of its branch, a property field's type and a
+    root field's type the location of the property or root schema. The innermost build keeps its record, so a node a
+    nested parse returned keeps the location of the nested schema. A copy of a node keeps the origin of the node it
+    copies; a node a later pass builds, and a node built from a schema object without a location, has none.
+    """
+    return data_type.__dict__.get(TYPE_ORIGIN_KEY)
+
+
 def _special_path(keyword: str, path: list[str]) -> list[str]:
     """Return ``path`` followed by the token of the model that the generator makes there for ``keyword``."""
     return [*path, _SPECIAL_PATH_FORMAT.format(keyword)]
@@ -414,22 +456,7 @@ def context_variable(setter: Callable[[T], None], current_value: T, new_value: T
 _BUILTIN_TYPE_ATTRIBUTES: frozenset[str] = frozenset(
     name for cls in (str, int, float, bytes) for name in dir(cls) if not name.startswith("_")
 )
-
-_BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN: dict[PythonVersion, frozenset[str]] = {
-    PythonVersion.PY_314: frozenset({"from_number"}),
-}
-
-
-def _get_builtin_type_attributes_for_target(target: PythonVersion) -> frozenset[str]:
-    """Get builtin type attributes adjusted for the target Python version."""
-    attrs = set(_BUILTIN_TYPE_ATTRIBUTES)
-    target_key = target.version_key
-    for ver, names in _BUILTIN_TYPE_ATTRIBUTES_INTRODUCED_IN.items():
-        if target_key >= ver.version_key:
-            attrs.update(names)
-        else:
-            attrs.difference_update(names)
-    return frozenset(attrs)
+"""The running interpreter's attributes of the builtin types, read only by a resolver without a target (API only)."""
 
 
 class FieldNameResolver:
@@ -678,7 +705,7 @@ class EnumFieldNameResolver(FieldNameResolver):
         super().__init__(**kwargs)
         target = self.target_python_version
         self._builtin_type_attributes = (
-            _get_builtin_type_attributes_for_target(target) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
+            target_builtin_type_attributes(target.version_key) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
         )
 
     @override

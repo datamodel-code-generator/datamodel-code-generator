@@ -24,6 +24,14 @@ class Mark(Enum):
     final = 'final'
 
 
+class Scan(RootModel[bytes]):
+    root: bytes
+
+
+class PageSize(RootModel[int]):
+    root: int = Field(20, title='Page size')
+
+
 FilesPostQueryDigestParameter = TypeAliasType("FilesPostQueryDigestParameter", Base64Bytes)
 
 
@@ -61,3 +69,4 @@ class UploadsPostRequest(BaseModel):
     pages: list[bytes] | None = None
     icon: str | None = Field(None, json_schema_extra={'contentMediaType': 'image/png'})
     record: Record | None = None
+    scan: Scan | None = None

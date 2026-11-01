@@ -42,7 +42,7 @@ from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
 from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
+from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import, _iter_import_bindings
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
     CollapseSiteFacts,
     LaterHolderFacts,
@@ -71,6 +71,13 @@ from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
+from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReferenceExpressionHost,
+    import_references,
+    set_reference_expression,
+    set_reference_expressions,
+)
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -87,7 +94,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ModuleScopeView,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
     RootModelHost,
@@ -105,7 +111,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _has_root_field_constraints,
     _is_discriminator_wrapper,
     _is_pydantic_v2_root_model,
-    _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
     _restore_inherited_field_names_for_unique_aliases,
@@ -116,7 +121,6 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
-    import_references,
     merge_duplicate,
     merge_duplicate_in_module,
     module_members,
@@ -125,8 +129,6 @@ from datamodel_code_generator.parser._passes._shared import (
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
-    set_reference_expression,
-    set_reference_expressions,
     site_display_name,
     subclass_duplicate,
     without_stand_ins,
@@ -1981,14 +1983,18 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 )
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser._build_field(  # noqa: SLF001
-                        "legacy-alias-option-only",
-                        new_data_type,
-                        name=field_name,
-                        alias=names.alias,
-                        source_name=names.property_name,
-                        class_name=discriminator_model.name,
-                        required=True,
+                    discriminator_field := with_field_origin(
+                        parser._build_field(  # noqa: SLF001
+                            "legacy-alias-option-only",
+                            new_data_type,
+                            name=field_name,
+                            alias=names.alias,
+                            source_name=names.property_name,
+                            class_name=discriminator_model.name,
+                            required=True,
+                        ),
+                        "tag",
+                        None,
                     ),
                 )
                 if parser.config.aliases:

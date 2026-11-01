@@ -44,6 +44,7 @@ from .errors import (
     StreamInterruptedError,
     configuration_error,
     data_refusal,
+    state_error,
 )
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
@@ -680,7 +681,7 @@ class _Events(Generic[T]):
         """
         resume = cast("StreamResumePlan", self._resume)
         waiter = self._client.waiting(self._limits.options, self._session, resume.call.operation_id)
-        if (remaining := waiter.remaining()) is not None and reconnect.delay >= remaining:
+        if waiter.cut_short(reconnect.delay) is not None:
             raise reconnect.failure
         return waiter
 
@@ -740,7 +741,7 @@ class _Events(Generic[T]):
         return held
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
+        return state_error(self._plan.helper_id, action, state)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
         """Give a failure of the stream the helper's context, the stream call's operation, and its measurements."""

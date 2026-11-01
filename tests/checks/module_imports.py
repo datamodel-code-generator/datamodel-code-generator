@@ -433,11 +433,11 @@ def _module_import_plan(
     from datamodel_code_generator._model_keys import model_key_of
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.parser._graph_ids import keyed_models
-    from datamodel_code_generator.parser._passes._shared import (
+    from datamodel_code_generator.parser._passes._import_binding import (
         _generic_base_class_module,
-        _get_model_module_name,
         reference_import_target,
     )
+    from datamodel_code_generator.parser._passes._shared import _get_model_module_name
 
     members = keyed_models(ctx.models, "module import plan")
     overrides = parser._import_overrides or {}

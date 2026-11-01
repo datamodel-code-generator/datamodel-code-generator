@@ -6,7 +6,7 @@ inputs and server URLs.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Generic
+from typing import TYPE_CHECKING, Any, ClassVar, Generic
 
 from typing_extensions import TypeVar
 
@@ -14,6 +14,8 @@ from .media import plain
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+
+    from typing_extensions import TypeForm
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -53,8 +55,12 @@ class ModelCodec(Generic[T]):
 class ValidatingCodec(ModelCodec[T]):
     """The codec of a backend that validates what it converts, and so builds a model from its field arguments too."""
 
-    __slots__ = ()
+    __slots__ = ("type",)
     _validates: ClassVar[bool] = True
+
+    def __init__(self, type_: TypeForm[Any]) -> None:
+        """Keep the generated type; the backend builds its native reader on first use and shares it by identity."""
+        self.type = type_
 
     def assemble(self, fields: Mapping[str, object]) -> T:
         """Construct the native model from field arguments addressed by their wire names, and its own defaults."""

@@ -35,6 +35,7 @@ from datamodel_code_generator.parser._intersection import (
     merge_inherited_value,
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
+from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
     _MODELED_POSITIONS,
@@ -1902,7 +1903,10 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     class_name: str,
     inherited_fields: dict[str, DataModelFieldBase] | None = None,
 ) -> DataModelFieldBase:
-    """Build a field for a required name that is not declared in properties."""
+    """Build a field for a required name that is not declared in properties.
+
+    A copy of the inherited field keeps that field's origin; a new field records the origin ``required-only``.
+    """
     field_name, alias = parser.model_resolver.get_valid_field_name_and_alias(
         required_field_name,
         excludes=excludes,
@@ -1940,6 +1944,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         required=True,
         original_name=required_field_name,
     )
+    with_field_origin(field, "required-only", None)
     if deferred:
         field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = class_name
     return field

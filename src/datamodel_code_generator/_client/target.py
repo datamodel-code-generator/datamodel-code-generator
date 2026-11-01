@@ -57,7 +57,12 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_operations import PlanError, raise_selected
-from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_render import (
+    PYDANTIC_BACKENDS,
+    TYPING_EXTENSIONS,
+    model_dependencies,
+    pydantic_dependency,
+)
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -82,7 +87,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_documents import JSONObject
 
 HTTPX2: Final = "httpx2>=2.13.0"
-DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 MSGSPEC: Final = "msgspec>=0.22.0"
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
@@ -166,7 +170,7 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
             WEBSOCKETS if sockets else HTTPX2,
-            *DEPENDENCIES,
+            TYPING_EXTENSIONS,
             *_backend_dependencies(backend, request.model_imports),
             *webhook_dependencies(webhooks),
             *model_dependencies(request.model_imports),

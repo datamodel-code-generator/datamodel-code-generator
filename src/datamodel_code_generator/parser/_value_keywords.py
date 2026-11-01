@@ -34,6 +34,7 @@ from datamodel_code_generator._constraint_applicability import (
     writes_beside_literal,
 )
 from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
@@ -143,7 +144,7 @@ def _validation_keywords(
 
     keywords: dict[str, Any] = {}
     extras = value.get(JsonSchemaObject.__extra_key__)
-    for key, item in {**(extras if isinstance(extras, dict) else {}), **value}.items():
+    for key, item in {**as_mapping(extras), **value}.items():
         if key in _NON_ASSERTING_KEYWORDS or key == JsonSchemaObject.__extra_key__ or key.startswith("x-"):
             continue
         if key == "$ref" and isinstance(item, str):

@@ -18,17 +18,20 @@ MODELS: Final[dict[type, Model]] = {
 codec_0: Final[TypedDictCodec[models.FilesPostQueryDigestParameter]] = TypedDictCodec(bytes, MODELS)
 """Codec of /paths/~1files/post parameter (request query digest)."""
 
-codec_1: Final[TypedDictCodec[models.Mark]] = TypedDictCodec(None, MODELS)
-"""Codec of /paths/~1marks/post request_body (request application/octet-stream)."""
+codec_1: Final[TypedDictCodec[models.PageSize]] = TypedDictCodec(None, MODELS)
+"""Codec of /paths/~1uploads/post parameter (request query pageSize)."""
 
 codec_2: Final[TypedDictCodec[models.Mark]] = TypedDictCodec(None, MODELS)
+"""Codec of /paths/~1marks/post request_body (request application/octet-stream)."""
+
+codec_3: Final[TypedDictCodec[models.Mark]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1marks/post response_body (response 200 application/octet-stream)."""
 
-codec_3: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
+codec_4: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records/post request_body (request application/json)."""
 
-codec_4: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
+codec_5: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records/post response_body (response 200 application/json)."""
 
-codec_5: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
+codec_6: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1uploads/post request_body (request record multipart/form-data)."""

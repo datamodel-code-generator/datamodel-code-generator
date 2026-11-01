@@ -83,7 +83,6 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
 import difflib
 import json
 import os
-import re
 import shlex
 import shutil
 import signal
@@ -92,7 +91,7 @@ import warnings
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import nullcontext, redirect_stdout, suppress
 from datetime import datetime, timezone
-from enum import Enum, IntEnum
+from enum import IntEnum
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
@@ -120,8 +119,17 @@ from datamodel_code_generator._cli_config import (
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
-from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
-from datamodel_code_generator._paths import concrete_parent, overlaps, resolved, same_file
+from datamodel_code_generator._option_names import (
+    TomlValue,
+    hyphenated,
+    option_arguments,
+    option_flag,
+    toml_table,
+    toml_text,
+    values_arguments,
+)
+from datamodel_code_generator._option_names import json_ready as _json_ready
+from datamodel_code_generator._paths import concrete_parent, files_under, names_directory, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
     _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
@@ -205,7 +213,6 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
-_TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "output", "url"})
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
@@ -973,25 +980,6 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     return BatchPlan(tuple(plans), watch, watch_delay, pyproject_path)
 
 
-TomlValue: TypeAlias = str | bool | int | float | list["TomlValue"] | tuple["TomlValue", ...]
-
-
-def _json_ready(value: Any) -> Any:
-    from pydantic import BaseModel  # noqa: PLC0415
-
-    if isinstance(value, Enum):
-        return value.value
-    if isinstance(value, Path):
-        return value.as_posix()
-    if isinstance(value, BaseModel):
-        return value.model_dump(mode="json", exclude_none=True)
-    if isinstance(value, tuple | list):
-        return [_json_ready(item) for item in value]
-    if isinstance(value, Mapping):
-        return {str(key): _json_ready(item) for key, item in value.items()}
-    return value
-
-
 def _pyproject_toml_value(key: str, value: object) -> TomlValue:
     from datamodel_code_generator.json_config import JsonConfigSpecs  # noqa: PLC0415
 
@@ -1003,18 +991,6 @@ def _pyproject_toml_value(key: str, value: object) -> TomlValue:
 def _compact_json(value: Mapping[str, Any]) -> str:
     """Serialize a mapping option as the compact JSON text its CLI option accepts."""
     return json.dumps(_json_ready(value), ensure_ascii=False, separators=(",", ":"))
-
-
-def _format_toml_value(value: TomlValue) -> str:
-    """Format a Python value as a TOML value string."""
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, int | float):
-        return str(value)
-    formatted_items = [_format_toml_value(item) for item in value]
-    return f"[{', '.join(formatted_items)}]"
 
 
 def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
@@ -1031,17 +1007,12 @@ def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
     return hyphenated(_cli_config_values(args))
 
 
-def _toml_key(key: str) -> str:
-    """Return a TOML key: bare when it uses only ASCII letters, digits, hyphens, and underscores, otherwise quoted."""
-    return key if _TOML_BARE_KEY.fullmatch(key) else json.dumps(key, ensure_ascii=False)
-
-
 def _format_pyproject_config(
     config_data: Mapping[str, TomlValue], table: tuple[str, ...] = ("tool", "datamodel-codegen")
 ) -> str:
-    lines: list[str] = [f"[{'.'.join(_toml_key(key) for key in table)}]"]
+    lines: list[str] = [toml_table(table)]
     for key, value in config_data.items():
-        lines.append(f"{key} = {_format_toml_value(value)}")
+        lines.append(f"{key} = {toml_text(value)}")
     return "\n".join(lines) + "\n"
 
 
@@ -1366,8 +1337,7 @@ def _generated_files_from_output(
         ]
     return [
         GeneratedFilePayload(path=path.relative_to(output).as_posix(), content=path.read_text(encoding=encoding))
-        for path in sorted(output.rglob("*.py"))
-        if path.is_file()
+        for path in files_under(output, "*.py")
     ]
 
 
@@ -1603,8 +1573,7 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
     if is_directory_output:
         targets = {
             generated_file: actual_output / generated_file.relative_to(generated_output)
-            for generated_file in sorted(generated_output.rglob("*"))
-            if generated_file.is_file()
+            for generated_file in files_under(generated_output)
         }
     if not targets and generated_output.is_file():
         targets = {generated_output: actual_output}
@@ -2831,7 +2800,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     )
     if config.check or writes_json_output_file or config.diff_against is not None:
         config_output = cast("Path", config.output)
-        is_directory_output = not config_output.suffix
+        is_directory_output = names_directory(config_output)
         temp_context: tempfile.TemporaryDirectory[str] | None = tempfile.TemporaryDirectory()
         temp_dir = Path(temp_context.name)
         if is_directory_output:

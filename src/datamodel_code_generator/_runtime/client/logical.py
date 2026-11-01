@@ -121,6 +121,11 @@ class LogicalCallContext:
         """Return seconds until the absolute deadline, or None for an unlimited call."""
         return None if self.deadline is None else self.deadline.remaining()
 
+    def cut_short(self, delay: float) -> float | None:
+        """Return the seconds left before the deadline when a wait of `delay` would not end before it, else None."""
+        remaining = self.remaining()
+        return remaining if remaining is not None and delay >= remaining else None
+
     def furthest(self) -> Delivery:
         """Return how far the call got over all its attempts and hops, never forgetting an earlier send or response."""
         current, earlier = self.delivery_state, self.earlier

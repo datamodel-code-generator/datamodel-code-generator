@@ -1,4 +1,4 @@
-"""The tag plan (home H11): the union sites the tag passes read, what they decide there and what they recorded.
+"""The tag plan: the union sites the tag passes read, what they decide there and what they recorded.
 
 A union site is a field whose extras carry a discriminator object naming a property; :func:`iter_union_sites` is the
 one match on ``extras["discriminator"]`` that the tag passes share, and each caller passes its own models, so it keeps

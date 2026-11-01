@@ -8,7 +8,14 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
-from datamodel_code_generator._python_syntax import call_text, dict_display, list_display, set_display, tuple_display
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    call_text,
+    dict_display,
+    list_display,
+    set_display,
+    tuple_display,
+)
 from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
 from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
@@ -233,17 +240,6 @@ def _semantic_value_text(value: object) -> str:
     return repr(float(value)) if isinstance(value, _NonFiniteFloat) else str(value)
 
 
-_QUOTE_AND_CONTROL_ESCAPES = {
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-}
-"""The escapes of a single-quoted literal: a Pydantic pattern writes these, a ``TypedDict`` key also the backslash, and
-an enum value also the backslash and the null byte."""
-
 _INTERNAL_TYPE_EXPRESSION_TOKEN = Sentinel("_INTERNAL_TYPE_EXPRESSION_TOKEN")
 _INTERNAL_TYPE_EXPRESSION_ERROR = "internal type expressions must be created by the parser"
 
@@ -287,11 +283,6 @@ def _make_internal_type_expression(value: str, code: str | None = None) -> _Inte
 def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeExpression:
     """Mark the type hint of ``source`` so that it can be rendered again once class names are final."""
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
-
-
-def _normalize_string(value: str) -> str:
-    """Return the underlying built-in string without invoking subclass overrides."""
-    return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
 
 
 def _normalized_safe_python_name(value: object, *, dotted: bool = False) -> str | None:

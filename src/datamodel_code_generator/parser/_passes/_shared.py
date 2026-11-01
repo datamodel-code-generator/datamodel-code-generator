@@ -11,9 +11,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from copy import deepcopy
-from functools import cache
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from typing_extensions import Protocol, final, override
 
@@ -25,12 +24,16 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
-from datamodel_code_generator._module_paths import dotted_name, is_below, written_name
+from datamodel_code_generator._module_paths import (
+    dotted_name,
+    exact_import,  # noqa: F401  # Preserve the established _shared name.
+    is_ancestor_package_reference,  # noqa: F401  # Preserve the established _shared name.
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, type_override_classes
-from datamodel_code_generator.imports import Import, _import_bindings, _import_key, _override_module
+from datamodel_code_generator.imports import Import, _override_module
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -40,7 +43,6 @@ from datamodel_code_generator.model._decisions.tag_value import (
     tag_field_matches,
 )
 from datamodel_code_generator.model.base import (
-    BaseClassDataType,
     ConstraintsBase,
     DataModel,
     _effective_field_owners,
@@ -54,7 +56,6 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
-from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import skips_root_model
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
@@ -65,11 +66,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
-from datamodel_code_generator.python_literal import (
-    _text_constructor_expression,
-    rewrite_runtime_expressions,
-    rewrite_runtime_imports,
-)
+from datamodel_code_generator.python_literal import _text_constructor_expression
 from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
@@ -82,7 +79,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
-    from datamodel_code_generator.imports import Imports, _ImportKey
+    from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -100,8 +97,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
-
-_SHADOWED_IMPORTS: Final = ImportProducer("shadowed-imports")
 
 
 @record
@@ -136,110 +131,6 @@ def iter_models_field_data_types(
         for field in model.fields:
             for data_type in field.data_type.all_data_types:
                 yield model, field, data_type
-
-
-def _aliased_import(import_: Import | None, aliased_imports: Mapping[_ImportKey, Import]) -> Import | None:
-    """Return the import that aliases ``import_``, or None when it has none other than itself."""
-    if import_ is None or (aliased := aliased_imports.get(_import_key(import_))) is import_:
-        return None
-    return aliased
-
-
-def _ordinary_field_shadow_aliases(
-    models: list[DataModel],
-    all_model_field_names: set[str],
-) -> tuple[dict[_ImportKey, Import], bool, bool]:
-    """Run the narrow fast path and report whether structured imports exist."""
-    aliases: dict[_ImportKey, Import] = {}
-    has_python_type = False
-    has_runtime_expressions = False
-    for model in models:
-        for field in model.fields:
-            if not has_runtime_expressions and field.runtime_expression_imports:
-                has_runtime_expressions = True
-            for data_type in field.data_type.all_data_types:
-                if data_type.python_type:
-                    has_python_type = True
-                if not has_runtime_expressions and data_type.runtime_expression_imports:
-                    has_runtime_expressions = True
-                if data_type.import_ and data_type.type in all_model_field_names:
-                    key = _import_key(data_type.import_)
-                    aliases.setdefault(
-                        key,
-                        Import(
-                            from_=data_type.import_.from_,
-                            import_=data_type.import_.import_,
-                            alias=f"{data_type.type}_aliased",
-                            reference_path=data_type.import_.reference_path,
-                        ),
-                    )
-    return aliases, has_python_type, has_runtime_expressions
-
-
-def _apply_structured_import_aliases(
-    builder: GraphBuilder,
-    models: list[DataModel],
-    aliased_imports: dict[_ImportKey, Import],
-) -> None:
-    """Rewrite every identity-carrying structured consumer of selected imports."""
-    for model in models:
-        for field in model.fields:
-            _alias_field_runtime_expressions(builder, field, aliased_imports)
-            for data_type in field.data_type.all_data_types:
-                _alias_data_type_structured_imports(builder, data_type, aliased_imports)
-        _alias_additional_imports(model, aliased_imports)
-    for model in models:
-        _alias_base_class_imports(model, aliased_imports)
-
-
-def _alias_field_runtime_expressions(
-    builder: GraphBuilder,
-    field: DataModelFieldBase,
-    aliased_imports: dict[_ImportKey, Import],
-) -> None:
-    """Rewrite a field only when its producer registered a runtime expression."""
-    imports = field.runtime_expression_imports
-    if not imports or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports:
-        return
-    builder.set_field_default(field, rewrite_runtime_expressions(field.default, aliased_imports))
-    builder.set_field_extras(field, cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports)))
-    field._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
-
-
-def _alias_data_type_structured_imports(
-    builder: GraphBuilder,
-    data_type: DataType,
-    aliased_imports: dict[_ImportKey, Import],
-) -> None:
-    """Apply aliases to type, annotation, and producer-registered kwargs expressions."""
-    if (aliased_import := _aliased_import(data_type.import_, aliased_imports)) is not None:
-        builder.set_type_expressions(data_type, type_=aliased_import.alias, import_=aliased_import)
-    if data_type.python_type:
-        alias_bound_python_type, render_python_type_expr = _python_type_import_alias_helpers()
-        bound_type = alias_bound_python_type(data_type.python_type, aliased_imports)
-        if bound_type is not data_type.python_type:
-            builder.set_type_expressions(
-                data_type, type_=render_python_type_expr(bound_type.expression), python_type=bound_type
-            )
-    if (
-        not (imports := data_type.runtime_expression_imports)
-        or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports
-    ):
-        return
-    builder.set_type_expressions(
-        data_type,
-        kwargs=cast("dict[str, Any]", rewrite_runtime_expressions(data_type.kwargs, aliased_imports)),
-        runtime_expression_imports=rewritten_imports,
-    )
-
-
-@cache
-def _python_type_import_alias_helpers() -> tuple[Any, Any]:
-    """Load annotation alias helpers only for the structured annotation path."""
-    from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-    from datamodel_code_generator._python_type_binding import alias_bound_python_type  # noqa: PLC0415
-
-    return alias_bound_python_type, render_python_type_expr
 
 
 def _unwrap_type_alias(data_type: DataType) -> DataType:
@@ -285,113 +176,6 @@ def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
     ):
         return None
     return data_type
-
-
-def _alias_base_class_imports(
-    model: DataModel,
-    aliased_imports: dict[tuple[str | None, str], Import],
-) -> None:
-    """Apply aliased imports to a model's base classes."""
-    for base_class in model.base_classes:
-        if (aliased_import := _aliased_import(base_class.import_, aliased_imports)) is None:
-            continue
-        base_class.type = aliased_import.alias
-        base_class.import_ = aliased_import
-
-
-def _alias_additional_imports(
-    model: DataModel,
-    aliased_imports: dict[tuple[str | None, str], Import],
-) -> None:
-    """Replace every additional import with the module's canonical identity binding."""
-    for index, import_ in enumerate(model._additional_imports):  # noqa: SLF001
-        if (aliased_import := _aliased_import(import_, aliased_imports)) is not None:
-            model._additional_imports[index] = aliased_import  # noqa: SLF001
-
-
-def relative(
-    current_module: str,
-    reference: str,
-    *,
-    reference_is_module: bool = False,
-    current_is_init: bool = False,
-) -> tuple[str, str]:
-    """Return the module and name that ``current_module`` imports ``reference`` by, relative to it.
-
-    ``reference`` is a ``module.Class`` path, or a module path with ``reference_is_module``; ``current_is_init`` makes
-    ``current_module`` a package ``__init__``.
-    """
-    if current_is_init:
-        current_module_path = [*current_module.split("."), "__init__"] if current_module else ["__init__"]
-    else:
-        current_module_path = current_module.split(".") if current_module else []
-
-    if reference_is_module:
-        reference_path = reference.split(".") if reference else []
-        name = reference_path[-1] if reference_path else ""
-    else:
-        *reference_path, name = reference.split(".")
-
-    if current_module_path == reference_path:
-        return "", ""
-
-    i = 0
-    for x, y in zip(current_module_path, reference_path, strict=False):
-        if x != y:
-            break
-        i += 1
-
-    left = "." * (len(current_module_path) - i)
-    right = ".".join(reference_path[i:])
-
-    if not left:
-        left = "."
-    if not right:
-        right = name
-    elif "." in right:
-        extra, right = right.rsplit(".", 1)
-        left += extra
-
-    return left, right
-
-
-def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
-    """Check if reference is in an ancestor package (__init__.py).
-
-    When the reference's module path is an ancestor (prefix) of the current module,
-    the reference is in an ancestor package's __init__.py file.
-
-    Args:
-        current_module: The current module path (e.g., "v0.mammal.canine")
-        reference: The full reference path (e.g., "v0.Animal")
-
-    Returns:
-        True if the reference is in an ancestor package, False otherwise.
-
-    Examples:
-        - current="v0.animal", ref="v0.Animal" -> True (immediate parent)
-        - current="v0.mammal.canine", ref="v0.Animal" -> True (grandparent)
-        - current="v0.animal", ref="v0.animal.Dog" -> False (same or child)
-        - current="pets", ref="Animal" -> True (root package is immediate parent)
-        - current="v0.mammal.canine", ref="Animal" -> True (root package is an ancestor)
-    """
-    *reference_path, _ = reference.split(".")
-    return is_below(tuple(current_module.split(".")) if current_module else (), tuple(reference_path))
-
-
-def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
-    """Create exact import path to avoid relative import issues."""
-    if from_ == len(from_) * ".":
-        # Prevents "from . import foo" becoming "from ..foo import Foo"
-        # or "from .. import foo" becoming "from ...foo import Foo"
-        # when our imported module has the same parent
-        return f"{from_}{import_}", short_name
-    return f"{from_}.{import_}", short_name
-
-
-def _join_module(from_: str, name: str) -> str:
-    """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
-    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
 
 
 def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
@@ -647,141 +431,6 @@ def replace_model_in_list(
     # Use direct assignment instead of insert+remove for O(n) instead of O(2n)
     idx = models.index(original)
     models[idx] = replacement
-
-
-ImportPathRow: TypeAlias = Literal["reference", "legacy-collapse-import-path"]
-"""How a module imports a model of another module (``reference_import_target``).
-
-* ``reference``: the import a module writes for the models its own types name (``change_from_import``).
-* ``legacy-collapse-import-path``: the import of a model that a type inlined into the module names (collapsed root
-  types, dict keys typed by root types), as these wrote it since 0.25.9 (#2043): the module path alone, without the
-  ``_`` of a hyphenated module, the import from an ``_internal`` module or from a module named like its class, or the
-  leading dot of a package ``__init__``; a model of the module itself imports nothing and keeps the expression it was
-  copied with, and every other one writes its binding even where it is the class name.
-"""
-
-
-@final
-@record
-class ReferenceImportTarget:
-    """How a module imports a model of another module: the resolver path of the import and its module and name.
-
-    ``from_`` is the module as the expression rule reads it, ``written_from`` the module the import line writes (a
-    package ``__init__`` reaches a model outside its package one level up).
-    """
-
-    full_path: tuple[str, str]
-    from_: str
-    import_: str
-    written_from: str
-    row: ImportPathRow = "reference"
-
-    @property
-    def same_module(self) -> bool:
-        """Return whether the model is one of the module itself, which the module names without an import."""
-        return not (self.from_ and self.import_)
-
-    def expression(self, name: str, binding: str) -> str | None:
-        """Return what the module writes for the model ``name`` under the binding, or None for the class name."""
-        if self.same_module or (binding == name and self.row == "reference"):
-            return None
-        return binding if name == self.import_ else f"{binding}.{name}"
-
-
-def reference_import_target(  # ruff: ignore[too-many-arguments]
-    name: str,
-    current_module_name: str,
-    target_full_name: str,
-    *,
-    use_exact: bool,
-    init: bool,
-    internal_modules: Collection[tuple[str, ...]],
-    base_class: bool,
-    treat_dot_as_module: bool | None,
-    row: ImportPathRow = "reference",
-) -> ReferenceImportTarget:
-    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
-
-    ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
-    """
-    if base_class and row == "reference":
-        left, right = relative(current_module_name, target_full_name)
-        from_ = (
-            left if is_ancestor_package_reference(current_module_name, target_full_name) else _join_module(left, right)
-        )
-        import_ = name
-        full_path = from_, import_
-    else:
-        from_, import_ = full_path = relative(current_module_name, target_full_name)
-        if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
-            from_, import_ = full_path = exact_import(from_, import_, name)
-        if row == "legacy-collapse-import-path":
-            return ReferenceImportTarget(full_path, from_, import_, from_, row)
-        import_ = written_name(import_)
-        current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
-        if (  # pragma: no cover
-            len(current_module_path) > 1 and current_module_path[-1].count(".") > 0 and not treat_dot_as_module
-        ):
-            rel_path_depth = current_module_path[-1].count(".")
-            from_ = from_[rel_path_depth:]
-
-        ref_module = tuple(target_full_name.split(".")[:-1])
-
-        is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
-
-        if from_ and not use_exact and (ref_module in internal_modules or is_module_class_collision):
-            from_ = _join_module(from_, import_)
-            import_ = name
-            full_path = from_, import_
-    written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
-    return ReferenceImportTarget(full_path, from_, import_, written_from)
-
-
-def register_reference_import(  # noqa: PLR0913
-    reference: Reference,
-    current_module_name: str,
-    target_full_name: str,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    *,
-    init: bool,
-    internal_modules: set[tuple[str, ...]],
-    base_class: bool = False,
-    producer: ImportProducer,
-    treat_dot_as_module: bool | None,
-    import_ledger: ModuleImportLedger,
-    row: ImportPathRow = "reference",
-) -> str | None:
-    """Import a reference from another module and return its expression when it is not the class name.
-
-    Under row ``legacy-collapse-import-path`` a model of the module itself imports nothing.
-    """
-    name = reference.short_name
-    target = reference_import_target(
-        name,
-        current_module_name,
-        target_full_name,
-        use_exact=imports.use_exact,
-        init=init,
-        internal_modules=internal_modules,
-        base_class=base_class,
-        treat_dot_as_module=treat_dot_as_module,
-        row=row,
-    )
-    if row == "legacy-collapse-import-path" and target.same_module:
-        return None
-    alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
-    import_ledger.append(
-        imports,
-        Import(
-            from_=target.written_from,
-            import_=target.import_,
-            alias=alias,
-            reference_path=reference.path,
-        ),
-        producer,
-    )
-    return target.expression(name, alias)
 
 
 def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataModel) -> None:
@@ -1100,46 +749,6 @@ def get_constructor_ordering_conflicts(
         seen_signature_default = seen_signature_default or field_has_signature_default
         seen_place_default = seen_place_default or field_has_place_default
     return ConstructorConflicts(frozenset(ordering_conflicts), tuple(inherited_conflicts))
-
-
-def alias_shadowed_imports(
-    host: RuntimeExpressionFlags,
-    models: list[DataModel],
-    all_model_field_names: set[str],
-    *,
-    module_imports: Imports | None = None,
-) -> None:
-    """Alias the imports whose names a field name of the models hides."""
-    ordinary_aliases, has_python_type, has_runtime_expressions = _ordinary_field_shadow_aliases(
-        models,
-        all_model_field_names,
-    )
-    if not (has_python_type or has_runtime_expressions):
-        if ordinary_aliases:
-            _apply_structured_import_aliases(host._graph_builder, models, ordinary_aliases)  # noqa: SLF001
-        return
-    host._has_bound_python_types = host._has_bound_python_types or has_python_type  # noqa: SLF001
-    if has_runtime_expressions:
-        register_runtime_expression(host)
-    # Keep structured import machinery lazy: ordinary schemas must not
-    # pay its import, allocation, or module-scan cost.
-    from datamodel_code_generator.parser._python_type_imports import (  # noqa: PLC0415
-        resolve_structured_import_aliases,
-    )
-
-    data_types = (data_type for _, _, data_type in iter_models_field_data_types(models))
-    aliased_imports = resolve_structured_import_aliases(
-        data_types,
-        models,
-        all_model_field_names,
-        (host.imports,) if module_imports is None else (host.imports, module_imports),
-    )
-    if not aliased_imports:
-        return
-    _apply_structured_import_aliases(host._graph_builder, models, aliased_imports)  # noqa: SLF001
-    if module_imports is not None:
-        for aliased_import in aliased_imports.values():
-            host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)  # noqa: SLF001
 
 
 def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel] | None) -> bool:
@@ -1464,12 +1073,6 @@ def _iter_discriminator_data_types(
                         active_union_models.remove(source_id)
 
 
-def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
-    """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
-    from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
-    return _join_module(from_, base_module[-1].replace(".py", ""))
-
-
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
     """Return the module name scope planning gives a model, or the model's own module name."""
     module_name = _module_name_of(model_path_to_module_name, model.reference)
@@ -1498,22 +1101,6 @@ class ReplacedRootsHost(Protocol):
         """The replaced roots by id, with the root and the inner model that replaces it."""
 
 
-class ReferenceExpressionHost(Protocol):
-    """The option, the import ledger and the builder that writing how a data type names its reference uses."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that writes the expression through the generation store."""
-
-    @property
-    def _import_ledger(self) -> ModuleImportLedger:
-        """The ledger of the imports each module adds."""
-
-    @property
-    def treat_dot_as_module(self) -> bool | None:
-        """Whether dots in schema names make modules."""
-
-
 def module_members(host: ReplacedRootsHost, models: list[DataModel]) -> list[DataModel]:
     """Return the models of a module that stay in it: a root replaced by its inner model leaves at the decision."""
     if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
@@ -1534,119 +1121,6 @@ def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel
         if (replacement := replaced_root_models.get(id(model))) is not None
         and model_key_of(replacement[1].reference) not in members.models
     }
-
-
-def set_reference_expression(  # noqa: PLR0913, PLR0917
-    host: ReferenceExpressionHost,
-    data_type: DataType,
-    current_module_name: str,
-    target_full_name: str,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    *,
-    same_module: bool,
-    init: bool,
-    internal_modules: set[ModulePath],
-    producer: ImportProducer,
-    row: ImportPathRow = "reference",
-) -> bool:
-    """Write how a data type names its reference in the current module, and return whether that changed it.
-
-    A model the module emits is written by its class name; any other is imported, and written by the expression
-    the import gives when that is not the class name. Under row ``legacy-collapse-import-path`` a model of the module
-    itself keeps the expression the data type has.
-    """
-    expression = (
-        None
-        if same_module
-        else register_reference_import(
-            cast("Reference", data_type.reference),
-            current_module_name,
-            target_full_name,
-            imports,
-            scoped_model_resolver,
-            init=init,
-            internal_modules=internal_modules,
-            base_class=isinstance(data_type, BaseClassDataType),
-            producer=producer,
-            treat_dot_as_module=host.treat_dot_as_module,
-            import_ledger=host._import_ledger,  # noqa: SLF001
-            row=row,
-        )
-    )
-    if (expression is None and row != "reference") or expression == data_type.alias:
-        return False
-    host._graph_builder.name_reference(data_type, expression)  # noqa: SLF001
-    return True
-
-
-def set_reference_expressions(  # noqa: PLR0913
-    host: ReferenceExpressionHost,
-    ctx: ModuleContextView,
-    naming: ModuleNamesView,
-    model: DataModel,
-    data_types: Iterable[DataType],
-    *,
-    members: KeyedModels | None,
-    producer: ImportProducer,
-) -> None:
-    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``ctx``.
-
-    A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``);
-    without ``members`` every one is. ``naming`` gives the module names of ``model`` and of the models named.
-    """
-    import_references(
-        host,
-        model,
-        data_types,
-        ctx.imports,
-        ctx.scoped_model_resolver,
-        naming.model_path_to_module_name,
-        init=ctx.is_init,
-        internal_modules=naming.internal_modules,
-        members=members,
-        producer=producer,
-    )
-
-
-def import_references(  # noqa: PLR0913, PLR0917
-    host: ReferenceExpressionHost,
-    model: DataModel,
-    data_types: Iterable[DataType],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: Mapping[str, str],
-    *,
-    init: bool,
-    internal_modules: set[ModulePath],
-    members: KeyedModels | None,
-    producer: ImportProducer,
-    row: ImportPathRow = "reference",
-) -> bool:
-    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``imports``.
-
-    ``set_reference_expressions`` with the module's imports, resolver and module names given one by one, under
-    ``row`` (``ImportPathRow``). Return whether an expression changed.
-    """
-    changed = False
-    current_module_name = _get_model_module_name(model, model_path_to_module_name)
-    for data_type in data_types:
-        if (reference := data_type.reference) is None:
-            continue
-        changed |= set_reference_expression(
-            host,
-            data_type,
-            current_module_name,
-            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-            imports,
-            scoped_model_resolver,
-            same_module=members is not None and members.key_of(reference) in members.models,
-            init=init,
-            internal_modules=internal_modules,
-            producer=producer,
-            row=row,
-        )
-    return changed
 
 
 def _declares_unique_items(field: DataModelFieldBase) -> bool:
@@ -1909,11 +1383,6 @@ def _assign_module_name(
         model_path_to_module_name.setdefault(model.path, module_name)
     else:
         model_path_to_module_name[model.path] = module_name
-
-
-def _iter_import_bindings(imports: Imports) -> Iterator[str]:
-    """Yield names bound by one generated import block."""
-    return (binding for _, binding in _import_bindings(imports))
 
 
 def _parsed_rule_data_types(model: DataModel) -> Iterator[DataType]:

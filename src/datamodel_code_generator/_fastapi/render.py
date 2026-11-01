@@ -42,6 +42,8 @@ from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     dict_display,
+    escape_docstring,
+    format_docstring,
     keyword_argument,
     list_display,
     set_display,
@@ -53,11 +55,9 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GenericType,
-    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralSequence,
-    SourceExpression,
     UnionType,
     fact,
 )
@@ -74,7 +74,6 @@ from datamodel_code_generator._target_render import (
 from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none, type_identity
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
 if TYPE_CHECKING:
@@ -98,7 +97,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         Requirement,
-        TypeArgument,
         TypeView,
     )
     from datamodel_code_generator._target_module import TypeNames
@@ -312,20 +310,6 @@ class Module(TargetModule):
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
-
-    def argument(self, value: TypeArgument) -> str:
-        """Return the Python expression of a recorded literal or source expression."""
-        match value:
-            case LiteralScalar(kind="decimal"):
-                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
-            case LiteralScalar():
-                return repr(value.value)
-            case SourceExpression():
-                return value.text
-            case _:
-                pass
-        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
-        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 
 class UserModule(Module):

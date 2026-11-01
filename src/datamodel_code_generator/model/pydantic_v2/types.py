@@ -14,7 +14,12 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
-from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
+from datamodel_code_generator._python_syntax import (
+    RAW_SINGLE_QUOTED_ESCAPES,
+    call_text,
+    keyword_argument,
+    subscript_text,
+)
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -76,7 +81,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.types import standard_primitive_type_map_factory
 from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
-from datamodel_code_generator.python_literal import _QUOTE_AND_CONTROL_ESCAPES, PythonCode, represent_python_value
+from datamodel_code_generator.python_literal import PythonCode, represent_python_value
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -175,7 +180,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = str.maketrans(_QUOTE_AND_CONTROL_ESCAPES)
+escape_characters = RAW_SINGLE_QUOTED_ESCAPES
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 

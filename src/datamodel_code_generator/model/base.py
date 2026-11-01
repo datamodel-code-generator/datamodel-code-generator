@@ -51,6 +51,14 @@ from datamodel_code_generator._parse_memo import (
     memoized,
     note_reads,
 )
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    _single_line_docstring,
+    comment_safe,  # noqa: F401  # Preserve the established model.base export.
+    escape_docstring,
+    format_docstring,
+    inline_comment_safe,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
@@ -105,7 +113,6 @@ from datamodel_code_generator.model._rendered_names import (
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
-    _normalize_string,
     represent_python_value,
 )
 from datamodel_code_generator.reference import Reference, _BaseModel
@@ -278,111 +285,6 @@ class _MissingCustomTemplateState:
 
 
 _missing_custom_template_state = _MissingCustomTemplateState()
-
-
-class _EscapedDocstring(str):  # noqa: FURB189
-    """Marker for values already escaped for a generated Python docstring."""
-
-    __slots__ = ()
-
-
-def escape_docstring(value: str | None) -> str | None:
-    r"""Escape special characters in a docstring to prevent syntax errors.
-
-    Handles:
-    - Backslashes: `\\` -> `\\\\` (must be escaped first)
-    - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
-
-    Args:
-        value: The string to escape, or None.
-
-    Returns:
-        The escaped string, or None if input was None.
-    """
-    if value is None:
-        return None
-    if type(value) is _EscapedDocstring:
-        return value
-    value = _normalize_string(value)
-    # Escape backslashes first, then triple quotes. Retain the original string
-    # when no escaping is needed so custom-template fast paths stay allocation-free.
-    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
-    return _EscapedDocstring(escaped) if escaped != value else value
-
-
-def _ends_with_unescaped_quote(value: str) -> bool:
-    """Return whether *value* ends with a double quote that is not escaped."""
-    if not value.endswith('"'):
-        return False
-
-    backslash_count = 0
-    for char in reversed(value[:-1]):
-        if char != "\\":
-            break
-        backslash_count += 1
-    return backslash_count % 2 == 0
-
-
-def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_line_docstring: bool = False) -> str:
-    """Format *value* as a docstring as per PEP 257.
-
-    PEP 257 recommends that docstrings that can fit on one line should be formatted on a
-    single line, for consistency and readability. When use_single_line_docstring is
-    false, docstrings retain the historical multi-line formatting. It is assumed that
-    the opening triple-quotes are indented appropriately in the template. If it's a
-    multi-line docstring, each line including the closing triple-quotes will be indented
-    as per indent_spaces.
-
-    Args:
-        value: docstring text
-        indent_spaces: Spaces to indent for all lines after the opening triple-quotes
-        use_single_line_docstring: Use one-line docstrings when possible
-
-    Returns:
-        Empty string when `value` is falsy; otherwise the docstring block.
-    """
-    if value is None:
-        return ""
-    if type(value) is not _EscapedDocstring:
-        value = _normalize_string(value)
-    if not value.strip():
-        return ""
-
-    escaped = escape_docstring(value) or ""
-
-    if use_single_line_docstring and "\n" not in value and "\r" not in value:
-        if _ends_with_unescaped_quote(escaped):
-            escaped = f'{escaped[:-1]}\\"'
-
-        return f'"""{escaped}"""'
-
-    indent = max(indent_spaces, 0) * " "
-    if indent:
-        escaped = "\n".join(f"{indent}{line}" if line else "" for line in escaped.split("\n"))
-        return f'"""\n{escaped}\n{indent}"""'
-    return f'"""\n{escaped}\n"""'
-
-
-def comment_safe(value: str | None) -> str | None:
-    """Normalize line endings before rendering text in Python comments.
-
-    Built-in union templates already prefix LF continuation lines with ``# ``.
-    This helper converts CRLF and bare CR into LF so that existing template
-    behavior keeps the whole description inside the comment block.
-    """
-    if value is None:
-        return None
-    value = _normalize_string(value)
-    # Collapse CRLF before converting lone CR.
-    return value.replace("\r\n", "\n").replace("\r", "\n")
-
-
-def inline_comment_safe(value: str | None) -> str | None:
-    """Make a value safe for a generated inline Python comment."""
-    if value is None:
-        return None
-    safe_value = comment_safe(value) or ""
-    return safe_value.replace("\v", "\n").replace("\f", "\n").replace("\n", "\n# ")
 
 
 def _safe_extra_template_data(
@@ -1083,8 +985,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self.use_inline_field_description:
             description = self.extras.get("description", None)
             if description is not None and "\n" not in description:
-                escaped = escape_docstring(description)
-                return f'"""{escaped}"""'
+                return _single_line_docstring(escape_docstring(description) or "")
 
         return None
 

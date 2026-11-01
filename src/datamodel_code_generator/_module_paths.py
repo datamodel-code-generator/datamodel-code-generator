@@ -17,8 +17,14 @@ A name in a module has a dotted name: the module's dotted name and the name, or 
 (``dotted_name``). A model is named across modules by it, which the imports of other modules read, and an import, a
 runtime symbol and a package beside a server package are named by it too. A module lies below a package when
 the package's path starts its own and is shorter (``is_below``), so Python runs the package's ``__init__`` first; it
-lies within the package when it is that package or below it (``is_within``). This module imports only the standard
-library, so every layer may use it.
+lies within the package when it is that package or below it (``is_within``).
+
+A module imports a name of another module by a relative import (``relative``): one dot for its own package and one
+more for each package up to the packages both modules share, then the other module's path below them, split into the
+module the import is from and its last name. A name in the ``__init__`` of a package the module lies below
+(``is_ancestor_package_reference``) is imported from the dots alone. ``join_module`` appends a name to such a relative
+module, and ``exact_import`` imports the name itself from the module ``relative`` imports. This module imports only
+the standard library, so every layer may use it.
 """
 
 from __future__ import annotations
@@ -31,13 +37,17 @@ if TYPE_CHECKING:
 __all__ = [
     "dotted_module",
     "dotted_name",
+    "exact_import",
     "expanded_path",
+    "is_ancestor_package_reference",
     "is_below",
     "is_package_init",
     "is_within",
+    "join_module",
     "module_parts",
     "normalized_path",
     "package_path",
+    "relative",
     "written_name",
     "written_names",
     "written_path",
@@ -77,6 +87,91 @@ def is_below(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
 def is_within(module: tuple[str, ...], package: tuple[str, ...]) -> bool:
     """Return whether the module path ``module`` is the package ``package`` or lies below it."""
     return module[: len(package)] == package
+
+
+def relative(
+    current_module: str,
+    reference: str,
+    *,
+    reference_is_module: bool = False,
+    current_is_init: bool = False,
+) -> tuple[str, str]:
+    """Return the module and name that ``current_module`` imports ``reference`` by, relative to it.
+
+    ``reference`` is a ``module.Class`` path, or a module path with ``reference_is_module``; ``current_is_init`` makes
+    ``current_module`` a package ``__init__``.
+    """
+    if current_is_init:
+        current_module_path = [*current_module.split("."), "__init__"] if current_module else ["__init__"]
+    else:
+        current_module_path = current_module.split(".") if current_module else []
+
+    if reference_is_module:
+        reference_path = reference.split(".") if reference else []
+        name = reference_path[-1] if reference_path else ""
+    else:
+        *reference_path, name = reference.split(".")
+
+    if current_module_path == reference_path:
+        return "", ""
+
+    i = 0
+    for x, y in zip(current_module_path, reference_path, strict=False):
+        if x != y:
+            break
+        i += 1
+
+    left = "." * (len(current_module_path) - i)
+    right = ".".join(reference_path[i:])
+
+    if not left:
+        left = "."
+    if not right:
+        right = name
+    elif "." in right:
+        extra, right = right.rsplit(".", 1)
+        left += extra
+
+    return left, right
+
+
+def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
+    """Check if reference is in an ancestor package (__init__.py).
+
+    When the reference's module path is an ancestor (prefix) of the current module,
+    the reference is in an ancestor package's __init__.py file.
+
+    Args:
+        current_module: The current module path (e.g., "v0.mammal.canine")
+        reference: The full reference path (e.g., "v0.Animal")
+
+    Returns:
+        True if the reference is in an ancestor package, False otherwise.
+
+    Examples:
+        - current="v0.animal", ref="v0.Animal" -> True (immediate parent)
+        - current="v0.mammal.canine", ref="v0.Animal" -> True (grandparent)
+        - current="v0.animal", ref="v0.animal.Dog" -> False (same or child)
+        - current="pets", ref="Animal" -> True (root package is immediate parent)
+        - current="v0.mammal.canine", ref="Animal" -> True (root package is an ancestor)
+    """
+    *reference_path, _ = reference.split(".")
+    return is_below(tuple(current_module.split(".")) if current_module else (), tuple(reference_path))
+
+
+def exact_import(from_: str, import_: str, short_name: str) -> tuple[str, str]:
+    """Create exact import path to avoid relative import issues."""
+    if from_ == len(from_) * ".":
+        # Prevents "from . import foo" becoming "from ..foo import Foo"
+        # or "from .. import foo" becoming "from ...foo import Foo"
+        # when our imported module has the same parent
+        return f"{from_}{import_}", short_name
+    return f"{from_}.{import_}", short_name
+
+
+def join_module(from_: str, name: str) -> str:
+    """Return the module ``name`` inside the module ``from_``, which may be only the dots of a relative import."""
+    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
 
 
 def written_name(name: str) -> str:

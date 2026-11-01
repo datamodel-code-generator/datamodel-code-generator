@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
-from datamodel_code_generator._python_syntax import keyword_argument, subscript_text
+from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES, keyword_argument, subscript_text
 from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import Import, _holds, _remove_all
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -28,7 +28,6 @@ from datamodel_code_generator.model.imports import (
     IMPORT_TYPED_DICT_BACKPORT,
 )
 from datamodel_code_generator.python_literal import (
-    _QUOTE_AND_CONTROL_ESCAPES,
     _InternalTypeExpression,
     represent_untrusted_public_type_name,
     represent_untrusted_python_value,
@@ -50,7 +49,7 @@ _KEY_REQUIREDNESS = Why(RuleId("D3.typed-dict.key-requiredness"), keyword="requi
 _READ_ONLY = Why(RuleId("D11.typed-dict.read-only"), keyword="readOnly", option="--use-frozen-field")
 
 
-escape_characters = str.maketrans({"\\": r"\\", **_QUOTE_AND_CONTROL_ESCAPES})
+escape_characters = SINGLE_QUOTED_ESCAPES
 
 
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:

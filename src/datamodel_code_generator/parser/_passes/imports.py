@@ -34,7 +34,13 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings, _import_key
+from datamodel_code_generator.imports import (
+    IMPORT_LITERAL,
+    Import,
+    _import_bindings,
+    _import_key,
+    _iter_import_bindings,
+)
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -44,6 +50,7 @@ from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, reference_import_target
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -51,7 +58,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ImportOptionsHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     ReplacedRootsHost,
     ReuseOptionsHost,
     RootModelHost,
@@ -60,12 +66,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _format_tags,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
-    _iter_import_bindings,
     _named_data_types,
     _string_or_identifier_pattern,
     _unique_items_tuple,
     get_special_path,
-    reference_import_target,
     site_display_name,
     unused_model_lists,
 )

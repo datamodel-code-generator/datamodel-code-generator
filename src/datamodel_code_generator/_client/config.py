@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar, cast, get_args
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.naming import namespace_problem, token
+from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.options import is_base_url
+from datamodel_code_generator._runtime.client.retry import RetrySafety
 from datamodel_code_generator._runtime.model_codecs.media import REDIRECT_STATUSES, normalize_media_type, normalized
 from datamodel_code_generator._target_config import (
     TargetConfig,
@@ -32,8 +34,8 @@ BodyArguments: TypeAlias = Literal["body", "both"]
 RecordT = TypeVar("RecordT")
 
 OPTION_PREFIX: Final = "client"
-_BODY_ARGUMENTS: Final = frozenset({"body", "both"})
-_RETRY_SAFETIES: Final = frozenset({"method_default", "idempotent", "never"})
+_BODY_ARGUMENTS: Final = frozenset(get_args(BodyArguments))
+_RETRY_SAFETIES: Final = frozenset(get_args(RetrySafety))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -75,7 +77,7 @@ class RuntimeOperationMetadata:
 
     request_id_header: str | None = None
     success_statuses: tuple[int, ...] = ()
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
@@ -202,7 +204,8 @@ def _field_name_problems(
 ) -> Iterator[Diagnostic]:
     """Refuse an invalid body mode, and field names that are malformed, repeated, or for a body-only operation."""
     if item.body_arguments is not None and not _one_of(item.body_arguments, _BODY_ARGUMENTS):
-        yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", "body_arguments must be 'body', 'both', or None")
+        allowed = english_list((*map(repr, get_args(BodyArguments)), "None"), "or", "serial")
+        yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", f"body_arguments must be {allowed}")
     names = item.body_field_names
     if names and (item.body_arguments or default) != "both":
         yield _diagnostic(
@@ -249,9 +252,8 @@ def _runtime_problems(runtime: RuntimeOperationMetadata, at: str) -> Iterator[Di
         if (value := getattr(runtime, name)) is not None and not token(value):
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.{name}", f"{name} must be a header name")
     if not _one_of(runtime.retry_safety, _RETRY_SAFETIES):
-        yield _diagnostic(
-            "E_CONFIG_VALUE", f"{at}.retry_safety", "retry_safety must be 'method_default', 'idempotent', or 'never'"
-        )
+        safeties = english_list(map(repr, get_args(RetrySafety)), "or", "serial")
+        yield _diagnostic("E_CONFIG_VALUE", f"{at}.retry_safety", f"retry_safety must be {safeties}")
     if runtime.idempotency is not None:
         yield from _idempotency_problems(runtime.idempotency, f"{at}.idempotency")
     if type(runtime.auth_challenge_less_401) is not bool:

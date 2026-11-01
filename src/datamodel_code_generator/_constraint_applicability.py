@@ -4,7 +4,7 @@ The rows are static: the keyword groups of each JSON kind, the keywords a declar
 each Python or library type takes in each output model, the classes that enforce a keyword themselves, the keywords
 the ``con*`` types and ``msgspec.Meta`` take, and the rows that keep today's answer where two sites disagree
 (``legacy-*``; a fix of that output deletes its row). Every function is pure: facts in, keywords out. The adapters
-read the live objects and are listed under H07 in ``scripts/decision_homes.toml``.
+read the live objects and are listed in ``docs/architecture.md``.
 
 Legacy rows, each named by the function that decides it:
 

@@ -276,6 +276,7 @@ from datamodel_code_generator.parser._null_facts import (
     resolve_null_facts,
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
+from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
@@ -1675,9 +1676,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         use_default_with_required: bool = False,
         class_name: str | None = None,
     ) -> DataModelFieldBase:
-        """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords."""
+        """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords.
+
+        The field, and its type where no nested build recorded one (a const the field types itself), record the
+        location of ``field`` as their origin (``reference.field_origin_of``, ``reference.type_origin_of``).
+        """
         if field is None:
-            return self._build_field(
+            model_field = self._build_field(
                 "property",
                 field_type,
                 name=field_name,
@@ -1690,6 +1695,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 has_default=effective_has_default is True,
                 use_default_with_required=use_default_with_required,
             )
+            return with_field_origin(model_field, "property", None)
 
         default_value = effective_default if effective_has_default is not None else field.default
         has_default = effective_has_default if effective_has_default is not None else field.has_default
@@ -1742,6 +1748,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             write_only=write_only,
             use_default_with_required=use_default_with_required,
         )
+        location = field.schema_location
+        with_type_origin(with_field_origin(model_field, "property", location).data_type, location)
         if self.model_resolver.default_value_overrides:
             model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = (
                 field.default if field.has_default else _RAW_SCHEMA_DEFAULT_UNDEFINED
@@ -3587,7 +3595,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         target_attribute_name: str,
     ) -> list[DataType]:
-        """Parse combined schema (anyOf, oneOf, allOf) into a list of data types."""
+        """Parse combined schema (anyOf, oneOf, allOf) into a list of data types.
+
+        Each member records the location of the branch it is parsed from as its origin (``reference.type_origin_of``),
+        also the member that stands for a referenced branch.
+        """
         default_left_off = self.config.keep_field_defaults_off_branch_roots and obj.has_default
         base_object = obj.model_dump(
             exclude={
@@ -3677,14 +3689,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _all_of_values.raise_unsatisfiable_schema(self, obj, path, target_attribute_name)
         common_path_keyword = f"{target_attribute_name}Common"
         return [
-            self._parse_object_common_part(
-                name,
-                obj.with_schema_location(combined_schemas[i].schema_location),
-                [*get_special_path(common_path_keyword, path), str(i)],
-                ignore_duplicate_model=True,
-                fields=[],
-                base_classes=[d.reference],
-                required=[],
+            with_type_origin(
+                self._parse_object_common_part(
+                    name,
+                    obj.with_schema_location(combined_schemas[i].schema_location),
+                    [*get_special_path(common_path_keyword, path), str(i)],
+                    ignore_duplicate_model=True,
+                    fields=[],
+                    base_classes=[d.reference],
+                    required=[],
+                ),
+                combined_schemas[i].schema_location,
             )
             if i in refs and d.reference
             else d
@@ -4340,8 +4355,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Register a root using an internal alternate output representation.
 
         Under request-response the root splits where its fields or the types it writes beside them
-        (``_rw_model_writes_variant_beside_fields``) name a model with variants, as a model with fields does.
+        (``_rw_model_writes_variant_beside_fields``) name a model with variants, as a model with fields does. The root
+        fields, and their types, record ``obj`` as their origin first, so the variants' copies keep it.
         """
+        location = obj.schema_location
+        for field in fields:
+            with_type_origin(with_field_origin(field, "root", location).data_type, location)
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
             self._add_unique_items_validator(
@@ -4530,7 +4549,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and isinstance(merged_root.items, JsonSchemaObject)
             and merged_root.items.enum
         ):
-            item_type = self._parse_all_of_root_value(f"{name}Item", merged_root.items, get_special_path("items", path))
+            item_type = with_type_origin(
+                self._parse_all_of_root_value(f"{name}Item", merged_root.items, get_special_path("items", path)),
+                merged_root.items.schema_location,
+            )
             merged_root = merged_root.model_copy(update={"items": True})
         root_data_type = self._parse_all_of_merged_root(name, merged_root, path)
         reference = cast("Reference", root_data_type.reference)
@@ -4753,7 +4775,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         module_name: Optional[str] = None,  # noqa: UP045
         class_name: Optional[str] = None,  # noqa: UP045
     ) -> list[DataModelFieldBase]:
-        """Parse object properties into a list of data model fields."""
+        """Parse object properties into a list of data model fields.
+
+        A field of a boolean property schema records where ``obj`` declares it, ``properties/<name>``, as its origin.
+        """
         properties: dict[str, JsonSchemaObject | bool] = {} if obj.properties is None else obj.properties
         requires: set[str] = {*()} if obj.required is None else {*obj.required}
         fields: list[DataModelFieldBase] = []
@@ -4772,18 +4797,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             exclude_field_names.add(field_name)
 
             if isinstance(field, bool):
-                fields.append(
-                    self._build_field(
-                        "legacy-boolean-property",
-                        self.data_type_manager.get_data_type(Types.any),
-                        name=field_name,
-                        alias=alias,
-                        source_name=original_field_name,
-                        class_name=class_name,
-                        required=False if self.force_optional_for_required_fields else original_field_name in requires,
-                        original_name=original_field_name,
-                    )
+                boolean_field = self._build_field(
+                    "legacy-boolean-property",
+                    self.data_type_manager.get_data_type(Types.any),
+                    name=field_name,
+                    alias=alias,
+                    source_name=original_field_name,
+                    class_name=class_name,
+                    required=False if self.force_optional_for_required_fields else original_field_name in requires,
+                    original_name=original_field_name,
                 )
+                declaration = (
+                    None
+                    if (location := obj.schema_location) is None
+                    else location.child("properties", original_field_name)
+                )
+                fields.append(with_field_origin(boolean_field, "property", declaration))
                 continue
 
             field = self._site_schema(field, merge_ref_siblings=True)  # noqa: PLW2901
@@ -5339,18 +5368,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse a single JSON Schema item into a data type, within the schema resource it declares.
 
         The name and the $ref sibling keywords are resolved here and the row of the field table (``_FIELD_TABLE``)
-        is built in this frame, so a nested schema costs no more frames than the parse methods it reaches.
+        is built in this frame, so a nested schema costs no more frames than the parse methods it reaches. The type
+        returned records the location of ``item`` as its origin (``_origins.with_type_origin``).
         """
+        location = item.schema_location
         with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
             item = self._site_schema(item)
             python_type_override = self._get_python_type_override(item)
             if python_type_override:
-                return python_type_override
+                return with_type_origin(python_type_override, location)
             if self.use_title_as_name and item.title:
                 name = sanitize_module_name(item.title, treat_dot_as_module=self.treat_dot_as_module)
                 singular_name = False
             if self._should_create_type_alias_for_title(item, name):
-                return self.parse_root_type(name, item, path)
+                return with_type_origin(self.parse_root_type(name, item, path), location)
             merged_scope = None
             if _merges_ref_siblings(item) and (merged_item := self._merge_ref_with_schema(item)) is not item:
                 item, merged_scope = self._read_false_all_of_values(merged_item), self._subschema_scope(merged_item)
@@ -5358,7 +5389,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 choice = self._FIELD_TABLE.choose(
                     self, SchemaSite(name, item, path, singular_name=singular_name, parent=parent)
                 )
-                return choice.build(self, choice.site)
+                return with_type_origin(choice.build(self, choice.site), location)
 
     def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
         """Return whether an inherited container shape materialized on the item keeps constraints of its own."""

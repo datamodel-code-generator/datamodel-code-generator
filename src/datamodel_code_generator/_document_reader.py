@@ -36,16 +36,13 @@ __all__ = [
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
 
-MemberRow: TypeAlias = Literal[
-    "canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens", "legacy-objects-only"
-]
+MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]
 """How a reader reads one token's member of a loaded value (``member``)."""
 _ENDS_WALK: Final[MappingProxyType[MemberRow, tuple[type[Exception], ...]]] = MappingProxyType({
     "canonical": (LookupError, TypeError),
     "refusing": (KeyError,),
     "legacy-int-tokens": (LookupError, TypeError, ValueError),
     "legacy-decimal-tokens": (LookupError,),
-    "legacy-objects-only": (LookupError,),
 })
 """The errors of each row that mean the value has no such member; any other error propagates."""
 
@@ -86,7 +83,7 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:  # noqa: 
     ``legacy-int-tokens`` (target binding) reads an item of any non-mapping by whatever ``int()`` accepts (``-1``,
     ``01``, ``1_0``, a character of a string), a mapping as ``canonical``; ``legacy-decimal-tokens`` (served document)
     reads a list item by any decimal token below the length (``01``, non-ASCII digits), a mapping member by the token
-    first, then by a decimal integer key; ``legacy-objects-only`` (recommender) reads a mapping member by the token.
+    first, then by a decimal integer key.
     """
     match row:
         case "canonical":
@@ -111,14 +108,11 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:  # noqa: 
                 return cast("list[YamlValue]", value)[int(token)]
             numbered = cast("dict[object, YamlValue]", value)
             return numbered[int(token)] if is_array_index(token) and int(token) in numbered else value[token]
-        case "legacy-decimal-tokens":
+        case _:  # legacy-decimal-tokens
             if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
                 return value[int(token)]
             if isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
                 return value[token] if token in value else cast("dict[object, YamlValue]", value)[int(token)]
-        case _:  # legacy-objects-only
-            if isinstance(value, dict) and token in value:
-                return value[token]
     raise LookupError(token)
 
 

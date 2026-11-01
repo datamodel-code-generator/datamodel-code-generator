@@ -37,13 +37,13 @@ from datamodel_code_generator.model.enum import Enum, Member
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, set_reference_expressions
 from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     GenerationStoreHost,
     ImportOptionsHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     ReplacedRootsHost,
     RootModelTypeHost,
     RuntimeExpressionFlags,
@@ -61,7 +61,6 @@ from datamodel_code_generator.parser._passes._shared import (
     module_members,
     normalize_default_value_constraints,
     resolve_default_value_descriptor,
-    set_reference_expressions,
     takes_positional_place,
     unused_model_lists,
 )

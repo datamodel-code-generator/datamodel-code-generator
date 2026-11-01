@@ -220,24 +220,10 @@ remediation without reading the checker implementation.
 
 A decision that several parser passes or output models need has one home in
 `docs/architecture.md` ("One home per decision"): a pure core and its adapters.
-`scripts/decision_homes.toml` names each home and the code shapes that mean "this
-code decides it" (a read of a schema object's `nullable`, a graph-component
-computation, the int64 limit, an option read outside its owner). Run
-
-```bash
-python scripts/check_decision_homes.py
-```
-
-after a change. A shape found outside its home fails with "decision X has its
-home in file:function": build the facts in the adapter and call the core, or, for
-a decision without a home, add the home to the toml in the same change instead of
-writing a second copy. A call of a function that the home's core defines is never
-reported, wherever it is made, so a caller of the core needs no adapter entry. The
-sites that exist today are the allowlist at the end of the toml; it only shrinks,
-and `--write-allowlist` lowers it after you route a site. A new `legacy-*` row
-needs a `legacy_rows` entry (home and `fix`) and a row of the "Legacy rows" table
-in `docs/architecture.md`. The check runs as `tests/test_decision_homes.py`; its
-fixtures are under `tests/data/decision_homes/`.
+Build the facts in an adapter and call the core; for a decision without a home,
+add the home in the same change instead of writing a second copy. A new `legacy-*`
+row needs a row of the "Legacy rows" table in `docs/architecture.md` with what
+deletes it (`fix`); `tests/test_legacy_rows.py` fails for a row on one side only.
 
 ## Parser generation state
 
@@ -528,7 +514,7 @@ it then appears in every JSON report, so record the changed expected reports.
    issue or pull request numbers or list known bugs in it.
 2. A test fixture: a small schema under `tests/data/recommend_options/` that fires the rule, added as a
    `pytest.param` to `test_recommend_options_for_schemas`. Run the test to record its expected report under
-   `tests/data/expected/main/recommend_options/`, accept the changed reports of other fixtures with
+   `tests/data/expected/main/main_recommend_options/`, accept the changed reports of other fixtures with
    `--inline-snapshot=fix`, and check that each change is one the rule should make.
 3. A registry entry: list the rule id in `options.<field>.rules` for every field it sets (see
    [Step 4](#step-4-register-the-option-in-the-recommender-required)).

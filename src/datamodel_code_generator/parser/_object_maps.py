@@ -13,6 +13,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
 from datamodel_code_generator.parser.base import get_special_path
@@ -290,7 +291,11 @@ def get_typed_additional_properties_field(
     obj: JsonSchemaObject,
     path: list[str],
 ) -> DataModelFieldBase | None:
-    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``)."""
+    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``).
+
+    The field and its dict record the location of the additionalProperties schema as their origin
+    (``reference.field_origin_of``, ``reference.type_origin_of``).
+    """
     if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
@@ -304,14 +309,14 @@ def get_typed_additional_properties_field(
     )
     dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
 
-    return parser.data_model_type.create_typed_extra_field(
+    location = additional_props.schema_location
+    field = parser.data_model_type.create_typed_extra_field(
         field_model=parser.data_model_field_type,
-        data_type=parser.data_type(
-            data_types=[extra_value_type],
-            is_dict=True,
-            dict_key=dict_key,
+        data_type=with_type_origin(
+            parser.data_type(data_types=[extra_value_type], is_dict=True, dict_key=dict_key), location
         ),
     )
+    return None if field is None else with_field_origin(field, "additional", location)
 
 
 def flatten_additional_properties_all_of(
@@ -750,6 +755,7 @@ def get_additional_properties_root_field(
     ``legacy-validated-pattern-maps`` keeps ``str`` keys and counts without the patterns. Elsewhere the keys are
     ``str``: an object with propertyNames and without properties reaches this field only where the validator checks
     its patterns. The dict takes the object map builder's null unless row ``legacy-map-null-left-to-field`` is kept.
+    The field and its dict record the location of ``obj`` as their origin.
     """
     value_type = parser.data_type_manager.get_data_type(Types.any)
     key_type = None
@@ -772,8 +778,9 @@ def get_additional_properties_root_field(
                     obj,
                     additional_properties=additional_properties,
                 )
-    map_type = parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type)
-    return parser.get_object_field(
+    location = obj.schema_location
+    map_type = with_type_origin(parser.data_type(data_types=[value_type], is_dict=True, dict_key=key_type), location)
+    field = parser.get_object_field(
         field_name=None,
         field=parser._schema_object(counts),  # noqa: SLF001
         required=True,
@@ -785,6 +792,8 @@ def get_additional_properties_root_field(
         ),
         alias=None,
     )
+    with_type_origin(with_field_origin(field, "root", location).data_type, location)
+    return field
 
 
 def object_map_key_type(  # noqa: PLR0913
@@ -807,6 +816,8 @@ def object_map_key_type(  # noqa: PLR0913
     - ``property-names-map``, the dict of ``parse_property_names``: a ``$ref`` merged with its siblings; an anyOf,
       oneOf or allOf parsed as a type under ``name`` and ``path`` (``_parse_combined_property_names_key_type``).
     - ``extra-field``, the typed extra field of a model: only a direct schema that constrains the keys.
+
+    A key type read from a propertyNames schema records its location as its origin (``reference.type_origin_of``).
     """
     if row == "pattern-map" and isinstance(property_names, JsonSchemaObject):
         schema = property_names.model_copy(deep=True)
@@ -838,12 +849,18 @@ def object_map_key_type(  # noqa: PLR0913
         if isinstance(schema, JsonSchemaObject) and _merges_ref_siblings(schema):
             schema = parser._merge_ref_with_schema(schema)  # noqa: SLF001
         if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
-            return parser._parse_combined_property_names_key_type(name, schema, [*path])  # noqa: SLF001
+            return with_type_origin(
+                parser._parse_combined_property_names_key_type(name, schema, [*path]),  # noqa: SLF001
+                schema.schema_location,
+            )
     elif is_direct_key_schema(parser, property_names):
         schema = cast("JsonSchemaObject", property_names)
     else:
         return None
-    return parse_property_name_key_schema(parser, schema)
+    return with_type_origin(
+        parse_property_name_key_schema(parser, schema),
+        schema.schema_location if isinstance(schema, JsonSchemaObject) else None,
+    )
 
 
 def object_map_type_union(

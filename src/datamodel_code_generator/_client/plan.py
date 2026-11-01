@@ -101,6 +101,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.retry import RetrySafety
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -283,7 +284,7 @@ class OperationSpec:
     body_field_names: tuple[BodyFieldName, ...] = ()
     fields: tuple[FieldBranch, ...] = ()
     body_only: tuple[tuple[str, str], ...] = ()
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None

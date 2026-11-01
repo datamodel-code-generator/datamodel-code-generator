@@ -14,6 +14,7 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from datamodel_code_generator.reference import field_origin_of, type_origin_of
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
@@ -35,6 +36,10 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datamodel_code_generator.model import DataModel
+    from datamodel_code_generator.reference import SchemaLocation
+    from datamodel_code_generator.types import DataType
 
 
 @pytest.mark.parametrize("entry_point", ["cli", "api"])
@@ -271,3 +276,127 @@ def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path)
     parser = ExtensionParser(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
     parser.parse(collect_model_metadata=True)
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
+
+
+_ORIGINS_JSON_SCHEMA: dict[str, Any] = {
+    "$defs": {
+        "Base": {"type": "object", "properties": {"id": {"type": "integer"}}},
+        "Ids": {"type": "array", "items": {"type": "integer"}},
+        "Labels": {"type": "object", "additionalProperties": {"type": "string"}},
+        "Merged": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"id": {"maximum": 5}}}]},
+    },
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "pair": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}], "items": False},
+        "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "flags": {"type": "object", "patternProperties": {"^x-": {"type": "boolean"}}},
+        "choice": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+        "maybe": {"oneOf": [{"$ref": "#/$defs/Base"}, {"type": "null"}]},
+        "either": {"type": ["string", "integer"]},
+        "fixed": {"const": "x"},
+        "keyed": {"type": "object", "propertyNames": {"pattern": "^a"}, "additionalProperties": {"type": "string"}},
+        "flag": True,
+        "base": {"$ref": "#/$defs/Base"},
+        "ids": {"$ref": "#/$defs/Ids"},
+        "labels": {"$ref": "#/$defs/Labels"},
+        "child": {
+            "allOf": [{"$ref": "#/$defs/Base"}, {"required": ["code"], "properties": {"note": {"type": "string"}}}]
+        },
+    },
+    "additionalProperties": {"type": "number"},
+    "propertyNames": {"maxLength": 9},
+}
+_ORIGINS_OPENAPI: dict[str, Any] = {
+    "openapi": "3.1.0",
+    "info": {"title": "origins", "version": "1"},
+    "paths": {},
+    "components": {
+        "schemas": {
+            "Pet": {
+                "type": "object",
+                "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"},
+                },
+                "properties": {"kind": {"type": "string"}},
+                "required": ["kind"],
+            },
+            "Cat": {
+                "allOf": [
+                    {"$ref": "#/components/schemas/Pet"},
+                    {"type": "object", "properties": {"meow": {"type": "boolean"}}},
+                ]
+            },
+            "Dog": {
+                "allOf": [
+                    {"$ref": "#/components/schemas/Pet"},
+                    {"type": "object", "properties": {"kind": {"type": "string"}, "bark": {"type": "boolean"}}},
+                ]
+            },
+            "Owner": {"type": "object", "properties": {"pet": {"$ref": "#/components/schemas/Pet"}}},
+        }
+    },
+}
+
+
+def _schema_at(document: Any, location: SchemaLocation | None) -> str:
+    """Return a location's pointer and the JSON of the schema value at it, as the input holds it."""
+    if location is None:
+        return "None"
+    value = document
+    for token in location.tokens:
+        value = value[int(token)] if isinstance(value, list) else value[token]
+    return f"{location.pointer} {json.dumps(value, sort_keys=True)}"
+
+
+def _type_origin_lines(data_type: DataType, position: str, document: Any) -> list[str]:
+    """Return the origin of a type node and of the nodes it holds, each under its position in the type tree."""
+    lines = [f"    {position or '.'}: {_schema_at(document, type_origin_of(data_type))}"]
+    for index, member in enumerate(data_type.data_types):
+        lines.extend(_type_origin_lines(member, f"{position}/{index}", document))
+    if data_type.dict_key is not None:
+        lines.extend(_type_origin_lines(data_type.dict_key, f"{position}/key", document))
+    return lines
+
+
+def _origin_lines(models: list[DataModel], document: Any) -> str:
+    """Return the origin of every field of the models and of each node of their types."""
+    lines: list[str] = []
+    for model in models:
+        lines.append(model.class_name)
+        for field in model.fields:
+            origin = field_origin_of(field)
+            kind, location = (None, None) if origin is None else (origin.kind, origin.location)
+            lines.extend((
+                f"  {field.name}: {kind} {_schema_at(document, location)}",
+                *_type_origin_lines(field.data_type, "", document),
+            ))
+    return "\n".join(lines)
+
+
+@pytest.mark.parametrize(
+    ("parser_class", "document"),
+    [
+        pytest.param(JsonSchemaParser, _ORIGINS_JSON_SCHEMA, id="jsonschema"),
+        pytest.param(OpenAPIParser, _ORIGINS_OPENAPI, id="openapi"),
+    ],
+)
+def test_fields_and_types_record_the_schema_they_are_built_from(
+    tmp_path: Path, parser_class: type[JsonSchemaParser], document: dict[str, Any]
+) -> None:
+    """Each field and type node records the schema object it is built from, which the dump shows beside its pointer.
+
+    A property field records its property schema, a root field and its type the schema of the root model, the typed
+    extra field the additionalProperties schema, a boolean property schema where its object declares it; a required
+    name without a property records its kind without a schema, as does a discriminator tag field the L5 pass appends
+    (kind ``tag``); an override of an inherited property records its own property schema. A type
+    node records the subschema it is parsed from (items, prefixItems, additionalProperties, patternProperties,
+    propertyNames, anyOf and oneOf branches, a merged allOf property its part); a container, a type list member and a
+    const the field types itself record the schema they are built from.
+    """
+    (input_path := tmp_path / "schema.json").write_text(json.dumps(document), encoding="utf-8")
+    parser = parser_class(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
+    parser.parse()
+    assert_output(_origin_lines(parser.results, document))

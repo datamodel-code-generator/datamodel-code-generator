@@ -32,8 +32,10 @@ from datamodel_code_generator import (
 from datamodel_code_generator._document_reader import string_key, string_keys
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
+    PATHS_PARAMETERS,
     effective_operation,
     effective_parameters,
+    holds_path_item,
     path_selected,
     rooted_path,
 )
@@ -41,6 +43,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _located_model_schema
@@ -62,7 +65,13 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
 )
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
-from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
+from datamodel_code_generator.reference import (
+    FIELD_ORIGIN_KEY,
+    SCHEMA_LOCATION_KEY,
+    FieldNameResolver,
+    is_url,
+    snake_to_upper_camel,
+)
 from datamodel_code_generator.types import (
     DataType,
     EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
@@ -478,7 +487,7 @@ class OpenAPIParser(JsonSchemaParser):
             # Resolve $ref in global parameter list
             global_parameters = [
                 self._get_ref_body(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
-                for p in paths.get("parameters", [])
+                for p in paths.get(PATHS_PARAMETERS, [])
                 if isinstance(p, dict)
             ]
             self._process_path_items(paths, path_parts, "paths", global_parameters, security)
@@ -718,11 +727,13 @@ class OpenAPIParser(JsonSchemaParser):
                     result_fields.append(field_obj)
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
+                origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
                 field_obj = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
-                    "data_type": new_field_type,
+                    "data_type": with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
                 })
+                field_obj.__dict__[FIELD_ORIGIN_KEY] = origin
             result_fields.append(field_obj)
 
         return result_fields
@@ -851,6 +862,8 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
+                continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
             item_ref = methods_.get("$ref")

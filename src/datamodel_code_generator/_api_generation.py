@@ -8,7 +8,7 @@ from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from io import BytesIO, TextIOWrapper
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 from urllib.parse import ParseResult
 
@@ -29,7 +29,7 @@ from datamodel_code_generator._fastapi.packages import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, lexical, overlaps, resolved
+from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -402,7 +402,7 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
 
     if staged.is_file():
         return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
-    files = sorted((path.relative_to(staged).parts, path) for path in staged.rglob("*") if path.is_file())
+    files = sorted((path.relative_to(staged).parts, path) for path in files_under(staged))
     return tuple(ModelArtifact(parts, path.read_bytes(), encoding) for parts, path in files)
 
 
@@ -486,8 +486,20 @@ def _generate_models(
         )
 
 
-def _is_python(path: PurePosixPath) -> bool:
+def _is_python(path: PurePath) -> bool:
     return path.suffix in {".py", ".pyi"}
+
+
+def file_encoding(path: PurePath, encoding: str, kind: ArtifactKind | None = None) -> str:
+    """Return the encoding a generated file is written in: models and Python files in `encoding`, else UTF-8."""
+    return encoding if kind == "model" or _is_python(path) else "utf-8"
+
+
+def artifact_text(artifact: GeneratedArtifact, encoding: str) -> str:
+    """Read a rendered file as its written file reads, in the encoding it is written in."""
+    return TextIOWrapper(
+        BytesIO(artifact.content), encoding=file_encoding(artifact.path, encoding, artifact.kind)
+    ).read()
 
 
 def _normalized(text: str) -> str:
@@ -863,7 +875,7 @@ class _Planner:
 
     def encoding(self, path: PurePosixPath) -> str:
         """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
-        return self.effective.encoding if _is_python(path) else "utf-8"
+        return file_encoding(path, self.effective.encoding)
 
     def encoded(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
         """Encode formatted texts as their files hold them."""

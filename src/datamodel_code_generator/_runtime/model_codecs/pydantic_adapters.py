@@ -27,11 +27,7 @@ def adapter(type_: TypeForm[Any]) -> TypeAdapter[Any]:
 class AdapterCodec(ValidatingCodec[T]):
     """Use Pydantic's own JSON validation, including aliases; a subclass serializes as its backend does."""
 
-    __slots__ = ("type",)
-
-    def __init__(self, type_: TypeForm[Any]) -> None:
-        """Keep the generated type; its TypeAdapter is built on first use and shared through the module cache."""
-        self.type = type_
+    __slots__ = ()
 
     def decode(self, content: bytes) -> T:
         """Validate JSON directly with the acquired model type."""
