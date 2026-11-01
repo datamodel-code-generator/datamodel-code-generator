@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlsplit
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
@@ -1273,33 +1274,23 @@ def _servers(
     if value is None:
         return ()
     entries = _plain(value)
-    if not _is_tuple(entries):
+    return all_or_none(map(_server, entries)) if _is_tuple(entries) else None
+
+
+def _server(entry: object) -> tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]] | None:
+    if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
         return None
-    servers: list[tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]]] = []
-    for entry in entries:
-        if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
-            return None
-        if (variables := _variables(entry.get("variables", {}))) is None:
-            return None
-        servers.append((url, variables))
-    return tuple(servers)
+    return None if (variables := _variables(entry.get("variables", {}))) is None else (url, variables)
 
 
 def _variables(value: object) -> tuple[tuple[str, str, tuple[str, ...]], ...] | None:
-    if not _is_dict(value):
+    return all_or_none(starmap(_variable, value.items())) if _is_dict(value) else None
+
+
+def _variable(name: object, variable: object) -> tuple[str, str, tuple[str, ...]] | None:
+    if not isinstance(name, str) or not _is_dict(variable) or not isinstance(default := variable.get("default"), str):
         return None
-    variables: list[tuple[str, str, tuple[str, ...]]] = []
-    for name, variable in value.items():
-        if (
-            not isinstance(name, str)
-            or not _is_dict(variable)
-            or not isinstance(default := variable.get("default"), str)
-        ):
-            return None
-        if not _strings(enum := variable.get("enum", ())):
-            return None
-        variables.append((name, default, enum))
-    return tuple(variables)
+    return (name, default, enum) if _strings(enum := variable.get("enum", ())) else None
 
 
 def _defaulted(url: str, variables: tuple[tuple[str, str, tuple[str, ...]], ...]) -> str:

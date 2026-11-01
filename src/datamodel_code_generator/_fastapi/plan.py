@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
@@ -107,7 +108,7 @@ from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -139,8 +140,6 @@ SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "digest", "oauth2"
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
-ItemT = TypeVar("ItemT")
-ReadT = TypeVar("ReadT")
 
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 _PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
@@ -1494,12 +1493,6 @@ class Planner:  # noqa: PLR0904
         return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
 
 
-def _all(items: Sequence[ItemT], read: Callable[[ItemT], ReadT | None]) -> tuple[ReadT, ...] | None:
-    """Return what `read` takes from every item, or None when it takes nothing from one."""
-    found = tuple(value for item in items if (value := read(item)) is not None)
-    return found if len(found) == len(items) else None
-
-
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     if (place := api_key_place(declaration)) is not None:
         location, parameter = place
@@ -1526,7 +1519,7 @@ def json_literal(value: FrozenLiteral) -> JSONValue:
         return [json_literal(item) for item in value.items]
     if (
         isinstance(value, LiteralMapping)
-        and (names := _all(value.entries, lambda entry: literal_text(entry[0]))) is not None
+        and (names := all_or_none(literal_text(key) for key, _ in value.entries)) is not None
     ):
         return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
     if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
@@ -1622,8 +1615,11 @@ def _strict(value: TypeView) -> bool:
 def _literal(value: FrozenLiteral | None) -> LiteralScalar | LiteralSequence | None:
     """Return a recorded JSON boolean, number, or string, or a list of them, as a literal."""
     if isinstance(value, LiteralSequence):
-        items = tuple(item for element in value.items if isinstance(item := _literal(element), LiteralScalar))
-        return LiteralSequence("list", items) if len(items) == len(value.items) else None
+        return None if (items := all_or_none(map(_scalar, value.items))) is None else LiteralSequence("list", items)
+    return _scalar(value)
+
+
+def _scalar(value: FrozenLiteral | None) -> LiteralScalar | None:
     return value if isinstance(value, LiteralScalar) and value.kind in _LITERAL_KINDS else None
 
 
