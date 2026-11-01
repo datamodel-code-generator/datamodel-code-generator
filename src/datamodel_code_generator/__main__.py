@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import functools
 import sys
 
 
@@ -239,6 +240,36 @@ def sig_int_handler(_: int, __: Any) -> None:  # pragma: no cover
     sys.exit(Exit.OK)
 
 
+@functools.cache
+def _long_options() -> tuple[str, ...]:
+    """Return every long option the command line parser accepts."""
+    from datamodel_code_generator.arguments import arg_parser  # noqa: PLC0415
+
+    options = {
+        option
+        for action in arg_parser._actions  # noqa: SLF001 - argparse keeps the option table in a private attribute
+        for option in action.option_strings
+        if option.startswith("--")
+    }
+    return tuple(sorted(options))
+
+
+def _resolved_option(option: str) -> str:
+    """Return the long option argparse resolves a spelling to.
+
+    argparse accepts any unambiguous prefix of a long option, so --http-header
+    reaches --http-headers. The redaction has to match what argparse took, not
+    what was typed, or the credential is written out verbatim.
+    """
+    if not option.startswith("--"):
+        return option
+    options = _long_options()
+    if option in options:
+        return option
+    matches = [candidate for candidate in options if candidate.startswith(option)]
+    return matches[0] if len(matches) == 1 else option
+
+
 def _redact_command_args(args: Sequence[str]) -> list[str]:
     redacted: list[str] = []
     redact_values = False
@@ -248,27 +279,22 @@ def _redact_command_args(args: Sequence[str]) -> list[str]:
             redacted.append(redact_url(arg))
             url_value = False
             continue
-        match arg:
-            case "--url":
-                redacted.append(arg)
-                redact_values = False
-                url_value = True
-            case url_option if url_option.startswith("--url="):
-                redacted.append(f"--url={redact_url(url_option.removeprefix('--url='))}")
-                redact_values = False
-            case option if option in SENSITIVE_COMMAND_OPTIONS:
-                redacted.append(option)
-                redact_values = True
-            case option_value if (option := option_value.partition("="))[1] and option[0] in SENSITIVE_COMMAND_OPTIONS:
-                redacted.append(f"{option[0]}={REDACTED_COMMAND_ARGUMENT}")
-                redact_values = False
-            case option if redact_values and option.startswith("-"):
-                redacted.append(option)
-                redact_values = False
-            case _ if redact_values:
-                redacted.append(REDACTED_COMMAND_ARGUMENT)
-            case _:
-                redacted.append(arg)
+        option, separator, value = arg.partition("=")
+        resolved = _resolved_option(option)
+        if resolved == "--url":
+            redacted.append(f"{option}={redact_url(value)}" if separator else arg)
+            redact_values = False
+            url_value = not separator
+        elif resolved in SENSITIVE_COMMAND_OPTIONS:
+            redacted.append(f"{option}={REDACTED_COMMAND_ARGUMENT}" if separator else arg)
+            redact_values = not separator
+        elif redact_values and arg.startswith("-"):
+            redacted.append(arg)
+            redact_values = False
+        elif redact_values:
+            redacted.append(REDACTED_COMMAND_ARGUMENT)
+        else:
+            redacted.append(arg)
     return redacted
 
 
