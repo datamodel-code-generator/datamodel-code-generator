@@ -25,7 +25,7 @@ from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
 from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._option_names import option_flags, split_external_ref_mapping
 from datamodel_code_generator._shared_types import LiteralType
-from datamodel_code_generator.deprecations import DeprecationFormat, deprecation_message
+from datamodel_code_generator.deprecations import DeprecationFormat, cli_deprecations
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     AliasGenerator,
@@ -226,6 +226,11 @@ def _flag(group: _ArgumentGroup, *names: str, help: str, default: bool | None = 
     group.add_argument(*names, action="store_true", default=default, help=help)
 
 
+def _deprecated_flag(group: _ArgumentGroup, name: str) -> None:
+    """Add a deprecated flag, whose help is its message in the deprecation registry."""
+    _flag(group, name, help=f"Deprecated: {cli_deprecations()[name]}")
+
+
 def _toggle(group: _ArgumentGroup, name: str, *, help: str) -> None:  # noqa: A002
     """Add a --name / --no-name flag whose default is unset (None), so that a configuration file can supply it."""
     group.add_argument(name, action=BooleanOptionalAction, default=None, help=help)
@@ -407,11 +412,7 @@ base_options.add_argument(
 # ======================================================================================
 # Customization options for generated models
 # ======================================================================================
-_flag(
-    extra_fields_model_options,
-    "--allow-extra-fields",
-    help=f"Deprecated: {deprecation_message('cli.allow-extra-fields')}",
-)
+_deprecated_flag(extra_fields_model_options, "--allow-extra-fields")
 _toggle(model_options, "--allow-population-by-field-name", help="Allow population by field name")
 model_options.add_argument(
     "--class-name",
@@ -674,7 +675,7 @@ model_options.add_argument(
     choices=_values(DateClassType),
     default=None,
 )
-_flag(model_options, "--parent-scoped-naming", help=f"Deprecated: {deprecation_message('cli.parent-scoped-naming')}")
+_deprecated_flag(model_options, "--parent-scoped-naming")
 model_options.add_argument(
     "--naming-strategy",
     help="Strategy for generating unique model names when duplicates occur. "
@@ -807,11 +808,7 @@ _flag(
     help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
     "values all parts admit, instead of the referenced type, which leaves the added assertions out",
 )
-_flag(
-    typing_options,
-    "--set-default-enum-member",
-    help=f"Deprecated: {deprecation_message('cli.set-default-enum-member')}",
-)
+_deprecated_flag(typing_options, "--set-default-enum-member")
 typing_options.add_argument(
     "--strict-types",
     help="Use strict types",
@@ -1366,7 +1363,7 @@ openapi_options.add_argument(
     nargs="+",
     default=None,
 )
-_flag(openapi_options, "--validation", help=f"Deprecated: {deprecation_message('cli.validation')}")
+_deprecated_flag(openapi_options, "--validation")
 openapi_options.add_argument(
     "--read-only-write-only-model-type",
     help="Model generation for readOnly/writeOnly fields: "

@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
 from datamodel_code_generator._requirements import REQUIREMENTS
-from datamodel_code_generator.deprecations import deprecation_message
+from datamodel_code_generator.deprecations import cli_deprecations
 from datamodel_code_generator.enums import (
     AllExportsScope,
     DataModelType,
@@ -175,6 +175,7 @@ _CATEGORY_TOPIC = {
 }
 _C = OptionCategory
 _G = OptionGroup
+_DEPRECATED_OPTIONS = cli_deprecations()
 
 
 def _words(chunks: tuple[str, ...]) -> list[str]:
@@ -191,11 +192,23 @@ def _opts(
 ) -> dict[str, CLIOptionMeta]:
     """Build the rows of the options in ``names`` that share a category, group and the other metadata.
 
-    A group takes the topic of its category unless ``topic`` is given.
+    A group takes the topic of its category unless ``topic`` is given. An option is deprecated, with its message, when
+    the deprecation registry has an entry for it.
     """
     if group and topic is None:
         topic = _CATEGORY_TOPIC[category]
-    return {name: CLIOptionMeta(name, category, topic, group, **fields) for name in _words(names)}
+    return {
+        name: CLIOptionMeta(
+            name,
+            category,
+            topic,
+            group,
+            deprecated=(message := _DEPRECATED_OPTIONS.get(name)) is not None,
+            deprecated_message=message,
+            **fields,
+        )
+        for name in _words(names)
+    }
 
 
 def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
@@ -279,13 +292,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.MODEL, "--collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--collapse-reuse-models", group=_G.MODEL_REUSE),
     **_opts(_C.MODEL, "--keep-model-order --order-constructor-fields-by"),
-    **_opts(
-        _C.MODEL,
-        "--allow-extra-fields",
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.allow-extra-fields"),
-        implies=_relations("--extra-fields", value="allow"),
-    ),
+    **_opts(_C.MODEL, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     **_opts(
         _C.MODEL,
         "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
@@ -326,8 +333,6 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.MODEL,
         "--parent-scoped-naming",
         group=_G.MODEL_NAMING,
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.parent-scoped-naming"),
         implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
     **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
@@ -350,12 +355,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
         "--empty-enum-field-name",
     ),
-    **_opts(
-        _C.FIELD,
-        "--set-default-enum-member",
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.set-default-enum-member"),
-    ),
+    **_opts(_C.FIELD, "--set-default-enum-member"),
     **_opts(
         _C.FIELD,
         "--aliases --serialization-aliases --default-values --deserialize-default-values",
@@ -479,7 +479,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
     **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
-    **_opts(_C.OPENAPI, "--validation", deprecated=True, deprecated_message=deprecation_message("cli.validation")),
+    **_opts(_C.OPENAPI, "--validation"),
     **_opts(_C.GRAPHQL, "--graphql-no-typename"),
     **_opts(_C.GENERAL, "--check"),
     **_opts(
