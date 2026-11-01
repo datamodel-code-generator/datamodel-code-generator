@@ -18,7 +18,7 @@ from argparse import (
 )
 from operator import attrgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, cast, get_args
+from typing import TYPE_CHECKING, Any, cast, get_args
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
 from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
@@ -43,6 +43,7 @@ from datamodel_code_generator.enums import (
     DataclassArguments,
     DataModelType,
     DefaultValueType,
+    ExtraFields,
     FieldTypeCollisionStrategy,
     HTTPBackend,
     InputFileType,
@@ -68,10 +69,19 @@ from datamodel_code_generator.preset_names import PRESET_NAMES
 if TYPE_CHECKING:
     from argparse import Action, _ArgumentGroup
     from collections.abc import Iterable, Sequence
+    from enum import Enum
 
 DEFAULT_ENCODING = "utf-8"
 
-namespace = Namespace(no_color=False)
+
+def _reset_namespace(target: Namespace) -> None:
+    """Empty ``target`` to the namespace a parse starts from: colors on, every other option unset."""
+    vars(target).clear()
+    target.no_color = False
+
+
+namespace = Namespace()
+_reset_namespace(namespace)
 
 
 def _dataclass_arguments(value: str) -> DataclassArguments:
@@ -206,6 +216,11 @@ target_options = arg_parser.add_argument_group("Target generation options (exper
 target_selection_options = target_options.add_mutually_exclusive_group()
 
 
+def _values(kind: type[Enum]) -> list[Any]:
+    """Return the choices of an option that takes an enum: the values of its members, in their order."""
+    return [member.value for member in kind]
+
+
 def _flag(group: _ArgumentGroup, *names: str, help: str, default: bool | None = None) -> None:  # noqa: A002
     """Add a flag that is off unless given; an unset default (None) lets a configuration file supply it."""
     group.add_argument(*names, action="store_true", default=default, help=help)
@@ -254,7 +269,7 @@ _toggle(
 )
 base_options.add_argument(
     "--http-backend",
-    choices=[backend.value for backend in HTTPBackend],
+    choices=_values(HTTPBackend),
     default=None,
     help=(
         "Select the HTTP client backend. 'auto' (default) selects stable HTTPX when its client module is installed "
@@ -321,7 +336,7 @@ base_options.add_argument(
         "for schema definitions. "
         "Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically."
     ),
-    choices=[i.value for i in InputFileType],
+    choices=_values(InputFileType),
 )
 base_options.add_argument(
     "--external-ref-mapping",
@@ -347,7 +362,7 @@ base_options.add_argument(
 base_options.add_argument(
     "--output-model-type",
     help="Output model type (default: pydantic_v2.BaseModel)",
-    choices=[i.value for i in DataModelType],
+    choices=_values(DataModelType),
 )
 base_options.add_argument(
     "--preset",
@@ -385,7 +400,7 @@ base_options.add_argument(
     "'reuse-foreign': Reuse types from different families (Enum, etc.), regenerate same-family. "
     "'reuse-all': Reuse all referenced types via import. "
     "If not specified, defaults to regenerate-all behavior.",
-    choices=[s.value for s in InputModelRefStrategy],
+    choices=_values(InputModelRefStrategy),
     default=None,
 )
 
@@ -435,7 +450,7 @@ model_options.add_argument(
     "'all': Apply to all classes including enums (default). "
     "'models': Apply only to model classes. "
     "'enums': Apply only to enum classes.",
-    choices=[s.value for s in ClassNameAffixScope],
+    choices=_values(ClassNameAffixScope),
     default=None,
 )
 _toggle(
@@ -448,7 +463,7 @@ model_options.add_argument(
     help="Strategy for naming when collapsing root models that reference other models. "
     "'child': Keep inner model's name (default). 'parent': Use wrapper's name for inner model. "
     "Requires --collapse-root-models to be set.",
-    choices=[s.value for s in CollapseRootModelsNameStrategy],
+    choices=_values(CollapseRootModelsNameStrategy),
     default=None,
 )
 _flag(
@@ -482,7 +497,7 @@ _flag(model_options, "--enable-generated-header-marker", help="Enable @generated
 extra_fields_model_options.add_argument(
     "--extra-fields",
     help="Set the generated models to allow, forbid, or ignore extra fields.",
-    choices=["allow", "ignore", "forbid"],
+    choices=_values(ExtraFields),
     default=None,
 )
 _flag(model_options, "--keep-model-order", help="Keep generated models' order")
@@ -500,7 +515,7 @@ model_options.add_argument(
     "field keeps its place among the fields without a default, as before: it is keyword-only after an inherited "
     "default, a redeclaring field inherits its None default, and the fields are reordered only where a required "
     "field would then follow a default.",
-    choices=[constructor_field_order.value for constructor_field_order in ConstructorFieldOrder],
+    choices=_values(ConstructorFieldOrder),
     nargs="+",
     default=None,
 )
@@ -551,7 +566,7 @@ model_options.add_argument(
     "--reuse-scope",
     help="Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). "
     "Only effective when --reuse-model is set.",
-    choices=[s.value for s in ReuseScope],
+    choices=_values(ReuseScope),
     default=None,
 )
 model_options.add_argument(
@@ -563,7 +578,7 @@ model_options.add_argument(
 model_options.add_argument(
     "--target-python-version",
     help="target python version",
-    choices=[v.value for v in PythonVersion],
+    choices=_values(PythonVersion),
 )
 model_options.add_argument(
     "--target-pydantic-version",
@@ -577,7 +592,7 @@ model_options.add_argument(
     "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; "
     "a number schema keeps multipleOf on a timedelta). "
     "Constructs without an older form are written for every target, with a warning naming the Pydantic they need.",
-    choices=[v.value for v in TargetPydanticVersion],
+    choices=_values(TargetPydanticVersion),
     default=None,
 )
 model_options.add_argument(
@@ -585,7 +600,7 @@ model_options.add_argument(
     help="Pydantic v2 BaseModel alias generator to use in ConfigDict. "
     "Matching generated aliases are omitted from individual Field() calls, "
     "except with --target-pydantic-version 2, which writes every alias.",
-    choices=[a.value for a in AliasGenerator],
+    choices=_values(AliasGenerator),
     default=None,
 )
 _flag(
@@ -649,14 +664,14 @@ model_options.add_argument(
     "--output-datetime-class",
     help="Choose Datetime class between AwareDatetime, NaiveDatetime, PastDatetime, FutureDatetime or datetime. "
     "Each output model has its default mapping (for example pydantic: datetime, dataclass: str, ...)",
-    choices=[i.value for i in DatetimeClassType],
+    choices=_values(DatetimeClassType),
     default=None,
 )
 model_options.add_argument(
     "--output-date-class",
     help="Choose Date class between PastDate, FutureDate or date. (Pydantic v2 only) "
     "Each output model has its default mapping.",
-    choices=[i.value for i in DateClassType],
+    choices=_values(DateClassType),
     default=None,
 )
 _flag(model_options, "--parent-scoped-naming", help=f"Deprecated: {deprecation_message('cli.parent-scoped-naming')}")
@@ -671,7 +686,7 @@ model_options.add_argument(
     "(CompanyAddress, CompanyEmployeeAddress). More readable for deep nesting. "
     "'primary-first': Keep clean names for primary definitions (in /definitions/ or "
     "/components/schemas/), only add suffix to inline/nested duplicates.",
-    choices=[s.value for s in NamingStrategy],
+    choices=_values(NamingStrategy),
     default=None,
 )
 model_options.add_argument(
@@ -688,7 +703,7 @@ model_options.add_argument(
     help="Generate __all__ in __init__.py with re-exports. "
     "'children': export from direct child modules only. "
     "'recursive': export from all descendant modules.",
-    choices=[s.value for s in AllExportsScope],
+    choices=_values(AllExportsScope),
     default=None,
 )
 model_options.add_argument(
@@ -697,13 +712,13 @@ model_options.add_argument(
     "'error': raise an error (default). "
     "'minimal-prefix': add module prefix only to colliding names. "
     "'full-prefix': add full module path prefix to colliding names.",
-    choices=[s.value for s in AllExportsCollisionStrategy],
+    choices=_values(AllExportsCollisionStrategy),
     default=None,
 )
 model_options.add_argument(
     "--module-split-mode",
     help="Split generated models into separate files. 'single': generate one file per model class.",
-    choices=[m.value for m in ModuleSplitMode],
+    choices=_values(ModuleSplitMode),
     default=None,
 )
 
@@ -729,7 +744,7 @@ typing_options.add_argument(
     "all: all enum field type are Literal. "
     "one: field type is Literal when an enum has only one possible value. "
     "none: always use Enum class (never convert to Literal)",
-    choices=[lt.value for lt in LiteralType],
+    choices=_values(LiteralType),
     default=None,
 )
 typing_options.add_argument(
@@ -800,7 +815,7 @@ _flag(
 typing_options.add_argument(
     "--strict-types",
     help="Use strict types",
-    choices=[t.value for t in StrictTypes],
+    choices=_values(StrictTypes),
     nargs="+",
 )
 _toggle(
@@ -937,7 +952,7 @@ typing_options.add_argument(
     "'constraints': merge only constraints (minItems, maxItems, pattern, etc.) from parent (default). "
     "'all': merge constraints plus annotations (default, examples) from parent. "
     "'none': do not merge any fields from parent properties.",
-    choices=[m.value for m in AllOfMergeMode],
+    choices=_values(AllOfMergeMode),
     default=None,
 )
 typing_options.add_argument(
@@ -945,7 +960,7 @@ typing_options.add_argument(
     help="How to map allOf references to class hierarchies. "
     "'if-no-conflict': only create subclasses when parent class has no conflicting property definition. "
     "'always': always create subclasses. ",
-    choices=[m.value for m in AllOfClassHierarchy],
+    choices=_values(AllOfClassHierarchy),
     default=None,
 )
 _flag(typing_options, "--use-type-alias", help="Use TypeAlias instead of root models (experimental)")
@@ -1093,7 +1108,7 @@ _flag(field_options, "--use-single-line-docstring", help="Use single-line docstr
 field_options.add_argument(
     "--union-mode",
     help="Union mode for only pydantic v2 field",
-    choices=[u.value for u in UnionMode],
+    choices=_values(UnionMode),
     default=None,
 )
 _flag(
@@ -1129,7 +1144,7 @@ field_options.add_argument(
     help="Strategy for handling field name and type name collisions (Pydantic v2 only). "
     "'rename-field': rename field with suffix and add alias (default). "
     "'rename-type': rename type class with suffix to preserve field name.",
-    choices=[s.value for s in FieldTypeCollisionStrategy],
+    choices=_values(FieldTypeCollisionStrategy),
     default=None,
 )
 
@@ -1163,7 +1178,7 @@ template_options.add_argument(
 template_options.add_argument(
     "--deserialize-default-values",
     help="Deserialize serialized schema defaults for selected generated types. Supported values: decimal, enum.",
-    choices=[default_value_type.value for default_value_type in DefaultValueType],
+    choices=_values(DefaultValueType),
     nargs="+",
     default=None,
 )
@@ -1190,7 +1205,7 @@ template_options.add_argument(
 template_options.add_argument(
     "--custom-file-header-mode",
     help="How to combine a custom file header with the generated header (default: replace)",
-    choices=[mode.value for mode in CustomFileHeaderMode],
+    choices=_values(CustomFileHeaderMode),
     default=None,
 )
 template_options.add_argument(
@@ -1236,7 +1251,7 @@ template_options.add_argument(
     "--schema-validator-type",
     help="Select the schema-derived runtime validator backend. "
     "'pydantic-v2' generates Pydantic v2 model validators (experimental).",
-    choices=[i.value for i in SchemaValidatorType],
+    choices=_values(SchemaValidatorType),
     default=None,
 )
 template_options.add_argument(
@@ -1290,7 +1305,7 @@ base_options.add_argument(
     "Black/isort remain required today; declare [black,isort] extras for their later optional installation. "
     "Review custom-template output with builtin. "
     "Details: https://datamodel-code-generator.koxudaxi.dev/formatter-behavior/",
-    choices=[f.value for f in Formatter],
+    choices=_values(Formatter),
     nargs="+",
     default=None,
 )
@@ -1312,7 +1327,7 @@ template_options.add_argument(
 openapi_options.add_argument(
     "--openapi-scopes",
     help="Scopes of OpenAPI model generation (default: schemas)",
-    choices=[o.value for o in OpenAPIScope],
+    choices=_values(OpenAPIScope),
     nargs="+",
     default=None,
 )
@@ -1347,7 +1362,7 @@ openapi_options.add_argument(
     "with patternProperties or propertyNames becomes the root model of a map. ref-components: a "
     "component written as a $ref to a recursive schema with sibling keywords, which gets the root model; without it "
     "such a component gets no model, and a reference to it is typed by the schema its $ref names",
-    choices=[as_definitions.value for as_definitions in OpenAPIAsDefinitions],
+    choices=_values(OpenAPIAsDefinitions),
     nargs="+",
     default=None,
 )
@@ -1357,7 +1372,7 @@ openapi_options.add_argument(
     help="Model generation for readOnly/writeOnly fields: "
     "'request-response' = Request/Response models only (no base model), "
     "'all' = Base + Request + Response models.",
-    choices=[e.value for e in ReadOnlyWriteOnlyModelType],
+    choices=_values(ReadOnlyWriteOnlyModelType),
     default=None,
 )
 _flag(
@@ -1391,7 +1406,7 @@ base_options.add_argument(
     help="Schema version validation mode. "
     "'lenient': accept all features regardless of version (default). "
     "'strict': warn on features outside declared/detected version.",
-    choices=[m.value for m in VersionMode],
+    choices=_values(VersionMode),
     default=None,
 )
 
@@ -1565,20 +1580,20 @@ _flag(general_options, "--version", help="show version", default=False)
 # ======================================================================================
 target_selection_options.add_argument(
     "--generate-server",
-    choices=[server.value for server in ServerType],
+    choices=_values(ServerType),
     default=None,
     help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
 )
 _package_options("server")
 target_options.add_argument(
     "--server-layout",
-    choices=[layout.value for layout in ServerLayout],
+    choices=_values(ServerLayout),
     default=None,
     help="Write one router module per tag (default) or a single routes module (experimental).",
 )
 target_options.add_argument(
     "--server-handler-mode",
-    choices=[mode.value for mode in ServerHandlerMode],
+    choices=_values(ServerHandlerMode),
     default=None,
     help="Make service methods plain functions (default) or coroutine functions (experimental).",
 )
@@ -1596,7 +1611,7 @@ _toggle(
 )
 target_options.add_argument(
     "--server-body-mode",
-    choices=[mode.value for mode in ServerBodyMode],
+    choices=_values(ServerBodyMode),
     default=None,
     help="Pass request bodies as validated models (default) or as the raw Request (experimental).",
 )
@@ -1635,20 +1650,20 @@ target_options.add_argument(
 )
 target_selection_options.add_argument(
     "--generate-client",
-    choices=[client.value for client in ClientType],
+    choices=_values(ClientType),
     default=None,
     help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
 )
 _package_options("client")
 target_options.add_argument(
     "--client-signature-style",
-    choices=[style.value for style in ClientSignatureStyle],
+    choices=_values(ClientSignatureStyle),
     default=None,
     help="Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental).",
 )
 target_options.add_argument(
     "--client-body-arguments",
-    choices=[arguments.value for arguments in ClientBodyArguments],
+    choices=_values(ClientBodyArguments),
     default=None,
     help="Take request bodies as one body argument (default) or also as field arguments (experimental).",
 )

@@ -31,10 +31,9 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
 
 def run_agent_skill_installer(args: list[str]) -> int:
     """Parse only the normal CLI arguments needed for the installer fast path."""
-    from datamodel_code_generator.arguments import arg_parser, namespace  # noqa: PLC0415
+    from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace  # noqa: PLC0415
 
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
     arg_parser.parse_args(args, namespace=namespace)
     return install_agent_skill_command(
         namespace.install_skill,

@@ -64,10 +64,9 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg.startswith(("--generate-prompt", "--output-format-json-schema=")) or arg == "--output-format-json-schema"
     for arg in sys.argv[1:]
 ):  # pragma: no cover
-    from datamodel_code_generator.arguments import arg_parser, namespace
+    from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
     arg_parser.parse_args(namespace=namespace)
     schema_output_name = namespace.output_format_json_schema
     if schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
@@ -145,7 +144,7 @@ from datamodel_code_generator._project_config import (
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
-from datamodel_code_generator.arguments import arg_parser, namespace
+from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES
 
@@ -2478,8 +2477,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
     """Execute datamodel code generation from command-line arguments."""
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
 
     if "_ARGCOMPLETE" in os.environ:  # pragma: no cover
         import argcomplete  # noqa: PLC0415
