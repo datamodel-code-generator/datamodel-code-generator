@@ -114,6 +114,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     Import,
     Imports,
+    _iter_import_bindings,
 )
 from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
 from datamodel_code_generator.model.base import (
@@ -183,7 +184,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _forward_enum_member_literals,
     _has_root_field_constraints,
     _hidden_type_names,
-    _iter_import_bindings,
     _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
