@@ -1356,7 +1356,9 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         source = input_text or input_
         assert not isinstance(source, Mapping)
 
-    defer_formatting = config.output is not None and not config.output.suffix
+    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
+
+    defer_formatting = config.output is not None and names_directory(config.output)
 
     target_datetime_class = config.output_datetime_class
     if target_datetime_class is None:
@@ -1574,9 +1576,11 @@ def _write_results_to_output(  # noqa: PLR0913
     has_custom_file_header: bool,
 ) -> None:
     """Write one file or a sorted collection of generated modules to disk."""
+    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
+
     if isinstance(results, str):
         _ensure_file_output_path(output, _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR)
-    elif output.suffix:
+    elif not names_directory(output):
         raise Error(_MODULAR_OUTPUT_FILE_ERROR)
     if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
         from itertools import starmap  # noqa: PLC0415
@@ -1989,7 +1993,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     if not isinstance(input_, Path) or not input_.is_dir():
         return config
 
-    from datamodel_code_generator._paths import concrete  # noqa: PLC0415
+    from datamodel_code_generator._paths import concrete, names_directory  # noqa: PLC0415
     from datamodel_code_generator._source import DirectoryInputFilter  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -1997,7 +2001,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     input_root = input_.resolve()
     files: set[Path] = set()
     output_directory = None
-    for target, is_directory in ((output, output is not None and not output.suffix), (metadata, False)):
+    for target, is_directory in ((output, output is not None and names_directory(output)), (metadata, False)):
         if target is None:
             continue
         paths = (

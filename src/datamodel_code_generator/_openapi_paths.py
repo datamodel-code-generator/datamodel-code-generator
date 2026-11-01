@@ -3,27 +3,31 @@
 ``PATH_ITEM_METHODS`` is the one table of the fields of a path item that each hold the operation of one HTTP method.
 A reader that takes another set keeps it as a named view here: ``OPERATION_METHODS``, the fields before OpenAPI 3.2
 added ``QUERY_METHOD``, which the paths scope, the API walk of an earlier document and the recommender read (the public
-``parser.openapi.OPERATION_NAMES`` lists them in this order). ``path_selected`` is the test of
-``--openapi-include-paths`` that generation and the recommender apply to a key of ``paths``. ``effective_parameters``,
-``inherited_security`` and ``effective_operation`` give an operation as the paths scope's walk and the API walk hand it
-on: with the parameters of its path item it does not override and the document's security requirement unless it
-declares its own. This module imports only the standard library, so every layer may use it.
+``parser.openapi.OPERATION_NAMES`` lists them in this order). ``holds_path_item`` tells which key of ``paths`` holds a
+path item; ``path_selected`` is the test of ``--openapi-include-paths`` that generation and the recommender apply to
+such a key. ``effective_parameters``, ``inherited_security`` and ``effective_operation`` give an operation as the paths
+scope's walk and the API walk hand it on: with the parameters of its path item it does not override and the document's
+security requirement unless it declares its own. This module imports only the standard library, so every layer may use
+it.
 """
 
 from __future__ import annotations
 
 from fnmatch import fnmatch
-from typing import TYPE_CHECKING, Any, Final, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 
 __all__ = [
     "OPERATION_METHODS",
+    "PATHS_PARAMETERS",
     "PATH_ITEM_METHODS",
     "QUERY_METHOD",
+    "PathKeyRow",
     "effective_operation",
     "effective_parameters",
+    "holds_path_item",
     "inherited_security",
     "path_selected",
     "rooted_path",
@@ -37,6 +41,23 @@ QUERY_METHOD: Final = "query"
 """The field of a path item that holds the operation of the QUERY method, added by OpenAPI 3.2."""
 PATH_ITEM_METHODS: Final = (*OPERATION_METHODS, QUERY_METHOD)
 """Every field of a path item that holds the operation of one HTTP method."""
+PATHS_PARAMETERS: Final = "parameters"
+"""The key of ``paths`` that holds the parameters of every path; it is not a path item."""
+_EXTENSION_PREFIX: Final = "x-"
+PathKeyRow: TypeAlias = Literal["openapi", "legacy-object-extension-paths"]
+
+
+def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> bool:
+    """Return whether a key of ``paths`` holds a path item: not ``PATHS_PARAMETERS`` and not a specification extension.
+
+    A path item is under a path template. OpenAPI reads a key that begins with ``x-`` as an extension of ``paths``, and
+    ``PATHS_PARAMETERS`` holds the parameters of every path, so row ``openapi`` (the API walk) skips both. Row
+    ``legacy-object-extension-paths`` (the paths scope's walk) reads such a key that holds an object as a path, as it
+    always has, and skips the rest, which no path item can be.
+    """
+    return not (key == PATHS_PARAMETERS or key.startswith(_EXTENSION_PREFIX)) or (
+        row == "legacy-object-extension-paths" and isinstance(value, dict)
+    )
 
 
 def rooted_path(path: str) -> str:

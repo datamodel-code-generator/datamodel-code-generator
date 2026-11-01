@@ -1,0 +1,72 @@
+Child
+  note: property /properties/child/allOf/1/properties/note {"type": "string"}
+    .: /properties/child/allOf/1/properties/note {"type": "string"}
+  code: required-only None
+    .: None
+Model
+  __pydantic_extra__: additional /additionalProperties {"type": "number"}
+    .: /additionalProperties {"type": "number"}
+    /0: /additionalProperties {"type": "number"}
+    /key: /propertyNames {"maxLength": 9}
+  name: property /properties/name {"type": "string"}
+    .: /properties/name {"type": "string"}
+  tags: property /properties/tags {"items": {"type": "string"}, "type": "array"}
+    .: /properties/tags {"items": {"type": "string"}, "type": "array"}
+    /0: /properties/tags {"items": {"type": "string"}, "type": "array"}
+    /0/0: /properties/tags/items {"type": "string"}
+  pair: property /properties/pair {"items": false, "prefixItems": [{"type": "string"}, {"type": "integer"}], "type": "array"}
+    .: /properties/pair {"items": false, "prefixItems": [{"type": "string"}, {"type": "integer"}], "type": "array"}
+    /0: /properties/pair {"items": false, "prefixItems": [{"type": "string"}, {"type": "integer"}], "type": "array"}
+    /0/0: /properties/pair/prefixItems/0 {"type": "string"}
+    /0/1: /properties/pair/prefixItems/1 {"type": "integer"}
+  counts: property /properties/counts {"additionalProperties": {"type": "integer"}, "type": "object"}
+    .: /properties/counts {"additionalProperties": {"type": "integer"}, "type": "object"}
+    /0: /properties/counts/additionalProperties {"type": "integer"}
+  flags: property /properties/flags {"patternProperties": {"^x-": {"type": "boolean"}}, "type": "object"}
+    .: /properties/flags {"patternProperties": {"^x-": {"type": "boolean"}}, "type": "object"}
+    /0: /properties/flags {"patternProperties": {"^x-": {"type": "boolean"}}, "type": "object"}
+    /0/0: /properties/flags/patternProperties/^x- {"type": "boolean"}
+    /0/key: /properties/flags {"patternProperties": {"^x-": {"type": "boolean"}}, "type": "object"}
+  choice: property /properties/choice {"anyOf": [{"type": "string"}, {"type": "integer"}]}
+    .: /properties/choice {"anyOf": [{"type": "string"}, {"type": "integer"}]}
+    /0: /properties/choice/anyOf/0 {"type": "string"}
+    /1: /properties/choice/anyOf/1 {"type": "integer"}
+  maybe: property /properties/maybe {"oneOf": [{"$ref": "#/$defs/Base"}, {"type": "null"}]}
+    .: /properties/maybe {"oneOf": [{"$ref": "#/$defs/Base"}, {"type": "null"}]}
+    /0: /properties/maybe/oneOf/0 {"$ref": "#/$defs/Base"}
+    /1: /properties/maybe/oneOf/1 {"type": "null"}
+  either: property /properties/either {"type": ["string", "integer"]}
+    .: /properties/either {"type": ["string", "integer"]}
+    /0: /properties/either {"type": ["string", "integer"]}
+    /1: /properties/either {"type": ["string", "integer"]}
+  fixed: property /properties/fixed {"const": "x"}
+    .: /properties/fixed {"const": "x"}
+  keyed: property /properties/keyed {"additionalProperties": {"type": "string"}, "propertyNames": {"pattern": "^a"}, "type": "object"}
+    .: /properties/keyed {"additionalProperties": {"type": "string"}, "propertyNames": {"pattern": "^a"}, "type": "object"}
+    /0: /properties/keyed/additionalProperties {"type": "string"}
+    /key: /properties/keyed/propertyNames {"pattern": "^a"}
+  flag: property /properties/flag true
+    .: None
+  base: property /properties/base {"$ref": "#/$defs/Base"}
+    .: /properties/base {"$ref": "#/$defs/Base"}
+  ids: property /properties/ids {"$ref": "#/$defs/Ids"}
+    .: /properties/ids {"$ref": "#/$defs/Ids"}
+  labels: property /properties/labels {"$ref": "#/$defs/Labels"}
+    .: /properties/labels {"$ref": "#/$defs/Labels"}
+  child: property /properties/child {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"note": {"type": "string"}}, "required": ["code"]}]}
+    .: /properties/child {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"note": {"type": "string"}}, "required": ["code"]}]}
+Base
+  id: property /$defs/Base/properties/id {"type": "integer"}
+    .: /$defs/Base/properties/id {"type": "integer"}
+Ids
+  field_: root /$defs/Ids {"items": {"type": "integer"}, "type": "array"}
+    .: /$defs/Ids {"items": {"type": "integer"}, "type": "array"}
+    /0: /$defs/Ids {"items": {"type": "integer"}, "type": "array"}
+    /0/0: /$defs/Ids/items {"type": "integer"}
+Labels
+  field_: root /$defs/Labels {"additionalProperties": {"type": "string"}, "type": "object"}
+    .: /$defs/Labels {"additionalProperties": {"type": "string"}, "type": "object"}
+    /0: /$defs/Labels/additionalProperties {"type": "string"}
+Merged
+  id: property /$defs/Merged/allOf/1/properties/id {"maximum": 5}
+    .: /$defs/Merged/allOf/1/properties/id {"maximum": 5}

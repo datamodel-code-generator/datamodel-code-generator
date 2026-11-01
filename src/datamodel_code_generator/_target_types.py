@@ -1,4 +1,4 @@
-"""What the client and server targets read from a model type's frozen view: its None (H23), its kind (T-kind).
+"""What the client and server targets read from a model type's frozen view: its None, its kind.
 
 The binder writes into each view the None the model renders (``model/_decisions/nullability.py``), as a `NoneType`
 member; these pure functions are the one reading of it, so no target decides by its own walk whether a type takes
@@ -12,7 +12,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._container_kinds import CONTAINER_CLASSES
+from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -75,11 +75,7 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
     (None, "bool"): "boolean",
     (None, "float"): "number",
     (None, "int"): "integer",
-    (None, "dict"): None,
-    (None, "frozenset"): None,
-    (None, "list"): None,
-    (None, "set"): None,
-    (None, "tuple"): None,
+    **dict.fromkeys(((None, name) for name in BUILTIN_CONTAINERS), None),
     **CONSTRAINED_SCALARS,
 }
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})

@@ -20,7 +20,7 @@ _SECRETS: Final = ("access-", "refresh-", "se:cr et", "upload-control")
 
 
 def failure_line(error: BaseException) -> str:
-    """Describe a failure by its safe fields, naming any token or secret its representations reveal."""
+    """Describe a failure by its safe fields and the exception it chains, naming any token or secret it reveals."""
     parts = [type(error).__name__]
     for name in _FIELDS:
         value = getattr(error, name, None)
@@ -28,6 +28,8 @@ def failure_line(error: BaseException) -> str:
             parts.append(f"{name}={getattr(value, 'value', value)}")
     if (cause := getattr(error, "cause", None)) is not None:
         parts.append(f"cause={type(cause).__name__}")
+    if (chained := error.__cause__) is not None:
+        parts.append(f"__cause__={type(chained).__name__}")
     text = f"{error!r} {error}"
     if leaked := [secret for secret in _SECRETS if secret in text]:
         parts.append(f"leaked={leaked}")

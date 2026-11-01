@@ -23,20 +23,22 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReferenceExpressionHost,
+    _generic_base_class_module,
+    register_reference_import,
+    set_reference_expressions,
+)
 from datamodel_code_generator.parser._passes._shared import (
     GraphBuilderHost,
     ModuleScopeView,
-    ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
     _context_models,
-    _generic_base_class_module,
     _get_model_module_name,
     _named_data_types,
     module_members,
     names_left_by_replaced_roots,
-    register_reference_import,
-    set_reference_expressions,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts

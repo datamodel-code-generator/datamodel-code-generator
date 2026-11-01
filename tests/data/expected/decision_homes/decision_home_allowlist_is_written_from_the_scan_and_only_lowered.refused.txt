@@ -1,3 +1,0 @@
-('other.py', 'Other.method', 'sample.null-test')
-('other.py', 'subscripts', 'sample.hand-subscript')
-unchanged: True

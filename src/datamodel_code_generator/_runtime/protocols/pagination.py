@@ -7,10 +7,8 @@ read, decoded, and closed inside its own child call, so abandoning a pager holds
 from __future__ import annotations
 
 import re
-import threading
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
-from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
@@ -20,7 +18,7 @@ from ..client.responses import ResponseInfo
 from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, PaginationOptions, layered, new_session
+from .options import HelperLimits, PaginationOptions, StepLock, layered, new_session
 from .records import (
     AsyncSteps,
     BodySelector,
@@ -42,7 +40,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
     from types import TracebackType
 
-    from ..client.errors import ConfigurationError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
@@ -89,6 +86,11 @@ _REFERENCE: Final = re.compile(
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
 
 
+def _end_digests(values: tuple[JSONValue, ...]) -> frozenset[bytes]:
+    """Return the canonical JSON of each value that ends a traversal, as a cursor or next URL plan keeps it."""
+    return frozenset(canonical_json(value) for value in values)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CursorPlan:
@@ -109,7 +111,7 @@ class CursorPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
@@ -152,7 +154,7 @@ class NextUrlPlan:
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
-        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+        object.__setattr__(self, "ends", _end_digests(self.end_values))
 
 
 @final
@@ -686,10 +688,6 @@ class _Walk(Generic[T, P]):
             reason=kind, limit=limit, progress=self.progress(), helper_id=plan.helper_id, operation=plan.operation
         )
 
-    def state_error(self, action: str, state: str) -> ConfigurationError:
-        """Return the refusal of an action the pager's state forbids."""
-        return configuration_error(self.plan.helper_id, (action, state), "invalid_state")
-
     def ready(self) -> OperationSession | None:
         """Return the session the next page is fetched in, or None when no page remains.
 
@@ -1013,23 +1011,19 @@ def _restored(
     return walk
 
 
-class _State(Enum):
-    READY = "ready"
-    FAILED = "failed"
-    CLOSED = "closed"
-
-
-class _Traversal(Generic[T, P]):
+class _Traversal(StepLock, Generic[T, P]):
     """What the synchronous and asyncio pagers share: their state, mode, buffered page, and walk."""
 
-    __slots__ = ("_items", "_lock", "_mode", "_position", "_state", "_walk")
+    __slots__ = ("_failed", "_items", "_mode", "_position", "_walk")
+
+    _busy = "fetching"
 
     def __init__(self, walk: _Walk[T, P]) -> None:
         """Keep the walk; nothing is sent until the first page is requested."""
+        super().__init__(walk.plan.helper_id)
         self._walk = walk
-        self._lock = threading.Lock()
         self._mode: Literal["items", "pages"] | None = None
-        self._state = _State.READY
+        self._failed = False
         self._items: tuple[T, ...] = ()
         self._position = 0
 
@@ -1038,24 +1032,24 @@ class _Traversal(Generic[T, P]):
         """Return the pages fetched, the items delivered, and the session's sends so far."""
         return self._walk.progress()
 
-    def _enter(self, mode: Literal["items", "pages"], action: str) -> None:
+    def _refused(self) -> str | None:
+        """Return the state that refuses every step of the pager: closed, failed, or None."""
+        return "closed" if self._closed else "failed" if self._failed else None
+
+    def _step(self, mode: Literal["items", "pages"], action: str) -> None:
         """Take the pager for one step in a mode, fixing the mode on first use.
 
         A concurrent step, a closed or failed pager, and then a step in the other mode are refused, in that order.
         """
-        if not self._lock.acquire(blocking=False):
-            raise self._walk.state_error(action, "fetching")
-        if (state := self._state) is not _State.READY:
-            self._lock.release()
-            raise self._walk.state_error(action, state.value)
+        self._enter(action)
         if (current := self._mode) is not None and current != mode:
             self._lock.release()
-            raise self._walk.state_error(action, current)
+            raise self._state_error(action, current)
         self._mode = mode
 
     def _select(self, mode: Literal["items", "pages"], action: str) -> None:
         """Fix the pager's mode without stepping it."""
-        self._enter(mode, action)
+        self._step(mode, action)
         self._lock.release()
 
     def _ready(self) -> OperationSession | None:
@@ -1063,14 +1057,14 @@ class _Traversal(Generic[T, P]):
         try:
             return self._walk.ready()
         except (SessionLimitError, ProtocolDataError):
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     def _take(self) -> T:
         """Return the next buffered item, refusing it once the delivered items reached the item limit."""
         walk = self._walk
         if (limit := walk.limits.max_items) is not None and walk.delivered >= limit:
-            self._state = _State.FAILED
+            self._failed = True
             raise walk.limit(limit, "items")
         walk.delivered += 1
         self._position += 1
@@ -1088,17 +1082,11 @@ class _Traversal(Generic[T, P]):
         """
         action = "checkpoint"
         if not self._lock.acquire(blocking=False):
-            raise self._walk.state_error(action, "fetching")
+            raise self._state_error(action, self._busy)
         try:
             return self._walk.checkpoint(len(self._items) - self._position)
         finally:
             self._lock.release()
-
-    def _close(self, action: str) -> None:
-        if not self._lock.acquire(blocking=False):
-            raise self._walk.state_error(action, "fetching")
-        self._state = _State.CLOSED
-        self._lock.release()
 
 
 @final
@@ -1123,7 +1111,7 @@ class Pager(_Traversal[T, P]):
 
     def __next__(self) -> T:
         """Return the next item, fetching the next page once the current one is consumed."""
-        self._enter("items", "next")
+        self._step("items", "next")
         try:
             while self._position >= len(self._items):
                 if (session := self._ready()) is None:
@@ -1139,7 +1127,7 @@ class Pager(_Traversal[T, P]):
         return Steps(self._page)
 
     def _page(self) -> Page[T, P]:
-        self._enter("pages", "next")
+        self._step("pages", "next")
         try:
             if (session := self._ready()) is None:
                 raise StopIteration
@@ -1154,7 +1142,7 @@ class Pager(_Traversal[T, P]):
         try:
             return walk.record(*_fetch(self._core, walk, session))
         except BaseException:
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     def close(self) -> None:
@@ -1194,7 +1182,7 @@ class AsyncPager(_Traversal[T, P]):
 
     async def __anext__(self) -> T:
         """Return the next item, fetching the next page once the current one is consumed."""
-        self._enter("items", "anext")
+        self._step("items", "anext")
         try:
             while self._position >= len(self._items):
                 if (session := self._ready()) is None:
@@ -1210,7 +1198,7 @@ class AsyncPager(_Traversal[T, P]):
         return AsyncSteps(self._page)
 
     async def _page(self) -> Page[T, P]:
-        self._enter("pages", "anext")
+        self._step("pages", "anext")
         try:
             if (session := self._ready()) is None:
                 raise StopAsyncIteration
@@ -1225,7 +1213,7 @@ class AsyncPager(_Traversal[T, P]):
         try:
             return walk.record(*await _afetch(self._core, walk, session))
         except BaseException:
-            self._state = _State.FAILED
+            self._failed = True
             raise
 
     async def aclose(self) -> None:

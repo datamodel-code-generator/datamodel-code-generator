@@ -56,6 +56,7 @@ from datamodel_code_generator._constraint_applicability import (
     resplit_overridden_constraints,  # noqa: F401  # Preserve the established parser.base export.
     untaken_minimums,  # noqa: F401  # Preserve the established parser.base export.
 )
+from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
@@ -66,7 +67,9 @@ from datamodel_code_generator._module_paths import (
     expanded_path,
     is_below,
     is_package_init,
+    join_module,
     normalized_path,
+    relative,
     written_names,
 )
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
@@ -113,6 +116,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     Import,
     Imports,
+    _iter_import_bindings,
 )
 from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
 from datamodel_code_generator.model.base import (
@@ -164,6 +168,7 @@ from datamodel_code_generator.parser._passes import _shared, _state, settle, str
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
+from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
@@ -182,14 +187,11 @@ from datamodel_code_generator.parser._passes._shared import (
     _forward_enum_member_literals,
     _has_root_field_constraints,
     _hidden_type_names,
-    _iter_import_bindings,
-    _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
     _string_or_identifier_pattern,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
-    alias_shadowed_imports,
     apply_inherited_field_default,
     enum_discriminator_literal,
     enum_discriminator_members,
@@ -198,7 +200,6 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
     register_runtime_expression,
-    relative,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -938,9 +939,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
-        self.typed_nullable_map_reference_ids: set[int] = set()
+        self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[int] = set()
-        self._site_model_reference_ids: set[int] = set()
+        self._site_model_keys: set[ModelKey] = set()
         self.typed_map_values_may_move_models = False
         self.model_placement: dict[ModulePath, frozenset[str]] = {}
         self.reuse_scope: ReuseScope | None = config.reuse_scope
@@ -1463,7 +1464,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         root_data_type: DataType,
         models_set: set[DataModel],
     ) -> Reference | None:
-        if not (root_reference := root_data_type.reference) or root_data_type.is_dict or root_data_type.is_list:
+        if not (root_reference := root_data_type.reference) or root_data_type in CONTAINERS:
             return None
         if root_reference.source not in models_set or (
             self.config.use_site_models_for_constrained_refs and _has_root_field_constraints(model.fields[0])
@@ -1796,7 +1797,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 left, right = relative(
                     original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
                 )
-                from_ = _join_module(left, right)
+                from_ = join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"

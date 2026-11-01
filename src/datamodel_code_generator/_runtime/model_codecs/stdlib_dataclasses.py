@@ -10,12 +10,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from .media import JSONKind, json_bytes, json_value, plain
+from .media import JSONKind, json_bytes, json_value
+from .shared import ModelCodec
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -93,7 +94,7 @@ def _kind(value: object) -> JSONKind:
     return kind
 
 
-class DataclassCodec(Generic[T]):
+class DataclassCodec(ModelCodec[T]):
     """Use static names and discriminator facts to construct dataclasses without validation."""
 
     __slots__ = ("models", "shape")
@@ -122,10 +123,6 @@ class DataclassCodec(Generic[T]):
     def convert(self, value: object) -> T:
         """Apply construction and leaf conversion without checking schema or field constraints."""
         return cast("T", self._load(value, self.shape))
-
-    def text(self, value: object) -> T:
-        """Construct from header, form, or part text; nothing validates later, so text that is no JSON literal fails."""
-        return cast("T", self._load(plain(value, strict=True), self.shape))
 
     def assemble(self, fields: Mapping[str, object]) -> object:
         """Construct a model from already-native field values addressed by their wire names."""

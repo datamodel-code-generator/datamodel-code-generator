@@ -31,6 +31,7 @@ from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
 from datamodel_code_generator.parser._intersection import inherits_keyword
+from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
@@ -48,6 +49,7 @@ from datamodel_code_generator.reference import (
     _rw_variant_flag,
     _rw_variant_of,
     _rw_variant_path,
+    field_origin_of,
     location_of,
 )
 
@@ -712,8 +714,9 @@ def overlay_inherited_field(
 ) -> DataModelFieldBase | None:
     """Return the copy of ``inherited_field`` that the deferred override ``field`` resolves to, else None.
 
-    The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``) and
-    the required state of the override, without the inherited constructor default.
+    The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``), the
+    required state of the override, without the inherited constructor default, and the origin of an override that
+    declares the property (``reference.field_origin_of``): it is the field the override's property schema builds.
     """
     if (
         resolved_field := parser._copy_inherited_field(  # noqa: SLF001
@@ -726,6 +729,8 @@ def overlay_inherited_field(
         )
     ) is not None:
         parser._prepare_required_inherited_field(resolved_field, inherited_field, overriding_field=field)  # noqa: SLF001
+        if (origin := field_origin_of(field)) is not None and origin.kind == "property":
+            with_field_origin(resolved_field, origin.kind, origin.location)
     return resolved_field
 
 

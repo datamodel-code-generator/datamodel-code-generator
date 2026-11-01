@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, NamedTuple
 
-from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._format_types import NEWEST_TARGET, PythonVersion
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 
 from .base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 try:
     DEFAULT_TARGET_PYTHON_VERSION = PythonVersion(f"{sys.version_info.major}.{sys.version_info.minor}")
 except ValueError:
-    DEFAULT_TARGET_PYTHON_VERSION = max(PythonVersion, key=lambda version: version.version_key)
+    DEFAULT_TARGET_PYTHON_VERSION = NEWEST_TARGET
 
 
 class DataModelSet(NamedTuple):

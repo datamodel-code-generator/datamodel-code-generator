@@ -22,7 +22,13 @@ from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
-from datamodel_code_generator._container_kinds import MAPPINGS, UNHASHABLE_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    BUILTIN_CONTAINERS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    UNHASHABLE_CONTAINERS,
+)
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
@@ -36,7 +42,7 @@ from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
 from datamodel_code_generator._user_keys import class_field_key
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
+from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import, _iter_import_bindings
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
     CollapseSiteFacts,
     LaterHolderFacts,
@@ -65,6 +71,13 @@ from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
+from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReferenceExpressionHost,
+    import_references,
+    set_reference_expression,
+    set_reference_expressions,
+)
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -81,7 +94,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ModuleScopeView,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
     RootModelHost,
@@ -99,7 +111,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _has_root_field_constraints,
     _is_discriminator_wrapper,
     _is_pydantic_v2_root_model,
-    _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
     _restore_inherited_field_names_for_unique_aliases,
@@ -110,7 +121,6 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
-    import_references,
     merge_duplicate,
     merge_duplicate_in_module,
     module_members,
@@ -119,8 +129,6 @@ from datamodel_code_generator.parser._passes._shared import (
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
-    set_reference_expression,
-    set_reference_expressions,
     site_display_name,
     subclass_duplicate,
     without_stand_ins,
@@ -592,21 +600,14 @@ def _named_enum(source: DataModel) -> Enum | None:
 ModelName: TypeAlias = str
 ModelNames: TypeAlias = set[ModelName]
 ModelDeps: TypeAlias = dict[ModelName, set[ModelName]]
-_BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
-    "list": "is_list",
-    "dict": "is_dict",
-    "set": "is_set",
-    "frozenset": "is_frozen_set",
-    "tuple": "is_tuple",
-}
 
 
 def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
     if data_type.type == current_name and not data_type.import_:
         return True
 
-    if flag := _BUILTIN_CONTAINER_COLLISION_FLAGS.get(current_name):
-        return bool(getattr(data_type, flag))
+    if (slot := BUILTIN_CONTAINERS.get(current_name)) is not None:
+        return bool(getattr(data_type, CONTAINER_FLAGS[slot]))
 
     return False
 
@@ -1199,7 +1200,10 @@ def collapse_site_facts(
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
         holder_has_container=field_constraints
         and constrained_root
-        and any(member.is_dict or member.is_union or member.is_list for member in model_field.data_type.all_data_types),
+        and any(
+            member.is_union or member in CONTAINERS.without("legacy-collapse-beside-lists-and-dicts")
+            for member in model_field.data_type.all_data_types
+        ),
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
         collapses_list_items=parser._collapses_list_item_root_models,  # noqa: SLF001
     )
@@ -1453,7 +1457,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
-                    if original_field:  # pragma: no cover
+                    if original_field:
                         # TODO: Improve detection of reference type
                         # Use list instead of set because Import is not hashable
                         excluded_imports = [IMPORT_OPTIONAL, IMPORT_UNION]
@@ -1979,14 +1983,18 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 )
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser._build_field(  # noqa: SLF001
-                        "legacy-alias-option-only",
-                        new_data_type,
-                        name=field_name,
-                        alias=names.alias,
-                        source_name=names.property_name,
-                        class_name=discriminator_model.name,
-                        required=True,
+                    discriminator_field := with_field_origin(
+                        parser._build_field(  # noqa: SLF001
+                            "legacy-alias-option-only",
+                            new_data_type,
+                            name=field_name,
+                            alias=names.alias,
+                            source_name=names.property_name,
+                            class_name=discriminator_model.name,
+                            required=True,
+                        ),
+                        "tag",
+                        None,
                     ),
                 )
                 if parser.config.aliases:

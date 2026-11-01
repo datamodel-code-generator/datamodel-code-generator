@@ -15,7 +15,7 @@ from contextlib import (
 )
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, TypedDict, TypeVar, cast
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -25,6 +25,7 @@ from typing_extensions import Self
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
+from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
 from .content import EncodedAttempt
 from .errors import (
@@ -61,6 +62,7 @@ from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
     Delivery,
+    RetrySafety,
     RetryState,
     RetryTiming,
     bind_retry_headers,
@@ -616,9 +618,7 @@ class Call(LogicalCallContext):
         self.operation = operation
         self.decoder: ResponseDecoder[object] = RAW_DECODER
         self.request_id_header = None if operation is None else operation.request_id_header
-        self.retry_safety: Literal["method_default", "idempotent", "never"] = (
-            "method_default" if operation is None else operation.retry_safety
-        )
+        self.retry_safety: RetrySafety = "method_default" if operation is None else operation.retry_safety
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
         self.key = str(uuid4()) if self.idempotency is not None and key is UNSET else key
@@ -894,12 +894,7 @@ class Core(Generic[AdapterT, HandleT]):
             return settings.base_url
         if settings.server is not self._settings.server:
             return _server_url(operation, settings.server)
-        servers = operation.servers
-        if (cached := self._urls.get(id(servers))) is not None and cached[0] is servers:
-            return cached[1]
-        url = _server_url(operation, settings.server)
-        self._urls[id(servers)] = (servers, url)
-        return url
+        return identity_cached(self._urls, operation.servers, lambda _: _server_url(operation, settings.server))
 
     @staticmethod
     def _decoder(operation: OperationPlan[T], response_media_type: str | None) -> ResponseDecoder[T]:

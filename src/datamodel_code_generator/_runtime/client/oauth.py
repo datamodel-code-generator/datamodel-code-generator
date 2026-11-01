@@ -29,7 +29,7 @@ from .auth import (
     basic_credentials,
     provider_failure,
 )
-from .errors import ConfigurationError
+from .errors import ConfigurationError, acalled, called
 from .security import SecurityScheme
 from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware
 from .urls import URLValidationError, canonical_origin
@@ -123,11 +123,7 @@ def _secret(value: Secret | None) -> str | None:
     """Return the client secret for one token request, calling a callable secret."""
     if not callable(value):
         return value
-    try:
-        secret = value()
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise provider_failure(error) from None
-    return _string(secret)
+    return _string(called(value, provider_failure))
 
 
 def _string(value: object) -> str:
@@ -222,13 +218,10 @@ class _Provider(TokenSource):
         raise NotImplementedError
 
     def _notify(self, tokens: TokenSet) -> object:
-        """Hand a refreshed token set to the callback, wrapping what it raises as the provider's failure."""
+        """Hand a refreshed token set to the callback, raising an SDK error as it is and any other as the provider's."""
         if (callback := self._callback) is None:
             return None
-        try:
-            return callback(tokens)
-        except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-            raise provider_failure(error) from None
+        return called(partial(callback, tokens), provider_failure)
 
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
@@ -323,10 +316,7 @@ class _Provider(TokenSource):
                     raise
                 return kept
             if inspect.isawaitable(result := self._notify(tokens)):
-                try:
-                    await result
-                except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-                    raise provider_failure(error) from None
+                await acalled(lambda: result, provider_failure)
             return tokens.access_token
 
     def _auth(self) -> SchemeAuth:

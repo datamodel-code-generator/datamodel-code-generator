@@ -17,6 +17,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
@@ -290,7 +291,7 @@ def _user_struct_option_items(model: DataModel) -> Iterable[tuple[str, Any]]:
 
 def _user_struct_options(model: DataModel) -> dict[str, Any]:
     """Return the struct options that template data gives a model, which builtin templates read only from a dict."""
-    return options if isinstance(options := model.extra_template_data.get("base_class_kwargs"), dict) else {}
+    return as_mapping(model.extra_template_data.get("base_class_kwargs"))
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:

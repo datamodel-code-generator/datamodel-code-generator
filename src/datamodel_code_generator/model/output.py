@@ -5,13 +5,13 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._target_unicode import host_parsable
+from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
 from datamodel_code_generator.model.base import _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY, ALL_MODEL
 from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Collection, Mapping
+    from collections.abc import Collection, Mapping
     from typing import Any
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -84,27 +84,14 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     return base_config
 
 
-def _expression_names(expression: ast.AST, restore_name: Callable[[str], str]) -> set[str]:
-    """Find unqualified loads without treating literal or keyword text as bindings."""
-    return {restore_name(node.id) for node in ast.walk(expression) if isinstance(node, ast.Name)}
-
-
 def _model_field_name_collisions(model: DataModel, import_names: Collection[str]) -> set[str]:
     """Find imported names hidden by assignments in the emitted model body."""
     field_names = {field.name for field in model.fields if field.name is not None}
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()
-    source, restore_name = host_parsable(model.render())
-    class_body = next(
-        (
-            node.body
-            for node in ast.parse(source).body
-            if isinstance(node, ast.ClassDef) and restore_name(node.name) == model.class_name
-        ),
-        None,
-    )
-    if class_body is None:
+    tree, restore_name = _parsed(model.render())
+    if (class_body := next(_class_bodies(tree, restore_name, model.class_name), None)) is None:
         return set()
     fields = [
         (restore_name(node.target.id), node)

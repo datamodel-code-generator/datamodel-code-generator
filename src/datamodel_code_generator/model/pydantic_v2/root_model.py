@@ -10,6 +10,7 @@ from typing import Any, ClassVar
 from typing_extensions import override
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, SETS
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -286,9 +287,9 @@ class RootModel(BaseModel):
         if _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY not in self._internal_template_data:
             return
         root_type = self.fields[0].data_type
-        if not (root_type.is_list or root_type.is_sequence or root_type.is_set):
+        if root_type not in ITEM_CONTAINERS:
             root_type = root_type.data_types[0]
-        if root_type.is_set:
+        if root_type in SETS:
             for import_ in _sequence_imports(self._internal_template_data[_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY]):
                 self._additional_imports.remove(import_)
             for key in _SEQUENCE_TEMPLATE_DATA_KEYS:

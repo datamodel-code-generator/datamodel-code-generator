@@ -15,12 +15,12 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, overload
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_refusal
-from .options import HelperLimits, PollOptions, StepLock, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, PollOptions, StepHandle, StepLock, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import (
     BodySelector,
@@ -36,7 +36,6 @@ from .values import MISSING, accessed, read_expiry, required
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
@@ -378,7 +377,7 @@ class _Operation(StepLock, Generic[T, P]):
         if (allowed := limits.max_wait) is not None and required > allowed:
             raise self._waited(required, allowed, "wait")
         waiter = core.waiting(limits.options, self._session, call.operation_id)
-        if (remaining := waiter.remaining()) is not None and required >= remaining:
+        if (remaining := waiter.cut_short(required)) is not None:
             raise self._waited(required, remaining, "deadline")
         return waiter
 
@@ -585,7 +584,7 @@ def _kept(data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url:
     return data
 
 
-class LroHandle(_Operation[T, P]):
+class LroHandle(_Operation[T, P], StepHandle):
     """A long-running operation a helper created: `status` polls it once, and `wait` polls until it settles.
 
     `close` only stops local polling; the remote operation goes on. Polling from two threads at once raises
@@ -694,18 +693,8 @@ class LroHandle(_Operation[T, P]):
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
 
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
-
-class AsyncLroHandle(_Operation[T, P]):
+class AsyncLroHandle(_Operation[T, P], AsyncStepHandle):
     """A long-running operation an asyncio helper created: `status` polls it once, and `wait` until it settles.
 
     `aclose` only stops local polling; the remote operation goes on. Polling from two tasks at once raises
@@ -813,16 +802,6 @@ class AsyncLroHandle(_Operation[T, P]):
     async def aclose(self) -> None:
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
-
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
 
 
 def _restored(

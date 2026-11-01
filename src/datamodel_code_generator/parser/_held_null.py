@@ -46,7 +46,8 @@ def _omit_held_null(facts: FinalFacts, writer: HeldNullWriter) -> None:
     """Drop the None of every type of a live model that names a live model holding null.
 
     Which models hold null is read for every model before the first write, so a root model whose root names a model
-    holding null keeps holding null after its root loses the restated None.
+    holding null keeps holding null after its root loses the restated None. The holders stay keyed by the identity of
+    their Reference, not by model key, so a deep copy of a type keeps the restated None as before (#5824).
     """
     holders = {id(model.reference) for model in facts.live_models if model.holds_null}
     if not holders:

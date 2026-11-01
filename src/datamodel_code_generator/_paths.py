@@ -16,6 +16,9 @@ compare with it.
 Two paths relate as written, without the filesystem: one lies inside the other when it is the other or below it
 (``Path.is_relative_to``), and they overlap when either lies inside the other. Two existing paths name one file when
 they reach one inode; the callers decide which forms they compare and what an error of the filesystem means.
+
+An output path names a directory, a package of modules, when it has no suffix. The files a generation stages or
+copies are the files below that directory, listed in path order.
 """
 
 from __future__ import annotations
@@ -98,3 +101,13 @@ def same_file(first: Path, second: Path) -> bool:
     if not (first.exists() and second.exists()):
         return False
     return first.samefile(second)
+
+
+def names_directory(path: Path) -> bool:
+    """Return whether an output path names a directory: it has no suffix."""
+    return not path.suffix
+
+
+def files_under(directory: Path, pattern: str = "*") -> list[Path]:
+    """Return the files below a directory whose names match ``pattern``, in path order; none below a file."""
+    return sorted(path for path in directory.rglob(pattern) if path.is_file())

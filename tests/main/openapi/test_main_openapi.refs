@@ -1564,6 +1564,10 @@ pydantic-v2-dataclass	main/openapi/parameter_field_policy/pydantic_v2_dataclass.
 typed-dict	main/openapi/parameter_field_policy/typing_TypedDict.py
 [test_main_openapi_path_parameter_operation_override]
 	main/openapi/path_parameter_override.py
+[test_main_openapi_paths_keys_that_are_not_path_items]
+api	main/openapi/main_openapi/paths_keys_that_are_not_path_items[api].py
+paths	main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths].py
+paths-include-all	main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths-include-all].py	= main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths].py
 [test_main_openapi_pattern]
 msgspec.Struct-msgspec_pattern.py	main/openapi/pattern/msgspec_pattern.py
 pydantic_v2.BaseModel-pydantic_v2.py	main/openapi/pattern/pydantic_v2.py

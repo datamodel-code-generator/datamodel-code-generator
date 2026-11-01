@@ -1,8 +1,8 @@
 """The names a client target reserves, and the rules its explicit names and header tokens follow.
 
 Each helper kind's names are here too: the label documentation and messages call it by, and its options keyword. So
-are the names the generated modules define for each other: an operation's response alias and header decoder, a
-resource's classes, and each numbered plan, accessor and codec.
+are the asyncio twin of a runtime class or function, and the names the generated modules define for each other: an
+operation's response alias and header decoder, a resource's classes, and each numbered plan, accessor and codec.
 """
 
 from __future__ import annotations
@@ -160,6 +160,21 @@ def header_constant(name: str) -> str:
     claims, so two method names that upper-case alike (``straße``, ``strasse``) name one constant twice.
     """
     return f"_{name.upper()}_HEADERS"
+
+
+def class_prefix(*, asynchronous: bool) -> str:
+    """Return what a class of the asyncio client is named after before its sync twin's name: `Async`, else nothing."""
+    return "Async" if asynchronous else ""
+
+
+def twin_name(name: str, *, asynchronous: bool) -> str:
+    """Return a sync runtime class's or function's name, or its asyncio twin's: a class after `Async`, a function `a`.
+
+    The asyncio twin of `Pager` is `AsyncPager`, that of `fetch` is `afetch`; the sync client keeps the name.
+    """
+    if asynchronous and not name[:1].isupper():
+        return f"a{name}"
+    return f"{class_prefix(asynchronous=asynchronous)}{name}"
 
 
 def resource_class(pascal: str, prefix: str = "", suffix: str = "Resource") -> str:

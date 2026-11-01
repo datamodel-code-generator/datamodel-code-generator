@@ -6,12 +6,13 @@ import os
 import sys
 import traceback
 from functools import partial
-from itertools import starmap
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._option_names import hyphenated, json_ready, toml_table, toml_text
+from datamodel_code_generator._paths import names_directory
 from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
@@ -72,17 +73,6 @@ def run_target(  # noqa: PLR0913, PLR0917
         return _ERROR
 
 
-def _implied_option(name: str, value: object) -> tuple[str, Any]:
-    """Return the key of an implied setting and its JSON value, as `pyproject.toml` spells them."""
-    key = name.replace("_", "-")
-    match value:
-        case list():
-            return key, [item.value for item in cast("list[Any]", value)]
-        case bool():
-            return key, value
-    return key, cast("Any", value).value
-
-
 def _print_notice(notice: str | None) -> None:
     if notice is not None:
         print(notice, file=sys.stderr)  # noqa: T201
@@ -99,18 +89,17 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     """
     if not implied:
         return None
-    import json  # noqa: PLC0415
     import shlex  # noqa: PLC0415
 
-    options = dict(starmap(_implied_option, implied.items()))
+    options = hyphenated({name: json_ready(value) for name, value in implied.items()})
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
         named = ("jobs", job) if job else ("profiles", profile) if (profile := namespace.profile) else ()
-        table = ".".join(("tool.datamodel-codegen", *(_toml_key(part) for part in named)))
-        lines = (f"  {key} = {json.dumps(data)}" for key, data in options.items())
+        table = toml_table(("tool", "datamodel-codegen", *named), "legacy-ascii-table-keys")
+        lines = (f"  {key} = {toml_text(data)}" for key, data in options.items())
         where = os.path.relpath(pyproject, Path.cwd())
-        return "\n".join((f"{lead}, add to [{table}] of {Path(where).as_posix()}:", *lines))
+        return "\n".join((f"{lead}, add to {table} of {Path(where).as_posix()}:", *lines))
     flags = [
         token
         for key, data in options.items()
@@ -118,14 +107,6 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     ]
     stdin = "" if config.input or config.url else " (with the same input on stdin)"
     return f"{lead}, run{stdin}:\n  {shlex.join(('datamodel-codegen', *args, *flags))}"
-
-
-def _toml_key(key: str) -> str:
-    """Return a key of a TOML table header: bare when TOML allows it, or quoted."""
-    import json  # noqa: PLC0415
-    import re  # noqa: PLC0415
-
-    return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else json.dumps(key)
 
 
 def _target_side(config: Any) -> tuple[str, str]:
@@ -251,7 +232,7 @@ def _shown(path: Path) -> str:
 def _payload_base(project: GeneratedProject, models: Path) -> Path:
     """Return the directory payload paths are relative to, as in the model payload: the model output or its parent."""
     rendered = [artifact.path for artifact in project.artifacts if artifact.kind == "model"]
-    return models.parent if models in rendered or (not rendered and models.suffix) else models
+    return models.parent if models in rendered or (not rendered and not names_directory(models)) else models
 
 
 def _target_payload(
@@ -277,7 +258,7 @@ def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
         return None
     from datamodel_code_generator._structured_output import ImpliedPayload  # noqa: PLC0415
 
-    return ImpliedPayload(**{name: _implied_option(name, value)[1] for name, value in implied.items()})
+    return ImpliedPayload(**{name: json_ready(value) for name, value in implied.items()})
 
 
 def _target_json(
@@ -289,8 +270,7 @@ def _target_json(
     As in the model payload, a path is relative to the model output directory; a file outside it has an absolute path.
     The payload's target names the package, its runtime dependencies, and the next steps with paths of the same base.
     """
-    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
-
+    from datamodel_code_generator._api_generation import artifact_text  # noqa: PLC0415
     from datamodel_code_generator._structured_output import (  # noqa: PLC0415
         EntrypointPayload,
         GeneratedFilePayload,
@@ -300,22 +280,15 @@ def _target_json(
     )
 
     taken = _taken_over(project)
-    artifacts = [
-        (
-            artifact.path,
-            content,
-            encoding if artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"} else "utf-8",
-        )
+    artifacts = (
+        artifact
         for artifact in project.artifacts
-        if (artifact.kind in {"model", "target"} or artifact is taken) and (content := artifact.content) is not None
-    ]
+        if (artifact.kind in {"model", "target"} or artifact is taken) and artifact.content is not None
+    )
     base = _payload_base(project, models)
     files = [
-        GeneratedFilePayload(
-            path=shown(path, base).as_posix(),
-            content=TextIOWrapper(BytesIO(content), encoding=codec).read(),
-        )
-        for path, content, codec in sorted(artifacts, key=lambda artifact: artifact[0].parts)
+        GeneratedFilePayload(path=shown(artifact.path, base).as_posix(), content=artifact_text(artifact, encoding))
+        for artifact in sorted(artifacts, key=lambda artifact: artifact.path.parts)
     ]
     steps = project.next_steps
     entrypoint = implementation = None
@@ -375,6 +348,7 @@ def _compare_target(
         OutputComparisonOptions,
         _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
     )
+    from datamodel_code_generator._api_generation import file_encoding  # noqa: PLC0415
 
     nested = _nested(models, target)
     differences: list[ComparisonDifference] = []
@@ -407,7 +381,7 @@ def _compare_target(
                 staged.parent.mkdir(parents=True, exist_ok=True)
                 staged.write_bytes(artifact.content)
                 if is_directory and path.suffix != ".py":
-                    non_python.append((staged, path, encoding if artifact.kind == "model" else "utf-8"))
+                    non_python.append((staged, path, file_encoding(path, encoding, artifact.kind)))
             _stage_implementations(project, output if is_directory and baseline is None else None, staged_root)
             comparisons.append((
                 staged_root if is_directory else staged_root / output.name,

@@ -77,8 +77,8 @@ class SettleHost(RecursionFactsHost, GenerationStoreHost, RootModelTypeHost, Pro
     yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...]
 
     @property
-    def _site_model_reference_ids(self) -> set[int]:
-        """The ids of the references of the site models a reference with more assertions gets."""
+    def _site_model_keys(self) -> set[ModelKey]:
+        """The model keys of the site models a reference with more assertions gets."""
 
     @property
     def dedupe_request_response_variants(self) -> bool:
@@ -398,7 +398,7 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
     duplicates to the others too.
     """
     parser._reuse_groups = ReuseGroups(  # noqa: SLF001
-        site_models=frozenset(parser._site_model_reference_ids),  # noqa: SLF001
+        site_models=frozenset(parser._site_model_keys),  # noqa: SLF001
         typed_map_values=frozenset(parser.model_resolver.settle_yielding_names()),
     )
     if (changes := parser.model_resolver.yielding_name_changes) and parser._construction_keys.name_any(changes):  # noqa: SLF001

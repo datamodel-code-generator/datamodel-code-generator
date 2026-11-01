@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from pydantic_core import SchemaSerializer, core_schema
 
+from .shared import identity_cached
+
 if TYPE_CHECKING:
     from pydantic import SerializerFunctionWrapHandler, TypeAdapter
 
@@ -16,12 +18,14 @@ _SERIALIZERS: Final[dict[int, tuple[TypeAdapter[Any], SchemaSerializer]]] = {}
 def extras_serializer(adapter: TypeAdapter[Any]) -> SchemaSerializer:
     """Return the serializer of an adapter's type that writes each dataclass's extra members after its fields.
 
-    It is built on first use and kept with its adapter; a concurrent first use builds an equal one.
+    It is built on first use and kept with its adapter.
     """
-    if (cached := _SERIALIZERS.get(id(adapter))) is None:
-        schema = cast("core_schema.CoreSchema", _keeping(adapter.core_schema))
-        _SERIALIZERS[id(adapter)] = cached = (adapter, SchemaSerializer(schema))
-    return cached[1]
+    return identity_cached(_SERIALIZERS, adapter, _serializer)
+
+
+def _serializer(adapter: TypeAdapter[Any]) -> SchemaSerializer:
+    """Build the serializer of an adapter's type that writes the extra members of its dataclasses."""
+    return SchemaSerializer(cast("core_schema.CoreSchema", _keeping(adapter.core_schema)))
 
 
 def extras_json(adapter: TypeAdapter[Any], value: object) -> bytes:

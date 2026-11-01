@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from datamodel_code_generator._python_syntax import comment_safe
 from datamodel_code_generator.imports import (
     IMPORT_TYPE_ALIAS,
     IMPORT_TYPE_ALIAS_TYPE,
@@ -14,7 +15,7 @@ from datamodel_code_generator.imports import (
     Import,
 )
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
-from datamodel_code_generator.model.base import UNDEFINED, comment_safe
+from datamodel_code_generator.model.base import UNDEFINED
 
 if TYPE_CHECKING:
     from collections import defaultdict

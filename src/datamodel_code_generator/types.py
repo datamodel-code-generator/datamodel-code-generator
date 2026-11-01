@@ -54,7 +54,15 @@ from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator import imports as generator_imports
-from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS, WRITTEN_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    ARRAYS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    SLOT_CLASSES,
+    WRITTEN_CONTAINERS,
+    written_slot,
+)
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -1313,35 +1321,18 @@ def _writes_none_alone(field: Any, chain: tuple[Reference, ...]) -> bool:
 
 def _container_name(data_type: DataType, container: str) -> str | None:
     """Return the name the data type's container ``container`` is written as, or None when it is not in one."""
-    standard = data_type.use_standard_collections
-    frozen_set = STANDARD_FROZEN_SET if standard else FROZEN_SET
-    name: str | None = None
-    match container:
-        case "frozen_set" if data_type.is_frozen_set:
-            name = frozen_set
-        case "set" if data_type.is_set:
-            name = frozen_set if data_type.use_generic_container else STANDARD_SET if standard else SET
-        case "sequence" if data_type.is_sequence:
-            name = SEQUENCE
-        case "list" if data_type.is_list:
-            name = SEQUENCE if data_type.use_generic_container else STANDARD_LIST if standard else LIST
-        case "mapping" if data_type.is_mapping:
-            name = MAPPING
-        case "dict" if data_type.is_dict:
-            name = MAPPING if data_type.use_generic_container else STANDARD_DICT if standard else DICT
-    return name
+    if container not in WRITTEN_CONTAINERS or not getattr(data_type, CONTAINER_FLAGS[container]):
+        return None
+    written = SLOT_CLASSES[written_slot(container, generic=data_type.use_generic_container)]
+    return written.written(standard=data_type.use_standard_collections)
 
 
 _CONTAINER_IMPORT_ORDER: Final = ("frozen_set", "mapping", "sequence", "list", "set", "dict")
 _TYPING_CONTAINER_IMPORTS: Final = {
-    FROZEN_SET: IMPORT_FROZEN_SET,
-    MAPPING: IMPORT_MAPPING,
-    SEQUENCE: IMPORT_SEQUENCE,
-    LIST: IMPORT_LIST,
-    SET: IMPORT_SET,
-    DICT: IMPORT_DICT,
+    import_.import_: import_
+    for import_ in (IMPORT_FROZEN_SET, IMPORT_MAPPING, IMPORT_SEQUENCE, IMPORT_LIST, IMPORT_SET, IMPORT_DICT)
 }
-_STANDARD_CONTAINER_IMPORTS: Final = {MAPPING: IMPORT_ABC_MAPPING, SEQUENCE: IMPORT_ABC_SEQUENCE}
+_STANDARD_CONTAINER_IMPORTS: Final = {import_.import_: import_ for import_ in (IMPORT_ABC_MAPPING, IMPORT_ABC_SEQUENCE)}
 
 
 def type_expr_of(data_type: DataType, *, base: bool = False) -> TypeExpr:
@@ -1438,7 +1429,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
     member_null = False
     match expr.form:
         case "tuple":
-            tuple_type = STANDARD_TUPLE if node.use_standard_collections else TUPLE
+            tuple_type = SLOT_CLASSES["tuple"].written(standard=node.use_standard_collections)
             if (count := node.tuple_item_count) is not None:
                 items: Iterable[str] = repeat((render_type_expr(expr.args[0]) or ANY) if expr.args else ANY, count)
             else:

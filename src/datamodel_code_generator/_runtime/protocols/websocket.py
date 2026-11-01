@@ -47,7 +47,7 @@ from .errors import (
     MAX_CLOSE_REASON,
     ProtocolDataError,
     WebSocketClosedError,
-    configuration_error,
+    state_error,
 )
 from .options import HelperLimits, WSOptions, layered, new_session
 from .records import SessionState
@@ -208,9 +208,14 @@ def _upgrade(subprotocols: tuple[str, ...]) -> Mapping[str, str]:
     return headers
 
 
+def _selected(info: ResponseInfo) -> str | None:
+    """Return the subprotocol a handshake's 101 response selected, or None."""
+    return info.headers.get("sec-websocket-protocol")
+
+
 def _negotiated(offered: tuple[str, ...], info: ResponseInfo) -> None:
     """Refuse a 101 that selected no subprotocol the helper offered, or selected one it did not offer."""
-    selected = info.headers.get("sec-websocket-protocol")
+    selected = _selected(info)
     if (selected is None and offered) or (selected is not None and selected not in offered):
         raise APIConnectionError(reason="negotiation_failed")
 
@@ -302,7 +307,7 @@ class _Sockets(Generic[SendT, RecvT]):
     @property
     def subprotocol(self) -> str | None:
         """Return the subprotocol the server selected, or None."""
-        return self._info.headers.get("sec-websocket-protocol")
+        return _selected(self._info)
 
     @property
     def progress(self) -> ProtocolProgress:
@@ -322,8 +327,8 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
         return self._stamped(APIConnectionError(cause=error))
 
-    def _state_error(self, action: str) -> ConfigurationError:
-        return self._stamped(configuration_error(self._plan.helper_id, (action, self._state.value), "invalid_state"))
+    def _state_error(self, action: str, state: str | None = None) -> ConfigurationError:
+        return self._stamped(state_error(self._plan.helper_id, action, self._state.value if state is None else state))
 
     def _close_error(self) -> WebSocketClosedError:
         code, reason, clean = self._closed
@@ -344,7 +349,8 @@ class _Sockets(Generic[SendT, RecvT]):
     def _enter_receive(self) -> None:
         """Take the session's one receive, refusing a concurrent one and an ended session."""
         if not self._receiving.acquire(blocking=False):
-            raise self._stamped(configuration_error(self._plan.helper_id, ("receive", "receiving"), "invalid_state"))
+            msg = "receive"
+            raise self._state_error(msg, "receiving")
         try:
             self._usable("receive")
         except BaseException:

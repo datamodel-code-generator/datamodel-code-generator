@@ -22,7 +22,7 @@ from functools import cache, cached_property
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
-from datamodel_code_generator._format_types import PythonVersion, PythonVersionMin
+from datamodel_code_generator._format_types import NEWEST_TARGET, PythonVersion, PythonVersionMin
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -342,10 +342,6 @@ class _TargetUnicode:
                 starter, last_class = len(composed), -1
             composed.append(character)
         return "".join(composed)
-
-
-NEWEST_TARGET: Final = max(PythonVersion, key=lambda version: version.version_key)
-"""The newest target: its rules accept every identifier some target accepts."""
 
 
 @cache

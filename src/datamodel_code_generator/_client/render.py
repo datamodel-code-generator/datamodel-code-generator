@@ -28,6 +28,7 @@ from datamodel_code_generator._client.naming import (
     HELPER_KINDS,
     TYPE_EXPORTS,
     VIEW_KEYWORDS,
+    class_prefix,
     header_constant,
     header_decoder,
     helper_classes,
@@ -36,9 +37,11 @@ from datamodel_code_generator._client.naming import (
     pascal_parts,
     resource_class,
     response_alias,
+    twin_name,
 )
 from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
+from datamodel_code_generator._client.protocols import POLL_INTERVAL
 from datamodel_code_generator._client.runtime import (
     Capabilities,
     compresses,
@@ -49,21 +52,29 @@ from datamodel_code_generator._client.runtime import (
 from datamodel_code_generator._client.sockets import SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._python_syntax import (
     call_text,
+    escape_docstring,
+    format_docstring,
     from_import,
     keyword_argument,
     set_display,
     subscript_text,
     tuple_display,
 )
+from datamodel_code_generator._runtime.client.content import CHUNK
+from datamodel_code_generator._runtime.client.errors import MAX_ERROR_BODY_BYTES
 from datamodel_code_generator._runtime.client.operations import BodyFields, FieldArguments, ServerPlan, ServerVariable
+from datamodel_code_generator._runtime.client.options import DEFAULT_RETRY, DEFAULT_TIMEOUT
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
@@ -79,7 +90,6 @@ from datamodel_code_generator._target_render import (
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -401,7 +411,7 @@ class _Facades:
     def resource_package(resource: ResourceSpec) -> Templated:
         """Return the initializer of one resource's package, which exports its sync and asyncio classes."""
         sync = sorted(_resource_classes(resource, ""))
-        names = sorted(_resource_classes(resource, "Async"))
+        names = sorted(_resource_classes(resource, class_prefix(asynchronous=True)))
         return facade_module(
             f"resources.{resource.namespace}",
             f"The {resource.namespace} resource.",
@@ -555,6 +565,31 @@ class CredentialExample:
     annotation: str
 
 
+def _limit_text(value: float | None, unit: str = "") -> str:
+    """Write a helper limit's default as a runtime reference states it: None as no limit, else its number and unit."""
+    return "None (no limit)" if value is None else f"{format(value, 'g')}{unit}"
+
+
+_HELPER_LIMITS: Final = {
+    "pagination": {
+        "max_pages": _limit_text(_PAGE_LIMITS.max_pages),
+        "max_items": _limit_text(_PAGE_LIMITS.max_items),
+        "total_timeout": _limit_text(_PAGE_LIMITS.total_timeout, " seconds"),
+    },
+    "polling": {
+        "max_polls": _limit_text(_POLL_LIMITS.max_polls),
+        "interval": _limit_text(POLL_INTERVAL, f" {for_count(POLL_INTERVAL, 'second')}"),
+        "max_wait": _limit_text(_POLL_LIMITS.max_wait, " seconds"),
+        "total_timeout": _limit_text(_POLL_LIMITS.total_timeout, " seconds"),
+    },
+    "uploads": {
+        "chunk_bytes": _limit_text(_UPLOAD_LIMITS.chunk_bytes / 2**20, " MiB"),
+        "total_timeout": _limit_text(_UPLOAD_LIMITS.total_timeout, " seconds"),
+    },
+}
+"""The limit defaults of the pagination, polling, and upload helpers, as the runtime reference states them."""
+
+
 @dataclass(frozen=True, slots=True)
 class RuntimePagination:
     """The pagination helper kinds a runtime reference describes: cursors, counted positions, and followed URLs."""
@@ -575,6 +610,21 @@ class RuntimeStreams:
     ndjson: bool
     resumed: bool
     no_content: bool
+
+
+_RETRY_STATUSES: Final = tuple(map(str, sorted(DEFAULT_RETRY.statuses)))
+_RUNTIME_DEFAULTS: Final = {
+    **{name: format(getattr(DEFAULT_TIMEOUT, name), "g") for name in ("connect", "read", "write", "pool")},
+    **{name: format(getattr(DEFAULT_RETRY, name), "g") for name in ("initial_delay", "max_delay", "max_retry_after")},
+    **{
+        name: str(getattr(DEFAULT_RETRY, name))
+        for name in ("max_retries", "jitter", "respect_retry_after", "retry_on_pool_timeout")
+    },
+    "statuses": ", ".join(_RETRY_STATUSES),
+    "error_prefix": str(MAX_ERROR_BODY_BYTES // 1024),
+    "read_size": str(CHUNK // 1024),
+}
+"""The runtime defaults a runtime reference states, as it writes them: seconds without a zero fraction, sizes in KiB."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -801,14 +851,14 @@ class _CallShape:
         The call then passes the parameters and the body, `extra`, and the options; without `sent` the method takes
         and passes only the options.
         """
-        given = (("", tuple_display(self.names)), *((f"{item.name}=", item.name) for item in self.body)) if sent else ()
+        given = (("", tuple_display(self.names)), *((item.name, item.name) for item in self.body)) if sent else ()
         passed = (
             ("", "self._core"),
             ("", plan),
             *(("", item.name) for item in positional),
             *given,
             *extra,
-            *((f"{item.name}=", item.name) for item in self.options),
+            *((item.name, item.name) for item in self.options),
         )
         keywords = self.signature if sent else self.options
         return Function(name, positional, keywords, returns, docstring, function, _arguments(passed), coroutine)
@@ -830,12 +880,13 @@ def _literal(literal: str, values: Iterable[str]) -> str:
 
 
 def _call(head: str, entries: Iterable[tuple[str, str]]) -> str:
-    return call_text(head, (f"{keyword}{value}" for keyword, value in entries))
+    """Return the call of ``head`` passing the value of each entry by its keyword, empty for a positional one."""
+    return call_text(head, (keyword_argument(keyword, value) if keyword else value for keyword, value in entries))
 
 
 def _arguments(entries: Iterable[tuple[str, str]]) -> tuple[Keyword, ...]:
-    """Return the arguments of a call by their keywords, written with an equals sign, empty for positional ones."""
-    return tuple(Keyword(keyword.removesuffix("="), value) for keyword, value in entries)
+    """Return the arguments of a call by their keywords, empty for positional ones."""
+    return tuple(starmap(Keyword, entries))
 
 
 def _wire(value: object) -> object:
@@ -847,6 +898,11 @@ def _wire(value: object) -> object:
 
 def _mode(*, asynchronous: bool) -> str:
     return "async" if asynchronous else "sync"
+
+
+def _mode_word(*, asynchronous: bool) -> str:
+    """Return the word documentation calls the sync or asyncio side of a package by."""
+    return "asyncio" if asynchronous else "synchronous"
 
 
 def _handle(spec: PollingSpec, prefix: str, python_version: PythonVersion) -> str:
@@ -1181,7 +1237,7 @@ class _Typing:
 
     def body_surface(self, module: TargetModule, media: MediaSpec, *, asynchronous: bool) -> str:
         """Return the body type of one request media type in the sync or asyncio client."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         match media.kind, media.use:
             case "binary", _:
                 return _binary_body(module, prefix)
@@ -1290,7 +1346,7 @@ class _Resources(_Typing):
         options = "._runtime.protocols.options"
         names = [("HelperSettings", options), ("HelperOptions", options)]
         if _caches(self.helpers):
-            names.append((f"{'Async' if asynchronous else ''}CacheStore", "._runtime.protocols.caches"))
+            names.append((twin_name("CacheStore", asynchronous=asynchronous), "._runtime.protocols.caches"))
         if _follows(self.helpers):
             names.append(("Origin", "._runtime.protocols.origins"))
         return tuple(names)
@@ -1323,7 +1379,7 @@ class _Resources(_Typing):
             "total_timeout": ("float | None", "None"),
             "max_retries": ("int", "2"),
             "clock": (f"{module.local('options', 'Clock')} | None", "None"),
-            "http_client": (f"{native}.{'Async' if asynchronous else ''}Client | None", "None"),
+            "http_client": (f"{native}.{twin_name('Client', asynchronous=asynchronous)} | None", "None"),
         }
         if compresses(self.plan):
             gzip = subscript_text(module.name("typing", "Literal"), ('"gzip"',))
@@ -1334,7 +1390,7 @@ class _Resources(_Typing):
                 "None",
             )
         if _caches(self.helpers):
-            store = f"{'Async' if asynchronous else ''}CacheStore"
+            store = twin_name("CacheStore", asynchronous=asynchronous)
             stores = subscript_text(module.name("collections.abc", "Mapping"), ("str", store))
             root["cache_stores"] = (f"{stores} | None", "None")
         if _follows(self.helpers):
@@ -1354,7 +1410,7 @@ class _Resources(_Typing):
 
     def client(self, *, asynchronous: bool) -> Templated:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         roots = [
             (
                 resource,
@@ -1388,7 +1444,7 @@ class _Resources(_Typing):
             "client.jinja2",
             client_template.render_with_scope,
             asynchronous=asynchronous,
-            docstring=f"The {'asyncio' if asynchronous else 'synchronous'} client of this package.",
+            docstring=f"The {_mode_word(asynchronous=asynchronous)} client of this package.",
             type_checking=module.name("typing", "TYPE_CHECKING") if lazy else "",
             lazy_imports=[LazyImport(path, name) for name, path in lazy],
             defaults=self.defaults(module),
@@ -1494,7 +1550,7 @@ class _Resources(_Typing):
 
     def resource(self, resource: ResourceSpec, *, asynchronous: bool) -> Templated:
         """Return a resource module: the resource and its metadata, raw, and streaming views of every operation."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         main = resource_class(resource.pascal, prefix)
         views: list[tuple[View, str, str, str]] = [
             (view, attribute, resource_class(resource.pascal, prefix, suffix), doc)
@@ -1530,7 +1586,7 @@ class _Resources(_Typing):
         )
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         overloaded = any(method.overloads for view in classes for method in view.methods)
-        kind = "asyncio" if asynchronous else "synchronous"
+        kind = _mode_word(asynchronous=asynchronous)
         return templated(
             "resource.jinja2",
             resource_template.render_with_scope,
@@ -1549,7 +1605,7 @@ class _Resources(_Typing):
             return _Argument(parameter.python_name, annotation)
         if (default := parameter.default) is None:
             return _Argument(parameter.python_name, annotation, "unset")
-        return _Argument(parameter.python_name, annotation, "value", repr(default.value))
+        return _Argument(parameter.python_name, annotation, "value", module.argument(default))
 
     def requests(
         self, module: TargetModule, spec: OperationSpec, *, asynchronous: bool
@@ -1796,7 +1852,7 @@ class _Resources(_Typing):
         self, module: TargetModule, spec: OperationSpec, keys: tuple[_Key, ...], *, asynchronous: bool, view: View
     ) -> str:
         """Return what an operation method of a view returns when it answers with one of some success types."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         match view:
             case "metadata":
                 return subscript_text(module.local("responses", "Response"), (self.named(module, spec, keys),))
@@ -2070,38 +2126,38 @@ class _Registry(_Typing):
     def operation(self, module: TargetModule, spec: OperationSpec, servers: str) -> tuple[Keyword, ...]:
         """Return the keywords of the OperationPlan constructor of one operation."""
         entries: list[tuple[str, str]] = [
-            ("operation_id=", repr(spec.operation_id)),
-            ("method=", repr(spec.contract.method.upper())),
-            ("path=", repr(_sent_path(spec.contract.path))),
-            ("servers=", servers),
-            ("responses=", self.decoder(module, spec)),
+            ("operation_id", repr(spec.operation_id)),
+            ("method", repr(spec.contract.method.upper())),
+            ("path", repr(_sent_path(spec.contract.path))),
+            ("servers", servers),
+            ("responses", self.decoder(module, spec)),
         ]
         if spec.parameters:
-            entries.append(("parameters=", tuple_display(self.parameter(module, item) for item in spec.parameters)))
+            entries.append(("parameters", tuple_display(self.parameter(module, item) for item in spec.parameters)))
         if (body := spec.body) is not None:
             media = tuple_display(self.media(module, item, null=item.null and not body.required) for item in body.media)
-            fields: list[tuple[str, str]] = [("media=", media)]
+            fields: list[tuple[str, str]] = [("media", media)]
             if body.default is not None:
-                fields.append(("default=", repr(body.default)))
+                fields.append(("default", repr(body.default)))
             if body.required:
-                fields.append(("required=", "True"))
-            entries.append(("body=", _call(module.local(_RUNTIME, "RequestBody"), fields)))
+                fields.append(("required", "True"))
+            entries.append(("body", _call(module.local(_RUNTIME, "RequestBody"), fields)))
         if spec.request_id_header is not None:
-            entries.append(("request_id_header=", repr(spec.request_id_header)))
+            entries.append(("request_id_header", repr(spec.request_id_header)))
         if spec.response_media_type is not None:
-            entries.append(("response_media_type=", repr(spec.response_media_type)))
+            entries.append(("response_media_type", repr(spec.response_media_type)))
         entries.extend(self.retry_metadata(module, spec))
         if spec.security is not None:
             entries.append((
-                "security=",
+                "security",
                 f"{module.local('_generated', 'security')}.{numbered('OPERATION', spec.index)}",
             ))
         if spec.auth_challenge_less_401:
-            entries.append(("auth_challenge_less_401=", "True"))
+            entries.append(("auth_challenge_less_401", "True"))
         if spec.accepted_content_encodings:
-            entries.append(("accepted_content_encodings=", tuple_display(map(repr, spec.accepted_content_encodings))))
+            entries.append(("accepted_content_encodings", tuple_display(map(repr, spec.accepted_content_encodings))))
         if spec.fields:
-            entries.append(("fields=", self.field_arguments(module, spec)))
+            entries.append(("fields", self.field_arguments(module, spec)))
         return _arguments(entries)
 
     @staticmethod
@@ -2109,14 +2165,14 @@ class _Registry(_Typing):
         """Return the explicit operation retry contract without inferring key or vendor declarations."""
         entries: list[tuple[str, str]] = []
         if spec.retry_safety != "method_default":
-            entries.append(("retry_safety=", repr(spec.retry_safety)))
+            entries.append(("retry_safety", repr(spec.retry_safety)))
         if (idempotency := spec.idempotency) is not None:
             entries.append((
-                "idempotency=",
+                "idempotency",
                 runtime_record(module.local, IdempotencyPlan(header_name=idempotency.header_name)),
             ))
         entries.extend(
-            (f"{name}=", repr(header))
+            (name, repr(header))
             for name in ("retry_after_ms_header", "should_retry_header")
             if (header := getattr(spec, name)) is not None
         )
@@ -2140,11 +2196,11 @@ class _Registry(_Typing):
 
     def parameter(self, module: TargetModule, parameter: ParameterSpec) -> str:
         """Return the ParameterSpec constructor of one parameter."""
-        entries: list[tuple[str, str]] = [("plan=", parameter_plan(module.local, parameter.plan))]
+        entries: list[tuple[str, str]] = [("plan", parameter_plan(module.local, parameter.plan))]
         if (use := parameter.use) is not None and use.id in self.accessors:
-            entries.append(("codec=", self.codec(module, use)))
+            entries.append(("codec", self.codec(module, use)))
             if parameter.converts:
-                entries.append(("converts=", "True"))
+                entries.append(("converts", "True"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: TargetModule, media: MediaSpec, *, null: bool) -> str:
@@ -2153,22 +2209,22 @@ class _Registry(_Typing):
         `null` marks the media of an optional body that sends None as JSON null; any other leaves None out.
         """
         kind = media.kind
-        entries: list[tuple[str, str]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
+        entries: list[tuple[str, str]] = [("media_type", repr(media.media_type)), ("kind", repr(kind))]
         if null:
-            entries.append(("null=", "True"))
+            entries.append(("null", "True"))
         form: list[tuple[str, str]] = []
         if media.members is not None:
-            form.append(("parts=", tuple_display(self.sent_plan(module, part) for part in media.members)))
+            form.append(("parts", tuple_display(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
-                form.append(("additional=", self.sent_plan(module, media.extra)))
+                form.append(("additional", self.sent_plan(module, media.extra)))
         elif (use := coded_use(kind, media.use)) is not None and use.id in self.accessors:
-            entries.append(("codec=", self.codec(module, use)))
+            entries.append(("codec", self.codec(module, use)))
             if kind == "multipart":
-                form.extend((("members=", "True"), *self.multipart_members(module, media)))
+                form.extend((("members", "True"), *self.multipart_members(module, media)))
             elif kind != "binary":
                 entries.extend(self.form(module, media))
         if kind == "multipart":
-            entries.append(("form=", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
+            entries.append(("form", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
         return _call(module.local(_RUNTIME, "BodyMedia"), entries)
 
     def sent_plan(self, module: TargetModule, part: PartSpec) -> str:
@@ -2179,10 +2235,10 @@ class _Registry(_Typing):
             (
                 ("", repr(plan.name)),
                 *((("", repr(plan.kind)),) if plan.kind == "json" else ()),
-                *((("repeated=", "True"),) if plan.repeated else ()),
-                *((("codec=", self.codec(module, part.use)),) if part.use is not None else ()),
-                *((("content_types=", tuple_display(map(repr, plan.content_types))),) if plan.content_types else ()),
-                *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
+                *((("repeated", "True"),) if plan.repeated else ()),
+                *((("codec", self.codec(module, part.use)),) if part.use is not None else ()),
+                *((("content_types", tuple_display(map(repr, plan.content_types))),) if plan.content_types else ()),
+                *((("style", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
             ),
         )
 
@@ -2191,11 +2247,11 @@ class _Registry(_Typing):
         """Return the member plan keywords of a URL-encoded media type."""
         entries: list[tuple[str, str]] = []
         if media.fields:
-            entries.append(("fields=", tuple_display(field_plan(module.local, item) for item in media.fields)))
+            entries.append(("fields", tuple_display(field_plan(module.local, item) for item in media.fields)))
         if media.additional is not None:
-            entries.append(("additional=", field_plan(module.local, media.additional)))
+            entries.append(("additional", field_plan(module.local, media.additional)))
         if media.encoded:
-            entries.append(("encoded=", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
+            entries.append(("encoded", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
 
     @staticmethod
@@ -2203,13 +2259,13 @@ class _Registry(_Typing):
         """Return the keywords of a form-data media type whose members its codec writes: JSON, media, and styles."""
         entries: list[tuple[str, str]] = []
         if media.parts:
-            entries.append(("parts=", tuple_display(_part_plan(module, item) for item in media.parts)))
+            entries.append(("parts", tuple_display(_part_plan(module, item) for item in media.parts)))
         if media.additional_part is not None:
-            entries.append(("additional=", _part_plan(module, media.additional_part)))
+            entries.append(("additional", _part_plan(module, media.additional_part)))
         if media.content_types:
-            entries.append(("content_types=", tuple_display(repr(pair) for pair in media.content_types)))
+            entries.append(("content_types", tuple_display(repr(pair) for pair in media.content_types)))
         if media.encoded:
-            entries.append(("encoded=", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
+            entries.append(("encoded", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
 
     def decoder(self, module: TargetModule, spec: OperationSpec) -> str:
@@ -2221,9 +2277,9 @@ class _Registry(_Typing):
             ("", tuple_display(errors)),
         ]
         if spec.success_statuses:
-            entries.append(("success_statuses=", f"frozenset({set_display(map(str, spec.success_statuses))})"))
+            entries.append(("success_statuses", f"frozenset({set_display(map(str, spec.success_statuses))})"))
         if spec.head:
-            entries.append(("head=", "True"))
+            entries.append(("head", "True"))
         return _call(module.local(_RUNTIME, "ResponseDecoder"), entries)
 
     def branches(self, module: TargetModule, response: ResponseSpec) -> list[str]:
@@ -2276,7 +2332,7 @@ class _Registry(_Typing):
             ("", tuple_display(self.read_part(module, part) for part in media.members or ()))
         ]
         if media.extra is not None:
-            entries.append(("additional=", self.read_part(module, media.extra)))
+            entries.append(("additional", self.read_part(module, media.extra)))
         return _call(
             module.local(_PARTS, "parts_branch"),
             (("", status), ("", repr(media.media_type)), ("", _call(reader, entries))),
@@ -2288,9 +2344,9 @@ class _Registry(_Typing):
         flags = [
             (flag, "True")
             for flag, value in (
-                ("repeated=", plan.repeated),
-                ("required=", part.required),
-                ("excluded=", part.excluded),
+                ("repeated", plan.repeated),
+                ("required", part.required),
+                ("excluded", part.excluded),
             )
             if value
         ]
@@ -2308,10 +2364,7 @@ _HELPER_SETTINGS: Final = {
     "allowed_origins": "allowed_origins",
 }
 _STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
-_HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
-    False: ("first_page", "iterate_pages", "following_page", "resume_pages"),
-    True: ("afirst_page", "aiterate_pages", "afollowing_page", "aresume_pages"),
-}
+_PAGE_CALLS: Final = ("first_page", "iterate_pages", "following_page", "resume_pages")
 _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _STREAMS: Final = "_runtime.protocols.streams"
@@ -2405,16 +2458,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         tree = helper.tree
         plan = module.local(_CACHE, "CachePlan")
         entries = [
-            ("helper_id=", repr(helper.name)),
+            ("helper_id", repr(helper.name)),
             *self.linked(module, operations, spec.operation),
-            ("validator=", repr(tree["validator"])),
-            ("authenticated=", repr(tree["authenticated"])),
-            ("fingerprint=", repr(self.fingerprints[helper.name])),
+            ("validator", repr(tree["validator"])),
+            ("authenticated", repr(tree["authenticated"])),
+            ("fingerprint", repr(self.fingerprints[helper.name])),
         ]
         if (statuses := tuple(tree["statuses"])) != CACHED_STATUSES:
-            entries.append(("statuses=", f"frozenset({tuple_display(map(repr, statuses))})"))
+            entries.append(("statuses", f"frozenset({tuple_display(map(repr, statuses))})"))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
-            entries.append(("vary_allowlist=", f"frozenset({tuple_display(map(repr, names))})"))
+            entries.append(("vary_allowlist", f"frozenset({tuple_display(map(repr, names))})"))
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (_response_type(module, spec.operation),)),)
         )
@@ -2468,13 +2521,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     def binding(self, module: TargetModule, binding: Mapping[str, Any]) -> str:
         """Return the runtime record of a helper's binding: its target, and its literal or its source and selector."""
         value = binding["value"]
-        entries = [("target=", self.target(module, binding["target"]))]
+        entries = [("target", self.target(module, binding["target"]))]
         if "literal" in value:
-            entries.append(("literal=", repr(_wire(value["literal"]))))
+            entries.append(("literal", repr(_wire(value["literal"]))))
         else:
             entries.extend((
-                ("source=", repr(value["source"])),
-                ("selector=", self.selector(module, value["selector"])),
+                ("source", repr(value["source"])),
+                ("selector", self.selector(module, value["selector"])),
             ))
         return _call(module.local("_runtime.protocols.pagination", "PageBinding"), entries)
 
@@ -2530,13 +2583,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         helper = spec.helper
         plan = module.local("_runtime.protocols.pagination", "PaginationPlan")
         entries = [
-            ("helper_id=", repr(helper.name)),
+            ("helper_id", repr(helper.name)),
             *self.linked(module, module.root("_operations"), spec.operation),
-            ("items=", numbered("_items", index)),
-            ("items_selector=", self.selector(module, helper.tree["items"])),
-            ("continuation=", self.continuation(module, spec)),
-            ("fingerprint=", repr(self.fingerprints[helper.name])),
-            *((("bindings=", self.bindings(module, bindings)),) if (bindings := helper.tree["bindings"]) else ()),
+            ("items", numbered("_items", index)),
+            ("items_selector", self.selector(module, helper.tree["items"])),
+            ("continuation", self.continuation(module, spec)),
+            ("fingerprint", repr(self.fingerprints[helper.name])),
+            *((("bindings", self.bindings(module, bindings)),) if (bindings := helper.tree["bindings"]) else ()),
         ]
         page = _response_type(module, spec.operation)
         annotation = subscript_text(
@@ -2546,7 +2599,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     @staticmethod
     def linked(
-        module: TargetModule, operations: str, operation: OperationSpec, keys: tuple[str, str] = ("operation=", "call=")
+        module: TargetModule, operations: str, operation: OperationSpec, keys: tuple[str, str] = ("operation", "call")
     ) -> tuple[tuple[str, str], tuple[str, str]]:
         """Return the keywords of a plan naming an operation: its runtime reference, then its plan in `operations`."""
         reference = module.local("_runtime.protocols.references", "OperationRef")
@@ -2568,32 +2621,32 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         result, poll = self.result(module, spec), _response_type(module, spec.poll)
         create = _response_type(module, spec.operation)
         entries = [
-            ("helper_id=", repr(name)),
-            *self.linked(module, operations, spec.operation, ("operation=", "create=")),
-            ("accepted=", tuple_display(map(repr, tree["accepted_statuses"]))),
-            *self.linked(module, operations, spec.poll, ("poll_operation=", "poll=")),
-            ("state=", self.selector(module, tree["state"])),
+            ("helper_id", repr(name)),
+            *self.linked(module, operations, spec.operation, ("operation", "create")),
+            ("accepted", tuple_display(map(repr, tree["accepted_statuses"]))),
+            *self.linked(module, operations, spec.poll, ("poll_operation", "poll")),
+            ("state", self.selector(module, tree["state"])),
             *(
-                (f"{state}=", tuple_display(repr(_wire(value)) for value in values))
+                (state, tuple_display(repr(_wire(value)) for value in values))
                 for state in STATES
                 if (values := tree[state])
             ),
         ]
         if bindings := tree["bindings"]:
-            entries.append(("bindings=", self.bindings(module, bindings)))
+            entries.append(("bindings", self.bindings(module, bindings)))
         if spec.result == "inline":
             what = f"the result of {name} in its final poll"
             accessors.append(
                 self.accessor(module, numbered("_result", index), poll, module.optional(result), what, spec.steps)
             )
             entries.extend((
-                ("inline=", numbered("_result", index)),
-                ("inline_selector=", self.selector(module, tree["result"]["selector"])),
+                ("inline", numbered("_result", index)),
+                ("inline_selector", self.selector(module, tree["result"]["selector"])),
             ))
         if (fetch := spec.fetch) is not None:
-            entries.extend(self.linked(module, operations, fetch, ("fetch_operation=", "fetch=")))
+            entries.extend(self.linked(module, operations, fetch, ("fetch_operation", "fetch")))
             if bindings := tree["result"]["bindings"]:
-                entries.append(("fetch_bindings=", self.bindings(module, bindings)))
+                entries.append(("fetch_bindings", self.bindings(module, bindings)))
         if (steps := spec.immediate) is not None:
             immediate = tree["immediate_result"]
             what = f"the result of {name} in an immediate create response"
@@ -2601,19 +2654,19 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 self.accessor(module, numbered("_immediate", index), create, module.optional(result), what, steps)
             )
             entries.extend((
-                ("immediate=", numbered("_immediate", index)),
-                ("immediate_statuses=", tuple_display(map(repr, immediate["statuses"]))),
-                ("immediate_selector=", self.selector(module, immediate["selector"])),
+                ("immediate", numbered("_immediate", index)),
+                ("immediate_statuses", tuple_display(map(repr, immediate["statuses"]))),
+                ("immediate_selector", self.selector(module, immediate["selector"])),
             ))
         interval = tree["interval"]
-        entries.append(("interval=", repr(float(interval["seconds"]))))
+        entries.append(("interval", repr(float(interval["seconds"]))))
         if (header := interval["retry_after_header"]) is not None:
-            entries.append(("retry_after_header=", repr(header)))
+            entries.append(("retry_after_header", repr(header)))
         if (cancel := spec.cancel) is not None:
             plans.append(self.cancel(module, index, spec, cancel))
-            entries.append(("cancel=", numbered("CANCEL", index)))
+            entries.append(("cancel", numbered("CANCEL", index)))
         if (expires_at := tree.get("expires_at")) is not None:
-            entries.append(("expires_at=", self.selector(module, expires_at)))
+            entries.append(("expires_at", self.selector(module, expires_at)))
         plan = module.local(_POLLING, "PollingPlan")
         annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (result, poll, create)),))
         plans.append(Plan(numbered("PLAN", index), annotation, plan, _arguments(entries)))
@@ -2623,7 +2676,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         bindings = spec.helper.tree["remote_cancel"]["bindings"]
         entries = list(self.linked(module, module.root("_operations"), cancel))
         if bindings:
-            entries.append(("bindings=", self.bindings(module, bindings)))
+            entries.append(("bindings", self.bindings(module, bindings)))
         plan = module.local(_POLLING, "CancelPlan")
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (_response_type(module, cancel),)),)
@@ -2632,7 +2685,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def module(self, *, asynchronous: bool) -> Templated:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         root = f"{prefix}ProtocolHelpers"
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
         named: dict[str, str] = {}
@@ -2685,7 +2738,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             "helpers.jinja2",
             helpers_template.render_with_scope,
             asynchronous=asynchronous,
-            docstring=f"The {'asyncio' if asynchronous else 'synchronous'} protocol helpers of this package, by their "
+            docstring=f"The {_mode_word(asynchronous=asynchronous)} protocol helpers of this package, by their "
             "dotted names.",
             imports=module.imports(),
             core=core,
@@ -2736,9 +2789,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         runtime = "_runtime.protocols.pagination"
         item, page = module.hint(spec.item), _response_type(module, spec.operation)
         page_type = subscript_text(module.local(runtime, "Page"), (item, page))
-        pager = subscript_text(module.local(runtime, "AsyncPager" if asynchronous else "Pager"), (item, page))
+        pager = subscript_text(module.local(runtime, twin_name("Pager", asynchronous=asynchronous)), (item, page))
         plan = _helper_plan(module, "PLAN", index)
-        first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        first, iterate, following, resume = (
+            module.local(runtime, twin_name(name, asynchronous=asynchronous)) for name in _PAGE_CALLS
+        )
         state = _checkpoint(module)
         return [
             shape.function(
@@ -2781,12 +2836,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
-        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        base = module.local(_POLLING, twin_name("LroHandle", asynchronous=asynchronous))
         returns = handle or subscript_text(base, (self.result(module, spec), _response_type(module, spec.poll)))
         plan = _helper_plan(module, "PLAN", index)
-        extra = (("handle=", handle),) if handle is not None else ()
-        start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
-        resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
+        extra = (("handle", handle),) if handle is not None else ()
+        start = module.local(_POLLING, twin_name("start_operation", asynchronous=asynchronous))
+        resume = module.local(_POLLING, twin_name("resume_operation", asynchronous=asynchronous))
         state = _checkpoint(module)
         return [
             shape.function(
@@ -2819,7 +2874,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         result = subscript_text(
             module.local("_runtime.protocols.caches", "CacheResult"), (_response_type(module, spec.operation),)
         )
-        fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
+        fetch = module.local(_CACHE, twin_name("fetch", asynchronous=asynchronous))
         docstring = f"Fetch {shape.route} through the helper's cache, revalidating a stale entry."
         return shape.function(plan, "fetch", (), result, docstring, fetch, coroutine=asynchronous)
 
@@ -2827,7 +2882,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """Return a polling helper's own handle class, which also cancels its operation remotely."""
         cancel = spec.cancel
         assert cancel is not None
-        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        base = module.local(_POLLING, twin_name("LroHandle", asynchronous=asynchronous))
         receipt = subscript_text(
             module.local("_runtime.protocols.records", "CancelReceipt"), (_response_type(module, cancel),)
         )
@@ -2849,37 +2904,37 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         tree, name = helper.tree, helper.name
         create, probe, append = tree["create"], tree["probe"], tree["append"]
         entries = [
-            ("helper_id=", repr(name)),
-            *self.linked(module, operations, spec.operation, ("operation=", "create=")),
-            *self.linked(module, operations, spec.probe, ("probe_operation=", "probe=")),
-            ("remote_offset=", self.selector(module, probe["remote_offset"])),
-            *self.linked(module, operations, spec.append, ("append_operation=", "append=")),
-            ("offset=", self.target(module, append["offset"])),
-            ("partial_commit=", repr(tree["partial_commit"] == "allowed")),
+            ("helper_id", repr(name)),
+            *self.linked(module, operations, spec.operation, ("operation", "create")),
+            *self.linked(module, operations, spec.probe, ("probe_operation", "probe")),
+            ("remote_offset", self.selector(module, probe["remote_offset"])),
+            *self.linked(module, operations, spec.append, ("append_operation", "append")),
+            ("offset", self.target(module, append["offset"])),
+            ("partial_commit", repr(tree["partial_commit"] == "allowed")),
         ]
         if (size := create.get("size")) is not None:
-            entries.append(("size=", self.target(module, size)))
+            entries.append(("size", self.target(module, size)))
         if (expires_at := create.get("expires_at")) is not None:
-            entries.append(("expires_at=", self.selector(module, expires_at)))
+            entries.append(("expires_at", self.selector(module, expires_at)))
         entries.extend(
             (key, self.bindings(module, bindings))
-            for key, bindings in (("probe_bindings=", probe["bindings"]), ("append_bindings=", append["bindings"]))
+            for key, bindings in (("probe_bindings", probe["bindings"]), ("append_bindings", append["bindings"]))
             if bindings
         )
         if (length := append.get("length")) is not None:
-            entries.append(("length=", self.target(module, length)))
+            entries.append(("length", self.target(module, length)))
         if (checksum := append.get("checksum")) is not None:
             entries.extend((
-                ("checksum=", self.target(module, checksum["target"])),
-                ("checksum_algorithm=", repr(checksum["algorithm"])),
-                ("checksum_encoding=", repr(checksum["encoding"])),
-                ("checksum_prefix=", repr(checksum["algorithm_prefix"])),
+                ("checksum", self.target(module, checksum["target"])),
+                ("checksum_algorithm", repr(checksum["algorithm"])),
+                ("checksum_encoding", repr(checksum["encoding"])),
+                ("checksum_prefix", repr(checksum["algorithm_prefix"])),
             ))
         if (completion := spec.completion) is not None:
             entries.extend((
-                *self.linked(module, operations, completion, ("completion_operation=", "completion=")),
+                *self.linked(module, operations, completion, ("completion_operation", "completion")),
                 *(
-                    ("completion_bindings=", self.bindings(module, bindings))
+                    ("completion_bindings", self.bindings(module, bindings))
                     for bindings in (tree["completion"]["bindings"],)
                     if bindings
                 ),
@@ -2898,15 +2953,15 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         size = None if spec.size is None else spec.size.python_name
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, skip=size)
-        prefix = "Async" if asynchronous else ""
+        prefix = class_prefix(asynchronous=asynchronous)
         handle = subscript_text(
             module.local(_UPLOADS, f"{prefix}UploadHandle"), (_result_type(module, spec.completion),)
         )
         source = Parameter("source", module.name(".", "UploadSource"))
         state = _checkpoint(module)
         plan = _helper_plan(module, "PLAN", index)
-        start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
-        resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
+        start = module.local(_UPLOADS, twin_name("start_upload", asynchronous=asynchronous))
+        resume = module.local(_UPLOADS, twin_name("resume_upload", asynchronous=asynchronous))
         return [
             shape.function(
                 plan,
@@ -2946,34 +3001,34 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         tree = helper.tree
         plan = module.local(_STREAMS, "EventPlan")
         entries = [
-            ("helper_id=", repr(helper.name)),
+            ("helper_id", repr(helper.name)),
             *self.linked(module, module.root("_operations"), spec.operation),
-            ("media=", repr(spec.media)),
+            ("media", repr(spec.media)),
         ]
         if (selector := discriminator(helper)) is None:
-            entries.append(("event=", codec(module, spec.events[0][1])))
+            entries.append(("event", codec(module, spec.events[0][1])))
         else:
             entries.append((
-                "routes=",
+                "routes",
                 tuple_display(tuple_display((repr(key), codec(module, use))) for key, use in spec.events),
             ))
             if selector["from"] == "body":
-                entries.append(("discriminator=", self.selector(module, selector)))
+                entries.append(("discriminator", self.selector(module, selector)))
             if spec.keeps_unknown:
-                entries.append(("unknown=", module.local(_STREAMS, "unknown_event")))
+                entries.append(("unknown", module.local(_STREAMS, "unknown_event")))
         if spec.errors:
             entries.append((
-                "errors=",
+                "errors",
                 tuple_display(tuple_display((repr(key), codec(module, use))) for key, use in spec.errors),
             ))
         if (completion := tree["completion"])["kind"] != "eof":
-            entries.extend((("completion=", repr(completion["kind"])), ("terminal=", repr(completion["value"]))))
+            entries.extend((("completion", repr(completion["kind"])), ("terminal", repr(completion["value"]))))
         if helper.kind != "sse":
-            entries.append(("kind=", repr(helper.kind)))
+            entries.append(("kind", repr(helper.kind)))
             if (final := tree["final_line"]) != "require_newline":
-                entries.append(("final_line=", repr(final)))
+                entries.append(("final_line", repr(final)))
         if (reopen := spec.reopen) is not None:
-            entries.append(("resume=", self.resumption(module, spec, reopen)))
+            entries.append(("resume", self.resumption(module, spec, reopen)))
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (self.event_type(module, spec),)),)
         )
@@ -2987,24 +3042,24 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         resume = spec.helper.tree["resume"]
         entries = [
             *self.linked(module, module.root("_operations"), reopen),
-            ("media=", repr(spec.reopen_media)),
-            ("write=", self.target(module, resume["write"])),
+            ("media", repr(spec.reopen_media)),
+            ("write", self.target(module, resume["write"])),
         ]
         if spec.own:
-            entries.append(("own=", "True"))
+            entries.append(("own", "True"))
         if (cursor := resume["cursor"]) != "event_id":
-            entries.append(("cursor=", self.selector(module, cursor)))
+            entries.append(("cursor", self.selector(module, cursor)))
             entries.extend(
-                (f"{name}=", repr(resume[name]))
+                (name, repr(resume[name]))
                 for name, default in (("missing", "inherit"), ("null", "clear"))
                 if resume[name] != default
             )
         if bindings := resume["bindings"]:
-            entries.append(("bindings=", self.bindings(module, bindings)))
+            entries.append(("bindings", self.bindings(module, bindings)))
         if (reasons := tuple(resume["reconnect_on"])) != ("transport_interruption",):
-            entries.append(("reconnect_on=", tuple_display(map(repr, reasons))))
+            entries.append(("reconnect_on", tuple_display(map(repr, reasons))))
         if (expires_at := resume.get("expires_at")) is not None:
-            entries.append(("expires_at=", self.selector(module, expires_at)))
+            entries.append(("expires_at", self.selector(module, expires_at)))
         return _call(module.local(_STREAMS, "StreamResumePlan"), entries)
 
     def stream_methods(
@@ -3017,9 +3072,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous)
-        handle = module.local(_STREAMS, "AsyncEventStream" if asynchronous else "EventStream")
+        handle = module.local(_STREAMS, twin_name("EventStream", asynchronous=asynchronous))
         plan = _helper_plan(module, "STREAM", index)
-        opener = module.local(_STREAMS, "aopen_events" if asynchronous else "open_events")
+        opener = module.local(_STREAMS, twin_name("open_events", asynchronous=asynchronous))
         stream = _STREAM_KINDS[spec.helper.kind]
         returns = subscript_text(handle, (self.event_type(module, spec),))
         methods = [
@@ -3034,7 +3089,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             )
         ]
         if spec.reopen is not None:
-            resume = module.local(_STREAMS, "aresume_events" if asynchronous else "resume_events")
+            resume = module.local(_STREAMS, twin_name("resume_events", asynchronous=asynchronous))
             methods.append(
                 shape.function(
                     plan,
@@ -3069,20 +3124,20 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         tree = helper.tree
         plan = module.local("_runtime.protocols.websocket", "ChannelPlan")
         entries = [
-            ("helper_id=", repr(helper.name)),
+            ("helper_id", repr(helper.name)),
             *self.linked(module, module.root("_operations"), spec.operation),
-            ("fingerprint=", repr(self.fingerprints[helper.name])),
+            ("fingerprint", repr(self.fingerprints[helper.name])),
         ]
         for direction, use in (("send", spec.send), ("receive", spec.receive)):
             message = tree[direction]
             if message["codec"] != "json":
-                entries.append((f"{direction}_codec=", repr(message["codec"])))
+                entries.append((f"{direction}_codec", repr(message["codec"])))
             if message["frame"] != "text":
-                entries.append((f"{direction}_frame=", repr(message["frame"])))
+                entries.append((f"{direction}_frame", repr(message["frame"])))
             if use is not None:
-                entries.append(("encoder=" if direction == "send" else "decoder=", self.resources.codec(module, use)))
+                entries.append(("encoder" if direction == "send" else "decoder", self.resources.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
-            entries.append(("subprotocols=", tuple_display(map(repr, subprotocols))))
+            entries.append(("subprotocols", tuple_display(map(repr, subprotocols))))
         sent, received = self.message_types(module, spec)
         annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (sent, received)),))
         return Plan(numbered("SOCKET", index), annotation, plan, _arguments(entries))
@@ -3092,9 +3147,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         options = _helper_options(spec.helper.kind)
         shape = self.resources.call_shape(module, spec.operation, options, asynchronous=asynchronous, body=False)
         runtime = "_runtime.protocols.websocket"
-        session = module.local(runtime, "AsyncWebSocketSession" if asynchronous else "WebSocketSession")
+        session = module.local(runtime, twin_name("WebSocketSession", asynchronous=asynchronous))
         plan = _helper_plan(module, "SOCKET", index)
-        opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
+        opener = module.local(runtime, twin_name("connect_socket", asynchronous=asynchronous))
         sent, received = self.message_types(module, spec)
         returns = subscript_text(session, (sent, received))
         summary = f"Open the WebSocket of {shape.route}, returning once its handshake got a valid 101."
@@ -3184,6 +3239,7 @@ class ClientRenderer:
             "readme.jinja2",
             readme_template.render_with_scope,
             package=config.package,
+            retry_statuses=english_list(_RETRY_STATUSES, "and", "serial"),
             public_modules=english_list((*public, "response types"), "and", "serial"),
             reference="_generated_docs/runtime.md",
             example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
@@ -3282,6 +3338,7 @@ class ClientRenderer:
             "runtime.jinja2",
             runtime_template.render_with_scope,
             package=self.config.package,
+            defaults=_RUNTIME_DEFAULTS,
             oauth=capabilities.oauth,
             schemes=capabilities.schemes,
             security=bool(capabilities.security),
@@ -3294,6 +3351,7 @@ class ClientRenderer:
             if pages
             else None,
             polling=any(isinstance(spec, PollingSpec) for spec in self.helpers),
+            limits=_HELPER_LIMITS,
             cache=_caches(self.helpers),
             uploads=any(isinstance(spec, UploadSpec) for spec in self.helpers),
             streams=RuntimeStreams(

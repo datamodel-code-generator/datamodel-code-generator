@@ -34,7 +34,13 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings, _import_key
+from datamodel_code_generator.imports import (
+    IMPORT_LITERAL,
+    Import,
+    _import_bindings,
+    _import_key,
+    _iter_import_bindings,
+)
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -44,6 +50,7 @@ from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, reference_import_target
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -51,7 +58,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ImportOptionsHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     ReplacedRootsHost,
     ReuseOptionsHost,
     RootModelHost,
@@ -60,12 +66,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _format_tags,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
-    _iter_import_bindings,
     _named_data_types,
     _string_or_identifier_pattern,
     _unique_items_tuple,
     get_special_path,
-    reference_import_target,
     site_display_name,
     unused_model_lists,
 )
@@ -182,7 +186,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
 
     @property
     def _literal_under_all_enum_reference_ids(self) -> set[int]:
-        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values."""
+        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values.
+
+        Keyed by the identity of the Reference, not by model key, so a deep copy of a type is not among them (#5824).
+        """
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
@@ -197,8 +204,8 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
         """Whether models get the schema validator rules the types cannot express."""
 
     @property
-    def typed_nullable_map_reference_ids(self) -> set[int]:
-        """The ids of the references of the nullable maps whose values the parse typed."""
+    def typed_nullable_map_reference_ids(self) -> set[ModelKey]:
+        """The model keys of the nullable maps whose values the parse typed."""
 
     @property
     def use_msgspec_nullable_enum_alias(self) -> bool:
@@ -1388,7 +1395,7 @@ def record_model_placement(
         or (
             parser.collapse_root_models
             and any(
-                id(model.reference) in parser.typed_nullable_map_reference_ids
+                model_key_of(model.reference) in parser.typed_nullable_map_reference_ids
                 for models in placement.values()
                 for model in models
             )

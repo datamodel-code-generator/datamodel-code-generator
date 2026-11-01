@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
     EXPORTED_NAMES,
@@ -1548,7 +1549,7 @@ def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
 
 def _member(source: object, key: str) -> JSONValue | None:
     """Return a recorded JSON member of an info source, or None when it has none."""
-    return source.get(key) if isinstance(source, dict) else None
+    return as_mapping(source).get(key)
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
