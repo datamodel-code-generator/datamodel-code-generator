@@ -81,6 +81,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     ModelWritten,
     PydanticDataclassWritten,
     classify_assignment,
+    excluded_from_init,
     participates_in_constructor,
     requires_value,
 )
@@ -139,7 +140,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
-    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
+    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DefaultState, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
     from datamodel_code_generator.model._render_plan import (
@@ -1110,7 +1111,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return (
             self.use_default_factory_for_optional_nested_models
             and not self.required
-            and (self.default is None or self.default is UNDEFINED)
+            and _default_state(self.default) != "value"
         )
 
     def _has_default_for_nested_model_factory(self) -> bool:
@@ -1249,8 +1250,7 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
         and (
             requires_value(field)
             or (
-                (field.default is UNDEFINED or field.default is None)
-                and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
+                _default_state(field.default) != "value" and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
             )
         )
         for field in fields
@@ -1987,6 +1987,11 @@ class BaseClassDataType(DataType):
 UNDEFINED: Any = object()
 
 
+def _default_state(default: object) -> DefaultState:
+    """Return what a field's default is: none given (``UNDEFINED``), ``None``, or another value."""
+    return "undefined" if default is UNDEFINED else "none" if default is None else "value"
+
+
 class BaseLayoutView(NamedTuple):
     """How the layouts of generated bases look before the processing of each module changes them.
 
@@ -2001,11 +2006,10 @@ class BaseLayoutView(NamedTuple):
 
 def _model_written(field: DataModelFieldBase) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
-    default = field.default
     return ModelWritten(
         text=bool(field.field),
-        declared_factory="default_factory" in field.extras,
-        default="undefined" if default is UNDEFINED else "none" if default is None else "value",
+        declared_factory=field.has_default_factory,
+        default=_default_state(field.default),
     )
 
 
@@ -2026,7 +2030,7 @@ def _assignment_inputs(
         strips_none=field.should_strip_default_none(),
         annotated=field.use_annotated,
         class_var=field.is_class_var,
-        init_excluded=field.extras.get("init") is False,
+        init_excluded=excluded_from_init(field),
         visibility=(
             field._dataclass_visibility()  # noqa: SLF001
             if row == "pydantic-dataclass" or isinstance(written, PydanticDataclassWritten)
@@ -2073,9 +2077,7 @@ def _get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
 
 def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a field participates in its model constructor."""
-    return participates_in_constructor(
-        "model", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
-    )
+    return participates_in_constructor("model", init_excluded=excluded_from_init(field), class_var=field.is_class_var)
 
 
 class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
@@ -2369,7 +2371,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         explicit_extras: Collection[str] = (),
     ) -> None:
         """Preserve output-specific inherited state until requiredness is final."""
-        if "default_factory" in inherited_field.extras and "default_factory" not in explicit_extras:
+        if inherited_field.has_default_factory and "default_factory" not in explicit_extras:
             field.__dict__[_REQUIRED_INHERITED_DEFAULT_FACTORY_KEY] = True
         cls.finalize_required_inherited_field(field)
 

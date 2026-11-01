@@ -69,6 +69,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
     _model_key_of_model,
@@ -804,7 +805,7 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         if self.is_class_var or self.required or self.has_default or factory_present:
             return False
-        return self.default is None or self.default is UNDEFINED
+        return _default_state(self.default) != "value"
 
     @property
     @override

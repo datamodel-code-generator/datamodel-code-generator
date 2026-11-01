@@ -69,6 +69,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _default_state,
     _find_base_classes,
     _has_opaque_custom_base,
     _keeps_stripped_place,
@@ -943,7 +944,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if self.alias is not None:
             args.put("name", self.alias, EXPLICIT_ALIAS, ("alias",))
 
-        if self.default is not UNDEFINED and self.default is not None:
+        if _default_state(self.default) == "value":
             args.put("default", self.default, DEFAULT_VALUE)
         elif self._not_required and "default_factory" not in args:
             args.put("default", None if self.nullable else UNSET, _NONE_DEFAULT if self.nullable else _UNSET_DEFAULT)
@@ -952,8 +953,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             args.pop("default", "factory-not-applicable", REQUIRED_FIELD)
             args.pop("default_factory", "factory-not-applicable", REQUIRED_FIELD)
         elif (
-            self.default is not UNDEFINED
-            and self.default is not None
+            _default_state(self.default) == "value"
             and "default_factory" not in args
             and (conversion := self._get_default_as_struct_model()) is not None
         ):

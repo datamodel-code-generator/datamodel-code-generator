@@ -49,6 +49,7 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model.base import (
+    _default_state,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
@@ -357,7 +358,7 @@ class DataModelField(DataModelFieldBase):
 
         A declared factory of a required field, or a ``None`` one, goes to ``args`` as omitted.
         """
-        if requires_value(self) or (self.default is not UNDEFINED and self.default is not None and configured is None):
+        if requires_value(self) or (_default_state(self.default) == "value" and configured is None):
             if configured is not None and args is not None:
                 args.omit_entry(configured, "factory-not-applicable", _FACTORY_NOT_APPLICABLE)
             return None
@@ -378,7 +379,7 @@ class DataModelField(DataModelFieldBase):
             return None
         configured = (
             Kwarg("default_factory", self.extras["default_factory"], _DECLARED_FACTORY, ("extra:default_factory",))
-            if "default_factory" in self.extras
+            if self.has_default_factory
             else None
         )
         return None if (factory := self._effective_default_factory(configured)) is None else factory.value
