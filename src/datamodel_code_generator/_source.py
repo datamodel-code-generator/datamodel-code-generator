@@ -11,7 +11,7 @@ from hashlib import sha256
 from importlib.util import source_from_cache
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, TextIO, TypeAlias
+from typing import TYPE_CHECKING, TextIO, TypeAlias, cast
 
 from datamodel_code_generator._module_paths import is_package_init
 
@@ -252,15 +252,25 @@ def _is_protobuf_text(text: str) -> bool:
     return False
 
 
-def load_data(text: str) -> dict[str, YamlValue]:
-    """Load text as a JSON or YAML mapping based on its content."""
+def load_text_data(text: str, *, mapping: bool) -> YamlValue:
+    """Load text as JSON when it starts like JSON and parses, otherwise as YAML.
+
+    With ``mapping`` (an input document), JSON that is no mapping is read again as YAML, and YAML that is no mapping
+    raises TypeError; without it (an MCP tool list), any JSON or YAML value is returned.
+    """
     import json  # noqa: PLC0415
 
     if _is_json_text(text):
         with contextlib.suppress(json.JSONDecodeError):
-            if isinstance(result := json.loads(text), dict):
+            result = json.loads(text)
+            if not mapping or isinstance(result, dict):
                 return result
-    return load_yaml_dict(text)
+    return load_yaml_dict(text) if mapping else load_yaml(text)
+
+
+def load_data(text: str) -> dict[str, YamlValue]:
+    """Load text as a JSON or YAML mapping based on its content."""
+    return cast("dict[str, YamlValue]", load_text_data(text, mapping=True))
 
 
 def load_data_from_path(path: Path, encoding: str) -> dict[str, YamlValue]:

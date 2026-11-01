@@ -44,6 +44,7 @@ from datamodel_code_generator._source import (
     enable_parsed_source_cache,
     load_data,
     load_data_from_path,
+    load_text_data,
     load_yaml,
     load_yaml_dict,
     load_yaml_dict_from_path,
@@ -1234,20 +1235,14 @@ def _convert_mcp_tools(
 
     from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema  # noqa: PLC0415
 
-    def load_mcp_tools_text(text: str) -> Any:
-        if _is_json_text(text):
-            with contextlib.suppress(json.JSONDecodeError):
-                return json.loads(text)
-        return load_yaml(text)
-
     def load_mcp_tools_data() -> Any:
         match input_:
             case Mapping() | list():
                 return input_
             case Path():
-                return load_mcp_tools_text(input_.read_text(encoding=config.encoding))
+                return load_text_data(input_.read_text(encoding=config.encoding), mapping=False)
         assert input_text is not None
-        return load_mcp_tools_text(input_text)
+        return load_text_data(input_text, mapping=False)
 
     try:
         mcp_tools_jsonschema = convert_mcp_tools_to_jsonschema(load_mcp_tools_data())
