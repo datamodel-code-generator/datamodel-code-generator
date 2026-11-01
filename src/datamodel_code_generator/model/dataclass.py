@@ -26,6 +26,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     DataclassItemInputs,
     DataclassWritten,
     dataclass_field_items,
+    excluded_from_init,
     participates_in_constructor,
     requires_value,
     written_data,
@@ -90,7 +91,7 @@ def get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
 def field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a Python dataclass field participates in __init__."""
     return participates_in_constructor(
-        "dataclass", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
+        "dataclass", init_excluded=excluded_from_init(field), class_var=field.is_class_var
     )
 
 
@@ -312,7 +313,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             inherited_field,
             explicit_extras=explicit_extras,
         )
-        if inherited_field.extras.get("init") is False and "init" not in explicit_extras:
+        if excluded_from_init(inherited_field) and "init" not in explicit_extras:
             field.__dict__[_REQUIRED_INHERITED_INIT_KEY] = True
 
     @classmethod
@@ -435,7 +436,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return dataclass_field_items(
             DataclassItemInputs(
                 extra_keys=tuple(key for key in self.extras if key in self._FIELD_KEYS),
-                init_excluded=self.extras.get("init") is False,
+                init_excluded=excluded_from_init(self),
                 nested_model_factory=nested is not None,
                 default=_default_state(default),
                 container_default=isinstance(default, (list, dict, set)),

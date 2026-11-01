@@ -16,6 +16,7 @@ from datamodel_code_generator.model import DataModelFieldBase, _rebuild_model_wi
 from datamodel_code_generator.model import dataclass as _dataclass_module
 from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
+    excluded_from_init,
     participates_in_constructor,
     requires_value,
 )
@@ -89,7 +90,7 @@ def _get_pydantic_dataclass_field_default_info(field: DataModelFieldBase) -> tup
 def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a Pydantic dataclass field participates in __init__."""
     return participates_in_constructor(
-        "pydantic-dataclass", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
+        "pydantic-dataclass", init_excluded=excluded_from_init(field), class_var=field.is_class_var
     )
 
 

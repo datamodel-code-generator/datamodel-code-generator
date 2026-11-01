@@ -52,6 +52,7 @@ __all__ = [
     "WrittenData",
     "classify_assignment",
     "dataclass_field_items",
+    "excluded_from_init",
     "participates_in_constructor",
     "requires_value",
     "struct_assigned",
@@ -276,6 +277,15 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     if row == "dataclass":
         return not init_excluded
     return not class_var if row == "pydantic-dataclass" else True
+
+
+def excluded_from_init(field: FieldView) -> bool:
+    """Return whether a field declares ``init=False``, which leaves it out of a dataclass ``__init__``.
+
+    The ``init_excluded`` of ``AssignmentInputs`` and ``DataclassItemInputs`` is this answer, and so is the one the
+    constructor participation hooks of the built-in outputs pass to ``participates_in_constructor``.
+    """
+    return field.extras.get("init") is False
 
 
 def requires_value(field: FieldView) -> bool:

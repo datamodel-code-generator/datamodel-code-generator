@@ -81,6 +81,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     ModelWritten,
     PydanticDataclassWritten,
     classify_assignment,
+    excluded_from_init,
     participates_in_constructor,
     requires_value,
 )
@@ -2029,7 +2030,7 @@ def _assignment_inputs(
         strips_none=field.should_strip_default_none(),
         annotated=field.use_annotated,
         class_var=field.is_class_var,
-        init_excluded=field.extras.get("init") is False,
+        init_excluded=excluded_from_init(field),
         visibility=(
             field._dataclass_visibility()  # noqa: SLF001
             if row == "pydantic-dataclass" or isinstance(written, PydanticDataclassWritten)
@@ -2076,9 +2077,7 @@ def _get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
 
 def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a field participates in its model constructor."""
-    return participates_in_constructor(
-        "model", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
-    )
+    return participates_in_constructor("model", init_excluded=excluded_from_init(field), class_var=field.is_class_var)
 
 
 class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
