@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
@@ -237,6 +237,53 @@ def _unchanged(rewritten: tuple[PythonTypeExpr, ...], original: tuple[PythonType
     return all(new is old for new, old in zip(rewritten, original, strict=True))
 
 
+_ChildRow: TypeAlias = Literal["all", "values"]
+"""The children of a node a walk visits: ``all`` of them, or the ``values``: the arguments of a subscript and the items
+of a union, a parameter list or a tuple, without the base of a subscript, the model of a field path, the owner of a
+member or the value of a starred expression."""
+
+
+def _children(expression: PythonTypeExpr, row: _ChildRow) -> tuple[PythonTypeExpr, ...] | None:
+    """Return the expressions a node holds in ``row``, in written order; None for a node that holds none there."""
+    match expression:
+        case PythonTypeSubscript():
+            return expression.arguments if row == "values" else (expression.base, *expression.arguments)
+        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
+            return expression.items
+        case PythonTypeModelField() if row == "all":
+            return (expression.model,)
+        case PythonTypeMember() if row == "all":
+            return (expression.owner,)
+        case PythonTypeStarred() if row == "all":
+            return (expression.value,)
+    return None
+
+
+def _with_children(
+    expression: PythonTypeExpr,
+    row: _ChildRow,
+    children: tuple[PythonTypeExpr, ...],
+    rewritten: tuple[PythonTypeExpr, ...],
+) -> PythonTypeExpr:
+    """Return the node holding ``rewritten`` in place of its ``children`` in ``row``, itself where none changed.
+
+    A starred expression is the one node with children that no case names.
+    """
+    if _unchanged(rewritten, children):
+        return expression
+    match expression:
+        case PythonTypeSubscript():
+            base, arguments = (expression.base, rewritten) if row == "values" else (rewritten[0], rewritten[1:])
+            return PythonTypeSubscript(base, arguments)
+        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
+            return type(expression)(rewritten)
+        case PythonTypeModelField():
+            return PythonTypeModelField(rewritten[0], expression.field_name, expression.arguments, expression.pydantic)
+        case PythonTypeMember():
+            return PythonTypeMember(rewritten[0], expression.name)
+    return PythonTypeStarred(rewritten[0])
+
+
 def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[too-many-return-statements, too-many-branches]
     """Render an expression with stable formatting and no AST round trip."""
     match expression:
@@ -309,6 +356,11 @@ def is_union_python_type_expr(expression: PythonTypeExpr) -> bool:
     )
 
 
+def is_literal_python_type_expr(expression: PythonTypeExpr) -> bool:
+    """Return whether an expression subscripts ``Literal``, by its base's last name."""
+    return isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) == "Literal"
+
+
 def _iter_names(expression: PythonTypeExpr, *, qualified: bool) -> Iterator[str]:
     match expression:
         case PythonTypeName() | PythonTypeBoundName():
@@ -318,19 +370,9 @@ def _iter_names(expression: PythonTypeExpr, *, qualified: bool) -> Iterator[str]
             yield ".".join(expression.parts) if qualified else expression.parts[-1]
         case PythonTypeRuntimeSymbol():
             yield _runtime_symbol_name(expression) if qualified else expression.qualname_parts[-1]
-        case PythonTypeSubscript():
-            yield from _iter_names(expression.base, qualified=qualified)
-            for argument in expression.arguments:
-                yield from _iter_names(argument, qualified=qualified)
-        case PythonTypeModelField():
-            yield from _iter_names(expression.model, qualified=qualified)
-        case PythonTypeMember():
-            yield from _iter_names(expression.owner, qualified=qualified)
-        case PythonTypeStarred():
-            yield from _iter_names(expression.value, qualified=qualified)
-        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
-            for item in expression.items:
-                yield from _iter_names(item, qualified=qualified)
+        case _:
+            for child in _children(expression, "all") or ():
+                yield from _iter_names(child, qualified=qualified)
 
 
 def iter_python_type_expr_names(expression: PythonTypeExpr) -> Iterator[str]:
@@ -370,32 +412,11 @@ def rewrite_python_type_expr(
     transform_leaf: Callable[[PythonTypeExpr], PythonTypeExpr],
 ) -> PythonTypeExpr:
     """Rewrite leaves while sharing every unchanged immutable subtree."""
-    match expression:
-        case PythonTypeModelField():
-            model = rewrite_python_type_expr(expression.model, transform_leaf)
-            return (
-                expression
-                if model is expression.model
-                else PythonTypeModelField(model, expression.field_name, expression.arguments, expression.pydantic)
-            )
-        case PythonTypeSubscript():
-            base = rewrite_python_type_expr(expression.base, transform_leaf)
-            arguments = tuple(rewrite_python_type_expr(item, transform_leaf) for item in expression.arguments)
-            return (
-                expression
-                if base is expression.base and _unchanged(arguments, expression.arguments)
-                else PythonTypeSubscript(base, arguments)
-            )
-        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
-            items = tuple(rewrite_python_type_expr(item, transform_leaf) for item in expression.items)
-            return expression if _unchanged(items, expression.items) else type(expression)(items)
-        case PythonTypeStarred():
-            value = rewrite_python_type_expr(expression.value, transform_leaf)
-            return expression if value is expression.value else PythonTypeStarred(value)
-        case PythonTypeMember():
-            owner = rewrite_python_type_expr(expression.owner, transform_leaf)
-            return expression if owner is expression.owner else PythonTypeMember(owner, expression.name)
-    return transform_leaf(expression)
+    if (children := _children(expression, "all")) is None:
+        return transform_leaf(expression)
+    return _with_children(
+        expression, "all", children, tuple(rewrite_python_type_expr(child, transform_leaf) for child in children)
+    )
 
 
 def read_literal_enum_members(expression: PythonTypeExpr) -> PythonTypeExpr:
@@ -406,45 +427,30 @@ def read_literal_enum_members(expression: PythonTypeExpr) -> PythonTypeExpr:
     ``client`` from ``http``, as a from-import takes a class or a submodule alike. A dotted name of two parts keeps
     naming an imported symbol.
     """
-    match expression:
-        case PythonTypeSubscript():
-            literal = python_type_expr_base_name(expression.base) == "Literal"
-            arguments = tuple(
-                PythonTypeMember(PythonTypeQualifiedName(argument.parts[:-1]), argument.parts[-1])
-                if literal
-                and isinstance(argument, PythonTypeQualifiedName)
-                and len(argument.parts) >= _MODULE_MEMBER_PARTS
-                else read_literal_enum_members(argument)
-                for argument in expression.arguments
-            )
-            return (
-                expression
-                if _unchanged(arguments, expression.arguments)
-                else PythonTypeSubscript(expression.base, arguments)
-            )
-        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
-            items = tuple(map(read_literal_enum_members, expression.items))
-            return expression if _unchanged(items, expression.items) else type(expression)(items)
-        case _:
-            pass
-    return expression
+    if (children := _children(expression, "values")) is None:
+        return expression
+    literal = is_literal_python_type_expr(expression)
+    return _with_children(
+        expression,
+        "values",
+        children,
+        tuple(
+            PythonTypeMember(PythonTypeQualifiedName(child.parts[:-1]), child.parts[-1])
+            if literal and isinstance(child, PythonTypeQualifiedName) and len(child.parts) >= _MODULE_MEMBER_PARTS
+            else read_literal_enum_members(child)
+            for child in children
+        ),
+    )
 
 
 def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]:
     """Yield each value of a ``Literal`` that is a member of a class or module, such as an enum member."""
-    match expression:
-        case PythonTypeSubscript():
-            literal = python_type_expr_base_name(expression.base) == "Literal"
-            for argument in expression.arguments:
-                if literal and isinstance(argument, PythonTypeMember | PythonTypeRuntimeSymbol):
-                    yield argument
-                else:
-                    yield from iter_literal_members(argument)
-        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
-            for item in expression.items:
-                yield from iter_literal_members(item)
-        case _:
-            pass
+    literal = is_literal_python_type_expr(expression)
+    for child in _children(expression, "values") or ():
+        if literal and isinstance(child, PythonTypeMember | PythonTypeRuntimeSymbol):
+            yield child
+        else:
+            yield from iter_literal_members(child)
 
 
 __all__ = [
@@ -463,6 +469,7 @@ __all__ = [
     "PythonTypeSubscript",
     "PythonTypeTuple",
     "PythonTypeUnion",
+    "is_literal_python_type_expr",
     "is_union_python_type_expr",
     "iter_literal_members",
     "iter_python_type_expr_names",
