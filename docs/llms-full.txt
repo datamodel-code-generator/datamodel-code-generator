@@ -68297,8 +68297,10 @@ the live `Imports` at once and keeps it as an entry with its producer: the pass 
 field it wrote for. The live `Imports` is the replay of its entries (`replay`). `imports.py` reads every import the
 same way: by its module and name (`_import_key`, the key every alias map uses), a stored `X as Y` split into the name and
 the alias kept apart (`_stored_import`), the module `--import-overrides` moves a name to (`_override_module`, never a
-`__future__` name), whether an `Imports` holds an import or drops every count of it (`_holds`, `_remove_all`), and
-the names an import block binds (`_iter_import_bindings`). How a module imports a model of another module and writes
+`__future__` name), whether an `Imports` holds an import or drops every count of it (`_holds`, `_remove_all`),
+the names an import block binds (`_iter_import_bindings`), and the alias `<name>_aliased` an import takes where a name
+of its module hides it (`_aliased_name`, each caller numbering it by its released row, `legacy.alias-order`) with the
+import that binds the identity under it (`_aliased_as`). How a module imports a model of another module and writes
 the expression that names it is `parser/_passes/_import_binding.py`: the rule (`reference_import_target`, under an
 `ImportPathRow`), the import it adds (`register_reference_import`) and the writes through the generation store
 (`set_reference_expression`, `set_reference_expressions`, `import_references`); the relative import text it writes,

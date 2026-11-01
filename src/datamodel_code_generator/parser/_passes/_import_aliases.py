@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import cache
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from datamodel_code_generator.imports import Import, _import_key
+from datamodel_code_generator.imports import _aliased_as, _aliased_name, _import_key
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import iter_models_field_data_types, register_runtime_expression
 from datamodel_code_generator.python_literal import rewrite_runtime_expressions, rewrite_runtime_imports
@@ -20,7 +20,7 @@ from datamodel_code_generator.python_literal import rewrite_runtime_expressions,
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from datamodel_code_generator.imports import Imports, _ImportKey
+    from datamodel_code_generator.imports import Import, Imports, _ImportKey
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._shared import RuntimeExpressionFlags
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -53,17 +53,12 @@ def _ordinary_field_shadow_aliases(
                     has_python_type = True
                 if not has_runtime_expressions and data_type.runtime_expression_imports:
                     has_runtime_expressions = True
-                if data_type.import_ and data_type.type in all_model_field_names:
-                    key = _import_key(data_type.import_)
-                    aliases.setdefault(
-                        key,
-                        Import(
-                            from_=data_type.import_.from_,
-                            import_=data_type.import_.import_,
-                            alias=f"{data_type.type}_aliased",
-                            reference_path=data_type.import_.reference_path,
-                        ),
-                    )
+                if (
+                    data_type.import_
+                    and data_type.type in all_model_field_names
+                    and (key := _import_key(data_type.import_)) not in aliases
+                ):
+                    aliases[key] = _aliased_as(data_type.import_, _aliased_name(data_type.type))
     return aliases, has_python_type, has_runtime_expressions
 
 
