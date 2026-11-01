@@ -5,7 +5,8 @@ keyword plays. Every walker reads it, by shape or through a view of its roles (`
 visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
 ``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
 data. ``subschema_entries`` reads the subschemas one keyword holds by its shape, and ``json_nodes`` walks every value of
-a loaded JSON value. ``admitted_types`` reads what the types a ``type`` keyword lists admit.
+a loaded JSON value. ``admitted_types`` reads what the types a ``type`` keyword lists admit, and ``non_null_types``
+which of them are not ``null``.
 """
 
 from __future__ import annotations
@@ -201,6 +202,12 @@ def admitted_types(types: Iterable[str]) -> frozenset[str]:
     """Return the JSON types a ``type`` keyword admits: the ones it lists, and ``integer`` where it lists ``number``."""
     listed = frozenset(types)
     return listed | {"integer"} if "number" in listed else listed
+
+
+def non_null_types(types: Iterable[str], /, *, distinct: bool = False) -> list[str]:
+    """Return the types a ``type`` list holds other than ``null``, in their order; ``distinct`` keeps one of each."""
+    listed = [type_ for type_ in types if type_ != "null"]
+    return list(dict.fromkeys(listed)) if distinct else listed
 
 
 def definition_ref(key: DefinitionKey, name: str = "") -> str:

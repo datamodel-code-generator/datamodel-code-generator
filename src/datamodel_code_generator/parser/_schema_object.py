@@ -24,7 +24,7 @@ from pydantic_core import core_schema
 from typing_extensions import override
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, schema_positions
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, keep_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
@@ -647,10 +647,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     @cached_property
     def has_multiple_types(self) -> bool:
         """Check if the type is a list with multiple non-null types."""
-        if not isinstance(self.type, list):
-            return False
-        non_null_types = [t for t in self.type if t != "null"]
-        return len(non_null_types) > 1
+        return isinstance(self.type, list) and len(non_null_types(self.type)) > 1
 
     @cached_property
     def has_ref_with_schema_keywords(self) -> bool:

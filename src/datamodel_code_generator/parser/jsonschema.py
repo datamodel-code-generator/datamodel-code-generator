@@ -136,6 +136,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_VALUE_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SINGLE_SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
     definition_ref,
+    non_null_types,
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._message_text import english_list, for_count
@@ -1853,8 +1854,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 schema_type,
                 [
                     self._get_constrained_data_type(obj, type_, field_constraints=field_constraints)
-                    for type_ in schema_type
-                    if type_ != "null"
+                    for type_ in non_null_types(schema_type)
                 ],
             )
         data_type = self._get_constrained_data_type(obj, schema_type, field_constraints=field_constraints)
@@ -5731,9 +5731,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _build_constrained_type_union(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
         """Build the union of a type list whose branches take annotated aliases."""
         data_types = []
-        for type_ in cast("list[str]", obj.type):
-            if type_ == "null":
-                continue
+        for type_ in non_null_types(cast("list[str]", obj.type)):
             if type_ == "object" and (obj.propertyNames is not None or obj.patternProperties):
                 branch_schema = self._get_array_union_branch_schema(obj, type_)
                 branch_path = get_special_path("type-union-object", path)
@@ -5762,7 +5760,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the non-array branches of a heterogeneous array type union."""
         match obj.type:
             case list() as type_list if "array" in type_list:
-                return tuple(type_ for type_ in type_list if type_ not in {"array", "null"})
+                return tuple(type_ for type_ in non_null_types(type_list) if type_ != "array")
         return ()
 
     def _add_array_union_non_array_types(  # noqa: PLR0913
@@ -6307,7 +6305,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Avoid applying type-specific Field constraints to heterogeneous root unions."""
         if not self.field_constraints or not isinstance(obj.type, list) or not obj.has_multiple_types:
             return False
-        return len({type_ for type_ in obj.type if type_ != "null"}) > 1
+        return len(non_null_types(obj.type, distinct=True)) > 1
 
     def _iter_non_object_union_types(
         self, name: str, obj: JsonSchemaObject, type_list: list[str], path: list[str], *, keep_constraints: bool = False
@@ -6326,8 +6324,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             and _inherited_schemas.get_inherited_constraint_fields(self, obj)
         )
-        for type_ in type_list:
-            if type_ not in {"object", "null"}:
+        for type_ in non_null_types(type_list):
+            if type_ != "object":
                 if localize_constraints:
                     yield self._parse_array_union_constrained_branch(name, obj, path, type_)
                 elif keep_constraints:
