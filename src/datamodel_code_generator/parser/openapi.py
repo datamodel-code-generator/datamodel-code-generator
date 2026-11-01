@@ -1306,19 +1306,18 @@ class OpenAPIParser(JsonSchemaParser):
 
     def _missing_references_of_parameter_models(self) -> set[str]:
         """Return the paths of the models that parameter models use, directly or through others, but lack."""
+        from datamodel_code_generator._graph import reach  # noqa: PLC0415
+
         models = {model.path: model for model in self.results}
-        pending = [model for model, _ in self._parameter_models]
-        seen = {model.path for model in pending}
-        missing: set[str] = set()
-        while pending:
-            model = pending.pop()
-            for path in model.reference_classes.union(model.additional_properties_reference_classes) - seen:
-                seen.add(path)
-                if (used := models.get(path)) is None:
-                    missing.add(path)
-                else:
-                    pending.append(used)
-        return missing
+        parameter_models = [model for model, _ in self._parameter_models]
+        walked = {model.path for model in parameter_models}
+
+        def used(*users: DataModel) -> set[str]:
+            paths = (user.reference_classes.union(user.additional_properties_reference_classes) for user in users)
+            return set().union(*paths) - walked
+
+        reached = reach(used(*parameter_models), lambda path: used(models[path]) if path in models else ())
+        return {path for path in reached if path not in models}
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Index discriminator metadata when the existing loader reads an external document."""
