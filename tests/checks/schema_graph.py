@@ -116,10 +116,17 @@ def site_facts(original: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(original)
     def site_facts(self: Any, location: Any) -> Any:
-        if (graph_mode := mode(Area.SCHEMA_GRAPH)) is None or location not in self._schema_sites:
+        if (graph_mode := mode(Area.SCHEMA_GRAPH)) is None:
             return original(self, location)
+        first = location not in self._schema_sites
         kept = original(self, location)
-        if (fresh := self._located_site(location)) is None or _site_record(fresh) != _site_record(kept):
+        # the record is taken at the first read: the site holds the document's own annotation values, so a write
+        # nested in one of them would change the kept site and a fresh read alike
+        records = self.__dict__.setdefault("_kept_site_records", {})
+        if first or location not in records:
+            records[location] = _site_record(kept)
+            return kept
+        if (fresh := self._located_site(location)) is None or _site_record(fresh) != records[location]:
             from datamodel_code_generator import Error
             from datamodel_code_generator._url_redaction import redact_reference
 
