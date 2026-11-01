@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
 from datamodel_code_generator._target_unicode import is_python_name
@@ -233,10 +234,6 @@ def _runtime_symbol_name(symbol: PythonTypeRuntimeSymbol) -> str:
     return dotted_name(symbol.module, ".".join(symbol.qualname_parts))
 
 
-def _unchanged(rewritten: tuple[PythonTypeExpr, ...], original: tuple[PythonTypeExpr, ...]) -> bool:
-    return all(new is old for new, old in zip(rewritten, original, strict=True))
-
-
 _ChildRow: TypeAlias = Literal["all", "values"]
 """The children of a node a walk visits: ``all`` of them, or the ``values``: the arguments of a subscript and the items
 of a union, a parameter list or a tuple, without the base of a subscript, the model of a field path, the owner of a
@@ -269,7 +266,7 @@ def _with_children(
 
     A starred expression is the one node with children that no case names.
     """
-    if _unchanged(rewritten, children):
+    if unchanged(rewritten, children):
         return expression
     match expression:
         case PythonTypeSubscript():
