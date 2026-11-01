@@ -98,7 +98,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
     _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR,
-    DataModelType,
+    DataModelType,  # noqa: F401  # Preserve the established __main__ export.
     Error,
     InputFileType,
     InvalidClassNameError,
@@ -147,6 +147,7 @@ from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES
 
 
 def __getattr__(name: str) -> Any:
@@ -1765,7 +1766,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
         warnings.simplefilter("ignore")
 
     if (
-        config.output_model_type in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        config.output_model_type in _PYDANTIC_MODEL_TYPES
         and not config.use_annotated
         and namespace.use_annotated is None
         and pyproject_config.get("use_annotated") is None
