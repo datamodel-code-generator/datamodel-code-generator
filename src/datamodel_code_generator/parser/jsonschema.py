@@ -4549,7 +4549,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and isinstance(merged_root.items, JsonSchemaObject)
             and merged_root.items.enum
         ):
-            item_type = self._parse_all_of_root_value(f"{name}Item", merged_root.items, get_special_path("items", path))
+            item_type = with_type_origin(
+                self._parse_all_of_root_value(f"{name}Item", merged_root.items, get_special_path("items", path)),
+                merged_root.items.schema_location,
+            )
             merged_root = merged_root.model_copy(update={"items": True})
         root_data_type = self._parse_all_of_merged_root(name, merged_root, path)
         reference = cast("Reference", root_data_type.reference)

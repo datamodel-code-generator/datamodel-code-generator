@@ -29,7 +29,7 @@ from datamodel_code_generator._fastapi.packages import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, lexical, overlaps, resolved
+from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -402,7 +402,7 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
 
     if staged.is_file():
         return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
-    files = sorted((path.relative_to(staged).parts, path) for path in staged.rglob("*") if path.is_file())
+    files = sorted((path.relative_to(staged).parts, path) for path in files_under(staged))
     return tuple(ModelArtifact(parts, path.read_bytes(), encoding) for parts, path in files)
 
 

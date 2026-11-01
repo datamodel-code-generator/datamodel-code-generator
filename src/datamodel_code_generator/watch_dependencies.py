@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, same_file
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, names_directory, same_file
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -275,7 +275,7 @@ class WatchDependencies(_Weakrefable):
             try:
                 is_directory = S_ISDIR(resolved_path.stat().st_mode)
             except OSError:
-                is_directory = not resolved_path.suffix
+                is_directory = names_directory(resolved_path)
         outputs[resolved_path] = is_directory
 
     def _add_config(
