@@ -22,6 +22,7 @@ from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     INSTANCE_DATA_KEYWORDS,
     SINGLE_SCHEMA_SHAPES,
+    non_null_types,
     schema_positions,
 )
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY
@@ -192,7 +193,7 @@ def _is_enumless_const(part: JsonSchemaObject) -> bool:
 
 def _non_null_types(type_: str | list[str] | None) -> str | list[str] | None:
     """Return a ``type`` keyword without null in its list."""
-    return [item for item in type_ if item != "null"] if isinstance(type_, list) else type_
+    return non_null_types(type_) if isinstance(type_, list) else type_
 
 
 def _excludes_objects(type_: str | list[str] | None) -> bool:
@@ -967,7 +968,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
         if obj.description:
             merged_dict["description"] = obj.description
         if isinstance(schema_type := merged_schema.type, list) and not merged_schema.has_multiple_types:
-            schema_type = next((item for item in schema_type if item != "null"), None)
+            schema_type = next(iter(non_null_types(schema_type)), None)
         if isinstance(schema_type, str):
             constraint_types = frozenset({schema_type})
             if (
@@ -1360,7 +1361,7 @@ def all_of_site_schema(
     own = obj.model_dump(exclude={"allOf", *_ALL_OF_VALUE_KEYWORDS}, exclude_unset=True, by_alias=True)
     if value.pop("nullable", False) or parser._null_facts(obj, "all-of-value").admits_null:  # noqa: SLF001
         if (type_ := value.get("type")) is not None:
-            value["type"] = [*(item for item in declared_types(type_) if item != "null"), "null"]
+            value["type"] = [*non_null_types(declared_types(type_)), "null"]
         elif null_member:
             value = {"anyOf": [value, null_schema()]}
         else:

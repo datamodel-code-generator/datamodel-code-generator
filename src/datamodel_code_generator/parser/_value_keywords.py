@@ -35,7 +35,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
@@ -473,8 +473,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         case str():
             final_type = parent_type
         case list():
-            non_null_types = [t for t in parent_type if t != "null"]
-            final_type = non_null_types[0] if non_null_types else inferred_type
+            final_type = next(iter(non_null_types(parent_type)), inferred_type)
         case _:
             pass
 
@@ -623,10 +622,8 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     match obj.type:
         case str() as schema_type:
             pass
-        case list() as schema_types if (
-            schema_type := next((item for item in schema_types if item != "null"), None)
-        ) is not None and all(item in ("null", schema_type) for item in schema_types):  # noqa: PLR6201
-            pass
+        case list() as schema_types if len(distinct := non_null_types(schema_types, distinct=True)) == 1:
+            schema_type = distinct[0]
         case _:
             return False
 

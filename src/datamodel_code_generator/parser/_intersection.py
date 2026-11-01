@@ -63,6 +63,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
     admitted_types,
+    non_null_types,
     schema_positions,
 )
 from datamodel_code_generator._records import record
@@ -490,7 +491,7 @@ class _Reconciler:
             return
         row_types = declared_types(row.get("type"))
         written = [
-            *(schema_type for schema_type in merged if schema_type != "null"),
+            *non_null_types(merged),
             *(["null"] if admits_null and "null" in row_types else []),
         ]
         if written and set(written) != set(row_types):
