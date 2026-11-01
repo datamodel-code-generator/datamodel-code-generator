@@ -1605,7 +1605,7 @@ class _Resources(_Typing):
             return _Argument(parameter.python_name, annotation)
         if (default := parameter.default) is None:
             return _Argument(parameter.python_name, annotation, "unset")
-        return _Argument(parameter.python_name, annotation, "value", repr(default.value))
+        return _Argument(parameter.python_name, annotation, "value", module.argument(default))
 
     def requests(
         self, module: TargetModule, spec: OperationSpec, *, asynchronous: bool

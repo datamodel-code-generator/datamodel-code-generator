@@ -55,11 +55,9 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GenericType,
-    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralSequence,
-    SourceExpression,
     UnionType,
     fact,
 )
@@ -99,7 +97,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         Requirement,
-        TypeArgument,
         TypeView,
     )
     from datamodel_code_generator._target_module import TypeNames
@@ -313,20 +310,6 @@ class Module(TargetModule):
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
-
-    def argument(self, value: TypeArgument) -> str:
-        """Return the Python expression of a recorded literal or source expression."""
-        match value:
-            case LiteralScalar(kind="decimal"):
-                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
-            case LiteralScalar():
-                return repr(value.value)
-            case SourceExpression():
-                return value.text
-            case _:
-                pass
-        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
-        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 
 class UserModule(Module):
