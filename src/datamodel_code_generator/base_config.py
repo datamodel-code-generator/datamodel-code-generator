@@ -134,7 +134,12 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     msgspec. A setting that was set keeps its value, which the target refuses when it cannot use it.
     """
     from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
-    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion  # noqa: PLC0415
+    from datamodel_code_generator.enums import (  # noqa: PLC0415
+        _PYDANTIC_MODEL_TYPES,
+        DataModelType,
+        OpenAPIScope,
+        TargetPydanticVersion,
+    )
 
     implied: dict[str, Any] = {}
     scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
@@ -152,7 +157,7 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     implied.update((name, True) for name in switches if name not in explicit and not getattr(config, name))
     if (
         implied.get("use_missing_sentinel", config.use_missing_sentinel)
-        and backend in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        and backend in _PYDANTIC_MODEL_TYPES
         and "target_pydantic_version" not in explicit
     ):
         implied["target_pydantic_version"] = TargetPydanticVersion.V2_14

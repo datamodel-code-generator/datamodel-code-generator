@@ -67,6 +67,7 @@ from datamodel_code_generator._target_unicode import (
     host_identifiers,  # noqa: F401  # Preserve the established model.base export.
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
 )
+from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
     IMPORT_ANY,  # noqa: F401  # Preserve the established model.base export.
@@ -132,7 +133,6 @@ if TYPE_CHECKING:
 
     from jinja2 import Environment, Template
 
-    from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
     from datamodel_code_generator._constraint_applicability import OutputKeywords, RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
@@ -179,18 +179,7 @@ _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
 _EXTRA_TEMPLATE_DATA_KEY_ERROR = "extra template data keys must be strings"
 _DATACLASS_ARGUMENTS_MAPPING_ERROR = "dataclass_arguments must be a dictionary"
 _DATACLASS_ARGUMENTS_KEY_ERROR = "dataclass_arguments keys must be strings"
-_DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset({
-    "eq",
-    "frozen",
-    "init",
-    "kw_only",
-    "match_args",
-    "order",
-    "repr",
-    "slots",
-    "unsafe_hash",
-    "weakref_slot",
-})
+_DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset(DataclassArguments.__annotations__)
 _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
     "class_body_lines",
     "config_items",

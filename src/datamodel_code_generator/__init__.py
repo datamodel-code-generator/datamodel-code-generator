@@ -64,6 +64,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
     MIN_VERSION,
@@ -649,7 +650,7 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
     if not config.use_missing_sentinel:
         return config
 
-    if config.output_model_type not in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}:
+    if config.output_model_type not in _PYDANTIC_MODEL_TYPES:
         msg = (
             "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
             "or `pydantic_v2.dataclass`"

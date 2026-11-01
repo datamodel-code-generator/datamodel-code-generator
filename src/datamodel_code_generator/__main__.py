@@ -64,10 +64,9 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg.startswith(("--generate-prompt", "--output-format-json-schema=")) or arg == "--output-format-json-schema"
     for arg in sys.argv[1:]
 ):  # pragma: no cover
-    from datamodel_code_generator.arguments import arg_parser, namespace
+    from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
     arg_parser.parse_args(namespace=namespace)
     schema_output_name = namespace.output_format_json_schema
     if schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
@@ -98,7 +97,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
     _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR,
-    DataModelType,
+    DataModelType,  # noqa: F401  # Preserve the established __main__ export.
     Error,
     InputFileType,
     InvalidClassNameError,
@@ -145,8 +144,9 @@ from datamodel_code_generator._project_config import (
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
-from datamodel_code_generator.arguments import arg_parser, namespace
+from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES
 
 
 def __getattr__(name: str) -> Any:
@@ -1765,7 +1765,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
         warnings.simplefilter("ignore")
 
     if (
-        config.output_model_type in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        config.output_model_type in _PYDANTIC_MODEL_TYPES
         and not config.use_annotated
         and namespace.use_annotated is None
         and pyproject_config.get("use_annotated") is None
@@ -2477,8 +2477,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
     """Execute datamodel code generation from command-line arguments."""
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
 
     if "_ARGCOMPLETE" in os.environ:  # pragma: no cover
         import argcomplete  # noqa: PLC0415

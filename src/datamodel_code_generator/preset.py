@@ -24,6 +24,7 @@ from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.base_config import BaseGenerateConfig
 from datamodel_code_generator.cli_options import CLI_OPTION_META
 from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
     AllOfClassHierarchy,
     AllOfMergeMode,
     CollapseRootModelsNameStrategy,
@@ -425,10 +426,7 @@ _STANDARD_20260619_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             use_frozen_field=True,
         ),
         description="Generate Pythonic field names while preserving input aliases and readOnly immutability metadata.",
-        output_model_types=frozenset({
-            DataModelType.PydanticV2BaseModel,
-            DataModelType.PydanticV2Dataclass,
-        }),
+        output_model_types=_PYDANTIC_MODEL_TYPES,
     ),
     PresetOptionGroup(
         title="msgspec Struct output",
