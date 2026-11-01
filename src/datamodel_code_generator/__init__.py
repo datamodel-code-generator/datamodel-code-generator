@@ -1909,9 +1909,9 @@ def _generate_with_atomic_remote_update(
 
 def _prepare_generation_config(config: GenerateConfig, caller_cwd: Path) -> tuple[GenerateConfig, Path, Path]:
     """Resolve configuration paths before any process-relative generation work."""
-    config = _absolute_config_paths(
-        config, ("output", "emit_model_metadata", "custom_file_header_path", "custom_template_dir"), caller_cwd
-    )
+    from datamodel_code_generator._config_fields import CALLER_RELATIVE_PATH_FIELDS  # noqa: PLC0415
+
+    config = _absolute_config_paths(config, CALLER_RELATIVE_PATH_FIELDS, caller_cwd)
     logical_output = _absolute_generation_path(config._logical_output, caller_cwd)  # noqa: SLF001
     output_context_path = _output_context_path(logical_output or config.output, caller_cwd)
     if (http_local_ref_path := _absolute_generation_path(config.http_local_ref_path, output_context_path)) is not (
