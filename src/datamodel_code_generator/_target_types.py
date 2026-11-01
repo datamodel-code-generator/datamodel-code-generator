@@ -50,6 +50,7 @@ __all__ = [
     "is_none",
     "lexical_kind",
     "present",
+    "sole_present",
     "takes_null",
     "type_identity",
     "without_none",
@@ -98,6 +99,11 @@ def admits_none(value: TypeView | None) -> bool:
 def present(value: TypeView) -> tuple[TypeView, ...]:
     """Return the members of a union besides None, or the type itself when it is neither a union nor None."""
     return tuple(member for member in _members(value) if not is_none(member))
+
+
+def sole_present(value: TypeView | None) -> TypeView | None:
+    """Return the one member of a union besides None, or None for any other type and a union with several others."""
+    return members[0] if isinstance(value, UnionType) and len(members := present(value)) == 1 else None
 
 
 def without_none(value: TypeView) -> TypeView:
