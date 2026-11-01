@@ -34,6 +34,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, type_override_classes
 from datamodel_code_generator.imports import Import, _override_module
+from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -55,6 +56,7 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import skips_root_model
 from datamodel_code_generator.parser._passes._keys import (
@@ -574,7 +576,9 @@ def apply_inherited_field_default(
         match field.default:
             case dict() | list() | set():
                 field.default = deepcopy(field.default)
-    field.use_default_with_required = apply_default_values_for_required_fields and field.required and field.has_default
+    field.use_default_with_required = uses_default_with_required(
+        required=field.required, has_default=field.has_default, use_default=apply_default_values_for_required_fields
+    )
 
 
 def placeholder_identity(placeholder: DataModelFieldBase) -> FieldIdentity:
@@ -724,8 +728,7 @@ def get_constructor_ordering_conflicts(
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
-            and field.required
-            and not field.use_default_with_required
+            and requires_value(field)
             and (field_name in required_assignment_names or facts.assigned)
         )
         field_has_signature_default = (

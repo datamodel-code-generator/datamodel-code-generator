@@ -150,6 +150,7 @@ from datamodel_code_generator.parser._field_rows import (
     FIELD_OPTIONS_LEFT_OUT,
     FIELD_ROWS_BUILT_WITHOUT_VALIDATION,
     FIELD_ROWS_WITHOUT_VALIDATION_ALIASES,
+    uses_default_with_required,
 )
 from datamodel_code_generator.parser._graph_ids import (
     keyed_models,
@@ -1211,7 +1212,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return (
             effective_default,
             effective_has_default,
-            required and self.apply_default_values_for_required_fields and effective_has_default,
+            uses_default_with_required(
+                required=required,
+                has_default=effective_has_default,
+                use_default=self.apply_default_values_for_required_fields,
+            ),
         )
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:

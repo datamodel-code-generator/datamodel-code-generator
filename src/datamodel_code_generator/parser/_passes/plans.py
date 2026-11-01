@@ -16,6 +16,7 @@ from datamodel_code_generator import ReuseScope
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
@@ -206,7 +207,11 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
         if required and not field.required:
             parser._graph_builder.require_field(  # noqa: SLF001
                 field,
-                use_default_with_required=parser.apply_default_values_for_required_fields and field.has_default,
+                use_default_with_required=uses_default_with_required(
+                    required=required,
+                    has_default=field.has_default,
+                    use_default=parser.apply_default_values_for_required_fields,
+                ),
             )
         return field
 

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection
 
     from datamodel_code_generator.model._render_plan import AssignmentRule, ConstructorDefault
+    from datamodel_code_generator.model._views import FieldView
 
 __all__ = [
     "AssignmentInputs",
@@ -52,6 +53,7 @@ __all__ = [
     "classify_assignment",
     "dataclass_field_items",
     "participates_in_constructor",
+    "requires_value",
     "struct_assigned",
     "struct_construction_assigned",
     "written_data",
@@ -274,6 +276,16 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     if row == "dataclass":
         return not init_excluded
     return not class_var if row == "pydantic-dataclass" else True
+
+
+def requires_value(field: FieldView) -> bool:
+    """Return whether a field must be given a value: it is required and does not keep its default beside it.
+
+    A required field keeps its default where ``--use-default`` writes it (``use_default_with_required``). The
+    ``required`` of ``AssignmentInputs`` and ``DataclassItemInputs`` is this answer, and so is every backend's choice
+    of a required ``Field(...)``, a dropped default or default factory and a default in effect.
+    """
+    return field.required and not field.use_default_with_required
 
 
 def struct_assigned(*, required: bool) -> bool:
