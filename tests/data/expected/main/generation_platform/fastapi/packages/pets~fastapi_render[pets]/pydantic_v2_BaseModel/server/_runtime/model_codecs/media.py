@@ -22,6 +22,7 @@ from .errors import MalformedError, ParameterEncodingError
 __all__ = (
     "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "JSON_MEDIA_TYPE",
     "LENIENT_QUOTED",
     "NOT_MODIFIED",
     "NO_CONTENT",
@@ -49,9 +50,11 @@ __all__ = (
     "decode_text",
     "encode_form",
     "essence",
+    "fields_without",
     "finite",
     "form_encode",
     "form_pairs",
+    "is_token",
     "json_bytes",
     "json_integer",
     "json_number",
@@ -84,6 +87,7 @@ T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
+JSON_MEDIA_TYPE: Final = "application/json"
 QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
 LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
 """A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
@@ -264,6 +268,16 @@ def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[st
         parameters.append((parameter["name"].lower(), parameter["value"]))
         position = parameter.end()
     return essence["type"].lower(), essence["subtype"].lower(), parameters
+
+
+def is_token(text: str) -> bool:
+    """Return whether text is an HTTP token as a whole, such as a method, a header field name or a cookie name."""
+    return TOKEN.fullmatch(text) is not None
+
+
+def fields_without(fields: Iterable[tuple[str, str]], names: Container[str]) -> list[tuple[str, str]]:
+    """Return header fields in order without those whose name, in lowercase, is one of the given lowercase names."""
+    return [(name, value) for name, value in fields if name.lower() not in names]
 
 
 def unquoted(value: str) -> str:

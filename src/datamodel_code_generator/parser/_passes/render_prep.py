@@ -20,12 +20,13 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
+from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.hashability import set_items_may_keep_builtin_hash
 from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
-    UNDEFINED,
     DataModel,
+    _default_state,
     _effective_field_owners,
     _find_base_classes,
     _model_key_of_model,
@@ -37,16 +38,17 @@ from datamodel_code_generator.model.enum import Enum, Member
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, set_reference_expressions
 from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     GenerationStoreHost,
     ImportOptionsHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     ReplacedRootsHost,
     RootModelTypeHost,
     RuntimeExpressionFlags,
+    UnusedModels,
     _context_models,
     _forward_enum_member_literals,
     _hidden_type_names,
@@ -61,7 +63,7 @@ from datamodel_code_generator.parser._passes._shared import (
     module_members,
     normalize_default_value_constraints,
     resolve_default_value_descriptor,
-    set_reference_expressions,
+    run_unused_models,
     takes_positional_place,
     unused_model_lists,
 )
@@ -248,12 +250,7 @@ def _needs_validate_default(data_type: DataType) -> bool:
 
 def _applies_default(field: DataModelFieldBase) -> bool:
     """Return whether the default of a field is one that render preparation reads: set, and in effect for the field."""
-    return not (
-        (field.required and not field.use_default_with_required)
-        or field.default is None
-        or field.default is UNDEFINED
-        or isinstance(field.default, Member)
-    )
+    return not (requires_value(field) or _default_state(field.default) != "value" or isinstance(field.default, Member))
 
 
 def validates_structured_default(field: DataModelFieldBase) -> bool:
@@ -1089,13 +1086,10 @@ def collect_live_models(state: _PreparedModule[Any]) -> None:
     if not (unused_models := state.current_unused_models):
         state.live_models = state.model_list
         return
-    unused_model_ids = {id(model) for model in unused_models}
-    state.live_models = [model for model in state.model_list if id(model) not in unused_model_ids]
+    state.live_models = UnusedModels(unused_models).written(state.model_list)
 
 
-def prepare_type_alias_fields(
-    parser: RenderPrepHost, contexts: Sequence[ModuleContextView], unused_models: list[DataModel]
-) -> None:
+def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
     """Prepare alias bodies once every module has collapsed its roots.
 
     A type alias has no model config to select Python's regex engine, so its patterns carry it,
@@ -1105,11 +1099,11 @@ def prepare_type_alias_fields(
     if (prepare_field := parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
         return
     prepared_patterns: dict[str, PythonRuntimeExpression] = {}
-    unused_model_ids = {id(model) for model in unused_models}
+    unused = run_unused_models(state)
     replace_field_type = parser._graph_builder.replace_field_type  # noqa: SLF001
-    for ctx in contexts:
+    for ctx in state.contexts:
         for model in ctx.models:
-            if not isinstance(model, TypeAliasBase) or id(model) in unused_model_ids or not model.fields:
+            if not isinstance(model, TypeAliasBase) or model in unused or not model.fields:
                 continue
             previous_imports = model.imports
             if prepare_field(field := model.fields[0], prepared_patterns, replace_field_type):
@@ -1151,14 +1145,11 @@ def finalize_sequence_interface(state: _FinalizeState[Any]) -> None:
 
 def decide_nested_model_default_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
     """Decide the nested models' default factories over the model lists the modules write, unused models gone."""
-    written_lists = {id(ctx.models) for ctx in state.contexts}
-    leaving = {
-        id(model)
-        for model, _, models in unused_model_lists(parser, state)
-        if id(models) in written_lists and model in models
-    }
+    leaving = UnusedModels(
+        model for model, _, models, written in unused_model_lists(parser, state) if written and model in models
+    )
     cast("RenderReady", RENDER_READY.get()).nested_factories = parser._nested_model_default_factory_decision(  # noqa: SLF001
-        [[model for model in ctx.models if id(model) not in leaving] for ctx in state.contexts],
+        [leaving.written(ctx.models) for ctx in state.contexts],
         parser._recursion_facts["require_update"],  # noqa: SLF001
     )
 

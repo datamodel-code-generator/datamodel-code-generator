@@ -11,6 +11,7 @@ from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
@@ -280,17 +281,17 @@ def _path_items(
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
     A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
-    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item (a
-    specification extension such as ``x-foo``, or the ``parameters`` key) is skipped, as the API walk of generation
-    skips it.
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item is skipped as
+    the paths scope skips it (row ``legacy-object-extension-paths``), also for the api scope, whose walk skips an
+    extension key that holds an object too.
     """
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
             string_key(path, kind, error_path)
-            if section == "paths" and not holds_path_item(path, item):
-                continue
-            if section == "webhooks" or path_selected(path, include_paths):
+            if section == "webhooks" or (
+                holds_path_item(path, item, "legacy-object-extension-paths") and path_selected(path, include_paths)
+            ):
                 yield path, as_mapping(_dereferenced(document, item))
 
 
@@ -412,16 +413,11 @@ def _operation_message(channel: object, operation: str) -> object:
 
 
 def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
-    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations.
-
-    A key of ``paths`` that holds no path item (a specification extension such as ``x-foo``, or the ``parameters``
-    key) holds no operations, as the API walk of generation reads it.
-    """
+    """Count OpenAPI path operations, or AsyncAPI channel and top-level operations."""
     if kind == "openapi":
         return sum(
             method in OPERATION_METHODS
-            for path, item in as_mapping(document.get("paths")).items()
-            if holds_path_item(path, item)
+            for item in as_mapping(document.get("paths")).values()
             for method in as_mapping(_dereferenced(document, item))
         )
     return len(as_mapping(document.get("operations"))) + sum(
@@ -696,14 +692,7 @@ class _Walker:
 
 
 def _reachable(start: str, edges: Mapping[str, set[str]]) -> set[str]:
-    seen: set[str] = set()
-    stack = [start]
-    while stack:
-        for target in edges.get(stack.pop(), ()):
-            if target not in seen:
-                seen.add(target)
-                stack.append(target)
-    return seen
+    return set(reach(edges.get(start, ()), lambda target: edges.get(target, ())))
 
 
 def _reference_cycles(references: Mapping[str, set[str]]) -> int:
@@ -762,11 +751,13 @@ def _walk_components(walker: _Walker, components: Mapping[str, Any], roots: Iter
         else sorted({target for root in roots for target in walker.references[root]})
     )
     walked: dict[str, Any] = {}
-    while pending:
-        if (key := pending.pop()) not in walked:
-            walked[key] = components[key]
-            walker.walk_named(key, components[key])
-            pending.extend(sorted(walker.references[key] - walked.keys()))
+
+    def visit(key: str) -> list[str]:
+        walked[key] = components[key]
+        walker.walk_named(key, components[key])
+        return sorted(walker.references[key] - walked.keys())
+
+    reach(pending, visit)
     return dict(sorted(walked.items()))
 
 

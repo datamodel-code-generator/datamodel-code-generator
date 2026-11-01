@@ -18,7 +18,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
-from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -34,7 +33,14 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
-from datamodel_code_generator.imports import IMPORT_LITERAL, Import, _import_bindings, _import_key
+from datamodel_code_generator.imports import (
+    IMPORT_LITERAL,
+    Import,
+    _aliased_name,
+    _import_bindings,
+    _import_key,
+    _iter_import_bindings,
+)
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -44,6 +50,7 @@ from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, reference_import_target
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -51,7 +58,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ImportOptionsHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     ReplacedRootsHost,
     ReuseOptionsHost,
     RootModelHost,
@@ -60,12 +66,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _format_tags,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
-    _iter_import_bindings,
     _named_data_types,
     _string_or_identifier_pattern,
     _unique_items_tuple,
     get_special_path,
-    reference_import_target,
     site_display_name,
     unused_model_lists,
 )
@@ -291,7 +295,7 @@ _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
 def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     """Reserve and return the first ``<name>_aliased`` name, with a suffix when taken."""
-    alias, _ = first_free(f"{name}_aliased", reserved_names.__contains__, "underscore")
+    alias = _aliased_name(name, reserved_names.__contains__)
     reserved_names.add(alias)
     return alias
 
@@ -1097,9 +1101,8 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
     A model leaves the output, and the store's emitted models, only when the list it leaves is the one its module
     writes; the list the module structure recorded may be an earlier one.
     """
-    written_lists = {id(ctx.models) for ctx in state.contexts}
     with cast("RenderReady", RENDER_READY.get()).import_view():
-        for unused_model, module, models in unused_model_lists(parser, state):
+        for unused_model, module, models, written in unused_model_lists(parser, state):
             if unused_model in models:  # pragma: no branch
                 parser._import_ledger.remove(  # noqa: SLF001
                     state.module_to_import[module],
@@ -1107,7 +1110,7 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
                     ImportProducer("unused-models", unused_model),
                 )
                 models.remove(unused_model)
-                if id(models) in written_lists:
+                if written:
                     parser._graph_builder.retire_model(unused_model)  # noqa: SLF001
 
 

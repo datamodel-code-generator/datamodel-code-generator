@@ -12,7 +12,7 @@ from urllib.parse import ParseResult, unquote
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
-from datamodel_code_generator._document_reader import string_key
+from datamodel_code_generator._document_reader import descend, string_key
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
@@ -24,6 +24,7 @@ from datamodel_code_generator._openapi_paths import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
+from datamodel_code_generator._site_facts import EMPTY_SITE, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -35,6 +36,7 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -58,6 +60,7 @@ from datamodel_code_generator.types import DataType  # noqa: TC001 - Public anno
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
+    from datamodel_code_generator._site_facts import SiteFacts
     from datamodel_code_generator.model import DataModel
 
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in PATH_ITEM_METHODS)
@@ -186,6 +189,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._processed_declarations: set[SchemaLocation] = set()
         self._projected_declarations: set[SchemaLocation] = set()
         self._declaration_types: dict[SchemaLocation, DataType] = {}
+        self._schema_sites: dict[SchemaLocation, SiteFacts] = {}
         self._api_roots: set[str] = set()
         self._api_security: YamlValue = None
         self.declaration_uses: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]] = []
@@ -368,7 +372,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         document = resolved.partition("#")[0]
         raw_document = self._api_documents.get(document)
         if raw_document is None:
-            raw_document = self._get_ref_body(document) if document else self.raw_obj
+            raw_document = ref_file_document(self, document)
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
@@ -384,6 +388,21 @@ class ApiOpenAPIParser(OpenAPIParser):
             document, _, fragment = self._ref_key(ref).key.partition("#")
         tokens = fragment_tokens(unquote(fragment))
         return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
+
+    def _site_facts(self, location: SchemaLocation) -> SiteFacts:
+        """Return the site of a schema object of a loaded document, read once, with its references resolved.
+
+        A location that holds no value reads as the empty schema, and is read again when it is asked again, so a
+        document loaded later is read then.
+        """
+        if (site := self._schema_sites.get(location)) is None and (site := self._located_site(location)) is not None:
+            self._schema_sites[location] = site
+        return EMPTY_SITE if site is None else site
+
+    def _located_site(self, location: SchemaLocation) -> SiteFacts | None:
+        """Read the site of a location of a loaded document anew, None where it holds no value."""
+        value = descend(self._api_documents.get(location.document), location.tokens, "legacy-int-tokens", None)
+        return None if value is None else site_facts_of(value, location, self._schema_reference_location)
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
         """Use the same object-reference boundary for ordinary parser leaves, resolving in the current context."""
@@ -859,6 +878,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._processed_declarations.clear()
             self._projected_declarations.clear()
             self._declaration_types.clear()
+            self._schema_sites.clear()
             self._api_documents.clear()
             self._api_roots.clear()
             self._api_security = None

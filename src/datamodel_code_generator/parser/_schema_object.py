@@ -271,6 +271,11 @@ def _is_document_object(values: object) -> TypeIs[dict[str, Any]]:
     return isinstance(values, dict) and (graph := SCHEMA_GRAPH.get()) is not None and id(values) in graph.locations
 
 
+def _has_map_key_keywords(schema: JsonSchemaObject) -> bool:
+    """Return whether ``schema`` has the keywords of a map's keys: patternProperties or a propertyNames but false."""
+    return bool(schema.patternProperties or (schema.propertyNames is not None and schema.propertyNames is not False))
+
+
 def _evaluates_no_property(schema: object) -> bool:
     """Return whether a raw subschema evaluates no property of the object it applies to."""
     return isinstance(schema, bool) or (isinstance(schema, dict) and _PROPERTY_EVALUATING_KEYWORDS.isdisjoint(schema))

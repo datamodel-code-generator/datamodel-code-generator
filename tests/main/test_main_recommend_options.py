@@ -63,7 +63,6 @@ def _recommend(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     args: Sequence[str],
-    expected: str | None,
     *,
     inputs: Mapping[str, Path] | None = None,
     mode: Sequence[str] = ("quick",),
@@ -72,27 +71,17 @@ def _recommend(
     """Run the CLI from a project directory holding copies of the inputs, so paths in the output are relative.
 
     ``mode`` follows --recommend-options; an empty one runs the command without a mode. Without ``expected_stderr``,
-    nothing may be printed to stderr. Without ``expected``, pytest names the stored output after the test.
+    nothing may be printed to stderr.
     """
     for name, source in (inputs or {}).items():
         shutil.copy(source, tmp_path / name)
     with chdir(tmp_path):
-        if expected is None:
-            (name,) = inputs or {}
-            index = list(args).index("--input")
-            run_main_and_assert(
-                input_path=Path(name),
-                extra_args=[*args[:index], *args[index + 2 :], "--recommend-options", *mode],
-                capsys=capsys,
-                assert_no_stderr=True,
-            )
-            return
         run_main_with_args(
             [*args, "--recommend-options", *mode],
             capsys=capsys,
-            expected_stdout_path=EXPECTED_PATH / expected,
             expected_stderr=expected_stderr,
             assert_no_stderr=expected_stderr is None,
+            derived_stdout=True,
             use_builtin_default_formatter=False,
         )
 
@@ -114,7 +103,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
 `--generate-prompt` to include the recommendation in an LLM prompt instead.""",
     input_schema="recommend_options/api.yaml",
     cli_args=["--input", "api.yaml", "--input-file-type", "openapi", "--recommend-options"],
-    expected_stdout="main/recommend_options/api.txt",
+    expected_stdout="main/main_recommend_options/recommend_options.stdout.txt",
     related_options=[
         "--preset",
         "--output-format",
@@ -142,40 +131,33 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         tmp_path,
         capsys,
         ["--input", "api.yaml", "--input-file-type", "openapi"],
-        "api.txt",
         inputs=_inputs(INPUT_PATH / "api.yaml"),
         mode=(),
     )
 
 
 @pytest.mark.parametrize(
-    ("source", "args", "expected"),
+    ("source", "args"),
     [
-        pytest.param("api.yaml", ["--output-format", "json"], "api_json.txt", id="json"),
-        pytest.param("union_edges.yaml", [], "union_edges.txt", id="union-edges"),
-        pytest.param("service-config.json", [], "service_config.txt", id="jsonschema"),
+        pytest.param("api.yaml", ["--output-format", "json"], id="json"),
+        pytest.param("union_edges.yaml", [], id="union-edges"),
+        pytest.param("service-config.json", [], id="jsonschema"),
         pytest.param(
             "service-config.json",
             ["--naming-strategy", "full-path"],
-            "service_config_naming_set.txt",
             id="jsonschema-contested-option-set",
         ),
-        pytest.param("order.json", [], "order.txt", id="root-name-taken"),
-        pytest.param("events.yaml", [], "asyncapi.txt", id="asyncapi"),
-        pytest.param("events_v3.yaml", [], "asyncapi_v3.txt", id="asyncapi-v3"),
-        pytest.param("swagger.yaml", ["--input-file-type", "openapi"], "swagger.txt", id="swagger"),
+        pytest.param("order.json", [], id="root-name-taken"),
+        pytest.param("events.yaml", [], id="asyncapi"),
+        pytest.param("events_v3.yaml", [], id="asyncapi-v3"),
+        pytest.param("swagger.yaml", ["--input-file-type", "openapi"], id="swagger"),
         pytest.param(
             "swagger.yaml",
             ["--input-file-type", "openapi", "--output-format", "json"],
-            "swagger_json.txt",
             id="swagger-json",
         ),
-        pytest.param(
-            "swagger.yaml", ["--input-file-type", "jsonschema"], "swagger_jsonschema.txt", id="swagger-definitions"
-        ),
-        pytest.param(
-            "operations.yaml", ["--openapi-scopes", "schemas", "paths"], "operations_paths.txt", id="paths-scope"
-        ),
+        pytest.param("swagger.yaml", ["--input-file-type", "jsonschema"], id="swagger-definitions"),
+        pytest.param("operations.yaml", ["--openapi-scopes", "schemas", "paths"], id="paths-scope"),
         pytest.param(
             "operations.yaml",
             [
@@ -187,97 +169,78 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
                 "--openapi-include-paths",
                 "/pets*",
             ],
-            "operations.txt",
             id="openapi-scopes",
         ),
         pytest.param(
             "api.yaml",
             ["--use-title-as-name", "--enum-field-as-literal", "one"],
-            "api_explicit_options.txt",
             id="explicit-options",
         ),
-        pytest.param("api.yaml", ["--preset", "practical-py314-20261017"], "api_practical.txt", id="preset-value"),
-        pytest.param("api.yaml", ["--preset", "standard-py314-20261015"], "api_older_preset.txt", id="older-preset"),
-        pytest.param("api.yaml", ["--output-model-type", "typing.TypedDict"], "api_typed_dict.txt", id="typed-dict"),
-        pytest.param("validation.yaml", [], "validation.txt", id="validation-keywords"),
-        pytest.param(
-            "validation.yaml", ["--output-format", "json"], "validation_json.txt", id="validation-keywords-json"
-        ),
+        pytest.param("api.yaml", ["--preset", "practical-py314-20261017"], id="preset-value"),
+        pytest.param("api.yaml", ["--preset", "standard-py314-20261015"], id="older-preset"),
+        pytest.param("api.yaml", ["--output-model-type", "typing.TypedDict"], id="typed-dict"),
+        pytest.param("validation.yaml", [], id="validation-keywords"),
+        pytest.param("validation.yaml", ["--output-format", "json"], id="validation-keywords-json"),
         pytest.param(
             "validation.yaml",
             ["--strict-types", "int", "--generate-schema-validators"],
-            "validation_options_set.txt",
             id="validation-options-set",
         ),
-        pytest.param("deployment.json", [], "deployment.txt", id="pattern-properties"),
-        pytest.param("settings.json", [], "settings.txt", id="draft-07-pattern-map"),
-        pytest.param("enum_const.yaml", [], "enum_const.txt", id="enums-read-as-their-const"),
+        pytest.param("deployment.json", [], id="pattern-properties"),
+        pytest.param("settings.json", [], id="draft-07-pattern-map"),
+        pytest.param("enum_const.yaml", [], id="enums-read-as-their-const"),
         pytest.param(
             "redundant_constraints.json",
             ["--preset", "standard-py314-20261017"],
-            "redundant_constraints.txt",
             id="redundant-constraints",
         ),
         pytest.param(
             "paths_bodies.yaml",
             ["--openapi-scopes", "paths", "webhooks", "--preset", "standard-py314-20261017"],
-            "paths_bodies.txt",
             id="paths-bodies-as-definitions",
         ),
         pytest.param(
             "paths_bodies.yaml",
             ["--openapi-scopes", "paths", "--openapi-include-paths", "/owners", "--preset", "standard-py314-20261017"],
-            "paths_bodies_included.txt",
             id="paths-bodies-included-paths",
         ),
         pytest.param(
             "paths_bodies.yaml",
             ["--openapi-scopes", "api", "webhooks", "--preset", "standard-py314-20261017"],
-            "paths_bodies_api.txt",
             id="paths-bodies-api-scope",
         ),
         pytest.param(
             "paths_bodies_path_item_ref.yaml",
             ["--openapi-scopes", "paths", "--preset", "standard-py314-20261017"],
-            "paths_bodies_path_item_ref.txt",
             id="paths-bodies-referenced-path-item",
         ),
         pytest.param(
             "paths_bodies_object_map.yaml",
             ["--openapi-scopes", "paths", "--preset", "standard-py314-20261017"],
-            "paths_bodies_object_map.txt",
             id="paths-bodies-object-map",
         ),
         pytest.param(
             "referenced_holders.yaml",
             ["--openapi-scopes", "paths", "webhooks"],
-            None,
             id="referenced-holders",
         ),
         pytest.param(
             "referenced_holders.yaml",
             ["--openapi-scopes", "api"],
-            None,
             id="referenced-holders-api-scope",
         ),
-        pytest.param(
-            "extension_paths.json",
-            ["--openapi-scopes", "api"],
-            None,
-            id="extension-paths-api-scope",
-        ),
-        pytest.param("integer_definition_keys.yaml", [], None, id="integer-definition-keys"),
+        pytest.param("extension_paths.json", ["--openapi-scopes", "api"], id="extension-paths-api-scope"),
+        pytest.param("integer_definition_keys.yaml", [], id="integer-definition-keys"),
         pytest.param(
             "paths_integer_schema_key.yaml",
             ["--openapi-scopes", "paths"],
-            None,
             id="paths-scope-integer-schema-key",
         ),
-        pytest.param("blank_union_titles.json", [], None, id="blank-union-titles"),
+        pytest.param("blank_union_titles.json", [], id="blank-union-titles"),
     ],
 )
 def test_recommend_options_for_schemas(
-    source: str, args: list[str], expected: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    source: str, args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Recommend options for each supported schema format, keeping the options the command sets.
 
@@ -286,11 +249,10 @@ def test_recommend_options_for_schemas(
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
-    an error, and a blank title is no title of a union variant. A specification extension under ``paths`` (a key such
-    as ``x-foo``) holds no path item, so its operations and inline schemas are not measured.
+    an error, and a blank title is no title of a union variant.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
-    _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))
+    _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))
 
 
 def test_recommend_options_quotes_arguments(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -299,7 +261,6 @@ def test_recommend_options_quotes_arguments(tmp_path: Path, capsys: pytest.Captu
         tmp_path,
         capsys,
         ["--input", "schema's.yaml", "--output-format", "json"],
-        "quoted_input_json.txt",
         inputs={"schema's.yaml": INPUT_PATH / "titled_variants.yaml"},
     )
 
@@ -311,7 +272,6 @@ def test_recommend_options_reads_each_container_once(tmp_path: Path, capsys: pyt
         tmp_path,
         capsys,
         ["--input", source.name, "--input-file-type", "openapi", "--target-python-version", "3.14"],
-        None,
         inputs=_inputs(source),
         mode=(),
     )
@@ -374,28 +334,26 @@ def test_recommend_options_rejects_unknown_modes(capsys: pytest.CaptureFixture[s
 
 
 @pytest.mark.parametrize(
-    ("inputs", "args", "expected"),
+    ("inputs", "args"),
     [
         pytest.param(
             _inputs(DATA_PATH / "graphql" / "simple-star-wars.graphql"),
             ["--input", "simple-star-wars.graphql", "--input-file-type", "graphql"],
-            "graphql.txt",
             id="graphql",
         ),
-        pytest.param({}, ["--input", "."], "directory.txt", id="directory"),
+        pytest.param({}, ["--input", "."], id="directory"),
         pytest.param(
             {},
             ["--input-model", "models.py:Pet", "--target-python-version", "3.12"],
-            "input_model.txt",
             id="input-model",
         ),
     ],
 )
 def test_recommend_options_without_schema_rules(
-    inputs: dict[str, Path], args: list[str], expected: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    inputs: dict[str, Path], args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Recommend only the latest preset for inputs the schema rules do not analyse."""
-    _recommend(tmp_path, capsys, args, expected, inputs=inputs)
+    _recommend(tmp_path, capsys, args, inputs=inputs)
 
 
 def test_recommend_options_from_stdin(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -406,7 +364,6 @@ def test_recommend_options_from_stdin(monkeypatch: pytest.MonkeyPatch, capsys: p
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--recommend-options", "quick"],
         capsys=capsys,
-        expected_stdout_path=EXPECTED_PATH / "stdin.txt",
     )
 
 
@@ -423,15 +380,14 @@ def test_recommend_options_needs_an_input(monkeypatch: pytest.MonkeyPatch, capsy
 
 
 @pytest.mark.parametrize(
-    ("args", "expected"),
+    "args",
     [
-        pytest.param([], "url.txt", id="no-lock"),
-        pytest.param(["--update-lock"], "url_update_lock.txt", id="update-lock"),
+        pytest.param([], id="no-lock"),
+        pytest.param(["--update-lock"], id="update-lock"),
     ],
 )
 def test_recommend_options_from_url(
     args: list[str],
-    expected: str,
     mock_httpx_get: HttpxGetMockFactory,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -443,7 +399,6 @@ def test_recommend_options_from_url(
         tmp_path,
         capsys,
         ["--url", url, "--http-headers", "Authorization: Bearer secret", "--target-python-version", "3.14", *args],
-        expected,
     )
 
 
@@ -460,38 +415,33 @@ def test_recommend_options_requires_the_remote_lock(tmp_path: Path, capsys: pyte
 
 
 @pytest.mark.parametrize(
-    ("project", "args", "expected"),
+    ("project", "args"),
     [
-        pytest.param("project_changes", [], "project_changes.txt", id="changes"),
-        pytest.param("project_current", [], "project_current.txt", id="current"),
+        pytest.param("project_changes", [], id="changes"),
+        pytest.param("project_current", [], id="current"),
         pytest.param(
             "project_changes",
             ["--preset", "standard-py314-20261015"],
-            "project_preset_argument.txt",
             id="preset-argument",
         ),
-        pytest.param("project_profile", ["--profile", "api"], "project_profile.txt", id="profile"),
-        pytest.param(
-            "project_profile_unicode", ["--profile", "ëu"], "project_profile_unicode.txt", id="unicode-profile"
-        ),
-        pytest.param("project_job", ["--job", "api"], "project_job.txt", id="job"),
+        pytest.param("project_profile", ["--profile", "api"], id="profile"),
+        pytest.param("project_profile_unicode", ["--profile", "ëu"], id="unicode-profile"),
+        pytest.param("project_job", ["--job", "api"], id="job"),
         pytest.param(
             "project_changes",
             ["--preset", "standard-py314-20261015", "--output-format", "json"],
-            "project_preset_argument_json.txt",
             id="preset-argument-json",
         ),
     ],
 )
 def test_recommend_options_for_projects(
-    project: str, args: list[str], expected: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    project: str, args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Recommend changes to the pyproject.toml table the command reads, keeping what it already sets."""
     _recommend(
         tmp_path,
         capsys,
         args,
-        expected,
         inputs=_inputs(INPUT_PATH / "api.yaml", INPUT_PATH / project / "pyproject.toml"),
     )
 
@@ -620,7 +570,7 @@ def test_recommend_options_json_schema(capsys: pytest.CaptureFixture[str]) -> No
     run_main_with_args(
         ["--output-format-json-schema", "recommend-options"],
         capsys=capsys,
-        expected_stdout_path=EXPECTED_PATH / "json_schema.txt",
+        derived_stdout=True,
         use_builtin_default_formatter=False,
     )
 
@@ -648,7 +598,6 @@ def test_every_option_is_registered_with_the_recommender() -> None:
             REGISTRY_GUIDE,
             "",
         )),
-        EXPECTED_PATH / "registry_coverage.txt",
     )
 
 
@@ -752,20 +701,25 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
             REGISTRY_GUIDE,
             "",
         ]),
-        EXPECTED_PATH / "registry_rules.txt",
     )
 
 
+def test_recommend_options_small_schema_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Compare the candidates of a small schema without a mode; docs/recommend-options.md shows this report."""
+    shutil.copy(INPUT_PATH / "titled_variants.yaml", tmp_path / "titled_variants.yaml")
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", "titled_variants.yaml", "--target-python-version", "3.14", "--recommend-options"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_PATH / "titled_variants.txt",
+            assert_no_stderr=True,
+            use_builtin_default_formatter=False,
+        )
+
+
 @pytest.mark.parametrize(
-    ("inputs", "args", "mode", "expected"),
+    ("inputs", "args", "mode"),
     [
-        pytest.param(
-            [INPUT_PATH / "titled_variants.yaml"],
-            ["--input", "titled_variants.yaml", "--target-python-version", "3.14"],
-            (),
-            "titled_variants.txt",
-            id="small-schema-default",
-        ),
         pytest.param(
             [INPUT_PATH / "store.yaml", INPUT_PATH / "store_previous.yaml"],
             [
@@ -782,14 +736,12 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
                 "3.14",
             ],
             (),
-            "full/store_diff_against.txt",
             id="diff-against",
         ),
         pytest.param(
             [INPUT_PATH / "api.yaml"],
             ["--input", "api.yaml", "--output-format", "json", "--target-python-version", "3.14"],
             ("full",),
-            "full/api_json.txt",
             id="json",
         ),
         pytest.param(
@@ -811,84 +763,72 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
                 "app.models",
             ],
             ("full",),
-            "full/server_target.txt",
             id="server-target",
         ),
         pytest.param(
             [INPUT_PATH / "api.yaml"],
             ["--input", "api.yaml", "--output", "models", "--target-python-version", "3.14"],
             ("full",),
-            "full/api_package.txt",
             id="package-output",
         ),
         pytest.param(
             [INPUT_PATH / "api.yaml"],
             ["--input", "api.yaml", "--preset", "standard-py314-20261027"],
             ("full",),
-            "full/api_preset_argument.txt",
             id="preset-argument",
         ),
         pytest.param(
             [INPUT_PATH / "service-config.json"],
             ["--input", "service-config.json", "--target-python-version", "3.14"],
             ("full",),
-            "full/service_config.txt",
             id="contested-option",
         ),
         pytest.param(
             [INPUT_PATH / "many_options.json"],
             ["--input", "many_options.json", "--target-python-version", "3.14"],
             ("full",),
-            "full/many_options.txt",
             id="candidate-limit",
         ),
         pytest.param(
             [INPUT_PATH / "numeric_title.json"],
             ["--input", "numeric_title.json", "--target-python-version", "3.14"],
             ("full",),
-            "full/numeric_title.txt",
             id="rejected-candidates",
         ),
         pytest.param(
             [GRAPHQL_INPUT],
             ["--input", "simple-star-wars.graphql", "--input-file-type", "graphql"],
             ("full",),
-            "full/graphql.txt",
             id="graphql",
         ),
         pytest.param(
             [],
             ["--input-model", "tests.data.python.input_model.pydantic_models:User", "--target-python-version", "3.12"],
             ("full",),
-            "full/input_model.txt",
             id="input-model",
         ),
         pytest.param(
             [INPUT_PATH / "data.json"],
             ["--input", "data.json", "--input-file-type", "json", "--no-use-annotated"],
             ("full",),
-            "full/json_data.txt",
             id="json-data",
         ),
         pytest.param(
             [INPUT_PATH / "validation.yaml"],
             ["--input", "validation.yaml", "--target-python-version", "3.14"],
             ("full",),
-            "full/validation.txt",
             id="unconstrained-fields",
         ),
         pytest.param(
             [INPUT_PATH / "schedules.yaml"],
             ["--input", "schedules.yaml", "--output", "models", "--target-python-version", "3.14"],
             ("full",),
-            "full/schedules_package.txt",
             id="unconstrained-fields-per-module",
         ),
         pytest.param(
             [INPUT_PATH / "schedules.yaml"],
             ["--input", "schedules.yaml", "--target-python-version", "3.14"],
             ("full",),
-            "full/schedules.txt",
             id="unconstrained-fields-of-the-kept-parse",
         ),
     ],
@@ -897,7 +837,6 @@ def test_recommend_options_compares_candidates(
     inputs: list[Path],
     args: list[str],
     mode: tuple[str, ...],
-    expected: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -909,7 +848,7 @@ def test_recommend_options_compares_candidates(
     same-named classes of different modules count apart, and only in the parse whose models the generation keeps,
     such as the repaired single module of dotted keys written to stdout.
     """
-    _recommend(tmp_path, capsys, args, expected, inputs=_inputs(*inputs), mode=mode)
+    _recommend(tmp_path, capsys, args, inputs=_inputs(*inputs), mode=mode)
 
 
 def test_recommend_options_compares_candidates_for_directories(
@@ -923,7 +862,6 @@ def test_recommend_options_compares_candidates_for_directories(
         tmp_path,
         capsys,
         ["--input", "."],
-        "full/directory.txt",
         inputs=_inputs(INPUT_PATH / "catalog.json"),
         mode=("full",),
     )
@@ -939,7 +877,6 @@ def test_recommend_options_rejects_candidates_that_fail(tmp_path: Path, capsys: 
         tmp_path,
         capsys,
         ["--input", ".", "--encoding", "ascii"],
-        "full/directory_undecodable.txt",
         mode=("full",),
     )
 
@@ -962,12 +899,11 @@ def test_recommend_options_counts_long_numbered_names(tmp_path: Path, capsys: py
 
 
 @pytest.mark.parametrize(
-    ("inputs", "args", "expected"),
+    ("inputs", "args"),
     [
         pytest.param(
             [INPUT_PATH / "large.yaml"],
             ["--input", "large.yaml", "--target-python-version", "3.14"],
-            "full/large_default.txt",
             id="large-schema",
         ),
         pytest.param(
@@ -982,33 +918,31 @@ def test_recommend_options_counts_long_numbered_names(tmp_path: Path, capsys: py
                 "--target-python-version",
                 "3.14",
             ],
-            "full/large_default_diff_against.txt",
             id="large-schema-and-previous",
         ),
         pytest.param(
             [GRAPHQL_INPUT],
             ["--input", "simple-star-wars.graphql", "--input-file-type", "graphql"],
-            "full/graphql_default.txt",
             id="size-unknown",
         ),
     ],
 )
 def test_recommend_options_default_skips_large_comparisons(
-    inputs: list[Path], args: list[str], expected: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    inputs: list[Path], args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Without a mode, apply only the rules when the inputs are estimated above 3000 models or cannot be estimated."""
-    _recommend(tmp_path, capsys, args, expected, inputs=_inputs(*inputs), mode=())
+    _recommend(tmp_path, capsys, args, inputs=_inputs(*inputs), mode=())
 
 
 @pytest.mark.parametrize(
-    ("stdin", "expected"),
+    "stdin",
     [
-        pytest.param(INPUT_PATH / "catalog.json", "full/stdin.txt", id="schema"),
-        pytest.param(INPUT_PATH / "numeric_title.json", "full/all_rejected.txt", id="all-rejected"),
+        pytest.param(INPUT_PATH / "catalog.json", id="schema"),
+        pytest.param(INPUT_PATH / "numeric_title.json", id="all-rejected"),
     ],
 )
 def test_recommend_options_compares_candidates_from_stdin(
-    stdin: Path, expected: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    stdin: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Generate the candidates from the schema read once from stdin.
 
@@ -1021,7 +955,6 @@ def test_recommend_options_compares_candidates_from_stdin(
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--target-python-version", "3.14", "--recommend-options", "full"],
         capsys=capsys,
-        expected_stdout_path=EXPECTED_PATH / expected,
         assert_no_stderr=True,
     )
 
@@ -1032,7 +965,7 @@ def test_recommend_options_compares_candidates_from_url(
     """Fetch a remote schema once for the analysis and every candidate."""
     url = "https://api.example.com/specs/catalog.json"
     mock_get = mock_httpx_get(MockHttpxResponse(url, INPUT_PATH / "catalog.json"))
-    _recommend(tmp_path, capsys, ["--url", url, "--target-python-version", "3.14"], "full/url.txt", mode=("full",))
+    _recommend(tmp_path, capsys, ["--url", url, "--target-python-version", "3.14"], mode=("full",))
     assert_httpx_get_kwargs(mock_get, call_count=1, expected_url=url)
 
 
@@ -1051,11 +984,10 @@ def test_recommend_options_compares_candidates_while_updating_the_lock(
         tmp_path,
         capsys,
         ["--url", url, "--update-lock", "--target-python-version", "3.14"],
-        "full/url_update_lock.txt",
         mode=("full",),
     )
     assert_httpx_get_kwargs(mock_get, call_count=2, expected_urls=[url, "https://api.example.com/specs/common.json"])
-    assert_output(lock.read_text(encoding="utf-8"), EXPECTED_PATH / "full" / "url_update_lock_file.txt")
+    assert_output(lock.read_text(encoding="utf-8"), name="lock")
 
 
 def test_recommend_options_compares_candidates_for_projects(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -1064,7 +996,6 @@ def test_recommend_options_compares_candidates_for_projects(tmp_path: Path, caps
         tmp_path,
         capsys,
         [],
-        "full/project_changes.txt",
         inputs=_inputs(INPUT_PATH / "api.yaml", INPUT_PATH / "project_changes" / "pyproject.toml"),
         mode=("full",),
     )

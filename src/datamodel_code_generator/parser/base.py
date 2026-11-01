@@ -58,6 +58,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
@@ -67,13 +68,17 @@ from datamodel_code_generator._module_paths import (
     expanded_path,
     is_below,
     is_package_init,
+    join_module,
     normalized_path,
+    relative,
     written_names,
 )
 from datamodel_code_generator._mro import c3_merge  # noqa: F401  # Preserve the established parser.base export.
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
+from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
@@ -114,6 +119,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     Import,
     Imports,
+    _iter_import_bindings,
 )
 from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
 from datamodel_code_generator.model.base import (
@@ -145,6 +151,7 @@ from datamodel_code_generator.parser._field_rows import (
     FIELD_OPTIONS_LEFT_OUT,
     FIELD_ROWS_BUILT_WITHOUT_VALIDATION,
     FIELD_ROWS_WITHOUT_VALIDATION_ALIASES,
+    uses_default_with_required,
 )
 from datamodel_code_generator.parser._graph_ids import (
     keyed_models,
@@ -165,6 +172,7 @@ from datamodel_code_generator.parser._passes import _shared, _state, settle, str
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
+from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
@@ -183,14 +191,11 @@ from datamodel_code_generator.parser._passes._shared import (
     _forward_enum_member_literals,
     _has_root_field_constraints,
     _hidden_type_names,
-    _iter_import_bindings,
-    _join_module,
     _ModelPositions,
     _parsed_rule_data_types,
     _ReuseOptimizationContext,
     _string_or_identifier_pattern,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
-    alias_shadowed_imports,
     apply_inherited_field_default,
     enum_discriminator_literal,
     enum_discriminator_members,
@@ -199,7 +204,6 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
     register_runtime_expression,
-    relative,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -447,11 +451,7 @@ class Source(BaseModel):
         record_watch_dependency(path)
         return cls(
             path=path.relative_to(base_path),
-            text=(
-                path.read_text(encoding=encoding)
-                if data is None
-                else data.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
-            ),
+            text=path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding)),
         )
 
     @classmethod
@@ -1213,7 +1213,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return (
             effective_default,
             effective_has_default,
-            required and self.apply_default_values_for_required_fields and effective_has_default,
+            uses_default_with_required(
+                required=required,
+                has_default=effective_has_default,
+                use_default=self.apply_default_values_for_required_fields,
+            ),
         )
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
@@ -1339,15 +1343,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 yield Source.from_dict(self.source)
             case Path() as path:
                 if path.is_dir():
+                    files = files_under(path, order="name")
                     if (input_filter := self._source_context.directory_input_filter) is not None:
-                        for source_path, data in input_filter.iter_files(
-                            sorted(path.rglob("*"), key=lambda p: p.name), self.encoding
-                        ):
+                        for source_path, data in input_filter.iter_files(files, self.encoding):
                             yield self._source_from_path(source_path, data=data)
                         return
-                    for p in sorted(path.rglob("*"), key=lambda p: p.name):
-                        if p.is_file():
-                            yield self._source_from_path(p)
+                    for p in files:
+                        yield self._source_from_path(p)
                 else:
                     yield self._source_from_path(path)
             case list() as paths:  # pragma: no cover
@@ -1417,23 +1419,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _get_text_from_url(self, url: str) -> str:
         def fetch(remote_url: str) -> str:
-            from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, _HTTPFetchSession  # noqa: PLC0415
+            from datamodel_code_generator.http import _get_configured_body, _HTTPFetchSession  # noqa: PLC0415
 
             if (session := self._http_fetch_session) is None:
                 self._http_fetch_session = session = _HTTPFetchSession(
                     self.http_backend,
                     response_observer=self._remote_response_observer,
                 )
-            timeout = self.http_timeout if self.http_timeout is not None else DEFAULT_HTTP_TIMEOUT
-            return session.get_body(
-                remote_url,
-                self.http_headers,
-                self.http_ignore_tls,
-                self.http_query_parameters,
-                timeout,
-                allow_private_network=self.allow_private_network,
-                encoding=self.encoding,
-            )
+            return _get_configured_body(remote_url, self, session=session)
 
         return self.remote_text_cache.get_or_put(
             url,
@@ -1797,7 +1790,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 left, right = relative(
                     original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
                 )
-                from_ = _join_module(left, right)
+                from_ = join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"
@@ -1839,20 +1832,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if name in refs or any(module_positions.get(r, -1) > pos for r in refs):
                     forward_needed.add(key)
 
-            # Propagate requirement through inheritance.
-            changed = True
-            required_filtered = set(forward_needed)
-            while changed:
-                changed = False
-                for model in models:
-                    if (key := model_key_of(model.reference)) in required_filtered:
-                        continue
-                    base_keys = {keyed.key_of(b.reference) for b in model.base_classes if b.reference}
-                    if base_keys & required_filtered:
-                        required_filtered.add(key)
-                        changed = True
-
-            required_keys_in_module = required_filtered
+            required_keys_in_module = reaching(
+                forward_needed,
+                (
+                    (
+                        model_key_of(model.reference),
+                        (keyed.key_of(b.reference) for b in model.base_classes if b.reference),
+                    )
+                    for model in models
+                ),
+            )
 
         return [
             "\n",

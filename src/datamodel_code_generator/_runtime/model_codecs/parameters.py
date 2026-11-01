@@ -10,12 +10,12 @@ from urllib.parse import quote
 
 from .errors import ParameterEncodingError
 from .media import (
-    TOKEN,
     FieldPlan,
     JSONValue,
     LexicalKind,
     encode_form,
     finite,
+    is_token,
     json_bytes,
     json_text,
     lexical,
@@ -92,14 +92,10 @@ class ParameterPlan:
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
             raise ValueError(msg)
-        if self.location == "header" and not TOKEN.fullmatch(self.name):
+        if self.location == "header" and not is_token(self.name):
             msg = f"header name {self.name!r} is not a token, which every header field name must be"
             raise ValueError(msg)
-        if (
-            self.location == "cookie"
-            and (self.style == "cookie" or self.shape == "scalar")
-            and not TOKEN.fullmatch(self.name)
-        ):
+        if self.location == "cookie" and (self.style == "cookie" or self.shape == "scalar") and not is_token(self.name):
             msg = f"cookie parameter name {self.name!r} is not a token, which a cookie sent as it is needs"
             raise ValueError(msg)
 
@@ -282,7 +278,7 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     pairs = [(plan.name if key is None else key, text) for key, text in entries]
     if plan.style == "form" and plan.shape != "scalar":
         return [(quote(key, safe=""), quote(text, safe="")) for key, text in pairs]
-    if not all(TOKEN.fullmatch(key) and cookie_octets(text) for key, text in pairs):
+    if not all(is_token(key) and cookie_octets(text) for key, text in pairs):
         msg = "A cookie name must be a token and its value unquoted cookie octets"
         raise ParameterEncodingError(msg)
     return list(pairs)

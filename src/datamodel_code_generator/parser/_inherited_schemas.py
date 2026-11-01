@@ -19,7 +19,12 @@ from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
-from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS, MODELED_SCHEMA_MAPS, schema_positions
+from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
+    MODELED_SCHEMA_MAPS,
+    admitted_types,
+    schema_positions,
+)
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.imports import IMPORT_ANY
@@ -35,6 +40,7 @@ from datamodel_code_generator.parser._intersection import (
     merge_inherited_value,
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
+from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
     _MODELED_POSITIONS,
@@ -906,10 +912,7 @@ def is_inherited_type_narrowing(
     parent_types: frozenset[str],
 ) -> bool:
     """Return whether explicit child JSON types are contained by the inherited types."""
-    if not parent_types:
-        return True
-    compatible_parent_types = parent_types | (frozenset(("integer",)) if "number" in parent_types else frozenset())
-    return child_types <= compatible_parent_types
+    return not parent_types or child_types <= admitted_types(parent_types)
 
 
 def is_partial_inherited_property(
@@ -1902,7 +1905,10 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     class_name: str,
     inherited_fields: dict[str, DataModelFieldBase] | None = None,
 ) -> DataModelFieldBase:
-    """Build a field for a required name that is not declared in properties."""
+    """Build a field for a required name that is not declared in properties.
+
+    A copy of the inherited field keeps that field's origin; a new field records the origin ``required-only``.
+    """
     field_name, alias = parser.model_resolver.get_valid_field_name_and_alias(
         required_field_name,
         excludes=excludes,
@@ -1940,6 +1946,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         required=True,
         original_name=required_field_name,
     )
+    with_field_origin(field, "required-only", None)
     if deferred:
         field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = class_name
     return field

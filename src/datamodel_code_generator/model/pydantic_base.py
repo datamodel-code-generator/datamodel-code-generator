@@ -26,6 +26,7 @@ from datamodel_code_generator.model import (
 from datamodel_code_generator.model import ConstraintsBase as _ConstraintsBase
 from datamodel_code_generator.model._constraints import Constraints
 from datamodel_code_generator.model._constraints import PatternConstraints as _PatternConstraints
+from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._pydantic_imports import IMPORT_ANYURL, IMPORT_FIELD
 from datamodel_code_generator.model._render_plan import (
     ANNOTATED_ANNOTATION,
@@ -48,6 +49,7 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model.base import (
+    _default_state,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
@@ -263,7 +265,7 @@ class DataModelField(DataModelFieldBase):
             or self.serialization_alias is not None
             or self.use_serialization_alias
         )
-        needs_required_nullable_field = self.nullable and self.required and not self.use_default_with_required
+        needs_required_nullable_field = self.nullable and requires_value(self)
         return bool(has_field_metadata or needs_required_nullable_field or self._takes_nested_model_factory())
 
     def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
@@ -356,9 +358,7 @@ class DataModelField(DataModelFieldBase):
 
         A declared factory of a required field, or a ``None`` one, goes to ``args`` as omitted.
         """
-        if (self.required and not self.use_default_with_required) or (
-            self.default is not UNDEFINED and self.default is not None and configured is None
-        ):
+        if requires_value(self) or (_default_state(self.default) == "value" and configured is None):
             if configured is not None and args is not None:
                 args.omit_entry(configured, "factory-not-applicable", _FACTORY_NOT_APPLICABLE)
             return None
@@ -379,7 +379,7 @@ class DataModelField(DataModelFieldBase):
             return None
         configured = (
             Kwarg("default_factory", self.extras["default_factory"], _DECLARED_FACTORY, ("extra:default_factory",))
-            if "default_factory" in self.extras
+            if self.has_default_factory
             else None
         )
         return None if (factory := self._effective_default_factory(configured)) is None else factory.value
@@ -526,12 +526,7 @@ class DataModelField(DataModelFieldBase):
             positional: Positional | None = None
             if self.use_annotated:
                 pass
-            elif (
-                self.required
-                and not self.use_default_with_required
-                and factory is None
-                and not self.extras.get("validate_default")
-            ):
+            elif requires_value(self) and factory is None and not self.extras.get("validate_default"):
                 positional = Positional("required", REQUIRED_FIELD)
             elif (
                 factory is None and self.represented_default and not self.should_strip_default_none(keep_optional=True)
@@ -544,7 +539,7 @@ class DataModelField(DataModelFieldBase):
                 default_keyword=self.use_default_kwarg and positional is not None and positional.kind == "default",
                 why=_FIELD_CALL,
             )
-        elif self.nullable and self.required and not self.use_default_with_required:
+        elif self.nullable and requires_value(self):
             call = CallPlan(
                 Positional("required", _REQUIRED_NULLABLE), None, (), default_keyword=False, why=_FIELD_CALL
             )

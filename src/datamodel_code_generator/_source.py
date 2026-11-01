@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import contextlib
 import sys
-from collections import OrderedDict
 from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import sha256
 from importlib.util import source_from_cache
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, TextIO, TypeAlias
+from typing import TYPE_CHECKING, TextIO, TypeAlias, cast
 
+from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._module_paths import is_package_init
 
 if TYPE_CHECKING:
@@ -41,8 +41,8 @@ _PARSER_SOURCE_DATA_CACHE_MAX_SIZE = 128
 _ParserSourceDataCacheKey: TypeAlias = tuple[Path, str, str, str]
 _ParserSourceDataSeenKey: TypeAlias = tuple[Path, str]
 # Serialized snapshots isolate mutable callers and are faster to restore than reparsing source text.
-_parser_source_data_cache: OrderedDict[_ParserSourceDataCacheKey, bytes] = OrderedDict()
-_parser_source_data_seen_keys: OrderedDict[_ParserSourceDataSeenKey, None] = OrderedDict()
+_parser_source_data_cache: BoundedLru[_ParserSourceDataCacheKey, bytes] = BoundedLru()
+_parser_source_data_seen_keys: SeenKeys[_ParserSourceDataSeenKey] = SeenKeys()
 _parser_source_data_cache_lock = RLock()
 _parsed_source_cache_enable_count = 0
 _enable_parsed_source_cache = False
@@ -96,6 +96,8 @@ class DirectoryInputFilter:
 
     def iter_files(self, paths: Iterable[Path], encoding: str) -> Iterator[tuple[Path, bytes | None]]:
         """Retain candidate bytes so recognizing an artifact never rereads a schema."""
+        from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
         for path in paths:
             if not path.is_file() or path in self.files:
                 continue
@@ -107,7 +109,7 @@ class DirectoryInputFilter:
                         source_path = Path(source_from_cache(str(path)))
                 if source_path.suffix == ".py" and (source_path == path or source_path.is_file()):
                     source_data = source_path.read_bytes()
-                    text = source_data.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
+                    text = normalize_newlines(source_data.decode(encoding))
                     if self._is_generated(text) or (is_package_init(source_path.name) and not text.strip()):
                         continue
                     if source_path == path:
@@ -252,15 +254,25 @@ def _is_protobuf_text(text: str) -> bool:
     return False
 
 
-def load_data(text: str) -> dict[str, YamlValue]:
-    """Load text as a JSON or YAML mapping based on its content."""
+def load_text_data(text: str, *, mapping: bool) -> YamlValue:
+    """Load text as JSON when it starts like JSON and parses, otherwise as YAML.
+
+    With ``mapping`` (an input document), JSON that is no mapping is read again as YAML, and YAML that is no mapping
+    raises TypeError; without it (an MCP tool list), any JSON or YAML value is returned.
+    """
     import json  # noqa: PLC0415
 
     if _is_json_text(text):
         with contextlib.suppress(json.JSONDecodeError):
-            if isinstance(result := json.loads(text), dict):
+            result = json.loads(text)
+            if not mapping or isinstance(result, dict):
                 return result
-    return load_yaml_dict(text)
+    return load_yaml_dict(text) if mapping else load_yaml(text)
+
+
+def load_data(text: str) -> dict[str, YamlValue]:
+    """Load text as a JSON or YAML mapping based on its content."""
+    return cast("dict[str, YamlValue]", load_text_data(text, mapping=True))
 
 
 def load_data_from_path(path: Path, encoding: str) -> dict[str, YamlValue]:
@@ -281,13 +293,8 @@ def _read_parser_source_data_from_path(
 
 
 def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, encoding: str) -> YamlValue:
-    seen_key = (resolved_path, encoding)
     with _parser_source_data_cache_lock:
-        use_cache = seen_key in _parser_source_data_seen_keys
-        _parser_source_data_seen_keys[seen_key] = None
-        _parser_source_data_seen_keys.move_to_end(seen_key)
-        while len(_parser_source_data_seen_keys) > _PARSER_SOURCE_DATA_CACHE_MAX_SIZE:
-            _parser_source_data_seen_keys.popitem(last=False)
+        use_cache = _parser_source_data_seen_keys.mark((resolved_path, encoding), _PARSER_SOURCE_DATA_CACHE_MAX_SIZE)
     return _load_parser_source_data_from_bytes(
         resolved_path, data, encoding, sha256(data).hexdigest() if use_cache else None
     )
@@ -295,9 +302,8 @@ def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, e
 
 def _load_cached_parser_source_data(cache_key: _ParserSourceDataCacheKey) -> YamlValue | None:
     with _parser_source_data_cache_lock:
-        if (cached_data := _parser_source_data_cache.get(cache_key)) is None:
+        if (cached_data := _parser_source_data_cache.recent(cache_key)) is None:
             return None
-        _parser_source_data_cache.move_to_end(cache_key)
 
     import marshal  # noqa: PLC0415
 
@@ -314,10 +320,7 @@ def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data:
         # Values outside the primitive YamlValue shape remain valid uncached input.
         return parsed_data
     with _parser_source_data_cache_lock:
-        _parser_source_data_cache[cache_key] = cached_data
-        _parser_source_data_cache.move_to_end(cache_key)
-        while len(_parser_source_data_cache) > _PARSER_SOURCE_DATA_CACHE_MAX_SIZE:
-            _parser_source_data_cache.popitem(last=False)
+        _parser_source_data_cache.put(cache_key, cached_data, _PARSER_SOURCE_DATA_CACHE_MAX_SIZE)
     return parsed_data
 
 

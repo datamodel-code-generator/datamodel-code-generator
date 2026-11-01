@@ -46,6 +46,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
@@ -57,7 +58,12 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_operations import PlanError, raise_selected
-from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_render import (
+    PYDANTIC_BACKENDS,
+    TYPING_EXTENSIONS,
+    model_dependencies,
+    pydantic_dependency,
+)
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -82,7 +88,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_documents import JSONObject
 
 HTTPX2: Final = "httpx2>=2.13.0"
-DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 MSGSPEC: Final = "msgspec>=0.22.0"
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
@@ -166,7 +171,7 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
             WEBSOCKETS if sockets else HTTPX2,
-            *DEPENDENCIES,
+            TYPING_EXTENSIONS,
             *_backend_dependencies(backend, request.model_imports),
             *webhook_dependencies(webhooks),
             *model_dependencies(request.model_imports),
@@ -349,14 +354,11 @@ class _HelperDigests:
         wire name, member kind, exclusion, requiredness, nullability, direction, type and emitted default, so a schema
         change that changes any reached model changes the digest.
         """
-        pending = list(() if use.type is None else _named(use.type))
         models: dict[str, object] = {}
-        while pending:
-            symbol = pending.pop()
-            if (name := self.spelling.symbol(symbol)) in models:
-                continue
+
+        def visit(symbol: SymbolId) -> list[SymbolId]:
             found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
-            models[name] = {
+            models[self.spelling.symbol(symbol)] = {
                 "kind": found.kind,
                 "values": [None if value is None else repr(value.value) for value in found.values],
                 "fields": [
@@ -364,9 +366,9 @@ class _HelperDigests:
                     for member in members
                 ],
             }
-            pending.extend(
-                symbol for member in members if member.model_facts for symbol in _named(member.model_facts.type)
-            )
+            return [named for member in members if member.model_facts for named in _named(member.model_facts.type)]
+
+        reach(() if use.type is None else _named(use.type), visit, key=self.spelling.symbol)
         return {"type": self.type(use), "models": models}
 
     def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:

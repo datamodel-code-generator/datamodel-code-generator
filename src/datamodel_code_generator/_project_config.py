@@ -7,7 +7,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._config_fields import (
+    JSON_FIELDS,
+    PYPROJECT_API_PATH_FIELDS,
+    PYPROJECT_PATH_FIELDS,
+    TARGET_JSON_FIELDS,
+)
+from datamodel_code_generator._option_names import FIELD_ALIASES, field_name
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator.util import load_toml
 
@@ -114,48 +120,15 @@ def _get_pyproject_toml_config_with_path(
 
 def _normalize_pyproject_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """Convert TOML option spelling to Config field spelling."""
-    normalized = {key.replace("-", "_"): value for key, value in config.items()}
-    if "capitalize_enum_members" in normalized and "capitalise_enum_members" not in normalized:  # pragma: no cover
-        normalized["capitalise_enum_members"] = normalized.pop("capitalize_enum_members")
+    normalized = {field_name(key): value for key, value in config.items()}
+    for alias, field in FIELD_ALIASES.items():
+        if alias in normalized and field not in normalized:  # pragma: no cover
+            normalized[field] = normalized.pop(alias)
     return normalized
 
 
-_PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
-    "custom_file_header_path",
-    "custom_template_dir",
-    "diff_against",
-    "emit_model_metadata",
-    "http_local_ref_path",
-    "input",
-    "lockfile",
-    "output",
-    "server_output",
-    "client_output",
-})
-
-_PYPROJECT_JSON_CONFIG_FIELDS = frozenset(JSON_CONFIG_FIELDS)
-
-_PYPROJECT_TARGET_JSON_CONFIG_FIELDS = frozenset({
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
-    "server_body_modes",
-    "server_handler_modes",
-    "server_operation_names",
-    "server_parameter_names",
-    "server_primary_responses",
-    "server_router_names",
-})
-
-_PYPROJECT_MODEL_JSON_CONFIG_FIELDS = _PYPROJECT_JSON_CONFIG_FIELDS - _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
-
-_PYPROJECT_PATH_FIELDS = _PYPROJECT_RELATIVE_PATH_FIELDS | _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
-
-_PYPROJECT_API_PATH_FIELDS = _PYPROJECT_PATH_FIELDS | _PYPROJECT_MODEL_JSON_CONFIG_FIELDS
-
-
 def _resolve_pyproject_relative_paths(
-    config: dict[str, Any], pyproject_path: Path | None, fields: frozenset[str] = _PYPROJECT_PATH_FIELDS
+    config: dict[str, Any], pyproject_path: Path | None, fields: frozenset[str] = PYPROJECT_PATH_FIELDS
 ) -> dict[str, Any]:
     """Resolve the relative paths of the given fields from the pyproject directory.
 
@@ -169,7 +142,7 @@ def _resolve_pyproject_relative_paths(
         field_name: config_directory / resolved_path
         for field_name in fields
         if isinstance(path := config.get(field_name), str | Path)
-        and not (field_name in _PYPROJECT_JSON_CONFIG_FIELDS and str(path).lstrip().startswith(("{", "[")))
+        and not (field_name in JSON_FIELDS and str(path).lstrip().startswith(("{", "[")))
         and not (resolved_path := Path(path).expanduser()).is_absolute()
     }
     if not updates:
@@ -238,7 +211,7 @@ def load_pyproject_config(
         _template_data,
     )
 
-    options = _resolve_pyproject_relative_paths(options, pyproject_path, _PYPROJECT_API_PATH_FIELDS)
+    options = _resolve_pyproject_relative_paths(options, pyproject_path, PYPROJECT_API_PATH_FIELDS)
     config = _get_config_class().model_validate(options)
     if "output_model_type" in explicit:
         from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
@@ -261,7 +234,7 @@ def load_pyproject_config(
     if bases := {
         field: _document_base(value, cast("Path", pyproject_path).parent)
         for field, value in options.items()
-        if field in _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
+        if field in TARGET_JSON_FIELDS
     }:
         loaded._target_document_bases = bases  # noqa: SLF001
     return loaded

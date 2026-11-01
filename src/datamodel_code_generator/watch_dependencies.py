@@ -12,21 +12,18 @@ from stat import S_ISDIR
 from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from datamodel_code_generator._config_fields import (
+    WATCHED_DIRECTORY_FIELDS,
+    WATCHED_FILE_FIELDS,
+    WATCHED_OUTPUT_FIELDS,
+    WATCHED_PATH_FIELDS,
+)
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, same_file
+from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, names_directory, same_file
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Mapping
-
-_JSON_CONFIG_FIELDS = frozenset(JSON_CONFIG_FIELDS)
-_CONFIG_PATH_FIELDS = ("input", "custom_file_header_path", "custom_template_dir", "http_local_ref_path")
-_FILE_FIELDS = ("custom_file_header_path", *_JSON_CONFIG_FIELDS)
-_DIRECTORY_FIELDS = ("custom_template_dir", "http_local_ref_path")
-_OUTPUT_FIELDS = (("output", None), ("emit_model_metadata", False), ("server_output", True), ("client_output", True))
-"""Output fields with whether each is a directory: the model output is judged by what it is, the metadata is always a
-single file, including when its name has no suffix, and the target outputs are always directories."""
 
 
 class _Weakrefable:
@@ -275,7 +272,7 @@ class WatchDependencies(_Weakrefable):
             try:
                 is_directory = S_ISDIR(resolved_path.stat().st_mode)
             except OSError:
-                is_directory = not resolved_path.suffix
+                is_directory = names_directory(resolved_path)
         outputs[resolved_path] = is_directory
 
     def _add_config(
@@ -290,7 +287,7 @@ class WatchDependencies(_Weakrefable):
         A validated `config` supplies the paths `config_values` lacks, the outputs and the project file; without one,
         only the raw values count, before validation can fail.
         """
-        fallbacks = {} if config is None else {name: getattr(config, name) for name in _CONFIG_PATH_FIELDS}
+        fallbacks = {} if config is None else {name: getattr(config, name) for name in WATCHED_PATH_FIELDS}
 
         def add(path: Path | None, paths: set[Path]) -> None:
             if path is not None:
@@ -303,11 +300,11 @@ class WatchDependencies(_Weakrefable):
         add(input_path, candidate.directories if input_path is not None and input_path.is_dir() else candidate.files)
         if config is not None:
             add(pyproject_path or _nearest_pyproject_toml(_logical_working_directory()), candidate.files)
-        for name in _FILE_FIELDS:
+        for name in WATCHED_FILE_FIELDS:
             add(read(name), candidate.files)
-        for name in _DIRECTORY_FIELDS:
+        for name in WATCHED_DIRECTORY_FIELDS:
             add(read(name), candidate.directories)
-        for name, is_directory in _OUTPUT_FIELDS:
+        for name, is_directory in WATCHED_OUTPUT_FIELDS:
             self._add_output(
                 read(name) if config is None else getattr(config, name, None),
                 candidate.outputs,

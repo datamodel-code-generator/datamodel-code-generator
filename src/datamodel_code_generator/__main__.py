@@ -64,10 +64,9 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg.startswith(("--generate-prompt", "--output-format-json-schema=")) or arg == "--output-format-json-schema"
     for arg in sys.argv[1:]
 ):  # pragma: no cover
-    from datamodel_code_generator.arguments import arg_parser, namespace
+    from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
     arg_parser.parse_args(namespace=namespace)
     schema_output_name = namespace.output_format_json_schema
     if schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
@@ -83,7 +82,6 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
 import difflib
 import json
 import os
-import re
 import shlex
 import shutil
 import signal
@@ -92,14 +90,14 @@ import warnings
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import nullcontext, redirect_stdout, suppress
 from datetime import datetime, timezone
-from enum import Enum, IntEnum
+from enum import IntEnum
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
     _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR,
-    DataModelType,
+    DataModelType,  # noqa: F401  # Preserve the established __main__ export.
     Error,
     InputFileType,
     InvalidClassNameError,
@@ -118,22 +116,37 @@ from datamodel_code_generator._cli_config import (
     _template_data,
     is_url,
 )
+from datamodel_code_generator._config_fields import JSON_FIELDS, MODEL_JSON_FIELDS, TARGET_SELECTORS
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
-from datamodel_code_generator._option_names import hyphenated, option_arguments, option_flag, values_arguments
-from datamodel_code_generator._paths import concrete_parent, overlaps, resolved, same_file
+from datamodel_code_generator._option_names import (
+    CONFIG_TABLE,
+    SENSITIVE_FIELDS,
+    TomlValue,
+    config_table,
+    field_name,
+    hyphenated,
+    option_arguments,
+    option_flag,
+    shell_command,
+    toml_table,
+    toml_text,
+    values_arguments,
+)
+from datamodel_code_generator._option_names import json_ready as _json_ready
+from datamodel_code_generator._paths import concrete_parent, files_under, names_directory, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
-    _PYPROJECT_JSON_CONFIG_FIELDS,
-    _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
 )
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
-from datamodel_code_generator.arguments import arg_parser, namespace
+from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES
 
 
 def __getattr__(name: str) -> Any:
@@ -203,9 +216,8 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "watch_delay",
 })
 
-SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
+SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE_FIELDS))
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
-_TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "output", "url"})
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
@@ -261,7 +273,7 @@ def _redact_command_args(args: Sequence[str]) -> list[str]:
 
 
 def _command_header(args: Sequence[str]) -> str:
-    return shlex.join(["datamodel-codegen", *_redact_command_args(args)])
+    return shell_command(_redact_command_args(args))
 
 
 signal.signal(signal.SIGINT, sig_int_handler)
@@ -298,7 +310,7 @@ def _create_config(
         config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
     config._json_sources = {  # noqa: SLF001
         name: value
-        for name in _PYPROJECT_JSON_CONFIG_FIELDS
+        for name in JSON_FIELDS
         if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
     }
     config._naming_chosen = not _NAMING_FIELDS.isdisjoint({*pyproject_config, *cli_config_args})  # noqa: SLF001
@@ -800,11 +812,7 @@ def _batch_outer_settings(
 ) -> tuple[bool, float]:
     """Resolve scheduler-only settings without adding them to inner jobs."""
     values = {
-        **{
-            key.replace("-", "_"): value
-            for key, value in tool_config.items()
-            if key.replace("-", "_") in BATCH_OUTER_CONFIG_FIELDS
-        },
+        **{name: value for key, value in tool_config.items() if (name := field_name(key)) in BATCH_OUTER_CONFIG_FIELDS},
         **{key: value for key, value in cli_config_args.items() if key in BATCH_OUTER_CONFIG_FIELDS},
     }
     if not values:
@@ -884,19 +892,13 @@ def _record_raw_job_config_dependencies(
 
     As in a planned job, the JSON files of model options stay relative to the working directory.
     """
-    from datamodel_code_generator.watch_dependencies import _JSON_CONFIG_FIELDS  # noqa: PLC0415
-
     for raw_name, raw_value in config.items():
-        if not isinstance(raw_name, str) or (name := raw_name.replace("-", "_")) not in (
-            _JSON_CONFIG_FIELDS | {"input"}
-        ):
+        if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (JSON_FIELDS | {"input"}):
             continue
         if not isinstance(raw_value, str | Path):
             continue
         path = Path(raw_value)
-        dependencies.add_recovery_file(
-            path if path.is_absolute() or name in _PYPROJECT_MODEL_JSON_CONFIG_FIELDS else base_path / path
-        )
+        dependencies.add_recovery_file(path if path.is_absolute() or name in MODEL_JSON_FIELDS else base_path / path)
 
 
 def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
@@ -945,11 +947,11 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     base_config = {
         key: value
         for key, value in tool_config.items()
-        if key not in {"jobs", "profiles"} and key.replace("-", "_") not in BATCH_OUTER_CONFIG_FIELDS
+        if key not in {"jobs", "profiles"} and field_name(key) not in BATCH_OUTER_CONFIG_FIELDS
     }
     watch, watch_delay = _batch_outer_settings(tool_config, cli_config_args)
-    for field_name in BATCH_OUTER_CONFIG_FIELDS:
-        cli_config_args.pop(field_name, None)
+    for field in BATCH_OUTER_CONFIG_FIELDS:
+        cli_config_args.pop(field, None)
 
     plans: list[JobPlan] = []
     for name, job in jobs.items():
@@ -973,25 +975,6 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     return BatchPlan(tuple(plans), watch, watch_delay, pyproject_path)
 
 
-TomlValue: TypeAlias = str | bool | int | float | list["TomlValue"] | tuple["TomlValue", ...]
-
-
-def _json_ready(value: Any) -> Any:
-    from pydantic import BaseModel  # noqa: PLC0415
-
-    if isinstance(value, Enum):
-        return value.value
-    if isinstance(value, Path):
-        return value.as_posix()
-    if isinstance(value, BaseModel):
-        return value.model_dump(mode="json", exclude_none=True)
-    if isinstance(value, tuple | list):
-        return [_json_ready(item) for item in value]
-    if isinstance(value, Mapping):
-        return {str(key): _json_ready(item) for key, item in value.items()}
-    return value
-
-
 def _pyproject_toml_value(key: str, value: object) -> TomlValue:
     from datamodel_code_generator.json_config import JsonConfigSpecs  # noqa: PLC0415
 
@@ -1003,18 +986,6 @@ def _pyproject_toml_value(key: str, value: object) -> TomlValue:
 def _compact_json(value: Mapping[str, Any]) -> str:
     """Serialize a mapping option as the compact JSON text its CLI option accepts."""
     return json.dumps(_json_ready(value), ensure_ascii=False, separators=(",", ":"))
-
-
-def _format_toml_value(value: TomlValue) -> str:
-    """Format a Python value as a TOML value string."""
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, int | float):
-        return str(value)
-    formatted_items = [_format_toml_value(item) for item in value]
-    return f"[{', '.join(formatted_items)}]"
 
 
 def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
@@ -1031,28 +1002,16 @@ def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
     return hyphenated(_cli_config_values(args))
 
 
-def _toml_key(key: str) -> str:
-    """Return a TOML key: bare when it uses only ASCII letters, digits, hyphens, and underscores, otherwise quoted."""
-    return key if _TOML_BARE_KEY.fullmatch(key) else json.dumps(key, ensure_ascii=False)
-
-
-def _format_pyproject_config(
-    config_data: Mapping[str, TomlValue], table: tuple[str, ...] = ("tool", "datamodel-codegen")
-) -> str:
-    lines: list[str] = [f"[{'.'.join(_toml_key(key) for key in table)}]"]
+def _format_pyproject_config(config_data: Mapping[str, TomlValue], table: tuple[str, ...] = CONFIG_TABLE) -> str:
+    lines: list[str] = [toml_table(table)]
     for key, value in config_data.items():
-        lines.append(f"{key} = {_format_toml_value(value)}")
+        lines.append(f"{key} = {toml_text(value)}")
     return "\n".join(lines) + "\n"
 
 
 def generate_pyproject_config(args: Namespace) -> str:
     """Generate pyproject.toml [tool.datamodel-codegen] section from CLI arguments."""
     return _format_pyproject_config(_pyproject_config_data(args))
-
-
-def _normalize_line_endings(text: str) -> str:
-    """Normalize line endings to LF for cross-platform comparison."""
-    return text.replace("\r\n", "\n")
 
 
 class _OutputDecodeError(UnicodeError):
@@ -1066,7 +1025,7 @@ class _OutputDecodeError(UnicodeError):
 def _read_existing_output(path: Path, encoding: str) -> str:
     """Read an existing output file with LF line endings, naming it when the encoding cannot decode it."""
     try:
-        return _normalize_line_endings(path.read_text(encoding=encoding))
+        return normalize_newlines(path.read_text(encoding=encoding))
     except UnicodeError as e:
         raise _OutputDecodeError(path, e) from e
 
@@ -1138,7 +1097,7 @@ def _compare_single_file(
         - has_differences: True if files differ
         - diff_lines: List of diff lines for output
     """
-    generated_content = _normalize_line_endings(generated_path.read_text(encoding=encoding))
+    generated_content = normalize_newlines(generated_path.read_text(encoding=encoding))
 
     display_path = comparison.single_file_display_path or actual_path.as_posix()
     actual_content = _read_existing_output(actual_path, encoding)
@@ -1194,7 +1153,7 @@ def _compare_directories(
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
-        generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
+        generated_content = normalize_newlines((generated_dir / rel_path).read_text(encoding=encoding))
         actual_content = _read_existing_output(actual_dir / rel_path, encoding)
         if generated_content != actual_content:
             display_path = comparison.directory_file_path(rel_path)
@@ -1366,8 +1325,7 @@ def _generated_files_from_output(
         ]
     return [
         GeneratedFilePayload(path=path.relative_to(output).as_posix(), content=path.read_text(encoding=encoding))
-        for path in sorted(output.rglob("*.py"))
-        if path.is_file()
+        for path in files_under(output, "*.py")
     ]
 
 
@@ -1521,7 +1479,7 @@ def _run_recommend_options(  # noqa: PLR0913
     cli_config_args: Mapping[str, _RawConfigValue],
     pyproject_path: Path | None,
     *,
-    table: tuple[str, ...] = ("tool", "datamodel-codegen"),
+    table: tuple[str, ...] = CONFIG_TABLE,
     selector: tuple[str, ...] = (),
 ) -> Exit:
     """Print option recommendations for the resolved configuration (experimental).
@@ -1574,7 +1532,7 @@ def _run_recommend_options(  # noqa: PLR0913
         if recommendation.runnable
         else []
     )
-    command = shlex.join(["datamodel-codegen", *arguments]) if recommendation.runnable else None
+    command = shell_command(arguments) if recommendation.runnable else None
     pyproject = (
         None
         if recommendation.config_values is None
@@ -1603,8 +1561,7 @@ def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_di
     if is_directory_output:
         targets = {
             generated_file: actual_output / generated_file.relative_to(generated_output)
-            for generated_file in sorted(generated_output.rglob("*"))
-            if generated_file.is_file()
+            for generated_file in files_under(generated_output)
         }
     if not targets and generated_output.is_file():
         targets = {generated_output: actual_output}
@@ -1735,14 +1692,10 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
     from datamodel_code_generator._message_text import english_list, for_count  # noqa: PLC0415
-    from datamodel_code_generator.base_config import (  # noqa: PLC0415
-        _TARGET_SELECTORS,
-        _selected_target,
-        _target_options_error,
-    )
+    from datamodel_code_generator.base_config import _selected_target, _target_options_error  # noqa: PLC0415
 
     explicit = _explicit_config_args(namespace)
-    unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
+    unselected = [(selector, prefix) for selector, prefix in TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
         (
             option_flag(selector),
@@ -1812,7 +1765,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
         warnings.simplefilter("ignore")
 
     if (
-        config.output_model_type in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        config.output_model_type in _PYDANTIC_MODEL_TYPES
         and not config.use_annotated
         and namespace.use_annotated is None
         and pyproject_config.get("use_annotated") is None
@@ -2524,8 +2477,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
     """Execute datamodel code generation from command-line arguments."""
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
 
     if "_ARGCOMPLETE" in os.environ:  # pragma: no cover
         import argcomplete  # noqa: PLC0415
@@ -2602,7 +2554,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 job_plan.raw_config,
                 job_plan.cli_config_args,
                 job_plan.pyproject_path,
-                table=("tool", "datamodel-codegen", "jobs", job_plan.name),
+                table=config_table("jobs", job_plan.name),
                 selector=("--job", job_plan.name),
             )
         if not batch_plan.watch:
@@ -2728,9 +2680,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             cli_config_args,
             pyproject_path,
             selector=() if namespace.profile is None else ("--profile", namespace.profile),
-            table=("tool", "datamodel-codegen")
-            if namespace.profile is None
-            else ("tool", "datamodel-codegen", "profiles", namespace.profile),
+            table=CONFIG_TABLE if namespace.profile is None else config_table("profiles", namespace.profile),
         )
 
     if config.url and config.allow_remote_refs is None:
@@ -2831,7 +2781,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     )
     if config.check or writes_json_output_file or config.diff_against is not None:
         config_output = cast("Path", config.output)
-        is_directory_output = not config_output.suffix
+        is_directory_output = names_directory(config_output)
         temp_context: tempfile.TemporaryDirectory[str] | None = tempfile.TemporaryDirectory()
         temp_dir = Path(temp_context.name)
         if is_directory_output:

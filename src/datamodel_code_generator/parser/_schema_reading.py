@@ -19,6 +19,7 @@ from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
     SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,
+    admitted_types,
     schema_positions,
 )
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
@@ -164,21 +165,13 @@ class _AllOfItemGroups(NamedTuple):
     objects: list[JsonSchemaObject]
 
 
-_NUMERIC_TYPE_DOMAINS = {
-    "integer": frozenset({"integer"}),
-    "number": frozenset({"integer", "number"}),
-    "null": frozenset({"null"}),
-}
+_NUMERIC_TYPE_DOMAIN: Final = frozenset({"integer", "number", "null"})
 
 
 def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
-    """Expand number to its numeric subtypes within the numeric/null domain."""
-    if isinstance(schema_type, str):
-        return _NUMERIC_TYPE_DOMAINS.get(schema_type)
-    types = frozenset(schema_type)
-    if not types.issubset(_NUMERIC_TYPE_DOMAINS):
-        return None
-    return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
+    """Return the types a ``type`` of numeric and null types admits (``admitted_types``), or None for another type."""
+    types = frozenset((schema_type,) if isinstance(schema_type, str) else schema_type)
+    return admitted_types(types) if types <= _NUMERIC_TYPE_DOMAIN else None
 
 
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})

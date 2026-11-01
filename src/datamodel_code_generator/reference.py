@@ -71,6 +71,9 @@ if TYPE_CHECKING:
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
+    FieldOriginKind: TypeAlias = Literal["property", "required-only", "additional", "root", "tag"]
+    """What a field is built for: a property, a required name without one, the typed extra properties, the value of a
+    root model or the tag a discriminated union gives a variant without a field of that name."""
 
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
@@ -335,6 +338,56 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     that two different schema objects reach (colliding parse paths) has none.
     """
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
+
+
+FIELD_ORIGIN_KEY: Final = "_field_origin"
+TYPE_ORIGIN_KEY: Final = "_type_origin"
+BINARY_CONTENT_KEY: Final = "_binary_content"
+
+
+@record
+class FieldOrigin:
+    """Where a field is built: its kind, and the location of the schema object it is built from, if it has one.
+
+    The location is None for a field built from no schema object of its own (a required name) or from one without a
+    location; a boolean property schema is located where its object declares it.
+    """
+
+    kind: FieldOriginKind
+    location: SchemaLocation | None
+
+
+def field_origin_of(field: object) -> FieldOrigin | None:
+    """Return where a field was built (FIELD_ORIGIN, final after L5); a copy of a field keeps the origin it copies.
+
+    The parser's builders record it when they build the field in L1, and the L5 discriminator pass when it appends a
+    tag field (kind ``tag``, without a location). A field built by no builder that records it, such as a parser
+    extension's, has none.
+    """
+    return field.__dict__.get(FIELD_ORIGIN_KEY)
+
+
+def type_origin_of(data_type: object) -> SchemaLocation | None:
+    """Return the location of the schema object the parser built a type node from (TYPE_ORIGIN, final after L1).
+
+    ``parse_item`` records it on the node it returns for a subschema and on the nodes it built inside that node (a
+    container, the members of a type list), a union member the location of its branch, a property field's type and a
+    root field's type the location of the property or root schema. The innermost build keeps its record, so a node a
+    nested parse returned keeps the location of the nested schema. A copy of a node keeps the origin of the node it
+    copies; a node a later pass builds, and a node built from a schema object without a location, has none.
+    """
+    return data_type.__dict__.get(TYPE_ORIGIN_KEY)
+
+
+def binary_content_of(data_type: object) -> bool:
+    """Return whether the parser reads the string a type node is built for as raw octets (BINARY_CONTENT, L1).
+
+    The type mapping records it when it builds the node, from the schema as the specification reads it, whatever
+    the model type: a format that maps to bytes other than bytes mapped from base64 text, or in OpenAPI 3.1 and later
+    a content media type without a content encoding. A copy of a node keeps it; an enum or const of such strings, and
+    a node a later pass builds, has none.
+    """
+    return BINARY_CONTENT_KEY in data_type.__dict__
 
 
 def _special_path(keyword: str, path: list[str]) -> list[str]:

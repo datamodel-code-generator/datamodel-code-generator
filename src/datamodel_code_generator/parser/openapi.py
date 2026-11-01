@@ -16,7 +16,7 @@ from functools import cache, cached_property, partial
 from operator import getitem
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union, cast
 from warnings import warn
 
 from pydantic import Field, StrictBool, ValidationError, field_validator
@@ -43,9 +43,11 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
-from datamodel_code_generator.parser._schema_object import _located_model_schema
+from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -64,7 +66,13 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
 )
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
-from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
+from datamodel_code_generator.reference import (
+    FIELD_ORIGIN_KEY,
+    SCHEMA_LOCATION_KEY,
+    FieldNameResolver,
+    is_url,
+    snake_to_upper_camel,
+)
 from datamodel_code_generator.types import (
     DataType,
     EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
@@ -310,12 +318,7 @@ def is_object_map_body(obj: JsonSchemaObject) -> bool:
     That is an ``is_object`` body without ``properties`` whose ``patternProperties`` or ``propertyNames`` make a map,
     other than one that ``_is_closed_pattern_map_body`` gives that model by default.
     """
-    return (
-        obj.is_object
-        and not obj.properties
-        and bool(obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False))
-        and not _is_closed_pattern_map_body(obj)
-    )
+    return obj.is_object and not obj.properties and _has_map_key_keywords(obj) and not _is_closed_pattern_map_body(obj)
 
 
 def _missing_operation_id(path_name: str) -> Error:
@@ -324,6 +327,9 @@ def _missing_operation_id(path_name: str) -> Error:
         "All operations must have an operationId when --use_operation_id_as_name is set."
         f"The following path was missing an operationId: {path_name}"
     )
+
+
+_CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32})
 
 
 @cache
@@ -352,6 +358,16 @@ class OpenAPIParser(JsonSchemaParser):
         # OpenAPI parses a single document context, so caching is intentional.
         # AsyncAPI overrides this with a live property because it swaps raw_obj while resolving refs.
         return cast("OpenAPISchemaFeatures", self._schema_features_for(self.raw_obj))
+
+    @property
+    @override
+    def _content_media_type_is_octets(self) -> bool:
+        """Whether the document's OpenAPI version reads a content media type without a content encoding as raw octets.
+
+        OpenAPI 3.1 and later write a binary string so ("Working with Binary Data") in place of 3.0's
+        ``format: binary``; an AsyncAPI document reads its strings as JSON Schema does.
+        """
+        return self._document_version(self.raw_obj, self._version_source) in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
 
     @property
     @override
@@ -414,7 +430,7 @@ class OpenAPIParser(JsonSchemaParser):
     def get_ref_model(self, ref: str) -> dict[str, Any]:
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self._ref_path(ref).split("#", 1)
-        ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
+        ref_body = ref_file_document(self, ref_file)
         return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
@@ -720,11 +736,13 @@ class OpenAPIParser(JsonSchemaParser):
                     result_fields.append(field_obj)
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
+                origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
                 field_obj = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
-                    "data_type": new_field_type,
+                    "data_type": with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
                 })
+                field_obj.__dict__[FIELD_ORIGIN_KEY] = origin
             result_fields.append(field_obj)
 
         return result_fields
@@ -853,7 +871,7 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
-            if scope_name == "paths" and not holds_path_item(item_name, methods_, objects_as_paths=True):
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
                 continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue

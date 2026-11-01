@@ -67,6 +67,8 @@ _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+POLL_INTERVAL: Final = 1.0
+"""The seconds a polling helper waits after each response before the next poll when its definition declares none."""
 
 
 class MessageCodec(NamedTuple):
@@ -538,7 +540,7 @@ class _Validator:  # noqa: PLR0904
                 "failed": (self.states(nonempty=False), ()),
                 "cancelled": (self.states(nonempty=False), ()),
                 "result": (self.result, REQUIRED),
-                "interval": (self.interval, {"seconds": 1.0, "retry_after_header": None}),
+                "interval": (self.interval, {"seconds": POLL_INTERVAL, "retry_after_header": None}),
                 "remote_cancel": (self.remote_cancel, OMITTED),
                 "immediate_result": (self.immediate, OMITTED),
                 "expires_at": (self.selector, OMITTED),
@@ -571,7 +573,7 @@ class _Validator:  # noqa: PLR0904
         return self.tagged(value, at, "kind", variants, "a result")
 
     def interval(self, value: object, at: str) -> object:
-        spec: Spec = {"seconds": (self.seconds, 1.0), "retry_after_header": (self.optional_header, None)}
+        spec: Spec = {"seconds": (self.seconds, POLL_INTERVAL), "retry_after_header": (self.optional_header, None)}
         return self.record(value, at, spec, "an interval")
 
     def remote_cancel(self, value: object, at: str) -> object:

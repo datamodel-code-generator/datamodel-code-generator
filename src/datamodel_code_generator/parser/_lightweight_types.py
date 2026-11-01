@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
     intersect_multiple_of,
+    intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
@@ -30,6 +30,7 @@ from datamodel_code_generator.types import ANY, DataType, UnionIntFloat
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from datamodel_code_generator.enums import AllOfMergeMode
     from datamodel_code_generator.parser._schema_graph import _TargetNode
 
 __all__ = [
@@ -135,7 +136,7 @@ def merge_primitive_schemas_for_allof(
     if len(formats) > 1:
         return None
 
-    if parser.allof_merge_mode != AllOfMergeMode.NoMerge:
+    if intersects_all_of_constraints(parser.allof_merge_mode.value):
         base_dict = parser._merge_primitive_schemas(items).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
     else:
         base_dict = type(parser)._first_typed_schema_dict(items)  # noqa: SLF001

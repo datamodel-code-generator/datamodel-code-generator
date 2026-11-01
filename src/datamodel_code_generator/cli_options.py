@@ -599,24 +599,34 @@ def _canonical_option_key(option: str) -> tuple[int, str]:
     return (len(option), option)
 
 
-@lru_cache(maxsize=1)
-def _build_alias_map_from_argparse() -> dict[str, str]:
-    """Build alias -> canonical map from argparse (the source of truth).
+@dataclass(frozen=True, slots=True)
+class _ArgparseIndex:
+    """The option strings of the command-line parser: each one's canonical option and siblings, actions by dest."""
 
-    The canonical option is the longest option string for each action.
-    If multiple options have the same length, the lexicographically last one is chosen.
+    canonical: dict[str, str]
+    siblings: dict[str, tuple[str, ...]]
+    actions: dict[str, Action]
+
+
+@lru_cache(maxsize=1)
+def _argparse_index() -> _ArgparseIndex:
+    """Index the command-line parser (the source of truth), when a caller first needs it.
+
+    The canonical option is the longest option string of an action; among options of one length, the
+    lexicographically last. A destination maps to the last action with option strings that stores it.
     """
     from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
 
-    alias_map: dict[str, str] = {}
+    index = _ArgparseIndex({}, {}, {})
     for action in argument_parser._actions:  # noqa: SLF001
-        if not action.option_strings:
+        if not (options := tuple(action.option_strings)):
             continue  # pragma: no cover
-        # Canonical = longest, then lexicographically last for stability
-        canonical = max(action.option_strings, key=_canonical_option_key)
-        for opt in action.option_strings:
-            alias_map[opt] = canonical
-    return alias_map
+        canonical = max(options, key=_canonical_option_key)
+        for option in options:
+            index.canonical[option] = canonical
+            index.siblings[option] = options
+        index.actions[action.dest] = action
+    return index
 
 
 def get_canonical_option(option: str) -> str:
@@ -630,20 +640,7 @@ def get_canonical_option(option: str) -> str:
         >>> get_canonical_option("--help")
         '--help'
     """
-    return _build_alias_map_from_argparse().get(option, option)
-
-
-@lru_cache(maxsize=1)
-def _build_option_string_groups_from_argparse() -> dict[str, tuple[str, ...]]:
-    """Build option string -> sibling option strings map from argparse."""
-    from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
-
-    groups: dict[str, tuple[str, ...]] = {}
-    for action in argument_parser._actions:  # noqa: SLF001
-        options = tuple(action.option_strings)
-        for option in options:
-            groups[option] = options
-    return groups
+    return _argparse_index().canonical.get(option, option)
 
 
 def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
@@ -653,32 +650,27 @@ def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
     return {action.dest: action for action in parser._actions if action.option_strings}  # noqa: SLF001
 
 
-@lru_cache(maxsize=1)
-def _option_actions() -> dict[str, Action]:
-    """Index the actions of the command-line parser by destination, when a caller first needs them."""
-    from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
-
-    return _actions_by_dest(argument_parser)
+def _no_option(action: Action) -> str | None:
+    """Return the first --no- option string of an action, or None."""
+    return next((option for option in action.option_strings if option.startswith("--no-")), None)
 
 
 def _negative_option(dest: str) -> str | None:
     """Return the --no- flag the parser defines for a boolean destination, or None."""
-    action = _option_actions().get(dest)
-    if not isinstance(action, BooleanOptionalAction):
-        return None
-    return next((option for option in action.option_strings if option.startswith("--no-")), None)
+    action = _argparse_index().actions.get(dest)
+    return _no_option(action) if isinstance(action, BooleanOptionalAction) else None
 
 
 @lru_cache(maxsize=1)
 def get_all_canonical_options() -> frozenset[str]:
     """Get all canonical options from argparse."""
-    return frozenset(_build_alias_map_from_argparse().values())
+    return frozenset(_argparse_index().canonical.values())
 
 
 @lru_cache(maxsize=1)
 def get_all_argparse_options() -> frozenset[str]:
     """Get all options from argparse (including aliases)."""
-    return frozenset(_build_alias_map_from_argparse().keys())
+    return frozenset(_argparse_index().canonical.keys())
 
 
 def is_manual_doc(option: str) -> bool:
@@ -728,7 +720,7 @@ def get_cli_option_doc_name(option: str) -> str:
     canonical = get_canonical_option(option)
     if canonical in MANUAL_DOCS:
         return canonical
-    options = _build_option_string_groups_from_argparse().get(option, ())
+    options = _argparse_index().siblings.get(option, ())
     if option.startswith("--") and any(item.startswith("--no-") for item in options):
         return option
     return canonical

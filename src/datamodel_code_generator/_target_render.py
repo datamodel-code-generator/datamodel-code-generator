@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Final
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
-from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, TargetPydanticVersion, _pydantic_version_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
+TYPING_EXTENSIONS: Final = "typing-extensions>=4.16"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
     ("pydantic.NameEmail", "email-validator>=2.3"),
@@ -28,7 +29,7 @@ MODEL_DEPENDENCIES: Final = (
 )
 PYDANTIC_TARGET_MINIMUM: Final = REQUIREMENTS["pydantic.api_target_runtime"].minimum
 PYDANTIC_FLOOR: Final = f"{PYDANTIC_TARGET_MINIMUM}.0"
-PYDANTIC_BACKENDS: Final = frozenset({"pydantic_v2.BaseModel", "pydantic_v2.dataclass"})
+PYDANTIC_BACKENDS: Final = frozenset(model_type.value for model_type in _PYDANTIC_MODEL_TYPES)
 PYDANTIC_IMPORT_MINIMUMS: Final = tuple(
     (form, row.minimum) for row in REQUIREMENTS.values() if row.library == "pydantic" and (form := row.form) is not None
 )

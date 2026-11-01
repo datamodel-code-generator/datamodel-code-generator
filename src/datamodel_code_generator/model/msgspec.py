@@ -29,6 +29,7 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebui
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
 from datamodel_code_generator.model._decisions.assignment import (
     MsgspecWritten,
+    requires_value,
     struct_assigned,
     struct_construction_assigned,
     written_data,
@@ -68,6 +69,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _default_state,
     _find_base_classes,
     _has_opaque_custom_base,
     _keeps_stripped_place,
@@ -299,7 +301,7 @@ def has_field_assignment(field: DataModelFieldBase) -> bool:
 
     A Struct writes a default for every optional field, ``UNSET`` or ``None``, with ``--strip-default-none`` too.
     """
-    return struct_assigned(required=field.required and not field.use_default_with_required)
+    return struct_assigned(required=requires_value(field))
 
 
 def _construction_order_key(field: DataModelFieldBase) -> bool:
@@ -309,7 +311,7 @@ def _construction_order_key(field: DataModelFieldBase) -> bool:
     without one, unless ``--order-constructor-fields-by written-defaults`` is given.
     """
     return struct_construction_assigned(
-        required=field.required and not field.use_default_with_required,
+        required=requires_value(field),
         keeps_stripped_place=_keeps_stripped_place(field),
     )
 
@@ -942,17 +944,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if self.alias is not None:
             args.put("name", self.alias, EXPLICIT_ALIAS, ("alias",))
 
-        if self.default is not UNDEFINED and self.default is not None:
+        if _default_state(self.default) == "value":
             args.put("default", self.default, DEFAULT_VALUE)
         elif self._not_required and "default_factory" not in args:
             args.put("default", None if self.nullable else UNSET, _NONE_DEFAULT if self.nullable else _UNSET_DEFAULT)
 
-        if self.required and not self.use_default_with_required:
+        if requires_value(self):
             args.pop("default", "factory-not-applicable", REQUIRED_FIELD)
             args.pop("default_factory", "factory-not-applicable", REQUIRED_FIELD)
         elif (
-            self.default is not UNDEFINED
-            and self.default is not None
+            _default_state(self.default) == "value"
             and "default_factory" not in args
             and (conversion := self._get_default_as_struct_model()) is not None
         ):

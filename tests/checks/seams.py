@@ -87,6 +87,14 @@ SEAMS: Final = (
         "model_graph.record_schema_location",
     ),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
+    Seam(f"{_PACKAGE}.parser.openapi_scope", "ApiOpenAPIParser", "_site_facts", "schema_graph.site_facts"),
+    Seam(
+        f"{_PACKAGE}._site_facts",
+        None,
+        "site_facts_of",
+        "schema_graph.site_facts_of",
+        holders=(f"{_PACKAGE}.parser.openapi_scope",),
+    ),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
     Seam(
         f"{_PASSES}._shared",

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._option_names import configured_value, option_flag
+from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
     OptionValue,
@@ -44,8 +44,6 @@ _DOCUMENT_NAMES: dict[SchemaKind, str] = {
     "jsonschema": "a JSON Schema",
     "asyncapi": "an AsyncAPI",
 }
-_DEFAULT_TABLE = ("tool", "datamodel-codegen")
-_SENSITIVE_FIELDS = frozenset({"http_headers", "http_query_parameters"})
 _MAX_CANDIDATES = 8
 _CandidateKey: TypeAlias = tuple[bool, frozenset[str]]
 _Pair: TypeAlias = "tuple[Option, tuple[Option, ...], tuple[Option, ...]]"
@@ -71,7 +69,7 @@ class RecommendRequest:
     preset_on_command_line: bool
     read_stdin: Callable[[], str]
     generation_config: Callable[[Mapping[str, Any]], Any]
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
     selector: tuple[str, ...] = ()
     mode: RecommendMode | None = None
     response_observer: Callable[[str, Any, Any, bytes], None] | None = None
@@ -156,7 +154,7 @@ class Recommendation:
     command_selector: tuple[str, ...] = ()
     config_values: dict[str, Any] | None = None
     config_complete: bool = True
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
 
 
 @dataclass(slots=True)
@@ -193,19 +191,9 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
     if config.input_model:
         return None, "input-model", None
     if config.url is not None:
-        from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, get_body  # noqa: PLC0415
+        from datamodel_code_generator.http import _get_configured_body  # noqa: PLC0415
 
-        text = get_body(
-            config.url.geturl(),
-            config.http_headers,
-            bool(config.http_ignore_tls),
-            config.http_query_parameters,
-            DEFAULT_HTTP_TIMEOUT if config.http_timeout is None else config.http_timeout,
-            allow_private_network=bool(config.allow_private_network),
-            http_backend=config.http_backend,
-            response_observer=request.response_observer,
-            encoding=config.encoding,
-        )
+        text = _get_configured_body(config.url.geturl(), config, response_observer=request.response_observer)
         return text, "url", Path(config.url.path).stem
     if config.input is not None:
         path = Path(config.input)
@@ -405,7 +393,7 @@ def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str
     notes: list[str] = []
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
-        if name in _SENSITIVE_FIELDS:
+        if name in SENSITIVE_FIELDS:
             notes.append(f"{option_flag(name)} is not repeated here; add it to the command again.")
             continue
         if name == "url":

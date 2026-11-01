@@ -378,6 +378,10 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
+    AttributeFact("DataType", "TYPE_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact(
+        "DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
     AttributeFact(
         "DataType",
         "_TYPE_NULL_DATA_TYPE_KEY",
@@ -788,6 +792,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         Phase.MODULES,
         None,
         access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
     ),
     AttributeFact(
         "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY

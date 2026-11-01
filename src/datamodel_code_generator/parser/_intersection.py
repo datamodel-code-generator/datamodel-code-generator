@@ -62,6 +62,7 @@ from datamodel_code_generator._json_schema import (
     MODELED_SCHEMA_MAPS,
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
+    admitted_types,
     schema_positions,
 )
 from datamodel_code_generator._records import record
@@ -123,7 +124,6 @@ _NOT_INHERITED: Final = {"constraints": frozenset({"default", "examples", "examp
 """The keywords an override does not inherit, by ``--allof-merge-mode`` value; ``none`` inherits no keyword."""
 ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
-_NUMBER_TYPES: Final = frozenset({"integer", "number"})
 _REMOVED: Final = Sentinel("_REMOVED")
 INTERSECTED_KEYWORDS: Final = _BOUNDS.union((
     "multipleOf",
@@ -337,23 +337,30 @@ def declared_types(value: object) -> tuple[str, ...]:
 
 
 def intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
-    """Return the types both lists admit, in the order of ``first``; ``integer`` is the part of ``number`` both admit.
+    """Return the types both lists admit (``admitted_types``), in the order of ``first``.
 
-    ``null`` stays only when both lists hold it; whether a site admits null is the null rule's decision.
+    A type of ``first`` stays where ``second`` admits it; a ``number`` of ``first`` gives the ``integer`` that both
+    admit where ``second`` admits only that. ``null`` stays only when both lists hold it; whether a site admits null is
+    the null rule's decision.
     """
+    admitted = admitted_types(second)
     return tuple(
         dict.fromkeys(
-            schema_type if schema_type in second else "integer"
+            schema_type if schema_type in admitted else "integer"
             for schema_type in first
-            if schema_type in second or (schema_type in _NUMBER_TYPES and _NUMBER_TYPES.intersection(second))
+            if admitted_types((schema_type,)) & admitted
         )
     )
 
 
 def common_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
-    """Return ``intersect_types`` without the ``integer`` beside ``number``, which admits it."""
+    """Return ``intersect_types`` without a type that another of them admits: the ``integer`` beside ``number``."""
     types = intersect_types(first, second)
-    return tuple(schema_type for schema_type in types if schema_type != "integer" or "number" not in types)
+    return tuple(
+        schema_type
+        for schema_type in types
+        if schema_type not in admitted_types(other for other in types if other != schema_type)
+    )
 
 
 def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int) -> object:
@@ -580,6 +587,14 @@ def intersect_keywords(  # noqa: PLR0913
         tuple(dict.fromkeys(reconciler.unsatisfiable)),
         tuple(dict.fromkeys(reconciler.untaken_patterns)),
     )
+
+
+def intersects_all_of_constraints(merge_mode: str) -> bool:
+    """Return whether the members of an allOf that merge into one schema intersect their constraints.
+
+    They do unless ``--allof-merge-mode none``.
+    """
+    return merge_mode != "none"
 
 
 def inherits_keyword(merge_mode: str, keyword: str) -> bool:

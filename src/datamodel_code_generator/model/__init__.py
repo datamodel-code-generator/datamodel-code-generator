@@ -51,15 +51,14 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
 ) -> DataModelSet:
     """Get the model types for the output format, target Python version, and target Pydantic version."""
     from datamodel_code_generator import DataModelType  # noqa: PLC0415
-
-    pydantic_v2_models = {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+    from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES  # noqa: PLC0415
 
     def get_auxiliary_model_types() -> tuple[type[DataModel], type[DataModel], type[DataModel]]:
         from . import scalar, type_alias, union  # noqa: PLC0415
 
         if python_target_meets("python.type_statement", target_python_version.version_key):
             return type_alias.TypeStatement, scalar.DataTypeScalarTypeStatement, union.DataTypeUnionTypeStatement
-        if use_type_alias_type or data_model_type in pydantic_v2_models:
+        if use_type_alias_type or data_model_type in _PYDANTIC_MODEL_TYPES:
             return type_alias.TypeAliasTypeBackport, scalar.DataTypeScalarTypeBackport, union.DataTypeUnionTypeBackport
         return type_alias.TypeAlias, scalar.DataTypeScalar, union.DataTypeUnion
 

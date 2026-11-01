@@ -2,12 +2,46 @@
 
 from __future__ import annotations
 
-from collections import Counter
-from collections.abc import Callable, Hashable
+from collections import Counter, defaultdict
+from collections.abc import Callable, Hashable, Iterable
 from heapq import heappop, heappush
 from typing import TypeVar
 
 TNode = TypeVar("TNode", bound=Hashable)
+_T = TypeVar("_T")
+
+
+def reach(
+    starts: Iterable[_T], visit: Callable[[_T], Iterable[_T]], key: Callable[[_T], Hashable] | None = None
+) -> list[_T]:
+    """Return the nodes a stack walk from ``starts`` takes, each once, in the order it takes them.
+
+    The walk takes the node pushed last first, beginning with the last start. It takes a node unless it took one of
+    the same ``key`` (the node itself by default) before, calls ``visit`` with it, and pushes the nodes ``visit``
+    returns, in their order.
+    """
+    taken: set[object] = set()
+    order: list[_T] = []
+    pending = list(starts)
+    while pending:
+        node = pending.pop()
+        if (marker := node if key is None else key(node)) not in taken:
+            taken.add(marker)
+            order.append(node)
+            pending.extend(visit(node))
+    return order
+
+
+def reaching(seeds: Iterable[TNode], edges: Iterable[tuple[TNode, Iterable[TNode]]]) -> set[TNode]:
+    """Return ``seeds`` and every node from which an edge, or a chain of edges, leads to one of them.
+
+    ``edges`` pairs a node with the nodes its edges lead to; a node may be paired more than once.
+    """
+    sources: defaultdict[TNode, list[TNode]] = defaultdict(list)
+    for node, targets in edges:
+        for target in targets:
+            sources[target].append(node)
+    return set(reach(seeds, lambda node: sources.get(node, ())))
 
 
 def stable_toposort(
@@ -67,4 +101,4 @@ def stable_toposort(
     return result
 
 
-__all__ = ["stable_toposort"]
+__all__ = ["reach", "reaching", "stable_toposort"]

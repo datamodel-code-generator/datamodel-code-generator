@@ -16,9 +16,9 @@ from __future__ import annotations
 import contextlib
 import socket
 from _thread import allocate_lock  # noqa: PLC2701
-from collections import OrderedDict
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
 from dataclasses import dataclass, field
+from functools import partial
 from ipaddress import IPv4Address, IPv6Address, IPv6Network, ip_address
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, cast
@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._caches import BoundedLru
 from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
@@ -144,6 +145,37 @@ if TYPE_CHECKING:
             timeout: float,
             verify: bool = True,
         ) -> _HTTPXClient: ...
+
+    class _FetchSettings(Protocol):
+        """The options of a config or a parser that say how a URL input is fetched."""
+
+        @property
+        def http_headers(self) -> Sequence[tuple[str, str]] | None:
+            """The headers each request sends."""
+
+        @property
+        def http_ignore_tls(self) -> bool:
+            """Whether a request skips TLS certificate verification."""
+
+        @property
+        def http_query_parameters(self) -> Sequence[tuple[str, str]] | None:
+            """The query parameters the first request sends."""
+
+        @property
+        def http_timeout(self) -> float | None:
+            """The timeout of a request in seconds, or None for the default one."""
+
+        @property
+        def allow_private_network(self) -> bool:
+            """Whether a URL may name a private network host."""
+
+        @property
+        def http_backend(self) -> HTTPBackend:
+            """The HTTP client stack a request without a session uses."""
+
+        @property
+        def encoding(self) -> str:
+            """The encoding the body is read in."""
 
     class _HTTPXURLJoiner(Protocol):
         def join(self, url: str) -> _HTTPXURLJoiner: ...
@@ -739,11 +771,11 @@ class _HTTPFetchSession:
         """Initialize empty size- and parser-lifetime-bounded caches."""
         self._response_observer = response_observer
         self.http_stack = _get_http_stack(http_backend)
-        self._dns_cache: OrderedDict[str, tuple[IPv4Address | IPv6Address, ...]] = OrderedDict()
-        self._clients: OrderedDict[
+        self._dns_cache: BoundedLru[str, tuple[IPv4Address | IPv6Address, ...]] = BoundedLru()
+        self._clients: BoundedLru[
             tuple[str | None, tuple[IPv4Address | IPv6Address, ...], bool, float],
             _HTTPXClient,
-        ] = OrderedDict()
+        ] = BoundedLru()
 
     def __enter__(self) -> Self:
         """Return this parser-scoped session."""
@@ -760,14 +792,11 @@ class _HTTPFetchSession:
 
     def get_ips_from_host(self, host: str) -> tuple[IPv4Address | IPv6Address, ...]:
         """Return a successful DNS result cached for this parser run."""
-        if (cached_ips := self._dns_cache.get(host)) is not None:
-            self._dns_cache.move_to_end(host)
+        if (cached_ips := self._dns_cache.recent(host)) is not None:
             return cached_ips
         if not (resolved_ips := _get_ips_from_host(host)):
             return resolved_ips
-        self._dns_cache[host] = resolved_ips
-        if len(self._dns_cache) > _HTTP_FETCH_DNS_CACHE_MAX_SIZE:
-            self._dns_cache.popitem(last=False)
+        self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
     def get_response(  # noqa: PLR0913
@@ -785,16 +814,13 @@ class _HTTPFetchSession:
     ) -> _HTTPResponse:
         """Fetch through a connection pool isolated by DNS pin and TLS policy."""
         key = (pinned_host, pinned_ips, verify, timeout)
-        if (client := self._clients.get(key)) is None:
-            client = self._clients[key] = _new_client(
+        if (client := self._clients.recent(key)) is None:
+            client = _new_client(
                 http_stack, pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify, timeout=timeout
             )
-            if len(self._clients) > _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE:
-                _, evicted_client = self._clients.popitem(last=False)
+            for _, evicted_client in self._clients.put(key, client, _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE):
                 with contextlib.suppress(Exception):
                     evicted_client.close()
-        else:
-            self._clients.move_to_end(key)
         try:
             return client.get(
                 url,
@@ -839,7 +865,7 @@ class _HTTPFetchSession:
 
     def close(self) -> None:
         """Close cached clients and discard validated DNS results."""
-        clients, self._clients = self._clients, OrderedDict()
+        clients, self._clients = self._clients, BoundedLru()
         self._dns_cache.clear()
         for client in clients.values():
             with contextlib.suppress(Exception):
@@ -1026,7 +1052,9 @@ def _get_redirect_headers(
     redirect_origin = _get_url_origin(redirect_url)
     if not headers or (current_origin is not None and current_origin == redirect_origin):
         return headers
-    return [(name, value) for name, value in headers if name.lower() not in _SENSITIVE_REDIRECT_HEADERS]
+    from datamodel_code_generator._runtime.model_codecs.media import fields_without  # noqa: PLC0415
+
+    return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
 def get_body(  # noqa: PLR0913
@@ -1067,6 +1095,34 @@ def get_body(  # noqa: PLR0913
         http_backend=http_backend,
         response_observer=response_observer,
         encoding=encoding,
+    )
+
+
+def _get_configured_body(
+    url: str,
+    settings: _FetchSettings,
+    *,
+    session: _HTTPFetchSession | None = None,
+    response_observer: ResponseObserver | None = None,
+) -> str:
+    """Fetch the text of a URL with the HTTP options of a config or a parser, the default timeout where none is set.
+
+    A parser fetches through its session, whose client stack and response observer take the place of the options'
+    backend and of `response_observer`.
+    """
+    fetch = (
+        partial(get_body, http_backend=settings.http_backend, response_observer=response_observer)
+        if session is None
+        else session.get_body
+    )
+    return fetch(
+        url,
+        settings.http_headers,
+        settings.http_ignore_tls,
+        settings.http_query_parameters,
+        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        allow_private_network=settings.allow_private_network,
+        encoding=settings.encoding,
     )
 
 
