@@ -11,7 +11,7 @@ from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._option_names import split_external_ref_mapping
+from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -476,7 +476,7 @@ def _apply_implicit_cli_config_values(
     """Apply CLI defaults after pyproject, command-line, and preset values have merged."""
     from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
 
-    explicit_fields = {field.replace("-", "_") for field in pyproject_config} | set(cli_config_args)
+    explicit_fields = {field_name(field) for field in pyproject_config} | set(cli_config_args)
     for name, value in implied_model_settings(config, explicit_fields).items():
         setattr(config, name, value)
 

@@ -11,7 +11,15 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._option_names import hyphenated, json_ready, toml_table, toml_text
+from datamodel_code_generator._option_names import (
+    config_table,
+    hyphenated,
+    json_ready,
+    shell_command,
+    toml_table,
+    toml_text,
+    values_arguments,
+)
 from datamodel_code_generator._paths import names_directory
 from datamodel_code_generator._target_documents import shown
 
@@ -89,24 +97,20 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     """
     if not implied:
         return None
-    import shlex  # noqa: PLC0415
-
-    options = hyphenated({name: json_ready(value) for name, value in implied.items()})
+    values = {name: json_ready(value) for name, value in implied.items()}
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
         named = ("jobs", job) if job else ("profiles", profile) if (profile := namespace.profile) else ()
-        table = toml_table(("tool", "datamodel-codegen", *named), "legacy-ascii-table-keys")
-        lines = (f"  {key} = {toml_text(data)}" for key, data in options.items())
+        table = toml_table(config_table(*named), "legacy-ascii-table-keys")
+        lines = (f"  {key} = {toml_text(data)}" for key, data in hyphenated(values).items())
         where = os.path.relpath(pyproject, Path.cwd())
         return "\n".join((f"{lead}, add to {table} of {Path(where).as_posix()}:", *lines))
-    flags = [
-        token
-        for key, data in options.items()
-        for token in (f"--{key}", *(data if isinstance(data, list) else () if data is True else (data,)))
-    ]
+    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+
+    flags = values_arguments(values.items(), negative=_negative_option)
     stdin = "" if config.input or config.url else " (with the same input on stdin)"
-    return f"{lead}, run{stdin}:\n  {shlex.join(('datamodel-codegen', *args, *flags))}"
+    return f"{lead}, run{stdin}:\n  {shell_command((*args, *flags))}"
 
 
 def _target_side(config: Any) -> tuple[str, str]:

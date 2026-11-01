@@ -18,7 +18,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
-from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -37,6 +36,7 @@ from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
     IMPORT_LITERAL,
     Import,
+    _aliased_name,
     _import_bindings,
     _import_key,
     _iter_import_bindings,
@@ -295,7 +295,7 @@ _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
 def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     """Reserve and return the first ``<name>_aliased`` name, with a suffix when taken."""
-    alias, _ = first_free(f"{name}_aliased", reserved_names.__contains__, "underscore")
+    alias = _aliased_name(name, reserved_names.__contains__)
     reserved_names.add(alias)
     return alias
 

@@ -12,12 +12,15 @@ from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING, TypeAlias
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._requirements import backport_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
+
+    from datamodel_code_generator._free_names import Numbering
 
 _ImportKey: TypeAlias = tuple[str | None, str]
 """A module and a name: an import's identity (``_import_key``) or where ``Imports`` counts it (``_storage_key``)."""
@@ -297,6 +300,23 @@ def _import_bindings(imports: Imports) -> Iterator[tuple[_ImportKey, str]]:
 def _iter_import_bindings(imports: Imports) -> Iterator[str]:
     """Yield names bound by one generated import block."""
     return (binding for _, binding in _import_bindings(imports))
+
+
+def _aliased_name(name: str, taken: Callable[[str], bool] | None = None, numbering: Numbering = "underscore") -> str:
+    """Return the alias ``<name>_aliased`` that an import takes where a name of its module hides ``name``.
+
+    The first free candidate of ``numbering`` that ``taken`` does not hold; each sequence is released output (row
+    ``legacy.alias-order``): the IMPORTS-phase repairs number ``underscore`` (``name_aliased_1``), the structured path
+    of ``alias_shadowed_imports`` ``padded`` (``name_aliased_``), and its fast path passes no ``taken`` and keeps
+    ``name_aliased`` unchecked.
+    """
+    alias = f"{name}_aliased"
+    return alias if taken is None else first_free(alias, taken, numbering)[0]
+
+
+def _aliased_as(import_: Import, alias: str) -> Import:
+    """Return the import that binds the identity of ``import_`` as ``alias``, keeping its model's reference path."""
+    return Import(from_=import_.from_, import_=import_.import_, alias=alias, reference_path=import_.reference_path)
 
 
 IMPORT_ANNOTATED = Import.from_full_path("typing.Annotated")
