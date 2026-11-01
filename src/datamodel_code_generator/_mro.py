@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, TypeVar, overload
 
+from datamodel_code_generator._all_or_none import all_or_none
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Hashable, Iterable, Sequence
 
@@ -178,9 +180,11 @@ def linearize(
                 return order
             frames[-1].orders.append(order.copy())
 
-    orders: list[list[_T]] = []
-    for head in heads:
+    def copied(head: _T) -> list[_T] | None:
         if (order := lineages.get(key(head))) is None and (order := lineage(head)) is None:
             return None
-        orders.append(order.copy())
+        return order.copy()
+
+    if (orders := all_or_none(map(copied, heads))) is None:
+        return None
     return c3_merge([*orders, heads.copy()], key, rule=rule)

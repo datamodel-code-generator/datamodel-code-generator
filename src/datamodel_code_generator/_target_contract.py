@@ -6,6 +6,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
@@ -133,6 +134,11 @@ def literal_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> Froze
 def scalar_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> object:
     """Return the value of the first scalar fact recorded under a name."""
     return next((value.value for key, value in facts if key == name and isinstance(value, LiteralScalar)), None)
+
+
+def literal_text(value: object) -> str | None:
+    """Return the text a recorded literal holds: the value of a string scalar, or None for any other literal."""
+    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -716,10 +722,7 @@ def requirement_alternatives(value: FrozenLiteral) -> tuple[tuple[RequirementEnt
 
 
 def _texts(value: FrozenLiteral) -> tuple[str, ...] | None:
-    if not isinstance(value, LiteralSequence):
-        return None
-    texts = tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
-    return texts if len(texts) == len(value.items) else None
+    return all_or_none(map(literal_text, value.items)) if isinstance(value, LiteralSequence) else None
 
 
 def security_requirements(operation: OperationContract) -> tuple[Requirement, ...] | None:
@@ -732,15 +735,14 @@ def security_requirements(operation: OperationContract) -> tuple[Requirement, ..
         return ()
     if (alternatives := requirement_alternatives(value)) is None:
         return None
-    requirements: list[Requirement] = []
-    for alternative in alternatives:
-        if alternative is None:
-            return None
-        entries = tuple((name, scopes) for name, scopes in alternative if isinstance(name, str) and scopes is not None)
-        if len(entries) != len(alternative):
-            return None
-        requirements.append(entries)
-    return tuple(requirements)
+    return all_or_none(
+        None if alternative is None else all_or_none(map(_named_scopes, alternative)) for alternative in alternatives
+    )
+
+
+def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None:
+    name, scopes = entry
+    return (name, scopes) if isinstance(name, str) and scopes is not None else None
 
 
 def scheme_catalogues(batch: GeneratedTypeContractBatch) -> dict[SourceDocumentId, dict[str, WireDeclaration]]:

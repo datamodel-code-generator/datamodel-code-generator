@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_ori
 from pydantic import BaseModel
 from typing_extensions import Self, Sentinel
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
@@ -1190,9 +1191,8 @@ def _exported_generic_expression(  # ruff: ignore[too-many-return-statements]
     arguments = tuple(
         _exported_generic_expression(argument, modules) for argument in (metadata["args"] if metadata else get_args(tp))
     )
-    if any(argument is None for argument in arguments):
+    if (resolved := all_or_none(arguments)) is None:
         return None
-    resolved = cast("tuple[PythonTypeExpr, ...]", arguments)
     if metadata:
         return PythonTypeSubscript(_reused_python_type_expression(metadata["origin"]), resolved)
     if isinstance(expression, PythonTypeUnion):

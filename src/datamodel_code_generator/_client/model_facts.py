@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
@@ -273,8 +274,8 @@ class ModelFacts:
         types: JSONTypes = None if named is None else frozenset({named})
         match value:
             case UnionType():
-                found = [self.json_types(member, seen) for member in value.members]
-                types = None if None in found else frozenset().union(*(item for item in found if item is not None))
+                found = all_or_none([self.json_types(member, seen) for member in value.members])
+                types = None if found is None else frozenset().union(*found)
             case LiteralType():
                 types = frozenset().union(
                     *(

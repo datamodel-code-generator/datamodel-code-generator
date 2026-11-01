@@ -12,10 +12,10 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._openapi_wire_plan import declared_media
 from datamodel_code_generator._runtime.model_codecs.media import bodyless
 from datamodel_code_generator._target_contract import (
-    LiteralScalar,
     LiteralSequence,
     fact,
     label,
+    literal_text,
     operation_literal,
     parameter_location,
 )
@@ -236,7 +236,7 @@ def tags(operation: OperationContract) -> tuple[str, ...]:
     """Return an operation's tags in declaration order."""
     if not isinstance(value := operation_literal(operation, "tags"), LiteralSequence):
         return ()
-    return tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
+    return tuple(text for item in value.items if (text := literal_text(item)) is not None)
 
 
 def group_tag(operation: OperationContract) -> str | None:

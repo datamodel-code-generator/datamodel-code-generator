@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._caches import BoundedLru
 from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
@@ -431,11 +432,8 @@ def _parse_legacy_ipv4_address(host: str) -> IPv4Address | None:
     if len(parts) > _IPV4_PART_COUNT:
         return None
 
-    numbers: list[int] = []
-    for part in parts:
-        if (number := _parse_legacy_ipv4_int(part)) is None:
-            return None
-        numbers.append(number)
+    if (numbers := all_or_none(map(_parse_legacy_ipv4_int, parts))) is None:
+        return None
 
     ipv4_value: int | None
     match numbers:
