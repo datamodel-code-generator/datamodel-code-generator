@@ -20,6 +20,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
+from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.hashability import set_items_may_keep_builtin_hash
 from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
 from datamodel_code_generator.model._render_plan import RENDER_READY
@@ -250,7 +251,7 @@ def _needs_validate_default(data_type: DataType) -> bool:
 def _applies_default(field: DataModelFieldBase) -> bool:
     """Return whether the default of a field is one that render preparation reads: set, and in effect for the field."""
     return not (
-        (field.required and not field.use_default_with_required)
+        requires_value(field)
         or field.default is None
         or field.default is UNDEFINED
         or isinstance(field.default, Member)

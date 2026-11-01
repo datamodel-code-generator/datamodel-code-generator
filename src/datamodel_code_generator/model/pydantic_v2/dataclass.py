@@ -17,6 +17,7 @@ from datamodel_code_generator.model import dataclass as _dataclass_module
 from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     participates_in_constructor,
+    requires_value,
 )
 from datamodel_code_generator.model._render_plan import FORCED_ASSIGNMENT, CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
@@ -351,9 +352,7 @@ class DataModelField(DataModelFieldV2):
     @override
     def _call_default_factory(self, args: _FieldArguments) -> Kwarg | None:
         """Use dataclass-safe factories for mutable schema defaults."""
-        if (factory := super()._call_default_factory(args)) is not None or (
-            self.required and not self.use_default_with_required
-        ):
+        if (factory := super()._call_default_factory(args)) is not None or requires_value(self):
             return factory
         match self.default:
             case list() | dict() | set() as default:
@@ -424,8 +423,7 @@ class DataModelField(DataModelFieldV2):
         """Return whether a required ``Annotated`` field is an assignment only because of its alias."""
         return (
             self.use_annotated
-            and self.required
-            and not self.use_default_with_required
+            and requires_value(self)
             and self._alias_requires_assignment
             and not self._metadata_requires_assignment(self._get_field_render_plan().default_factory)
         )
@@ -439,11 +437,7 @@ class DataModelField(DataModelFieldV2):
         """Render a dataclass assignment from an already computed plan."""
         if not plan.rendered:
             return None
-        if (
-            plan.default_factory
-            or (self.required and not self.use_default_with_required)
-            or self.should_strip_default_none(keep_optional=True)
-        ):
+        if plan.default_factory or requires_value(self) or self.should_strip_default_none(keep_optional=True):
             return plan.rendered
         if not self.use_annotated:
             return plan.assignment

@@ -82,6 +82,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     classify_assignment,
     participates_in_constructor,
+    requires_value,
 )
 from datamodel_code_generator.model._decisions.hashability import (
     HashClassFacts,
@@ -1121,7 +1122,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if _COUNTS_CONSTRUCTION_DEFAULTS.get() and self._FIELD_ASSIGNMENT_ROW == "pydantic-dataclass":
             return (
                 not self.is_class_var
-                and not (self.required and not self.use_default_with_required)
+                and not requires_value(self)
                 and _classify_field_assignment(self, "pydantic-dataclass").construction_assigned
             )
         return self._get_constructor_default_info()[0]
@@ -1246,7 +1247,7 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
         and (source.USES_DATACLASS_ARGUMENTS or not field.is_class_var)
         and source.FIELD_PARTICIPATES_IN_CONSTRUCTOR(field)
         and (
-            (field.required and not field.use_default_with_required)
+            requires_value(field)
             or (
                 (field.default is UNDEFINED or field.default is None)
                 and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
@@ -2021,7 +2022,7 @@ def _assignment_inputs(
     return AssignmentInputs(
         row=row,
         written=written,
-        required=field.required and not field.use_default_with_required,
+        required=requires_value(field),
         strips_none=field.should_strip_default_none(),
         annotated=field.use_annotated,
         class_var=field.is_class_var,

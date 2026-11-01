@@ -34,6 +34,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, r
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, type_override_classes
 from datamodel_code_generator.imports import Import, _override_module
+from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     enum_tag_members,
@@ -724,8 +725,7 @@ def get_constructor_ordering_conflicts(
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
-            and field.required
-            and not field.use_default_with_required
+            and requires_value(field)
             and (field_name in required_assignment_names or facts.assigned)
         )
         field_has_signature_default = (

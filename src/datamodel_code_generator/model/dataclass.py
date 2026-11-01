@@ -27,6 +27,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     DataclassWritten,
     dataclass_field_items,
     participates_in_constructor,
+    requires_value,
     written_data,
 )
 from datamodel_code_generator.model._render_plan import (
@@ -106,7 +107,7 @@ def _construction_order_key(field: DataModelFieldBase) -> bool:
 
 def _has_constructor_default(field: DataModelFieldBase) -> bool:
     """Classify a constructor default without recursively rendering structured values."""
-    if field.required and not field.use_default_with_required:
+    if requires_value(field):
         return False
     if field.default is not UNDEFINED and field.default is not None:
         return True
@@ -438,7 +439,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 default="none" if default is None else "value" if default != UNDEFINED else "undefined",
                 container_default=isinstance(default, (list, dict, set)),
                 strip_default_none=self.strip_default_none,
-                required=self.required and not self.use_default_with_required,
+                required=requires_value(self),
                 unbound=bool(self.__dict__.get(_UNBOUND_FIELD_KEY)),
             )
         )
