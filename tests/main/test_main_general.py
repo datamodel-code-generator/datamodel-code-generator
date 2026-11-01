@@ -3616,6 +3616,46 @@ def test_type_overrides_scoped(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("target_python_version", ["3.10", "3.12"])
+@pytest.mark.parametrize("type_name", ["str", "int", "dict", "list", "builtins.str"])
+@pytest.mark.parametrize(
+    ("schema_name", "override_key", "model_name"),
+    [
+        ("type_overrides_builtin.json", "M.f", "M"),
+        ("type_overrides_test.json", "CustomType", "User"),
+    ],
+    ids=["field", "model"],
+)
+def test_type_overrides_builtin_names(
+    output_file: Path,
+    schema_name: str,
+    override_key: str,
+    model_name: str,
+    type_name: str,
+    target_python_version: str,
+) -> None:
+    """Builtin overrides produce importable field and model annotations for the configured Python target."""
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.filterwarnings("always", message="--type-overrides writes", category=UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / schema_name,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                "--target-python-version",
+                target_python_version,
+                "--type-overrides",
+                json.dumps({override_key: type_name}),
+            ],
+            importable_module_name="generated_builtin_type_override",
+            importable_module_attribute=model_name,
+        )
+    assert_output("".join(f"{warning.message}\n" for warning in recorded_warnings), name="warnings")
+
+
 @pytest.mark.parametrize(
     ("collapse_args", "expected_file"),
     [

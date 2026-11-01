@@ -833,6 +833,47 @@ pydantic_v2.BaseModel-20261027	main/main_general/standard_preset_enums_read_as_t
 off	main/main_general/type_expression_whose_field_changes_after_render_preparation[off].txt
 report	main/main_general/type_expression_whose_field_changes_after_render_preparation[report].report.txt
 report	main/main_general/type_expression_whose_field_changes_after_render_preparation[report].txt	= main/main_general/type_expression_whose_field_changes_after_render_preparation[off].txt
+[test_type_overrides_builtin_names]
+field-builtins.str-3.10	main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].py
+field-builtins.str-3.10	main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].warnings.txt
+field-builtins.str-3.12	main/main_general/type_overrides_builtin_names[field-builtins.str-3.12].py	= main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].py
+field-builtins.str-3.12	main/main_general/type_overrides_builtin_names[field-builtins.str-3.12].warnings.txt	= main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].warnings.txt
+field-dict-3.10	main/main_general/type_overrides_builtin_names[field-dict-3.10].py
+field-dict-3.10	main/main_general/type_overrides_builtin_names[field-dict-3.10].warnings.txt
+field-dict-3.12	main/main_general/type_overrides_builtin_names[field-dict-3.12].py	= main/main_general/type_overrides_builtin_names[field-dict-3.10].py
+field-dict-3.12	main/main_general/type_overrides_builtin_names[field-dict-3.12].warnings.txt	= main/main_general/type_overrides_builtin_names[field-dict-3.10].warnings.txt
+field-int-3.10	main/main_general/type_overrides_builtin_names[field-int-3.10].py
+field-int-3.10	main/main_general/type_overrides_builtin_names[field-int-3.10].warnings.txt
+field-int-3.12	main/main_general/type_overrides_builtin_names[field-int-3.12].py	= main/main_general/type_overrides_builtin_names[field-int-3.10].py
+field-int-3.12	main/main_general/type_overrides_builtin_names[field-int-3.12].warnings.txt	= main/main_general/type_overrides_builtin_names[field-int-3.10].warnings.txt
+field-list-3.10	main/main_general/type_overrides_builtin_names[field-list-3.10].py
+field-list-3.10	main/main_general/type_overrides_builtin_names[field-list-3.10].warnings.txt
+field-list-3.12	main/main_general/type_overrides_builtin_names[field-list-3.12].py	= main/main_general/type_overrides_builtin_names[field-list-3.10].py
+field-list-3.12	main/main_general/type_overrides_builtin_names[field-list-3.12].warnings.txt	= main/main_general/type_overrides_builtin_names[field-list-3.10].warnings.txt
+field-str-3.10	main/main_general/type_overrides_builtin_names[field-str-3.10].py
+field-str-3.10	main/main_general/type_overrides_builtin_names[field-str-3.10].warnings.txt	= main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].warnings.txt
+field-str-3.12	main/main_general/type_overrides_builtin_names[field-str-3.12].py	= main/main_general/type_overrides_builtin_names[field-str-3.10].py
+field-str-3.12	main/main_general/type_overrides_builtin_names[field-str-3.12].warnings.txt	= main/main_general/type_overrides_builtin_names[field-builtins.str-3.10].warnings.txt
+model-builtins.str-3.10	main/main_general/type_overrides_builtin_names[model-builtins.str-3.10].py
+model-builtins.str-3.10	main/main_general/type_overrides_builtin_names[model-builtins.str-3.10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-builtins.str-3.12	main/main_general/type_overrides_builtin_names[model-builtins.str-3.12].py	= main/main_general/type_overrides_builtin_names[model-builtins.str-3.10].py
+model-builtins.str-3.12	main/main_general/type_overrides_builtin_names[model-builtins.str-3.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-dict-3.10	main/main_general/type_overrides_builtin_names[model-dict-3.10].py
+model-dict-3.10	main/main_general/type_overrides_builtin_names[model-dict-3.10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-dict-3.12	main/main_general/type_overrides_builtin_names[model-dict-3.12].py	= main/main_general/type_overrides_builtin_names[model-dict-3.10].py
+model-dict-3.12	main/main_general/type_overrides_builtin_names[model-dict-3.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-int-3.10	main/main_general/type_overrides_builtin_names[model-int-3.10].py
+model-int-3.10	main/main_general/type_overrides_builtin_names[model-int-3.10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-int-3.12	main/main_general/type_overrides_builtin_names[model-int-3.12].py	= main/main_general/type_overrides_builtin_names[model-int-3.10].py
+model-int-3.12	main/main_general/type_overrides_builtin_names[model-int-3.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-list-3.10	main/main_general/type_overrides_builtin_names[model-list-3.10].py
+model-list-3.10	main/main_general/type_overrides_builtin_names[model-list-3.10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-list-3.12	main/main_general/type_overrides_builtin_names[model-list-3.12].py	= main/main_general/type_overrides_builtin_names[model-list-3.10].py
+model-list-3.12	main/main_general/type_overrides_builtin_names[model-list-3.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-str-3.10	main/main_general/type_overrides_builtin_names[model-str-3.10].py
+model-str-3.10	main/main_general/type_overrides_builtin_names[model-str-3.10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-str-3.12	main/main_general/type_overrides_builtin_names[model-str-3.12].py	= main/main_general/type_overrides_builtin_names[model-str-3.10].py
+model-str-3.12	main/main_general/type_overrides_builtin_names[model-str-3.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_type_overrides_external_lib]
 	main/type_overrides_external_lib.py
 [test_type_overrides_for_target]
