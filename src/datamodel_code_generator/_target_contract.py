@@ -637,6 +637,7 @@ class GeneratedTypeContractBatch:
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
+ParameterKeyRow: TypeAlias = Literal["nameless-querystring", "legacy-server-named-parameter-keys"]
 
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 API_KEY_LOCATIONS: Final[dict[object, ApiKeyLocation]] = {location: location for location in get_args(ApiKeyLocation)}
@@ -659,6 +660,18 @@ def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, st
     ``parameter_key`` gives what identifies the parameter.
     """
     return parameter_location(declaration), declaration.name or ""
+
+
+def parameter_name_key(key: str, row: ParameterKeyRow = "nameless-querystring") -> tuple[ParameterLocation, str] | None:
+    """Return the location and wire name that a `location:name` key of a parameter-name setting selects, or None.
+
+    The key is one of the five locations, a colon, and the wire name, empty for a querystring that has no name. Row
+    ``legacy-server-named-parameter-keys`` (the server's `parameter_names`) refuses an empty name.
+    """
+    location, separator, name = key.partition(":")
+    if not separator or (known := LOCATIONS.get(location)) is None:
+        return None
+    return None if row == "legacy-server-named-parameter-keys" and not name else (known, name)
 
 
 def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | None:
