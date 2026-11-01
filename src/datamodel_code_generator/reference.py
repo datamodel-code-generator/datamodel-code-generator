@@ -348,8 +348,8 @@ TYPE_ORIGIN_KEY: Final = "_type_origin"
 class FieldOrigin:
     """Where a field is built: its kind, and the location of the schema object it is built from, if it has one.
 
-    The location is None for a field built from no schema object of its own (a required name, a boolean property
-    schema) or from one without a location.
+    The location is None for a field built from no schema object of its own (a required name) or from one without a
+    location; a boolean property schema is located where its object declares it.
     """
 
     kind: FieldOriginKind

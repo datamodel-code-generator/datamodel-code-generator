@@ -45,7 +45,7 @@ Model
     .: /properties/keyed {"additionalProperties": {"type": "string"}, "propertyNames": {"pattern": "^a"}, "type": "object"}
     /0: /properties/keyed/additionalProperties {"type": "string"}
     /key: /properties/keyed/propertyNames {"pattern": "^a"}
-  flag: property None
+  flag: property /properties/flag true
     .: None
   base: property /properties/base {"$ref": "#/$defs/Base"}
     .: /properties/base {"$ref": "#/$defs/Base"}

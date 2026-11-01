@@ -5484,6 +5484,15 @@
       ]
     ]
   },
+  "forms-boolean-properties": {
+    "input": "forms-boolean-properties.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "fingerprint-nested": {
     "input": "fingerprint-nested.yaml",
     "references": [

@@ -183,6 +183,8 @@ form-name-errors	main/generation_platform/client/form-name-errors.txt
 form-name-kept	main/generation_platform/client/form-name-kept.txt
 forms-allof-cycle	main/generation_platform/client/forms-allof-cycle.txt
 forms-allof-cycle	main/generation_platform/client/packages/forms-allof-cycle/pydantic_v2_BaseModel//*.py
+forms-boolean-properties	main/generation_platform/client/forms-boolean-properties.txt
+forms-boolean-properties	main/generation_platform/client/packages/forms-boolean-properties/pydantic_v2_BaseModel//*.py
 forms-member-locations	main/generation_platform/client/forms-member-locations.txt
 forms-member-locations	main/generation_platform/client/packages/forms-member-locations/pydantic_v2_BaseModel//*.py
 header-names	main/generation_platform/client/header-names.txt

@@ -84,6 +84,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "multipart-referenced-items",
         "forms-allof-cycle",
         "forms-member-locations",
+        "forms-boolean-properties",
         "server-errors",
         "codec-errors",
         "binary-text",
