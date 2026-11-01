@@ -77,7 +77,7 @@ from typing_extensions import (
 
 from datamodel_code_generator import (
     AllOfClassHierarchy,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    AllOfMergeMode,
+    AllOfMergeMode,  # noqa: F401  # Preserve the established parser.jsonschema export.
     DanglingRefWarning,
     Error,
     InputFileType,
@@ -260,6 +260,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_multiple_of,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_types,
+    intersects_all_of_constraints,
     merge_inherited_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
     merge_inherited_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     warn_unsatisfiable,
@@ -317,6 +318,7 @@ from datamodel_code_generator.parser._schema_object import (
     JSONReference,
     JsonSchemaLiteral,
     JsonSchemaObject,
+    _has_map_key_keywords,
     _is_false_all_of,
     _locate,
     _located,
@@ -2117,14 +2119,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         An inline allOf member with additionalProperties: false and no patternProperties closes the combined model.
         """
-        if (
-            obj.allOf
-            and obj.additionalProperties is not False
-            and any(
-                source.additionalProperties is False and not source.patternProperties
-                for source in self._iter_schema_validation_sources(obj, include_references=False)
-            )
-        ):
+        if obj.allOf and obj.additionalProperties is not False and _all_of_values.inline_sources_close(self, (obj,)):
             return False
         return obj.additionalProperties
 
@@ -3540,7 +3535,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         if types:
             merged["type"] = JsonSchemaParser._first_typed_schema_dict(schemas)["type"]
-        self._merge_schema_constraints(merged, schemas, intersect=self.allof_merge_mode != AllOfMergeMode.NoMerge)
+        self._merge_schema_constraints(
+            merged, schemas, intersect=intersects_all_of_constraints(self.allof_merge_mode.value)
+        )
         return self._schema_object(merged)
 
     def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
@@ -5260,7 +5257,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return key_type
         schemas = cast("list[JsonSchemaObject]", property_names.allOf)
         merged = JsonSchemaParser._first_typed_schema_dict(schemas)
-        self._merge_schema_constraints(merged, schemas, intersect=self.allof_merge_mode != AllOfMergeMode.NoMerge)
+        self._merge_schema_constraints(
+            merged, schemas, intersect=intersects_all_of_constraints(self.allof_merge_mode.value)
+        )
         key_type.unregister_reference()
         return _object_maps.parse_property_name_key_schema(self, self._schema_object(merged))
 
@@ -6305,9 +6304,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return bool(site.obj.properties or self._should_parse_object_with_schema_validators(site.obj))
 
     def _object_kind_object_map_applies(self, site: _Site) -> bool:  # noqa: PLR6301
-        return bool(
-            site.obj.patternProperties or (site.obj.propertyNames is not None and site.obj.propertyNames is not False)
-        )
+        return _has_map_key_keywords(site.obj)
 
     def _object_kind_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return site.obj.type == "object"
@@ -7887,8 +7884,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.config.generate_schema_validators
                     and raw is self.raw_obj
                     and root_obj.patternProperties
-                    and not any((self.config.base_class, self.config.base_class_map, self.config.custom_template_dir))
-                    and self.config.extra_template_data is None
+                    and not _schema_validators.customizes_models(self.config)
                 ):
                     self._pattern_validation_document_root = root_obj
                 self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path_parts or ["#"])), root_obj)

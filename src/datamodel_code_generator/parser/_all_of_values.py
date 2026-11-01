@@ -35,6 +35,7 @@ from datamodel_code_generator.parser._intersection import (
     concatenating_row,
     declared_types,
     intersect_enum_values,
+    intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._null_facts import dump_null_sources, null_schema
@@ -1005,6 +1006,20 @@ def all_of_pattern_conjunction(parser: AllOfValuesHost) -> Callable[[Sequence[st
     )
 
 
+def _closes_properties(source: JsonSchemaObject) -> bool:
+    """Return whether ``source`` admits no property but its own: additionalProperties false and no patternProperties."""
+    return source.additionalProperties is False and not source.patternProperties
+
+
+def inline_sources_close(parser: AllOfValuesHost, schemas: Iterable[JsonSchemaObject]) -> bool:
+    """Return whether a schema of ``schemas`` or one of their inline allOf sources closes the object they combine."""
+    return any(
+        _closes_properties(source)
+        for schema in schemas
+        for source in parser._iter_schema_validation_sources(schema, include_references=False)  # noqa: SLF001
+    )
+
+
 def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
     """Merge allOf items when they share object properties to avoid duplicate models.
 
@@ -1044,11 +1059,7 @@ def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonS
     )
     for resolved_item in resolved_items:
         merged_schema = merge_schema(merged_schema, resolved_item.model_dump(exclude_unset=True, by_alias=True))
-    if any(
-        source.additionalProperties is False and not source.patternProperties
-        for resolved_item in (obj, *resolved_items)
-        for source in parser._iter_schema_validation_sources(resolved_item, include_references=False)  # noqa: SLF001
-    ):
+    if inline_sources_close(parser, (obj, *resolved_items)):
         merged_schema["additionalProperties"] = False
 
     if "required" in merged_schema and isinstance(merged_schema["required"], list):
@@ -1109,7 +1120,9 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
         if not (allowed_types := reduce(common_types, typed, typed[0])):
             return False
         merged["type"] = allowed_types[0] if len(allowed_types) == 1 else sorted(allowed_types)
-    parser._merge_schema_constraints(merged, children, intersect=parser.allof_merge_mode != AllOfMergeMode.NoMerge)  # noqa: SLF001
+    parser._merge_schema_constraints(  # noqa: SLF001
+        merged, children, intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
+    )
     parser._merge_all_of_root_validation_keywords(merged, children)  # noqa: SLF001
     for keyword in ("properties", "patternProperties"):
         properties: dict[str, list[JsonSchemaObject | bool]] = {}
@@ -1120,7 +1133,7 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
             if keyword == "properties":
                 forbidden = set()
                 for source in children:
-                    if source.additionalProperties is False and not source.patternProperties:
+                    if _closes_properties(source):
                         forbidden.update(name for name in properties if name not in (source.properties or {}))
                 if forbidden:
                     if any(name in source.required for name in forbidden for source in children):
@@ -1199,7 +1212,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
                 merged.update(item.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
                 merged.update(obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True))
                 parser._merge_schema_constraints(  # noqa: SLF001
-                    merged, [schema, item, obj], intersect=parser.allof_merge_mode != AllOfMergeMode.NoMerge
+                    merged, [schema, item, obj], intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
                 )
                 if supports_literal_validation or narrows_literals:
                     parser._merge_all_of_root_validation_keywords(merged, [referenced_schema, item, obj])  # noqa: SLF001
