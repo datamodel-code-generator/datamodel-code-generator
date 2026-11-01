@@ -1101,9 +1101,8 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
     A model leaves the output, and the store's emitted models, only when the list it leaves is the one its module
     writes; the list the module structure recorded may be an earlier one.
     """
-    written_lists = {id(ctx.models) for ctx in state.contexts}
     with cast("RenderReady", RENDER_READY.get()).import_view():
-        for unused_model, module, models in unused_model_lists(parser, state):
+        for unused_model, module, models, written in unused_model_lists(parser, state):
             if unused_model in models:  # pragma: no branch
                 parser._import_ledger.remove(  # noqa: SLF001
                     state.module_to_import[module],
@@ -1111,7 +1110,7 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
                     ImportProducer("unused-models", unused_model),
                 )
                 models.remove(unused_model)
-                if id(models) in written_lists:
+                if written:
                     parser._graph_builder.retire_model(unused_model)  # noqa: SLF001
 
 
