@@ -12,6 +12,7 @@ from functools import cache, partial
 from io import StringIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard, cast
 
+from datamodel_code_generator._constraint_applicability import json_integer
 from datamodel_code_generator._format_types import (
     DEFAULT_KNOWN_FIRST_PARTY,
     DEFAULT_LINE_LENGTH,
@@ -97,7 +98,7 @@ def _split_python_lines(source: str) -> list[str]:
 
 
 def _is_valid_builtin_line_length(line_length: Any) -> TypeGuard[int]:
-    return isinstance(line_length, int) and not isinstance(line_length, bool) and line_length > 0
+    return json_integer(line_length) and line_length > 0
 
 
 def _line_indent(line: str) -> str:
