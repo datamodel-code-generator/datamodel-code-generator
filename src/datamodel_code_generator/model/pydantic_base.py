@@ -379,7 +379,7 @@ class DataModelField(DataModelFieldBase):
             return None
         configured = (
             Kwarg("default_factory", self.extras["default_factory"], _DECLARED_FACTORY, ("extra:default_factory",))
-            if "default_factory" in self.extras
+            if self.has_default_factory
             else None
         )
         return None if (factory := self._effective_default_factory(configured)) is None else factory.value

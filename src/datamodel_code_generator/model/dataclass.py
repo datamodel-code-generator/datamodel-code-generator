@@ -426,7 +426,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
     def _nested_model_factory_argument(self) -> _NestedModelFactory | None:
         """Return the nested model's factory the field writes: optional, no declared factory, a factory found."""
-        if self._takes_nested_model_factory() and "default_factory" not in self.extras:
+        if self._takes_nested_model_factory() and not self.has_default_factory:
             return self._get_default_factory_for_nested_model()
         return None
 

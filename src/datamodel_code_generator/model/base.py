@@ -2008,7 +2008,7 @@ def _model_written(field: DataModelFieldBase) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
     return ModelWritten(
         text=bool(field.field),
-        declared_factory="default_factory" in field.extras,
+        declared_factory=field.has_default_factory,
         default=_default_state(field.default),
     )
 
@@ -2371,7 +2371,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         explicit_extras: Collection[str] = (),
     ) -> None:
         """Preserve output-specific inherited state until requiredness is final."""
-        if "default_factory" in inherited_field.extras and "default_factory" not in explicit_extras:
+        if inherited_field.has_default_factory and "default_factory" not in explicit_extras:
             field.__dict__[_REQUIRED_INHERITED_DEFAULT_FACTORY_KEY] = True
         cls.finalize_required_inherited_field(field)
 
