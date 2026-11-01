@@ -748,7 +748,8 @@ class LexicalKinds:
         """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
 
         A place is a schema's location and the steps from the type bound there to the leaf: a list's items, then a
-        mapping's values. A leaf no place binds a type for has no kind.
+        mapping's values. A leaf no place binds a type for has no kind. The places are those the walk read, not the
+        members their uses bind (`legacy-target-located-kinds`).
         """
         value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
         return lexical_kind(value, self._symbols, self._members)

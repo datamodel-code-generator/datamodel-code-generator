@@ -1016,7 +1016,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         without a content encoding and its format maps to plain text.
         """
         if type_ == "string" and (
-            not self._is_base64_encoded_binary_mapping(type_, format_)
+            self._format_bytes(types, type_, format_) == "raw"
             if types == Types.binary
             else types == Types.string
             and "contentMediaType" in obj.extras
@@ -1036,11 +1036,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _get_format_type_kwargs(self, type_: str, format_: str, types: Types) -> dict[str, bool]:
         """Keep bytes mapped from base64 text decoded, and string time formats out of float strictness."""
-        if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format_):
+        if self._format_bytes(types, type_, format_) == "base64":
             return {"base64_encoded": True}
         if types == Types.time and type_ == "string":
             return {"string_format": True}
         return {}
+
+    def _format_bytes(self, types: Types, type_: str, format_: str) -> Literal["raw", "base64"] | None:
+        """Return which bytes the models type a type and format as that the type mapping gives ``types``.
+
+        A format that maps to bytes holds raw bytes, unless they are bytes mapped from base64 text, which the models
+        write as base64 text; any other format holds no bytes.
+        """
+        if types != Types.binary:
+            return None
+        return "base64" if self._is_base64_encoded_binary_mapping(type_, format_) else "raw"
 
     def _is_base64_encoded_binary_mapping(self, type_: str, format_: str) -> bool:
         if type_ != "string" or format_ != "byte" or not self.type_mappings:
