@@ -112,9 +112,9 @@ from datamodel_code_generator.model._decisions.union_assembly import WrittenMemb
 from datamodel_code_generator.model.base import (
     _REUSE_PATH_SUFFIX,
     UNDEFINED,
-    ConstraintsBase,
     DataModel,
     DataModelFieldBase,
+    _has_root_field_constraints,
 )
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
@@ -1183,8 +1183,7 @@ class _Binder:
         return (
             self.policies[id(model)].backend not in _UNCHECKED
             and (field := self.root_field(model)) is not None
-            and isinstance(constraints := field.constraints, ConstraintsBase)
-            and constraints.has_constraints
+            and _has_root_field_constraints(field, row="declared")
         )
 
     def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
