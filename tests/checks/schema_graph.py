@@ -1,12 +1,17 @@
-"""``SCHEMA_GRAPH``: no reader writes a schema object the schema graph validated once and shares.
+"""``SCHEMA_GRAPH``: no reader writes a schema object the schema graph validated once and shares, or a schema site.
 
 ``SchemaGraphBuilder.schema`` validates each JSON object of a loaded document once and gives every reader the same
 object. The wrapper of ``schema`` keeps a fingerprint of each object when it is validated, and the check compares the
 objects with their fingerprints at the end of L1.
+
+``ApiOpenAPIParser._site_facts`` reads the site of a location once, for the target bindings. Its wrapper reads a kept
+site anew from the documents at every read and compares the two, and the wrapper of ``site_facts_of`` reports a string
+`$ref` that leads to no loaded schema when a site is read: a site read before the document its reference names loads.
 """
 
 from __future__ import annotations
 
+from dataclasses import fields
 from functools import cached_property, wraps
 from typing import TYPE_CHECKING, Any, Final
 
@@ -99,3 +104,59 @@ def check_shared_schemas(parser: Any) -> None:
             kind="shared-schema",
             locations=changed,
         )
+
+
+def _site_record(site: Any) -> tuple[object, ...]:
+    """Return a comparable record of each field of a schema site; the annotations it holds as written included."""
+    return tuple(_fingerprint(getattr(site, field.name)) for field in fields(site))
+
+
+def site_facts(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap ``ApiOpenAPIParser._site_facts``: a kept site is read anew from the documents and compared at every read."""
+
+    @wraps(original)
+    def site_facts(self: Any, location: Any) -> Any:
+        if (graph_mode := mode(Area.SCHEMA_GRAPH)) is None or location not in self._schema_sites:
+            return original(self, location)
+        kept = original(self, location)
+        if (fresh := self._located_site(location)) is None or _site_record(fresh) != _site_record(kept):
+            from datamodel_code_generator import Error
+            from datamodel_code_generator._url_redaction import redact_reference
+
+            where = redact_reference(str(location))
+            graph_mode.violation(
+                Error,
+                f"the schema site kept for {where} differs from the documents",
+                kind="schema-site",
+                location=where,
+            )
+        return kept
+
+    return site_facts
+
+
+def site_facts_of(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap ``site_facts_of``: a string `$ref` of a site that leads to no loaded schema is reported."""
+
+    @wraps(original)
+    def site_facts_of(value: object, location: Any, follow: Callable[[str, str], Any]) -> Any:
+        site = original(value, location, follow)
+        if (
+            (graph_mode := mode(Area.SCHEMA_GRAPH)) is not None
+            and site.ref is None
+            and isinstance(value, dict)
+            and isinstance(ref := value.get("$ref"), str)
+        ):
+            from datamodel_code_generator import Error
+            from datamodel_code_generator._url_redaction import redact_reference
+
+            where = redact_reference(str(location))
+            graph_mode.violation(
+                Error,
+                f"the $ref {redact_reference(ref)} of the schema site {where} leads to no loaded schema",
+                kind="schema-site-reference",
+                location=where,
+            )
+        return site
+
+    return site_facts_of
