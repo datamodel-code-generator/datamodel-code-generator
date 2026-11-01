@@ -159,6 +159,8 @@ empty-security	main/generation_platform/client/empty-security.txt
 empty-security	main/generation_platform/client/packages/empty-security/pydantic_v2_BaseModel//*.py
 encodings-model-types	main/generation_platform/client/encodings-model-types.txt
 encodings-model-types	main/generation_platform/client/packages/encodings-model-types/pydantic_v2_BaseModel//*.py
+encodings-model-types-collapsed	main/generation_platform/client/encodings-model-types-collapsed.txt
+encodings-model-types-collapsed	main/generation_platform/client/packages/encodings-model-types-collapsed/pydantic_v2_BaseModel//*.py
 encodings-model-types-errors	main/generation_platform/client/encodings-model-types-errors.txt
 evolution	main/generation_platform/client/evolution.txt
 evolution	main/generation_platform/client/packages/evolution/msgspec_Struct//*.py
@@ -190,6 +192,9 @@ forms-boolean-properties	main/generation_platform/client/forms-boolean-propertie
 forms-boolean-properties	main/generation_platform/client/packages/forms-boolean-properties/pydantic_v2_BaseModel//*.py
 forms-member-locations	main/generation_platform/client/forms-member-locations.txt
 forms-member-locations	main/generation_platform/client/packages/forms-member-locations/pydantic_v2_BaseModel//*.py
+forms-merged-closed	main/generation_platform/client/forms-merged-closed.txt
+forms-merged-closed	main/generation_platform/client/packages/forms-merged-closed/dataclasses_dataclass//*.py
+forms-merged-closed	main/generation_platform/client/packages/forms-merged-closed/msgspec_Struct//*.py	= main/generation_platform/client/packages/forms-merged-closed/dataclasses_dataclass//*.py
 header-names	main/generation_platform/client/header-names.txt
 helpers	main/generation_platform/client/helpers.txt
 helpers	main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py

@@ -881,6 +881,19 @@
   "cookie-names": {
     "input": "cookie-names.yaml"
   },
+  "forms-merged-closed": {
+    "input": "forms-merged-closed.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "header-names": {
     "input": "header-names.yaml"
   },
@@ -5498,6 +5511,21 @@
     "backends": [
       "pydantic_v2.BaseModel"
     ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "encodings-model-types-collapsed": {
+    "input": "encodings-model-types.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "collapse_root_models": true
+    },
     "modules": [
       [
         "client",

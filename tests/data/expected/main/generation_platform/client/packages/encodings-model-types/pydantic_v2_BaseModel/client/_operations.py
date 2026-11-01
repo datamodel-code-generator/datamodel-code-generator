@@ -21,6 +21,7 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
+    ListConstantsResponse,
     ListMergedResponse,
     ListUntypedResponse,
     SubmitUntypedResponse,
@@ -63,4 +64,13 @@ OPERATION_3: Final[OperationPlan[UploadClosedResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_3, form=MultipartForm(members=True)), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_4, fields=(FieldPlan('name', 'string'),))), required=True),
+)
+
+OPERATION_4: Final[OperationPlan[ListConstantsResponse]] = OperationPlan(
+    operation_id='listConstants',
+    method='GET',
+    path='/constants',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='shaped', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('aliased', 'based', 'chosen', 'merged', 'named')), codec=model_bindings.codec_5), ParameterSpec(plan=ParameterPlan(location='header', name='merged', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('aliased', 'based', 'chosen', 'named', 'shaped')), codec=model_bindings.codec_6), ParameterSpec(plan=ParameterPlan(location='header', name='named', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('aliased', 'based', 'chosen', 'merged', 'shaped')), codec=model_bindings.codec_7, converts=True), ParameterSpec(plan=ParameterPlan(location='header', name='based', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('aliased', 'chosen', 'merged', 'named', 'shaped')), codec=model_bindings.codec_8, converts=True), ParameterSpec(plan=ParameterPlan(location='header', name='aliased', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('based', 'chosen', 'merged', 'named', 'shaped')), codec=model_bindings.codec_9, converts=True), ParameterSpec(plan=ParameterPlan(location='header', name='chosen', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('aliased', 'based', 'merged', 'named', 'shaped')), codec=model_bindings.codec_10, converts=True)),
 )

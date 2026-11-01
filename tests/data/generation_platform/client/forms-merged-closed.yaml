@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+servers: [{url: 'https://x.example.com'}]
+paths:
+  /forms:
+    get:
+      operationId: readForm
+      responses:
+        '201':
+          description: open
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  name: {type: string}
+        '203':
+          description: closed
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  name: {type: string}
+                additionalProperties: false
+  /parts:
+    get:
+      operationId: readParts
+      responses:
+        '201':
+          description: open
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+        '203':
+          description: closed
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+                additionalProperties: false

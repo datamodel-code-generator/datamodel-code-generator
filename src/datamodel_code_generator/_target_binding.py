@@ -33,8 +33,14 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
+from datamodel_code_generator._json_pointer import (
+    NONCANONICAL_ESCAPE,
+    NONCANONICAL_PERCENT,
+    fragment_tokens,
+    pointer_tokens,
+)
 from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
     MODEL_VALUE_POSITIONS,
     MODELED_SCHEMA_MAPS,
     SCHEMA_SHAPES,
@@ -533,6 +539,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             ),
         )
 
+    def schema_kinds(self, declaration: SchemaLocation) -> frozenset[str] | None:
+        """Return the JSON kinds a schema's values have, as the reader reads them (``_Reader.kinds``)."""
+        return self._reader.kinds(declaration)
+
     def parse_combined_schema(
         self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
     ) -> list[DataType]:
@@ -917,13 +927,16 @@ def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
     )
 
 
-def _json_type(value: object) -> str:
-    """Return the JSON type of an enum value by its literal kind.
+def _json_type(value: object, other: str | None = None) -> str:
+    """Return the JSON type of an enum or const value by its literal kind.
 
-    Any other value is a number when it is a Decimal, an object when it is a dict, and an array otherwise.
+    Any other value is ``other``, or by default a number when it is a Decimal, an object when it is a dict, and an
+    array otherwise.
     """
     if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
         return found
+    if other is not None:
+        return other
     return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
 
 
@@ -2080,6 +2093,15 @@ class _SchemaLocations:
             node = self.nodes[declaration] = _SchemaNode.of(value, partial(self.follow, declaration.document))
         return node or _LEAF
 
+    def resolve(self, declaration: SchemaLocation) -> tuple[SchemaLocation, _SchemaNode]:
+        """Follow a schema's reference chain, whatever keywords sit beside them, to the schema it leads to."""
+        node = self.at(declaration)
+        seen = {declaration}
+        while (target := node.target) is not None and target not in seen:
+            seen.add(target)
+            declaration, node = target, self.at(target)
+        return declaration, node
+
     def property_location(
         self, schema: SchemaLocation, name: str, active: set[SchemaLocation]
     ) -> SchemaLocation | None:
@@ -2303,6 +2325,40 @@ class _Reader(_SchemaLocations):
             if isinstance(raw.get(keyword), dict):
                 yield declaration.child(keyword)
 
+    def resolved(self, declaration: SchemaLocation) -> tuple[dict[str, YamlValue], SchemaLocation]:
+        """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
+        location = self.resolve(declaration)[0]
+        return as_mapping(self.borrow(location)), location
+
+    def kinds(
+        self, declaration: SchemaLocation, active: frozenset[SchemaLocation] = frozenset()
+    ) -> frozenset[str] | None:
+        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
+
+        A branch that leads back to a schema being read says nothing of its values.
+        """
+        value, declaration = self.resolved(declaration)
+        if declaration in active:
+            return None
+        active |= {declaration}
+        kinds = _json_types(value) if isinstance(value.get("type"), str | list) else None
+        if kinds is None and isinstance(
+            values := value.get("enum", [value["const"]] if "const" in value else None), list
+        ):
+            kinds = frozenset(_json_type(item, "object") for item in values)
+        for keyword in COMBINATOR_POSITIONS:
+            branches = value.get(keyword)
+            if not isinstance(branches, list) or not branches:
+                continue
+            found_kinds = [self.kinds(declaration.child(keyword, str(index)), active) for index in range(len(branches))]
+            if keyword == "allOf":
+                for found in found_kinds:
+                    kinds = found if kinds is None else kinds if found is None else kinds & found
+            elif all(found is not None for found in found_kinds):
+                union = frozenset[str]().union(*(found for found in found_kinds if found is not None))
+                kinds = union if kinds is None else kinds & union
+        return kinds
+
 
 class _Documents:
     """The documents an attempt loaded, by identity: the walked roots first, then the documents they reference.
@@ -2330,6 +2386,10 @@ class _Documents:
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
         return SourceLocation(self.ids[declaration.document], declaration.pointer, role)
+
+    def declaration(self, location: SourceLocation) -> SchemaLocation:
+        """Return the declaration a plain pointer location in a loaded document is at (``location``'s inverse)."""
+        return SchemaLocation(list(self.ids)[location.document], pointer_tokens(location.pointer))
 
 
 class _Models:
@@ -3048,9 +3108,16 @@ class _Encodings(_SchemaUses):
             return facts.type
         return None if member.wire_name is None else self.left_out_types.get((member.consumer, member.wire_name))
 
-    def kinds(self, value: TypeView | None) -> frozenset[str] | None:
-        """Return the JSON kinds of a type's values (``json_kinds``), None for any value or no type."""
-        return None if value is None else json_kinds(value, self.symbol_table, self.members)
+    def kinds(self, value: TypeView | None, source: SourceLocation | None = None) -> frozenset[str] | None:
+        """Return the JSON kinds of a type's values (``json_kinds``), None for any value or no type.
+
+        A type that gives none has those the schema at ``source`` says, as the reader reads that schema
+        (``schema_kinds``), until the parser records them.
+        """
+        kinds = None if value is None else json_kinds(value, self.symbol_table, self.members)
+        if kinds is None and source is not None:
+            kinds = self.parser.schema_kinds(self.documents.declaration(source))
+        return kinds
 
     def stepped(self, value: TypeView | None, steps: tuple[LeafStep, ...]) -> TypeView | None:
         """Return the type the steps from a type lead to (``_target_types.stepped``)."""
@@ -3064,16 +3131,19 @@ class _Encodings(_SchemaUses):
         """Return where the schema of a type's values is: the schema of the model it names, else ``source``."""
         return source if (location := self.located(value)) is None else self.documents.location(location, "schema")
 
-    def additional(self, symbol: SymbolId) -> tuple[SymbolId, SchemaLocation, _AdditionalSaid] | None:
+    def additional(
+        self, symbol: SymbolId, anchor: SchemaLocation | None = None
+    ) -> tuple[SymbolId, SchemaLocation, _AdditionalSaid] | None:
         """Return the model whose schema says what a model's other properties are, that schema, and what it says.
 
-        It is the model's own when that says anything of them, else the last base's that does, as a model takes the
-        configuration of its last base; a class has no cycle of bases.
+        It is the schema a use reads the model at (``anchor``) when that says anything of them, as an equal schema the
+        model stands for may say more than the model's own; else the model's own, else the last base's that does, as
+        a model takes the configuration of its last base; a class has no cycle of bases.
         """
         location = self.locations.get(symbol)
-        said = None if location is None else self.parser.object_schemas.get(location)
-        if location is not None and said is not None and said.additional != "absent":
-            return symbol, location, said.additional
+        for place in dict.fromkeys(found for found in (anchor, location) if found is not None):
+            if (said := self.parser.object_schemas.get(place)) is not None and said.additional != "absent":
+                return symbol, place, said.additional
         return next(
             (
                 found
@@ -3104,7 +3174,7 @@ class _Encodings(_SchemaUses):
             anchor = self.located(value) or schema
             found = None if anchor is None else self.parser.object_schemas.get(anchor)
             said: _AdditionalSaid = "absent" if found is None else found.additional
-        elif (owner := self.additional(symbol)) is None:
+        elif (owner := self.additional(symbol, schema)) is None:
             said = "absent"
         else:
             model, declared, said = owner
@@ -3142,7 +3212,7 @@ class _Encodings(_SchemaUses):
         An array member of a form repeats, in its items' kind, reported where its items' schema is.
         """
         leaf = self.stepped(value, steps)
-        if form and (self.kinds(leaf) or frozenset()) - _NULL == _ARRAY:
+        if form and (self.kinds(leaf, source) or frozenset()) - _NULL == _ARRAY:
             items = _child(self.resolved(leaf, source), "items")
             return MemberShape(name, KindSite(items, value, (*steps, "items")), repeated=True)
         return MemberShape(name, KindSite(source, value, steps))
@@ -3164,7 +3234,7 @@ class _Encodings(_SchemaUses):
         declares pattern properties, have no builtin encoding.
         """
         location = self.resolved(value, source)
-        kinds = (self.kinds(value) or frozenset()) - _NULL
+        kinds = (self.kinds(value, source) or frozenset()) - _NULL
         if kinds == _ARRAY and not form:
             return TextShape("array", KindSite(_child(location, "items"), value, _ITEMS))
         if kinds != _OBJECT:
@@ -3197,11 +3267,11 @@ class _Encodings(_SchemaUses):
         form = self.text(value, source, schema, direction, form=True)
         extras: KindSite | None = None
         declared = False
-        if members and (self.kinds(value) or frozenset()) - _NULL == _OBJECT:
+        if members and (self.kinds(value, source) or frozenset()) - _NULL == _OBJECT:
             held = self.held_members(value, schema, direction)
             _, extras, declared = self.others(value, held, self.resolved(value, source), form=True)
         return EncodingFacts(
-            self.kinds(value),
+            self.kinds(value, source),
             self.text(value, source, schema, direction, form=False),
             form,
             tuple(
@@ -3244,18 +3314,20 @@ class _Contracts(_Encodings):
         """Return what the walk recorded of an acquired schema, located in the attempt's documents."""
         return cast("_SchemaRecord", _relocated(self.parser.schema_records.get(schema, _UNRECORDED), self.relocations))
 
-    def parts(self, binding: TypeUseBinding, record: _PartsRecord, model: SymbolId | None) -> PartFacts:
+    def parts(
+        self, binding: TypeUseBinding, record: _PartsRecord, model: SymbolId | None, anchor: SchemaLocation
+    ) -> PartFacts:
         """Return how a multipart body's schema encodes the parts of its use's members.
 
         Its type says whether it is an object, or any value, and no union of several types. The model it holds allows
-        no other parts when the schema that says what its other properties are, its own or a base's, closes it
-        (``additional``), and allows them when that schema says anything else.
+        no other parts when the schema that says what its other properties are, the one it is read at (``anchor``),
+        its own or a base's, closes it (``additional``), and allows them when that schema says anything else.
         """
         value = binding.type
         kinds = self.kinds(value)
         union = unwrapped(value, self.symbol_table, self.members)
         declared = dict(record.members)
-        said = None if model is None or (owner := self.additional(model)) is None else owner[2]
+        said = None if model is None or (owner := self.additional(model, anchor)) is None else owner[2]
         return PartFacts(
             (kinds is None or kinds - _NULL <= _OBJECT)
             and not (isinstance(union, UnionType) and len(present(union)) > 1),
@@ -3366,7 +3438,7 @@ class _Contracts(_Encodings):
             binary = record.binary if textual or parts is None else parts.binary
             self.uses[use] = replace(
                 binding,
-                parts=None if parts is None else self.parts(binding, parts, model),
+                parts=None if parts is None else self.parts(binding, parts, model, anchor),
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=self.encoding(binding, schema, members=kind in _FORMS)

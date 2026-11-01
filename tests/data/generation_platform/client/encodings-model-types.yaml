@@ -57,9 +57,23 @@ paths:
                 - {$ref: "#/components/schemas/Closed"}
       responses:
         "204": {description: Forms closed by a base.}
+  /constants:
+    get:
+      operationId: listConstants
+      parameters:
+        - {name: shaped, in: header, schema: {const: {a: 1}}}
+        - {name: merged, in: header, schema: {allOf: [{const: {a: 1}}]}}
+        - {name: named, in: header, schema: {$ref: "#/components/schemas/Shaped"}}
+        - {name: based, in: header, schema: {anyOf: [{allOf: [{$ref: "#/components/schemas/Shaped"}]}]}}
+        - {name: aliased, in: header, schema: {$ref: "#/components/schemas/Renamed"}}
+        - {name: chosen, in: header, schema: {anyOf: [{type: object}, {$ref: "#/components/schemas/Shaped"}]}}
+      responses:
+        "204": {description: Headers of constant objects that the models type as any value.}
 components:
   schemas:
     Color: {type: object, properties: {color: {type: string}}}
+    Shaped: {const: {a: 1}}
+    Renamed: {$ref: "#/components/schemas/Shaped"}
     Closed:
       type: object
       additionalProperties: false

@@ -16,6 +16,14 @@ paths:
               - {type: object, properties: {tags: {type: array, items: {type: string}}}}
       responses:
         "204": {description: A query object built by allOf with an array member.}
+  /loops:
+    get:
+      operationId: listLoops
+      parameters:
+        - {name: looped, in: header, schema: {$ref: "#/components/schemas/Loop"}}
+      responses:
+        "204": {description: A header of any value whose schema leads back to itself.}
 components:
   schemas:
     Color: {type: object, properties: {color: {type: string}}}
+    Loop: {anyOf: [{const: {a: 1}}, {$ref: "#/components/schemas/Loop"}]}
