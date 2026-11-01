@@ -334,19 +334,11 @@ class _Union:
 
 
 @dataclass(slots=True)
-class _WalkedObject:
-    """An object of an operation as the walk visited it, resolved, and what the walk visited in it, in order.
+class _WalkedHolder:
+    """A resolved object of the walk, where the document spells it, and the objects the walk visited in it, in order."""
 
-    ``key`` names it in its holder: a parameter's name, a response's status key, a media type, an encoding's property,
-    a header's or a callback's name. ``schemas`` are the schemas the walk acquired in it, with their projections; a
-    callback is kept as written, since its metadata follows its references itself.
-    """
-
-    kind: ApiObjectKind | Literal["operation"]
-    key: str
     declaration: SchemaLocation
     value: dict[str, YamlValue]
-    schemas: dict[SchemaLocation, tuple[Projection, ...]]
     objects: list[_WalkedObject]
 
     def below(self, kind: ApiObjectKind) -> Iterator[_WalkedObject]:
@@ -355,10 +347,24 @@ class _WalkedObject:
 
 
 @dataclass(slots=True)
-class _WalkedOperation:
+class _WalkedObject(_WalkedHolder):
+    """An object of an operation as the walk visited it.
+
+    ``key`` names it in its holder as the document spells it, so a YAML status such as ``200:`` is a number; the other
+    names are checked to be text before the bindings read them: a parameter's name, a media type, an encoding's
+    property, a header's or a callback's name. ``schemas`` are the schemas the walk acquired in it, with their
+    projections; a callback is kept as written, since its metadata follows its references itself.
+    """
+
+    kind: ApiObjectKind
+    key: Any
+    schemas: dict[SchemaLocation, tuple[Projection, ...]]
+
+
+@dataclass(slots=True)
+class _WalkedOperation(_WalkedHolder):
     """An operation as the target parser walked it: the objects the walk visited in it and the parameters in effect."""
 
-    node: _WalkedObject
     use_site: SchemaLocation
     origin: SchemaLocation
     item: _WalkedPathItem
@@ -397,7 +403,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
-        self._visits: list[_WalkedObject] = []
+        self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
         self._reader = _Reader(
@@ -470,28 +476,28 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             shared.update(
                 (id(entry.target), item.origin.child("parameters", entry.occurrence.tokens[-1])) for entry in common[1]
             )
-        node = _WalkedObject("operation", path[-1], self._declared(operation), operation, {}, [])
-        self.operations.append(
-            _WalkedOperation(
-                node,
-                use_site,
-                item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
-                item,
-                self._walked_operations[-1] if self._walked_operations else None,
-                self._api_security,
-                shared,
-                [],
-            )
+        walked = _WalkedOperation(
+            self._declared(operation),
+            operation,
+            [],
+            use_site,
+            item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
+            item,
+            self._walked_operations[-1] if self._walked_operations else None,
+            self._api_security,
+            shared,
+            [],
         )
+        self.operations.append(walked)
         self._walked_operations.append(len(self.operations) - 1)
-        self._visits.append(node)
+        self._visits.append(walked)
         super()._walk_api_operation(operation, path, use_site, prefix, common)
         self._visits.pop()
         self._walked_operations.pop()
 
     @override
     @contextmanager
-    def _visiting(self, kind: ApiObjectKind, key: str, target: Any) -> Generator[None, None, None]:
+    def _visiting(self, kind: ApiObjectKind, key: object, target: Any) -> Generator[None, None, None]:
         """Record an object of the operation under the walk below the object it is in, a parameter at its place."""
         if not self._visits:
             yield
@@ -499,7 +505,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         declaration, value = (
             (self._declared(target), target) if isinstance(target, dict) else (target.declaration, target.value)
         )
-        node = _WalkedObject(kind, key, declaration, value, {}, [])
+        node = _WalkedObject(declaration, value, [], kind, key, {})
         if kind == "parameter":
             operation = self.operations[self._walked_operations[-1]]
             operation.parameters.append((
@@ -510,8 +516,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         else:
             self._visits[-1].objects.append(node)
         self._visits.append(node)
-        yield
-        self._visits.pop()
+        try:
+            yield
+        finally:
+            self._visits.pop()
 
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Keep where the document spells the callback while its path items are walked."""
@@ -615,6 +623,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Return True: the bindings locate every medium by its media type, so walking one reads it."""
         return True
 
+    def _visited(self) -> _WalkedObject | None:
+        """Return the object of an operation the walk is visiting, None where it visits none."""
+        return visited if self._visits and isinstance(visited := self._visits[-1], _WalkedObject) else None
+
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
     ) -> None:
@@ -624,8 +636,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         documents spell them, since its model types do not say them.
         """
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
-        if self._visits:
-            self._visits[-1].schemas.setdefault(declaration, ("value",))
+        if (visited := self._visited()) is not None:
+            visited.schemas.setdefault(declaration, ("value",))
         super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
         if declaration not in self.schema_records:
             self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
@@ -663,8 +675,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.model_resolver.join_path(tuple(self._media_schema_path(path, from_item_schema=True))),
         )
         super()._acquire_item_schema(name, item, path, projected, declaration=declaration, role=role)
-        if self._visits:
-            self._visits[-1].schemas[declaration] = ("value", "item_stream_array")
+        if (visited := self._visited()) is not None:
+            visited.schemas[declaration] = ("value", "item_stream_array")
         self._free(declaration, "item_stream_array", item, item_path)
 
     def _generate_module_output(  # noqa: PLR0913, PLR0917
@@ -3260,7 +3272,7 @@ class _Contracts(_SchemaUses):
         values: list[WireDeclaration] = []
         for medium in holder.below("media"):
             name = medium.key
-            media_declaration, media_use = declaration.child("content", name), use_site.child("content", name)
+            media_declaration, media_use = medium.declaration, use_site.child("content", name)
             uses: list[TypeUseId] = []
             for schema, projections in medium.schemas.items():
                 uses.extend(
@@ -3297,7 +3309,7 @@ class _Contracts(_SchemaUses):
                     medium.value.get("encoding"), encoding_declaration, "encoding property name"
                 ):
                     encoding = walked[property_name]
-                    declared = encoding_declaration.child(property_name)
+                    declared = encoding.declaration
                     used = media_use.child("encoding", property_name)
                     encodings.append(
                         WireDeclaration(
@@ -3430,12 +3442,10 @@ class _Contracts(_SchemaUses):
             contracts.append(self.operation(walked, len(contracts), parent))
         return tuple(contracts)
 
-    def operation(  # ruff: ignore[too-many-locals]
-        self, walked: _WalkedOperation, order: int, parent: OperationId | None
-    ) -> OperationContract:
+    def operation(self, walked: _WalkedOperation, order: int, parent: OperationId | None) -> OperationContract:
         locate = self.documents.location
-        node, use_site, item = walked.node, walked.use_site, walked.item
-        raw, declaration = node.value, node.declaration
+        use_site, item = walked.use_site, walked.item
+        raw, declaration = walked.value, walked.declaration
         kind: Literal["path", "webhook", "callback"] = (
             "callback" if parent is not None else "webhook" if use_site.tokens[0] == "webhooks" else "path"
         )
@@ -3452,7 +3462,7 @@ class _Contracts(_SchemaUses):
             if parameter.declaration not in self.ignored_declarations
         )
         body: WireDeclaration | None = None
-        if (requested := next(node.below("request_body"), None)) is not None:
+        if (requested := next(walked.below("request_body"), None)) is not None:
             used = use_site.child("requestBody")
             body = WireDeclaration(
                 "request_body",
@@ -3465,7 +3475,7 @@ class _Contracts(_SchemaUses):
         responses = tuple(
             self.response(response, use_site.child("responses", status), identity, status)
             for status, response in document_statuses(
-                {response.key: response for response in node.below("response")},
+                {response.key: response for response in walked.below("response")},
                 lambda status: [str(declaration.child("responses", status))],
             ).items()
         )
@@ -3473,11 +3483,11 @@ class _Contracts(_SchemaUses):
             self.metadata(
                 "callback",
                 callback.key,
-                declaration.child("callbacks", callback.key),
+                callback.declaration,
                 use_site.child("callbacks", callback.key),
                 callback.value,
             )
-            for callback in node.below("callback")
+            for callback in walked.below("callback")
         )
         root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)

@@ -637,8 +637,10 @@ class ApiOpenAPIParser(OpenAPIParser):
         ):
             self.parse_raw_obj(name, array_schema, projected_path)
 
-    def _visiting(self, kind: ApiObjectKind, key: str, target: _Visited) -> AbstractContextManager[None]:  # ruff: ignore[no-self-use, unused-method-argument]
+    def _visiting(self, kind: ApiObjectKind, key: object, target: _Visited) -> AbstractContextManager[None]:  # ruff: ignore[no-self-use, unused-method-argument]
         """Return the context the walk visits an object of an operation in; ``key`` names it in its holder.
+
+        ``key`` is as the document spells it, so a YAML status such as ``200:`` is a number.
 
         ``target`` is the object a reference resolves to, or a media type, encoding or callback object as written. The
         API walk keeps nothing of it; the target walk records it.
