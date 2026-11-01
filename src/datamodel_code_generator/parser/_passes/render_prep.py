@@ -25,8 +25,8 @@ from datamodel_code_generator.model._decisions.hashability import set_items_may_
 from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, MemberFacts, assemble_union
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
-    UNDEFINED,
     DataModel,
+    _default_state,
     _effective_field_owners,
     _find_base_classes,
     _model_key_of_model,
@@ -250,12 +250,7 @@ def _needs_validate_default(data_type: DataType) -> bool:
 
 def _applies_default(field: DataModelFieldBase) -> bool:
     """Return whether the default of a field is one that render preparation reads: set, and in effect for the field."""
-    return not (
-        requires_value(field)
-        or field.default is None
-        or field.default is UNDEFINED
-        or isinstance(field.default, Member)
-    )
+    return not (requires_value(field) or _default_state(field.default) != "value" or isinstance(field.default, Member))
 
 
 def validates_structured_default(field: DataModelFieldBase) -> bool:

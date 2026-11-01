@@ -52,6 +52,7 @@ from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
     _default_factory_type_name,
+    _default_state,
     _has_field_assignment,
     _model_key_of_model,
     _nested_model_factory,
@@ -109,7 +110,7 @@ def _has_constructor_default(field: DataModelFieldBase) -> bool:
     """Classify a constructor default without recursively rendering structured values."""
     if requires_value(field):
         return False
-    if field.default is not UNDEFINED and field.default is not None:
+    if _default_state(field.default) == "value":
         return True
     return get_field_default_info(field)[0]
 
@@ -436,7 +437,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 extra_keys=tuple(key for key in self.extras if key in self._FIELD_KEYS),
                 init_excluded=self.extras.get("init") is False,
                 nested_model_factory=nested is not None,
-                default="none" if default is None else "value" if default != UNDEFINED else "undefined",
+                default=_default_state(default),
                 container_default=isinstance(default, (list, dict, set)),
                 strip_default_none=self.strip_default_none,
                 required=requires_value(self),

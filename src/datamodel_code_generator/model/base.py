@@ -139,7 +139,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
-    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
+    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DefaultState, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
     from datamodel_code_generator.model._render_plan import (
@@ -1110,7 +1110,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return (
             self.use_default_factory_for_optional_nested_models
             and not self.required
-            and (self.default is None or self.default is UNDEFINED)
+            and _default_state(self.default) != "value"
         )
 
     def _has_default_for_nested_model_factory(self) -> bool:
@@ -1249,8 +1249,7 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
         and (
             requires_value(field)
             or (
-                (field.default is UNDEFINED or field.default is None)
-                and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
+                _default_state(field.default) != "value" and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
             )
         )
         for field in fields
@@ -1987,6 +1986,11 @@ class BaseClassDataType(DataType):
 UNDEFINED: Any = object()
 
 
+def _default_state(default: object) -> DefaultState:
+    """Return what a field's default is: none given (``UNDEFINED``), ``None``, or another value."""
+    return "undefined" if default is UNDEFINED else "none" if default is None else "value"
+
+
 class BaseLayoutView(NamedTuple):
     """How the layouts of generated bases look before the processing of each module changes them.
 
@@ -2001,11 +2005,10 @@ class BaseLayoutView(NamedTuple):
 
 def _model_written(field: DataModelFieldBase) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
-    default = field.default
     return ModelWritten(
         text=bool(field.field),
         declared_factory="default_factory" in field.extras,
-        default="undefined" if default is UNDEFINED else "none" if default is None else "value",
+        default=_default_state(field.default),
     )
 
 
