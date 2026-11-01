@@ -197,6 +197,14 @@ In the legacy order it meets references in, which the names of the references it
 """
 
 
+def definition_ref(key: DefinitionKey, name: str = "") -> str:
+    """Return the local reference to the definition ``name`` under ``key``, the name as the reference writes it.
+
+    Without a name, it is the text every local reference to a definition under ``key`` starts with.
+    """
+    return f"#/{key}/{name}"
+
+
 def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
     if not ref.startswith("#"):
         return None
@@ -205,7 +213,7 @@ def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
 
         ref = unquote(ref)
     for key in DEFINITION_KEYS:
-        prefix = f"#/{key}/"
+        prefix = definition_ref(key)
         if not ref.startswith(prefix):
             continue
         escaped_name, separator, suffix = ref[len(prefix) :].partition("/")
@@ -218,7 +226,7 @@ def _rewrite_local_definition_ref(ref: str, ref_map: Mapping[str, str], referenc
         name, escaped_name, suffix = local_ref
         definition_name = ref_map.get(name, escaped_name)
         references.add(definition_name)
-        return f"#/$defs/{definition_name}{suffix}"
+        return f"{definition_ref('$defs', definition_name)}{suffix}"
     return ref
 
 

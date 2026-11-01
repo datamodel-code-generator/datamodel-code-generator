@@ -38,7 +38,12 @@ from typing_extensions import Self, Sentinel
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
-from datamodel_code_generator._json_schema import MODEL_VALUE_POSITIONS, SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import (
+    MODEL_VALUE_POSITIONS,
+    SCHEMA_MAP_KEYS,
+    SCHEMA_VALUE_KEYS,
+    definition_ref,
+)
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeExpr,
@@ -1426,7 +1431,7 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0913, PLR0917
         schema, model_class, parent.model_fields, parent_properties, parent_required
     )
 
-    new_schema: dict[str, object] = {"$defs": defs, "allOf": [{"$ref": f"#/$defs/{parent_name}"}]}
+    new_schema: dict[str, object] = {"$defs": defs, "allOf": [{"$ref": definition_ref("$defs", parent_name)}]}
     if child_props:
         new_schema["properties"] = child_props
     if child_required:
@@ -1436,7 +1441,7 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0913, PLR0917
     if overrides:
         from datamodel_code_generator.input_model_result import PythonModelBases  # noqa: PLC0415
 
-        new_schema["allOf"] = PythonModelBases(f"#/$defs/{parent_name}", overrides)
+        new_schema["allOf"] = PythonModelBases(definition_ref("$defs", parent_name), overrides)
 
     new_schema.update({
         key: value
@@ -1504,7 +1509,7 @@ class _InputModelDefinitions:
             schema["$defs"] = {renames.get(name, name): value for name, value in schema["$defs"].items()}
         if "$ref" in schema or "allOf" in schema:
             name = self.name(model_class.__name__, model_class)
-            root_ref = {"$ref": f"#/$defs/{name}"}
+            root_ref = {"$ref": definition_ref("$defs", name)}
             wrapper = {key: value for key, value in schema.items() if key != "$defs"}
             if wrapper in (root_ref, {"allOf": [root_ref]}):
                 # A recursive root's wrapper must not overwrite its real definition.
@@ -1621,7 +1626,7 @@ def _load_model_schema(  # noqa: PLR0914
             model_def = {k: v for k, v in schema.items() if k != "$defs"}
             merged_defs[model_name] = model_def
 
-            root_refs.append({"$ref": f"#/$defs/{model_name}"})
+            root_refs.append({"$ref": definition_ref("$defs", model_name)})
 
         final_schema: dict[str, object] = {"$defs": merged_defs, "anyOf": root_refs}
 

@@ -135,6 +135,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SCHEMA_VALUE_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SINGLE_SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    definition_ref,
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._message_text import english_list, for_count
@@ -2384,7 +2385,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _resolve_type_import_from_defs(self, type_name: str) -> Import | PythonTypeExpr | None:
         """Resolve import for a type name from $defs with x-python-import."""
         try:
-            spelled = f"#/$defs/{type_name}"
+            spelled = definition_ref("$defs", type_name)
             ref = self._derived_ref(spelled, self._current_document_root(), "x-python-type", spelled)
             ref_schema = self._load_ref_schema_object(ref)
             x_python_import = ref_schema.extras.get("x-python-import")
@@ -2676,9 +2677,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         document = self._schema_resource_document(_ref_path_parts(file_part))
         path_parts = self._schema_resource_path_parts.get(document) or _ref_path_parts(file_part)
         with self._schema_document_context(path_parts):
-            raw = self._prepare_schema_resources(
-                self._get_ref_body(file_part) if file_part else self.raw_obj, path_parts
-            )
+            raw = self._prepare_schema_resources(_schema_refs.ref_file_document(self, file_part), path_parts)
             with self.root_id_context(raw):
                 yield document, raw
 

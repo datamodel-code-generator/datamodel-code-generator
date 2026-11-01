@@ -35,6 +35,7 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -368,7 +369,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         document = resolved.partition("#")[0]
         raw_document = self._api_documents.get(document)
         if raw_document is None:
-            raw_document = self._get_ref_body(document) if document else self.raw_obj
+            raw_document = ref_file_document(self, document)
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document

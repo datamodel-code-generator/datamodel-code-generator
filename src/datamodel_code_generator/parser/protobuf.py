@@ -18,6 +18,7 @@ from warnings import warn
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
+from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import extra_requirement
 from datamodel_code_generator._paths import files_under
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
@@ -518,7 +519,7 @@ class _ProtobufDescriptorConverter:
             if self._referenced_standard_types is None:
                 self._referenced_standard_types = {}
             self._referenced_standard_types.setdefault(full_name, None)
-        return {"$ref": f"#/definitions/{self._definition_key(full_name)}"}
+        return {"$ref": definition_ref("definitions", self._definition_key(full_name))}
 
     @staticmethod
     def _make_definition_key(full_name: str) -> str:

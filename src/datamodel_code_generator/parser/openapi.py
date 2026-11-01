@@ -47,6 +47,7 @@ from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -429,7 +430,7 @@ class OpenAPIParser(JsonSchemaParser):
     def get_ref_model(self, ref: str) -> dict[str, Any]:
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self._ref_path(ref).split("#", 1)
-        ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
+        ref_body = ref_file_document(self, ref_file)
         return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
