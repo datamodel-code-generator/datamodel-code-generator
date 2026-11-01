@@ -560,13 +560,13 @@ class _SiteWriterParser(ApiOpenAPIParser):
 
 
 class _EarlySiteReader(ApiOpenAPIParser):
-    """Reads the site of each schema it acquires before the parser parses it and loads the documents it references."""
+    """Reads the site of each schema it acquires before the parser has loaded the documents it references.
 
-    def _acquire_schema(
-        self, name: str, raw: Any, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
-    ) -> None:
+    The check raises at that read, so the schema is never parsed.
+    """
+
+    def _acquire_schema(self, *_: Any, declaration: SchemaLocation, **__: Any) -> None:
         self._site_facts(declaration)
-        super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
 
 
 def test_api_schema_site_check_of_a_reader_that_writes_the_document(monkeypatch: pytest.MonkeyPatch) -> None:
