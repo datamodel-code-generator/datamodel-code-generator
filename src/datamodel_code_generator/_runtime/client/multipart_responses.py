@@ -15,7 +15,8 @@ from typing import TYPE_CHECKING, Final, Generic, cast
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError, MalformedError
-from ..model_codecs.media import LENIENT_QUOTED, charset, essence, json_value, media_kind, typed, unquoted
+from ..model_codecs.media import LENIENT_QUOTED, essence, json_value, media_kind, typed, unquoted
+from .media import charset_text
 from .operations import BodyFramingError, BodyValueError, Branch, InvalidBodyError, coded, read_branch
 from .responses import HeadersView
 
@@ -182,7 +183,7 @@ def _text_kind(part: DecodedPart[bytes], kind: PartKind) -> LexicalKind | None:
 
 
 def _typed_text(part: DecodedPart[bytes], kind: LexicalKind) -> JSONScalar:
-    return typed(part.value.decode(charset(part.content_type or "")), kind)
+    return typed(charset_text(part.value, part.content_type), kind)
 
 
 def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:

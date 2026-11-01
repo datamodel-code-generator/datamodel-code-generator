@@ -35,6 +35,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
+    JSON_MEDIA_TYPE,
     OK,
     SUCCESS_STATUSES,
     FieldPlan,
@@ -141,7 +142,6 @@ ItemT = TypeVar("ItemT")
 ReadT = TypeVar("ReadT")
 
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
-_JSON: Final = "application/json"
 _PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
 _TEXT: Final = FieldPlan("")
 _STYLES: Final[dict[str, frozenset[str]]] = {
@@ -1558,7 +1558,7 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
     native = (
         not bodyless
         and media is not None
-        and media.media_type == _JSON
+        and media.media_type == JSON_MEDIA_TYPE
         and (use := media.use) is not None
         and use.type is not None
     )
@@ -1663,7 +1663,7 @@ def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | No
 def default_media(response: ResponseSpec) -> MediaSpec | None:
     """Return the media a response takes without a choice: JSON, then +json, then the first declared."""
     return (
-        next((item for item in response.media if item.media_type == _JSON), None)
+        next((item for item in response.media if item.media_type == JSON_MEDIA_TYPE), None)
         or next((item for item in response.media if essence(item.media_type).endswith("+json")), None)
         or next(iter(response.media), None)
     )

@@ -13,12 +13,10 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.media import REDIRECT_STATUSES, TOKEN, bodyless, declaring, json_text
+from ..model_codecs.media import JSON_MEDIA_TYPE, REDIRECT_STATUSES, bodyless, declaring, is_token, json_text
 from ..model_codecs.parameters import header_text
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
-
-_JSON: Final = "application/json"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +127,7 @@ def _respond(
         if inspect.isawaitable(body):
             raise _unawaited(body)
         return Response(status_code=status, headers=headers)
-    media_type = declared.media_type or _JSON
+    media_type = declared.media_type or JSON_MEDIA_TYPE
     if isinstance(content := _content(declared, body), str):
         return Response(_encoded(declared, content), status_code=status, media_type=media_type, headers=headers)
     if declared.kind == "json" or not media_type.startswith("text/"):
@@ -146,7 +144,7 @@ def _check_headers(headers: Iterable[tuple[object, object]]) -> None:
     A result's headers may hold other values than its annotation says, such as bytes.
     """
     for name, value in headers:
-        if not (isinstance(name, str) and TOKEN.fullmatch(name)):
+        if not (isinstance(name, str) and is_token(name)):
             msg = f"The response header name {name!r} is not a token"
             raise _failure(msg)
         if not (isinstance(value, str) and header_text(value)):

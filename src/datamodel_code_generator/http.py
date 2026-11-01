@@ -1020,7 +1020,9 @@ def _get_redirect_headers(
     redirect_origin = _get_url_origin(redirect_url)
     if not headers or (current_origin is not None and current_origin == redirect_origin):
         return headers
-    return [(name, value) for name, value in headers if name.lower() not in _SENSITIVE_REDIRECT_HEADERS]
+    from datamodel_code_generator._runtime.model_codecs.media import fields_without  # noqa: PLC0415
+
+    return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
 def get_body(  # noqa: PLR0913

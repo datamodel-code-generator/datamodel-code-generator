@@ -10,7 +10,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
 
-from ..model_codecs.media import ERROR_STATUSES, TOKEN
+from ..model_codecs.media import ERROR_STATUSES, is_token
 from ..model_codecs.parameters import header_text
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
@@ -201,7 +201,7 @@ def _sendable(headers: Iterable[tuple[object, object]], key: object) -> None:
     for name, value in headers:
         if not isinstance(name, str):
             raise ConfigurationError(field_path=("headers",), reason="invalid_value")
-        if not TOKEN.fullmatch(name) or not (value is None or (isinstance(value, str) and header_text(value))):
+        if not is_token(name) or not (value is None or (isinstance(value, str) and header_text(value))):
             raise ConfigurationError(field_path=("headers", name), reason="invalid_value")
 
 

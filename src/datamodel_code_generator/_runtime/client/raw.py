@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, TypeAl
 
 from typing_extensions import Self, TypeIs, TypeVar
 
-from ..model_codecs.media import charset, json_value
+from ..model_codecs.media import json_value
 from .content import CHUNK, pieces
 from .errors import (
     MAX_ERROR_BODY_BYTES,
@@ -29,6 +29,7 @@ from .errors import (
     response_failure,
 )
 from .logical import Ready, in_thread, run_sync
+from .media import charset_text
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator, Iterator
@@ -269,7 +270,7 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _text(self, body: bytes) -> str:
         try:
-            return body.decode(charset(self._info.content_type or ""))
+            return charset_text(body, self._info.content_type)
         except UnicodeDecodeError as error:
             raise self._undecodable(body, error) from None
 

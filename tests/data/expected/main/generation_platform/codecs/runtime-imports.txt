@@ -12,7 +12,7 @@ client/errors.py: .responses, __future__, collections.abc, typing, typing_extens
 client/logical.py: .errors, .options, .retry, .timing, __future__, anyio, asyncio, collections.abc, functools, typing
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .body_sources, .content, .errors, .logical, .media, .parts, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions
-client/multipart_responses.py: ..model_codecs.errors, ..model_codecs.media, .operations, .parts, .responses, __future__, collections.abc, email.message, email.parser, email.policy, functools, re, typing, typing_extensions
+client/multipart_responses.py: ..model_codecs.errors, ..model_codecs.media, .media, .operations, .parts, .responses, __future__, collections.abc, email.message, email.parser, email.policy, functools, re, typing, typing_extensions
 client/native.py: .errors, .options, .responses, .retry, .timing, __future__, collections.abc, contextlib, httpx2, typing
 client/oauth.py: ..model_codecs.media, .auth, .errors, .positions, .security, .timing, .urls, __future__, asyncio, collections.abc, contextlib, dataclasses, datetime, functools, httpx2, inspect, threading, typing, typing_extensions, urllib.parse, weakref
 client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, .media, .positions, .responses, .retry, __future__, collections.abc, dataclasses, functools, typing, typing_extensions
@@ -20,7 +20,7 @@ client/options.py: ..model_codecs.media, ..model_codecs.parameters, ..model_code
 client/parts.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, .media, .operations, __future__, typing
 client/paths.py: ..model_codecs.parameters, __future__, collections.abc, re, typing
 client/positions.py: .urls, __future__, collections.abc, functools, httpx2, typing
-client/raw.py: ..model_codecs.media, .content, .errors, .logical, .operations, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions
+client/raw.py: ..model_codecs.media, .content, .errors, .logical, .media, .operations, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.media, ..model_codecs.unset, .errors, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, enum, math, re, typing
 client/security.py: .positions, .urls, __future__, collections.abc, dataclasses, httpx2, typing
