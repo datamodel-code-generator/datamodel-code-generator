@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
 from urllib.parse import ParseResult, unquote
@@ -84,6 +84,7 @@ SchemaRole: TypeAlias = Literal[
     "request_encoding_header",
     "response_encoding_header",
 ]
+ApiObjectKind: TypeAlias = Literal["parameter", "request_body", "response", "media", "encoding", "header", "callback"]
 
 
 @record
@@ -118,6 +119,9 @@ class _ApiObject:
     def path(self) -> list[str]:
         """Return raw resolver tokens without reconstructing them from names."""
         return [self.declaration.document, "#", *self.declaration.tokens]
+
+
+_Visited: TypeAlias = "_ApiObject | dict[str, YamlValue]"
 
 
 @record
@@ -633,6 +637,16 @@ class ApiOpenAPIParser(OpenAPIParser):
         ):
             self.parse_raw_obj(name, array_schema, projected_path)
 
+    def _visiting(self, kind: ApiObjectKind, key: object, target: _Visited) -> AbstractContextManager[None]:  # ruff: ignore[no-self-use, unused-method-argument]
+        """Return the context the walk visits an object of an operation in; ``key`` names it in its holder.
+
+        ``key`` is as the document spells it, so a YAML status such as ``200:`` is a number.
+
+        ``target`` is the object a reference resolves to, or a media type, encoding or callback object as written. The
+        API walk keeps nothing of it; the target walk records it.
+        """
+        return nullcontext()
+
     def _walk_parameter(
         self, name: str, target: _ApiObject, *, header: bool = False, role: SchemaRole = "parameter"
     ) -> None:
@@ -694,27 +708,28 @@ class ApiOpenAPIParser(OpenAPIParser):
                 medium = _mapping(value, media_path)
                 if not isinstance(media, str) and self._reads_media_type(medium, [*content_path, str(media)], owner):
                     self._key_name(content, media, content_path, "media type")
-                if (schema := self._get_raw_media_schema(medium)) is not None:
-                    if schema.from_item_schema:
-                        declaration = self._declared(medium).child("itemSchema")
-                        self._acquire_item_schema(
-                            name,
-                            medium["itemSchema"],
-                            media_path,
-                            schema.schema,
-                            declaration=declaration,
-                            role=schema_role,
-                        )
-                        self._record_boolean_schema_location(
-                            medium["itemSchema"], [*media_path, "itemSchema"], declaration
-                        )
-                    else:
-                        declaration = self._declared(medium).child("schema")
-                        self._acquire_schema(
-                            name, schema.schema, [*media_path, "schema"], declaration=declaration, role=schema_role
-                        )
-                        self._record_boolean_schema_location(schema.schema, [*media_path, "schema"], declaration)
-                self._walk_encoding(name, medium, media, media_path, owner)
+                with self._visiting("media", media, medium):
+                    if (schema := self._get_raw_media_schema(medium)) is not None:
+                        if schema.from_item_schema:
+                            declaration = self._declared(medium).child("itemSchema")
+                            self._acquire_item_schema(
+                                name,
+                                medium["itemSchema"],
+                                media_path,
+                                schema.schema,
+                                declaration=declaration,
+                                role=schema_role,
+                            )
+                            self._record_boolean_schema_location(
+                                medium["itemSchema"], [*media_path, "itemSchema"], declaration
+                            )
+                        else:
+                            declaration = self._declared(medium).child("schema")
+                            self._acquire_schema(
+                                name, schema.schema, [*media_path, "schema"], declaration=declaration, role=schema_role
+                            )
+                            self._record_boolean_schema_location(schema.schema, [*media_path, "schema"], declaration)
+                    self._walk_encoding(name, medium, media, media_path, owner)
 
     def _reads_media_type(self, medium: dict[str, YamlValue], path: list[str], owner: MediaOwner) -> bool:
         """Return whether walking ``medium`` at ``path`` builds a schema path from its media type or parses it.
@@ -737,7 +752,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 if self._ignores_content_type(target.value, headers, key, headers_path, "header"):
                     continue
                 header = self._resolve_api_object(value, [*target.path, "headers", key])
-                with self._api_object_context(header):
+                with self._visiting("header", key, header), self._api_object_context(header):
                     self._walk_parameter(
                         self._get_model_name((header_name or name) + key, "", "Header"),
                         header,
@@ -942,21 +957,20 @@ class ApiOpenAPIParser(OpenAPIParser):
                     + location.capitalize()
                     + (self._get_model_name(wire_name, "", "Parameter") if wire_name else "")
                 )
-                self._walk_parameter(candidate, parameter)
+                with self._visiting("parameter", wire_name, parameter):
+                    self._walk_parameter(candidate, parameter)
             if "requestBody" in operation:
-                self._walk_content(
-                    name + "Request",
-                    self._resolve_api_object(operation["requestBody"], [*path, "requestBody"]),
-                    owner="request_body",
-                )
-            for status, response in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
+                body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"])
+                with self._visiting("request_body", "requestBody", body):
+                    self._walk_content(name + "Request", body, owner="request_body")
+            for status, value in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
                 response_path = [*path, "responses", str(status)]
                 suffix = str(status).capitalize() if self.use_status_code_in_response_name else ""
-                self._walk_response(
-                    name + "Response" + suffix,
-                    self._resolve_api_object(response, response_path),
-                    header_name=name + "Response" + str(status).capitalize(),
-                )
+                response = self._resolve_api_object(value, response_path)
+                with self._visiting("response", status, response):
+                    self._walk_response(
+                        name + "Response" + suffix, response, header_name=name + "Response" + str(status).capitalize()
+                    )
             callbacks_path = [*path, "callbacks"]
             callbacks = _mapping(operation.get("callbacks", {}), callbacks_path)
             for callback_name, value in callbacks.items():
@@ -964,12 +978,11 @@ class ApiOpenAPIParser(OpenAPIParser):
                     *callbacks_path,
                     self._key_name(callbacks, callback_name, callbacks_path, "callback name"),
                 ]
-                self._walk_callback(
-                    _mapping(value, callback_path),
-                    callback_path,
-                    name + self._get_model_name(callback_name, "", "Callback"),
-                    use_site,
-                )
+                callback = _mapping(value, callback_path)
+                with self._visiting("callback", callback_name, callback):
+                    self._walk_callback(
+                        callback, callback_path, name + self._get_model_name(callback_name, "", "Callback"), use_site
+                    )
             if OpenAPIScope.Tags in self.open_api_scopes:
                 tags = operation.get("tags", [])
                 if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
@@ -1045,33 +1058,34 @@ class ApiOpenAPIParser(OpenAPIParser):
         for property_name, value in (encodings := _mapping(medium["encoding"], encoding_path)).items():
             property_path = [*encoding_path, property_name]
             encoding = _mapping(value, property_path)
-            headers = encoding.get("headers", {})
-            if parsed_media.type != "multipart":
-                if isinstance(headers, dict):
-                    for key in headers:
-                        self._ignore_declaration(
-                            self._declared(encoding).child("headers", key),
-                            "oas_non_multipart_encoding_headers",
-                            owner,
-                            media=media,
-                            wire_name=key,
-                        )
-                continue
-            headers_path = [*property_path, "headers"]
-            for key, header_value in (headers := _mapping(headers, headers_path)).items():
-                if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
+            with self._visiting("encoding", property_name, encoding):
+                headers = encoding.get("headers", {})
+                if parsed_media.type != "multipart":
+                    if isinstance(headers, dict):
+                        for key in headers:
+                            self._ignore_declaration(
+                                self._declared(encoding).child("headers", key),
+                                "oas_non_multipart_encoding_headers",
+                                owner,
+                                media=media,
+                                wire_name=key,
+                            )
                     continue
-                property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
-                header = self._resolve_api_object(header_value, [*property_path, "headers", key])
-                with self._api_object_context(header):
-                    candidate = (
-                        name
-                        + self._get_model_name(property_key, "", "")
-                        + self._get_model_name(key, "", "EncodingHeader")
-                    )
-                    self._walk_parameter(
-                        candidate,
-                        header,
-                        header=True,
-                        role="response_encoding_header" if owner == "response" else "request_encoding_header",
-                    )
+                headers_path = [*property_path, "headers"]
+                for key, header_value in (headers := _mapping(headers, headers_path)).items():
+                    if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
+                        continue
+                    property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
+                    header = self._resolve_api_object(header_value, [*property_path, "headers", key])
+                    with self._visiting("header", key, header), self._api_object_context(header):
+                        candidate = (
+                            name
+                            + self._get_model_name(property_key, "", "")
+                            + self._get_model_name(key, "", "EncodingHeader")
+                        )
+                        self._walk_parameter(
+                            candidate,
+                            header,
+                            header=True,
+                            role="response_encoding_header" if owner == "response" else "request_encoding_header",
+                        )

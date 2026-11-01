@@ -10,7 +10,7 @@ JSON pointer tokens through a loaded document is here too, with the rows that sa
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Sentinel
 
@@ -35,6 +35,7 @@ __all__ = [
 ]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
+_T = TypeVar("_T")
 
 MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]
 """How a reader reads one token's member of a loaded value (``member``)."""
@@ -143,15 +144,13 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
         string_key(key, kind, error_path)
 
 
-def document_statuses(
-    responses: Mapping[Any, YamlValue], error_path: Callable[[str], list[str]]
-) -> dict[str, YamlValue]:
+def document_statuses(responses: Mapping[Any, _T], error_path: Callable[[str], list[str]]) -> dict[str, _T]:
     """Return ``responses`` by their status, the text of their key.
 
     Two keys such as ``200`` and ``'200'`` give one status twice: it is an error at ``error_path(status)``.
     """
     keys: dict[str, object] = {}
-    statuses: dict[str, YamlValue] = {}
+    statuses: dict[str, _T] = {}
     for key, value in responses.items():
         if (status := str(key)) in keys:
             msg = f"response status {status} is given by two keys, {keys[status]!r} and {key!r}"
