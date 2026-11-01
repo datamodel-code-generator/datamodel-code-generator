@@ -76,6 +76,7 @@ draft-07-pattern-map	main/main_recommend_options/recommend_options_for_schemas[d
 enums-read-as-their-const	main/main_recommend_options/recommend_options_for_schemas[enums-read-as-their-const].stdout.txt
 explicit-options	main/main_recommend_options/recommend_options_for_schemas[explicit-options].stdout.txt
 extension-paths-api-scope	main/main_recommend_options/recommend_options_for_schemas[extension-paths-api-scope].stdout.txt
+extension-paths-paths-scope	main/main_recommend_options/recommend_options_for_schemas[extension-paths-paths-scope].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
 json	main/main_recommend_options/recommend_options_for_schemas[json].stdout.txt
 jsonschema	main/main_recommend_options/recommend_options_for_schemas[jsonschema].stdout.txt
