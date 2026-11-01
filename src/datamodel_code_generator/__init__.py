@@ -14,7 +14,6 @@ import threading
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Generator, Mapping
-from datetime import datetime, timezone
 from functools import lru_cache as _lru_cache
 from pathlib import Path
 from typing import (
@@ -27,6 +26,7 @@ from typing import (
 )
 from urllib.parse import ParseResult
 
+from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
@@ -896,7 +896,7 @@ def _build_file_header_parts(custom_file_header: str | None, config: GenerateCon
 #   filename:  """
     header_suffix = ""
     if not config.disable_timestamp:
-        timestamp = config._generation_timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
+        timestamp = config._generation_timestamp or current_timestamp()  # noqa: SLF001
         header_suffix += f"\n#   timestamp: {timestamp}"
     if config.enable_version_header:
         header_suffix += f"\n#   version:   {get_version()}"
