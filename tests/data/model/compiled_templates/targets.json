@@ -196,6 +196,7 @@
             },
             "polling": {
               "max_polls": "1000",
+              "interval": "1 second",
               "max_wait": "60 seconds",
               "total_timeout": "600 seconds"
             },
@@ -276,6 +277,7 @@
             },
             "polling": {
               "max_polls": "1000",
+              "interval": "1 second",
               "max_wait": "60 seconds",
               "total_timeout": "600 seconds"
             },
@@ -1812,6 +1814,7 @@
             },
             "polling": {
               "max_polls": "1000",
+              "interval": "1 second",
               "max_wait": "60 seconds",
               "total_timeout": "600 seconds"
             },
@@ -1865,6 +1868,7 @@
             },
             "polling": {
               "max_polls": "1000",
+              "interval": "1 second",
               "max_wait": "60 seconds",
               "total_timeout": "600 seconds"
             },
@@ -1935,6 +1939,7 @@
             },
             "polling": {
               "max_polls": "1000",
+              "interval": "1 second",
               "max_wait": "60 seconds",
               "total_timeout": "600 seconds"
             },
