@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Generic, Protocol, TypeVar, final
 
 from typing_extensions import NamedTuple, Self
 
-from datamodel_code_generator._graph import stable_toposort
+from datamodel_code_generator._graph import reach, stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
@@ -134,13 +134,7 @@ class ReferenceGraph:
 
     def reached(self, key: ModelKey, kinds: Collection[EdgeKind]) -> frozenset[ModelKey]:
         """Return the models that ``key`` reaches through one or more edges of ``kinds``, itself on a cycle."""
-        reached: set[ModelKey] = set()
-        pending = list(self.targets(key, kinds))
-        while pending:
-            if (target := pending.pop()) not in reached:
-                reached.add(target)
-                pending.extend(self.targets(target, kinds))
-        return frozenset(reached)
+        return frozenset(reach(self.targets(key, kinds), lambda target: self.targets(target, kinds)))
 
     def acyclic_order(self, kinds: Collection[EdgeKind]) -> list[ModelKey] | None:
         """Return the models with the targets of each first, or ``None`` when edges of ``kinds`` close a cycle."""
@@ -157,15 +151,7 @@ class ReferenceGraph:
 
         A model comes before its targets, and its last target first.
         """
-        order: list[ModelKey] = []
-        met: set[ModelKey] = set()
-        pending = [key]
-        while pending:
-            if (current := pending.pop()) not in met:
-                met.add(current)
-                order.append(current)
-                pending.extend(self.ordered_targets(current, kind))
-        return order
+        return reach((key,), lambda current: self.ordered_targets(current, kind))
 
     def postorder(self, key: ModelKey, kind: EdgeKind, met: set[ModelKey]) -> list[ModelKey]:
         """Return ``key`` and the models it reaches through edges of ``kind``, each after its targets in their order.
@@ -326,10 +312,11 @@ def walk_graph(
 
     start_keys = tuple(map(met, starts))
     targets: dict[ModelKey, tuple[ModelKey, ...]] = {}
-    pending = list(start_keys)
-    while pending:
-        if (key := pending.pop()) not in targets:
-            targets[key] = target_keys = tuple(map(met, targets_of(node_of[key])))
-            pending.extend(target_keys)
+
+    def visit(key: ModelKey) -> tuple[ModelKey, ...]:
+        targets[key] = target_keys = tuple(map(met, targets_of(node_of[key])))
+        return target_keys
+
+    reach(start_keys, visit)
     note_reads(node_of.values())
     return ReachedModels(reference_graph(snapshot, node_of, {kind: targets}), MappingProxyType(node_of), start_keys)

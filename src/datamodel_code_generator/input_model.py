@@ -28,7 +28,7 @@ from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
-from operator import methodcaller
+from operator import itemgetter, methodcaller
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
@@ -36,6 +36,7 @@ from pydantic import BaseModel
 from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
 from datamodel_code_generator._json_schema import MODEL_VALUE_POSITIONS, SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
@@ -1108,17 +1109,10 @@ def _has_annotated_generic_argument(tp: object) -> bool:
 def _native_generic_field_paths(models: Sequence[type]) -> dict[type, dict[str, Any]]:
     """Capture only observed native model_fields paths, retaining exact specialization identity."""
     paths: dict[type, dict[str, Any]] = {}
-    pending = [
-        (model, {"module": symbol.module, "qualname": ".".join(symbol.qualname_parts), "fields": []})
-        for model in models
-        if (symbol := _exported_runtime_symbol(model, [model.__module__])) is not None
-    ]
-    visited: set[type] = set()
-    while pending:
-        model, path = pending.pop()
-        if model in visited:
-            continue
-        visited.add(model)
+
+    def visit(item: tuple[type, dict[str, Any]]) -> list[tuple[type, dict[str, Any]]]:
+        model, path = item
+        found: list[tuple[type, dict[str, Any]]] = []
         model_fields = getattr(model, "model_fields", None)
         annotations = (
             {name: info.annotation for name, info in model_fields.items()}
@@ -1139,12 +1133,23 @@ def _native_generic_field_paths(models: Sequence[type]) -> dict[type, dict[str, 
                 if _pydantic_generic_metadata(annotation):
                     paths.setdefault(cast("type", annotation), field_path)
                 if get_origin(annotation) is None and isinstance(annotation, type):
-                    pending.append((annotation, field_path))
+                    found.append((annotation, field_path))
                 else:
                     args = get_args(annotation)
                     if get_origin(annotation) is Annotated:
                         args = args[:1]
                     arguments.extend((argument, (*indexes, index)) for index, argument in enumerate(args))
+        return found
+
+    reach(
+        [
+            (model, {"module": symbol.module, "qualname": ".".join(symbol.qualname_parts), "fields": []})
+            for model in models
+            if (symbol := _exported_runtime_symbol(model, [model.__module__])) is not None
+        ],
+        visit,
+        key=itemgetter(0),
+    )
     return paths
 
 

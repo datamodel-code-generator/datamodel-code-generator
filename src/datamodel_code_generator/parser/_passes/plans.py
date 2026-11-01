@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 from datamodel_code_generator import ReuseScope
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
@@ -155,18 +156,17 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     if not (joins := [model for model in models if len(model.base_classes) > 1]):
         return
     duplicates = find_possible_reuse_duplicates(parser, module_models)
-    layout_models: dict[int, DataModel] = {}
-    pending = joins.copy()
-    while pending:
-        if id(model := pending.pop()) in layout_models:
-            continue
-        layout_models[id(model)] = model
-        pending.extend(_find_base_classes(model))
+
+    def layout_targets(model: DataModel) -> list[DataModel]:
+        targets = _find_base_classes(model)
         if (duplicated := duplicates.get(id(model))) is not None:
-            pending.append(duplicated)
+            targets.append(duplicated)
+        return targets
+
+    layout_models = reach(joins, layout_targets, key=id)
     tag_names = possible_tag_names(
         iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),  # noqa: SLF001
-        list(layout_models.values()),
+        layout_models,
         field_namer(parser.model_resolver, parser.field_name_model_type),
     )
     overrides = parser._model_type_override_imports  # noqa: SLF001
