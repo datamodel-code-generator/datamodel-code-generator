@@ -19,11 +19,23 @@ TomlValue: TypeAlias = str | bool | int | float | list["TomlValue"] | tuple["Tom
 TomlKeyRow: TypeAlias = Literal["unicode", "legacy-ascii-table-keys"]
 _TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 CONFIG_TABLE: Final = ("tool", "datamodel-codegen")
+FIELD_ALIASES: Final = {"capitalize_enum_members": "capitalise_enum_members"}
+SENSITIVE_FIELDS: Final = frozenset({"http_headers", "http_query_parameters"})
 
 
 def option_flag(field: str, *, negative: bool = False) -> str:
     """Return the option of a config field, or its --no- form."""
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
+
+
+def option_flags(field: str) -> tuple[str, ...]:
+    """Return the options of a config field: its own, then those of the aliases ``FIELD_ALIASES`` gives it."""
+    return (option_flag(field), *(option_flag(alias) for alias, name in FIELD_ALIASES.items() if name == field))
+
+
+def field_name(key: str) -> str:
+    """Return the config field a hyphenated pyproject.toml key names, the reverse of ``hyphenated``."""
+    return key.replace("-", "_")
 
 
 def option_arguments(field: str, value: object, *, negative: Callable[[str], str | None]) -> list[Any] | None:

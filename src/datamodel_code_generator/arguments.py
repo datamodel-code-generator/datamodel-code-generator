@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, cast, get_args
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
 from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
 from datamodel_code_generator._message_text import extra_requirement, install_command
-from datamodel_code_generator._option_names import split_external_ref_mapping
+from datamodel_code_generator._option_names import option_flags, split_external_ref_mapping
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import DeprecationFormat, deprecation_message
 from datamodel_code_generator.enums import (
@@ -992,7 +992,7 @@ typing_options.add_argument(
 # ======================================================================================
 # Customization options for generated model fields
 # ======================================================================================
-_flag(field_options, "--capitalise-enum-members", "--capitalize-enum-members", help="Capitalize field names on enum")
+_flag(field_options, *option_flags("capitalise_enum_members"), help="Capitalize field names on enum")
 field_options.add_argument(
     "--empty-enum-field-name",
     help="Set field name when enum value is empty (default:  `_`)",

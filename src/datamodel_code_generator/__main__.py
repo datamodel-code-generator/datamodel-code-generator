@@ -121,8 +121,10 @@ from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
     CONFIG_TABLE,
+    SENSITIVE_FIELDS,
     TomlValue,
     config_table,
+    field_name,
     hyphenated,
     option_arguments,
     option_flag,
@@ -214,7 +216,7 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "watch_delay",
 })
 
-SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset({"--http-headers", "--http-query-parameters"})
+SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE_FIELDS))
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
 BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "output", "url"})
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
@@ -810,11 +812,7 @@ def _batch_outer_settings(
 ) -> tuple[bool, float]:
     """Resolve scheduler-only settings without adding them to inner jobs."""
     values = {
-        **{
-            key.replace("-", "_"): value
-            for key, value in tool_config.items()
-            if key.replace("-", "_") in BATCH_OUTER_CONFIG_FIELDS
-        },
+        **{name: value for key, value in tool_config.items() if (name := field_name(key)) in BATCH_OUTER_CONFIG_FIELDS},
         **{key: value for key, value in cli_config_args.items() if key in BATCH_OUTER_CONFIG_FIELDS},
     }
     if not values:
@@ -897,9 +895,7 @@ def _record_raw_job_config_dependencies(
     from datamodel_code_generator.watch_dependencies import _JSON_CONFIG_FIELDS  # noqa: PLC0415
 
     for raw_name, raw_value in config.items():
-        if not isinstance(raw_name, str) or (name := raw_name.replace("-", "_")) not in (
-            _JSON_CONFIG_FIELDS | {"input"}
-        ):
+        if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (_JSON_CONFIG_FIELDS | {"input"}):
             continue
         if not isinstance(raw_value, str | Path):
             continue
@@ -955,11 +951,11 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     base_config = {
         key: value
         for key, value in tool_config.items()
-        if key not in {"jobs", "profiles"} and key.replace("-", "_") not in BATCH_OUTER_CONFIG_FIELDS
+        if key not in {"jobs", "profiles"} and field_name(key) not in BATCH_OUTER_CONFIG_FIELDS
     }
     watch, watch_delay = _batch_outer_settings(tool_config, cli_config_args)
-    for field_name in BATCH_OUTER_CONFIG_FIELDS:
-        cli_config_args.pop(field_name, None)
+    for field in BATCH_OUTER_CONFIG_FIELDS:
+        cli_config_args.pop(field, None)
 
     plans: list[JobPlan] = []
     for name, job in jobs.items():

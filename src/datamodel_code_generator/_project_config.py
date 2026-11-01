@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._option_names import FIELD_ALIASES, field_name
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator.util import load_toml
 
@@ -114,9 +115,10 @@ def _get_pyproject_toml_config_with_path(
 
 def _normalize_pyproject_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """Convert TOML option spelling to Config field spelling."""
-    normalized = {key.replace("-", "_"): value for key, value in config.items()}
-    if "capitalize_enum_members" in normalized and "capitalise_enum_members" not in normalized:  # pragma: no cover
-        normalized["capitalise_enum_members"] = normalized.pop("capitalize_enum_members")
+    normalized = {field_name(key): value for key, value in config.items()}
+    for alias, field in FIELD_ALIASES.items():
+        if alias in normalized and field not in normalized:  # pragma: no cover
+            normalized[field] = normalized.pop(alias)
     return normalized
 
 

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._option_names import CONFIG_TABLE, configured_value, option_flag
+from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
     OptionValue,
@@ -44,7 +44,6 @@ _DOCUMENT_NAMES: dict[SchemaKind, str] = {
     "jsonschema": "a JSON Schema",
     "asyncapi": "an AsyncAPI",
 }
-_SENSITIVE_FIELDS = frozenset({"http_headers", "http_query_parameters"})
 _MAX_CANDIDATES = 8
 _CandidateKey: TypeAlias = tuple[bool, frozenset[str]]
 _Pair: TypeAlias = "tuple[Option, tuple[Option, ...], tuple[Option, ...]]"
@@ -404,7 +403,7 @@ def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str
     notes: list[str] = []
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
-        if name in _SENSITIVE_FIELDS:
+        if name in SENSITIVE_FIELDS:
             notes.append(f"{option_flag(name)} is not repeated here; add it to the command again.")
             continue
         if name == "url":
