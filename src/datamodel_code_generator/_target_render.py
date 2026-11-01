@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from _typeshed import DataclassInstance
 
+    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
@@ -63,10 +64,14 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
-    """Return the FieldPlan constructor of one form or object member, naming it through `local`."""
-    repeated = ", repeated=True" if field.repeated else ""
-    return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
+def member_plan(local: Callable[[str, str], str], plan: FieldPlan | PartPlan) -> str:
+    """Return the constructor of a member's plan: a form or object member's, or a form-data member's read as a part.
+
+    The member's name and kind are passed by position, ``repeated=True`` only when it repeats; the class is named
+    through `local` from the module of the package's runtime copy that defines it.
+    """
+    repeated = (keyword_argument("repeated", "True"),) if plan.repeated else ()
+    return call_text(_record_class(local, plan), (repr(plan.name), repr(plan.kind), *repeated))
 
 
 def runtime_record(
@@ -104,7 +109,7 @@ def _record_arguments(
     )
 
 
-def _record_class(local: Callable[[str, str], str], record: DataclassInstance) -> str:
+def _record_class(local: Callable[[str, str], str], record: object) -> str:
     kind = type(record)
     return local(kind.__module__.removeprefix(f"{__package__}."), kind.__name__)
 
@@ -121,9 +126,9 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
     def spelled(name: str, value: Any) -> str:
         match name:
             case "fields":
-                return tuple_display(field_plan(local, item) for item in value)
+                return tuple_display(member_plan(local, item) for item in value)
             case "additional":
-                return field_plan(local, value)
+                return member_plan(local, value)
         return repr(value)
 
     return runtime_record(local, plan, spelled)

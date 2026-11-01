@@ -70,6 +70,8 @@ _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 POLL_INTERVAL: Final = 1.0
 """The seconds a polling helper waits after each response before the next poll when its definition declares none."""
+COUNTED_CONTINUATIONS: Final = ("offset", "page")
+"""The continuation kinds that count a pagination helper's position, by item offset or page number."""
 
 
 class MessageCodec(NamedTuple):
@@ -495,8 +497,7 @@ class _Validator:  # noqa: PLR0904
                 "end": (self.ends, REQUIRED),
                 "empty_string": (self.choice("value", "end"), REQUIRED),
             },
-            "offset": count,
-            "page": count,
+            **dict.fromkeys(COUNTED_CONTINUATIONS, count),
             "next_url": {
                 "read": (self.selector, REQUIRED),
                 "end": (self.ends, REQUIRED),
@@ -510,7 +511,7 @@ class _Validator:  # noqa: PLR0904
             where = f"{at}.end[{selected['end'].index(_EMPTY_STRING)}]"
             self.conflict(where, f"{where} ends at the empty string, which empty_string decides alone")
             return INVALID
-        if selected["kind"] in {"offset", "page"} and ("has_more" in selected) == ("total" in selected):
+        if selected["kind"] in COUNTED_CONTINUATIONS and ("has_more" in selected) == ("total" in selected):
             if "total" in selected:
                 self.conflict(at, f"{at} needs has_more or total, not both")
                 return INVALID
