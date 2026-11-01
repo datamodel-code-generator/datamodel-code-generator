@@ -21,7 +21,14 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
-from datamodel_code_generator._python_syntax import aliased, call_text, from_import, keyword_argument, module_import
+from datamodel_code_generator._python_syntax import (
+    aliased,
+    call_text,
+    from_import,
+    keyword_argument,
+    module_import,
+    normalize_newlines,
+)
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
@@ -82,10 +89,7 @@ def _split_python_lines(source: str) -> list[str]:
     """Split physical Python lines while preserving Unicode separators."""
     if not source:
         return []
-    if "\r" in source:
-        source = source.replace("\r\n", "\n").replace("\r", "\n")
-
-    lines = source.split("\n")
+    lines = normalize_newlines(source).split("\n")
     if lines[-1]:
         return lines
     lines.pop()

@@ -144,6 +144,7 @@ from datamodel_code_generator._project_config import (
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
 )
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
@@ -1018,11 +1019,6 @@ def generate_pyproject_config(args: Namespace) -> str:
     return _format_pyproject_config(_pyproject_config_data(args))
 
 
-def _normalize_line_endings(text: str) -> str:
-    """Normalize line endings to LF for cross-platform comparison."""
-    return text.replace("\r\n", "\n")
-
-
 class _OutputDecodeError(UnicodeError):
     """An existing output file that the configured encoding cannot decode."""
 
@@ -1034,7 +1030,7 @@ class _OutputDecodeError(UnicodeError):
 def _read_existing_output(path: Path, encoding: str) -> str:
     """Read an existing output file with LF line endings, naming it when the encoding cannot decode it."""
     try:
-        return _normalize_line_endings(path.read_text(encoding=encoding))
+        return normalize_newlines(path.read_text(encoding=encoding))
     except UnicodeError as e:
         raise _OutputDecodeError(path, e) from e
 
@@ -1106,7 +1102,7 @@ def _compare_single_file(
         - has_differences: True if files differ
         - diff_lines: List of diff lines for output
     """
-    generated_content = _normalize_line_endings(generated_path.read_text(encoding=encoding))
+    generated_content = normalize_newlines(generated_path.read_text(encoding=encoding))
 
     display_path = comparison.single_file_display_path or actual_path.as_posix()
     actual_content = _read_existing_output(actual_path, encoding)
@@ -1162,7 +1158,7 @@ def _compare_directories(
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
-        generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
+        generated_content = normalize_newlines((generated_dir / rel_path).read_text(encoding=encoding))
         actual_content = _read_existing_output(actual_dir / rel_path, encoding)
         if generated_content != actual_content:
             display_path = comparison.directory_file_path(rel_path)
