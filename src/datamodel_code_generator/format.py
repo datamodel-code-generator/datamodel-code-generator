@@ -25,6 +25,7 @@ from weakref import ReferenceType, WeakKeyDictionary, ref
 from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
+from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.util import load_toml
 
@@ -75,13 +76,12 @@ def _local_package_modules(module: ModuleType, *, previous_modules: frozenset[st
     if package_paths is None:
         return (module.__name__,)
     roots = tuple(Path(path).resolve(strict=False) for path in package_paths)
-    prefix = f"{module.__name__}."
     loaded_modules = sys.modules.copy()
     local_modules = tuple(
         name
         for name, candidate in loaded_modules.items()
         if name not in previous_modules
-        and name.startswith(prefix)
+        and is_below_name(name, module.__name__)
         and isinstance(candidate, ModuleType)
         and (source_path := _module_source_path(candidate)) is not None
         and any(source_path.is_relative_to(root) for root in roots)
@@ -153,12 +153,12 @@ class _WatchSourceFinder:
     """Wrap only current-package child imports with source-first loading."""
 
     def __init__(self, package_name: str) -> None:
-        self._prefix = f"{package_name}."
+        self._package = package_name
 
     def find_spec(
         self, fullname: str, path: Sequence[str] | None = None, target: ModuleType | None = None
     ) -> ModuleSpec | None:
-        if not fullname.startswith(self._prefix) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
+        if not is_below_name(fullname, self._package) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
             return None
         if spec.loader is not None and callable(getattr(spec.loader, "get_source", None)):
             spec.loader = _WatchSourceLoader(spec.loader, spec.origin)
@@ -189,8 +189,7 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
 
 def _package_modules(name: str, modules: dict[str, ModuleType]) -> dict[str, ModuleType]:
     """Return the modules of `modules` that are the package `name` or one of its submodules."""
-    prefix = f"{name}."
-    return {loaded: module for loaded, module in modules.items() if loaded == name or loaded.startswith(prefix)}
+    return {loaded: module for loaded, module in modules.items() if is_within_name(loaded, name)}
 
 
 def _restore_watch_package(

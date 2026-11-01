@@ -18,6 +18,7 @@ from datamodel_code_generator._api_types import Diagnostic, OperationRef, Schema
 from datamodel_code_generator._client.naming import helper_name_problem, token
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
@@ -186,7 +187,7 @@ def validate(
 
 
 def _collides(name: str, other: str) -> bool:
-    return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
+    return is_within_name(name, other) or is_within_name(other, name)
 
 
 class _Validator:  # noqa: PLR0904

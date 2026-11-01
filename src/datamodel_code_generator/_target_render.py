@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, TargetPydanticVersion, _pydantic_version_key
@@ -134,7 +135,7 @@ def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
         dict.fromkeys(
             requirement
             for name, requirement in MODEL_DEPENDENCIES
-            if any(item == name or item.startswith(f"{name}.") for item in imported)
+            if any(is_within_name(item, name) for item in imported)
         )
     )
 
