@@ -16,7 +16,6 @@ from __future__ import annotations
 import contextlib
 import socket
 from _thread import allocate_lock  # noqa: PLC2701
-from collections import OrderedDict
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
 from dataclasses import dataclass, field
 from ipaddress import IPv4Address, IPv6Address, IPv6Network, ip_address
@@ -27,6 +26,7 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._caches import BoundedLru
 from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
@@ -739,11 +739,11 @@ class _HTTPFetchSession:
         """Initialize empty size- and parser-lifetime-bounded caches."""
         self._response_observer = response_observer
         self.http_stack = _get_http_stack(http_backend)
-        self._dns_cache: OrderedDict[str, tuple[IPv4Address | IPv6Address, ...]] = OrderedDict()
-        self._clients: OrderedDict[
+        self._dns_cache: BoundedLru[str, tuple[IPv4Address | IPv6Address, ...]] = BoundedLru()
+        self._clients: BoundedLru[
             tuple[str | None, tuple[IPv4Address | IPv6Address, ...], bool, float],
             _HTTPXClient,
-        ] = OrderedDict()
+        ] = BoundedLru()
 
     def __enter__(self) -> Self:
         """Return this parser-scoped session."""
@@ -760,14 +760,11 @@ class _HTTPFetchSession:
 
     def get_ips_from_host(self, host: str) -> tuple[IPv4Address | IPv6Address, ...]:
         """Return a successful DNS result cached for this parser run."""
-        if (cached_ips := self._dns_cache.get(host)) is not None:
-            self._dns_cache.move_to_end(host)
+        if (cached_ips := self._dns_cache.recent(host)) is not None:
             return cached_ips
         if not (resolved_ips := _get_ips_from_host(host)):
             return resolved_ips
-        self._dns_cache[host] = resolved_ips
-        if len(self._dns_cache) > _HTTP_FETCH_DNS_CACHE_MAX_SIZE:
-            self._dns_cache.popitem(last=False)
+        self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
     def get_response(  # noqa: PLR0913
@@ -785,16 +782,13 @@ class _HTTPFetchSession:
     ) -> _HTTPResponse:
         """Fetch through a connection pool isolated by DNS pin and TLS policy."""
         key = (pinned_host, pinned_ips, verify, timeout)
-        if (client := self._clients.get(key)) is None:
-            client = self._clients[key] = _new_client(
+        if (client := self._clients.recent(key)) is None:
+            client = _new_client(
                 http_stack, pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify, timeout=timeout
             )
-            if len(self._clients) > _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE:
-                _, evicted_client = self._clients.popitem(last=False)
+            for _, evicted_client in self._clients.put(key, client, _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE):
                 with contextlib.suppress(Exception):
                     evicted_client.close()
-        else:
-            self._clients.move_to_end(key)
         try:
             return client.get(
                 url,
@@ -839,7 +833,7 @@ class _HTTPFetchSession:
 
     def close(self) -> None:
         """Close cached clients and discard validated DNS results."""
-        clients, self._clients = self._clients, OrderedDict()
+        clients, self._clients = self._clients, BoundedLru()
         self._dns_cache.clear()
         for client in clients.values():
             with contextlib.suppress(Exception):

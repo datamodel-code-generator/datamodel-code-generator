@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import sys
-from collections import OrderedDict
 from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import sha256
@@ -13,6 +12,7 @@ from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, TextIO, TypeAlias, cast
 
+from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._module_paths import is_package_init
 
 if TYPE_CHECKING:
@@ -41,8 +41,8 @@ _PARSER_SOURCE_DATA_CACHE_MAX_SIZE = 128
 _ParserSourceDataCacheKey: TypeAlias = tuple[Path, str, str, str]
 _ParserSourceDataSeenKey: TypeAlias = tuple[Path, str]
 # Serialized snapshots isolate mutable callers and are faster to restore than reparsing source text.
-_parser_source_data_cache: OrderedDict[_ParserSourceDataCacheKey, bytes] = OrderedDict()
-_parser_source_data_seen_keys: OrderedDict[_ParserSourceDataSeenKey, None] = OrderedDict()
+_parser_source_data_cache: BoundedLru[_ParserSourceDataCacheKey, bytes] = BoundedLru()
+_parser_source_data_seen_keys: SeenKeys[_ParserSourceDataSeenKey] = SeenKeys()
 _parser_source_data_cache_lock = RLock()
 _parsed_source_cache_enable_count = 0
 _enable_parsed_source_cache = False
@@ -293,13 +293,8 @@ def _read_parser_source_data_from_path(
 
 
 def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, encoding: str) -> YamlValue:
-    seen_key = (resolved_path, encoding)
     with _parser_source_data_cache_lock:
-        use_cache = seen_key in _parser_source_data_seen_keys
-        _parser_source_data_seen_keys[seen_key] = None
-        _parser_source_data_seen_keys.move_to_end(seen_key)
-        while len(_parser_source_data_seen_keys) > _PARSER_SOURCE_DATA_CACHE_MAX_SIZE:
-            _parser_source_data_seen_keys.popitem(last=False)
+        use_cache = _parser_source_data_seen_keys.mark((resolved_path, encoding), _PARSER_SOURCE_DATA_CACHE_MAX_SIZE)
     return _load_parser_source_data_from_bytes(
         resolved_path, data, encoding, sha256(data).hexdigest() if use_cache else None
     )
@@ -307,9 +302,8 @@ def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, e
 
 def _load_cached_parser_source_data(cache_key: _ParserSourceDataCacheKey) -> YamlValue | None:
     with _parser_source_data_cache_lock:
-        if (cached_data := _parser_source_data_cache.get(cache_key)) is None:
+        if (cached_data := _parser_source_data_cache.recent(cache_key)) is None:
             return None
-        _parser_source_data_cache.move_to_end(cache_key)
 
     import marshal  # noqa: PLC0415
 
@@ -326,10 +320,7 @@ def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data:
         # Values outside the primitive YamlValue shape remain valid uncached input.
         return parsed_data
     with _parser_source_data_cache_lock:
-        _parser_source_data_cache[cache_key] = cached_data
-        _parser_source_data_cache.move_to_end(cache_key)
-        while len(_parser_source_data_cache) > _PARSER_SOURCE_DATA_CACHE_MAX_SIZE:
-            _parser_source_data_cache.popitem(last=False)
+        _parser_source_data_cache.put(cache_key, cached_data, _PARSER_SOURCE_DATA_CACHE_MAX_SIZE)
     return parsed_data
 
 

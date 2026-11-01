@@ -1506,13 +1506,50 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
     }
 
 
+@final
+class UnusedModels:
+    """Models that leave the output, by identity: ``model in unused`` asks of one, ``written`` keeps the others."""
+
+    __slots__ = ("_ids",)
+
+    def __init__(self, models: Iterable[DataModel]) -> None:
+        """Take the models that leave."""
+        self._ids = {id(model) for model in models}
+
+    def __contains__(self, model: object) -> bool:
+        """Return whether ``model`` is one of the models that leave."""
+        return id(model) in self._ids
+
+    def written(self, models: Iterable[DataModel]) -> list[DataModel]:
+        """Return the models of ``models`` that stay, in their order."""
+        return [model for model in models if id(model) not in self._ids]
+
+
+class UnusedModelsHolder(Protocol):
+    """A run, or the state of its finalization, that holds the unused models of the run."""
+
+    @property
+    def unused_models(self) -> list[DataModel]:
+        """The models no module writes."""
+
+
+def run_unused_models(run: UnusedModelsHolder) -> UnusedModels:
+    """Return the models that the passes between the module loop and unused-model removal leave out.
+
+    They leave out every unused model of the run, also one that removal leaves written in a merged module.
+    """
+    return UnusedModels(run.unused_models)
+
+
 def unused_model_lists(
     host: ReplacedRootsHost, state: _FinalizeState[Any]
-) -> Iterator[tuple[DataModel, ModulePath, list[DataModel]]]:
-    """Yield each unused model with the module and the model list it leaves.
+) -> Iterator[tuple[DataModel, ModulePath, list[DataModel], bool]]:
+    """Yield each unused model with the module and the model list it leaves, and whether its module writes that list.
 
-    A root model that collapsing replaced leaves the list of the module that writes it now.
+    A root model that collapsing replaced leaves the list of the module that writes it now. The list the module
+    structure recorded for another model may be an earlier one than the list its module writes.
     """
+    written_lists = {id(ctx.models) for ctx in state.contexts}
     replaced_root_modules = (
         {
             id(model): (ctx.module_key, ctx.models)
@@ -1525,4 +1562,4 @@ def unused_model_lists(
     )
     for unused_model in state.unused_models:
         module, models = replaced_root_modules.pop(id(unused_model), None) or state.model_to_module_models[unused_model]
-        yield unused_model, module, models
+        yield unused_model, module, models, id(models) in written_lists

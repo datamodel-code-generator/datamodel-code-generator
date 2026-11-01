@@ -130,6 +130,7 @@ from datamodel_code_generator.parser._passes._shared import (
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
+    run_unused_models,
     site_display_name,
     subclass_duplicate,
     without_stand_ins,
@@ -2480,17 +2481,16 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
     collapse does not redirect, then name the inner model, and their module imports it as a collapsed field's
     module does.
     """
-    unused = {id(model) for model in run.unused_models}
+    unused = run_unused_models(run)
     inner_references = {
         model_key_of(root_model.reference): inner_model.reference
         for root_model, inner_model in parser._replaced_root_models.values()  # noqa: SLF001
-        if id(root_model) in unused
+        if root_model in unused
     }
     for ctx in run.contexts:
         rule_users = [
             (model, data_type, inner_reference, ctx.imports.reference_paths.get(reference.path))
-            for model in ctx.models
-            if id(model) not in unused
+            for model in unused.written(ctx.models)
             for data_type in _rule_data_types(model)
             if (reference := data_type.reference) is not None
             and (inner_reference := inner_references.get(model_key_of(reference))) is not None
@@ -2603,12 +2603,11 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     the root model it replaces leaves that entry behind. The class imports the models of other modules that its rules
     name, as ``change_from_import`` imports them for a class that writes its rules from the start.
     """
-    unused = {id(model) for model in run.unused_models}
     if not (
         aliases := [
             model
-            for model in _context_models(run.contexts)
-            if id(model) not in unused and model._unwritable_runtime_rules  # noqa: SLF001
+            for model in run_unused_models(run).written(_context_models(run.contexts))
+            if model._unwritable_runtime_rules  # noqa: SLF001
         ]
     ):
         return
