@@ -96,6 +96,8 @@ class DirectoryInputFilter:
 
     def iter_files(self, paths: Iterable[Path], encoding: str) -> Iterator[tuple[Path, bytes | None]]:
         """Retain candidate bytes so recognizing an artifact never rereads a schema."""
+        from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
         for path in paths:
             if not path.is_file() or path in self.files:
                 continue
@@ -107,7 +109,7 @@ class DirectoryInputFilter:
                         source_path = Path(source_from_cache(str(path)))
                 if source_path.suffix == ".py" and (source_path == path or source_path.is_file()):
                     source_data = source_path.read_bytes()
-                    text = source_data.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
+                    text = normalize_newlines(source_data.decode(encoding))
                     if self._is_generated(text) or (is_package_init(source_path.name) and not text.strip()):
                         continue
                     if source_path == path:

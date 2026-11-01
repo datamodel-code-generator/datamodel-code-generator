@@ -10,7 +10,9 @@ text's own, and a writer of imports decides which names it imports, in which ord
 The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal; the caller
 or its template writes the quotes. So are the text of a docstring and of a comment: the escapes a triple-quoted
 docstring needs, its one-line and block forms, and the line endings a comment block keeps; templates read the public
-functions as filters through ``model.base``, which keeps their names.
+functions as filters through ``model.base``, which keeps their names. Every reader of text that ends its lines as
+Python's universal newlines do (CRLF and a lone CR read as LF), source text and comments alike, reads it through
+``normalize_newlines``.
 """
 
 from __future__ import annotations
@@ -89,6 +91,11 @@ def from_import(module: str, names: Iterable[str], /) -> str:
 def aliased(name: str, alias: str, /) -> str:
     """Return an imported module or name as an import statement lists it when the import binds it to ``alias``."""
     return f"{name} as {alias}"
+
+
+def normalize_newlines(text: str) -> str:
+    """Return ``text`` with every CRLF and lone CR as LF, as Python's universal newlines read a file."""
+    return text.replace("\r\n", "\n").replace("\r", "\n") if "\r" in text else text
 
 
 def _normalize_string(value: str) -> str:
@@ -193,9 +200,7 @@ def comment_safe(value: str | None) -> str | None:
     """
     if value is None:
         return None
-    value = _normalize_string(value)
-    # Collapse CRLF before converting lone CR.
-    return value.replace("\r\n", "\n").replace("\r", "\n")
+    return normalize_newlines(_normalize_string(value))
 
 
 def inline_comment_safe(value: str | None) -> str | None:

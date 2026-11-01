@@ -30,6 +30,7 @@ from datamodel_code_generator._fastapi.packages import (
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -503,7 +504,7 @@ def artifact_text(artifact: GeneratedArtifact, encoding: str) -> str:
 
 
 def _normalized(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
+    text = normalize_newlines(text).rstrip("\n")
     return f"{text}\n" if text else ""
 
 

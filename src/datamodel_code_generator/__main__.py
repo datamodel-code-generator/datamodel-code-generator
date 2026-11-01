@@ -117,6 +117,7 @@ from datamodel_code_generator._cli_config import (
     _template_data,
     is_url,
 )
+from datamodel_code_generator._config_fields import JSON_FIELDS, MODEL_JSON_FIELDS, TARGET_SELECTORS
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
@@ -136,14 +137,13 @@ from datamodel_code_generator._option_names import (
 from datamodel_code_generator._option_names import json_ready as _json_ready
 from datamodel_code_generator._paths import concrete_parent, files_under, names_directory, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
-    _PYPROJECT_JSON_CONFIG_FIELDS,
-    _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
 )
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
@@ -310,7 +310,7 @@ def _create_config(
         config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
     config._json_sources = {  # noqa: SLF001
         name: value
-        for name in _PYPROJECT_JSON_CONFIG_FIELDS
+        for name in JSON_FIELDS
         if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
     }
     config._naming_chosen = not _NAMING_FIELDS.isdisjoint({*pyproject_config, *cli_config_args})  # noqa: SLF001
@@ -892,17 +892,13 @@ def _record_raw_job_config_dependencies(
 
     As in a planned job, the JSON files of model options stay relative to the working directory.
     """
-    from datamodel_code_generator.watch_dependencies import _JSON_CONFIG_FIELDS  # noqa: PLC0415
-
     for raw_name, raw_value in config.items():
-        if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (_JSON_CONFIG_FIELDS | {"input"}):
+        if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (JSON_FIELDS | {"input"}):
             continue
         if not isinstance(raw_value, str | Path):
             continue
         path = Path(raw_value)
-        dependencies.add_recovery_file(
-            path if path.is_absolute() or name in _PYPROJECT_MODEL_JSON_CONFIG_FIELDS else base_path / path
-        )
+        dependencies.add_recovery_file(path if path.is_absolute() or name in MODEL_JSON_FIELDS else base_path / path)
 
 
 def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
@@ -1018,11 +1014,6 @@ def generate_pyproject_config(args: Namespace) -> str:
     return _format_pyproject_config(_pyproject_config_data(args))
 
 
-def _normalize_line_endings(text: str) -> str:
-    """Normalize line endings to LF for cross-platform comparison."""
-    return text.replace("\r\n", "\n")
-
-
 class _OutputDecodeError(UnicodeError):
     """An existing output file that the configured encoding cannot decode."""
 
@@ -1034,7 +1025,7 @@ class _OutputDecodeError(UnicodeError):
 def _read_existing_output(path: Path, encoding: str) -> str:
     """Read an existing output file with LF line endings, naming it when the encoding cannot decode it."""
     try:
-        return _normalize_line_endings(path.read_text(encoding=encoding))
+        return normalize_newlines(path.read_text(encoding=encoding))
     except UnicodeError as e:
         raise _OutputDecodeError(path, e) from e
 
@@ -1106,7 +1097,7 @@ def _compare_single_file(
         - has_differences: True if files differ
         - diff_lines: List of diff lines for output
     """
-    generated_content = _normalize_line_endings(generated_path.read_text(encoding=encoding))
+    generated_content = normalize_newlines(generated_path.read_text(encoding=encoding))
 
     display_path = comparison.single_file_display_path or actual_path.as_posix()
     actual_content = _read_existing_output(actual_path, encoding)
@@ -1162,7 +1153,7 @@ def _compare_directories(
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
 
     for rel_path in sorted(generated_files & actual_files):
-        generated_content = _normalize_line_endings((generated_dir / rel_path).read_text(encoding=encoding))
+        generated_content = normalize_newlines((generated_dir / rel_path).read_text(encoding=encoding))
         actual_content = _read_existing_output(actual_dir / rel_path, encoding)
         if generated_content != actual_content:
             display_path = comparison.directory_file_path(rel_path)
@@ -1701,14 +1692,10 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
     from datamodel_code_generator._message_text import english_list, for_count  # noqa: PLC0415
-    from datamodel_code_generator.base_config import (  # noqa: PLC0415
-        _TARGET_SELECTORS,
-        _selected_target,
-        _target_options_error,
-    )
+    from datamodel_code_generator.base_config import _selected_target, _target_options_error  # noqa: PLC0415
 
     explicit = _explicit_config_args(namespace)
-    unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
+    unselected = [(selector, prefix) for selector, prefix in TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
         (
             option_flag(selector),

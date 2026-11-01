@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 from typing_extensions import Self
 
+from datamodel_code_generator._config_fields import TARGET_SELECTORS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -83,13 +84,12 @@ def _validate_additional_import_paths(value: list[str] | None) -> list[str] | No
         raise Error(msg) from None
 
 
-_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
 _TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
 def _selected_target(config: Any) -> tuple[str, str] | None:
     """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
-    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
+    return next((item for item in TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
 
 
 def _target_options_error(config: Any, *, output: bool = True) -> str | None:

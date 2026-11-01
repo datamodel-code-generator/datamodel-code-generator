@@ -747,9 +747,11 @@ def _is_comment_only_source(source: str) -> bool:
 
     Split only at CR/LF: ``splitlines()`` adds Unicode boundaries the tokenizer does not treat as line breaks.
     """
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
     return all(
         not (content := line.lstrip(" \t\f")) or content.startswith("#")
-        for line in source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        for line in normalize_newlines(source).split("\n")
     )
 
 
@@ -1907,9 +1909,9 @@ def _generate_with_atomic_remote_update(
 
 def _prepare_generation_config(config: GenerateConfig, caller_cwd: Path) -> tuple[GenerateConfig, Path, Path]:
     """Resolve configuration paths before any process-relative generation work."""
-    config = _absolute_config_paths(
-        config, ("output", "emit_model_metadata", "custom_file_header_path", "custom_template_dir"), caller_cwd
-    )
+    from datamodel_code_generator._config_fields import CALLER_RELATIVE_PATH_FIELDS  # noqa: PLC0415
+
+    config = _absolute_config_paths(config, CALLER_RELATIVE_PATH_FIELDS, caller_cwd)
     logical_output = _absolute_generation_path(config._logical_output, caller_cwd)  # noqa: SLF001
     output_context_path = _output_context_path(logical_output or config.output, caller_cwd)
     if (http_local_ref_path := _absolute_generation_path(config.http_local_ref_path, output_context_path)) is not (
@@ -1992,6 +1994,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
         return config
 
     from datamodel_code_generator._paths import concrete, names_directory  # noqa: PLC0415
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
     from datamodel_code_generator._source import DirectoryInputFilter  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -2039,7 +2042,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     config._directory_input_filter = DirectoryInputFilter(  # noqa: SLF001
         frozenset(files),
         output_directory,
-        tuple(header.replace("\r\n", "\n").replace("\r", "\n") for header in headers),
+        tuple(normalize_newlines(header) for header in headers),
     )
     return config
 

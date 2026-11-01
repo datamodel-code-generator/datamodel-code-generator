@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
+from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -169,17 +170,7 @@ def _get_config_class() -> type[Config]:
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 
-        @field_validator(
-            "input",
-            "output",
-            "diff_against",
-            "custom_template_dir",
-            "custom_file_header_path",
-            "http_local_ref_path",
-            "server_output",
-            "client_output",
-            mode="before",
-        )
+        @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
         @classmethod
         def validate_path(cls, value: Any) -> Path | None:
             """Validate and resolve path."""
