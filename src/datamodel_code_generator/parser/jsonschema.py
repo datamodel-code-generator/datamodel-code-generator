@@ -390,6 +390,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    BINARY_CONTENT_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
     SCHEMA_LOCATION_KEY,
     SPECIAL_PATH_MARKER,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -996,10 +997,40 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return _get_type(type_, format_, data_formats)
 
-    def _get_format_data_type(self, type_: str, format_: str) -> DataType:
-        """Map a type and format without constraints."""
+    def _get_format_data_type(self, obj: JsonSchemaObject, type_: str) -> DataType:
+        """Map a type and the format of ``obj`` without constraints."""
+        format_ = obj.format or "default"
         types = self._get_type_with_mappings(type_, format_)
-        return self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
+        data_type = self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
+        return self._with_binary_content(data_type, obj, type_, format_, types)
+
+    def _with_binary_content(
+        self, data_type: DataType, obj: JsonSchemaObject, type_: str, format_: str, types: Types
+    ) -> DataType:
+        """Record BINARY_CONTENT on the type of a string of ``obj`` that the specification reads as raw octets.
+
+        A string holds raw octets when its format maps to bytes, unless they are bytes mapped from base64 text, or,
+        where a content media type reads so (``_content_media_type_is_octets``), when it names a content media type
+        without a content encoding and its format maps to plain text.
+        """
+        if type_ == "string" and (
+            not self._is_base64_encoded_binary_mapping(type_, format_)
+            if types == Types.binary
+            else types == Types.string
+            and "contentMediaType" in obj.extras
+            and "contentEncoding" not in obj.extras
+            and self._content_media_type_is_octets
+        ):
+            data_type.__dict__[BINARY_CONTENT_KEY] = True
+        return data_type
+
+    @property
+    def _content_media_type_is_octets(self) -> bool:
+        """Whether a string with a content media type and no content encoding holds raw octets: never in JSON Schema.
+
+        A JSON Schema string is text; ``contentMediaType`` only describes it.
+        """
+        return False
 
     def _get_format_type_kwargs(self, type_: str, format_: str, types: Types) -> dict[str, bool]:
         """Keep bytes mapped from base64 text decoded, and string time formats out of float strictness."""
@@ -1830,7 +1861,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             **_constraint_values(obj, constrained_type_keyword_order(types.name), as_numbers=True),
             **self._get_format_type_kwargs(type_, format_, types),
         }
-        data_type = self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs)
+        data_type = self._with_binary_content(
+            self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs),
+            obj,
+            type_,
+            format_,
+            types,
+        )
         if (
             not field_constraints
             and (dropped := self.data_type_manager._non_finite_multiple_of(types, kwargs)) is not None  # noqa: SLF001
@@ -5736,7 +5773,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             data_types.append(
                 self._parse_array_union_constrained_branch(name, obj, path, type_, typed_map)
                 if localize_constraints
-                else typed_map or self._get_format_data_type(type_, obj.format or "default")
+                else typed_map or self._get_format_data_type(obj, type_)
             )
         return len(data_types) - count
 
@@ -5791,7 +5828,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse a constrained union branch through the backend-compatible alias path."""
         branch_schema = self._get_array_union_branch_schema(obj, type_)
         if not self._has_effective_constraints(branch_schema):
-            return fallback_data_type or self._get_format_data_type(type_, obj.format or "default")
+            return fallback_data_type or self._get_format_data_type(obj, type_)
 
         branch_path = get_special_path(f"array-union-{type_}", path)
         branch_name = self.model_resolver.add(
@@ -6282,7 +6319,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 elif keep_constraints:
                     yield self._get_constrained_data_type(obj, type_, field_constraints=self.field_constraints)
                 else:
-                    yield self._get_format_data_type(type_, obj.format or "default")
+                    yield self._get_format_data_type(obj, type_)
 
     def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
         """Parse an object into its model; a type array with other types makes a root model of their union."""

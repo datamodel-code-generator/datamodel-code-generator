@@ -16,7 +16,7 @@ from functools import cache, cached_property, partial
 from operator import getitem
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union, cast
 from warnings import warn
 
 from pydantic import Field, StrictBool, ValidationError, field_validator
@@ -328,6 +328,9 @@ def _missing_operation_id(path_name: str) -> Error:
     )
 
 
+_CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32})
+
+
 @cache
 def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
     """Return the resolver that names operation models by the rules of the target Python version."""
@@ -354,6 +357,16 @@ class OpenAPIParser(JsonSchemaParser):
         # OpenAPI parses a single document context, so caching is intentional.
         # AsyncAPI overrides this with a live property because it swaps raw_obj while resolving refs.
         return cast("OpenAPISchemaFeatures", self._schema_features_for(self.raw_obj))
+
+    @property
+    @override
+    def _content_media_type_is_octets(self) -> bool:
+        """Whether the document's OpenAPI version reads a content media type without a content encoding as raw octets.
+
+        OpenAPI 3.1 and later write a binary string so ("Working with Binary Data") in place of 3.0's
+        ``format: binary``; an AsyncAPI document reads its strings as JSON Schema does.
+        """
+        return self._document_version(self.raw_obj, self._version_source) in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
 
     @property
     @override

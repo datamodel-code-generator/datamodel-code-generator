@@ -3,6 +3,7 @@
 [test_fields_and_types_record_the_schema_they_are_built_from]
 jsonschema	main/jsonschema/model_metadata/fields_and_types_record_the_schema_they_are_built_from[jsonschema].txt
 openapi	main/jsonschema/model_metadata/fields_and_types_record_the_schema_they_are_built_from[openapi].txt
+openapi-3.0-type-mappings	main/jsonschema/model_metadata/fields_and_types_record_the_schema_they_are_built_from[openapi-3.0-type-mappings].txt
 [test_root_model_metadata_names]
 root_model-metadata-api	main/jsonschema/root_model_metadata/root_model.py
 root_model-metadata-api	main/jsonschema/root_model_metadata/root_model.txt
