@@ -1510,11 +1510,18 @@ def test_client_cli_implied_settings(
     )
 
 
-def test_client_cli_schema_version_reads_ref_siblings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    ("declared", "configured", "parameter"),
+    [("3.1.0", "3.0", "q: int | UNSET = UNSET,"), ("3.0.3", "3.1", "q: int = 7,")],
+    ids=["3.0", "3.1"],
+)
+def test_client_cli_schema_version_reads_ref_siblings(
+    declared: str, configured: str, parameter: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Read the siblings of a parameter's `$ref` at the version `--schema-version` sets, as the models do.
 
-    An OpenAPI 3.1 document read with `--schema-version 3.0` gives the client of the same document declaring 3.0.3,
-    whose `$ref` ignores the `default` beside it.
+    A document read with `--schema-version` gives the client of the same document declaring that version: 3.0 ignores
+    the `default` beside the `$ref`, 3.1 keeps it.
     """
     document = (
         "info: {title: t, version: '1'}\n"
@@ -1534,7 +1541,10 @@ def test_client_cli_schema_version_reads_ref_siblings(tmp_path: Path, monkeypatc
         "    Q: {type: integer}\n"
     )
     clients: dict[str, str] = {}
-    for name, version, arguments in (("configured", "3.1.0", ["--schema-version", "3.0"]), ("declared", "3.0.3", [])):
+    for name, version, arguments in (
+        ("configured", declared, ["--schema-version", configured]),
+        ("declared", f"{configured}.0", []),
+    ):
         (root := tmp_path / name).mkdir()
         (root / "api.yaml").write_text(f"openapi: {version}\n{document}", encoding="utf-8")
         monkeypatch.chdir(root)
@@ -1546,4 +1556,4 @@ def test_client_cli_schema_version_reads_ref_siblings(tmp_path: Path, monkeypatc
         ])
         clients[name] = (root / "client/resources/default/_sync.py").read_text(encoding="utf-8")
     assert clients["configured"] == clients["declared"]
-    assert "q: int | UNSET = UNSET," in clients["configured"]
+    assert parameter in clients["configured"]
