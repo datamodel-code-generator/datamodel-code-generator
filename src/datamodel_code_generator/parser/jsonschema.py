@@ -5747,9 +5747,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         use_annotated=True,
                     )
             else:
-                data_type = self._parse_array_union_constrained_branch(
-                    name, obj, path, type_, self._parse_typed_union_map(name, obj, path, type_)
-                )
+                data_type = self._type_list_branch(name, obj, path, type_, localize=True)
             data_types.append(data_type)
         return build_union(self.data_type, data_types, nullable=bool(self._null_facts(obj, "type-union").admits_null))
 
@@ -5781,13 +5779,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for type_ in non_array_types:
             if type_ == "object" and obj.is_object:
                 continue
-            typed_map = self._parse_typed_union_map(name, obj, path, type_)
-            data_types.append(
-                self._parse_array_union_constrained_branch(name, obj, path, type_, typed_map)
-                if localize_constraints
-                else typed_map or self._get_format_data_type(obj, type_)
-            )
+            data_types.append(self._type_list_branch(name, obj, path, type_, localize=localize_constraints))
         return len(data_types) - count
+
+    def _type_list_branch(
+        self, name: str, obj: JsonSchemaObject, path: list[str], type_: str, *, localize: bool
+    ) -> DataType:
+        """Return the type of the member ``type_`` of the type list of ``obj``, other than null.
+
+        A localized member takes the constraints of ``obj`` in an annotated alias, where they apply to it. Otherwise
+        the object member whose map values this run types is that map, and any other member is its type and format
+        without constraints.
+        """
+        typed_map = self._parse_typed_union_map(name, obj, path, type_)
+        if localize:
+            return self._parse_array_union_constrained_branch(name, obj, path, type_, typed_map)
+        return typed_map or self._get_format_data_type(obj, type_)
 
     def _parse_typed_union_map(self, name: str, obj: JsonSchemaObject, path: list[str], type_: str) -> DataType | None:
         """Return the map type of the object member of a type array whose map values this run types, else None.
@@ -6326,12 +6333,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         for type_ in non_null_types(type_list):
             if type_ != "object":
-                if localize_constraints:
-                    yield self._parse_array_union_constrained_branch(name, obj, path, type_)
-                elif keep_constraints:
-                    yield self._get_constrained_data_type(obj, type_, field_constraints=self.field_constraints)
-                else:
-                    yield self._get_format_data_type(obj, type_)
+                yield (
+                    self._get_constrained_data_type(obj, type_, field_constraints=self.field_constraints)
+                    if keep_constraints and not localize_constraints
+                    else self._type_list_branch(name, obj, path, type_, localize=bool(localize_constraints))
+                )
 
     def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
         """Parse an object into its model; a type array with other types makes a root model of their union."""
