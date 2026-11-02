@@ -20,6 +20,7 @@ from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast, get_args
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, DEFAULT_WATCH_DELAY
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
 from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
 from datamodel_code_generator._message_text import extra_requirement, install_command
@@ -70,8 +71,6 @@ if TYPE_CHECKING:
     from argparse import Action, _ArgumentGroup
     from collections.abc import Iterable, Sequence
     from enum import Enum
-
-DEFAULT_ENCODING = "utf-8"
 
 
 def _reset_namespace(target: Namespace) -> None:
@@ -1568,7 +1567,7 @@ general_options.add_argument(
     "--watch-delay",
     type=float,
     default=None,
-    help="Debounce delay in seconds for watch mode (default: 0.5)",
+    help=f"Debounce delay in seconds for watch mode (default: {DEFAULT_WATCH_DELAY})",
 )
 _flag(general_options, "--version", help="show version", default=False)
 

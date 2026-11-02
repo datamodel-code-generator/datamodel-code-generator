@@ -816,7 +816,7 @@ def _batch_outer_settings(
         **{key: value for key, value in cli_config_args.items() if key in BATCH_OUTER_CONFIG_FIELDS},
     }
     if not values:
-        return False, 0.5
+        return (fields := _get_config_class().model_fields)["watch"].default, fields["watch_delay"].default
     outer_config = _get_config_class().model_validate(values)
     return outer_config.watch, outer_config.watch_delay
 

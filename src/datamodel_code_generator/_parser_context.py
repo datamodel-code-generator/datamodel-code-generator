@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING
 from datamodel_code_generator.enums import HTTPBackend
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ class ParserSourceContext:
     """Immutable source and reference policy shared by parser entry points."""
 
     base_path: Path | None = None
-    encoding: str = "utf-8"
+    encoding: str = DEFAULT_ENCODING
     directory_input_filter: DirectoryInputFilter | None = None
     remote_text_cache: DefaultPutDict[str, str] | None = None
     allow_remote_refs: bool | None = None

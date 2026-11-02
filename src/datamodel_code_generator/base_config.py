@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 from typing_extensions import Self
 
-from datamodel_code_generator._config_fields import TARGET_SELECTORS
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, TARGET_SELECTORS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -232,7 +232,7 @@ class BaseGenerateConfig(BaseModel):
     reuse_model: bool = False
     reuse_scope: ReuseScope = ReuseScope.Module
     shared_module_name: str = DEFAULT_SHARED_MODULE_NAME
-    encoding: str = "utf-8"
+    encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False

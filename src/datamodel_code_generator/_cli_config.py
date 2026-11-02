@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
-from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS
+from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DEFAULT_WATCH_DELAY
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -401,7 +401,7 @@ def _get_config_class() -> type[Config]:
         openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: [OpenAPIScope.Schemas])  # noqa: UP045
         custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
         watch: bool = False
-        watch_delay: float = 0.5
+        watch_delay: float = DEFAULT_WATCH_DELAY
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
 
