@@ -33,16 +33,12 @@ from datamodel_code_generator.model.runtime_validation import _is_internal_schem
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._intersection import inherits_keyword
 from datamodel_code_generator.parser._origins import with_field_origin
-from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
+from datamodel_code_generator.parser._passes._keys import declares_raw_schema_default
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, _merges_ref_siblings
-from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
-)
+from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
     _is_special_path,
@@ -749,10 +745,7 @@ def inherited_default_source(
     The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
     ``field`` declares none.
     """
-    if inherits_keyword(parser.allof_merge_mode.value, "default") and not (
-        _RAW_SCHEMA_DEFAULT_KEY in field.__dict__
-        and field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-    ):
+    if inherits_keyword(parser.allof_merge_mode.value, "default") and not declares_raw_schema_default(field):
         return inherited_field
     return field
 
@@ -1066,6 +1059,12 @@ def ref_schema_generates_variant(
     return result
 
 
+def _cache_request_response_split(parser: RwSplitHost, resolved_ref: str, *, splits: bool) -> None:
+    """Record whether the schema at a key splits under ``request-response``: for both variants, which split together."""
+    for suffix in ("Request", "Response"):
+        parser._rw_model_variant_requirement_cache[resolved_ref, suffix] = splits  # noqa: SLF001
+
+
 def request_response_ref_schema_generates_variant(
     parser: RwSplitHost,
     resolved_ref: str,
@@ -1095,13 +1094,11 @@ def request_response_ref_schema_generates_variant(
 
     if matched_ref is None:
         for evaluated_ref in parent_by_ref:
-            parser._rw_model_variant_requirement_cache[evaluated_ref, "Request"] = False  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache[evaluated_ref, "Response"] = False  # noqa: SLF001
+            _cache_request_response_split(parser, evaluated_ref, splits=False)
         return False
 
     while matched_ref is not None:
-        parser._rw_model_variant_requirement_cache[matched_ref, "Request"] = True  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[matched_ref, "Response"] = True  # noqa: SLF001
+        _cache_request_response_split(parser, matched_ref, splits=True)
         matched_ref = parent_by_ref[matched_ref]
     return True
 
@@ -1574,8 +1571,7 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
     if request_response := parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
             parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[reference.path, "Request"] = True  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[reference.path, "Response"] = True  # noqa: SLF001
+        _cache_request_response_split(parser, reference.path, splits=True)
         parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
         parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
             field_name for field in own_fields if (field_name := _field_source_name(field)) is not None

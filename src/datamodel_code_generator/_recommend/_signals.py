@@ -18,7 +18,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import pointer_tokens
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
 if TYPE_CHECKING:
@@ -177,10 +177,7 @@ def _unmodeled_pattern_properties(node: Mapping[str, Any]) -> bool:
 
 def _types(node: Mapping[str, Any]) -> frozenset[str]:
     """Return the JSON types a schema declares, from a type name or a list of them."""
-    declared = node.get("type")
-    return frozenset(
-        name for name in (declared if isinstance(declared, list) else (declared,)) if isinstance(name, str)
-    )
+    return frozenset(declared_types(node.get("type")))
 
 
 def _title(node: Mapping[str, Any]) -> str:
