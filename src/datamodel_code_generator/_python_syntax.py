@@ -7,17 +7,18 @@ a set without items, the colon of a dict entry, the equals sign of a keyword arg
 statement are written once. A value becomes its text first (``python_literal.represent_python_value`` or a target's
 own writer), a type renderer decides which types a subscript holds, a keyword written in a call's source text is that
 text's own, and a writer of imports decides which names it imports, in which order, and when one takes another name.
-The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal; the caller
-or its template writes the quotes. So are the text of a docstring and of a comment: the escapes a triple-quoted
-docstring needs, its one-line and block forms, and the line endings a comment block keeps; templates read the public
-functions as filters through ``model.base``, which keeps their names. Every reader of text that ends its lines as
-Python's universal newlines do (CRLF and a lone CR read as LF), source text and comments alike, reads it through
-``normalize_newlines``.
+The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal, and the raw
+literal of a text is written here when one holds it; the caller or its template writes the quotes. So are the text of a
+docstring and of a comment: the escapes a triple-quoted docstring needs, its one-line and block forms, and the line
+endings a comment block keeps; templates read the public functions as filters through ``model.base``, which keeps
+their names. Every reader of text that ends its lines as Python's universal newlines do (CRLF and a lone CR read as
+LF), source text and comments alike, reads it through ``normalize_newlines``.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -39,6 +40,21 @@ a ``TypedDict`` key): the escapes above, the backslash, and the null byte, which
 
 RAW_SINGLE_QUOTED_ESCAPES = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
 """The escapes of the text of a raw single-quoted literal (a Pydantic pattern), as ``str.translate`` reads them."""
+
+_RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\'\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
+"""The escaped text a raw single-quoted literal holds: each character is a plain one or follows a backslash."""
+
+
+def raw_single_quoted(text: str, /) -> str | None:
+    r"""Return the raw single-quoted literal that holds ``text`` with its quote and control characters escaped.
+
+    A raw literal reads a backslash as itself, so it holds the text only when its closing quote stays the first one a
+    reader meets: no backslash left alone at the end or in front of the escaped quote, and no null byte or lone
+    surrogate, which a module cannot hold and a raw literal has no escape for. Any other text has no raw literal
+    (None); the caller writes it as a literal that is not raw. The result does not depend on the Python that runs.
+    """
+    escaped = text.translate(RAW_SINGLE_QUOTED_ESCAPES)
+    return f"r'{escaped}'" if _RAW_LITERAL_TEXT.fullmatch(escaped) else None
 
 
 def call_text(head: str, arguments: Iterable[str], /) -> str:
