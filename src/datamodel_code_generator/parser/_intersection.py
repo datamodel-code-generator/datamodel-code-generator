@@ -63,6 +63,7 @@ from datamodel_code_generator._json_schema import (
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
     admitted_types,
+    declared_types,
     non_null_types,
     schema_positions,
 )
@@ -330,11 +331,6 @@ def _crosses(schema: Mapping[str, Any], lower: Sequence[str], upper: Sequence[st
 def bounds_admit_no_value(schema: Mapping[str, Any]) -> bool:
     """Return whether the bounds of any dimension of a schema admit no value."""
     return any(_crosses(schema, lower, upper) for lower, upper in _BOUND_DIMENSIONS)
-
-
-def declared_types(value: object) -> tuple[str, ...]:
-    """Return the JSON types a ``type`` keyword lists."""
-    return (value,) if isinstance(value, str) else tuple(value) if isinstance(value, list) else ()
 
 
 def intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:

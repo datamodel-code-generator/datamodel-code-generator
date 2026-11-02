@@ -5,8 +5,8 @@ keyword plays. Every walker reads it, by shape or through a view of its roles (`
 visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
 ``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
 data. ``subschema_entries`` reads the subschemas one keyword holds by its shape, and ``json_nodes`` walks every value of
-a loaded JSON value. ``admitted_types`` reads what the types a ``type`` keyword lists admit, and ``non_null_types``
-which of them are not ``null``.
+a loaded JSON value. ``declared_types`` reads the types a ``type`` keyword lists, ``admitted_types`` what they admit,
+and ``non_null_types`` which of them are not ``null``.
 """
 
 from __future__ import annotations
@@ -196,6 +196,22 @@ REF_PRE_PASS_POSITIONS: Final = tuple(
 
 In the legacy order it meets references in, which the names of the references it registers follow.
 """
+
+
+def declared_types(value: object, *, items: Literal["strings", "text"] = "strings") -> tuple[str, ...]:
+    """Return the JSON types a ``type`` keyword lists, in order: the one a string names, or the string items of a list.
+
+    With ``items="text"`` every item of a list names a type by its text (``str``), as the site facts of the target
+    reader read it (``legacy-target-type-items-as-text``): an unquoted YAML ``null`` names ``None``.
+    """
+    match value:
+        case str():
+            return (value,)
+        case list() if items == "text":
+            return tuple(map(str, value))
+        case list():
+            return tuple(item for item in value if isinstance(item, str))
+    return ()
 
 
 def admitted_types(types: Iterable[str]) -> frozenset[str]:

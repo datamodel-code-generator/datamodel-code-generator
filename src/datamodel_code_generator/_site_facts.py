@@ -18,6 +18,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_SHAPES,
     SEQUENCE_SCHEMA_SHAPES,
     SINGLE_SCHEMA_SHAPES,
+    declared_types,
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model._decisions.enum_kind import json_type
@@ -158,11 +159,7 @@ def site_facts_of(
         frozenset(value),
         follow(location.document, ref) if isinstance(ref := value.get("$ref"), str) else None,
         follow(location.document, ref) if isinstance(ref := value.get("$dynamicRef"), str) else None,
-        frozenset({types})
-        if isinstance(types, str)
-        else frozenset(str(item) for item in types)
-        if isinstance(types, list)
-        else None,
+        frozenset(declared_types(types, items="text")) if isinstance(types, str | list) else None,
         frozenset(json_type(item, "object") for item in enum) if isinstance(enum, list) else None,
         json_type(value["const"], "object") if "const" in value else None,
         format_ if isinstance(format_, str) else None,
