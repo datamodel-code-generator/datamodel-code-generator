@@ -105,6 +105,7 @@ querystring	main/generation_platform/client/runtime/querystring.txt
 raw	main/generation_platform/client/runtime/raw.txt
 redirect-head	main/generation_platform/client/runtime/redirect-head.txt
 redirects	main/generation_platform/client/runtime/redirects.txt
+response-keys	main/generation_platform/client/runtime/response-keys.txt
 retry-boundaries	main/generation_platform/client/runtime/retry-boundaries.txt
 retry-calls	main/generation_platform/client/runtime/retry-calls.txt
 retry-errors	main/generation_platform/client/runtime/retry-errors.txt

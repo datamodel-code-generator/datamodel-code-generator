@@ -68,12 +68,14 @@ class _Caches:
 
         Return the use of the first one's body.
         """
+        from datamodel_code_generator._client.plan import success_response  # noqa: PLC0415
+
         at, name, label = f"{helper.at}.statuses", helper.name, _label(spec.contract)
         found: list[TypeUseBinding] = []
         for index, status in enumerate(helper.tree["statuses"]):
-            response = next((item for item in spec.responses if item.status == str(status)), None)
+            response = success_response(spec, status)
             where = f"{at}[{index}]"
-            if response is None or not response.success or status not in SUCCESS_STATUSES:
+            if response is None or status not in SUCCESS_STATUSES:
                 message = f"The cacheable status {status} of {name!r} is no declared 2xx success of {label}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
                 continue

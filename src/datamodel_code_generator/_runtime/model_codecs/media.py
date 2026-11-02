@@ -9,7 +9,7 @@ from collections.abc import Callable, Container, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
-from typing import Final, Literal, TypeAlias, TypeVar, cast
+from typing import Final, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from typing_extensions import Self, TypeAliasType, TypeIs
@@ -37,7 +37,6 @@ __all__ = (
     "JSONValue",
     "LexicalKind",
     "MediaKind",
-    "MediaOrder",
     "Unparsed",
     "ascii_digits",
     "bodyless",
@@ -79,7 +78,6 @@ JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 JSONKind = Literal["object", "array", "string", "number", "boolean"]
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
-MediaOrder: TypeAlias = Literal["specific", "declared"]
 T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
@@ -242,12 +240,9 @@ def range_key(status: int) -> str:
     return f"{status // 100}XX"
 
 
-def bodyless(status: int, *, head: bool = False, informational: bool = True) -> bool:
-    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one.
-
-    `informational=False` reads a status below 200 as one that may carry content (the client plan's row).
-    """
-    return head or status in BODYLESS_STATUSES or (informational and status < SUCCESS_STATUSES.start)
+def bodyless(status: int, *, head: bool = False) -> bool:
+    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one."""
+    return head or status in BODYLESS_STATUSES or status < SUCCESS_STATUSES.start
 
 
 def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[str, str, list[tuple[str, str]]]:
@@ -306,19 +301,16 @@ def media_range(media_type: str) -> bool:
     return "*" in essence(media_type)
 
 
-def most_specific(received: str, declared: Iterable[str], *, order: MediaOrder = "specific") -> str | None:
+def most_specific(received: str, declared: Iterable[str]) -> str | None:
     """Return the declared media type a received one falls under: itself, then its essence, type/*, and */*.
 
-    Among the declarations of one of these, the first without parameters wins (#4185); `order="declared"` instead takes
-    the first declaration of the most specific one in declared order (the client's row).
+    Among the declarations of one of these, the first without parameters wins (#4185).
     """
     declared = tuple(declared)
     if received in declared:
         return received
     bare = essence(received)
     candidates = (bare, f"{bare.partition('/')[0]}/*", "*/*")
-    if order == "declared":
-        return next((media for candidate in candidates for media in declared if essence(media) == candidate), None)
     return min((media for media in declared if essence(media) in candidates), key=_specificity, default=None)
 
 

@@ -77,6 +77,7 @@ from tests.api_generation.scenarios.client_regressions import (
     no_success,
     route_text,
 )
+from tests.api_generation.scenarios.client_response_keys import response_keys
 from tests.api_generation.scenarios.client_retry_boundaries import retry_boundaries
 from tests.api_generation.scenarios.client_retry_calls import retry_calls
 from tests.api_generation.scenarios.client_retry_errors import retry_errors
@@ -862,6 +863,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
+    "response-keys": ("response-keys", ("pydantic_v2.BaseModel",), response_keys),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),

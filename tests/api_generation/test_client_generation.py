@@ -76,6 +76,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "method-collisions-suffix",
         "child-collision",
         "media-errors",
+        "response-keys",
         "form-name-errors",
         "form-name-kept",
         "media-item-parts",

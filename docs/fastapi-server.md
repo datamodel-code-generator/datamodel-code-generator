@@ -1514,7 +1514,9 @@ stops generation with an error, on the server and the client alike, since no HTT
 
 ### Responses
 
-A service method returns the value of its primary response, which FastAPI validates and serializes with the route's
+A response is declared under a status from `100` to `599`, a range from `1XX` to `5XX`, or `default`; any other key of
+`responses`, such as an extension `x-note` or an empty key, declares no response. A service method returns the value
+of its primary response, which FastAPI validates and serializes with the route's
 `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`). Without a
 [`--server-primary-responses`](cli-reference/target-generation-options.md#server-primary-responses) entry, the
 primary response is `200` when the operation declares it, or else its lowest success status, or else its `2XX` or

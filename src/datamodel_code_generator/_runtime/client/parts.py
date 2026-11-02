@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import LexicalKind, media_range, normalized
-from .media import most_specific, with_charset
+from ..model_codecs.media import LexicalKind, media_range, most_specific, normalized
+from .media import with_charset
 
 if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterPlan

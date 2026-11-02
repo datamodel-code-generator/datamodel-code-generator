@@ -10,7 +10,7 @@ client/compression.py: .content, __future__, collections.abc, typing, zlib
 client/content.py: __future__, abc, collections.abc, dataclasses, typing
 client/errors.py: .responses, __future__, collections.abc, typing, typing_extensions
 client/logical.py: .errors, .options, .retry, .timing, __future__, anyio, asyncio, collections.abc, functools, typing
-client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing
+client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .bodies, .body_sources, .content, .errors, .logical, .media, .parts, __future__, collections.abc, dataclasses, httpx2, io, os, typing, typing_extensions
 client/multipart_responses.py: ..model_codecs.errors, ..model_codecs.media, .media, .operations, .parts, .responses, __future__, collections.abc, email.message, email.parser, email.policy, functools, re, typing, typing_extensions
 client/native.py: .errors, .options, .responses, .retry, .timing, __future__, collections.abc, contextlib, httpx2, typing

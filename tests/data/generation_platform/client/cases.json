@@ -5624,5 +5624,25 @@
         "models.py"
       ]
     ]
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/response-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/response-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
