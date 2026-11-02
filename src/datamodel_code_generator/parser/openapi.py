@@ -179,6 +179,11 @@ class RawMediaSchemaSource:
     from_item_schema: bool = False
 
 
+def _item_schema_array(items: RawSchema) -> dict[str, YamlValue]:
+    """Return the array schema OpenAPI 3.2 ``itemSchema`` stands for: an array whose items are the item schema."""
+    return {"type": "array", "items": items}
+
+
 class RawMediaObject(BaseModel):
     """Raw OpenAPI media type object fields used by the parser."""
 
@@ -798,7 +803,7 @@ class OpenAPIParser(JsonSchemaParser):
             raw_item_schema: RawSchema = item_schema
         else:
             raw_item_schema = cast("dict[str, YamlValue]", item_schema.model_dump(by_alias=True, exclude_none=True))
-        return JsonSchemaObject.model_validate({"type": "array", "items": raw_item_schema})
+        return JsonSchemaObject.model_validate(_item_schema_array(raw_item_schema))
 
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
         """Return the schema represented by an OpenAPI media type object.
@@ -831,7 +836,7 @@ class OpenAPIParser(JsonSchemaParser):
             return None
         return RawMediaSchemaSource(
             _located(
-                {"type": "array", "items": cast("dict[str, RawSchema]", media_obj)["itemSchema"]},
+                _item_schema_array(cast("dict[str, RawSchema]", media_obj)["itemSchema"]),
                 self._raw_location(media_obj),
             ),
             from_item_schema=True,
