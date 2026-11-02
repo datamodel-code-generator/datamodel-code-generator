@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Generic, Protocol, TypeVar, final
 
 from typing_extensions import NamedTuple, Self
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._graph import reach, stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
@@ -138,13 +139,13 @@ class ReferenceGraph:
 
     def acyclic_order(self, kinds: Collection[EdgeKind]) -> list[ModelKey] | None:
         """Return the models with the targets of each first, or ``None`` when edges of ``kinds`` close a cycle."""
-        order: list[ModelKey] = []
-        for component in self.components(kinds):
-            key = next(iter(component))
-            if len(component) > 1 or key in self.targets(key, kinds):
-                return None
-            order.append(key)
-        return order
+        order = all_or_none(self._acyclic(component, kinds) for component in self.components(kinds))
+        return None if order is None else list(order)
+
+    def _acyclic(self, component: set[ModelKey], kinds: Collection[EdgeKind]) -> ModelKey | None:
+        """Return the model of a strongly connected component, or ``None`` when edges of ``kinds`` make it a cycle."""
+        key = next(iter(component))
+        return None if len(component) > 1 or key in self.targets(key, kinds) else key
 
     def preorder(self, key: ModelKey, kind: EdgeKind) -> list[ModelKey]:
         """Return ``key`` and the models it reaches through edges of ``kind``, each once, as a stack walk takes them.
