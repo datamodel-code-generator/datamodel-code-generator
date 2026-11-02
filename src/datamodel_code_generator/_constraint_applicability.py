@@ -41,7 +41,7 @@ from math import inf, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
-from typing_extensions import final
+from typing_extensions import TypeIs, final
 
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import pattern_admits
@@ -95,6 +95,7 @@ __all__ = [
     "int_beyond_values",
     "int_constraint_beyond_values",
     "is_non_finite",
+    "json_number",
     "keyword_kinds",
     "length_reading",
     "listed_type_keywords",
@@ -796,6 +797,11 @@ _BOUND_CHECKS: Final[Mapping[str, Callable[[float, float], bool]]] = MappingProx
 })
 
 
+def json_number(value: object) -> TypeIs[int | float]:
+    """Return whether a JSON value is a number: an int or a float, a ``bool`` being none."""
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
 def _meets_length(value: object, keyword: str, limit: float) -> bool:
     """Return whether a JSON value meets a length keyword, counting the code points of a string."""
     if not isinstance(value, str):
@@ -815,7 +821,7 @@ def _meets(value: object, keyword: str, limit: float | str) -> bool | None:
         return pattern_admits(limit, value) if isinstance(value, str) else True
     if keyword in LENGTH_KEYWORDS:
         return _meets_length(value, keyword, limit)
-    if isinstance(value, bool) or not isinstance(value, int | float):
+    if not json_number(value):
         return True
     if (check := _BOUND_CHECKS.get(keyword)) is not None:
         return check(value, limit)

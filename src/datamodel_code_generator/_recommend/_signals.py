@@ -9,7 +9,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 from urllib.parse import unquote
 
-from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
+from datamodel_code_generator._constraint_applicability import (
+    LENGTH_KEYWORDS,
+    NUMBER_BOUND_KEYWORDS,
+    NUMBER_KEYWORDS,
+    json_number,
+)
 from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import pointer_tokens
@@ -139,11 +144,7 @@ def _redundant_constraint(node: Mapping[str, Any], *, at_property: bool) -> bool
     """
     if ("const" in node or _is_enum(node)) and not _LITERAL_CHECKED_KEYWORDS.isdisjoint(node):
         return True
-    zero_bounds = [
-        key
-        for key in NUMBER_BOUND_KEYWORDS
-        if isinstance(value := node.get(key), int | float) and not isinstance(value, bool) and value == 0
-    ]
+    zero_bounds = [key for key in NUMBER_BOUND_KEYWORDS if json_number(value := node.get(key)) and value == 0]
     return len(zero_bounds) == 1 and (not at_property or "null" in _types(node) or node.get("nullable") is True)
 
 
@@ -511,8 +512,7 @@ class _Walker:
         counts["unique_items"] += node.get("uniqueItems") is True
         counts["pattern_properties"] += isinstance(patterns := node.get("patternProperties"), dict) and bool(patterns)
         counts["unmodeled_pattern_properties"] += _unmodeled_pattern_properties(node)
-        divisor = node.get("multipleOf")
-        counts["multiple_of"] += isinstance(divisor, int | float) and not isinstance(divisor, bool)
+        counts["multiple_of"] += json_number(node.get("multipleOf"))
 
     def count_keywords(self, node: Mapping[str, Any]) -> None:
         """Count a one-value enum, an enum beside a const, the validation keywords and a format generation maps.

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import chain
 from math import isfinite, isnan
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._python_syntax import (
     _normalize_string,
     call_text,
@@ -175,7 +177,7 @@ def rewrite_runtime_expressions(
     if (items := _runtime_expression_container_items(value)) is None:
         return value
     rewritten = tuple(rewrite_runtime_expressions(item, aliases) for item in items)
-    if all(item is original for item, original in zip(rewritten, items, strict=True)):
+    if unchanged(rewritten, items):
         return value
     return rewritten if type(value) is tuple else type(value)(rewritten)
 
@@ -189,10 +191,7 @@ def _rewrite_runtime_mapping(
         (rewrite_runtime_expressions(key, aliases), rewrite_runtime_expressions(item, aliases))
         for key, item in value.items()
     )
-    if all(
-        rewritten_key is original_key and rewritten_item is original_item
-        for (rewritten_key, rewritten_item), (original_key, original_item) in zip(items, value.items(), strict=True)
-    ):
+    if unchanged(chain.from_iterable(items), chain.from_iterable(value.items())):
         return value
     return dict(items)
 
@@ -228,10 +227,10 @@ def _safe_non_finite_value(value: Any) -> Any:
             return _safe_non_finite_float(value)
         case dict():
             safe_items = {key: _safe_non_finite_value(item) for key, item in value.items()}
-            return value if all(safe_items[key] is item for key, item in value.items()) else safe_items
+            return value if unchanged(safe_items.values(), value.values()) else safe_items
         case list():
             safe_list = [_safe_non_finite_value(item) for item in value]
-            return value if all(safe is item for safe, item in zip(safe_list, value, strict=True)) else safe_list
+            return value if unchanged(safe_list, value) else safe_list
     return value
 
 
