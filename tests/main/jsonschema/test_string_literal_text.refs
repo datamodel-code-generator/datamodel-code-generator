@@ -8,6 +8,9 @@ dataclasses.dataclass	main/jsonschema/string_literal_text/inline_field_descripti
 msgspec.Struct	main/jsonschema/string_literal_text/inline_field_description_text[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/string_literal_text/inline_field_description_text[pydantic_v2.BaseModel].py
 typing.TypedDict	main/jsonschema/string_literal_text/inline_field_description_text[typing.TypedDict].py
+[test_regex_literal_control_characters]
+pydantic_v2.BaseModel	main/jsonschema/string_literal_text/regex_literal_control_characters[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/string_literal_text/regex_literal_control_characters[pydantic_v2.dataclass].py
 [test_regex_literal_surrogate]
 pydantic_v2.BaseModel	main/jsonschema/string_literal_text/regex_literal_surrogate[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/string_literal_text/regex_literal_surrogate[pydantic_v2.dataclass].py

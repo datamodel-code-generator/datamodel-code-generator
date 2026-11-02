@@ -145,10 +145,6 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/rust_unsupported_python_rejected.json": (
         "patterns both regex engines reject fail to import under either engine"
     ),
-    "jsonschema/rust_unsupported_verbose_repetition.json": (
-        "a newline of a verbose pattern ends its comments, and only --field-constraints writes it as one; "
-        "test_verbose_comments_inside_a_counted_repetition_keep_the_rust_engine validates the generated models"
-    ),
     "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_type.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,

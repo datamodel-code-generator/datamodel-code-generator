@@ -6,13 +6,24 @@ import json
 from typing import TYPE_CHECKING
 
 import pytest
+from jsonschema import Draft7Validator
+from jsonschema import ValidationError as SchemaValidationError
 
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
+from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 INPUT_PATH = JSON_SCHEMA_DATA_PATH / "string_literal_text.json"
+
+REGEX_CONTROL_PATTERNS = {
+    "line_feed": ("^a\nb$", "a\nb", "ab"),
+    "backspace": ("^a\bb$", "a\bb", "ab"),
+    "escaped_line_feed": ("^a\\\nb$", "a\nb", "a\\nb"),
+    "escaped_tab": ("^a\\\tb$", "a\tb", "a\\tb"),
+    "verbose_comment": ("(?x)^a # it's\n b$", "ab", "ac"),
+    "verbose_tab": ("(?x)^a\tb$", "ab", "a\tb"),
+}
 
 
 @pytest.mark.parametrize(
@@ -106,3 +117,42 @@ def test_regex_literal_surrogate(output_file: Path, output_type: str) -> None:
         extra_args=["--formatters", "builtin", "--output-model-type", output_type],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_regex_literal_control_characters(output_file: Path, output_type: str) -> None:
+    r"""Write a pattern as a raw literal only where its control characters keep their meaning as regex escapes.
+
+    A raw literal read ``\b`` as the word boundary instead of a backspace and ``\n`` after a backslash as a
+    backslash and a letter instead of the escaped line feed, and a verbose pattern took the escape of a tab or line
+    feed as a character to match, where the character ended a comment or was ignored. Each pattern is checked against
+    the schema's own verdict on a payload that matches it and one that does not.
+    """
+    schema = {
+        "title": "Control",
+        "type": "object",
+        "properties": {name: {"type": "string", "pattern": row[0]} for name, row in REGEX_CONTROL_PATTERNS.items()},
+    }
+    (input_path := output_file.parent / "regex_literal_control.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", output_type],
+        force_exec_validation=True,
+    )
+    validator = Draft7Validator(schema)
+    for name, (_, valid, invalid) in REGEX_CONTROL_PATTERNS.items():
+        validator.validate({name: valid})
+        with pytest.raises(SchemaValidationError):
+            validator.validate({name: invalid})
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"regex_literal_control_{name}",
+            model_name="Control",
+            valid_json=json.dumps({name: valid}),
+            invalid_json=json.dumps({name: invalid}),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=(name,),
+            expected_attribute_value=valid,
+        )

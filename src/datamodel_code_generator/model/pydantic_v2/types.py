@@ -20,6 +20,7 @@ from datamodel_code_generator._python_syntax import (
     raw_single_quoted,
     subscript_text,
 )
+from datamodel_code_generator._regex_syntax import control_escapes_keep_meaning
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -191,7 +192,7 @@ def _decimal_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _get_regex_literal(pattern: str) -> str:
-    raw_literal = raw_single_quoted(pattern)
+    raw_literal = raw_single_quoted(pattern) if control_escapes_keep_meaning(pattern) else None
     return pattern if raw_literal is None else PythonCode(raw_literal, pattern)
 
 

@@ -52,6 +52,8 @@ def raw_single_quoted(text: str, /) -> str | None:
     reader meets: no backslash left alone at the end or in front of the escaped quote, and no null byte or lone
     surrogate, which a module cannot hold and a raw literal has no escape for. Any other text has no raw literal
     (None); the caller writes it as a literal that is not raw. The result does not depend on the Python that runs.
+    A regex reads the escape of a control character in a raw literal as its own syntax (``\b`` is a word boundary), so
+    the caller of a pattern asks ``_regex_syntax.control_escapes_keep_meaning`` first.
     """
     escaped = text.translate(RAW_SINGLE_QUOTED_ESCAPES)
     return f"r'{escaped}'" if _RAW_LITERAL_TEXT.fullmatch(escaped) else None
