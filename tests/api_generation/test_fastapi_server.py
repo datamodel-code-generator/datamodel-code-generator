@@ -70,6 +70,8 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "kinds-annotated",
         "kinds-decimal",
         "kinds-literal",
+        "patterns",
+        "patterns-annotated",
         "errors",
         "bodies",
         "nullable",

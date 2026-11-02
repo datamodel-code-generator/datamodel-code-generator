@@ -873,7 +873,7 @@ class EmittedFieldFacts:
     emitted_default_kind: DefaultKind
     emitted_default_value: FrozenLiteral | SourceExpression | None
     qualifiers: tuple[str, ...]
-    constructor_keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
+    constructor_keywords: tuple[tuple[str, TypeArgument], ...]
 
 
 @dataclass(frozen=True, slots=True)
