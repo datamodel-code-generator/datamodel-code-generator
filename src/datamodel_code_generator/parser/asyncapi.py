@@ -16,7 +16,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
-from datamodel_code_generator._document_reader import as_mapping, string_keys
+from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import (
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import SchemaLocation
 
 
-OPERATION_NAMES: tuple[str, ...] = ("publish", "subscribe")
+OPERATION_NAMES: tuple[str, ...] = CHANNEL_OPERATIONS
 BINDING_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset({"headers", "query", "key", "groupId", "clientId"})
 ASYNCAPI_SCHEMA_FORMATS: frozenset[str] = frozenset({
     "application/vnd.aai.asyncapi",
