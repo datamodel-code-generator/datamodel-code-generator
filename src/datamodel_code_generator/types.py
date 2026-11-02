@@ -2026,13 +2026,13 @@ class DataTypeManager(ABC):
         """Yield the type path of each value of a ``Literal`` other than ``None``, or ``""`` for an unclassified one."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeLiteralValue,
-            PythonTypeSubscript,
+            is_literal_python_type_expr,
             python_type_expr_arguments,
             python_type_expr_base_name,
         )
 
         for argument in python_type_expr_arguments(expression):
-            if isinstance(argument, PythonTypeSubscript) and python_type_expr_base_name(argument) == "Literal":
+            if is_literal_python_type_expr(argument):
                 yield from DataTypeManager._literal_value_paths(argument)
             elif python_type_expr_base_name(argument) != NONE:
                 yield (

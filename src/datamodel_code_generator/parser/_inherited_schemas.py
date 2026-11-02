@@ -23,6 +23,7 @@ from datamodel_code_generator._json_schema import (
     COMBINATOR_POSITIONS,
     MODELED_SCHEMA_MAPS,
     admitted_types,
+    non_null_types,
     schema_positions,
 )
 from datamodel_code_generator._mro import linearize, sort_descendants_first
@@ -1178,10 +1179,8 @@ def merge_inherited_type_shape_dict(  # noqa: PLR0914
     distributed_fields = get_inherited_distributed_fields(parser, child_obj)
     child_shape = child
     parent_type_shape = parent_shape.get("type")
-    if excludes_null and isinstance(parent_type_shape, list):
-        filtered_types = [schema_type for schema_type in parent_type_shape if schema_type != "null"]
-        if filtered_types:
-            parent_shape["type"] = filtered_types[0] if len(filtered_types) == 1 else filtered_types
+    if excludes_null and isinstance(parent_type_shape, list) and (filtered_types := non_null_types(parent_type_shape)):
+        parent_shape["type"] = filtered_types[0] if len(filtered_types) == 1 else filtered_types
     if (union_key := next((key for key in ("anyOf", "oneOf") if parent_shape.get(key)), None)) is not None:
         merged_branches = [
             merged_branch
