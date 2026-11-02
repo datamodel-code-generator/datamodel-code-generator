@@ -18,9 +18,9 @@ import jsonschema
 import pytest
 from packaging.version import Version
 
-from datamodel_code_generator._recommend._signals import measure_signals
 from datamodel_code_generator import NamingHintWarning, chdir, generate
 from datamodel_code_generator.__main__ import Config, Exit
+from datamodel_code_generator._recommend._signals import measure_signals
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.experimental import EXPERIMENTAL_FEATURES
