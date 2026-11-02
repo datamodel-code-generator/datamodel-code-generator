@@ -301,13 +301,17 @@ def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
 
 
 def _bind_module_field_names(
-    models: list[DataModel], imports: Imports, ledger: ModuleImportLedger, target: tuple[int, int]
+    models: list[DataModel],
+    imports: Imports,
+    shared_imports: Imports,
+    ledger: ModuleImportLedger,
+    target: tuple[int, int],
 ) -> None:
     """Allocate aliases only where a property hides an emitted expression name.
 
     The names are those the module's imports bind and the builtin classes of the ``target`` that no import binds,
-    which a builtin import binds under the alias. Type aliases sit at module scope, so an import they name keeps its
-    name beside the alias.
+    which a builtin import binds under the alias. An alias avoids every name the module's and the shared imports
+    bind. Type aliases sit at module scope, so an import they name keeps its name beside the alias.
     """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
     shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
@@ -325,6 +329,7 @@ def _bind_module_field_names(
     if not collisions:
         return
     reserved_names.update(_iter_import_bindings(imports))
+    reserved_names.update(_iter_import_bindings(shared_imports))
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
@@ -1308,6 +1313,7 @@ def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]
         _bind_module_field_names(
             ctx.models,
             ctx.imports,
+            parser.imports,
             parser._import_ledger,  # noqa: SLF001
             parser.target_python_version.version_key,
         )
