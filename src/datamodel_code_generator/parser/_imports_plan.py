@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from typing_extensions import final
 
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import, Imports, _ImportKey, _stored_import
 
@@ -405,7 +406,7 @@ class ModuleImportLedger:
         """
         entries = self._entries_of(imports)
         reduced = [_without_unrendered(entry) for entry in entries]
-        if all(entry is reduced_entry for entry, reduced_entry in zip(entries, reduced, strict=True)):
+        if unchanged(reduced, entries):
             return imports
         written = replay(entries, use_exact=imports.use_exact).counter
         kept = replay(reduced, use_exact=imports.use_exact).counter
