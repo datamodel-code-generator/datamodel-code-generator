@@ -69151,7 +69151,7 @@ is a new named row, never an anonymous `if`.
 
 | Row | Keeps | Fix |
 | --- | --- | --- |
-| `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it | keep |
+| `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it and is written as it | keep |
 | `legacy-msgspec-float-bounds` | the check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past `2**53` is the integer of its binary value (`int(1e300)`), where the schema models read the decimal that is written (`10**300`), and the int member of a union can keep a constraint that rejects an integer the float member accepts | #5973 |
 | `legacy-rw-parsed-facts` | without `--dedupe-request-response-variants`, the read/write facts and graph node of a key come from a temporary parse of its fields, the walk reads every reference of a key, and every model collects its inherited fields to decide its split | keep |
 | `legacy-rw-unowned-parent-fields` | without `--dedupe-request-response-variants`, the inline models of an allOf parent's own fields are parsed at no owner path | keep |

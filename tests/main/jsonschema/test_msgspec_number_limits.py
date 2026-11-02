@@ -26,7 +26,7 @@ OPTION_SETS = {
 }
 
 
-@pytest.mark.parametrize("name", ["int64_constraints", "float_range_bounds"])
+@pytest.mark.parametrize("name", ["int64_constraints", "float_range_bounds", "exact_int_divisors"])
 @pytest.mark.parametrize("option_set", OPTION_SETS)
 def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecorder, name: str, option_set: str) -> None:
     """Write the number constraints of an int within the 64-bit range only, and finite numbers only.
@@ -34,7 +34,8 @@ def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecord
     msgspec refuses a ``Meta`` whose int constraint lies beyond the 64-bit range, at every decode, but decodes ints of
     any size, so the field goes without it, accepts the values beyond it and warns, also on the int that an
     ``x-python-type`` of ``Annotated`` qualifies and for a bound beyond the float range. Any other number beyond the
-    float range is left out like the infinite bound it is as a float, without a warning.
+    float range is left out like the infinite bound it is as a float, without a warning. A divisor or an exclusive
+    bound within the range that a float writes as another number (``2**62``) stays the integer the schema gives.
     """
     input_path = NUMBER_LIMITS / f"{name}.json"
     run_main_and_assert(

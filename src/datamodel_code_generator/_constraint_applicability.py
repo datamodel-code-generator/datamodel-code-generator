@@ -15,7 +15,7 @@ Legacy rows, each named by the function that decides it:
   the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
   emitted type.
 * ``legacy-exact-ints-as-floats`` (``exact_float``): the schema models read an int constraint as a float where one
-  equals it, and keep the int only where a float would differ.
+  equals it and is written as it, and keep the int only where a float would differ.
 * ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``): the ``Literal`` of a ``const`` or an
   ``enum`` takes no keyword of a kind its schema does not declare, though it takes those of its values' type for a
   declared one. The literal check (``literal_check``) decides such a keyword on the values where it can, so the row
@@ -899,16 +899,18 @@ def saturating_float(number: float) -> float:
 
 
 def exact_float(number: int) -> float | None:
-    """Return an int as the float that equals it, or None when the float range or its precision cannot hold it.
+    """Return an int as the float that equals it and is written as it, or None when a float would differ.
 
     Row ``legacy-exact-ints-as-floats``: the schema models read an int constraint as a float where one equals it
-    (``-2**63``, ``2**64``) and keep the int only where a float would differ.
+    (``-2**63``, ``2**53``) and keep the int where the float range or its precision cannot hold it, or where the
+    decimal the float is written as is another number (``2**64`` is written ``18446744073709552000``), since the
+    constraints of an integer are read as the decimal written (``integer_bound`` ``exact``).
     """
     try:
         float_value = float(number)
     except OverflowError:
         return None
-    return float_value if float_value == number else None
+    return float_value if float_value == number == Fraction(str(float_value)) else None
 
 
 _INTEGER_BOUNDS: Final[Mapping[str, tuple[Literal["ge", "le"], Callable[[Any], int], int]]] = MappingProxyType({
