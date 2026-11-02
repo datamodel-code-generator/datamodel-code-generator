@@ -857,17 +857,6 @@ def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
     return fragment_tokens(unquote(ref.partition("#")[2]))
 
 
-def _schema_use(location: SourceLocation) -> TypeUseId:
-    return TypeUseId(
-        location,
-        "schema",
-        replace(location, role="use"),
-        location,
-        DeclarationId(replace(location, role="declaration")),
-        "neutral",
-    )
-
-
 def _spelled(site: SiteFacts, formats: frozenset[str]) -> bool:
     """Return whether a schema is written as a string of one of the formats, its values telling the type it omits."""
     return site.format in formats and "string" in (site.json_types or {*(site.enum or ()), site.const})
@@ -2886,6 +2875,45 @@ class _SchemaUses(_Models):
             members.append(replace(member, direction=direction) if direction != member.direction else member)
         return tuple(members)
 
+    def use_id(  # ruff: ignore[too-many-arguments]
+        self,
+        owner: OperationId | SourceLocation,
+        role: TypeUseRole,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
+        schema_use: SchemaLocation,
+        *,
+        projection: Projection = "value",
+        location: str | None = None,
+        name: str | None = None,
+        status: str | None = None,
+        media: str | None = None,
+        direction: Direction | None = None,
+    ) -> TypeUseId:
+        """Return the id of a use, in the direction its role reads or sends unless one is given."""
+        direction = direction or (
+            "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
+        )
+        locate = self.documents.location
+        return TypeUseId(
+            owner,
+            role,
+            locate(use_site, "use"),
+            locate(schema_use, "schema"),
+            DeclarationId(locate(declaration, "declaration")),
+            direction,
+            projection,
+            location,
+            name,
+            status,
+            media,
+        )
+
+    def own_use(self, declaration: SchemaLocation) -> TypeUseId:
+        """Return the id of a schema's neutral value use of itself, the use `schema_uses` binds first."""
+        owner = self.documents.location(declaration, "schema")
+        return self.use_id(owner, "schema", declaration, declaration, declaration)
+
     def use(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         owner: OperationId | SourceLocation,
@@ -2902,23 +2930,21 @@ class _SchemaUses(_Models):
         media: str | None = None,
         direction: Direction | None = None,
     ) -> TypeUseId:
-        direction = direction or (
-            "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
-        )
-        locate = self.documents.location
-        use = TypeUseId(
+        use = self.use_id(
             owner,
             role,
-            locate(use_site, "use"),
-            locate(schema_use, "schema"),
-            DeclarationId(locate(declaration, "declaration")),
-            direction,
-            projection,
-            location,
-            name,
-            status,
-            media,
+            declaration,
+            use_site,
+            schema_use,
+            projection=projection,
+            location=location,
+            name=name,
+            status=status,
+            media=media,
+            direction=direction,
         )
+        direction = use.direction
+        locate = self.documents.location
         nullable = role != "schema" and (media is None or _media_kind(media) not in _FORMS)
         projected = self.projection(schema, projection, direction, nullable=nullable)
         members = (
@@ -3013,7 +3039,7 @@ class _SchemaUses(_Models):
                 or (declaration := location.child("additionalProperties")) not in self.parser.free_schemas
             ):
                 continue
-            use = _schema_use(self.documents.location(declaration, "schema"))
+            use = self.own_use(declaration)
             if (
                 use in self.uses
                 or (
@@ -3080,10 +3106,10 @@ class _SchemaUses(_Models):
     def helper_uses(self) -> None:
         """Bind each collected schema to its one type, or refuse it when fields hold it as different types."""
         for declaration, candidates in self.helpers.items():
-            use = _schema_use(location := self.documents.location(declaration, "schema"))
+            use = self.own_use(declaration)
             self.uses.setdefault(
                 use,
-                TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=location)
+                TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=use.schema_site)
                 if len(candidates) > 1
                 else self.binding(use, candidates[0]),
             )
