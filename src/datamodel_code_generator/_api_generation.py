@@ -821,7 +821,7 @@ class _Planner:
             _format_file_header,  # pyright: ignore[reportPrivateUsage]
         )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
-        from datamodel_code_generator.format import resolve_use_type_checking_imports  # noqa: PLC0415
+        from datamodel_code_generator.format import _model_formatter_arguments  # noqa: PLC0415
         from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         effective, models = self.effective, self.models
@@ -832,25 +832,14 @@ class _Planner:
         ).data_model
         files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
         formatter = TargetCodeFormatter(
-            effective.target_python_version,
-            models.settings_path,
-            effective.wrap_string_literal,
-            skip_string_normalization=not effective.use_double_quotes,
+            settings_path=models.settings_path,
             model_package=self.config.model_package,
             package=self.config.package,
-            custom_formatters=effective.custom_formatters,
-            custom_formatters_kwargs=effective.custom_formatters_kwargs,
-            encoding=effective.encoding,
-            formatters=effective.formatters,
-            builtin_format_line_length=effective.builtin_format_line_length,
-            use_type_checking_imports=resolve_use_type_checking_imports(
-                effective.use_type_checking_imports,
-                is_multi_module_output=True,
-                formatters=effective.formatters,
-                requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
-            ),
             defer_formatting=True,
             formatter_cwd=models.formatter_cwd,
+            **_model_formatter_arguments(
+                effective, custom_formatters=effective.custom_formatters, backend=backend, is_multi_module_output=True
+            ),
         )
         custom_header = models.custom_header
         header = _format_file_header(*_build_file_header_parts(custom_header, effective), models.filename)
