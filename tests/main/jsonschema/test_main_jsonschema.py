@@ -35480,6 +35480,30 @@ def test_main_jsonschema_hyphenated_directory_reference(output_dir: Path, extra_
 
 
 @pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(["--treat-dot-as-module"], id="treat-dot-as-module"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_main_jsonschema_dotted_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a directory named with a dot from the package the output writes.
+
+    Without ``--treat-dot-as-module`` the dots of a directory are written as ``_`` (``api_v2``), as those of a file
+    name; up to 0.88.0 the directory kept them, and ``from .api.v2 import b`` named no module (#5710). With the option
+    each dot is a package (``api/v2``), as before.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dotted_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
     "output_model_type",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],
 )

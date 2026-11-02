@@ -1,0 +1,1 @@
+{"title": "C", "type": "object", "properties": {"b": {"$ref": "../b.json"}, "y": {"type": "string"}}}

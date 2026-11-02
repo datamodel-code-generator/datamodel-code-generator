@@ -1904,17 +1904,18 @@ def get_module_path(name: str, file_path: Path | None, *, treat_dot_as_module: b
     """Get the module path components from a name and file path.
 
     The treat_dot_as_module flag controls behavior:
-    - None (default): Split names on dots (backward compat), but sanitize file names (replace dots)
-    - True: Split names on dots AND keep dots in file names (for modular output)
-    - False: Don't split names on dots AND sanitize file names (new feature for flat output)
+    - None (default): Split names on dots (backward compat), but sanitize directory and file names (replace dots)
+    - True: Split names on dots AND keep dots in directory and file names (for modular output)
+    - False: Don't split names on dots AND sanitize directory and file names (new feature for flat output)
     """
     should_split_names = treat_dot_as_module is not False
-    should_keep_dots_in_files = treat_dot_as_module is True
+    should_keep_dots = treat_dot_as_module is True
     if file_path:
-        sanitized_stem = sanitize_module_name(file_path.stem, treat_dot_as_module=should_keep_dots_in_files)
+        sanitized_stem = sanitize_module_name(file_path.stem, treat_dot_as_module=should_keep_dots)
+        directories = file_path.parts[:-1]
         module_parts = name.split(".")[:-1] if should_split_names else []
         return [
-            *file_path.parts[:-1],
+            *(directories if should_keep_dots else (part.replace(".", "_") for part in directories)),
             sanitized_stem,
             *module_parts,
         ]

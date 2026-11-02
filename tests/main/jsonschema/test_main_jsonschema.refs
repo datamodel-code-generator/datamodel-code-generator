@@ -6271,6 +6271,11 @@ pydantic_v2.dataclass-extra_args3	main/jsonschema/main_jsonschema/discriminator_
 [test_main_jsonschema_discriminator_tag_of_earlier_module]
 dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_module[dataclass]/
 pydantic-dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_module[pydantic-dataclass]/
+[test_main_jsonschema_dotted_directory_reference]
+collapse-root-models	main/jsonschema/main_jsonschema/dotted_directory_reference[collapse-root-models]/
+default	main/jsonschema/main_jsonschema/dotted_directory_reference[default]/
+no-treat-dot-as-module	main/jsonschema/main_jsonschema/dotted_directory_reference[no-treat-dot-as-module]/	= main/jsonschema/main_jsonschema/dotted_directory_reference[default]/
+treat-dot-as-module	main/jsonschema/main_jsonschema/dotted_directory_reference[treat-dot-as-module]/
 [test_main_jsonschema_duplicate_name]
 	main/jsonschema/duplicate_name//*.py
 [test_main_jsonschema_duration]
