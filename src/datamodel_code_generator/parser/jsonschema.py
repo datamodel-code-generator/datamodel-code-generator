@@ -230,6 +230,7 @@ from datamodel_code_generator.parser import (
     _schema_documents,
     _schema_refs,
     _schema_validators,
+    _type_overrides,
     _union_tags,
     _value_keywords,
 )
@@ -2145,12 +2146,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         x_python_import, is_optional = facts
         if isinstance(x_python_import, dict) and (full_path := self._get_x_python_import_path(x_python_import)):
             if runtime_symbol := self._get_x_python_import_expression(x_python_import, resolved_ref):
-                from datamodel_code_generator._python_type_annotation import (  # ruff: ignore[import-outside-top-level]
-                    render_python_type_expr,
-                )
-
-                bound_type = self._bind_python_type(runtime_symbol)
-                return self.data_type(type=render_python_type_expr(bound_type.expression), python_type=bound_type)
+                return _type_overrides.python_type_data_type(self, runtime_symbol)
             import_ = self._get_x_python_import(full_path)
             self._import_ledger.append(self.imports, import_, _X_PYTHON_IMPORT)
             return self.data_type(type=import_.import_, import_=import_, alias=import_.alias)
@@ -2418,13 +2414,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self._is_compatible_python_type(schema_type, python_type):
             return None
 
-        bound_type = self._bind_python_type(python_type)
-        from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-
-        return self.data_type(
-            type=render_python_type_expr(bound_type.expression),
-            python_type=bound_type,
-        )
+        return _type_overrides.python_type_data_type(self, python_type)
 
     def _apply_title_as_name(self, name: str, obj: JsonSchemaObject) -> str:
         """Apply title as name if use_title_as_name is enabled."""

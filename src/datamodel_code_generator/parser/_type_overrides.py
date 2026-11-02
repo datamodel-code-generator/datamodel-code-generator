@@ -57,6 +57,7 @@ __all__ = [
     "is_target_python_builtin_type",
     "mark_untaken_constraints",
     "override_annotation",
+    "python_type_data_type",
     "record_overridden_constraints",
     "reject_unavailable_imports",
     "resolve_qualified_type_import",
@@ -304,6 +305,22 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
     return BoundPythonType(rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports))
 
 
+def python_type_data_type(
+    parser: TypeOverridesHost, expression: PythonTypeExpr, *, is_optional: bool = False
+) -> DataType:
+    """Return the type a Python type expression spells: its bound names and imports, written as the bound expression.
+
+    ``x-python-type``, an ``x-python-import`` that names a runtime symbol and a ``--type-overrides`` annotation each
+    become a type this way.
+    """
+    from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
+
+    bound_type = parser._bind_python_type(expression)  # noqa: SLF001
+    return parser.data_type(
+        type=render_python_type_expr(bound_type.expression), python_type=bound_type, is_optional=is_optional
+    )
+
+
 def override_annotation(
     parser: TypeOverridesHost, override_import: Import, *, is_optional: bool = False
 ) -> DataType | None:
@@ -319,12 +336,7 @@ def override_annotation(
     if (expression := _parse_override_annotation(path)) is None:
         msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
         raise Error(msg)
-    from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-
-    bound_type = parser._bind_python_type(expression)  # noqa: SLF001
-    return parser.data_type(
-        type=render_python_type_expr(bound_type.expression), python_type=bound_type, is_optional=is_optional
-    )
+    return python_type_data_type(parser, expression, is_optional=is_optional)
 
 
 def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase, override_import: Import) -> None:
