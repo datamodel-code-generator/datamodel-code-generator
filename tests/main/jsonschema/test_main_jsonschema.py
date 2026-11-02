@@ -35437,3 +35437,75 @@ def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) ->
         invalid_json=json.dumps({"copy": {"children": [1]}}),
         expected_error_type="model_type",
     )
+
+
+def test_main_jsonschema_collapse_root_models_module_class_collision(output_dir: Path) -> None:
+    """Import the class an array alias inlines from a module named like it, as a direct reference imports it.
+
+    ``BarStatsList`` is an array of ``datatypes/BarStats.json``, whose class ``BarStats`` its module ``BarStats``
+    writes; up to 0.88.0 the holder imported the module (``from ..datatypes import BarStats``) for
+    ``list[BarStats]`` (#5450).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--collapse-root-models"], id="collapse-root-models")],
+)
+def test_main_jsonschema_hyphenated_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a hyphenated directory from the package the output writes, ``my_dir``.
+
+    Up to 0.88.0 the import read the directory as written in the input (``from .my-dir import b``), a syntax error;
+    a collapsed array of ``my-dir/b.json`` too (#5709).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "hyphenated_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],
+)
+def test_main_jsonschema_builtin_named_fields(output_file: Path, output_model_type: str) -> None:
+    """Import under an alias each builtin class that a field name hides from an annotation of its class.
+
+    The fields ``set``, ``dict``, ``tuple`` and ``str`` hide the builtins that ``tags``, ``counts``, ``pair`` and
+    ``name`` write; up to 0.88.0 only ``list`` was imported under an alias, so the annotations failed to evaluate
+    (#5524). A TypedDict assigns no field in its class body, so nothing is hidden there.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_named_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--use-unique-items-as-set",
+            "--use-tuple-for-fixed-items",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(
+        output_file, f"builtin_named_fields_{output_model_type.replace('.', '_')}", "Holder"
+    ) as model:
+        get_type_hints(model)

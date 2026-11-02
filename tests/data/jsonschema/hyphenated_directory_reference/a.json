@@ -1,0 +1,1 @@
+{"title": "A", "type": "object", "properties": {"b": {"$ref": "my-dir/b.json"}, "items": {"$ref": "my-dir/b_list.json"}}}

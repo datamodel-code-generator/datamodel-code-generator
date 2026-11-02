@@ -1444,7 +1444,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         internal_modules=internal_modules,
                         members=None,
                         producer=producer,
-                        row="legacy-collapse-import-path",
+                        row="legacy-collapse-internal-module-import",
                     )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
@@ -2394,7 +2394,7 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     internal_modules=state.internal_modules,
                     members=None,
                     producer=producer,
-                    row="legacy-collapse-import-path",
+                    row="legacy-collapse-internal-module-import",
                 )
                 parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))

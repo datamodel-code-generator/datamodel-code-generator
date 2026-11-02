@@ -1,8 +1,8 @@
 """How a module imports a model of another module and writes the expression that names it.
 
 The rule of the import (``reference_import_target``, under an ``ImportPathRow``), the import it adds through the
-module's import ledger (``register_reference_import``), the module that imports the generated base class
-(``_generic_base_class_module``) and the writes of the expression a data type names its model by
+module's import ledger (``register_reference_import``), the import of the generated base class
+(``generic_base_class_import``) and the writes of the expression a data type names its model by
 (``set_reference_expression``, ``set_reference_expressions``, ``import_references``), through the generation store, and
 importing again what a module imported under a stale import (``reimport_references``, under a ``ReimportRow``). The
 import path text is ``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator._module_paths import (
+    dotted_module,
     dotted_name,
     exact_import,
     is_ancestor_package_reference,
@@ -49,15 +50,14 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
 
-ImportPathRow: TypeAlias = Literal["reference", "legacy-collapse-import-path"]
+ImportPathRow: TypeAlias = Literal["reference", "legacy-collapse-internal-module-import"]
 """How a module imports a model of another module (``reference_import_target``).
 
 * ``reference``: the import a module writes for the models its own types name (``change_from_import``).
-* ``legacy-collapse-import-path``: the import of a model that a type inlined into the module names (collapsed root
-  types, dict keys typed by root types), as these wrote it since 0.25.9 (#2043): the module path alone, without the
-  ``_`` of a hyphenated module, the import from an ``_internal`` module or from a module named like its class, or the
-  leading dot of a package ``__init__``; a model of the module itself imports nothing and keeps the expression it was
-  copied with, and every other one writes its binding even where it is the class name.
+* ``legacy-collapse-internal-module-import``: the import of a model that a type inlined into the module names
+  (collapsed root types, dict keys typed by root types), where an ``_internal`` module holds the model, as these wrote
+  it since 0.25.9 (#2043): the ``_internal`` module is imported and names the model (``field_internal.Pet``), where
+  ``reference`` imports the model from it.
 """
 
 
@@ -74,7 +74,6 @@ class ReferenceImportTarget:
     from_: str
     import_: str
     written_from: str
-    row: ImportPathRow = "reference"
 
     @property
     def same_module(self) -> bool:
@@ -83,7 +82,7 @@ class ReferenceImportTarget:
 
     def expression(self, name: str, binding: str) -> str | None:
         """Return what the module writes for the model ``name`` under the binding, or None for the class name."""
-        if self.same_module or (binding == name and self.row == "reference"):
+        if self.same_module or binding == name:
             return None
         return binding if name == self.import_ else f"{binding}.{name}"
 
@@ -103,8 +102,9 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
 
     ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
+    The module is imported by the path the output writes it at (``written_name``).
     """
-    if base_class and row == "reference":
+    if base_class:
         left, right = relative(current_module_name, target_full_name)
         from_ = (
             left if is_ancestor_package_reference(current_module_name, target_full_name) else join_module(left, right)
@@ -115,8 +115,6 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         from_, import_ = full_path = relative(current_module_name, target_full_name)
         if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
             from_, import_ = full_path = exact_import(from_, import_, name)
-        if row == "legacy-collapse-import-path":
-            return ReferenceImportTarget(full_path, from_, import_, from_, row)
         import_ = written_name(import_)
         current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
         if (  # pragma: no cover
@@ -129,10 +127,15 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
 
-        if from_ and not use_exact and (ref_module in internal_modules or is_module_class_collision):
+        if (
+            from_
+            and not use_exact
+            and ((ref_module in internal_modules and row == "reference") or is_module_class_collision)
+        ):
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
+    from_ = written_name(from_)
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
     return ReferenceImportTarget(full_path, from_, import_, written_from)
 
@@ -154,7 +157,7 @@ def register_reference_import(  # noqa: PLR0913
 ) -> str | None:
     """Import a reference from another module and return its expression when it is not the class name.
 
-    Under row ``legacy-collapse-import-path`` a model of the module itself imports nothing.
+    A model of the module itself imports nothing and is written by its class name.
     """
     name = reference.short_name
     target = reference_import_target(
@@ -168,7 +171,7 @@ def register_reference_import(  # noqa: PLR0913
         treat_dot_as_module=treat_dot_as_module,
         row=row,
     )
-    if row == "legacy-collapse-import-path" and target.same_module:
+    if target.same_module:
         return None
     alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
     import_ledger.append(
@@ -184,10 +187,23 @@ def register_reference_import(  # noqa: PLR0913
     return target.expression(name, alias)
 
 
-def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
-    """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
-    from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
-    return join_module(from_, base_module[-1].replace(".py", ""))
+def generic_base_class_import(module: ModulePath, base_module: ModulePath, name: str, *, init: bool) -> Import:
+    """Return the import of the generated base class ``name``, which ``base_module`` writes, into ``module``.
+
+    It is the import of a base class of another module (``reference_import_target``), from the modules' dotted names;
+    ``init`` makes ``module`` a package ``__init__``.
+    """
+    target = reference_import_target(
+        name,
+        dotted_module(module),
+        dotted_name(dotted_module(base_module), name),
+        use_exact=False,
+        init=init,
+        internal_modules=(),
+        base_class=True,
+        treat_dot_as_module=None,
+    )
+    return Import(from_=target.written_from, import_=target.import_)
 
 
 class ReferenceExpressionHost(Protocol):
@@ -222,9 +238,8 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
 ) -> bool:
     """Write how a data type names its reference in the current module, and return whether that changed it.
 
-    A model the module emits is written by its class name; any other is imported, and written by the expression
-    the import gives when that is not the class name. Under row ``legacy-collapse-import-path`` a model of the module
-    itself keeps the expression the data type has.
+    A model the module emits is written by its class name; any other is imported under ``row`` (``ImportPathRow``),
+    and written by the expression the import gives when that is not the class name.
     """
     expression = (
         None
@@ -244,7 +259,7 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             row=row,
         )
     )
-    if (expression is None and row != "reference") or expression == data_type.alias:
+    if expression == data_type.alias:
         return False
     host._graph_builder.name_reference(data_type, expression)  # noqa: SLF001
     return True

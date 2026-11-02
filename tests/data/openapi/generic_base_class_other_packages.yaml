@@ -1,0 +1,14 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    a.b.First:
+      type: object
+      properties: {x: {type: string}}
+    c.d.Second:
+      type: object
+      properties: {y: {type: string}}
+    top.Third:
+      type: object
+      properties: {z: {type: string}}

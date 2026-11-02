@@ -25,7 +25,7 @@ from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ReimportHost,
-    _generic_base_class_module,
+    generic_base_class_import,
     register_reference_import,
     reimport_references,
     set_reference_expressions,
@@ -334,10 +334,10 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
         return
 
     all_target_models: set[DataModel] = set()
-    modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports]] = []
+    modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
     for ctx in run.contexts:
         if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:  # noqa: SLF001
-            modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports))
+            modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
             all_target_models.update(target_models)
 
     if not modules_with_targets:
@@ -350,7 +350,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     if not root_modules:  # pragma: no cover
         root_modules = [modules_with_targets[0]]
 
-    first_root_module, first_root_models, first_root_target_models, _ = root_modules[0]
+    first_root_module, first_root_models, first_root_target_models, _, _ = root_modules[0]
     first_root_file_path = first_root_target_models[0].file_path
 
     base_class_ref = Reference(path=GENERIC_BASE_CLASS_PATH, name=GENERIC_BASE_CLASS_NAME)
@@ -375,7 +375,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
 
     original_base_class = parser.data_model_type.BASE_CLASS
     original_import = Import.from_full_path(original_base_class) if original_base_class else None
-    for module, _, target_models, imports in modules_with_targets:
+    for module, _, target_models, imports, init in modules_with_targets:
         for model in target_models:
             if original_import:  # pragma: no branch
                 additional_imports = model._additional_imports  # noqa: SLF001
@@ -390,6 +390,6 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
             parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)  # noqa: SLF001
             parser._import_ledger.append(  # noqa: SLF001
                 imports,
-                Import(from_=_generic_base_class_module(module, first_root_module), import_=base_class_ref.name),
+                generic_base_class_import(module, first_root_module, base_class_ref.name, init=init),
                 _GENERIC_BASE_CLASS,
             )

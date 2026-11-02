@@ -6069,6 +6069,12 @@ typed-dict	main/jsonschema/boolean_property/typing_TypedDict.py
 [test_main_jsonschema_builtin_formatter_preserves_unicode_line_separators]
 	main/jsonschema/unicode_line_separators_builtin.py
 	main/jsonschema/unicode_line_separators_values.txt
+[test_main_jsonschema_builtin_named_fields]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/builtin_named_fields[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.dataclass].py
+typing.TypedDict	main/jsonschema/main_jsonschema/builtin_named_fields[typing.TypedDict].py
 [test_main_jsonschema_collapse_reuse_models_cross_module_users]
 module	main/jsonschema/collapse_reuse_models_cross_module_users//*.py
 tree	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
@@ -6104,6 +6110,8 @@ fields	main/jsonschema/collapse_root_models_lookaround.py
 fields-type-alias	main/jsonschema/collapse_root_models_lookaround.py
 inheritance	main/jsonschema/collapse_root_models_lookaround_inheritance.py
 root-model	main/jsonschema/collapse_root_models_lookaround_root.py
+[test_main_jsonschema_collapse_root_models_module_class_collision]
+	main/jsonschema/main_jsonschema/collapse_root_models_module_class_collision/	= main/jsonschema/exact_imports_collapse_root_models//*.py
 [test_main_jsonschema_collapse_root_models_name_strategy_child]
 	main/jsonschema/jsonschema_collapse_root_models_name_strategy_child.py
 [test_main_jsonschema_collapse_root_models_name_strategy_complex_child]
@@ -6792,6 +6800,9 @@ pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= 
 	main/jsonschema/jsonschema_hierarchical_aliases_scoped.py
 [test_main_jsonschema_hierarchical_aliases_scoped]
 	main/jsonschema/jsonschema_hierarchical_aliases_scoped.py
+[test_main_jsonschema_hyphenated_directory_reference]
+collapse-root-models	main/jsonschema/main_jsonschema/hyphenated_directory_reference[collapse-root-models]/
+default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 [test_main_jsonschema_id]
 	main/jsonschema/id.py
 [test_main_jsonschema_id_as_stdin]
