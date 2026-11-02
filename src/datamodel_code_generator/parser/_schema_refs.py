@@ -1097,16 +1097,42 @@ def intersect_ref_siblings(
     return intersection.keywords, intersection.unsatisfiable
 
 
-def intersect_ref_siblings_schema(
-    parser: SchemaRefsHost, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
+def intersect_ref_siblings_schema(  # noqa: PLR0913
+    parser: SchemaRefsHost,
+    target: dict[str, Any],
+    siblings: dict[str, Any],
+    where: str,
+    *,
+    siblings_are_parts: bool,
+    holder: JsonSchemaObject | None = None,
+    target_ref: str | None = None,
 ) -> JsonSchemaObject:
-    """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref."""
+    """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref.
+
+    A ``holder`` of the ``$ref`` that has a ``contains`` of its own does not replace the referenced one: both apply,
+    so the item bounds the referenced contains keywords imply intersect with the holder's. The schema keeps the
+    reference ``target_ref`` it ends at, when given, for the dynamic scope of its anchors.
+    """
     merged, unsatisfiable = intersect_ref_siblings(
         parser, target, siblings, where, siblings_are_parts=siblings_are_parts
     )
     merged.pop("$ref", None)
+    if (
+        holder is not None
+        and "contains" in holder.extras
+        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(target))) is not None  # noqa: SLF001
+    ):
+        sibling_contains = _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & holder.extras.keys()
+        extras_key = JsonSchemaObject.__extra_key__
+        merged[extras_key] = {
+            **_without_contains_keywords(merged[extras_key]),
+            **{key: holder.extras[key] for key in sibling_contains},
+        }
+        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
     merged_schema = parser._schema_object(merged)  # noqa: SLF001
     parser._mark_reported_value_conflict(merged_schema, unsatisfiable)  # noqa: SLF001
+    if target_ref is not None:
+        merged_schema.__dict__[_MERGED_REF_TARGET_KEY] = target_ref
     return merged_schema
 
 
@@ -1140,29 +1166,15 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
 
     ref_dict, resolved_ref = parser._ref_target_dump(ref, resolved_ref)  # noqa: SLF001
     current_dict = obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
-    merged, unsatisfiable = intersect_ref_siblings(
+    merged_obj = intersect_ref_siblings_schema(
         parser,
         ref_dict,
         current_dict,
         where or named_location(obj.schema_location, redact_reference(obj.ref), row="legacy-unredacted-locations"),
         siblings_are_parts=parser._ref_siblings_are_parts_of(obj),  # noqa: SLF001
+        holder=obj,
+        target_ref=resolved_ref,
     )
-    merged.pop("$ref", None)
-    if (
-        "contains" in obj.extras
-        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(ref_dict))) is not None  # noqa: SLF001
-    ):
-        sibling_contains = _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & obj.extras.keys()
-        extras_key = JsonSchemaObject.__extra_key__
-        merged[extras_key] = {
-            **_without_contains_keywords(merged[extras_key]),
-            **{key: obj.extras[key] for key in sibling_contains},
-        }
-        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
-
-    merged_obj = parser._schema_object(merged)  # noqa: SLF001
-    parser._mark_reported_value_conflict(merged_obj, unsatisfiable)  # noqa: SLF001
-    merged_obj.__dict__[_MERGED_REF_TARGET_KEY] = resolved_ref
     return _locate(merged_obj, obj.schema_location)
 
 
