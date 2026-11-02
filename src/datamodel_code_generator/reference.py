@@ -1646,8 +1646,15 @@ class ModelResolver:  # noqa: PLR0904
     @staticmethod
     @lru_cache(maxsize=4096)
     def join_path(path: tuple[str, ...]) -> str:
-        """Join path components with slashes and normalize anchors."""
-        joined_path = "/".join(p for p in path if p).replace("/#", "#")
+        """Join path components with slashes and normalize anchors.
+
+        An empty component is left out before the anchor; after it, it is the empty token of a JSON pointer (a key
+        ``""``) and stays, as a pointer's other tokens do, so that ``#/definitions/`` is not ``#/definitions``.
+        """
+        if "" in path:
+            anchored = next((index for index, part in enumerate(path) if "#" in part), len(path))
+            path = (*filter(None, path[: anchored + 1]), *path[anchored + 1 :])
+        joined_path = "/".join(path).replace("/#", "#")
         if "#" not in joined_path:
             joined_path += "#"
         return joined_path

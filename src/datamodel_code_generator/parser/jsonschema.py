@@ -7906,7 +7906,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""
         path = ref.split("#", 1)[-1]
-        path = path.removeprefix("/")
         object_paths, reference_paths = _split_json_pointer(raw, path)
         if not object_paths:  # pragma: no cover
             reference = self.model_resolver.add_ref(ref)

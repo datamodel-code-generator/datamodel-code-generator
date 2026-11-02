@@ -257,7 +257,7 @@ def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: 
 
 def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> tuple[list[str], list[str]]:
     """Split a JSON pointer into lookup and reference path parts."""
-    raw_parts = pointer.lstrip("/").split("/") if pointer else []
+    raw_parts = pointer.removeprefix("/").split("/") if pointer else []
     if "://" not in pointer and "~1" not in pointer:
         return [unescape_json_pointer_segment(part) for part in raw_parts], raw_parts
 

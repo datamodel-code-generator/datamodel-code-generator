@@ -1,0 +1,21 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "empty": {"$ref": "#/definitions/"},
+    "nested": {"$ref": "#/definitions/a/"},
+    "atRoot": {"$ref": "#//j"},
+    "missing": {"$ref": "#/definitions//k"},
+    "missingInAllOf": {"allOf": [{"$ref": "#/definitions//m"}]},
+    "named": {"$ref": "#/definitions/k"}
+  },
+  "": {
+    "j": {"type": "number"}
+  },
+  "definitions": {
+    "": {"type": "string"},
+    "a": {"": {"type": "integer"}},
+    "k": {"type": "boolean"},
+    "m": {"type": "number"}
+  }
+}
