@@ -39,9 +39,10 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TextShape,
     TypeUseId,
-    UnionType,
     WireDeclaration,
     api_key_place,
+    children_of,
+    encoding_headers,
     fact,
     is_required,
     label,
@@ -57,7 +58,7 @@ from datamodel_code_generator._target_contract import (
     uses_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import container_slot, lexical_kind, present, type_identity
+from datamodel_code_generator._target_types import container_slot, lexical_kind, sole_present, type_identity
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
@@ -448,12 +449,12 @@ def _encoding(
                 raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
         shape, kind, fields, additional = _shape(planner, _member_shape(form, member))
-        chosen = str(style or "form")
+        chosen, exploded = _style_of(encoding, "query")
         return ParameterPlan(
             location="query",
             name=name,
             style=chosen,
-            explode=explode if isinstance(explode, bool) else chosen == "form",
+            explode=exploded,
             allow_reserved=reserved is True,
             shape=shape,
             kind=kind,
@@ -502,14 +503,12 @@ def _planned(
 def _headers(operation: OperationContract, requested: frozenset[TypeUseId] | None) -> Iterator[WireDeclaration]:
     """Yield the headers of an operation's responses, then the requested ones its request body's encodings declare."""
     for response in operation.responses:
-        yield from (child for child in response.children if child.kind == "header")
-    for media in () if operation.request_body is None else operation.request_body.children:
-        for encoding in (child for child in media.children if child.kind == "encoding"):
-            yield from (
-                child
-                for child in encoding.children
-                if child.kind == "header" and (requested is None or not requested.isdisjoint(type_uses(child)))
-            )
+        yield from children_of(response, "header")
+    yield from (
+        header
+        for header in encoding_headers(operation)
+        if requested is None or not requested.isdisjoint(type_uses(header))
+    )
 
 
 def _header(
@@ -598,6 +597,16 @@ def parameter_collisions(
     return tuple(found)
 
 
+def _style_of(declaration: WireDeclaration, location: ParameterLocation) -> tuple[str, bool]:
+    """Return the style a parameter or a form member's encoding writes in a location, and whether it explodes.
+
+    The style defaults by the location, and a style that is not given explodes by default where it is form or cookie.
+    """
+    style = str(fact(declaration, "style") or _DEFAULT_STYLES[location])
+    explode = fact(declaration, "explode")
+    return style, explode if isinstance(explode, bool) else style in {"form", "cookie"}
+
+
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
     source = declaration.use_site
     location, name = parameter_place(declaration)
@@ -606,16 +615,15 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
-    style = str(fact(declaration, "style") or _DEFAULT_STYLES[location])
+    style, explode = _style_of(declaration, location)
     if style == "cookie" and not planner.version.startswith("3.2"):
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
-    explode = fact(declaration, "explode")
     try:
         return ParameterPlan(
             location=location,
             name=name,
             style=style,
-            explode=explode if isinstance(explode, bool) else style in {"form", "cookie"},
+            explode=explode,
             required=required,
             allow_reserved=_allow_reserved(planner.version, location, declaration),
             shape=shape,
@@ -748,7 +756,8 @@ class LexicalKinds:
         """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
 
         A place is a schema's location and the steps from the type bound there to the leaf: a list's items, then a
-        mapping's values. A leaf no place binds a type for has no kind.
+        mapping's values. A leaf no place binds a type for has no kind. The places are those the walk read, not the
+        members their uses bind (`legacy-target-located-kinds`).
         """
         value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
         return lexical_kind(value, self._symbols, self._members)
@@ -839,8 +848,8 @@ class LexicalKinds:
         """Return the type a type stands for, through aliases, root models and a union with None alone."""
         seen: set[int] = set()
         while True:
-            if isinstance(value, UnionType) and len(members := present(value)) == 1:
-                value = members[0]
+            if (member := sole_present(value)) is not None:
+                value = member
             elif (
                 isinstance(value, GeneratedSymbolType)
                 and value.symbol not in seen

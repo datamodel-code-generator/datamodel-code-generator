@@ -140,9 +140,10 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
     ) -> Iterable[TypedChild[SchemaT]]:
         """Return what the row chosen for the site types there: its own declaration, else the table's.
 
-        ``as_parsed`` is the site as its position reads it before the table chooses (a ``$ref`` merged with its
-        siblings) where the caller reads another. The entries after the last row with a declaration of its own answer
-        with the table's, so they are not read.
+        The row is chosen as the position chooses it, after the steps before it rewrite the site; what it types is read
+        from the site as written. ``as_parsed`` is the site as its position reads it before the table chooses where
+        that differs from the site as written (a position that merges a ``$ref`` with its siblings first). The entries
+        after the last row with a declaration of its own answer with the table's, so they are not read.
         """
         last = max(
             (index for index, entry in enumerate(self.entries) if isinstance(entry, Row) and entry.typed is not None),

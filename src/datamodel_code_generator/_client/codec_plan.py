@@ -22,6 +22,7 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralType,
     UnionType,
+    literal_text,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
 from datamodel_code_generator._target_types import container_slot, is_none
@@ -397,7 +398,7 @@ class _Planner:
             field = next((field for field in self.facts.fields(symbol) if field.wire_name == tag), None)
             type_ = None if field is None else field.type
             values = (
-                [item.value for item in type_.values if isinstance(item, LiteralScalar) and isinstance(item.value, str)]
+                [text for item in type_.values if (text := literal_text(item)) is not None]
                 if isinstance(type_, LiteralType)
                 else []
             )

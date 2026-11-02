@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator.parser._passes._shared import GenerationStoreHost
+from datamodel_code_generator.parser._passes._shared import GenerationStoreHost, run_unused_models
 from datamodel_code_generator.parser._phases import _DecisionWriter
 from datamodel_code_generator.types import _copy_data_type
 
@@ -34,8 +34,8 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
     """Seal the facts final at B1 and run the decisions of the registry on them in its order, when it holds any."""
     if not (decisions := tuple(d for d in parser._DECISION_PASSES if d.when is None or d.when(parser))):  # noqa: SLF001
         return
-    unused = {id(model) for model in run.unused_models}
-    modules = [(ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in run.contexts]
+    unused = run_unused_models(run)
+    modules = [(ctx.module_key, unused.written(ctx.models)) for ctx in run.contexts]
     facts = parser.generation_store.seal_facts(modules)
     writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001
     for decision in decisions:

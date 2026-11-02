@@ -20,8 +20,10 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
+from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._option_rules import IMPLIED_OPTIONS
 from datamodel_code_generator._requirements import REQUIREMENTS
-from datamodel_code_generator.deprecations import deprecation_message
+from datamodel_code_generator.deprecations import cli_deprecations
 from datamodel_code_generator.enums import (
     AllExportsScope,
     DataModelType,
@@ -175,6 +177,7 @@ _CATEGORY_TOPIC = {
 }
 _C = OptionCategory
 _G = OptionGroup
+_DEPRECATED_OPTIONS = cli_deprecations()
 
 
 def _words(chunks: tuple[str, ...]) -> list[str]:
@@ -191,16 +194,33 @@ def _opts(
 ) -> dict[str, CLIOptionMeta]:
     """Build the rows of the options in ``names`` that share a category, group and the other metadata.
 
-    A group takes the topic of its category unless ``topic`` is given.
+    A group takes the topic of its category unless ``topic`` is given. An option is deprecated, with its message, when
+    the deprecation registry has an entry for it.
     """
     if group and topic is None:
         topic = _CATEGORY_TOPIC[category]
-    return {name: CLIOptionMeta(name, category, topic, group, **fields) for name in _words(names)}
+    return {
+        name: CLIOptionMeta(
+            name,
+            category,
+            topic,
+            group,
+            deprecated=(message := _DEPRECATED_OPTIONS.get(name)) is not None,
+            deprecated_message=message,
+            **fields,
+        )
+        for name in _words(names)
+    }
 
 
 def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
     """Build one relation with the same ``fields`` to each option in the space-separated ``names``."""
     return tuple(CLIOptionRelation(name, **fields) for name in names.split())
+
+
+def _implied(field: str) -> tuple[CLIOptionRelation, ...]:
+    """Build the relation to the option that the option of ``field`` turns on (``IMPLIED_OPTIONS``)."""
+    return _relations(option_flag(IMPLIED_OPTIONS[field]), value=True)
 
 
 def _target_options(generate: str, value: str, *names: str) -> dict[str, CLIOptionMeta]:
@@ -279,13 +299,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.MODEL, "--collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--collapse-reuse-models", group=_G.MODEL_REUSE),
     **_opts(_C.MODEL, "--keep-model-order --order-constructor-fields-by"),
-    **_opts(
-        _C.MODEL,
-        "--allow-extra-fields",
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.allow-extra-fields"),
-        implies=_relations("--extra-fields", value="allow"),
-    ),
+    **_opts(_C.MODEL, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     **_opts(
         _C.MODEL,
         "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
@@ -326,8 +340,6 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.MODEL,
         "--parent-scoped-naming",
         group=_G.MODEL_NAMING,
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.parent-scoped-naming"),
         implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
     **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
@@ -350,12 +362,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
         "--empty-enum-field-name",
     ),
-    **_opts(
-        _C.FIELD,
-        "--set-default-enum-member",
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.set-default-enum-member"),
-    ),
+    **_opts(_C.FIELD, "--set-default-enum-member"),
     **_opts(
         _C.FIELD,
         "--aliases --serialization-aliases --default-values --deserialize-default-values",
@@ -378,12 +385,10 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-standard-collections --no-use-standard-collections --use-generic-container-types",
         group=_G.COLLECTION_TYPES,
     ),
-    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_relations("--field-constraints", value=True)),
+    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_implied("use_annotated")),
     **_opts(_C.TYPING, "--no-use-annotated", group=_G.TYPE_SYNTAX),
     **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
-    **_opts(
-        _C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_relations("--use-type-alias", value=True)
-    ),
+    **_opts(_C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_implied("use_type_alias_type")),
     **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
     **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
     **_opts(
@@ -479,7 +484,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
     **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
-    **_opts(_C.OPENAPI, "--validation", deprecated=True, deprecated_message=deprecation_message("cli.validation")),
+    **_opts(_C.OPENAPI, "--validation"),
     **_opts(_C.GRAPHQL, "--graphql-no-typename"),
     **_opts(_C.GENERAL, "--check"),
     **_opts(
@@ -599,24 +604,34 @@ def _canonical_option_key(option: str) -> tuple[int, str]:
     return (len(option), option)
 
 
-@lru_cache(maxsize=1)
-def _build_alias_map_from_argparse() -> dict[str, str]:
-    """Build alias -> canonical map from argparse (the source of truth).
+@dataclass(frozen=True, slots=True)
+class _ArgparseIndex:
+    """The option strings of the command-line parser: each one's canonical option and siblings, actions by dest."""
 
-    The canonical option is the longest option string for each action.
-    If multiple options have the same length, the lexicographically last one is chosen.
+    canonical: dict[str, str]
+    siblings: dict[str, tuple[str, ...]]
+    actions: dict[str, Action]
+
+
+@lru_cache(maxsize=1)
+def _argparse_index() -> _ArgparseIndex:
+    """Index the command-line parser (the source of truth), when a caller first needs it.
+
+    The canonical option is the longest option string of an action; among options of one length, the
+    lexicographically last. A destination maps to the last action with option strings that stores it.
     """
     from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
 
-    alias_map: dict[str, str] = {}
+    index = _ArgparseIndex({}, {}, {})
     for action in argument_parser._actions:  # noqa: SLF001
-        if not action.option_strings:
+        if not (options := tuple(action.option_strings)):
             continue  # pragma: no cover
-        # Canonical = longest, then lexicographically last for stability
-        canonical = max(action.option_strings, key=_canonical_option_key)
-        for opt in action.option_strings:
-            alias_map[opt] = canonical
-    return alias_map
+        canonical = max(options, key=_canonical_option_key)
+        for option in options:
+            index.canonical[option] = canonical
+            index.siblings[option] = options
+        index.actions[action.dest] = action
+    return index
 
 
 def get_canonical_option(option: str) -> str:
@@ -630,20 +645,7 @@ def get_canonical_option(option: str) -> str:
         >>> get_canonical_option("--help")
         '--help'
     """
-    return _build_alias_map_from_argparse().get(option, option)
-
-
-@lru_cache(maxsize=1)
-def _build_option_string_groups_from_argparse() -> dict[str, tuple[str, ...]]:
-    """Build option string -> sibling option strings map from argparse."""
-    from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
-
-    groups: dict[str, tuple[str, ...]] = {}
-    for action in argument_parser._actions:  # noqa: SLF001
-        options = tuple(action.option_strings)
-        for option in options:
-            groups[option] = options
-    return groups
+    return _argparse_index().canonical.get(option, option)
 
 
 def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
@@ -653,32 +655,27 @@ def _actions_by_dest(parser: ArgumentParser | None) -> dict[str, Action]:
     return {action.dest: action for action in parser._actions if action.option_strings}  # noqa: SLF001
 
 
-@lru_cache(maxsize=1)
-def _option_actions() -> dict[str, Action]:
-    """Index the actions of the command-line parser by destination, when a caller first needs them."""
-    from datamodel_code_generator.arguments import arg_parser as argument_parser  # noqa: PLC0415
-
-    return _actions_by_dest(argument_parser)
+def _no_option(action: Action) -> str | None:
+    """Return the first --no- option string of an action, or None."""
+    return next((option for option in action.option_strings if option.startswith("--no-")), None)
 
 
 def _negative_option(dest: str) -> str | None:
     """Return the --no- flag the parser defines for a boolean destination, or None."""
-    action = _option_actions().get(dest)
-    if not isinstance(action, BooleanOptionalAction):
-        return None
-    return next((option for option in action.option_strings if option.startswith("--no-")), None)
+    action = _argparse_index().actions.get(dest)
+    return _no_option(action) if isinstance(action, BooleanOptionalAction) else None
 
 
 @lru_cache(maxsize=1)
 def get_all_canonical_options() -> frozenset[str]:
     """Get all canonical options from argparse."""
-    return frozenset(_build_alias_map_from_argparse().values())
+    return frozenset(_argparse_index().canonical.values())
 
 
 @lru_cache(maxsize=1)
 def get_all_argparse_options() -> frozenset[str]:
     """Get all options from argparse (including aliases)."""
-    return frozenset(_build_alias_map_from_argparse().keys())
+    return frozenset(_argparse_index().canonical.keys())
 
 
 def is_manual_doc(option: str) -> bool:
@@ -728,7 +725,7 @@ def get_cli_option_doc_name(option: str) -> str:
     canonical = get_canonical_option(option)
     if canonical in MANUAL_DOCS:
         return canonical
-    options = _build_option_string_groups_from_argparse().get(option, ())
+    options = _argparse_index().siblings.get(option, ())
     if option.startswith("--") and any(item.startswith("--no-") for item in options):
         return option
     return canonical

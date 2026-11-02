@@ -29,10 +29,10 @@ from datamodel_code_generator.parser._passes import (
     settle,
     structure,
 )
+from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
     _context_models,
-    alias_shadowed_imports,
     override_required_field,
 )
 from datamodel_code_generator.parser._pipeline import (
@@ -321,7 +321,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             PassSpec("collect_all_models", lambda _, s: render_prep.collect_all_models(s)),
             PassSpec(
                 "prepare_type_alias_fields",
-                lambda self, s: render_prep.prepare_type_alias_fields(self, s.contexts, s.unused_models),
+                late(render_prep.prepare_type_alias_fields),
             ),
             PassSpec(
                 "finalize_type_alias_users",

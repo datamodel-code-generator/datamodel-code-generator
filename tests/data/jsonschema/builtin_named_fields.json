@@ -1,0 +1,14 @@
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "set": {"type": "string"},
+    "tags": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "dict": {"type": "string"},
+    "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+    "tuple": {"type": "string"},
+    "pair": {"type": "array", "items": [{"type": "string"}, {"type": "integer"}], "minItems": 2, "maxItems": 2},
+    "str": {"type": "integer"},
+    "name": {"type": "string"}
+  }
+}

@@ -18,7 +18,7 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, resolved, same_file
+from datamodel_code_generator._paths import concrete, existing_ancestor, files_under, lexical, resolved, same_file
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -223,10 +223,9 @@ class StagedArtifact(NamedTuple):
         if staged.is_file():
             yield StagedFile(staged, target, parent / target.name, anchor)
             return
-        for staged_file in sorted(staged.rglob("*")):
-            if staged_file.is_file():
-                relative_path = staged_file.relative_to(staged)
-                yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
+        for staged_file in files_under(staged):
+            relative_path = staged_file.relative_to(staged)
+            yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
 
 
 class StagedOutputs(NamedTuple):

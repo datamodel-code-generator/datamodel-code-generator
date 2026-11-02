@@ -16,7 +16,7 @@ from functools import cache, cached_property, partial
 from operator import getitem
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union, cast
 from warnings import warn
 
 from pydantic import Field, StrictBool, ValidationError, field_validator
@@ -29,7 +29,7 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
-from datamodel_code_generator._document_reader import string_key, string_keys
+from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
     PATHS_PARAMETERS,
@@ -43,9 +43,11 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
-from datamodel_code_generator.parser._schema_object import _located_model_schema
+from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -64,7 +66,13 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
 )
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
-from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
+from datamodel_code_generator.reference import (
+    FIELD_ORIGIN_KEY,
+    SCHEMA_LOCATION_KEY,
+    FieldNameResolver,
+    is_url,
+    snake_to_upper_camel,
+)
 from datamodel_code_generator.types import (
     DataType,
     EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
@@ -169,6 +177,11 @@ class RawMediaSchemaSource:
 
     schema: RawSchema
     from_item_schema: bool = False
+
+
+def _item_schema_array(items: RawSchema) -> dict[str, YamlValue]:
+    """Return the array schema OpenAPI 3.2 ``itemSchema`` stands for: an array whose items are the item schema."""
+    return {"type": "array", "items": items}
 
 
 class RawMediaObject(BaseModel):
@@ -310,12 +323,7 @@ def is_object_map_body(obj: JsonSchemaObject) -> bool:
     That is an ``is_object`` body without ``properties`` whose ``patternProperties`` or ``propertyNames`` make a map,
     other than one that ``_is_closed_pattern_map_body`` gives that model by default.
     """
-    return (
-        obj.is_object
-        and not obj.properties
-        and bool(obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False))
-        and not _is_closed_pattern_map_body(obj)
-    )
+    return obj.is_object and not obj.properties and _has_map_key_keywords(obj) and not _is_closed_pattern_map_body(obj)
 
 
 def _missing_operation_id(path_name: str) -> Error:
@@ -324,6 +332,9 @@ def _missing_operation_id(path_name: str) -> Error:
         "All operations must have an operationId when --use_operation_id_as_name is set."
         f"The following path was missing an operationId: {path_name}"
     )
+
+
+_CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32})
 
 
 @cache
@@ -352,6 +363,16 @@ class OpenAPIParser(JsonSchemaParser):
         # OpenAPI parses a single document context, so caching is intentional.
         # AsyncAPI overrides this with a live property because it swaps raw_obj while resolving refs.
         return cast("OpenAPISchemaFeatures", self._schema_features_for(self.raw_obj))
+
+    @property
+    @override
+    def _content_media_type_is_octets(self) -> bool:
+        """Whether the document's OpenAPI version reads a content media type without a content encoding as raw octets.
+
+        OpenAPI 3.1 and later write a binary string so ("Working with Binary Data") in place of 3.0's
+        ``format: binary``; an AsyncAPI document reads its strings as JSON Schema does.
+        """
+        return self._document_version(self.raw_obj, self._version_source) in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
 
     @property
     @override
@@ -414,7 +435,7 @@ class OpenAPIParser(JsonSchemaParser):
     def get_ref_model(self, ref: str) -> dict[str, Any]:
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self._ref_path(ref).split("#", 1)
-        ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
+        ref_body = ref_file_document(self, ref_file)
         return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
@@ -601,41 +622,17 @@ class OpenAPIParser(JsonSchemaParser):
             warn_deprecated("schema.openapi-nullable", stacklevel=2)
         return super()._get_data_type(obj, localize_constraints=localize_constraints)
 
-    def _normalize_discriminator_mapping_ref(self, mapping_value: str) -> str:  # noqa: PLR6301
-        """Normalize a discriminator mapping value to a full $ref path.
-
-        Per OpenAPI spec, mapping values can be either:
-        - Full refs: "#/components/schemas/Pet" or "./other.yaml#/components/schemas/Pet"
-        - Short names: "Pet" or "Pet.V1" (relative to #/components/schemas/)
-        - Relative paths: "schemas/Pet" or "./other.yaml"
-
-        Values containing "/" or "#" are treated as paths/refs and passed through.
-        All other values (including those with dots like "Pet.V1") are treated as
-        short schema names and normalized to full refs.
-
-        Note: Bare file references without path separators (e.g., "other.yaml") will be
-        treated as schema names. Use "./other.yaml" format for file references.
-
-        Note: This could be a staticmethod, but @snooper_to_methods() decorator
-        converts staticmethods to regular functions when pysnooper is installed.
-        """
-        if "/" in mapping_value or "#" in mapping_value:
-            return mapping_value
-        return f"#/components/schemas/{mapping_value}"
-
-    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:
+    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR6301
         """Return a copy of the discriminator dict with normalized mapping refs."""
         result = discriminator.copy()
         mapping = discriminator.get("mapping")
         if mapping:
-            result["mapping"] = {
-                k: self._normalize_discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)
-            }
+            result["mapping"] = {k: discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)}
         return result
 
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
-        normalized = self._normalize_discriminator_mapping_ref(value)
+        normalized = discriminator_mapping_ref(value)
         return self._derived_ref(normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
@@ -720,11 +717,13 @@ class OpenAPIParser(JsonSchemaParser):
                     result_fields.append(field_obj)
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
+                origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
                 field_obj = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
-                    "data_type": new_field_type,
+                    "data_type": with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
                 })
+                field_obj.__dict__[FIELD_ORIGIN_KEY] = origin
             result_fields.append(field_obj)
 
         return result_fields
@@ -780,7 +779,7 @@ class OpenAPIParser(JsonSchemaParser):
             raw_item_schema: RawSchema = item_schema
         else:
             raw_item_schema = cast("dict[str, YamlValue]", item_schema.model_dump(by_alias=True, exclude_none=True))
-        return JsonSchemaObject.model_validate({"type": "array", "items": raw_item_schema})
+        return JsonSchemaObject.model_validate(_item_schema_array(raw_item_schema))
 
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
         """Return the schema represented by an OpenAPI media type object.
@@ -813,7 +812,7 @@ class OpenAPIParser(JsonSchemaParser):
             return None
         return RawMediaSchemaSource(
             _located(
-                {"type": "array", "items": cast("dict[str, RawSchema]", media_obj)["itemSchema"]},
+                _item_schema_array(cast("dict[str, RawSchema]", media_obj)["itemSchema"]),
                 self._raw_location(media_obj),
             ),
             from_item_schema=True,
@@ -853,7 +852,7 @@ class OpenAPIParser(JsonSchemaParser):
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
-            if scope_name == "paths" and not holds_path_item(item_name, methods_, objects_as_paths=True):
+            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
                 continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
@@ -970,6 +969,20 @@ class OpenAPIParser(JsonSchemaParser):
         Default("data-type", _parse_unmodeled_operation_schema),
     )
 
+    def _parse_media_schema(self, name: str, media_obj: MediaObject, path: list[str]) -> DataType | None:
+        """Parse the schema of a media type object at ``path`` into a data type, none for one without a schema.
+
+        The array that stands for an ``itemSchema`` is parsed at the special path of ``path``.
+        """
+        if (media_schema := self._get_media_schema(media_obj)) is None:
+            return None
+        return self._parse_schema_or_ref(
+            name,
+            media_schema.schema,
+            self._media_schema_path(path, from_item_schema=media_schema.from_item_schema),
+            location=media_schema.location,
+        )
+
     def parse_request_body(
         self,
         name: str,
@@ -979,14 +992,8 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse request body content into data types by media type."""
         data_types: dict[str, DataType] = {}
         for media_type, media_obj in request_body.content.items():
-            media_schema = self._get_media_schema(media_obj)
-            if media_schema is None:
-                continue
-            schema_path = self._media_schema_path([*path, media_type], from_item_schema=media_schema.from_item_schema)
-            data_type = self._parse_schema_or_ref(
-                name, media_schema.schema, schema_path, location=media_schema.location
-            )
-            data_types[media_type] = data_type
+            if (data_type := self._parse_media_schema(name, media_obj, [*path, media_type])) is not None:
+                data_types[media_type] = data_type
         return data_types
 
     def parse_responses(
@@ -1013,14 +1020,8 @@ class OpenAPIParser(JsonSchemaParser):
 
             for content_type, obj in content.items():
                 response_path: list[str] = [*path, str(status_code), str(content_type)]
-                media_schema = self._get_media_schema(obj)
-                if media_schema is None:
-                    continue
-                schema_path = self._media_schema_path(response_path, from_item_schema=media_schema.from_item_schema)
-                data_type = self._parse_schema_or_ref(
-                    response_name, media_schema.schema, schema_path, location=media_schema.location
-                )
-                data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
+                if (data_type := self._parse_media_schema(response_name, obj, response_path)) is not None:
+                    data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
 
         return data_types
 
@@ -1288,19 +1289,18 @@ class OpenAPIParser(JsonSchemaParser):
 
     def _missing_references_of_parameter_models(self) -> set[str]:
         """Return the paths of the models that parameter models use, directly or through others, but lack."""
+        from datamodel_code_generator._graph import reach  # noqa: PLC0415
+
         models = {model.path: model for model in self.results}
-        pending = [model for model, _ in self._parameter_models]
-        seen = {model.path for model in pending}
-        missing: set[str] = set()
-        while pending:
-            model = pending.pop()
-            for path in model.reference_classes.union(model.additional_properties_reference_classes) - seen:
-                seen.add(path)
-                if (used := models.get(path)) is None:
-                    missing.add(path)
-                else:
-                    pending.append(used)
-        return missing
+        parameter_models = [model for model, _ in self._parameter_models]
+        walked = {model.path for model in parameter_models}
+
+        def used(*users: DataModel) -> set[str]:
+            paths = (user.reference_classes.union(user.additional_properties_reference_classes) for user in users)
+            return set().union(*paths) - walked
+
+        reached = reach(used(*parameter_models), lambda path: used(models[path]) if path in models else ())
+        return {path for path in reached if path not in models}
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Index discriminator metadata when the existing loader reads an external document."""

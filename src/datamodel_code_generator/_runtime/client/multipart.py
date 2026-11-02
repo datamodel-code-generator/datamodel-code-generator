@@ -20,8 +20,8 @@ import httpx2
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
+from ..model_codecs.media import JSON_MEDIA_TYPE, media_kind
 from ..model_codecs.media import json_bytes as _json_bytes
-from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import UNSET
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
@@ -54,7 +54,6 @@ _TEXT: Final = "A text part carries a scalar"
 _DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
 _OCTETS: Final = "application/octet-stream"
-_JSON: Final = "application/json"
 _FORM_DATA: Final = "multipart/form-data"
 
 
@@ -215,18 +214,14 @@ def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[b
             case str():
                 return value.encode(), None
             case Mapping() | list():
-                return _json_bytes(value), "application/json"
+                return _json_bytes(value), JSON_MEDIA_TYPE
             case _:
                 return _json_bytes(value), None
-    match media_kind(media_type), value:
-        case "json", _:
-            return _json_bytes(value), media_type
-        case _, Mapping() | list():
-            raise ParameterEncodingError(_TEXT)
-        case _, str():
-            return encode_text(value, media_type), media_type
-        case _:
-            return encode_text(_json_bytes(value).decode(), media_type), media_type
+    if media_kind(media_type) == "json":
+        return _json_bytes(value), media_type
+    if isinstance(value, Mapping | list):
+        raise ParameterEncodingError(_TEXT)
+    return encode_text(value if isinstance(value, str) else _json_bytes(value).decode(), media_type), media_type
 
 
 def _entry(
@@ -292,7 +287,7 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
 
 def _shaped(plan: PartPlan | None) -> Literal["application/json"] | None:
     """Return the media type a member's plan gives each value: JSON for the JSON kind, else the value's shape's."""
-    return _JSON if plan is not None and plan.kind == "json" else None
+    return JSON_MEDIA_TYPE if plan is not None and plan.kind == "json" else None
 
 
 def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = None) -> tuple[bytes | FormParts, str]:

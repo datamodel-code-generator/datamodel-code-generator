@@ -25,6 +25,7 @@ from weakref import ReferenceType, WeakKeyDictionary, ref
 from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
+from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.util import load_toml
 
@@ -75,13 +76,12 @@ def _local_package_modules(module: ModuleType, *, previous_modules: frozenset[st
     if package_paths is None:
         return (module.__name__,)
     roots = tuple(Path(path).resolve(strict=False) for path in package_paths)
-    prefix = f"{module.__name__}."
     loaded_modules = sys.modules.copy()
     local_modules = tuple(
         name
         for name, candidate in loaded_modules.items()
         if name not in previous_modules
-        and name.startswith(prefix)
+        and is_below_name(name, module.__name__)
         and isinstance(candidate, ModuleType)
         and (source_path := _module_source_path(candidate)) is not None
         and any(source_path.is_relative_to(root) for root in roots)
@@ -153,12 +153,12 @@ class _WatchSourceFinder:
     """Wrap only current-package child imports with source-first loading."""
 
     def __init__(self, package_name: str) -> None:
-        self._prefix = f"{package_name}."
+        self._package = package_name
 
     def find_spec(
         self, fullname: str, path: Sequence[str] | None = None, target: ModuleType | None = None
     ) -> ModuleSpec | None:
-        if not fullname.startswith(self._prefix) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
+        if not is_below_name(fullname, self._package) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
             return None
         if spec.loader is not None and callable(getattr(spec.loader, "get_source", None)):
             spec.loader = _WatchSourceLoader(spec.loader, spec.origin)
@@ -189,8 +189,7 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
 
 def _package_modules(name: str, modules: dict[str, ModuleType]) -> dict[str, ModuleType]:
     """Return the modules of `modules` that are the package `name` or one of its submodules."""
-    prefix = f"{name}."
-    return {loaded: module for loaded, module in modules.items() if loaded == name or loaded.startswith(prefix)}
+    return {loaded: module for loaded, module in modules.items() if is_within_name(loaded, name)}
 
 
 def _restore_watch_package(
@@ -902,3 +901,31 @@ class CustomCodeFormatter:
     def apply(self, code: str) -> str:
         """Apply formatting to code. Must be implemented by subclasses."""
         raise NotImplementedError
+
+
+def _model_formatter_arguments(
+    settings: Any, *, custom_formatters: list[str] | None, backend: type[Any], is_multi_module_output: bool
+) -> dict[str, Any]:
+    """Return the arguments of a code formatter that the model settings give, by `CodeFormatter` parameter name.
+
+    `settings` is a `GenerateConfig` or a parser, read when called; the parser names its custom formatters
+    `custom_formatter`, so they are passed apart. Imports used only for type checking move into `TYPE_CHECKING` blocks
+    unless `settings` decides: the model class `backend` and whether the output has several modules give the default.
+    The caller adds the settings path, the third-party packages, deferred formatting and the formatter directory.
+    """
+    return {
+        "python_version": settings.target_python_version,
+        "wrap_string_literal": settings.wrap_string_literal,
+        "skip_string_normalization": not settings.use_double_quotes,
+        "custom_formatters": custom_formatters,
+        "custom_formatters_kwargs": settings.custom_formatters_kwargs,
+        "encoding": settings.encoding,
+        "formatters": settings.formatters,
+        "builtin_format_line_length": settings.builtin_format_line_length,
+        "use_type_checking_imports": resolve_use_type_checking_imports(
+            settings.use_type_checking_imports,
+            is_multi_module_output=is_multi_module_output,
+            formatters=settings.formatters,
+            requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
+        ),
+    }

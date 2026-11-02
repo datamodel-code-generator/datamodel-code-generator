@@ -27,6 +27,7 @@ __all__ = [
     "FieldFacts",
     "FieldIdentity",
     "FieldRow",
+    "uses_default_with_required",
 ]
 
 FieldRow: TypeAlias = Literal[
@@ -186,3 +187,12 @@ other rows build through the field class."""
 
 FIELD_ROWS_WITHOUT_VALIDATION_ALIASES: Final[frozenset[FieldRow]] = frozenset({"typename"})
 """The rows whose ``alias`` is one output alias: they leave ``validation_aliases`` unset."""
+
+
+def uses_default_with_required(*, required: bool, has_default: bool, use_default: bool) -> bool:
+    """Return whether a field keeps its default beside ``required`` (``use_default_with_required``).
+
+    ``--use-default`` (``use_default``) keeps the default of a required field that has one, wherever a parser builds
+    the field or makes it required later.
+    """
+    return required and use_default and has_default

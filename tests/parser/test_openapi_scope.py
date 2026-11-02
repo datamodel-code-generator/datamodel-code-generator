@@ -14,12 +14,20 @@ from datamodel_code_generator.enums import AllExportsScope
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_scope import ApiModelResolver, ApiOpenAPIParser
-from tests.conftest import assert_directory_content, assert_inputs_not_mutated, assert_output, stored_expected
+from tests.conftest import (
+    CHECK_SCHEMA_GRAPH_ENV,
+    assert_directory_content,
+    assert_inputs_not_mutated,
+    assert_output,
+    stored_expected,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
+    from datamodel_code_generator.parser.openapi_scope import SchemaRole
+    from datamodel_code_generator.reference import SchemaLocation
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
@@ -537,3 +545,80 @@ def test_api_case_sensitive_declarations(case: str) -> None:
         ),
         EXPECTED / f"{case}.py",
     )
+
+
+class _SiteWriterParser(ApiOpenAPIParser):
+    """Reads the site of each schema it acquires, writes a keyword into the document there, and reads the site again."""
+
+    def _acquire_schema(
+        self, name: str, raw: Any, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
+    ) -> None:
+        super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
+        self._site_facts(declaration)
+        raw["format"] = "written"
+        self._site_facts(declaration)
+
+
+class _EarlySiteReader(ApiOpenAPIParser):
+    """Reads the site of each schema it acquires before the parser has loaded the documents it references.
+
+    The check raises at that read, so the schema is never parsed.
+    """
+
+    def _acquire_schema(self, *_: Any, declaration: SchemaLocation, **__: Any) -> None:
+        self._site_facts(declaration)
+
+
+def test_api_schema_site_check_of_a_reader_that_writes_the_document(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A schema site read again after a reader wrote the document there differs from the documents, and is reported.
+
+    The check (`1`, as the test suite sets it) reads each kept site anew at every read of it and raises.
+    """
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "1")
+    parser = _SiteWriterParser(SOURCE / "declarations.json", openapi_scopes=[OpenAPIScope.Api], formatters=[])
+    try:
+        with pytest.raises(
+            Error,
+            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the schema site kept for "
+            "declarations.json#/components/parameters/Page/schema differs from the documents$",
+        ):
+            parser.parse()
+    finally:
+        parser.dispose()
+
+
+def test_api_schema_site_check_of_a_site_read_before_its_reference_loads(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A schema site read before the document its `$ref` names is loaded has a reference that leads nowhere, reported.
+
+    The parameter's schema references `other.json`, which the parser loads only when it parses that schema.
+    """
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "1")
+    (tmp_path / "other.json").write_text('{"B": {"type": "string"}}', encoding="utf-8")
+    (tmp_path / "api.json").write_text(
+        json.dumps({
+            "openapi": "3.1.0",
+            "info": {"title": "t", "version": "1"},
+            "paths": {
+                "/a": {
+                    "get": {
+                        "operationId": "getA",
+                        "parameters": [{"name": "p", "in": "query", "schema": {"$ref": "other.json#/B"}}],
+                        "responses": {"200": {"description": "ok"}},
+                    }
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    parser = _EarlySiteReader(tmp_path / "api.json", openapi_scopes=[OpenAPIScope.Api], formatters=[])
+    try:
+        with pytest.raises(
+            Error,
+            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the \\$ref other.json#/B of the schema site "
+            "api.json#/paths/~1a/get/parameters/0/schema leads to no loaded schema$",
+        ):
+            parser.parse()
+    finally:
+        parser.dispose()

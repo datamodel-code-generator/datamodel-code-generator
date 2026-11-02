@@ -1,0 +1,13 @@
+{
+  "title": "Patterns",
+  "type": "object",
+  "properties": {
+    "plain": {"type": "string", "pattern": "^\\d+$"},
+    "quote": {"type": "string", "pattern": "^it's$"},
+    "backslash_quote": {"type": "string", "pattern": "^it\\'s$"},
+    "newline": {"type": "string", "pattern": "^a\nb$"},
+    "null_byte": {"type": "string", "pattern": "^a\u0000b$"},
+    "quote_comment": {"type": "string", "pattern": "^a\\' #"},
+    "quote_expression": {"type": "string", "pattern": "^a\\' if 1 else 2 #"}
+  }
+}

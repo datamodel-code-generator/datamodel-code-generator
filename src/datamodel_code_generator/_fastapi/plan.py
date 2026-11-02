@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._fastapi.routes import (
     BUILDER_NAMES,
@@ -35,6 +36,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
+    JSON_MEDIA_TYPE,
     OK,
     SUCCESS_STATUSES,
     FieldPlan,
@@ -60,10 +62,12 @@ from datamodel_code_generator._target_contract import (
     Requirement,
     UnionType,
     api_key_place,
+    children_of,
     fact,
     http_scheme,
     is_required,
     label,
+    literal_text,
     members_by_consumer,
     operation_schemes,
     parameter_place,
@@ -99,13 +103,13 @@ from datamodel_code_generator._target_operations import (
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present
+from datamodel_code_generator._target_types import present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -137,11 +141,8 @@ SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "digest", "oauth2"
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
-ItemT = TypeVar("ItemT")
-ReadT = TypeVar("ReadT")
 
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
-_JSON: Final = "application/json"
 _PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
 _TEXT: Final = FieldPlan("")
 _STYLES: Final[dict[str, frozenset[str]]] = {
@@ -465,7 +466,7 @@ def _link_operation_problem(link: WireDeclaration) -> str | None:
     if len(named) > 1:
         return f"The link {link.name!r} names its operation with both operationRef and operationId"
     key, value = named[0]
-    if isinstance(value, LiteralScalar) and isinstance(value.value, str):
+    if literal_text(value) is not None:
         return None
     return f"The link {link.name!r} has an {key} that is not a string"
 
@@ -474,7 +475,7 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
     """Return the problems of the operations' response links that reach no link naming an operation."""
     problems: list[Diagnostic] = []
     for operation in operations:
-        for link in (child for response in operation.responses for child in response.children if child.kind == "link"):
+        for link in (child for response in operation.responses for child in children_of(response, "link")):
             if (unresolved := _unresolved("F_LINK_INVALID", "link", link)) is not None:
                 problems.append(unresolved)
             elif (message := _link_operation_problem(link)) is not None:
@@ -508,7 +509,7 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
 def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
     """Return the encodings a media declares."""
-    return (child for child in media.declaration.children if child.kind == "encoding")
+    return children_of(media.declaration, "encoding")
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -992,8 +993,8 @@ class Planner:  # noqa: PLR0904
         match value:
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
                 return value
-            case UnionType() if len(members := present(value)) == 1:
-                return self.member(members[0])
+            case UnionType() if (member := sole_present(value)) is not None:
+                return self.member(member)
             case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
                 return self.member(value.arguments[0])
             case _:
@@ -1130,7 +1131,7 @@ class Planner:  # noqa: PLR0904
         FastAPI takes the JSON null of a required body for an omitted one, so an adapter reads a required JSON body
         whose type accepts null.
         """
-        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in children_of(declaration, "media"))
         for item in media:
             self.bound(item.use)
         spec = BodySpec(required=is_required(declaration), media=media, decision=Decision(transport="adapter"))
@@ -1341,7 +1342,7 @@ class Planner:  # noqa: PLR0904
 
         A response whose default media is JSON of a type that accepts null sends None as null, as the models decide.
         """
-        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in children_of(declaration, "media"))
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
@@ -1493,16 +1494,6 @@ class Planner:  # noqa: PLR0904
         return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
 
 
-def _all(items: Sequence[ItemT], read: Callable[[ItemT], ReadT | None]) -> tuple[ReadT, ...] | None:
-    """Return what `read` takes from every item, or None when it takes nothing from one."""
-    found = tuple(value for item in items if (value := read(item)) is not None)
-    return found if len(found) == len(items) else None
-
-
-def _text(value: FrozenLiteral) -> str | None:
-    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
-
-
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     if (place := api_key_place(declaration)) is not None:
         location, parameter = place
@@ -1527,7 +1518,10 @@ def json_literal(value: FrozenLiteral) -> JSONValue:
     """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
     if isinstance(value, LiteralSequence):
         return [json_literal(item) for item in value.items]
-    if isinstance(value, LiteralMapping) and (names := _all(value.entries, lambda entry: _text(entry[0]))) is not None:
+    if (
+        isinstance(value, LiteralMapping)
+        and (names := all_or_none(literal_text(key) for key, _ in value.entries)) is not None
+    ):
         return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
     if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
         return scalar
@@ -1558,7 +1552,7 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
     native = (
         not bodyless
         and media is not None
-        and media.media_type == _JSON
+        and media.media_type == JSON_MEDIA_TYPE
         and (use := media.use) is not None
         and use.type is not None
     )
@@ -1585,10 +1579,10 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
     scalar: BuiltinType | ImportedType | None = None
     identity: tuple[str | None, str] = (None, "")
     match value:
-        case UnionType() if len(scalars := present(value)) == 1:
-            if (constrained := _constrained(scalars[0], constraints)) is None:
+        case UnionType() if (member := sole_present(value)) is not None:
+            if (constrained := _constrained(member, constraints)) is None:
                 return None
-            members = tuple(constrained if item is scalars[0] else item for item in value.members)
+            members = tuple(constrained if item is member else item for item in value.members)
             return replace(value, members=members, hint=None)
         case BuiltinType():
             scalar, identity = value, (None, value.name)
@@ -1622,8 +1616,11 @@ def _strict(value: TypeView) -> bool:
 def _literal(value: FrozenLiteral | None) -> LiteralScalar | LiteralSequence | None:
     """Return a recorded JSON boolean, number, or string, or a list of them, as a literal."""
     if isinstance(value, LiteralSequence):
-        items = tuple(item for element in value.items if isinstance(item := _literal(element), LiteralScalar))
-        return LiteralSequence("list", items) if len(items) == len(value.items) else None
+        return None if (items := all_or_none(map(_scalar, value.items))) is None else LiteralSequence("list", items)
+    return _scalar(value)
+
+
+def _scalar(value: FrozenLiteral | None) -> LiteralScalar | None:
     return value if isinstance(value, LiteralScalar) and value.kind in _LITERAL_KINDS else None
 
 
@@ -1663,7 +1660,7 @@ def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | No
 def default_media(response: ResponseSpec) -> MediaSpec | None:
     """Return the media a response takes without a choice: JSON, then +json, then the first declared."""
     return (
-        next((item for item in response.media if item.media_type == _JSON), None)
+        next((item for item in response.media if item.media_type == JSON_MEDIA_TYPE), None)
         or next((item for item in response.media if essence(item.media_type).endswith("+json")), None)
         or next(iter(response.media), None)
     )

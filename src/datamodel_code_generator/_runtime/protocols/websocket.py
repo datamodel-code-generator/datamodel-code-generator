@@ -47,7 +47,7 @@ from .errors import (
     MAX_CLOSE_REASON,
     ProtocolDataError,
     WebSocketClosedError,
-    configuration_error,
+    state_error,
 )
 from .options import HelperLimits, WSOptions, layered, new_session
 from .records import SessionState
@@ -327,8 +327,8 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return a failure of the HTTPX2 session, such as its network error, as the session's lost connection."""
         return self._stamped(APIConnectionError(cause=error))
 
-    def _state_error(self, action: str) -> ConfigurationError:
-        return self._stamped(configuration_error(self._plan.helper_id, (action, self._state.value), "invalid_state"))
+    def _state_error(self, action: str, state: str | None = None) -> ConfigurationError:
+        return self._stamped(state_error(self._plan.helper_id, action, self._state.value if state is None else state))
 
     def _close_error(self) -> WebSocketClosedError:
         code, reason, clean = self._closed
@@ -349,7 +349,8 @@ class _Sockets(Generic[SendT, RecvT]):
     def _enter_receive(self) -> None:
         """Take the session's one receive, refusing a concurrent one and an ended session."""
         if not self._receiving.acquire(blocking=False):
-            raise self._stamped(configuration_error(self._plan.helper_id, ("receive", "receiving"), "invalid_state"))
+            msg = "receive"
+            raise self._state_error(msg, "receiving")
         try:
             self._usable("receive")
         except BaseException:

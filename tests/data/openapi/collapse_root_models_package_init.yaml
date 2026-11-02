@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    pkg.Holder:
+      type: object
+      properties:
+        r: {$ref: '#/components/schemas/other.Root'}
+        l:
+          type: array
+          items: {$ref: '#/components/schemas/other.Root'}
+        m:
+          type: object
+          propertyNames: {$ref: '#/components/schemas/other.KindKey'}
+          additionalProperties: {type: integer}
+    pkg.sub.X:
+      type: object
+      properties: {a: {type: string}}
+    other.Root:
+      type: array
+      items: {$ref: '#/components/schemas/third.Thing'}
+    other.KindKey:
+      $ref: '#/components/schemas/third.Kind'
+    third.Thing:
+      type: object
+      properties: {b: {type: string}}
+    third.Kind:
+      type: string
+      enum: [small, large]

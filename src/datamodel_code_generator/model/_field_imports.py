@@ -4,9 +4,10 @@
 filtered and completed by the typing names (``Union``, ``Optional``, ``Annotated``, ``Any``) the hint writes, which
 ``typing_import_requirements`` gathers over the type tree into a ``_TypingImportNames``. A simple type whose hint
 needs no typing name is read without rendering the hint (``can_collect_imports_without_type_hint``). The None a field
-writes comes from ``DataModelFieldBase._field_null_source``; ``write_pre_render_nullability`` writes the None of the
-nullable models a type names before rendering. Every function takes the field (``FieldImportsHost``) first and
-reaches the field's members through it, so a subclass that overrides a member keeps seeing the calls;
+writes comes from ``field_none_source``, which ``DataModelFieldBase._field_null_source`` and ``field_admits_none`` call;
+``write_pre_render_nullability`` writes the None of the nullable models a type names before rendering. Every function
+takes the field (``FieldImportsHost``) first and reaches the field's members through it, so a subclass that overrides
+a member keeps seeing the calls;
 ``DataModelFieldBase`` keeps each moved method as a delegator, and ``model/base.py`` keeps importing the names other
 modules import from it. The module reads data types and references through the protocols below and imports neither
 ``types`` nor ``reference``: both reach ``model.base``, which imports this module.
@@ -173,6 +174,14 @@ class _DataTypeView(Protocol):  # noqa: PLR0904
     @property
     def _is_container(self) -> bool:
         """Whether the type is a container."""
+
+    @property
+    def _own_text(self) -> str | None:
+        """The text the type writes of its own: its alias, else its type."""
+
+    @property
+    def _writes_nothing_of_its_own(self) -> bool:
+        """Whether the type writes no text, names no model and is no container."""
 
     @property
     def is_union(self) -> bool:
@@ -622,21 +631,35 @@ def data_type_writes_hint(field_type: type[FieldImportsHost[_D]], data_type: _D)
 
 def mapping_writes_value(field_type: type[FieldImportsHost[_D]], data_type: _D) -> bool:
     """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
-    return bool(data_type.alias or data_type.type) or any(
+    return bool(data_type._own_text) or any(  # noqa: SLF001
         field_type._data_type_writes_hint(child)  # noqa: SLF001
         for child in data_type.data_types
     )
 
 
 def data_type_has_renderable_structure(data_type: _DataTypeView) -> bool:
-    if data_type.alias or data_type.type or data_type.reference:
+    if not data_type._writes_nothing_of_its_own:  # noqa: SLF001
         return True
-    return bool(
-        data_type.data_types
-        or data_type.dict_key
-        or data_type.literals
-        or data_type.enum_member_literals
-        or data_type._is_container  # noqa: SLF001
+    return bool(data_type.data_types or data_type.dict_key or data_type.literals or data_type.enum_member_literals)
+
+
+def field_none_source(
+    field: FieldImportsHost[_D], *, hint_has_none: bool, pending_reference_null: bool = False
+) -> FieldNullSource | None:
+    """Return why the field writes None around its type's hint (``field_renders_none``), from the field's own facts.
+
+    A required field passes whether its schema type admits null and an optional one its backend's fall-back, as
+    ``field_renders_none`` reads only the one that applies.
+    """
+    required = field.required
+    return field_renders_none(
+        hint_has_none=hint_has_none,
+        has_default_factory=field.has_default_factory,
+        nullable=field.nullable,
+        required=required,
+        type_has_null=required and field.type_has_null,
+        fall_back_to_nullable=not required and field.fall_back_to_nullable,
+        pending_reference_null=pending_reference_null,
     )
 
 
@@ -646,15 +669,7 @@ def field_admits_none(field: FieldImportsHost[_D]) -> bool:
     return (
         data_type.admits_none
         or field._data_type_renders_none(data_type)  # noqa: SLF001
-        or field_renders_none(
-            hint_has_none=False,
-            has_default_factory=field.has_default_factory,
-            nullable=field.nullable,
-            required=(required := field.required),
-            type_has_null=required and field.type_has_null,
-            fall_back_to_nullable=not required and field.fall_back_to_nullable,
-        )
-        is not None
+        or field_none_source(field, hint_has_none=False) is not None
     )
 
 
@@ -730,6 +745,4 @@ def needs_optional_import_without_type_hint(field: FieldImportsHost[_D], *, data
 def has_renderable_data_type_without_type_hint(field: FieldImportsHost[_D], *, data_type: _D | None = None) -> bool:
     """Return whether this simple DataType renders to something other than None."""
     data_type = data_type or field.data_type
-    return bool(
-        data_type.alias or data_type.type or data_type.reference or data_type._is_container  # noqa: SLF001
-    )
+    return not data_type._writes_nothing_of_its_own  # noqa: SLF001

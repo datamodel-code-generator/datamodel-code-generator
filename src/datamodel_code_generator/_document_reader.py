@@ -4,13 +4,15 @@ A YAML key such as ``1`` or ``200`` loads as a number. A key that names a compon
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
 must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
-JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member.
+JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
+the fields of an AsyncAPI channel that each hold an operation and the reference a discriminator mapping value names
+(``discriminator_mapping_ref``).
 """
 
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Sentinel
 
@@ -23,11 +25,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
 
 __all__ = [
+    "CHANNEL_OPERATIONS",
     "MISSING",
     "ArrayIndexOutOfRangeError",
     "MemberRow",
     "as_mapping",
     "descend",
+    "discriminator_mapping_ref",
     "document_statuses",
     "member",
     "string_key",
@@ -35,6 +39,10 @@ __all__ = [
 ]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
+CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
+"""The fields of an AsyncAPI 2 channel that each hold an operation, in the order generation and the recommender read
+them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
+_T = TypeVar("_T")
 
 MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]
 """How a reader reads one token's member of a loaded value (``member``)."""
@@ -143,15 +151,26 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
         string_key(key, kind, error_path)
 
 
-def document_statuses(
-    responses: Mapping[Any, YamlValue], error_path: Callable[[str], list[str]]
-) -> dict[str, YamlValue]:
+def discriminator_mapping_ref(value: str) -> str:
+    """Return the reference a discriminator mapping value names.
+
+    A value with a ``/`` or a ``#`` is a reference or a path (``#/components/schemas/Pet``, ``./other.yaml#/Pet``,
+    ``schemas/Pet``) and stays as it is. Any other value, a dot included (``Pet``, ``Pet.V1``), names a schema of
+    ``#/components/schemas/``; a bare file name such as ``other.yaml`` is a schema name, so a file is written
+    ``./other.yaml``.
+    """
+    if "/" in value or "#" in value:
+        return value
+    return f"#/components/schemas/{value}"
+
+
+def document_statuses(responses: Mapping[Any, _T], error_path: Callable[[str], list[str]]) -> dict[str, _T]:
     """Return ``responses`` by their status, the text of their key.
 
     Two keys such as ``200`` and ``'200'`` give one status twice: it is an error at ``error_path(status)``.
     """
     keys: dict[str, object] = {}
-    statuses: dict[str, YamlValue] = {}
+    statuses: dict[str, _T] = {}
     for key, value in responses.items():
         if (status := str(key)) in keys:
             msg = f"response status {status} is given by two keys, {keys[status]!r} and {key!r}"

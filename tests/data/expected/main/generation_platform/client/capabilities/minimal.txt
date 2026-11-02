@@ -10,26 +10,26 @@ copied runtime
   client/content.py: 108
   client/errors.py: 349
   client/logical.py: 224
-  client/media.py: 43
+  client/media.py: 53
   client/native.py: 187
-  client/operations.py: 860
+  client/operations.py: 859
   client/options.py: 312
   client/paths.py: 47
   client/positions.py: 129
-  client/raw.py: 714
+  client/raw.py: 715
   client/responses.py: 87
   client/retry.py: 321
   client/timing.py: 166
   client/urls.py: 88
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
-  model_codecs/media.py: 544
-  model_codecs/parameters.py: 390
+  model_codecs/media.py: 558
+  model_codecs/parameters.py: 386
   model_codecs/pydantic_adapters.py: 51
   model_codecs/pydantic_models.py: 31
   model_codecs/shared.py: 70
   model_codecs/unset.py: 11
-total 25 modules, 6432 lines
+total 25 modules, 6452 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

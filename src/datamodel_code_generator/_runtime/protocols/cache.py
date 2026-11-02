@@ -20,7 +20,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.media import LENIENT_QUOTED, NOT_MODIFIED, TCHARS, ascii_digits, normalized
+from ..model_codecs.media import LENIENT_QUOTED, NOT_MODIFIED, TCHARS, ascii_digits, fields_without, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
@@ -182,7 +182,7 @@ def _age(entry: CacheEntry, now: float) -> float:
 
 
 def _without(headers: HeadersView, names: frozenset[str], length: int) -> list[tuple[str, str]]:
-    kept = [(name, value) for name, value in headers if name.lower() not in names]
+    kept = fields_without(headers, names)
     kept.append(("Content-Length", str(length)))
     return kept
 
@@ -190,7 +190,7 @@ def _without(headers: HeadersView, names: frozenset[str], length: int) -> list[t
 def _merged(stored: HeadersView, update: HeadersView, length: int) -> HeadersView:
     """Return stored headers with every field a 304 gives replaced by its values, except fields it may not update."""
     replaced = {name.lower() for name, _ in update if name.lower() not in _UNMERGED}
-    kept = [(name, value) for name, value in stored if name.lower() not in replaced]
+    kept = fields_without(stored, replaced)
     added = [(name, value) for name, value in update if name.lower() in replaced]
     return HeadersView(_without(HeadersView((*kept, *added)), frozenset({"content-length"}), length))
 

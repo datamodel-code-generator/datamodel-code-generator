@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
     intersect_multiple_of,
+    intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
@@ -30,6 +30,7 @@ from datamodel_code_generator.types import ANY, DataType, UnionIntFloat
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from datamodel_code_generator.enums import AllOfMergeMode
     from datamodel_code_generator.parser._schema_graph import _TargetNode
 
 __all__ = [
@@ -135,7 +136,7 @@ def merge_primitive_schemas_for_allof(
     if len(formats) > 1:
         return None
 
-    if parser.allof_merge_mode != AllOfMergeMode.NoMerge:
+    if intersects_all_of_constraints(parser.allof_merge_mode.value):
         base_dict = parser._merge_primitive_schemas(items).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
     else:
         base_dict = type(parser)._first_typed_schema_dict(items)  # noqa: SLF001
@@ -264,7 +265,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
         return False
 
     candidate = data_type
-    if not candidate.is_list and len(candidate.data_types) == 1 and candidate.data_types[0].is_list:
+    if candidate._wraps_one_list:  # noqa: SLF001
         candidate = candidate.data_types[0]
 
     if not candidate.is_list or len(candidate.data_types) != 1:
@@ -273,7 +274,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
     item_type = candidate.data_types[0]
     while len(item_type.data_types) == 1:
         inner = item_type.data_types[0]
-        if (not item_type.is_list and inner.is_list) or item_type.is_list:
+        if item_type.is_list or item_type._wraps_one_list:  # noqa: SLF001
             item_type = inner
         else:
             break

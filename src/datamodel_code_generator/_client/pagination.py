@@ -18,6 +18,7 @@ from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._json_pointer import pointer_tokens
+from datamodel_code_generator._json_schema import admitted_types
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
@@ -27,7 +28,7 @@ from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
-from datamodel_code_generator._target_types import admits_none, present
+from datamodel_code_generator._target_types import admits_none, sole_present
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterator
@@ -173,7 +174,7 @@ def _json_type(value: object) -> str:
 
 
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
-    return accepted is None or kind in accepted or (kind == "integer" and "number" in accepted)
+    return accepted is None or kind in admitted_types(accepted)
 
 
 def _branches(value: TypeView) -> bool:
@@ -275,9 +276,7 @@ class _Pages(HelperPlanner):
     def present(self, value: TypeView) -> TypeView:
         """Return a type without None, through its aliases."""
         value = self.facts.plain(value)
-        if isinstance(value, UnionType) and len(members := present(value)) == 1:
-            return self.facts.plain(members[0])
-        return value
+        return value if (member := sole_present(value)) is None else self.facts.plain(member)
 
     def single(
         self, spec: OperationSpec, at: str, what: str

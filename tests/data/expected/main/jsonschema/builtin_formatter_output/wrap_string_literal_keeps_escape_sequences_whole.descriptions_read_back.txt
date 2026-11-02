@@ -1,0 +1,8 @@
+{
+  "backslash": true,
+  "newline": true,
+  "hex": true,
+  "unicode": true,
+  "quote": true,
+  "spaces": true
+}

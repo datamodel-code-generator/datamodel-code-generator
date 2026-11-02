@@ -15,7 +15,7 @@ Legacy rows, each named by the function that decides it:
   the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
   emitted type.
 * ``legacy-exact-ints-as-floats`` (``exact_float``): the schema models read an int constraint as a float where one
-  equals it, and keep the int only where a float would differ.
+  equals it and is written as it, and keep the int only where a float would differ.
 * ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``): the ``Literal`` of a ``const`` or an
   ``enum`` takes no keyword of a kind its schema does not declare, though it takes those of its values' type for a
   declared one. The literal check (``literal_check``) decides such a keyword on the values where it can, so the row
@@ -26,6 +26,9 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
   drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
   every constraint of a field whose type holds it outside a container when they write the field, with a warning.
+* ``legacy-msgspec-float-bounds`` (``integer_bound``): the check of a msgspec union reads the bound of a float member
+  as the float it is, so an integral bound past ``2**53`` is the integer of its binary value, where the schema models
+  read the decimal that is written.
 
 This module is a leaf (the standard library, ``typing_extensions``, ``enums`` and ``_requirements``): ``types.py``
 builds the public tables of ``DataTypeManager`` from it while it is imported, and the model package imports
@@ -37,11 +40,11 @@ from __future__ import annotations
 import operator
 from dataclasses import replace
 from fractions import Fraction
-from math import inf, isfinite
+from math import ceil, floor, inf, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
-from typing_extensions import final
+from typing_extensions import TypeIs, final
 
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import pattern_admits
@@ -94,7 +97,10 @@ __all__ = [
     "inexact_float_divisor",
     "int_beyond_values",
     "int_constraint_beyond_values",
+    "integer_bound",
     "is_non_finite",
+    "json_integer",
+    "json_number",
     "keyword_kinds",
     "length_reading",
     "listed_type_keywords",
@@ -796,6 +802,16 @@ _BOUND_CHECKS: Final[Mapping[str, Callable[[float, float], bool]]] = MappingProx
 })
 
 
+def json_integer(value: object) -> TypeIs[int]:
+    """Return whether a JSON value is an integer: an int, a ``bool`` being none."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def json_number(value: object) -> TypeIs[int | float]:
+    """Return whether a JSON value is a number: an int or a float, a ``bool`` being none."""
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
 def _meets_length(value: object, keyword: str, limit: float) -> bool:
     """Return whether a JSON value meets a length keyword, counting the code points of a string."""
     if not isinstance(value, str):
@@ -815,7 +831,7 @@ def _meets(value: object, keyword: str, limit: float | str) -> bool | None:
         return pattern_admits(limit, value) if isinstance(value, str) else True
     if keyword in LENGTH_KEYWORDS:
         return _meets_length(value, keyword, limit)
-    if isinstance(value, bool) or not isinstance(value, int | float):
+    if not json_number(value):
         return True
     if (check := _BOUND_CHECKS.get(keyword)) is not None:
         return check(value, limit)
@@ -883,16 +899,44 @@ def saturating_float(number: float) -> float:
 
 
 def exact_float(number: int) -> float | None:
-    """Return an int as the float that equals it, or None when the float range or its precision cannot hold it.
+    """Return an int as the float that equals it and is written as it, or None when a float would differ.
 
     Row ``legacy-exact-ints-as-floats``: the schema models read an int constraint as a float where one equals it
-    (``-2**63``, ``2**64``) and keep the int only where a float would differ.
+    (``-2**63``, ``2**53``) and keep the int where the float range or its precision cannot hold it, or where the
+    decimal the float is written as is another number (``2**64`` is written ``18446744073709552000``), since the
+    constraints of an integer are read as the decimal written (``integer_bound`` ``exact``).
     """
     try:
         float_value = float(number)
     except OverflowError:
         return None
-    return float_value if float_value == number else None
+    return float_value if float_value == number == Fraction(str(float_value)) else None
+
+
+_INTEGER_BOUNDS: Final[Mapping[str, tuple[Literal["ge", "le"], Callable[[Any], int], int]]] = MappingProxyType({
+    "ge": ("ge", ceil, 0),
+    "gt": ("ge", floor, 1),
+    "le": ("le", floor, 0),
+    "lt": ("le", ceil, -1),
+})
+
+
+def integer_bound(
+    keyword: str, value: float, *, arithmetic: Literal["exact", "float"]
+) -> tuple[Literal["ge", "le"], int] | None:
+    """Return the ``ge`` or ``le`` that the integers a ``ge``, ``gt``, ``le`` or ``lt`` bound admits come to, or None.
+
+    The least integer a lower bound admits and the greatest an upper bound admits: the ceiling or the floor of the
+    bound, one more or less for an exclusive one. ``exact`` reads the bound as the decimal it is written (``1e300`` is
+    ``10**300``); ``float`` reads the float it is (``int(1e300)``).
+
+    Row ``legacy-msgspec-float-bounds``: the check of a msgspec union reads a bound ``float``, so an integral bound
+    past ``2**53`` is the integer of its binary value, where the schema models read it ``exact``.
+    """
+    if (row := _INTEGER_BOUNDS.get(keyword)) is None:
+        return None
+    side, rounding, offset = row
+    return side, rounding(Fraction(str(value)) if arithmetic == "exact" else value) + offset
 
 
 def is_non_finite(number: float) -> bool:

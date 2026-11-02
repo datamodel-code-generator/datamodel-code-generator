@@ -532,7 +532,7 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/parser/test_output_context.py::datamodel_code_generator.parser._output_context",
         "private-import:tests/parser/test_python_type_imports.py::datamodel_code_generator._python_type_annotation",
         "private-import:tests/parser/test_python_type_imports.py::datamodel_code_generator._python_type_binding",
-        "private-import:tests/parser/test_python_type_imports.py::datamodel_code_generator.parser._passes._shared",
+        "private-import:tests/parser/test_python_type_imports.py::datamodel_code_generator.parser._passes._import_aliases",
         "private-import:tests/parser/test_python_type_imports.py::datamodel_code_generator.parser._python_type_imports",
         "private-import:tests/parser/test_scc.py::datamodel_code_generator.parser._scc",
         "private-import:tests/parser/test_schema_version.py::datamodel_code_generator.parser.jsonschema._DEFAULT_SCHEMA_PATHS",

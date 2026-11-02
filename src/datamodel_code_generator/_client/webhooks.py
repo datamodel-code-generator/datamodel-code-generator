@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
 from datamodel_code_generator._client.facade import facade_module
 from datamodel_code_generator._client.naming import twin_name
@@ -195,8 +196,8 @@ def webhook_uses(
     specs: list[WebhookSpec] = []
     for helper in helpers:
         events = [event(helper, name, reference, where) for where, name, reference in _events(helper)]
-        if all(item is not None for item in events):
-            specs.append(WebhookSpec(helper=helper, events=tuple(item for item in events if item is not None)))
+        if (found := all_or_none(events)) is not None:
+            specs.append(WebhookSpec(helper=helper, events=found))
     return tuple(specs), problems
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
@@ -82,23 +83,28 @@ def extras_symbols(
     A dataclass allows them by its own configuration or by a base's, which it inherits; a model, root model, or alias
     reaches what its bases and the types of its fields reach.
     """
-    if not (reached := {symbol for symbol, declared in symbols.items() if _allows_extras(declared)}):
+    if not (allowing := [symbol for symbol, declared in symbols.items() if _allows_extras(declared)]):
         return frozenset()
-    named = {
-        symbol: frozenset((
-            *declared.bases,
-            *(
-                name
-                for member in members.get(symbol, ())
-                if (facts := member.model_facts) is not None
-                for name in named_symbols(facts.type)
+    return frozenset(
+        reaching(
+            allowing,
+            (
+                (
+                    symbol,
+                    (
+                        *declared.bases,
+                        *(
+                            name
+                            for member in members.get(symbol, ())
+                            if (facts := member.model_facts) is not None
+                            for name in named_symbols(facts.type)
+                        ),
+                    ),
+                )
+                for symbol, declared in symbols.items()
             ),
-        ))
-        for symbol, declared in symbols.items()
-    }
-    while grown := {symbol for symbol, names in named.items() if not names.isdisjoint(reached)} - reached:
-        reached |= grown
-    return frozenset(reached)
+        )
+    )
 
 
 def named_symbols(value: TypeView) -> Iterator[SymbolId]:

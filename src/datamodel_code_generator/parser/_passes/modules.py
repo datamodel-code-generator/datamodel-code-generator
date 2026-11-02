@@ -29,9 +29,9 @@ from datamodel_code_generator._container_kinds import (
     MAPPINGS,
     UNHASHABLE_CONTAINERS,
 )
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
-from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -60,6 +60,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _find_base_classes,
+    _has_root_field_constraints,
     _model_key_of_model,
     _ModelKeys,
     _reference_names_model,
@@ -71,6 +72,16 @@ from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
+from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReferenceExpressionHost,
+    ReimportHost,
+    emitting_module_name,
+    import_references,
+    reimport_module_references,
+    reimport_references,
+    set_reference_expressions,
+)
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -87,7 +98,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ModuleScopeView,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
     RenamedTypesHost,
     ReplacedRootsHost,
     RootModelHost,
@@ -102,10 +112,8 @@ from datamodel_code_generator.parser._passes._shared import (
     _derived_models,
     _get_enum_from_base,
     _get_model_module_name,
-    _has_root_field_constraints,
     _is_discriminator_wrapper,
     _is_pydantic_v2_root_model,
-    _iter_import_bindings,
     _ModelPositions,
     _named_data_types,
     _restore_inherited_field_names_for_unique_aliases,
@@ -116,17 +124,13 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
-    import_references,
     merge_duplicate,
-    merge_duplicate_in_module,
     module_members,
-    names_left_by_replaced_roots,
     record_renamed_type,
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
-    set_reference_expression,
-    set_reference_expressions,
+    run_unused_models,
     site_display_name,
     subclass_duplicate,
     without_stand_ins,
@@ -392,9 +396,8 @@ class CollapseHost(
     CollisionRenameHost,
     InlineVariantHost,
     RecursionFactsHost,
-    ReferenceExpressionHost,
+    ReimportHost,
     RenamedTypesHost,
-    ReplacedRootsHost,
     GenerationStoreHost,
     CollapseRootModelsHost,
     RootModelHost,
@@ -415,16 +418,8 @@ class CollapseHost(
         """The function that copies a data type tree without detaching its model references."""
 
     @property
-    def _emitting_module_lists(self) -> list[tuple[str, list[DataModel]]]:
-        """The live model list of each output module, by module name."""
-
-    @property
     def _kept_parent_roots(self) -> dict[int, _KeptParentRoot]:
         """The roots that the ``parent`` strategy kept for their later holders, by id."""
-
-    @property
-    def _emitting_module_names(self) -> dict[int, str]:
-        """The module that emits each model found in the live lists, by model id."""
 
     @property
     def collapse_root_models_name_strategy(self) -> CollapseRootModelsNameStrategy | None:
@@ -787,15 +782,14 @@ def _same_named_references(model: DataModel, name: str | None, *, skips_aliases:
 def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
     """Return the models that the model inherits from or passes its fields on to, transitively, by model key."""
     keys = _ModelKeys()
-    family = {keys.of(model): model}
-    pending = [model]
-    while pending:
-        current = pending.pop()
-        for kin in chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())):
-            if (kin_key := keys.of(kin)) not in family:
-                family[kin_key] = kin
-                pending.append(kin)
-    return family
+    return {
+        keys.of(kin): kin
+        for kin in reach(
+            (model,),
+            lambda current: chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())),
+            keys.of,
+        )
+    }
 
 
 def _family_field_names(family: Mapping[ModelKey, DataModel]) -> set[str]:
@@ -819,7 +813,6 @@ def _field_type_resolver(parser: ModulesHost, exclude_names: set[str] | None = N
     )
 
 
-_COLLAPSE_ROOT_MODELS: Final = ImportProducer("collapse-root-models")
 _DIRECTLY_REFERENCED: Final = "it is directly referenced by non-wrapper models"
 
 
@@ -1054,7 +1047,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            merge_duplicate_in_module(parser, model, cached_model, models)
+            merge_duplicate(parser, model, cached_model, REUSE_MODEL, keeps_duplicate_tags=False)
             duplicates.append(model)
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
@@ -1182,6 +1175,7 @@ def collapse_site_facts(
     field_constraints = parser.field_constraints
     root_field = root_model.fields[0]
     root_data_type = root_field.data_type
+    constrained_root_field = _has_root_field_constraints(root_field, row="declared")
     constrained_root = _has_root_field_constraints(root_field)
     return CollapseSiteFacts(
         has_root_field=True,
@@ -1190,8 +1184,7 @@ def collapse_site_facts(
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
         field_constraints=field_constraints,
         constrains_through_root_types=not field_constraints and _has_preservable_root_constraints(root_model),
-        constrained_root_field=isinstance(constraints := root_field.constraints, ConstraintsBase)
-        and bool(constraints.has_constraints),
+        constrained_root_field=constrained_root_field,
         constrained_root=constrained_root,
         root_type_is_map=root_data_type in MAPPINGS,
         root_type_names_model=root_data_type.reference is not None,
@@ -1451,7 +1444,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         internal_modules=internal_modules,
                         members=None,
                         producer=producer,
-                        row="legacy-collapse-import-path",
+                        row="legacy-collapse-internal-module-import",
                     )
 
                     original_field = get_most_of_parent(data_type, DataModelFieldBase)
@@ -1471,15 +1464,16 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 ):
                     unused_models.append(root_type_model)
 
-    import_collapsed_inner_models(
+    reimport_module_references(
         parser,
         models,
         redirected_holders,
         imports,
         scoped_model_resolver,
         model_path_to_module_name,
-        is_init=is_init,
+        init=is_init,
         internal_modules=internal_modules,
+        row="collapse-root-models",
     )
 
 
@@ -1498,21 +1492,6 @@ def carry_const_narrowings(parser: CollapseHost, source: DataType, copied: DataT
         pending.extend(zip(source_node.data_types, copied_node.data_types, strict=True))
         if (key := source_node.dict_key) is not None:
             pending.append((key, cast("DataType", copied_node.dict_key)))
-
-
-def emitting_module_name(parser: CollapseHost, model: DataModel, model_path_to_module_name: dict[str, str]) -> str:
-    """Return the name of the module whose live model list holds a model, found by identity.
-
-    A model that a module's processing puts into its list after modules are structured, such as a reuse subclass,
-    is looked up in the live lists and remembered.
-    """
-    if (module_name := parser._emitting_module_names.get(id(model))) is not None:  # noqa: SLF001
-        return module_name
-    for module_name, module_models in parser._emitting_module_lists:  # noqa: SLF001
-        if any(module_model is model for module_model in module_models):
-            parser._emitting_module_names[id(model)] = module_name  # noqa: SLF001
-            return module_name
-    return _get_model_module_name(model, model_path_to_module_name)
 
 
 def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: DataModel) -> None:
@@ -1634,77 +1613,8 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
                     holder.root_import,
                 ))
         for ctx, redirected_holders in holders_by_module.values():
-            _import_inner_models_into(parser, run, ctx, redirected_holders)
+            reimport_references(parser, ctx, run, redirected_holders, row="collapse-root-models")
         run.unused_models.append(root_model)
-
-
-def import_collapsed_inner_models(  # noqa: PLR0913, PLR0917
-    parser: CollapseHost,
-    models: list[DataModel],
-    redirected_holders: list[tuple[DataModel, DataType, Import | None]],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
-    *,
-    is_init: bool,
-    internal_modules: set[ModulePath],
-) -> None:
-    """Import the inner models that collapse redirected this module's holders to, as direct references would.
-
-    Each holder drops its import of the root model. A name that no import binds any more, and the name of a root
-    of this module that its inner model replaced, are free for the inner model, which is imported where the
-    holder's module does not emit it.
-    """
-    if not redirected_holders:
-        return
-    root_imports = [root_import for *_, root_import in redirected_holders if root_import is not None]
-    parser._import_ledger.remove(imports, root_imports, _COLLAPSE_ROOT_MODELS)  # noqa: SLF001
-    parser._import_ledger.release_names(  # noqa: SLF001
-        imports,
-        scoped_model_resolver,
-        {root_import.binding_name for root_import in root_imports}.difference(_iter_import_bindings(imports)).union(
-            names_left_by_replaced_roots(parser, models, keyed_models(module_members(parser, models), "module members"))
-        ),
-    )
-    for holder, data_type, _ in redirected_holders:
-        reference = cast("Reference", data_type.reference)
-        holder_module_name = _get_model_module_name(holder, model_path_to_module_name)
-        inner_module_name = (
-            holder_module_name
-            if (inner_model := reference.source) is None
-            else emitting_module_name(parser, cast("DataModel", inner_model), model_path_to_module_name)
-        )
-        set_reference_expression(
-            parser,
-            data_type,
-            holder_module_name,
-            dotted_name(inner_module_name, reference.short_name),
-            imports,
-            scoped_model_resolver,
-            same_module=inner_module_name == holder_module_name,
-            init=is_init,
-            internal_modules=internal_modules,
-            producer=ImportProducer("collapse-root-models", holder),
-        )
-
-
-def _import_inner_models_into(
-    parser: CollapseHost,
-    run: ModulesRun,
-    ctx: ModuleContextView,
-    redirected_holders: list[tuple[DataModel, DataType, Import | None]],
-) -> None:
-    """Import into a processed module the inner models that its redirected holders name, as collapse imports them."""
-    import_collapsed_inner_models(
-        parser,
-        ctx.models,
-        redirected_holders,
-        ctx.imports,
-        ctx.scoped_model_resolver,
-        run.model_path_to_module_name,
-        is_init=ctx.is_init,
-        internal_modules=run.internal_modules,
-    )
 
 
 def set_default_enum_member(
@@ -1981,14 +1891,18 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 )
                 builder.append_field(
                     discriminator_model,
-                    discriminator_field := parser._build_field(  # noqa: SLF001
-                        "legacy-alias-option-only",
-                        new_data_type,
-                        name=field_name,
-                        alias=names.alias,
-                        source_name=names.property_name,
-                        class_name=discriminator_model.name,
-                        required=True,
+                    discriminator_field := with_field_origin(
+                        parser._build_field(  # noqa: SLF001
+                            "legacy-alias-option-only",
+                            new_data_type,
+                            name=field_name,
+                            alias=names.alias,
+                            source_name=names.property_name,
+                            class_name=discriminator_model.name,
+                            required=True,
+                        ),
+                        "tag",
+                        None,
                     ),
                 )
                 if parser.config.aliases:
@@ -2480,7 +2394,7 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     internal_modules=state.internal_modules,
                     members=None,
                     producer=producer,
-                    row="legacy-collapse-import-path",
+                    row="legacy-collapse-internal-module-import",
                 )
                 parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
@@ -2566,25 +2480,28 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
     collapse does not redirect, then name the inner model, and their module imports it as a collapsed field's
     module does.
     """
-    unused = {id(model) for model in run.unused_models}
+    unused = run_unused_models(run)
     inner_references = {
         model_key_of(root_model.reference): inner_model.reference
         for root_model, inner_model in parser._replaced_root_models.values()  # noqa: SLF001
-        if id(root_model) in unused
+        if root_model in unused
     }
     for ctx in run.contexts:
         rule_users = [
             (model, data_type, inner_reference, ctx.imports.reference_paths.get(reference.path))
-            for model in ctx.models
-            if id(model) not in unused
+            for model in unused.written(ctx.models)
             for data_type in _rule_data_types(model)
             if (reference := data_type.reference) is not None
             and (inner_reference := inner_references.get(model_key_of(reference))) is not None
         ]
         for _, data_type, inner_reference, _ in rule_users:
             parser._graph_builder.collapse_root_data_type(data_type, inner_reference)  # noqa: SLF001
-        _import_inner_models_into(
-            parser, run, ctx, [(model, data_type, root_import) for model, data_type, _, root_import in rule_users]
+        reimport_references(
+            parser,
+            ctx,
+            run,
+            [(model, data_type, root_import) for model, data_type, _, root_import in rule_users],
+            row="collapse-root-models",
         )
 
 
@@ -2685,12 +2602,11 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     the root model it replaces leaves that entry behind. The class imports the models of other modules that its rules
     name, as ``change_from_import`` imports them for a class that writes its rules from the start.
     """
-    unused = {id(model) for model in run.unused_models}
     if not (
         aliases := [
             model
-            for model in _context_models(run.contexts)
-            if id(model) not in unused and model._unwritable_runtime_rules  # noqa: SLF001
+            for model in run_unused_models(run).written(_context_models(run.contexts))
+            if model._unwritable_runtime_rules  # noqa: SLF001
         ]
     ):
         return

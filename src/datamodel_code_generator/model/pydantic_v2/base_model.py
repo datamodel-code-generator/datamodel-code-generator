@@ -22,7 +22,9 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
+from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
@@ -68,6 +70,8 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    _builtin_renderer,
+    _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
     _model_key_of_model,
@@ -433,7 +437,7 @@ def _config_dict_items(config: Any) -> list[tuple[str, Any]]:
     if not dump:
         return []
     values = dump(exclude_unset=True)
-    return list(values.items()) if isinstance(values, dict) else []
+    return list(as_mapping(values).items())
 
 
 def _decode_legacy_quoted_config_string(value: str) -> str:
@@ -803,7 +807,7 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         if self.is_class_var or self.required or self.has_default or factory_present:
             return False
-        return self.default is None or self.default is UNDEFINED
+        return _default_state(self.default) != "value"
 
     @property
     @override
@@ -1457,17 +1461,13 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
     ]
     if not pending:
         return set()
-    referrers: defaultdict[int, list[DataModel]] = defaultdict(list)
-    for model in models:
-        for reference in _model_references(model, model.base_classes):
-            referrers[id(reference.source)].append(model)
-    reached = {id(model) for model in pending}
-    while pending:
-        for referrer in referrers.get(id(pending.pop()), ()):
-            if id(referrer) not in reached:
-                reached.add(id(referrer))
-                pending.append(referrer)
-    return reached
+    return reaching(
+        map(id, pending),
+        (
+            (id(model), (id(reference.source) for reference in _model_references(model, model.base_classes)))
+            for model in models
+        ),
+    )
 
 
 def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str) -> bool:
@@ -1838,7 +1838,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
     @override
     def refresh_field_config(self) -> None:
-        """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
+        """Select Python's regex engine for lookaround patterns, also those fields gained after ``__init__``.
 
         Collapsed root models inline their patterns; a config that already names an engine is kept.
         """
@@ -2139,11 +2139,10 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             "schema_runtime_validation_base_class_name": base_class_name,
             **_helper_template_facts(runtime_validations),
         }
-        if custom_template_dir is None and cls.__module__.startswith("datamodel_code_generator.model."):
-            from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
-
-            if renderer := get_builtin_renderer(cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH):
-                return renderer(**context)
+        if renderer := _builtin_renderer(
+            cls, cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH, custom_template_dir
+        ):
+            return renderer(**context)
 
         if (
             (context["has_conditional_presence"] or context["has_not_required_groups"])
@@ -2263,9 +2262,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             )
         )
 
-        if has_lookaround_pattern(self.fields):
-            config_parameters["regex_engine"] = '"python-re"'
-
         if alias_generator := _alias_generator_name(self.extra_template_data.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY)):
             config_parameters[_ALIAS_GENERATOR_TEMPLATE_DATA_KEY] = alias_generator
             self._additional_imports.append(_ALIAS_GENERATOR_IMPORTS[alias_generator])
@@ -2285,6 +2281,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
 
+        self.refresh_field_config()
         self._process_schema_runtime_validation()
         self._process_validators()
 

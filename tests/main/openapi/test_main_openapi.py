@@ -15999,3 +15999,39 @@ def test_main_openapi_ref_components_as_definitions(output_file: Path, extra_arg
         invalid_json=json.dumps({"trees": [{"children": [1]}]}),
         expected_error_type="model_type",
     )
+
+
+def test_main_openapi_collapse_root_models_package_init(output_dir: Path) -> None:
+    """Import a model that collapse inlines into a package ``__init__`` from the package above, as a reference does.
+
+    ``pkg/__init__.py`` inlines ``other.Root`` and types the dict key ``other.KindKey`` by its root type, which name
+    models of the top-level module ``third``; up to 0.88.0 it wrote ``from . import third``, which does not import
+    (#5465).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_root_models_package_init.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+def test_main_openapi_generic_base_class_other_packages(output_dir: Path) -> None:
+    """Import the generated base class from the module that writes it, as a base class of another module is imported.
+
+    The base class is written to ``c/d.py``; up to 0.88.0 ``a/b.py`` and ``top.py`` wrote ``from .d import
+    BaseModel``, which does not import (#5594).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_other_packages.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )

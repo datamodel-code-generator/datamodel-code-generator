@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 from typing_extensions import Self
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, TARGET_SELECTORS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -23,6 +24,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._option_rules import enable_implied_options, implied_options
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -83,13 +85,27 @@ def _validate_additional_import_paths(value: list[str] | None) -> list[str] | No
         raise Error(msg) from None
 
 
-_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
+def _schema_validator_base_class_name_error(value: str | None) -> str | None:
+    """Return why a name cannot name the shared schema validator base class, or None when it can or none is given.
+
+    The command line and `generate()` accept the same names; each raises the message as its own error.
+    """
+    if value is None:
+        return None
+
+    from datamodel_code_generator._target_unicode import is_python_name  # noqa: PLC0415
+
+    if is_python_name(value, rule="legacy-host-identifiers"):
+        return None
+    return f"--schema-validator-base-class-name '{value}' is not a valid Python identifier"
+
+
 _TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
 def _selected_target(config: Any) -> tuple[str, str] | None:
     """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
-    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
+    return next((item for item in TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
 
 
 def _target_options_error(config: Any, *, output: bool = True) -> str | None:
@@ -120,8 +136,9 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
     implied: dict[str, bool] = {}
     if "use_annotated" not in explicit and DataModelType(config.output_model_type) is DataModelType.MsgspecStruct:
         implied["use_annotated"] = use_annotated = True
-    if use_annotated or "field_constraints" not in explicit:
+    if "field_constraints" not in explicit:
         implied["field_constraints"] = use_annotated
+    implied.update(implied_options({"use_annotated": use_annotated}))
     return implied
 
 
@@ -134,7 +151,12 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     msgspec. A setting that was set keeps its value, which the target refuses when it cannot use it.
     """
     from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
-    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion  # noqa: PLC0415
+    from datamodel_code_generator.enums import (  # noqa: PLC0415
+        _PYDANTIC_MODEL_TYPES,
+        DataModelType,
+        OpenAPIScope,
+        TargetPydanticVersion,
+    )
 
     implied: dict[str, Any] = {}
     scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
@@ -152,7 +174,7 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     implied.update((name, True) for name in switches if name not in explicit and not getattr(config, name))
     if (
         implied.get("use_missing_sentinel", config.use_missing_sentinel)
-        and backend in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        and backend in _PYDANTIC_MODEL_TYPES
         and "target_pydantic_version" not in explicit
     ):
         implied["target_pydantic_version"] = TargetPydanticVersion.V2_14
@@ -227,7 +249,7 @@ class BaseGenerateConfig(BaseModel):
     reuse_model: bool = False
     reuse_scope: ReuseScope = ReuseScope.Module
     shared_module_name: str = DEFAULT_SHARED_MODULE_NAME
-    encoding: str = "utf-8"
+    encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
@@ -435,8 +457,7 @@ class BaseGenerateConfig(BaseModel):
     @model_validator(mode="after")
     def normalize_use_type_alias_type(self) -> Self:
         """Enable type aliases when their implementation is explicitly selected."""
-        if self.use_type_alias_type:
-            self.use_type_alias = True
+        enable_implied_options(self, "use_type_alias_type")
         return self
 
 

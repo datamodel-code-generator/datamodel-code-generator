@@ -5,7 +5,6 @@ Maps schema types to Pydantic v2 specific types with AwareDatetime, NaiveDatetim
 
 from __future__ import annotations
 
-import ast
 from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -15,9 +14,10 @@ from typing_extensions import override
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator._python_syntax import (
-    QUOTE_AND_CONTROL_ESCAPES,
+    RAW_SINGLE_QUOTED_ESCAPES,
     call_text,
     keyword_argument,
+    raw_single_quoted,
     subscript_text,
 )
 from datamodel_code_generator._requirements import pydantic_target_meets
@@ -180,7 +180,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
+escape_characters = RAW_SINGLE_QUOTED_ESCAPES
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 
@@ -191,13 +191,8 @@ def _decimal_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _get_regex_literal(pattern: str) -> str:
-    escaped_regex = pattern.translate(escape_characters)
-    raw_literal = f"r'{escaped_regex}'"
-    try:
-        ast.literal_eval(raw_literal)
-    except SyntaxError:
-        return pattern
-    return PythonCode(raw_literal, pattern)
+    raw_literal = raw_single_quoted(pattern)
+    return pattern if raw_literal is None else PythonCode(raw_literal, pattern)
 
 
 class DataTypeManager(_DataTypeManagerBase):
@@ -616,7 +611,7 @@ class PydanticV2DataType(DataType):
     def _needs_serialize_as_any_import(self) -> bool:
         if not self.use_serialize_as_any:
             return False
-        if self.alias or self.type or self.reference is None:
+        if self._own_text or self.reference is None:
             return False
         return self._should_wrap_with_serialize_as_any()
 

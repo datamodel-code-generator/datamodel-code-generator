@@ -6978,6 +6978,114 @@ def test_main_type_overrides_rejects_bracketed_non_annotation(
     )
 
 
+_TYPE_OVERRIDES_BUILTINS = {
+    "TypeOverridesLiterals.integer_values": "int",
+    "TypeOverridesLiterals.string_values": "str",
+    "TypeOverridesLiterals.nullable_values": "int | None",
+    "TypeOverridesLiterals.optional_value": "int | str",
+    "TypeOverridesLiterals.values": "list",
+    "TypeOverridesLiterals.amount": "Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("pydantic_v2.dataclass", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("typing.TypedDict", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write a field override without brackets that is an annotation, such as ``str``, as ``x-python-type`` writes it.
+
+    Up to 0.87.0 every value without brackets was split at its last dot as a class path, so ``str`` wrote
+    ``import str``, ``Decimal`` wrote ``import Decimal`` and ``int | None`` wrote ``import int | None``, and the module
+    failed to import. A builtin needs no import, a standard-library name takes the import of the registry, and a union
+    writes the imports of its names; each field takes the keywords that annotation takes.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"--type-overrides writes (int|str) in place of con(int|str)\(")
+        if output_model == "pydantic_v2.BaseModel" and not extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                *extra_args,
+                "--type-overrides",
+                json.dumps(_TYPE_OVERRIDES_BUILTINS),
+                "--target-python-version",
+                "3.11",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations_for_models(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a model-level override that is a builtin or a union, such as ``str | None``, where the model is named."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--type-overrides",
+            json.dumps({"Level": "int", "Mode": "str | None", "Ratio": "float"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_type_overrides_unknown_bare_name_is_imported(output_file: Path) -> None:
+    """Keep a bare name that no builtin and no standard-library type of the registry has as a module to import."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"TypeOverridesLiterals.amount": "json"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
@@ -28175,6 +28283,115 @@ def test_main_read_only_write_only_custom_type_path(
     "dedupe_args",
     [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
 )
+def test_main_read_only_write_only_custom_type_ref_siblings(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites are a $ref with sibling keywords to a schema typed by its customTypePath.
+
+    The $ref of each property, item, additionalItems, anyOf and oneOf member and additionalProperties of ``Holder`` and
+    ``Extras`` is merged with its siblings first, so the site takes the customTypePath of ``Item`` (or of ``Alias``,
+    which names it) and names no model: ``Holder`` and ``Extras`` keep one class while ``Item`` splits.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_ref_siblings.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "ref": {"any": 1},
+            "alias": {"other": 1},
+            "list": [{"a": 1}],
+            "pair": [{"b": 1}, "s", {"c": 1}],
+            "union": 1,
+            "choice": True,
+            "count": 1,
+        },
+        "extras": {"k": {"d": 1}},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_custom_type_ref_siblings", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_python_type_override(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites an x-python-type types, over an object with a readOnly property.
+
+    The inline objects of the properties, items, additionalItems, anyOf and oneOf members and additionalProperties of
+    ``Extended``, ``Other``, ``Positions`` and ``Extras`` are typed ``int``, and so is the property of ``Positions``
+    that is a $ref with sibling keywords to ``Sized`` (a property reads the merged schema first), so they generate no
+    model and keep one class while ``Flagged`` splits. The items of ``Sizes`` are such a $ref too, but the items are
+    merged after the python-type row, so they name a model of their own that splits with ``Sizes``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_python_type_override.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "extended": {"a": "s", "flagged": 1},
+        "other": {"b": "s", "flagged": 2},
+        "flagged": {"name": "n"},
+        "positions": {"list": [1], "pair": [1, "s", 2], "union": 3, "choice": None, "ref": 4},
+        "extras": {"k": 5},
+        "sizes": {"sizes": [{}]},
+    }
+    invalid = {"extended": {"flagged": "x"}}
+    with _generated_model(output_file, "rw_python_type_override", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
 def test_main_read_only_write_only_merged_all_of_extras(
     output_file: Path, output_model_type: str, dedupe_args: list[str]
 ) -> None:
@@ -35220,3 +35437,99 @@ def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) ->
         invalid_json=json.dumps({"copy": {"children": [1]}}),
         expected_error_type="model_type",
     )
+
+
+def test_main_jsonschema_collapse_root_models_module_class_collision(output_dir: Path) -> None:
+    """Import the class an array alias inlines from a module named like it, as a direct reference imports it.
+
+    ``BarStatsList`` is an array of ``datatypes/BarStats.json``, whose class ``BarStats`` its module ``BarStats``
+    writes; up to 0.88.0 the holder imported the module (``from ..datatypes import BarStats``) for
+    ``list[BarStats]`` (#5450).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--collapse-root-models"], id="collapse-root-models")],
+)
+def test_main_jsonschema_hyphenated_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a hyphenated directory from the package the output writes, ``my_dir``.
+
+    Up to 0.88.0 the import read the directory as written in the input (``from .my-dir import b``), a syntax error;
+    a collapsed array of ``my-dir/b.json`` too (#5709).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "hyphenated_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(["--treat-dot-as-module"], id="treat-dot-as-module"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_main_jsonschema_dotted_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a directory named with a dot from the package the output writes.
+
+    Without ``--treat-dot-as-module`` the dots of a directory are written as ``_`` (``api_v2``), as those of a file
+    name; up to 0.88.0 the directory kept them, and ``from .api.v2 import b`` named no module (#5710). With the option
+    each dot is a package (``api/v2``), as before.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dotted_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],
+)
+def test_main_jsonschema_builtin_named_fields(output_file: Path, output_model_type: str) -> None:
+    """Import under an alias each builtin class that a field name hides from an annotation of its class.
+
+    The fields ``set``, ``dict``, ``tuple`` and ``str`` hide the builtins that ``tags``, ``counts``, ``pair`` and
+    ``name`` write; up to 0.88.0 only ``list`` was imported under an alias, so the annotations failed to evaluate
+    (#5524). A TypedDict assigns no field in its class body, so nothing is hidden there.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_named_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--use-unique-items-as-set",
+            "--use-tuple-for-fixed-items",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(
+        output_file, f"builtin_named_fields_{output_model_type.replace('.', '_')}", "Holder"
+    ) as model:
+        get_type_hints(model)

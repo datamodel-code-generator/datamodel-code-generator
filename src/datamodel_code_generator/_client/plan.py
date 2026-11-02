@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlsplit
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
@@ -49,11 +50,14 @@ from datamodel_code_generator._target_contract import (
     SchemaSite,
     SourceLocation,
     TypeUseBinding,
+    children_of,
+    encoding_headers,
     fact,
     is_required,
     label,
     operation_literal,
     parameter_place,
+    request_media,
     schema_uses,
     type_uses,
     uses_by_id,
@@ -752,7 +756,7 @@ class Planner:
         members = {} if use is None else {name: declared[name] for name, _, _ in _members(use)}
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
-        for encoding in (child for child in declaration.children if child.kind == "encoding"):
+        for encoding in children_of(declaration, "encoding"):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
             if name in members and (headers := self._headers(encoding)):
@@ -789,10 +793,8 @@ class Planner:
         """Return the headers with a schema a response or encoding declares, with the plans that read their values."""
         return tuple(
             HeaderSpec(name=child.name or "", required=is_required(child), use=use, plan=plan)
-            for child in declaration.children
-            if child.kind == "header"
-            and (use := self.use(type_uses(child))) is not None
-            and (plan := self.header_plans.get(use.id)) is not None
+            for child in children_of(declaration, "header")
+            if (use := self.use(type_uses(child))) is not None and (plan := self.header_plans.get(use.id)) is not None
         )
 
     def _sent(
@@ -974,9 +976,7 @@ class Planner:
         self, operation: OperationContract, declaration: WireDeclaration, *, request: bool
     ) -> tuple[MediaSpec, ...]:
         """Return the declared media of a body or response, rejecting media types that normalize alike."""
-        media = tuple(
-            self.media(operation, child, request=request) for child in declaration.children if child.kind == "media"
-        )
+        media = tuple(self.media(operation, child, request=request) for child in children_of(declaration, "media"))
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
@@ -1253,9 +1253,8 @@ def _encoded(media: WireDeclaration) -> WireDeclaration | None:
     return next(
         (
             child
-            for child in media.children
-            if child.kind == "encoding"
-            and (
+            for child in children_of(media, "encoding")
+            if (
                 bool(child.children)
                 or fact(child, "contentType") is not None
                 or fact(child, "style") not in {None, "form"}
@@ -1273,33 +1272,23 @@ def _servers(
     if value is None:
         return ()
     entries = _plain(value)
-    if not _is_tuple(entries):
+    return all_or_none(map(_server, entries)) if _is_tuple(entries) else None
+
+
+def _server(entry: object) -> tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]] | None:
+    if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
         return None
-    servers: list[tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]]] = []
-    for entry in entries:
-        if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
-            return None
-        if (variables := _variables(entry.get("variables", {}))) is None:
-            return None
-        servers.append((url, variables))
-    return tuple(servers)
+    return None if (variables := _variables(entry.get("variables", {}))) is None else (url, variables)
 
 
 def _variables(value: object) -> tuple[tuple[str, str, tuple[str, ...]], ...] | None:
-    if not _is_dict(value):
+    return all_or_none(starmap(_variable, value.items())) if _is_dict(value) else None
+
+
+def _variable(name: object, variable: object) -> tuple[str, str, tuple[str, ...]] | None:
+    if not isinstance(name, str) or not _is_dict(variable) or not isinstance(default := variable.get("default"), str):
         return None
-    variables: list[tuple[str, str, tuple[str, ...]]] = []
-    for name, variable in value.items():
-        if (
-            not isinstance(name, str)
-            or not _is_dict(variable)
-            or not isinstance(default := variable.get("default"), str)
-        ):
-            return None
-        if not _strings(enum := variable.get("enum", ())):
-            return None
-        variables.append((name, default, enum))
-    return tuple(variables)
+    return (name, default, enum) if _strings(enum := variable.get("enum", ())) else None
 
 
 def _defaulted(url: str, variables: tuple[tuple[str, str, tuple[str, ...]], ...]) -> str:
@@ -1347,9 +1336,7 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
 def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
     """Yield the uses of the headers the encodings of the selected operations' request bodies declare."""
     for operation in request.operations:
-        for media in () if operation.request_body is None else operation.request_body.children:
-            for encoding in (child for child in media.children if child.kind == "encoding"):
-                yield from (use for header in encoding.children if header.kind == "header" for use in type_uses(header))
+        yield from (use for header in encoding_headers(operation) for use in type_uses(header))
 
 
 def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
@@ -1359,12 +1346,10 @@ def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDe
     """
     version = request.batch.openapi
     for operation in request.operations:
-        for media in () if operation.request_body is None else operation.request_body.children:
+        for media in request_media(operation):
             if _essence(media.name or "") == _FORM_DATA and (
                 encodings := tuple(
-                    child
-                    for child in media.children
-                    if child.kind == "encoding" and form_styled(child, version, multipart=True)
+                    child for child in children_of(media, "encoding") if form_styled(child, version, multipart=True)
                 )
             ):
                 yield from ((use, encodings) for use in media.schemas)
@@ -1378,12 +1363,10 @@ def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDec
     for operation in request.operations:
         declarations = (*(() if operation.request_body is None else (operation.request_body,)), *operation.responses)
         for declaration in declarations:
-            for child in declaration.children:
-                if child.kind == "media" and _form(child.name or ""):
+            for child in children_of(declaration, "media"):
+                if _form(child.name or ""):
                     encodings = tuple(
-                        item
-                        for item in child.children
-                        if item.kind == "encoding" and declaration.kind == "request_body"
+                        item for item in children_of(child, "encoding") if declaration.kind == "request_body"
                     )
                     yield from ((use, encodings) for use in child.schemas)
 

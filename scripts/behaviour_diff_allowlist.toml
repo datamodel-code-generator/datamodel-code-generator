@@ -6,76 +6,36 @@
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
 # decision, release_note.
-base = "0.87.0"
+base = "0.88.0"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "*msgspec_number_limits*"
+aspects = [ "constraints", "type" ]
+match = "=-?(?:4611686018427388000\\b.* -> .*=-?4611686018427387904|9223372036854776000\\b.* -> .*=-?9223372036854775808|18446744073709552000\\b.* -> .*=-?18446744073709551616)\\b"
+reason = "an integer multipleOf or exclusive bound past 2**53 was read as a float and written as another number (2**64 as 18446744073709552000), so the model rejected values the schema accepts and accepted values it rejects; it is written as the exact integer now (schema-mismatch fix)"
+decision = "#5214"
+release_note = "an integer multipleOf, exclusiveMinimum or exclusiveMaximum past 2**53 (for example multipleOf 18446744073709551616) is written as that exact integer in the constraints instead of a float-rounded number (18446744073709552000), so the model no longer rejects the multiples the schema accepts"
 
 [[accepted]]
-input = "tests/data/openapi/schema_intersection"
-aspects = [ "kind", "type", "name-removed" ]
-match = "root_site_null_oas30:(Model:\\w+: .*\\b(InlineArray|RefArray)\\b|(InlineArray|RefArray):)"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "*numeric_constraint_precision*"
+aspects = [ "constraints", "type" ]
+match = "=-?(?:4611686018427388000\\b.* -> .*=-?4611686018427387904|18446744073709552000\\b.* -> .*=-?18446744073709551616|55340232221128656000\\b.* -> .*=-?55340232221128654848)\\b"
+reason = "an integer multipleOf or exclusive bound past 2**53 was read as a float and written as another number (2**64 as 18446744073709552000), so the model rejected values the schema accepts and accepted values it rejects; it is written as the exact integer now (schema-mismatch fix)"
+decision = "#5214"
+release_note = "an integer multipleOf, exclusiveMinimum or exclusiveMaximum past 2**53 (for example multipleOf 18446744073709551616) is written as that exact integer in the constraints instead of a float-rounded number (18446744073709552000), so the model no longer rejects the multiples the schema accepts"
 
 [[accepted]]
-input = "tests/data/jsonschema/allof_root_model_constraints.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(ConstraintWithItems|RefToArrayAllOf)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "*numeric_constraint_precision*"
+aspects = [ "type", "enum-member-removed" ]
+match = "^\\[type\\] (?:exact_integer_constraints:)?Model:literal: .*\\bLiteral\\[18446744073709551616, 36893488147419103232, 5\\].* -> .*\\bLiteral\\[18446744073709551616, 36893488147419103232\\]|^\\[enum-member-removed\\] (?:exact_integer_constraints:)?Literal: integer_5$"
+reason = "the literal filter read the float-rounded divisor of a multipleOf past 2**53, so a value that is not a multiple of the schema's divisor (5 beside multipleOf 2**64) stayed in the Literal and the enum; it is dropped now (schema-mismatch fix)"
+decision = "#5214"
+release_note = "a const or enum value that is not a multiple of an integer multipleOf past 2**53 is no longer kept as a member of the Literal"
 
 [[accepted]]
-input = "tests/data/openapi/allof_scalar_roots.yaml"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\bTwoPatterns\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\broot_forms:Model: accept -> reject|\\ballof_ref_item_constraints:.*?(?:\\b(TwoItem|TwoMap)\\b)|\\ballof_refs:.*?(?:\\bTwoRefs(Item|Map|Prop)\\b|Model:two_refs_(prop|items):|Model:two_refs_map: .*Pick2)|\\ballof_scalar_refs:.*?(?:\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b)|\\ballof_values:.*?(?:\\bPat\\b)|\\broot_forms:.*?(?:\\b(Arr|ArrRef|Pat|TwoRefs)\\b|Model:(a|b|p|two_refs): .*\\bM2\\b)|\\broot_site_null:.*?(?:\\b(InlineArray|InlineInteger|RefArray|RefIntegers)\\b)|\\broot_value_items_draft07:.*?(?:\\b(ClosingElsewhere|NullableTags|OwnClosing|TupleLater)\\b)|\\broot_value_keywords:.*?(?:\\b(Bounded|ItemsFirst|ItemsLater|RefBounded|RefItems|RefNoParts|UnevaluatedItems)\\b)"
-reason = "the directory input of the same #5401 sites: an allOf whose parts admit no object was an empty object model that rejected every valid scalar (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] (allof_ref_item_constraints:Model:two_map|allof_refs:Model:two_refs_(map|prop)|allof_scalar_refs:Model:(lookahead_items|pattern_refs|two_map|two_prop)|allof_values:Model:pat|root_forms:Model:(a|b|p|two_refs)|root_site_null:M:(inline_array|inline_integer|ref_array|ref_integers)|root_value_items_draft07:M:(closing_elsewhere|nullable_tags|own_closing|tuple_later)|root_value_keywords:M:(items_first|items_later|ref_bounded|ref_items|ref_no_parts|unevaluated_items)): |^\\[constructor-order\\] (allof_ref_item_constraints|allof_refs|allof_scalar_refs|allof_values|root_forms):Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] Model:(lookahead_items|pattern_refs|two_map|two_prop): |^\\[constructor-order\\] Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
-
-[[accepted]]
-input = "tests/data/jsonschema/allof_root_model_constraints.json"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] Model:(refarr|withitems): |^\\[constructor-order\\] Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
-
-[[accepted]]
-input = "tests/data/openapi/schema_intersection"
-aspects = [ "required", "default" ]
-match = "^\\[(required|default)\\] root_site_null_oas30:Model:(inline_array|ref_array): "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+input = "payload:jsonschema/msgspec_number_limits/exact_int_divisors.json"
+aspects = [ "payload-verdict" ]
+match = "^\\[payload-verdict\\] payload v\\d+: reject -> accept$"
+reason = "payloads valid for the schema were rejected by the float-rounded divisor or bound (2**64 beside multipleOf 2**64) and are accepted now (schema-mismatch fix)"
+decision = "#5214"
+release_note = "a value that is a multiple of an integer multipleOf past 2**53, or beyond an exclusive bound past 2**53, is accepted instead of being rejected as the float-rounded number"

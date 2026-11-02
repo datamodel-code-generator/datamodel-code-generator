@@ -31,6 +31,7 @@ __all__ = (
     "configuration_error",
     "data_error",
     "data_refusal",
+    "state_error",
 )
 
 MAX_CLOSE_REASON: Final = 123
@@ -184,6 +185,11 @@ def configuration_error(
 ) -> ConfigurationError:
     """Return a helper's refusal of a setting, an argument, or a call, by its field path and the rule it broke."""
     return ConfigurationError(field_path=field_path, reason=reason, helper_id=helper_id)
+
+
+def state_error(helper_id: str, action: str, state: str) -> ConfigurationError:
+    """Return a helper's refusal of an action the state of its handle, pager, stream, or session forbids."""
+    return configuration_error(helper_id, (action, state), "invalid_state")
 
 
 def data_error(

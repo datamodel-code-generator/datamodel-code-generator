@@ -6,14 +6,16 @@ import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._site_facts import Projection, TypeUseRole
     from datamodel_code_generator._target_naming import TargetNames
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.types import DataType
@@ -36,16 +38,6 @@ class FieldSlot:
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
-Projection: TypeAlias = Literal["value", "item_stream_array"]
-TypeUseRole: TypeAlias = Literal[
-    "schema",
-    "parameter",
-    "request_body",
-    "response_body",
-    "response_header",
-    "request_encoding_header",
-    "response_encoding_header",
-]
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +125,11 @@ def literal_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> Froze
 def scalar_fact(facts: Iterable[tuple[str, FrozenLiteral]], name: str) -> object:
     """Return the value of the first scalar fact recorded under a name."""
     return next((value.value for key, value in facts if key == name and isinstance(value, LiteralScalar)), None)
+
+
+def literal_text(value: object) -> str | None:
+    """Return the text a recorded literal holds: the value of a string scalar, or None for any other literal."""
+    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -548,13 +545,16 @@ class SourceReference:
     state: Literal["resolved", "document_not_observed", "pointer_missing", "invalid_pointer", "invalid_target", "cycle"]
 
 
+WireKind: TypeAlias = Literal[
+    "parameter", "request_body", "response", "header", "media", "encoding", "link", "callback", "security_scheme"
+]
+
+
 @dataclass(frozen=True, slots=True)
 class WireDeclaration:
     """Freeze non-schema wire facts while retaining original source/schema locations."""
 
-    kind: Literal[
-        "parameter", "request_body", "response", "header", "media", "encoding", "link", "callback", "security_scheme"
-    ]
+    kind: WireKind
     name: str | None
     declaration: DeclarationId
     use_site: SourceLocation
@@ -637,6 +637,7 @@ class GeneratedTypeContractBatch:
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
+ParameterKeyRow: TypeAlias = Literal["nameless-querystring", "legacy-server-named-parameter-keys"]
 
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 API_KEY_LOCATIONS: Final[dict[object, ApiKeyLocation]] = {location: location for location in get_args(ApiKeyLocation)}
@@ -659,6 +660,18 @@ def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, st
     ``parameter_key`` gives what identifies the parameter.
     """
     return parameter_location(declaration), declaration.name or ""
+
+
+def parameter_name_key(key: str, row: ParameterKeyRow = "nameless-querystring") -> tuple[ParameterLocation, str] | None:
+    """Return the location and wire name that a `location:name` key of a parameter-name setting selects, or None.
+
+    The key is one of the five locations, a colon, and the wire name, empty for a querystring that has no name. Row
+    ``legacy-server-named-parameter-keys`` (the server's `parameter_names`) refuses an empty name.
+    """
+    location, separator, name = key.partition(":")
+    if not separator or (known := LOCATIONS.get(location)) is None:
+        return None
+    return None if row == "legacy-server-named-parameter-keys" and not name else (known, name)
 
 
 def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | None:
@@ -703,10 +716,7 @@ def requirement_alternatives(value: FrozenLiteral) -> tuple[tuple[RequirementEnt
 
 
 def _texts(value: FrozenLiteral) -> tuple[str, ...] | None:
-    if not isinstance(value, LiteralSequence):
-        return None
-    texts = tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
-    return texts if len(texts) == len(value.items) else None
+    return all_or_none(map(literal_text, value.items)) if isinstance(value, LiteralSequence) else None
 
 
 def security_requirements(operation: OperationContract) -> tuple[Requirement, ...] | None:
@@ -719,15 +729,14 @@ def security_requirements(operation: OperationContract) -> tuple[Requirement, ..
         return ()
     if (alternatives := requirement_alternatives(value)) is None:
         return None
-    requirements: list[Requirement] = []
-    for alternative in alternatives:
-        if alternative is None:
-            return None
-        entries = tuple((name, scopes) for name, scopes in alternative if isinstance(name, str) and scopes is not None)
-        if len(entries) != len(alternative):
-            return None
-        requirements.append(entries)
-    return tuple(requirements)
+    return all_or_none(
+        None if alternative is None else all_or_none(map(_named_scopes, alternative)) for alternative in alternatives
+    )
+
+
+def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None:
+    name, scopes = entry
+    return (name, scopes) if isinstance(name, str) and scopes is not None else None
 
 
 def scheme_catalogues(batch: GeneratedTypeContractBatch) -> dict[SourceDocumentId, dict[str, WireDeclaration]]:
@@ -764,6 +773,26 @@ def label(operation: OperationContract) -> str:
 def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     """Return the type uses of a declaration: its own, then those of its children."""
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+
+
+def children_of(declaration: WireDeclaration, kind: WireKind) -> Iterator[WireDeclaration]:
+    """Return the children of a declaration of one kind, in order."""
+    return (child for child in declaration.children if child.kind == kind)
+
+
+def request_media(operation: OperationContract) -> tuple[WireDeclaration, ...]:
+    """Return the media of an operation's request body, none without one."""
+    return () if operation.request_body is None else operation.request_body.children
+
+
+def encoding_headers(operation: OperationContract) -> Iterator[WireDeclaration]:
+    """Return the headers the encodings of an operation's request body declare, in order."""
+    return (
+        header
+        for media in request_media(operation)
+        for encoding in children_of(media, "encoding")
+        for header in children_of(encoding, "header")
+    )
 
 
 def uses_by_id(batch: GeneratedTypeContractBatch) -> dict[TypeUseId, TypeUseBinding]:

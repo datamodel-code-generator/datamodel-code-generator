@@ -26,6 +26,7 @@ from datamodel_code_generator._constraint_applicability import (
     declared_string_keywords_taken,
     enforced_keywords,
     holds_number_format,
+    json_integer,
     literal_check,
     literal_enforces_every_keyword,
     split_declared_keywords,
@@ -35,7 +36,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
@@ -49,7 +50,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator.types import ANY, NONE, Types, _is_value_literal
+from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -205,7 +206,7 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
     """
     if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
         yield None, ()
-    elif members := [member for member in data_type.data_types if member.type != NONE or member.data_types]:
+    elif members := [member for member in data_type.data_types if not _is_plain_none(member)]:
         for member in members:
             yield from _enforcing_leaves(member)
     else:
@@ -473,8 +474,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         case str():
             final_type = parent_type
         case list():
-            non_null_types = [t for t in parent_type if t != "null"]
-            final_type = non_null_types[0] if non_null_types else inferred_type
+            final_type = next(iter(non_null_types(parent_type)), inferred_type)
         case _:
             pass
 
@@ -623,10 +623,8 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     match obj.type:
         case str() as schema_type:
             pass
-        case list() as schema_types if (
-            schema_type := next((item for item in schema_types if item != "null"), None)
-        ) is not None and all(item in ("null", schema_type) for item in schema_types):  # noqa: PLR6201
-            pass
+        case list() as schema_types if len(distinct := non_null_types(schema_types, distinct=True)) == 1:
+            schema_type = distinct[0]
         case _:
             return False
 
@@ -957,12 +955,12 @@ def get_contains_count_constraints(
     max_contains = obj.extras.get("maxContains")
     min_items = (
         min_contains
-        if isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+        if json_integer(min_contains) and min_contains > 0
         else 1
         if "minContains" not in obj.extras
         else None
     )
-    max_items = max_contains if isinstance(max_contains, int) and not isinstance(max_contains, bool) else None
+    max_items = max_contains if json_integer(max_contains) else None
     return min_items, max_items
 
 
@@ -972,7 +970,7 @@ def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywords
     if "minContains" not in obj.extras:
         return True
     min_contains = obj.extras["minContains"]
-    return isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+    return json_integer(min_contains) and min_contains > 0
 
 
 def get_effective_array_length(cls: type[ValueKeywordsHost], obj: JsonSchemaObject) -> int | None:

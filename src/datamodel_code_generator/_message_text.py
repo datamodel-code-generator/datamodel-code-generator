@@ -60,7 +60,7 @@ def listed_with_more(shown: Sequence[str], total: int) -> str:
     return f"{', '.join(shown)}{f' and {rest} more' if rest > 0 else ''}"
 
 
-def for_count(count: int, one: str, many: str | None = None) -> str:
+def for_count(count: float, one: str, many: str | None = None) -> str:
     """Return the form of a word for ``count`` things: ``one`` for exactly one, else ``many``.
 
     ``many`` defaults to ``one`` with ``s``, or with ``es`` after an ``s`` (``key``, ``keys``; ``class``, ``classes``).

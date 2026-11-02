@@ -24,7 +24,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._shared import _InheritedTypeModifiers, placeholder_identity
 from datamodel_code_generator.parser.generation import GenerationStore
-from datamodel_code_generator.types import NONE, DataType, _copy_data_type, build_union, union_members
+from datamodel_code_generator.types import DataType, _copy_data_type, _is_plain_none, build_union, union_members
 
 if TYPE_CHECKING:
     from typing_extensions import Unpack
@@ -68,11 +68,6 @@ def _copy_data_model_field(
     return copied_field
 
 
-def _wraps_one_list(data_type: DataType) -> bool:
-    """Return whether ``data_type`` is not a list and holds one member, which is a list."""
-    return not data_type.is_list and len(data_type.data_types) == 1 and data_type.data_types[0].is_list
-
-
 def _get_inherited_type_modifiers(
     data_type: DataType,
     *,
@@ -80,7 +75,7 @@ def _get_inherited_type_modifiers(
     drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = _copy_data_type(data_type, register_references=False) if _wraps_one_list(data_type) else None
+    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None  # noqa: SLF001
     return _InheritedTypeModifiers(
         null_rule=null_rule,
         is_optional=data_type.is_optional,
@@ -106,7 +101,7 @@ def _without_null_members(data_type: DataType, current_type: DataType | _Inherit
         and (members := union_members(data_type))
     ):
         return data_type
-    kept = [member for member in members if member.type != NONE or member.data_types]
+    kept = [member for member in members if not _is_plain_none(member)]
     rebuilt = data_type.model_copy(update={"data_types": build_union(DataType, kept).data_types})
     for member in rebuilt.data_types:
         member.parent = rebuilt
@@ -193,7 +188,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             wrapper_template = (
                 current_type.list_wrapper
                 if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if _wraps_one_list(current_type) else None)
+                else (current_type if current_type._wraps_one_list else None)  # noqa: SLF001
             )
             if wrapper_template is not None and copied_data_type.is_list:
                 wrapper = _copy_data_type(wrapper_template, register_references=register_references)

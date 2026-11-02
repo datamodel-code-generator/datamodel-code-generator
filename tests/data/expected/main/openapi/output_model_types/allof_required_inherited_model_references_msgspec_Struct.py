@@ -102,8 +102,8 @@ class Pickup(BasePickup):
     packages: list[PackageModel] | UnsetType = UNSET
     package: Package | UnsetType = UNSET
     tracking_code: TrackingCode | UnsetType = field(name='trackingCode', default=UNSET)
-    pickup_window: Annotated[PickupWindow, Meta(title='pickup_window')] | UnsetType = field(
-        name='pickupWindow', default=UNSET
+    pickup_window: Annotated[PickupWindow, Meta(title='pickup_window')] | UnsetType = (
+        field(name='pickupWindow', default=UNSET)
     )
     mode: str | UnsetType = 'standard'
 

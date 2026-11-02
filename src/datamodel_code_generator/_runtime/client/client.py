@@ -23,7 +23,7 @@ import httpx2
 from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
+from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, fields_without, is_token, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
 from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
@@ -228,7 +228,7 @@ def _headers(
     for name, value in () if call is None else call.items():
         if name.lower() == "content-type":
             label = _relabel(value, media_type)
-    unlabelled = (pair for pair in generated if pair[0].lower() != "content-type")
+    unlabelled = fields_without(generated, ("content-type",))
     return HeadersView([*unlabelled, *(() if label is None else (("Content-Type", label),))])
 
 
@@ -374,7 +374,7 @@ def request_body(request: httpx2.Request) -> EncodedAttempt | None:
 
 def _checked_raw(method: object, url: object) -> tuple[str, str]:
     """Normalize the raw method and validate its native URL before sending."""
-    if not isinstance(method, str) or not TOKEN.fullmatch(method):
+    if not isinstance(method, str) or not is_token(method):
         raise ConfigurationError(field_path=("method",), reason="invalid_value")
     if not isinstance(url, str):
         raise ConfigurationError(field_path=("url",), reason="invalid_url")
@@ -420,7 +420,7 @@ def _compressed(
     attempt = request_body(request)
     body = None if attempt is None else coding.attempt(attempt, call.check)
     headers = HeadersView((
-        *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
+        *fields_without(request_fields(request), ("content-length",)),
         ("Content-Encoding", coding.token),
     ))
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
@@ -470,7 +470,7 @@ def _framing(
     if not isinstance(attempt, EncodedAttempt | None):
         media_type, length = attempt.content_type, attempt.content_length
     framed = {"host", "content-length", "transfer-encoding", *(() if media_type is None else ("content-type",))}
-    headers = [(name, value) for name, value in request_fields(request) if name.lower() not in framed]
+    headers = fields_without(request_fields(request), framed)
     if media_type is not None:
         headers.append(("Content-Type", media_type))
     if length is not None:
@@ -584,7 +584,7 @@ def strip_credentials(
     whether the auth placed them or a patch, a parameter, or the server's URL carried them.
     """
     names, query = secret_names(schemes)
-    kept = tuple((name, value) for name, value in headers if name.lower() not in names)
+    kept = tuple(fields_without(headers, names))
     return kept, strip_query(url, query)
 
 

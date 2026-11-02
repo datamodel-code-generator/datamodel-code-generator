@@ -16,6 +16,8 @@ datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_file <- tests
 datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_rw_model_variant_reference <- tests.checks.model_graph.get_rw_model_variant_reference
 datamodel_code_generator.parser.jsonschema:JsonSchemaParser._record_schema_location <- tests.checks.model_graph.record_schema_location
 datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.schema <- tests.checks.schema_graph.schema
+datamodel_code_generator.parser.openapi_scope:ApiOpenAPIParser._site_facts <- tests.checks.schema_graph.site_facts
+datamodel_code_generator._site_facts:site_facts_of <- tests.checks.schema_graph.site_facts_of
 datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
 datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
 datamodel_code_generator.parser.base:Parser._get_module_future_imports <- tests.checks.module_imports.get_module_future_imports

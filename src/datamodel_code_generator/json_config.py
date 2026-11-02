@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator._json_output import (
@@ -21,7 +22,6 @@ from datamodel_code_generator._json_output import (
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
-DEFAULT_ENCODING = "utf-8"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
@@ -209,6 +209,18 @@ def _path_is_file(path: Path) -> bool:
 def _json_file(value: str | Path) -> Path | None:
     """Return the file a JSON option value names, or None for inline JSON."""
     return path if _path_is_file(path := Path(value).expanduser()) else None
+
+
+def document_base(value: Any, directory: Path, fallback: Path) -> Path:
+    """Return the directory that the documents a JSON option value names resolve against.
+
+    A value that names a JSON file resolves against that file's directory, or against the directory of a link when the
+    file is given through one; a relative file is joined to ``directory``. Inline JSON, a table and no value resolve
+    against ``fallback``.
+    """
+    if isinstance(value, str | Path) and (file := _json_file(value)) is not None:
+        return (directory / file).parent
+    return fallback
 
 
 def _read_json_or_inline(value: str) -> str:

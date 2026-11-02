@@ -17,7 +17,7 @@ from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wir
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator._target_module import TypeNames
 from datamodel_code_generator._target_operations import PlanError, raise_selected
-from datamodel_code_generator._target_render import model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_render import TYPING_EXTENSIONS, model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
 
 FASTAPI: Final = "fastapi>=0.141.1"
-TYPING_EXTENSIONS: Final = "typing-extensions>=4.16"
 FORMS: Final = "python-multipart>=0.0.32"
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",

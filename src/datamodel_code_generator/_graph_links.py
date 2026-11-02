@@ -4,16 +4,17 @@ A data type that names a reference, and a model whose base names one, is a child
 (``Reference.children``), in the order the children were added. A data type is the child that names its reference
 through ``replace_reference``; every other child is a model, which ``Reference.iter_data_model_children`` yields.
 
-A data type node is held through its ``parent``: by the data type it is a member of, or by the field whose type it is,
-which its model holds. A field is the holder with ``invalidate_semantic_caches``; a model has no ``parent``. A base
-class node has no ``parent``: the models that list it in their ``base_classes`` hold it.
+A data type node is held through its ``parent``: by the data type it is a member of or the dict key of
+(``link_members``), or by the field whose type it is, which its model holds. A field is the holder with
+``invalidate_semantic_caches``; a model has no ``parent``. A base class node has no ``parent``: the models that list it
+in their ``base_classes`` hold it.
 
 A type built only to read facts from, or a tree a holder lets go of, leaves the graph through its tree: every node
 of a data type's tree (``all_data_types``) drops its record as a child (``drop_tree``), or lets go of its ``parent``
 (``clear_parents``).
 
-This module adds, drops and reads children and walks and clears the holders without importing `reference`, `types` or
-`model`, which import it.
+This module adds, drops and reads children, links the members of a node and walks and clears the holders without
+importing `reference`, `types` or `model`, which import it.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ __all__ = [
     "drop_child",
     "drop_child_and_detached",
     "drop_tree",
+    "link_members",
     "nearest_field",
 ]
 
@@ -66,6 +68,14 @@ def drop_tree(root: Any | None) -> None:
 def data_type_children(reference: Any) -> list[Any]:
     """Return the data types that name ``reference``, in the order they were added, as a list of their own."""
     return [child for child in reference.children if hasattr(child, "replace_reference")]
+
+
+def link_members(node: Any) -> None:
+    """Make ``node`` the ``parent`` of each of its members and of its dict key."""
+    for member in node.data_types:
+        member.parent = node
+    if (dict_key := node.dict_key) is not None:
+        dict_key.parent = node
 
 
 def nearest_field(node: object) -> Any | None:

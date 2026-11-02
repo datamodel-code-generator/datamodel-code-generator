@@ -19,7 +19,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import SUCCESS_STATUSES, json_number
+from ..model_codecs.media import JSON_MEDIA_TYPE, SUCCESS_STATUSES, json_number
 from .auth import (
     OAUTH_ERROR_CODES,
     AuthError,
@@ -226,7 +226,7 @@ class _Provider(TokenSource):
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
         form = self._form()
-        headers = {"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Accept": JSON_MEDIA_TYPE, "Content-Type": "application/x-www-form-urlencoded"}
         secret = _secret(self._secret)
         match self._method:
             case "client_secret_basic":

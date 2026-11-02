@@ -686,6 +686,7 @@ def run_main_with_args(
     expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
+    derived_stdout: bool = False,
     use_parsed_source_cache: bool = True,
     use_builtin_default_formatter: bool = True,
     isolate_model_template_cache: bool = False,
@@ -701,6 +702,7 @@ def run_main_with_args(
         expected_stderr_path: Path to file with expected stderr content
         expected_stderr_contains: Expected stderr substring
         assert_no_stderr: Assert stderr is empty
+        derived_stdout: Compare stdout with the output pytest stores for the test
         use_parsed_source_cache: Enable the process-local parsed source cache for generation-style commands
         use_builtin_default_formatter: Add the test-suite builtin formatter default when applicable
         isolate_model_template_cache: Clear cached Jinja model templates before and after execution
@@ -731,6 +733,7 @@ def run_main_with_args(
         expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
+        derived_stdout=derived_stdout,
     )
     return return_code
 

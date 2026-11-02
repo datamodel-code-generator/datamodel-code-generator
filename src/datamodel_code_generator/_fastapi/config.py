@@ -15,7 +15,7 @@ from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
-from datamodel_code_generator._target_contract import LOCATIONS
+from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name
 from datamodel_code_generator.enums import ServerBodyMode, ServerHandlerMode
 
@@ -100,8 +100,7 @@ def _names(value: object, target_python_version: PythonVersion, valid_key: Calla
 
 
 def _parameter_key(key: str) -> bool:
-    location, _, name = key.partition(":")
-    return location in LOCATIONS and bool(name)
+    return parameter_name_key(key, "legacy-server-named-parameter-keys") is not None
 
 
 def _response_choice(value: object) -> bool:
