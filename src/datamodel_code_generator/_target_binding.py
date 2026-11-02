@@ -1071,22 +1071,25 @@ class _Binder:
             self.anchors.append(node)
         return identity
 
-    def source(self, reference: Reference) -> str:
-        """Return the path of the schema a model is generated from, through read and write variants and reuse.
+    def reuse_origin(self, reference: Reference) -> str | None:
+        """Return the path of the reference reuse replaced with this one, or None if reuse did not make it.
 
         A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
         """
         path = reference.path
-        return _source_path(path.removesuffix(_REUSE_PATH_SUFFIX) if id(reference) not in self.keys else path)
+        if id(reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX):
+            return None
+        return path.removesuffix(_REUSE_PATH_SUFFIX)
+
+    def source(self, reference: Reference) -> str:
+        """Return the path of the schema a model is generated from, through read and write variants and reuse."""
+        origin = self.reuse_origin(reference)
+        return _source_path(reference.path if origin is None else origin)
 
     def reused(self, model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
-        path = model.reference.path
-        original = (
-            None
-            if id(model.reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX)
-            else self.parser.model_resolver.references.get(path.removesuffix(_REUSE_PATH_SUFFIX))
-        )
+        origin = self.reuse_origin(model.reference)
+        original = None if origin is None else self.parser.model_resolver.references.get(origin)
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 
     def emitted(self, model: object) -> bool:
