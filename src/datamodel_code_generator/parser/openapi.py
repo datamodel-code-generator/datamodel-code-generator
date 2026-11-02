@@ -993,6 +993,20 @@ class OpenAPIParser(JsonSchemaParser):
         Default("data-type", _parse_unmodeled_operation_schema),
     )
 
+    def _parse_media_schema(self, name: str, media_obj: MediaObject, path: list[str]) -> DataType | None:
+        """Parse the schema of a media type object at ``path`` into a data type, none for one without a schema.
+
+        The array that stands for an ``itemSchema`` is parsed at the special path of ``path``.
+        """
+        if (media_schema := self._get_media_schema(media_obj)) is None:
+            return None
+        return self._parse_schema_or_ref(
+            name,
+            media_schema.schema,
+            self._media_schema_path(path, from_item_schema=media_schema.from_item_schema),
+            location=media_schema.location,
+        )
+
     def parse_request_body(
         self,
         name: str,
@@ -1002,14 +1016,8 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse request body content into data types by media type."""
         data_types: dict[str, DataType] = {}
         for media_type, media_obj in request_body.content.items():
-            media_schema = self._get_media_schema(media_obj)
-            if media_schema is None:
-                continue
-            schema_path = self._media_schema_path([*path, media_type], from_item_schema=media_schema.from_item_schema)
-            data_type = self._parse_schema_or_ref(
-                name, media_schema.schema, schema_path, location=media_schema.location
-            )
-            data_types[media_type] = data_type
+            if (data_type := self._parse_media_schema(name, media_obj, [*path, media_type])) is not None:
+                data_types[media_type] = data_type
         return data_types
 
     def parse_responses(
@@ -1036,14 +1044,8 @@ class OpenAPIParser(JsonSchemaParser):
 
             for content_type, obj in content.items():
                 response_path: list[str] = [*path, str(status_code), str(content_type)]
-                media_schema = self._get_media_schema(obj)
-                if media_schema is None:
-                    continue
-                schema_path = self._media_schema_path(response_path, from_item_schema=media_schema.from_item_schema)
-                data_type = self._parse_schema_or_ref(
-                    response_name, media_schema.schema, schema_path, location=media_schema.location
-                )
-                data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
+                if (data_type := self._parse_media_schema(response_name, obj, response_path)) is not None:
+                    data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
 
         return data_types
 
