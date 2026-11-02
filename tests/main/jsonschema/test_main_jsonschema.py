@@ -35635,6 +35635,28 @@ def test_main_jsonschema_dotted_directory_reference(output_dir: Path, extra_args
     )
 
 
+def test_main_jsonschema_additional_import_named_like_module(output_dir: Path) -> None:
+    """Import the models of a module from it where an additional import binds the name of the module.
+
+    ``--additional-imports ipaddress.IPv4Address`` is written by every module, the ``__init__.py`` of each package
+    included, so ``from . import IPv4Address`` bound the name twice and gave what the package binds, not the module
+    ``IPv4Address`` (#5773).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "additional_import_named_like_module.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],

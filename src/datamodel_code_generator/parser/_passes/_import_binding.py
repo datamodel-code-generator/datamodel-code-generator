@@ -24,7 +24,7 @@ from datamodel_code_generator._module_paths import (
     written_name,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator.imports import Import, _iter_import_bindings
+from datamodel_code_generator.imports import Import, _import_bindings, _iter_import_bindings
 from datamodel_code_generator.model.base import BaseClassDataType
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
@@ -87,6 +87,18 @@ class ReferenceImportTarget:
         return binding if name == self.import_ else f"{binding}.{name}"
 
 
+def _is_module_named_like_shared_import(shared_imports: Imports | None, module: str, name: str) -> bool:
+    """Return whether ``module``, which is not the ``name`` of the model it holds, is bound by a shared import.
+
+    A ``__future__`` import binds a name too, but it is no import of a module's name.
+    """
+    return (
+        shared_imports is not None
+        and module != name
+        and any(binding == module for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__")
+    )
+
+
 def reference_import_target(  # ruff: ignore[too-many-arguments]
     name: str,
     current_module_name: str,
@@ -97,12 +109,16 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
     treat_dot_as_module: bool | None,
+    shared_imports: Imports | None,
     row: ImportPathRow = "reference",
 ) -> ReferenceImportTarget:
     """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
 
     ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
-    The module is imported by the path the output writes it at (``written_name``).
+    The module is imported by the path the output writes it at (``written_name``). A model is imported from its module,
+    not through the module imported from its package, where an import every module shares (``shared_imports``) binds
+    the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
+    name twice and ``from package import module`` would give what the package binds, not the module.
     """
     if base_class:
         left, right = relative(current_module_name, target_full_name)
@@ -126,11 +142,16 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         ref_module = tuple(target_full_name.split(".")[:-1])
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
+        is_internal_module = row == "reference" and ref_module in internal_modules
 
         if (
             from_
             and not use_exact
-            and ((ref_module in internal_modules and row == "reference") or is_module_class_collision)
+            and (
+                is_internal_module
+                or is_module_class_collision
+                or _is_module_named_like_shared_import(shared_imports, import_, name)
+            )
         ):
             from_ = join_module(from_, import_)
             import_ = name
@@ -153,11 +174,13 @@ def register_reference_import(  # noqa: PLR0913
     producer: ImportProducer,
     treat_dot_as_module: bool | None,
     import_ledger: ModuleImportLedger,
+    shared_imports: Imports,
     row: ImportPathRow = "reference",
 ) -> str | None:
     """Import a reference from another module and return its expression when it is not the class name.
 
-    A model of the module itself imports nothing and is written by its class name.
+    A model of the module itself imports nothing and is written by its class name. ``shared_imports`` are the imports
+    every module writes (``reference_import_target``).
     """
     name = reference.short_name
     target = reference_import_target(
@@ -169,6 +192,7 @@ def register_reference_import(  # noqa: PLR0913
         internal_modules=internal_modules,
         base_class=base_class,
         treat_dot_as_module=treat_dot_as_module,
+        shared_imports=shared_imports,
         row=row,
     )
     if target.same_module:
@@ -202,6 +226,7 @@ def generic_base_class_import(module: ModulePath, base_module: ModulePath, name:
         internal_modules=(),
         base_class=True,
         treat_dot_as_module=None,
+        shared_imports=None,
     )
     return Import(from_=target.written_from, import_=target.import_)
 
@@ -216,6 +241,10 @@ class ReferenceExpressionHost(Protocol):
     @property
     def _import_ledger(self) -> ModuleImportLedger:
         """The ledger of the imports each module adds."""
+
+    @property
+    def imports(self) -> Imports:
+        """The imports every module shares."""
 
     @property
     def treat_dot_as_module(self) -> bool | None:
@@ -256,6 +285,7 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             producer=producer,
             treat_dot_as_module=host.treat_dot_as_module,
             import_ledger=host._import_ledger,  # noqa: SLF001
+            shared_imports=host.imports,
             row=row,
         )
     )

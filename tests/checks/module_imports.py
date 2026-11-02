@@ -477,6 +477,7 @@ def _module_import_plan(
                     internal_modules=internal_modules,
                     base_class=base_class,
                     treat_dot_as_module=parser.treat_dot_as_module,
+                    shared_imports=parser.imports,
                 )
                 pending.append((target, model.class_name, name, written, import_target, reference.path))
     log = NameLog(frozenset(ctx.scoped_model_resolver.exclude_names), tuple(_name_events(imports_mode, ctx.imports)))
