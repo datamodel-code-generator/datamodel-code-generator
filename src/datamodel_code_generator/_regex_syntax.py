@@ -38,18 +38,29 @@ EngineRow: TypeAlias = Literal["model", "adapter"]
 _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 
 
-_UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
+_WHITE_SPACE_CHARACTERS = "\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
+_UNICODE_WHITE_SPACE = f"[{_WHITE_SPACE_CHARACTERS}]*"
+_VERBOSE_SPACE = rf"(?:[{_WHITE_SPACE_CHARACTERS}]|#[^\n]*(?=\n|\Z))*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
-_COUNTED_REPETITION: Final = (
-    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
-    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
-)
-_REGEX_TOKEN: Final = (
-    rf"(?s){_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
-    rf"|(?:{_COUNTED_REPETITION}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
-)
+
+
+def _counted_repetition(space: str) -> str:
+    """Return the pattern of a counted repetition whose parts may be separated by ``space``."""
+    return rf"\{{{space}[0-9]+{space}(?:,{space}(?:[0-9]+{space})?)?\}}"
+
+
+def _regex_token(counted_repetition: str) -> str:
+    """Return the token pattern of the scan, which reads a counted repetition as ``counted_repetition`` does."""
+    return (
+        rf"(?s){_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
+        rf"|(?:{counted_repetition}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
+    )
+
+
+_COUNTED_REPETITION: Final = _counted_repetition(_UNICODE_WHITE_SPACE)
+_REGEX_TOKEN: Final = _regex_token(_COUNTED_REPETITION)
 _REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])"
-_REGEX_VERBOSE_TOKEN: Final = rf"{_REGEX_TOKEN}|(?P<comment>#[^\n]*)"
+_REGEX_VERBOSE_TOKEN: Final = rf"{_regex_token(_counted_repetition(_VERBOSE_SPACE))}|(?P<comment>#[^\n]*)"
 _REGEX_VERBOSE_CLASS_TOKEN: Final = rf"{_REGEX_CLASS_TOKEN}|(?P<comment>#[^\n]*)"
 _VERBOSE_FLAGS: Final = r"\(\?(?P<flags>[A-Za-z]*x[A-Za-z]*(?:-[A-Za-wyz]+)?)\)"
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")

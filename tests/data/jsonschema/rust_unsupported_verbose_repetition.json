@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CommentAfterComma": {
+      "type": "string",
+      "pattern": "(?x) ^ a{2, # up to three\n 3} $"
+    },
+    "CommentsAroundNumbers": {
+      "type": "string",
+      "pattern": "(?x) ^ a{ # at least\n 2 # and at most\n , 3 } $"
+    },
+    "CommentBeforeUpperBound": {
+      "type": "string",
+      "pattern": "(?x) ^ a{ # no lower bound\n ,3 } $"
+    }
+  }
+}

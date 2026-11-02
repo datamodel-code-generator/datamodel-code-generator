@@ -11,6 +11,7 @@ import sys
 import warnings
 from contextlib import redirect_stdout
 from importlib.resources import files
+from operator import attrgetter
 from pathlib import Path
 from string import Formatter
 from typing import TYPE_CHECKING, Any
@@ -724,7 +725,7 @@ def test_recommend_options_runs_on_pydantic_2_0(
         pydantic, "__getattr__", lambda name: {"StringConstraints": _missing_attribute}.get(name, load)(name)
     )
     with pytest.raises(AttributeError):
-        pydantic.StringConstraints  # noqa: B018
+        attrgetter("StringConstraints")(pydantic)
     for name in [name for name in sys.modules if name == RECOMMENDER or name.startswith(f"{RECOMMENDER}.")]:
         monkeypatch.delitem(sys.modules, name)
     _recommend(

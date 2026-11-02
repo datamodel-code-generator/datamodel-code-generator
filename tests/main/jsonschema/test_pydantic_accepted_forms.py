@@ -26,6 +26,12 @@ VERBOSE_PAYLOADS = {
     "ScopedVerbose": ("abc", "ABC"),
 }
 
+REPETITION_PAYLOADS = {
+    "CommentAfterComma": ("aaa", "aaaa"),
+    "CommentsAroundNumbers": ("aa", "a"),
+    "CommentBeforeUpperBound": ("a{,3}", "aaa"),
+}
+
 
 def _outcome(validate: Callable[[str], object], payload: object) -> str:
     """Return ``valid``, or the types of the errors that the validator reports for a JSON payload."""
@@ -103,6 +109,34 @@ def test_verbose_patterns_select_the_python_engine_for_syntax_rust_rejects(outpu
     outcomes = ""
     for name, payloads in VERBOSE_PAYLOADS.items():
         with _generated_model(output_file, "rust_unsupported_verbose", name) as model:
+            outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
+    assert_output(outcomes, name="payloads")
+
+
+def test_verbose_comments_inside_a_counted_repetition_keep_the_rust_engine(output_file: Path) -> None:
+    """Keep the default engine for a verbose pattern with comments inside a counted repetition, as Rust reads it.
+
+    The Rust engine skips whitespace and a comment after the ``{``, a number and the ``,`` of a counted repetition,
+    where Python's ``re`` reads the braces as text. A repetition without a lower bound is rejected by Rust either way.
+    ``--field-constraints`` writes the pattern with the newline that ends a comment.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_verbose_repetition.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = ""
+    for name, payloads in REPETITION_PAYLOADS.items():
+        with _generated_model(output_file, "rust_unsupported_verbose_repetition", name) as model:
             outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
     assert_output(outcomes, name="payloads")
 

@@ -23,6 +23,8 @@ from .constants import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
+_RE_GLOBAL_FLAGS_AFTER_START = "Flags not at the start of the expression"
+
 
 def _any_schema_node(value: Any, predicate: Callable[[dict[str, Any]], bool]) -> bool:
     result = False
@@ -235,8 +237,9 @@ def _schema_exclusion_reason(schema: dict[str, Any], *, is_openapi: bool = False
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
+            warnings.filterwarnings("error", _RE_GLOBAL_FLAGS_AFTER_START, DeprecationWarning)
             validators.validator_for(schema).check_schema(schema)
-    except exceptions.SchemaError:
+    except (exceptions.SchemaError, DeprecationWarning):
         return "schema is invalid for its declared JSON Schema draft"
     if _has_external_ref(schema):
         return "contains external or non-fragment $ref values"
