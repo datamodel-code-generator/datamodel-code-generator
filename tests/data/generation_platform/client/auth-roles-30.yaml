@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Role names in OpenAPI 3.0
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /billing:
+    get:
+      operationId: billing
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - key: [Billing Admin]
+  /bearer:
+    get:
+      operationId: bearer
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bearer: [admin]
+  /tokens:
+    get:
+      operationId: tokens
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - oauth: [read]
+  /empty:
+    get:
+      operationId: empty
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - key: []
+components:
+  securitySchemes:
+    key:
+      type: apiKey
+      in: header
+      name: X-Key
+    bearer:
+      type: http
+      scheme: bearer
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: Read
+            write:pets: Write pets

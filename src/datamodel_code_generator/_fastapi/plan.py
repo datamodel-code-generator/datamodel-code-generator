@@ -74,6 +74,7 @@ from datamodel_code_generator._target_contract import (
     parameter_place,
     range_start,
     scheme_catalogues,
+    scope_problem,
     security_requirements,
     symbols_by_id,
     type_uses,
@@ -829,6 +830,15 @@ class Planner:  # noqa: PLR0904
             return None
         for name in dict.fromkeys(name for requirement in requirements for name, _ in requirement):
             self.scheme(operation, name)
+        declared = operation_schemes(self.scheme_catalogues, operation)
+        for name, scopes in dict.fromkeys(entry for requirement in requirements for entry in requirement):
+            if (
+                name in self.schemes
+                and (declaration := declared.get(name)) is not None
+                and (problem := scope_problem(name, declaration, scopes, self.request.batch.openapi)) is not None
+            ):
+                message = f"The security of {label(operation)} {problem}"
+                self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
         return SecuritySpec(requirements=requirements)
 
     def scheme(self, operation: OperationContract, name: str) -> None:

@@ -99,6 +99,10 @@ security	main/generation_platform/fastapi/packages/security/
 security	main/generation_platform/fastapi/security.txt
 security-errors	main/generation_platform/fastapi/packages/security-errors/
 security-errors	main/generation_platform/fastapi/security-errors.txt
+security-roles	main/generation_platform/fastapi/packages/security-roles/
+security-roles	main/generation_platform/fastapi/security-roles.txt
+security-roles-30	main/generation_platform/fastapi/packages/security-roles-30/	= main/generation_platform/fastapi/packages/info/
+security-roles-30	main/generation_platform/fastapi/security-roles-30.txt
 selector-errors	main/generation_platform/fastapi/packages/selector-errors/
 selector-errors	main/generation_platform/fastapi/selector-errors.txt
 services	main/generation_platform/fastapi/packages/services/

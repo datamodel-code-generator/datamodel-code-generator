@@ -1,0 +1,80 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Role names",
+  "version": "1.0.0"
+ },
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "paths": {
+  "/billing": {
+   "get": {
+    "operationId": "billing",
+    "responses": {
+     "204": {
+      "description": "Accepted"
+     }
+    },
+    "security": [
+     {
+      "key": [
+       "Billing Admin",
+       "Auditor"
+      ]
+     },
+     {
+      "bearer": [
+       "Billing Admin"
+      ]
+     }
+    ]
+   }
+  },
+  "/tokens": {
+   "get": {
+    "operationId": "tokens",
+    "responses": {
+     "204": {
+      "description": "Accepted"
+     }
+    },
+    "security": [
+     {
+      "oauth": [
+       "read",
+       "write:pets"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "components": {
+  "securitySchemes": {
+   "key": {
+    "type": "apiKey",
+    "in": "header",
+    "name": "X-Key"
+   },
+   "bearer": {
+    "type": "http",
+    "scheme": "bearer"
+   },
+   "oauth": {
+    "type": "oauth2",
+    "flows": {
+     "clientCredentials": {
+      "tokenUrl": "https://auth.example.com/token",
+      "scopes": {
+       "read": "Read",
+       "write:pets": "Write pets"
+      }
+     }
+    }
+   }
+  }
+ }
+}

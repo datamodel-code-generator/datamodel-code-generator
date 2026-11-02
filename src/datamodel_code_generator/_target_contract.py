@@ -640,6 +640,8 @@ Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
 
 _STATUS_KEY: Final = re.compile(r"[1-5][0-9]{2}")
+_SCOPE_TOKEN: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
+_SCOPE_SCHEMES: Final = frozenset({"oauth2", "openIdConnect"})
 _RANGE_KEY: Final = re.compile(r"([1-5])[xX]{2}")
 
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
@@ -761,6 +763,21 @@ def security_requirements(operation: OperationContract) -> tuple[Requirement, ..
 def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None:
     name, scopes = entry
     return (name, scopes) if isinstance(name, str) and scopes is not None else None
+
+
+def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: str) -> str | None:
+    """Return what a requirement gets wrong in the scopes it lists for a scheme, or None when they are valid.
+
+    An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
+    which OpenAPI 3.1 leaves to the API (any text) and OpenAPI 3.0 does not allow (its array must be empty). `scopes` is
+    None when the requirement lists no strings.
+    """
+    tokens = fact(declaration, "type") in _SCOPE_SCHEMES
+    if scopes is None or (tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes))):
+        return f"requires valid scope tokens for scheme {name!r}"
+    if scopes and not tokens and openapi.startswith("3.0"):
+        return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"
+    return None
 
 
 def scheme_catalogues(batch: GeneratedTypeContractBatch) -> dict[SourceDocumentId, dict[str, WireDeclaration]]:

@@ -121,6 +121,9 @@ auth-context	main/generation_platform/client/packages/auth-context/pydantic_v2_B
 auth-errors	main/generation_platform/client/auth-errors.txt
 auth-no-root	main/generation_platform/client/auth-no-root.txt
 auth-no-root	main/generation_platform/client/packages/auth-no-root/pydantic_v2_BaseModel//*.py
+auth-roles	main/generation_platform/client/auth-roles.txt
+auth-roles	main/generation_platform/client/packages/auth-roles/pydantic_v2_BaseModel//*.py
+auth-roles-30	main/generation_platform/client/auth-roles-30.txt
 auth-wire-conflicts	main/generation_platform/client/auth-wire-conflicts.txt
 binary-allowed	main/generation_platform/client/binary-allowed.txt
 binary-allowed	main/generation_platform/client/packages/binary-allowed/dataclasses_dataclass//*.py
