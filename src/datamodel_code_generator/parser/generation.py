@@ -653,38 +653,14 @@ class GenerationIndexBuilder:
         return model_occurrences(model, self._model_key(model.reference), self._model_key)
 
     def _record_data_types(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
-        """Record the data type occurrences of a model in traversal order, as a full build visits them."""
-        facts = self._facts
-        data_type_ids: list[DataTypeId] = []
-        for occurrence in occurrences:
-            data_type, _, role = occurrence
-            if role == "base":
-                self._add_base_owner(id(data_type), model_id)
-            data_type_id = self._next_data_type_id
-            self._next_data_type_id += 1
-            fact = facts.data_type_facts[data_type_id] = _data_type_fact(data_type_id, model_id, occurrence)
-            if (current := facts.data_type_fact_by_object.get(object_id := id(data_type))) is not None:
-                facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(data_type_id)
-            facts.data_type_fact_by_object[object_id] = fact
-            data_type_ids.append(data_type_id)
-            if fact.reference:
-                facts.sites_by_target[self._model_key(fact.reference)][SiteKey(data_type_id)] = None
-        facts.data_types_by_model[model_id] = tuple(data_type_ids)
-
-    def _record_data_types_again(
-        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
-    ) -> None:
-        """Record a changed or appended model in the ids it had, replacing only the occurrences that differ.
+        """Record the data type occurrences of a model in the ids it had, replacing only the occurrences that differ.
 
         Keeping the ids keeps the dictionaries from growing with every change; occurrences beyond the old
-        count get new ids, which still follow every id the model keeps. The model's ``sites`` replace its old ones.
+        count get new ids, which still follow every id the model keeps. A full build records each model this way,
+        with no old ids.
         """
         data_type_facts = self._facts.data_type_facts
         old_ids = self._facts.data_types_by_model.get(model_id, ())
-        all_sites = self._facts.sites
-        old_sites = _OldSites(
-            site for data_type_id in old_ids if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
-        )
         data_type_ids = list(old_ids[: len(occurrences)])
         for _ in range(len(occurrences) - len(old_ids)):
             data_type_ids.append(self._next_data_type_id)
@@ -712,6 +688,18 @@ class GenerationIndexBuilder:
         for fact in fresh_facts:
             self._record_fact(fact)
         self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
+
+    def _record_data_types_again(
+        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
+    ) -> None:
+        """Record a changed or appended model in the ids it had; its ``sites`` replace its old ones."""
+        all_sites = self._facts.sites
+        old_sites = _OldSites(
+            site
+            for data_type_id in self._facts.data_types_by_model.get(model_id, ())
+            if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
+        )
+        self._record_data_types(model_id, occurrences)
         self._record_sites(model_id, sites, old_sites)
 
     def _record_sites(
@@ -805,9 +793,8 @@ class GenerationIndexBuilder:
             owners[base_class_id] = model_id
             return
         model_ids = [current] if isinstance(current, int) else current
-        if model_id not in model_ids:
-            insort(model_ids, model_id, key=self._facts.parse_order)
-            owners[base_class_id] = model_ids
+        insort(model_ids, model_id, key=self._facts.parse_order)
+        owners[base_class_id] = model_ids
 
     def _remove_base_owner(self, base_class_id: int, model_id: ModelId) -> None:
         owners = self._facts.base_owner_model_ids_by_object
