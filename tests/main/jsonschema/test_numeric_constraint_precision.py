@@ -35,6 +35,10 @@ if TYPE_CHECKING:
 BEYOND_FLOAT_RANGE = JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision" / "beyond_float_range.json"
 BEYOND_FLOAT_RANGE_PAYLOADS = JSON_DATA_PATH / "numeric_constraint_precision" / "beyond_float_range_payloads.json"
 NON_FINITE_MULTIPLE_OF = JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision" / "non_finite_multiple_of.json"
+EXACT_INTEGER_CONSTRAINTS = JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision" / "exact_integer_constraints.json"
+EXACT_INTEGER_CONSTRAINTS_PAYLOADS = (
+    JSON_DATA_PATH / "numeric_constraint_precision" / "exact_integer_constraints_payloads.json"
+)
 
 
 @pytest.mark.parametrize("entry_point", ["api", "cli"])
@@ -238,6 +242,57 @@ def test_non_finite_multiple_of_left_out_accepts_non_multiples(
             for document in ({name: 0}, {name: 3 if name == "count" else 1.5})
         )
     assert_output(verdicts, name="payloads")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param((), id="constrained"),
+        pytest.param(("--field-constraints",), id="field"),
+        pytest.param(("--use-annotated",), id="annotated"),
+        pytest.param(("--use-decimal-for-multiple-of",), id="decimal"),
+        pytest.param(("--output-model-type", "pydantic_v2.dataclass"), id="dataclass"),
+    ],
+)
+def test_integer_constraints_past_float_precision_stay_exact(output_file: Path, extra_args: tuple[str, ...]) -> None:
+    """Write the multipleOf and the exclusive bounds of an integer as the integers the schema gives, past 2**53 too.
+
+    An integer a float equals but writes as another number (``2**64`` is ``1.8446744073709552e+19``) stays the integer,
+    so ``2**64`` meets a ``multipleOf`` of ``2**64``, the least common multiple of an ``allOf`` and the values a
+    ``--filter-literal-values`` keeps are those of the schema, and a ``number`` still takes the float it is. The
+    documents are validated as Python values, since the JSON parser of the oldest supported Pydantic refuses integers
+    beyond 64 bits.
+    """
+    run_main_and_assert(
+        input_path=EXACT_INTEGER_CONSTRAINTS,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--filter-literal-values", *extra_args],
+    )
+    payloads = json.loads(EXACT_INTEGER_CONSTRAINTS_PAYLOADS.read_text(encoding="utf-8"))
+    documents = [
+        *payloads["valid"],
+        *({**payloads["valid"][0], **change} for change in payloads["invalid"]),
+    ]
+    validator = Draft202012Validator(json.loads(EXACT_INTEGER_CONSTRAINTS.read_text(encoding="utf-8")))
+    with _generated_model(output_file, "exact_integer_constraints", "Model") as model:
+        _model_json_validator(model)
+        validate_python = TypeAdapter(model).validate_python
+        verdicts = "".join(
+            f"{json.dumps(document)}: schema {'accepts' if validator.is_valid(document) else 'rejects'}, "
+            f"model {_python_verdict(validate_python, document)}\n"
+            for document in documents
+        )
+    assert_output(verdicts, name="payloads")
+
+
+def _python_verdict(validate_python: Callable[[object], Any], document: object) -> str:
+    """Return whether a generated model accepts or rejects a document of Python values."""
+    try:
+        validate_python(document)
+    except ValidationError:
+        return "rejects"
+    return "accepts"
 
 
 def _model_verdict(validate_json: Callable[[str], Any], document: object) -> str:

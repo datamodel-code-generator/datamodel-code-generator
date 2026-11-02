@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "divisor": {
+      "type": "integer",
+      "multipleOf": 4611686018427387904
+    },
+    "above": {
+      "type": "integer",
+      "exclusiveMinimum": 4611686018427387904
+    },
+    "below": {
+      "type": "integer",
+      "exclusiveMaximum": -4611686018427387904
+    },
+    "beyond": {
+      "type": "integer",
+      "multipleOf": 18446744073709551616
+    }
+  }
+}
