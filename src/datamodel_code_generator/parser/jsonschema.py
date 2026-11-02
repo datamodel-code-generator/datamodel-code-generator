@@ -4126,7 +4126,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if self.model_resolver.default_value_overrides:
                         self._apply_inherited_field_default(
                             resolved_field,
-                            _rw_split.inherited_default_source(self, field, inherited_field),
+                            _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
                             class_name=name,
                         )
                     fields[index] = resolved_field

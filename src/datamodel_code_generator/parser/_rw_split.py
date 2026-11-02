@@ -31,10 +31,11 @@ from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
-from datamodel_code_generator.parser._intersection import inherits_keyword
 from datamodel_code_generator.parser._origins import with_field_origin
-from datamodel_code_generator.parser._passes._keys import declares_raw_schema_default
-from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
+from datamodel_code_generator.parser._passes._shared import (
+    _detach_deferred_inherited_field_parents,
+    inherited_default_source,
+)
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, _merges_ref_siblings
@@ -701,7 +702,7 @@ def merge_inherited_field_overrides(
         if class_name := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
             parser._apply_inherited_field_default(resolved_field, inherited_field, class_name=class_name)  # noqa: SLF001
         elif class_name := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
-            source = inherited_default_source(parser, field, inherited_field)
+            source = inherited_default_source(parser.allof_merge_mode, field, inherited_field)
             parser._apply_inherited_field_default(resolved_field, source, class_name=class_name)  # noqa: SLF001
         result.append(resolved_field)
     return result
@@ -735,19 +736,6 @@ def overlay_inherited_field(
         if (origin := field_origin_of(field)) is not None and origin.kind == "property":
             with_field_origin(resolved_field, origin.kind, origin.location)
     return resolved_field
-
-
-def inherited_default_source(
-    parser: RwSplitHost, field: DataModelFieldBase, inherited_field: DataModelFieldBase
-) -> DataModelFieldBase:
-    """Return the field whose default the override ``field`` of ``inherited_field`` takes.
-
-    The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
-    ``field`` declares none.
-    """
-    if inherits_keyword(parser.allof_merge_mode.value, "default") and not declares_raw_schema_default(field):
-        return inherited_field
-    return field
 
 
 def prepare_required_inherited_field(
