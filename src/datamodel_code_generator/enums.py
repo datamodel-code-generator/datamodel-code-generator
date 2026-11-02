@@ -32,6 +32,15 @@ MAX_VERSION: Final[int] = 13
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
 
 
+class _ExitCode:
+    """The exit codes of the command line: `__main__.Exit`, and those its fast paths and target runs return as ints."""
+
+    OK: Final = 0
+    DIFF: Final = 1
+    ERROR: Final = 2
+    INTERRUPTED: Final = 3
+
+
 class InputFileType(Enum):
     """Supported input file types for schema parsing."""
 

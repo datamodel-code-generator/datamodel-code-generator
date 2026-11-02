@@ -14,17 +14,17 @@ def _json_schema_path(name: str) -> str | None:
 
 
 def _print_json_schema(name: str) -> int:
-    """Print a JSON Schema on a fast path and return the exit code, 2 where Pydantic lacks the JSON output support."""
+    """Print a JSON Schema on a fast path and return the exit code, an error if Pydantic lacks JSON output support."""
     from datamodel_code_generator import _StructuredOutputUnavailableError  # noqa: PLC0415
     from datamodel_code_generator._json_output import json_schema_text  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
-        text = json_schema_text(name)
+        sys.stdout.write(f"{json_schema_text(name)}\n")
     except _StructuredOutputUnavailableError as error:
         sys.stderr.write(f"{error}\n")
-        return 2
-    sys.stdout.write(f"{text}\n")
-    return 0
+        return _ExitCode.ERROR
+    return _ExitCode.OK
 
 
 match sys.argv:
@@ -146,7 +146,7 @@ from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
-from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode
 
 
 def __getattr__(name: str) -> Any:
@@ -228,10 +228,10 @@ _NAMING_FIELDS: frozenset[str] = frozenset({"model_name_map", "naming_strategy",
 class Exit(IntEnum):
     """Exit reasons."""
 
-    OK = 0
-    DIFF = 1
-    ERROR = 2
-    KeyboardInterrupt = 3
+    OK = _ExitCode.OK
+    DIFF = _ExitCode.DIFF
+    ERROR = _ExitCode.ERROR
+    KeyboardInterrupt = _ExitCode.INTERRUPTED
 
 
 def sig_int_handler(_: int, __: Any) -> None:  # pragma: no cover
@@ -2516,7 +2516,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         from datamodel_code_generator import get_version  # noqa: PLC0415
 
         print(get_version())  # noqa: T201
-        sys.exit(0)
+        sys.exit(Exit.OK)
 
     if namespace.output_format_json_schema is not None:
         print(json_schema_text(namespace.output_format_json_schema))  # noqa: T201
