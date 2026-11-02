@@ -31,6 +31,7 @@ from urllib.parse import unquote, urljoin
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import escape_token, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
 from datamodel_code_generator._records import record
@@ -781,19 +782,18 @@ def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[s
     """
     if not parser._dynamic_anchors or not (scope := parser._current_dynamic_scope()):  # noqa: SLF001
         return {}
-    if not (used := set(dynamic_anchors_used(parser, resolved_ref))):
+    if not (used := dynamic_anchors_used(parser, resolved_ref)):
         return {}
     target_document, _, target_pointer = parser._schema_location(resolved_ref).partition("#")  # noqa: SLF001
     defaults = dynamic_anchor_bindings(parser, target_document, target_pointer, {})
     bindings = {**defaults, **scope}
-    pending = [anchor for anchor in used if anchor in bindings]
-    while pending:
-        found = dynamic_anchors_used(parser, parser._location_ref(bindings[pending.pop()])) - used  # noqa: SLF001
-        used |= found
-        pending.extend(anchor for anchor in found if anchor in bindings)
+
+    def used_by_binding(anchor: str) -> Iterable[str]:
+        return dynamic_anchors_used(parser, parser._location_ref(bindings[anchor])) if anchor in bindings else ()  # noqa: SLF001
+
     return {
         anchor: bindings[anchor]
-        for anchor in sorted(used)
+        for anchor in sorted(reach(used, used_by_binding))
         if anchor in bindings and bindings[anchor] != defaults.get(anchor)
     }
 
