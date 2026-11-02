@@ -14,14 +14,12 @@ __all__ = [
     "_DEFERRED_INHERITED_FIELD_KEY",
     "_DEFERRED_INHERITED_TYPE_KEY",
     "_DERIVED_FROM_KEY",
-    "_MODEL_MODULE_PREFIX",
     "_RAW_SCHEMA_DEFAULT_KEY",
     "_RAW_SCHEMA_DEFAULT_UNDEFINED",
     "declares_raw_schema_default",
     "raw_schema_default",
 ]
 
-_MODEL_MODULE_PREFIX: Final = "datamodel_code_generator.model."
 _DEFERRED_INHERITED_CLASS_KEY: Final = "_deferred_inherited_class"
 _DEFERRED_INHERITED_FIELD_KEY: Final = "_deferred_inherited_field"
 _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"

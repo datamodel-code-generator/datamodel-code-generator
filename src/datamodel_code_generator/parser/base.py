@@ -130,6 +130,7 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _bind_builtin_names,
     _has_root_field_constraints,
+    _model_package_class,
     _set_nested_model_default_factory_order,
     forget_model_memos,
     get_resolve_reference_action_capabilities,
@@ -178,7 +179,6 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_TYPE_KEY,  # noqa: F401  # Preserve the established parser.base export.
-    _MODEL_MODULE_PREFIX,
     _RAW_SCHEMA_DEFAULT_KEY,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._passes._name_allocation import (
@@ -874,7 +874,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.data_model_field_type: type[DataModelFieldBase] = config.data_model_field_type
         self._configured_generation_types_are_builtin = all(
-            generation_type.__module__.startswith(_MODEL_MODULE_PREFIX)
+            _model_package_class(generation_type)
             for generation_type in (
                 self.data_model_type,
                 self.data_model_root_type,
@@ -882,8 +882,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 type(self.data_type_manager),
             )
         ) and all(
-            (generation_type := getattr(config, attribute, None)) is None
-            or generation_type.__module__.startswith(_MODEL_MODULE_PREFIX)
+            (generation_type := getattr(config, attribute, None)) is None or _model_package_class(generation_type)
             for attribute in ("data_model_scalar_type", "data_model_union_type")
         )
         self._uses_standard_generation_templates = False

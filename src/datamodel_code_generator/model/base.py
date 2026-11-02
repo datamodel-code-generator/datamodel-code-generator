@@ -2807,11 +2807,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
-        if (
-            args
-            or self._custom_template_dir is not None
-            or not type(self).__module__.startswith("datamodel_code_generator.model.")
-        ):
+        if args or self._custom_template_dir is not None or not _model_package_class(type(self)):
             return super()._render(*args, **kwargs)
 
         from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
@@ -3319,6 +3315,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             _RenderedDataModelField(field, self._format_docstring(field.docstring, self.FIELD_DOCSTRING_INDENT))
             for field in self.fields
         ]
+
+
+def _model_package_class(cls: type) -> bool:
+    """Return whether ``cls`` is a built-in model, field or type class, one that the model package defines."""
+    return cls.__module__.startswith("datamodel_code_generator.model.")
 
 
 def direct_base_models(model: DataModel, stand_ins: Mapping[int, Reference | None] | None = None) -> list[DataModel]:
