@@ -28283,6 +28283,115 @@ def test_main_read_only_write_only_custom_type_path(
     "dedupe_args",
     [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
 )
+def test_main_read_only_write_only_custom_type_ref_siblings(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites are a $ref with sibling keywords to a schema typed by its customTypePath.
+
+    The $ref of each property, item, additionalItems, anyOf and oneOf member and additionalProperties of ``Holder`` and
+    ``Extras`` is merged with its siblings first, so the site takes the customTypePath of ``Item`` (or of ``Alias``,
+    which names it) and names no model: ``Holder`` and ``Extras`` keep one class while ``Item`` splits.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_ref_siblings.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "ref": {"any": 1},
+            "alias": {"other": 1},
+            "list": [{"a": 1}],
+            "pair": [{"b": 1}, "s", {"c": 1}],
+            "union": 1,
+            "choice": True,
+            "count": 1,
+        },
+        "extras": {"k": {"d": 1}},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_custom_type_ref_siblings", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_python_type_override(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites an x-python-type types, over an object with a readOnly property.
+
+    The inline objects of the properties, items, additionalItems, anyOf and oneOf members and additionalProperties of
+    ``Extended``, ``Other``, ``Positions`` and ``Extras`` are typed ``int``, and so is the property of ``Positions``
+    that is a $ref with sibling keywords to ``Sized`` (a property reads the merged schema first), so they generate no
+    model and keep one class while ``Flagged`` splits. The items of ``Sizes`` are such a $ref too, but the items are
+    merged after the python-type row, so they name a model of their own that splits with ``Sizes``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_python_type_override.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "extended": {"a": "s", "flagged": 1},
+        "other": {"b": "s", "flagged": 2},
+        "flagged": {"name": "n"},
+        "positions": {"list": [1], "pair": [1, "s", 2], "union": 3, "choice": None, "ref": 4},
+        "extras": {"k": 5},
+        "sizes": {"sizes": [{}]},
+    }
+    invalid = {"extended": {"flagged": "x"}}
+    with _generated_model(output_file, "rw_python_type_override", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
 def test_main_read_only_write_only_merged_all_of_extras(
     output_file: Path, output_model_type: str, dedupe_args: list[str]
 ) -> None:
