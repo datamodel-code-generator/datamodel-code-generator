@@ -24,7 +24,7 @@ from datamodel_code_generator._openapi_paths import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, site_facts_of
+from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -75,15 +75,7 @@ def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
     raise SchemaParseError(msg, path=list(path))
 
 
-SchemaRole: TypeAlias = Literal[
-    "schema",
-    "parameter",
-    "request_body",
-    "response_body",
-    "response_header",
-    "request_encoding_header",
-    "response_encoding_header",
-]
+SchemaRole: TypeAlias = TypeUseRole
 ApiObjectKind: TypeAlias = Literal["parameter", "request_body", "response", "media", "encoding", "header", "callback"]
 
 
