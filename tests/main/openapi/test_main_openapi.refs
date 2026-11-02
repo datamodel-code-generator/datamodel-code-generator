@@ -866,6 +866,8 @@ two-holders-exact-imports-child	main/openapi/main_openapi/collapse_root_models_n
 two-holders-exact-imports-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-parent]/
 two-modules-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-child]/
 two-modules-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-parent]/
+[test_main_openapi_collapse_root_models_package_init]
+	main/openapi/main_openapi/collapse_root_models_package_init/
 [test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice]
 dataclasses.dataclass	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py
 pydantic_v2.BaseModel	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py	= main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice~collapse_root_models_parent_wrapper_referenced_twice[pydantic_v2.BaseModel].py
@@ -1327,6 +1329,8 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/fixed_length_array_tuples.py
 [test_main_openapi_fixed_length_array_tuples_disabled]
 	main/openapi/fixed_length_array_tuples_disabled.py
+[test_main_openapi_generic_base_class_other_packages]
+	main/openapi/main_openapi/generic_base_class_other_packages/
 [test_main_openapi_ignored_content_type_header_refs]
 	main/openapi/main_openapi/ignored_content_type_header_refs.py
 [test_main_openapi_include_info_version]

@@ -300,15 +300,22 @@ def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     return alias
 
 
-def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: ModuleImportLedger) -> None:
+def _bind_module_field_names(
+    models: list[DataModel], imports: Imports, ledger: ModuleImportLedger, target: tuple[int, int]
+) -> None:
     """Allocate aliases only where a property hides an emitted expression name.
 
-    Type aliases sit at module scope, so an import they name keeps its name beside the alias.
+    The names are those the module's imports bind and the builtin classes of the ``target`` that no import binds,
+    which a builtin import binds under the alias. Type aliases sit at module scope, so an import they name keeps its
+    name beside the alias.
     """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
     shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
-    if "list" in field_names and "list" not in shadowable_imports:
-        shadowable_imports["list"] = ("builtins", "list")
+    shadowable_imports.update(
+        (name, ("builtins", name))
+        for name in sorted(field_names.difference(shadowable_imports))
+        if is_builtin_type_name(name, target)
+    )
     if not shadowable_imports:
         return
     collisions: set[str] = set()
@@ -1298,7 +1305,12 @@ def builtin_name_bindings(ledger: ModuleImportLedger, imports: Imports) -> dict[
 def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
     """Bind the field names of each module that its imports shadow."""
     for ctx in state.contexts:
-        _bind_module_field_names(ctx.models, ctx.imports, parser._import_ledger)  # noqa: SLF001
+        _bind_module_field_names(
+            ctx.models,
+            ctx.imports,
+            parser._import_ledger,  # noqa: SLF001
+            parser.target_python_version.version_key,
+        )
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:

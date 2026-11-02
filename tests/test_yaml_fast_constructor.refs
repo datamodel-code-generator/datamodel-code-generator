@@ -162,6 +162,7 @@ openapi/collapse_root_models_name_strategy/same_class_name.yaml	yaml_fast_constr
 openapi/collapse_root_models_name_strategy/two_holders.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_name_strategy/two_holders_modular.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_name_strategy/two_holders_one_module.yaml	yaml_fast_constructor/parity.txt
+openapi/collapse_root_models_package_init.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_recursive_invalid_dotted.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_ref_cycle_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/api.yaml	yaml_fast_constructor/parity.txt
@@ -307,6 +308,7 @@ openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
 openapi/fixed_length_array_tuples.yaml	yaml_fast_constructor/parity.txt
+openapi/generic_base_class_other_packages.yaml	yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	yaml_fast_constructor/parity.txt
 openapi/ignored_content_type_header_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/include_path_parameters.yaml	yaml_fast_constructor/parity.txt

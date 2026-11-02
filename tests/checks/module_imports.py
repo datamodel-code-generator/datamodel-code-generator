@@ -434,7 +434,7 @@ def _module_import_plan(
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.parser._graph_ids import keyed_models
     from datamodel_code_generator.parser._passes._import_binding import (
-        _generic_base_class_module,
+        generic_base_class_import,
         reference_import_target,
     )
     from datamodel_code_generator.parser._passes._shared import _get_model_module_name
@@ -464,7 +464,7 @@ def _module_import_plan(
                 uses.append(ReferenceUse(target, model.class_name, final.class_name, written))
                 add_reference(
                     target,
-                    Import(from_=_generic_base_class_module(ctx.module, final.module_path), import_=final.class_name),
+                    generic_base_class_import(ctx.module, final.module_path, final.class_name, init=ctx.is_init),
                 )
             else:
                 name = names.class_name(target, reference)
