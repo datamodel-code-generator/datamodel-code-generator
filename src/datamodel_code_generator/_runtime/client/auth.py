@@ -37,6 +37,7 @@ __all__ = (
     "Secret",
     "TokenSource",
     "UserPassword",
+    "checked_text",
 )
 
 AuthReason: TypeAlias = Literal[
@@ -63,6 +64,7 @@ _UNAUTHORIZED: Final = 401
 _CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
 _CHALLENGE: Final = re.compile(rf"({TCHARS})(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
 _INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
+_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 
 
 class AuthError(SDKError):
@@ -139,6 +141,12 @@ def provider_failure(error: Exception) -> AuthError:
     return AuthError(reason="provider_failed", cause=error)
 
 
+def checked_text(field: str, *texts: str) -> None:
+    """Refuse credential text that UTF-8 cannot encode, a lone surrogate, which no request can send, by its field."""
+    if any(_SURROGATE.search(text) for text in texts):
+        raise ConfigurationError(field_path=(field,), reason="invalid_value")
+
+
 def basic_credentials(user: str, password: str) -> str:
     """Return the credentials of the Basic scheme for a user and a password, as RFC 7617 writes them in UTF-8."""
     return "Basic " + base64.b64encode(f"{user}:{password}".encode()).decode("ascii")
@@ -160,13 +168,18 @@ def _pair(value: object) -> tuple[str, str] | None:
 
 
 def _text(scheme: SecurityScheme, value: object) -> str:
-    """Return the wire text of a resolved credential, refusing a value of another type than its scheme's."""
+    """Return the wire text of a resolved credential, refusing a value of another type than its scheme's.
+
+    Text that UTF-8 cannot encode is refused as an unusable value, before any position takes it.
+    """
     if scheme.kind == "basic":
         if (pair := _pair(value)) is None:
             raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
+        checked_text(scheme.name, *pair)
         return basic_credentials(*pair)
     if not isinstance(value, str):
         raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
+    checked_text(scheme.name, value)
     return f"Bearer {value}" if scheme.kind == "bearer" else value
 
 
