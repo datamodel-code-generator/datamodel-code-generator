@@ -50,7 +50,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator.types import ANY, NONE, Types, _is_value_literal
+from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -206,7 +206,7 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
     """
     if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
         yield None, ()
-    elif members := [member for member in data_type.data_types if member.type != NONE or member.data_types]:
+    elif members := [member for member in data_type.data_types if not _is_plain_none(member)]:
         for member in members:
             yield from _enforcing_leaves(member)
     else:

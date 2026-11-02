@@ -24,7 +24,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._shared import _InheritedTypeModifiers, placeholder_identity
 from datamodel_code_generator.parser.generation import GenerationStore
-from datamodel_code_generator.types import NONE, DataType, _copy_data_type, build_union, union_members
+from datamodel_code_generator.types import DataType, _copy_data_type, _is_plain_none, build_union, union_members
 
 if TYPE_CHECKING:
     from typing_extensions import Unpack
@@ -101,7 +101,7 @@ def _without_null_members(data_type: DataType, current_type: DataType | _Inherit
         and (members := union_members(data_type))
     ):
         return data_type
-    kept = [member for member in members if member.type != NONE or member.data_types]
+    kept = [member for member in members if not _is_plain_none(member)]
     rebuilt = data_type.model_copy(update={"data_types": build_union(DataType, kept).data_types})
     for member in rebuilt.data_types:
         member.parent = rebuilt

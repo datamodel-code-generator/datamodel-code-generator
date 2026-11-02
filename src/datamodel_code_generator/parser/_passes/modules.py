@@ -29,6 +29,7 @@ from datamodel_code_generator._container_kinds import (
     MAPPINGS,
     UNHASHABLE_CONTAINERS,
 )
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._reference_graph import (
@@ -782,15 +783,14 @@ def _same_named_references(model: DataModel, name: str | None, *, skips_aliases:
 def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
     """Return the models that the model inherits from or passes its fields on to, transitively, by model key."""
     keys = _ModelKeys()
-    family = {keys.of(model): model}
-    pending = [model]
-    while pending:
-        current = pending.pop()
-        for kin in chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())):
-            if (kin_key := keys.of(kin)) not in family:
-                family[kin_key] = kin
-                pending.append(kin)
-    return family
+    return {
+        keys.of(kin): kin
+        for kin in reach(
+            (model,),
+            lambda current: chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())),
+            keys.of,
+        )
+    }
 
 
 def _family_field_names(family: Mapping[ModelKey, DataModel]) -> set[str]:

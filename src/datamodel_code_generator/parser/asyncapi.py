@@ -578,7 +578,7 @@ class AsyncAPIParser(OpenAPIParser):
         if not path_pointer:
             return AsyncAPIResolvedRef(raw_doc, [*root_parts, "#/"], context)
         target = get_model_by_path(raw_doc, pointer)
-        return AsyncAPIResolvedRef(target, [*root_parts, f"#/{path_pointer[0]}", *path_pointer[1:]], context)
+        return AsyncAPIResolvedRef(target, self._pointer_parse_path(root_parts, path_pointer), context)
 
     def _iter_message_payload_schemas(
         self,

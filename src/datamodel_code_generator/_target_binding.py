@@ -100,7 +100,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import admits_none, is_none, present
+from datamodel_code_generator._target_types import admits_none, is_none, sole_present
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
@@ -2837,8 +2837,7 @@ class _SchemaUses(_Models):
     def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
         """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
         if isinstance(value, UnionType):
-            members = present(value)
-            value = members[0] if len(members) == 1 else None
+            value = sole_present(value)
         symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
         members = () if symbol is None else self.members.get(symbol, ())
         root = next(

@@ -7813,7 +7813,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._parse_raw_at(
             model_name,
             models,
-            [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]],
+            self._pointer_parse_path(path_parts, reference_paths),
             self._member_location(raw, *object_paths),
         )
 
@@ -7913,11 +7913,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         object_paths = [o for o in object_paths or [] if o]
         reference_paths = [r for r in reference_paths or [] if r]
         path = (
-            [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
-            if reference_paths
-            else [*path_parts, f"#/{object_paths[0]}", *object_paths[1:]]
-            if object_paths
-            else path_parts
+            self._pointer_parse_path(path_parts, tokens) if (tokens := reference_paths or object_paths) else path_parts
         )
         with self.model_resolver.current_root_context(path_parts):
             prepared = self._prepare_schema_resources(raw, path_parts)
@@ -8014,8 +8010,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
                 model_name = reference_paths[-1]
-                path = [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
+                path = self._pointer_parse_path(path_parts, reference_paths)
                 self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
+
+    def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:  # noqa: PLR6301
+        """Return the parse path of the target that the ``tokens`` of a JSON pointer name below the path ``root``.
+
+        An instance method, as ``snooper_to_methods`` does not keep staticmethod descriptors on parser subclasses.
+        """
+        return [*root, f"#/{tokens[0]}", *tokens[1:]]
 
 
 # Snapshot the default hooks after JsonSchemaParser is fully defined. The local

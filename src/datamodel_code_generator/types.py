@@ -1192,7 +1192,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _gives_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
-        verdict = core.member_null(is_none=self.type == NONE and not self.data_types, is_any=self.type == ANY)
+        verdict = core.member_null(is_none=_is_plain_none(self), is_any=self.type == ANY)
         return self._rendered_null_source() is not None if verdict is None else verdict
 
     def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
@@ -1757,6 +1757,11 @@ def _copy_data_type(data_type: DataType, *, register_references: bool = True, li
     return copied
 
 
+def _is_plain_none(data_type: DataType) -> bool:
+    """Return whether a type is the type None with no members of its own, the None that a union member adds."""
+    return data_type.type == NONE and not data_type.data_types
+
+
 def _is_value_literal(data_type: DataType) -> bool:
     """Return whether a type is the ``Literal`` of the values of a const or an enum."""
     return bool(data_type.literals) and not data_type.type and data_type.import_ is None
@@ -1922,7 +1927,7 @@ class DataTypeManager(ABC):
                         target_model_version=target_model_version,
                     )
                     for member in data_type.data_types
-                    if member.type != NONE or member.data_types
+                    if not _is_plain_none(member)
                 ),
                 number_values=number_values,
             )
