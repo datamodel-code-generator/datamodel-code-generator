@@ -113,7 +113,6 @@ from datamodel_code_generator._cli_config import (
     _prepare_cli_config_args,
     _RawConfigValue,
     _template_data,
-    is_url,
 )
 from datamodel_code_generator._config_fields import JSON_FIELDS, MODEL_JSON_FIELDS, TARGET_SELECTORS
 from datamodel_code_generator._format_types import Formatter, PythonVersion
@@ -143,7 +142,7 @@ from datamodel_code_generator._project_config import (
     _resolve_pyproject_relative_paths,
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode

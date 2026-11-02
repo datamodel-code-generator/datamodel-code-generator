@@ -55,7 +55,7 @@ from datamodel_code_generator._target_unicode import (
     replace_non_word,
     upper,
 )
-from datamodel_code_generator._url_redaction import redact_path, redact_reference
+from datamodel_code_generator._url_redaction import is_url, redact_path, redact_reference
 from datamodel_code_generator._user_keys import field_keys, first_given, first_present
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
@@ -2312,8 +2312,3 @@ def snake_to_upper_camel(word: str, delimiter: str = "_", *, target_python_versi
         word = word[1:]
 
     return prefix + "".join(upper(x[0], target_python_version) + x[1:] for x in word.split(delimiter) if x)
-
-
-def is_url(ref: str) -> bool:
-    """Check if a reference string is a URL (HTTP, HTTPS, or file scheme)."""
-    return ref.startswith(("https://", "http://", "file://"))

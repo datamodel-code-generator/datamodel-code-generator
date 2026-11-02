@@ -14,7 +14,7 @@ from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DE
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AllExportsScope,
@@ -81,12 +81,6 @@ def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, 
     from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
 
     return _validate_additional_import_paths(additional_imports) or []
-
-
-def is_url(ref: str) -> bool:
-    """Check if a reference string is a URL (HTTP, HTTPS, or file scheme)."""
-    # Keep this local so importing the CLI does not import reference.py and its model stack.
-    return ref.startswith(("https://", "http://", "file://"))
 
 
 def _validate_http_key_value_options(
