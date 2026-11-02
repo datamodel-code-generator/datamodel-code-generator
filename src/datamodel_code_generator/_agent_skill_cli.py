@@ -15,7 +15,7 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
         SkillScope,
         install_agent_skill,
     )
-    from datamodel_code_generator.enums import _EXIT_ERROR, _EXIT_OK  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
         destination = install_agent_skill(
@@ -25,9 +25,9 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
         )
     except AgentSkillError as e:
         print(f"Error: {e}", file=sys.stderr)  # noqa: T201
-        return _EXIT_ERROR
+        return _ExitCode.ERROR
     print(f"Installed datamodel-code-generator skill at {destination}")  # noqa: T201
-    return _EXIT_OK
+    return _ExitCode.OK
 
 
 def run_agent_skill_installer(args: list[str]) -> int:

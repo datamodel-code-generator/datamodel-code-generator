@@ -22,7 +22,7 @@ from datamodel_code_generator._option_names import (
 )
 from datamodel_code_generator._paths import names_directory
 from datamodel_code_generator._target_documents import shown
-from datamodel_code_generator.enums import _EXIT_DIFF, _EXIT_ERROR, _EXIT_OK
+from datamodel_code_generator.enums import _ExitCode
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -65,17 +65,17 @@ def run_target(  # noqa: PLR0913, PLR0917
     kind, selector = _target_side(config)
     if config.preset is not None and (problem := python_problem(config, kind)) is not None:
         print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
-        return _EXIT_ERROR
+        return _ExitCode.ERROR
     if requirement := model_requirement(config.openapi_scopes, selector):
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
-        return _EXIT_ERROR
+        return _ExitCode.ERROR
     try:
         return _run(args, namespace, config, pyproject_path, batch, lock, job, implied, announced or {})
     except Exception as error:  # noqa: BLE001
         from datamodel_code_generator._target_selection import keyed  # noqa: PLC0415
 
         _failure(keyed(error, config), namespace, config)
-        return _EXIT_ERROR
+        return _ExitCode.ERROR
 
 
 def _print_notice(notice: str | None) -> None:
@@ -178,7 +178,7 @@ def _run(  # noqa: PLR0913, PLR0917
             target=_target_payload(namespace.output_format, target, project, implied),
         )
         _print_notice(notice)
-        return _EXIT_DIFF if comparison.differences else _EXIT_OK
+        return _ExitCode.DIFF if comparison.differences else _ExitCode.OK
     json_output = namespace.output_format == "json"
     if batch is not None:
         timestamp = next((earlier.timestamp for _, earlier, _ in batch if earlier.timestamp is not None), None)
@@ -188,7 +188,7 @@ def _run(  # noqa: PLR0913, PLR0917
         _join(batch, job, planned, _next_step(target, planned.project, notice))
         if json_output:
             print(_target_json(planned.project, config.output, config.encoding, target, implied))  # noqa: T201
-        return _EXIT_OK
+        return _ExitCode.OK
     planned = plan_target(source, model_config=effective, config=target, generator=generator, publish=True)
     project = planned.project
     output = _target_json(project, config.output, config.encoding, target, implied) if json_output else None
@@ -198,7 +198,7 @@ def _run(  # noqa: PLR0913, PLR0917
         return int(failure)
     if output is not None:
         print(output)  # noqa: T201
-    return _EXIT_OK
+    return _ExitCode.OK
 
 
 def _join(

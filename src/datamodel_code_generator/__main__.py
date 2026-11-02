@@ -17,14 +17,14 @@ def _print_json_schema(name: str) -> int:
     """Print a JSON Schema on a fast path and return the exit code, an error if Pydantic lacks JSON output support."""
     from datamodel_code_generator import _StructuredOutputUnavailableError  # noqa: PLC0415
     from datamodel_code_generator._json_output import json_schema_text  # noqa: PLC0415
-    from datamodel_code_generator.enums import _EXIT_ERROR, _EXIT_OK  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
         sys.stdout.write(f"{json_schema_text(name)}\n")
     except _StructuredOutputUnavailableError as error:
         sys.stderr.write(f"{error}\n")
-        return _EXIT_ERROR
-    return _EXIT_OK
+        return _ExitCode.ERROR
+    return _ExitCode.OK
 
 
 match sys.argv:
@@ -146,7 +146,7 @@ from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
-from datamodel_code_generator.enums import _EXIT_DIFF, _EXIT_ERROR, _EXIT_INTERRUPTED, _EXIT_OK, _PYDANTIC_MODEL_TYPES
+from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode
 
 
 def __getattr__(name: str) -> Any:
@@ -228,10 +228,10 @@ _NAMING_FIELDS: frozenset[str] = frozenset({"model_name_map", "naming_strategy",
 class Exit(IntEnum):
     """Exit reasons."""
 
-    OK = _EXIT_OK
-    DIFF = _EXIT_DIFF
-    ERROR = _EXIT_ERROR
-    KeyboardInterrupt = _EXIT_INTERRUPTED
+    OK = _ExitCode.OK
+    DIFF = _ExitCode.DIFF
+    ERROR = _ExitCode.ERROR
+    KeyboardInterrupt = _ExitCode.INTERRUPTED
 
 
 def sig_int_handler(_: int, __: Any) -> None:  # pragma: no cover
