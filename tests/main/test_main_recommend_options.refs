@@ -120,6 +120,8 @@ text	main/main_recommend_options/recommend_options_in_prompt[text].txt
 	main/main_recommend_options/recommend_options_reads_each_container_once.stdout.txt
 [test_recommend_options_rejects_candidates_that_fail]
 	main/main_recommend_options/recommend_options_rejects_candidates_that_fail.stdout.txt
+[test_recommend_options_runs_on_pydantic_2_0]
+	main/main_recommend_options/recommend_options_runs_on_pydantic_2_0.stdout.txt	= main/recommend_options/titled_variants.txt
 [test_recommend_options_small_schema_default]
 	main/recommend_options/titled_variants.txt
 [test_recommend_options_without_schema_rules]
