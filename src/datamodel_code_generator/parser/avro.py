@@ -44,6 +44,8 @@ DURATION_BYTE_LENGTH = 12
 _PHYSICAL_DEFAULT_OVERRIDES = frozenset({
     Import.from_full_path("builtins.int"),
     Import.from_full_path("builtins.bytes"),
+    Import.from_full_path("int"),
+    Import.from_full_path("bytes"),
 })
 _TEMPORAL_KINDS = {"date": "date", "time": "time", "date-time": "datetime", "date-time-local": "datetime"}
 

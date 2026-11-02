@@ -6978,6 +6978,114 @@ def test_main_type_overrides_rejects_bracketed_non_annotation(
     )
 
 
+_TYPE_OVERRIDES_BUILTINS = {
+    "TypeOverridesLiterals.integer_values": "int",
+    "TypeOverridesLiterals.string_values": "str",
+    "TypeOverridesLiterals.nullable_values": "int | None",
+    "TypeOverridesLiterals.optional_value": "int | str",
+    "TypeOverridesLiterals.values": "list",
+    "TypeOverridesLiterals.amount": "Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("pydantic_v2.dataclass", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("typing.TypedDict", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write a field override without brackets that is an annotation, such as ``str``, as ``x-python-type`` writes it.
+
+    Up to 0.87.0 every value without brackets was split at its last dot as a class path, so ``str`` wrote
+    ``import str``, ``Decimal`` wrote ``import Decimal`` and ``int | None`` wrote ``import int | None``, and the module
+    failed to import. A builtin needs no import, a standard-library name takes the import of the registry, and a union
+    writes the imports of its names; each field takes the keywords that annotation takes.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"--type-overrides writes (int|str) in place of con(int|str)\(")
+        if output_model == "pydantic_v2.BaseModel" and not extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                *extra_args,
+                "--type-overrides",
+                json.dumps(_TYPE_OVERRIDES_BUILTINS),
+                "--target-python-version",
+                "3.11",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations_for_models(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a model-level override that is a builtin or a union, such as ``str | None``, where the model is named."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--type-overrides",
+            json.dumps({"Level": "int", "Mode": "str | None", "Ratio": "float"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_type_overrides_unknown_bare_name_is_imported(output_file: Path) -> None:
+    """Keep a bare name that no builtin and no standard-library type of the registry has as a module to import."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"TypeOverridesLiterals.amount": "json"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
