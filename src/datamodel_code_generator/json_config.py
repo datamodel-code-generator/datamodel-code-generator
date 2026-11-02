@@ -211,6 +211,18 @@ def _json_file(value: str | Path) -> Path | None:
     return path if _path_is_file(path := Path(value).expanduser()) else None
 
 
+def document_base(value: Any, directory: Path, fallback: Path) -> Path:
+    """Return the directory that the documents a JSON option value names resolve against.
+
+    A value that names a JSON file resolves against that file's directory, or against the directory of a link when the
+    file is given through one; a relative file is joined to ``directory``. Inline JSON, a table and no value resolve
+    against ``fallback``.
+    """
+    if isinstance(value, str | Path) and (file := _json_file(value)) is not None:
+        return (directory / file).parent
+    return fallback
+
+
 def _read_json_or_inline(value: str) -> str:
     if (path := _json_file(value)) is None:
         return value

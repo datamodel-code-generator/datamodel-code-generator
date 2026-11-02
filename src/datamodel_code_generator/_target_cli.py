@@ -541,12 +541,14 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
     the file is given through one. Inline JSON and tables resolve against the pyproject.toml directory for its keys,
     and against the working directory for options.
     """
-    if (source := config._json_sources.get(field)) is not None:  # noqa: SLF001
-        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
 
-        if (file := _json_file(source)) is not None:
-            return (Path.cwd() / file).parent
-    return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
+    cwd = Path.cwd()
+    return document_base(
+        config._json_sources.get(field),  # noqa: SLF001
+        cwd,
+        cwd if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent,
+    )
 
 
 def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
