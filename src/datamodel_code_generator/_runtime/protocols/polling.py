@@ -367,29 +367,34 @@ class _Operation(StepLock, Generic[T, P]):
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
 
         The poll limit, for a poll, and the session's send slots are checked first. A wait longer than the allowed
-        wait, or not shorter than what remains of the deadline, raises SessionLimitError instead of sending early.
+        wait, or not shorter than what remains of the deadline, raises SessionLimitError instead of sending early,
+        naming the operation the wait comes before.
         """
-        if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
+        plan = self._plan
+        polling = call is plan.polled.call
+        if polling and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
         if (required := self._not_before - self._limits.clock.monotonic()) <= 0:
             return None
         limits = self._limits
+        operation = plan.poll_operation if polling else plan.fetch_operation
         if (allowed := limits.max_wait) is not None and required > allowed:
-            raise self._waited(required, allowed, "wait")
+            raise self._waited(required, allowed, "wait", operation)
         waiter = core.waiting(limits.options, self._session, call.operation_id)
         if (remaining := waiter.cut_short(required)) is not None:
-            raise self._waited(required, remaining, "deadline")
+            raise self._waited(required, remaining, "deadline", operation)
         return waiter
 
-    def _waited(self, required: float, limit: float, kind: Literal["wait", "deadline"]) -> SessionLimitError:
-        plan = self._plan
+    def _waited(
+        self, required: float, limit: float, kind: Literal["wait", "deadline"], operation: OperationRef | None
+    ) -> SessionLimitError:
         return SessionLimitError(
             reason=kind,
             limit=limit,
             progress=self.progress,
             required_wait=required,
-            helper_id=plan.helper_id,
-            operation=plan.poll_operation,
+            helper_id=self._plan.helper_id,
+            operation=operation,
         )
 
     def _after(self, info: ResponseInfo) -> float:

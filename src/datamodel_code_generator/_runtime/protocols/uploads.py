@@ -426,9 +426,12 @@ class _Upload(StepLock, Generic[T]):
     def _offered(
         self, _data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> tuple[int, ResponseInfo]:
-        """Return the offset a probe response gives: a JSON integer, or a header of ASCII digits."""
+        """Return the offset a probe response gives: a JSON integer, or a header of ASCII digits.
+
+        A refusal names the probe operation, whose response gave the offset.
+        """
         plan = self._plan
-        read, refuse = plan.remote_offset, data_refusal(plan.helper_id, plan.operation, info)
+        read, refuse = plan.remote_offset, data_refusal(plan.helper_id, plan.probe_operation, info)
         value = required(read, wire, info, refuse)
         if isinstance(read, HeaderSelector) and isinstance(value, str):
             try:

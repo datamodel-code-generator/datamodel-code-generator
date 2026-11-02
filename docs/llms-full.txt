@@ -19287,8 +19287,9 @@ is a header or query parameter's name, a property an exploded form or deepObject
 of a form querystring:
 `iterate`, `page`, and `next_page` raise `ConfigurationError` with a `field_path` of `("options", "extra_headers" or
 "extra_query", <name>)`, or `("default_headers" or "default_query", <name>)`, before sending. A count helper's offset
-or page position is the exception: a client or view default of it is the first position, and only the call's own
-extra may not name it. A binding
+or page position is the exception: a client or view default of it is the first position, read as a parameter reads an
+integer, so any text but a canonical integer such as `40` raises `ProtocolDataError`, and only the call's own extra may
+not name it. A binding
 with `source: input` is not supported yet.
 
 ### Pagination limits and sessions
@@ -19312,9 +19313,10 @@ client's construction with `ConfigurationError`, and so do options of another ty
 `RequestOptions` fixes, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
-mixing items with pages raise `ConfigurationError` with the reason `invalid_state`. After a failure, cancellation
-included, and after `close()`, every step raises it, and nothing is fetched again. Each page is an ordinary request
-of the HTTP client, which its `event_hooks` see.
+mixing items with pages raise `ConfigurationError` with the reason `invalid_state`, while a `with` or `async with`
+block that ends with an error while it fetches leaves the pager open and lets its own error propagate. After a failure,
+cancellation included, and after `close()`, every step raises it, and nothing is fetched again. Each page is an
+ordinary request of the HTTP client, which its `event_hooks` see.
 
 ### Pagination checkpoints and resume
 

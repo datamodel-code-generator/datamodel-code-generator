@@ -8,17 +8,17 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, replace
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
+from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value, typed
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, PaginationOptions, StepLock, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, PaginationOptions, StepHandle, StepLock, layered, new_session
 from .records import (
     AsyncSteps,
     BodySelector,
@@ -38,7 +38,6 @@ from .values import MISSING, absence, accessed, read_selector, required, resolve
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
-    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
@@ -562,22 +561,13 @@ def _integer(value: object) -> int | None:
     return int(value) if isinstance(value, float) and value.is_integer() else None
 
 
-def _numeral(text: str) -> int | str:
-    """Return the integer a header or query value spells as a decimal number, or else the text itself."""
-    try:
-        number = Decimal(text)
-    except InvalidOperation:
-        return text
-    return int(number) if number.is_finite() and number == number.to_integral_value() else text
-
-
 def _exact(plan: PaginationPlan[T, P], read: Selector, content: bytes, info: ResponseInfo) -> int | None:
     """Return the integer a page's JSON number spells, read again from the body's text, or None for a fraction.
 
     The parsed page holds the number as a float, which may have rounded it, so it is read once more as a Decimal.
     """
-    number = cast("Decimal", _selected(plan, read, json_value(content, floats="decimal"), info))
-    return int(number) if number == number.to_integral_value() else None
+    number = _selected(plan, read, json_value(content, floats="decimal"), info)
+    return int(number) if isinstance(number, Decimal) and number == number.to_integral_value() else None
 
 
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, content: bytes, info: ResponseInfo) -> int:
@@ -768,7 +758,8 @@ class _Walk(Generic[T, P]):
         """Read a first count request's default position after all query and header patches have been applied.
 
         An encoded typed start overrides client and view patches, and call patches of the target are refused, so it
-        already gives the sent position without reparsing the request.
+        already gives the sent position without reparsing the request. A position is read as a parameter reads an
+        integer, a canonical JSON integer, and any other text is refused.
         """
         if self.start is not None or self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
             return
@@ -790,7 +781,7 @@ class _Walk(Generic[T, P]):
         self.start = None
         if not values:
             return
-        self.started(_numeral(values[0]) if len(values) == 1 else list(values))
+        self.started(typed(values[0], "integer") if len(values) == 1 else list(values))
 
     def advance(
         self, rule: CountPlan, count: int, wire: JSONValue, content: bytes, info: ResponseInfo
@@ -1087,7 +1078,7 @@ class _Traversal(StepLock, Generic[T, P]):
 
 
 @final
-class Pager(_Traversal[T, P]):
+class Pager(_Traversal[T, P], StepHandle):
     """Iterate over a helper's items, or over its pages with `iter_pages`, fetching each page only when it is needed.
 
     A pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration or
@@ -1146,19 +1137,9 @@ class Pager(_Traversal[T, P]):
         """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this pager, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the pager."""
-        self.close()
-
 
 @final
-class AsyncPager(_Traversal[T, P]):
+class AsyncPager(_Traversal[T, P], AsyncStepHandle):
     """Iterate over a helper's items with asyncio, or over its pages with `iter_pages`, fetching pages when needed.
 
     An asyncio pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration
@@ -1216,16 +1197,6 @@ class AsyncPager(_Traversal[T, P]):
     async def aclose(self) -> None:
         """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
-
-    async def __aenter__(self) -> Self:
-        """Return this pager, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the pager."""
-        await self.aclose()
 
 
 def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
