@@ -19,8 +19,11 @@ from datamodel_code_generator._format_types import (
     PythonVersionMin,
 )
 from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
-from datamodel_code_generator._target_unicode import is_python_name
-from datamodel_code_generator.base_config import BaseGenerateConfig, _validate_additional_import_paths
+from datamodel_code_generator.base_config import (
+    BaseGenerateConfig,
+    _schema_validator_base_class_name_error,
+    _validate_additional_import_paths,
+)
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     AliasGenerator,
@@ -72,10 +75,7 @@ else:
 
 def validate_schema_validator_base_class_name(value: str | None) -> str | None:
     """Validate the generated shared schema validator base class name."""
-    if value is None:
-        return value
-    if not is_python_name(value, rule="legacy-host-identifiers"):
-        msg = f"--schema-validator-base-class-name '{value}' is not a valid Python identifier"
+    if (msg := _schema_validator_base_class_name_error(value)) is not None:
         raise ValueError(msg)
     return value
 

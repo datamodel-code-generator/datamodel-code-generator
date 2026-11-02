@@ -369,12 +369,9 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_schema_validator_base_class_name(cls, v: str | None) -> str | None:
             """Validate schema validator base class name."""
-            if v is None:  # pragma: no cover
-                return v
-            from datamodel_code_generator._target_unicode import is_python_name  # noqa: PLC0415
+            from datamodel_code_generator.base_config import _schema_validator_base_class_name_error  # noqa: PLC0415
 
-            if not is_python_name(v, rule="legacy-host-identifiers"):
-                msg = f"--schema-validator-base-class-name '{v}' is not a valid Python identifier"
+            if (msg := _schema_validator_base_class_name_error(v)) is not None:
                 raise Error(msg)
             return v
 

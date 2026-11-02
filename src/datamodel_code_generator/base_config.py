@@ -85,6 +85,21 @@ def _validate_additional_import_paths(value: list[str] | None) -> list[str] | No
         raise Error(msg) from None
 
 
+def _schema_validator_base_class_name_error(value: str | None) -> str | None:
+    """Return why a name cannot name the shared schema validator base class, or None when it can or none is given.
+
+    The command line and `generate()` accept the same names; each raises the message as its own error.
+    """
+    if value is None:
+        return None
+
+    from datamodel_code_generator._target_unicode import is_python_name  # noqa: PLC0415
+
+    if is_python_name(value, rule="legacy-host-identifiers"):
+        return None
+    return f"--schema-validator-base-class-name '{value}' is not a valid Python identifier"
+
+
 _TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
