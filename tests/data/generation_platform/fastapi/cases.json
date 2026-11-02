@@ -395,6 +395,9 @@
   "reference-errors": {
     "input": "reference-errors.yaml"
   },
+  "pointer-references": {
+    "input": "pointer-references.yaml"
+  },
   "link-errors": {
     "input": "link-errors.yaml",
     "files": [

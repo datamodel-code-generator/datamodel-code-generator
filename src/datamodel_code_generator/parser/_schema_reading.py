@@ -9,12 +9,11 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
-from urllib.parse import unquote
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
-from datamodel_code_generator._json_pointer import unescape_token
+from datamodel_code_generator._json_pointer import decode_token
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
     SCHEMA_MAP_KEYS,
@@ -185,26 +184,36 @@ def _without_contains_keywords(extras: Mapping[str, Any]) -> dict[str, Any]:
 
 def unescape_json_pointer_segment(segment: str) -> str:
     """Decode one URI-fragment JSON Pointer token in RFC evaluation order."""
-    return unescape_token(unquote(segment))
+    return decode_token(segment)
 
 
 _MISSING_JSON_POINTER = Sentinel("_MISSING_JSON_POINTER")
 
 
-def get_model_by_path(schema: dict[str, YamlValue] | list[YamlValue], keys: list[str] | list[int]) -> YamlValue:
-    """Retrieve a model from schema by traversing raw JSON Pointer keys."""
+def get_model_by_path(
+    schema: dict[str, YamlValue] | list[YamlValue], keys: list[str] | list[int], *, refuse_scalar: bool = False
+) -> YamlValue:
+    """Retrieve a model from schema by traversing raw JSON Pointer keys (``_get_model_by_decoded_path``)."""
     return _get_model_by_decoded_path(
-        schema, [unescape_json_pointer_segment(key) if isinstance(key, str) else key for key in keys]
+        schema,
+        [unescape_json_pointer_segment(key) if isinstance(key, str) else key for key in keys],
+        refuse_scalar=refuse_scalar,
     )
 
 
 def _get_model_by_decoded_path(
-    schema: dict[str, YamlValue] | list[YamlValue], keys: Sequence[str | int], *, or_missing: bool = False
+    schema: dict[str, YamlValue] | list[YamlValue],
+    keys: Sequence[str | int],
+    *,
+    or_missing: bool = False,
+    refuse_scalar: bool = False,
 ) -> Any:
     """Retrieve a model after JSON Pointer tokens have already been decoded.
 
-    Each key's member is read by row ``refusing`` (``_document_reader.member``). A key a dict lacks reads as ``{}``
-    and an index a list lacks raises; under ``or_missing`` both are the sentinel.
+    Each key's member is read by row ``refusing`` (``_document_reader.member``). A key a dict lacks, and any key below
+    a value that is no container, reads as ``{}``, and an index a list lacks raises; under ``or_missing`` they are the
+    sentinel. Row ``legacy-cycle-through-scalar`` (``refuse_scalar``): the check for a reference cycle counts a walk
+    through a value that is no container as a target that cannot be loaded, so it raises ``NotImplementedError``.
     """
     if not keys:
         if isinstance(schema, dict):
@@ -224,8 +233,10 @@ def _get_model_by_decoded_path(
         if value is _MISSING_JSON_POINTER or index == len(keys) - 1:
             return value
         if not isinstance(value, (dict, list)):
-            msg = f"Cannot traverse non-container value. schema={current}, key={keys[index:]}"  # pragma: no cover
-            raise NotImplementedError(msg)  # pragma: no cover
+            if refuse_scalar:
+                msg = f"Cannot traverse non-container value. schema={current}, key={keys[index:]}"
+                raise NotImplementedError(msg)
+            return _MISSING_JSON_POINTER if or_missing else {}
         current = value
     raise AssertionError  # pragma: no cover
 

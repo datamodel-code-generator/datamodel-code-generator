@@ -7,13 +7,13 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager, nullcontext
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
-from urllib.parse import ParseResult, unquote
+from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
 
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
-from datamodel_code_generator._json_pointer import fragment_tokens
+from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
     PATHS_PARAMETERS,
@@ -382,7 +382,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         """
         with self._home_context(holder):
             document, _, fragment = self._ref_key(ref).key.partition("#")
-        tokens = fragment_tokens(unquote(fragment))
+        tokens = reference_tokens(fragment)
         return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
 
     def _site_facts(self, location: SchemaLocation) -> SiteFacts:
@@ -397,7 +397,7 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _located_site(self, location: SchemaLocation) -> SiteFacts | None:
         """Read the site of a location of a loaded document anew, None where it holds no value."""
-        value = descend(self._api_documents.get(location.document), location.tokens, "legacy-int-tokens", None)
+        value = descend(self._api_documents.get(location.document), location.tokens, "canonical", None)
         return None if value is None else site_facts_of(value, location, self._schema_reference_location)
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:

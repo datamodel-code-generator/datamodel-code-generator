@@ -5948,6 +5948,8 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 	main/jsonschema/autodetect.py
 [test_main_json_pointer]
 	main/jsonschema/json_pointer.py
+[test_main_json_pointer_through_scalar]
+	main/jsonschema/json_pointer_through_scalar.py
 [test_main_json_reuse_enum]
 	main/jsonschema/json_reuse_enum.py
 [test_main_json_reuse_enum_default_member]

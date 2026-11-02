@@ -67,6 +67,8 @@ parameters	main/generation_platform/fastapi/packages/parameters/
 parameters	main/generation_platform/fastapi/parameters.txt
 pets	main/generation_platform/fastapi/packages/pets/	= main/generation_platform/fastapi/packages/pets~fastapi_render[pets]/
 pets	main/generation_platform/fastapi/pets.txt
+pointer-references	main/generation_platform/fastapi/packages/pointer-references/
+pointer-references	main/generation_platform/fastapi/pointer-references.txt
 primary-errors	main/generation_platform/fastapi/packages/primary-errors/
 primary-errors	main/generation_platform/fastapi/primary-errors.txt
 querystring-nameless	main/generation_platform/fastapi/packages/querystring-nameless/

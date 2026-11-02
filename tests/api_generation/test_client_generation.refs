@@ -261,6 +261,9 @@ pets	main/generation_platform/client/packages/pets/typing_TypedDict//*.py
 pets	main/generation_platform/client/pets.txt
 pets-unpack	main/generation_platform/client/packages/pets-unpack/pydantic_v2_BaseModel//*.py
 pets-unpack	main/generation_platform/client/pets-unpack.txt
+pointer-errors	main/generation_platform/client/pointer-errors.txt
+pointer-references	main/generation_platform/client/packages/pointer-references/pydantic_v2_BaseModel//*.py
+pointer-references	main/generation_platform/client/pointer-references.txt
 polling	main/generation_platform/client/packages/polling/pydantic_v2_BaseModel//*.py
 polling	main/generation_platform/client/polling.txt
 polling-plans	main/generation_platform/client/packages/polling-plans/dataclasses_dataclass//*.py

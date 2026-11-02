@@ -4587,6 +4587,20 @@ def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) 
     )
 
 
+def test_main_json_pointer_through_scalar(output_file: Path) -> None:
+    """A pointer through a scalar, a null or a string names nothing, as a missing member does."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "json_pointer_through_scalar.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
+
+
 def test_main_nested_json_pointer(output_file: Path) -> None:
     """Test nested JSON pointer references."""
     run_main_and_assert(

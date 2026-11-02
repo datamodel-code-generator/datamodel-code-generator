@@ -63,6 +63,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "security-errors",
         "references",
         "reference-errors",
+        "pointer-references",
         "link-errors",
         "info",
         "callbacks",

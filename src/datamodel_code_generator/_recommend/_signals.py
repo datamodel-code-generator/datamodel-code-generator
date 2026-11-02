@@ -7,7 +7,6 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
-from urllib.parse import unquote
 
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
@@ -17,7 +16,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._graph import reach
-from datamodel_code_generator._json_pointer import pointer_tokens
+from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
 from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
@@ -212,7 +211,7 @@ def _local_tokens(ref: object) -> tuple[str, ...] | None:
     """Return the tokens a local JSON Pointer reference names, its fragment percent-decoded as generation reads it."""
     if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
-    return pointer_tokens(unquote(ref[1:]))
+    return reference_tokens(ref[1:])
 
 
 def _resolve_local(document: Mapping[str, Any], ref: object) -> object:

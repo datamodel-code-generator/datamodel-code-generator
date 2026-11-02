@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info: {title: Pointer through a scalar, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        inMapping: {$ref: "#/x-ext/k/j"}
+        inList: {$ref: "#/x-ext/items/0/j"}
+x-ext:
+  k: 5
+  items: [5]

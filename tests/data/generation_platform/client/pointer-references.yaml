@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info: {title: Pointer references, version: "1.0"}
+servers: [{url: https://api.example.com}]
+security:
+  - listed: []
+paths:
+  /pets:
+    post:
+      operationId: addPet
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/a%2Fb"}
+      responses:
+        "200":
+          description: Added.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/a%2Fb"}
+  /keyed:
+    get:
+      operationId: keyed
+      security:
+        - keyed: []
+      responses:
+        "204": {description: Done.}
+  /slashed:
+    get:
+      operationId: slashed
+      security:
+        - slashed: []
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    listed: {$ref: "#/x-schemes/0"}
+    keyed: {$ref: "#/x-keyed/1"}
+    slashed: {$ref: "#/x-keyed/a%2Fb"}
+  schemas:
+    a/b:
+      type: object
+      properties: {name: {type: string}}
+    a:
+      type: object
+      properties: {b: {type: integer}}
+x-schemes:
+  - {type: http, scheme: bearer}
+x-keyed:
+  1: {type: http, scheme: basic}
+  a/b: {type: apiKey, name: X-Key, in: header}
