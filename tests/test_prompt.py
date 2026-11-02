@@ -100,8 +100,6 @@ def test_format_current_options_without_parser() -> None:
     assert _format_current_options(Namespace(disabled=False), None) == "(No options specified)"
 
 
-
-
 @pytest.mark.allow_direct_assert
 def test_format_current_options_with_empty_store_const() -> None:
     """Format an empty store_const value using its negative option."""
@@ -131,8 +129,6 @@ def test_format_current_options_with_dictionary() -> None:
     args = parser.parse_args(["--model-name-map", '{"A": "B"}'])
 
     assert _format_current_options(args, parser) == '--model-name-map \'{"A": "B"}\''
-
-
 
 
 def test_generate_prompt_uses_default_parser_for_text_output() -> None:
