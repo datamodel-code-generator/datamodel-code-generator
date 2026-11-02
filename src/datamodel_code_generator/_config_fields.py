@@ -4,7 +4,8 @@ A path field is listed once with the stages that read it: the pyproject.toml joi
 pyproject.toml resolves against its directory), the command line (``Config`` expands ``~`` and resolves it),
 ``generate()`` (a relative path resolves against the caller's working directory) and ``--watch`` (the file, directory
 or output it watches). A JSON field holds an inline JSON value or names a JSON file; a target's JSON fields are those
-with the prefix of the target's settings.
+with the prefix of the target's settings. The defaults that the help text and the config models state of the encoding
+and the watch delay are read from here.
 """
 
 from __future__ import annotations
@@ -87,9 +88,16 @@ PYPROJECT_PATH_FIELDS: Final = frozenset({field.name for field in PATH_FIELDS} |
 PYPROJECT_API_PATH_FIELDS: Final = PYPROJECT_PATH_FIELDS | MODEL_JSON_FIELDS
 """The fields ``generate()`` reads relative to the pyproject.toml directory: every path field and JSON field."""
 
+DEFAULT_ENCODING: Final = "utf-8"
+"""The encoding of input and output text when none is given, and of JSON files that option values name."""
+DEFAULT_WATCH_DELAY: Final = 0.5
+"""The seconds ``--watch`` waits for changes to settle before it regenerates, when no delay is given."""
+
 __all__ = [
     "CALLER_RELATIVE_PATH_FIELDS",
     "CLI_RESOLVED_PATH_FIELDS",
+    "DEFAULT_ENCODING",
+    "DEFAULT_WATCH_DELAY",
     "JSON_FIELDS",
     "MODEL_JSON_FIELDS",
     "PATH_FIELDS",

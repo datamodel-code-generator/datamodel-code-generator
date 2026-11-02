@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator._json_output import (
@@ -21,7 +22,6 @@ from datamodel_code_generator._json_output import (
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
-DEFAULT_ENCODING = "utf-8"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None

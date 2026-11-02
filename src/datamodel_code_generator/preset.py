@@ -18,6 +18,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
 )
 from datamodel_code_generator._option_names import option_flag, toml_value
+from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import LiteralType
@@ -238,8 +239,7 @@ class ResolvedPresetConfig:
         if self.target_python_version is not None:
             updates["target_python_version"] = self.target_python_version
         updates.update((item.field_name, item.applied_value) for item in self.items)
-        if self.force_field_constraints:
-            updates["field_constraints"] = True
+        updates.update(implied_options({"use_annotated": self.force_field_constraints}))
         return updates
 
 

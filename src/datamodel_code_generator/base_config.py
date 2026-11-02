@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 from typing_extensions import Self
 
-from datamodel_code_generator._config_fields import TARGET_SELECTORS
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, TARGET_SELECTORS
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -24,6 +24,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._option_rules import enable_implied_options, implied_options
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -120,8 +121,9 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
     implied: dict[str, bool] = {}
     if "use_annotated" not in explicit and DataModelType(config.output_model_type) is DataModelType.MsgspecStruct:
         implied["use_annotated"] = use_annotated = True
-    if use_annotated or "field_constraints" not in explicit:
+    if "field_constraints" not in explicit:
         implied["field_constraints"] = use_annotated
+    implied.update(implied_options({"use_annotated": use_annotated}))
     return implied
 
 
@@ -232,7 +234,7 @@ class BaseGenerateConfig(BaseModel):
     reuse_model: bool = False
     reuse_scope: ReuseScope = ReuseScope.Module
     shared_module_name: str = DEFAULT_SHARED_MODULE_NAME
-    encoding: str = "utf-8"
+    encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
@@ -440,8 +442,7 @@ class BaseGenerateConfig(BaseModel):
     @model_validator(mode="after")
     def normalize_use_type_alias_type(self) -> Self:
         """Enable type aliases when their implementation is explicitly selected."""
-        if self.use_type_alias_type:
-            self.use_type_alias = True
+        enable_implied_options(self, "use_type_alias_type")
         return self
 
 

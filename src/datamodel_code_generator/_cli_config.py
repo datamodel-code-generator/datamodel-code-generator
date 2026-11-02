@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
-from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS
+from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DEFAULT_WATCH_DELAY
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -334,8 +334,9 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_root(self: Self) -> Self:
             """Validate root model configuration."""
-            if self.use_annotated:
-                self.field_constraints = True
+            from datamodel_code_generator._option_rules import enable_implied_options  # noqa: PLC0415
+
+            enable_implied_options(self, "use_annotated")
             return self
 
         @model_validator(mode="after")
@@ -401,7 +402,7 @@ def _get_config_class() -> type[Config]:
         openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: [OpenAPIScope.Schemas])  # noqa: UP045
         custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
         watch: bool = False
-        watch_delay: float = 0.5
+        watch_delay: float = DEFAULT_WATCH_DELAY
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
 
@@ -445,18 +446,10 @@ def _explicit_config_args(args: Namespace) -> dict[str, _RawConfigValue]:
 
 
 def _prepare_cli_config_args(set_args: Mapping[str, _RawConfigValue]) -> dict[str, _RawConfigValue]:
-    """Apply validation-time CLI config values before merging."""
-    if not set_args:
-        return {}
+    """Return the command-line values with the options they imply, as merging copies only the given fields."""
+    from datamodel_code_generator._option_rules import implied_options  # noqa: PLC0415
 
-    prepared_args = dict(set_args)
-    if prepared_args.get("use_annotated"):
-        prepared_args["field_constraints"] = True
-
-    if prepared_args.get("use_type_alias_type"):
-        prepared_args["use_type_alias"] = True
-
-    return prepared_args
+    return {**set_args, **implied_options(set_args)}
 
 
 def _apply_implicit_cli_config_values(

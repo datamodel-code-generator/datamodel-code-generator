@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -216,7 +217,7 @@ class ParserConfig(BaseModel):
     reuse_model: bool = False
     reuse_scope: ReuseScope | None = None
     shared_module_name: str = DEFAULT_SHARED_MODULE_NAME
-    encoding: str = "utf-8"
+    encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
