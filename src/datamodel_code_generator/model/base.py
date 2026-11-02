@@ -92,7 +92,6 @@ from datamodel_code_generator.model._decisions.hashability import (
     keeps_builtin_hash,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
-from datamodel_code_generator.model._decisions.nullability import field_renders_none
 from datamodel_code_generator.model._field_imports import (
     _annotation_typing_import_names,  # noqa: F401  # Preserve the established model.base export.
     _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
@@ -775,18 +774,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         Without ``pending_reference_null`` the hint is the one ``type_hint`` renders; with it, imports collected
         without a hint read the type's own None and pass its model's.
         """
-        required = self.required
         hint_has_none = (
             data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
         )
-        return field_renders_none(
-            hint_has_none=hint_has_none and data_type.type != ANY,
-            has_default_factory=self.has_default_factory,
-            nullable=self.nullable,
-            required=required,
-            type_has_null=required and self.type_has_null,
-            fall_back_to_nullable=not required and self.fall_back_to_nullable,
-            pending_reference_null=pending_reference_null,
+        return _field_imports.field_none_source(
+            self, hint_has_none=hint_has_none and data_type.type != ANY, pending_reference_null=pending_reference_null
         )
 
     @property
