@@ -86,7 +86,7 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
     path='/owners',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_10),), default='application/json', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True, codec=model_bindings.codec_10),), default='application/json', required=True),
     fields=FieldArguments(method='create_owner', names=('email', 'nickName'), media=(BodyFields(media_type='application/json', fields=((0, 'email', False), (1, 'nickName', False))),)),
 )
 
