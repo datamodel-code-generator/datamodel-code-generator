@@ -33,16 +33,12 @@ from datamodel_code_generator.model.runtime_validation import _is_internal_schem
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._intersection import inherits_keyword
 from datamodel_code_generator.parser._origins import with_field_origin
-from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
+from datamodel_code_generator.parser._passes._keys import declares_raw_schema_default
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, _merges_ref_siblings
-from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
-)
+from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
     _is_special_path,
@@ -749,10 +745,7 @@ def inherited_default_source(
     The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
     ``field`` declares none.
     """
-    if inherits_keyword(parser.allof_merge_mode.value, "default") and not (
-        _RAW_SCHEMA_DEFAULT_KEY in field.__dict__
-        and field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-    ):
+    if inherits_keyword(parser.allof_merge_mode.value, "default") and not declares_raw_schema_default(field):
         return inherited_field
     return field
 

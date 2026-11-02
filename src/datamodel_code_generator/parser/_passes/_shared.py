@@ -64,8 +64,8 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
     _DERIVED_FROM_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
-    _RAW_SCHEMA_DEFAULT_UNDEFINED,
+    declares_raw_schema_default,
+    raw_schema_default,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import _text_constructor_expression
@@ -564,14 +564,9 @@ def apply_inherited_field_default(
     apply_default_values_for_required_fields: bool,
 ) -> None:
     """Resolve an inherited schema default in the derived class scope."""
-    if model_resolver.default_value_overrides and _RAW_SCHEMA_DEFAULT_KEY in inherited_field.__dict__:
-        raw_default = inherited_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
-        has_default = raw_default is not _RAW_SCHEMA_DEFAULT_UNDEFINED
+    if model_resolver.default_value_overrides and (raw := raw_schema_default(inherited_field)) is not None:
         field.default, field.has_default = model_resolver.resolve_default_value(
-            field.original_name or field.name or "",
-            None if not has_default else raw_default,
-            has_default,
-            class_name=class_name,
+            field.original_name or field.name or "", *raw, class_name=class_name
         )
         match field.default:
             case dict() | list() | set():
@@ -660,11 +655,7 @@ def override_required_field(
             if (
                 not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY))
                 and (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY))
-                and (
-                    host.allof_merge_mode != AllOfMergeMode.All
-                    or model_field.__dict__.get(_RAW_SCHEMA_DEFAULT_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED)
-                    is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-                )
+                and (host.allof_merge_mode != AllOfMergeMode.All or declares_raw_schema_default(model_field))
             ):
                 default_source = model_field
             if class_name:
