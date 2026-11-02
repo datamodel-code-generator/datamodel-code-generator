@@ -218,7 +218,7 @@ else:
 
 def _preserve_float_constraint_precision(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
     """Retain legacy floats except when conversion would lose integer precision (``exact_float``)."""
-    if isinstance(value, int) and not isinstance(value, bool):
+    if _applicability.json_integer(value):
         return value if (float_value := _applicability.exact_float(value)) is None else float_value
     return handler(value)
 

@@ -31,7 +31,7 @@ from datamodel_code_generator._target_contract import (
     symbols_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, present, without_none
+from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, sole_present, without_none
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
@@ -232,8 +232,8 @@ class ModelFacts:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
         while True:
             value = self.plain(value)
-            if isinstance(value, UnionType) and len(members := present(value)) == 1:
-                value = members[0]
+            if (member := sole_present(value)) is not None:
+                value = member
             elif (
                 (symbol := self.symbol(value)) is not None
                 and symbol.kind == "root"
@@ -256,8 +256,8 @@ class ModelFacts:
             and (root := self.root(symbol.id)) is not None
         ):
             value = self.plain(root)
-        if isinstance(value, UnionType) and len(members := present(value)) == 1:
-            value = self.plain(members[0])
+        if (member := sole_present(value)) is not None:
+            value = self.plain(member)
         return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
 
     def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:

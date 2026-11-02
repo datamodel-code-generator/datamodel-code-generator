@@ -103,7 +103,7 @@ from datamodel_code_generator._target_operations import (
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present
+from datamodel_code_generator._target_types import present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -993,8 +993,8 @@ class Planner:  # noqa: PLR0904
         match value:
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
                 return value
-            case UnionType() if len(members := present(value)) == 1:
-                return self.member(members[0])
+            case UnionType() if (member := sole_present(value)) is not None:
+                return self.member(member)
             case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
                 return self.member(value.arguments[0])
             case _:
@@ -1579,10 +1579,10 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
     scalar: BuiltinType | ImportedType | None = None
     identity: tuple[str | None, str] = (None, "")
     match value:
-        case UnionType() if len(scalars := present(value)) == 1:
-            if (constrained := _constrained(scalars[0], constraints)) is None:
+        case UnionType() if (member := sole_present(value)) is not None:
+            if (constrained := _constrained(member, constraints)) is None:
                 return None
-            members = tuple(constrained if item is scalars[0] else item for item in value.members)
+            members = tuple(constrained if item is member else item for item in value.members)
             return replace(value, members=members, hint=None)
         case BuiltinType():
             scalar, identity = value, (None, value.name)

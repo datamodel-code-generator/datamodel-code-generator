@@ -26,6 +26,7 @@ from datamodel_code_generator._constraint_applicability import (
     declared_string_keywords_taken,
     enforced_keywords,
     holds_number_format,
+    json_integer,
     literal_check,
     literal_enforces_every_keyword,
     split_declared_keywords,
@@ -954,12 +955,12 @@ def get_contains_count_constraints(
     max_contains = obj.extras.get("maxContains")
     min_items = (
         min_contains
-        if isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+        if json_integer(min_contains) and min_contains > 0
         else 1
         if "minContains" not in obj.extras
         else None
     )
-    max_items = max_contains if isinstance(max_contains, int) and not isinstance(max_contains, bool) else None
+    max_items = max_contains if json_integer(max_contains) else None
     return min_items, max_items
 
 
@@ -969,7 +970,7 @@ def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywords
     if "minContains" not in obj.extras:
         return True
     min_contains = obj.extras["minContains"]
-    return isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+    return json_integer(min_contains) and min_contains > 0
 
 
 def get_effective_array_length(cls: type[ValueKeywordsHost], obj: JsonSchemaObject) -> int | None:

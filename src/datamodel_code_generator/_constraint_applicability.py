@@ -95,6 +95,7 @@ __all__ = [
     "int_beyond_values",
     "int_constraint_beyond_values",
     "is_non_finite",
+    "json_integer",
     "json_number",
     "keyword_kinds",
     "length_reading",
@@ -795,6 +796,11 @@ _BOUND_CHECKS: Final[Mapping[str, Callable[[float, float], bool]]] = MappingProx
     "exclusiveMinimum": operator.gt,
     "exclusiveMaximum": operator.lt,
 })
+
+
+def json_integer(value: object) -> TypeIs[int]:
+    """Return whether a JSON value is an integer: an int, a ``bool`` being none."""
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def json_number(value: object) -> TypeIs[int | float]:

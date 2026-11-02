@@ -28,7 +28,7 @@ from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
-from datamodel_code_generator._target_types import admits_none, present
+from datamodel_code_generator._target_types import admits_none, sole_present
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterator
@@ -276,9 +276,7 @@ class _Pages(HelperPlanner):
     def present(self, value: TypeView) -> TypeView:
         """Return a type without None, through its aliases."""
         value = self.facts.plain(value)
-        if isinstance(value, UnionType) and len(members := present(value)) == 1:
-            return self.facts.plain(members[0])
-        return value
+        return value if (member := sole_present(value)) is None else self.facts.plain(member)
 
     def single(
         self, spec: OperationSpec, at: str, what: str

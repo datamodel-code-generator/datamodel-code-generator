@@ -39,7 +39,6 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     TextShape,
     TypeUseId,
-    UnionType,
     WireDeclaration,
     api_key_place,
     children_of,
@@ -59,7 +58,7 @@ from datamodel_code_generator._target_contract import (
     uses_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import container_slot, lexical_kind, present, type_identity
+from datamodel_code_generator._target_types import container_slot, lexical_kind, sole_present, type_identity
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
@@ -840,8 +839,8 @@ class LexicalKinds:
         """Return the type a type stands for, through aliases, root models and a union with None alone."""
         seen: set[int] = set()
         while True:
-            if isinstance(value, UnionType) and len(members := present(value)) == 1:
-                value = members[0]
+            if (member := sole_present(value)) is not None:
+                value = member
             elif (
                 isinstance(value, GeneratedSymbolType)
                 and value.symbol not in seen
