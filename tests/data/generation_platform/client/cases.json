@@ -4573,6 +4573,16 @@
     },
     "modules": false
   },
+  "protocols-cache-bodyless": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/cache-bodyless.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-bodyless.json"
+    },
+    "modules": false
+  },
   "caching-typing": {
     "input": "caching.yaml",
     "references": [

@@ -2,7 +2,7 @@
 
 A YAML key such as ``1`` or ``200`` loads as a number. A key that names a component, path, webhook, callback, method,
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
-must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
+must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
 the fields of an AsyncAPI channel that each hold an operation and the reference a discriminator mapping value names
@@ -164,17 +164,23 @@ def discriminator_mapping_ref(value: str) -> str:
     return f"#/components/schemas/{value}"
 
 
-def document_statuses(responses: Mapping[Any, _T], error_path: Callable[[str], list[str]]) -> dict[str, _T]:
+def document_statuses(
+    responses: Mapping[Any, _T], canonical: Callable[[str], str | None], error_path: Callable[[str], list[str]]
+) -> dict[str, _T]:
     """Return ``responses`` by their status, the text of their key.
 
-    Two keys such as ``200`` and ``'200'`` give one status twice: it is an error at ``error_path(status)``.
+    Two keys that give one response twice are an error at ``error_path(status)`` of the second: ``200`` and ``'200'``,
+    or keys that ``canonical`` maps to one response key, such as ``2XX`` and ``2xx``. A key it maps to none stands for
+    itself.
     """
     keys: dict[str, object] = {}
     statuses: dict[str, _T] = {}
     for key, value in responses.items():
-        if (status := str(key)) in keys:
-            msg = f"response status {status} is given by two keys, {keys[status]!r} and {key!r}"
+        status = str(key)
+        name = canonical(status) or status
+        if name in keys:
+            msg = f"response status {name} is given by two keys, {keys[name]!r} and {key!r}"
             raise SchemaParseError(msg, path=error_path(status))
-        keys[status] = key
+        keys[name] = key
         statuses[status] = value
     return statuses

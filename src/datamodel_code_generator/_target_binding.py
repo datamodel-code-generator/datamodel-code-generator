@@ -3504,6 +3504,7 @@ class _Contracts(_SchemaUses):
             self.response(response, use_site.child("responses", status), identity, key)
             for status, response in document_statuses(
                 {response.key: response for response in walked.below("response")},
+                response_key,
                 lambda status: [str(declaration.child("responses", status))],
             ).items()
             if (key := response_key(status)) is not None
