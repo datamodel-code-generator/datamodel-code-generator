@@ -57,6 +57,7 @@ __all__ = [
     "is_target_python_builtin_type",
     "mark_untaken_constraints",
     "override_annotation",
+    "override_spells_builtin",
     "python_type_data_type",
     "record_overridden_constraints",
     "reject_unavailable_imports",
@@ -321,22 +322,78 @@ def python_type_data_type(
     )
 
 
+def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr | None:
+    """Return the annotation a ``--type-overrides`` value spells, or None when it names a class to import.
+
+    A value with brackets is an annotation or an error, as it has no import to write either. A value without them
+    names a class to import when it is a dotted path, or a bare name that no builtin and no standard-library type
+    of the registry has; a bare name that one has, or a union of names such as ``str | None``, is an annotation.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeName,
+        PythonTypeQualifiedName,
+    )
+
+    expression = _parse_override_annotation(path)
+    if "[" in path:
+        if expression is None:
+            msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
+            raise Error(msg)
+        return expression
+    if expression is None or isinstance(expression, PythonTypeQualifiedName):
+        return None
+    if isinstance(expression, PythonTypeName) and not (
+        parser._is_target_python_builtin_type(expression.value)  # noqa: SLF001
+        or parser._resolve_type_import(expression.value)  # noqa: SLF001
+    ):
+        return None
+    return expression
+
+
 def override_annotation(
     parser: TypeOverridesHost, override_import: Import, *, is_optional: bool = False
 ) -> DataType | None:
     """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class.
 
-    A value with brackets, such as ``typing.Literal[1, 2]``, names no class to import: it is written as
-    ``x-python-type`` writes it, with the imports of its names and the keywords that type takes. A value with
-    brackets that is no annotation is an error, as it has no import to write either.
+    A value that is an annotation, such as ``typing.Literal[1, 2]``, ``str`` or ``str | None``, names no class to
+    import: it is written as ``x-python-type`` writes it, with the imports of its names, none for a builtin, and the
+    keywords that type takes.
     """
-    path = _import_path(override_import)
-    if "[" not in path:
+    if (expression := _override_expression(parser, _import_path(override_import))) is None:
         return None
-    if (expression := _parse_override_annotation(path)) is None:
-        msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
-        raise Error(msg)
     return python_type_data_type(parser, expression, is_optional=is_optional)
+
+
+def override_spells_builtin(override_import: Import | None, names: frozenset[str]) -> bool:
+    """Return whether a ``--type-overrides`` value spells one of the builtins ``names``, alone or unioned with ``None``.
+
+    ``bytes``, ``builtins.bytes``, ``bytes | None``, ``None | bytes``, ``typing.Optional[bytes]`` and
+    ``Union[bytes, None]`` spell ``bytes``. A union of two builtins, ``bytes | Decimal``, ``list[bytes]`` and a class
+    path such as ``module.bytes`` spell none.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeName,
+        PythonTypeQualifiedName,
+        is_union_python_type_expr,
+        python_type_expr_arguments,
+    )
+
+    if override_import is None or (expression := _parse_override_annotation(_import_path(override_import))) is None:
+        return False
+    spelled: set[str] = set()
+    pending = [expression]
+    while pending:
+        member = pending.pop()
+        if is_union_python_type_expr(member):
+            pending.extend(python_type_expr_arguments(member))
+        elif isinstance(member, PythonTypeName):
+            spelled.add(member.value)
+        elif isinstance(member, PythonTypeQualifiedName) and member.parts[:-1] == ("builtins",):
+            spelled.add(member.parts[-1])
+        else:
+            return False
+    spelled.discard("None")
+    return len(spelled) == 1 and spelled <= names
 
 
 def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase, override_import: Import) -> None:
