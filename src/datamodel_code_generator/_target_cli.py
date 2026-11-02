@@ -248,9 +248,16 @@ def _target_payload(
         return None
     from datamodel_code_generator._structured_output import TargetPayload  # noqa: PLC0415
 
-    return TargetPayload(
-        package=target.package, dependencies=list(project.dependencies), implied=_implied_payload(implied)
-    )
+    return TargetPayload(**_payload_fields(target, project, implied))
+
+
+def _payload_fields(target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]) -> dict[str, Any]:
+    """Return what both JSON reports record of a target: its package, its runtime dependencies and what it implied."""
+    return {
+        "package": target.package,
+        "dependencies": list(project.dependencies),
+        "implied": _implied_payload(implied),
+    }
 
 
 def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
@@ -302,13 +309,11 @@ def _target_json(
             for item in steps.implementations
         ]
     payload = GeneratedTargetPayload(
-        package=target.package,
-        dependencies=list(project.dependencies),
+        **_payload_fields(target, project, implied),
         readme=shown(steps.readme, base).as_posix(),
         entrypoint=entrypoint,
         implementation=implementation,
         usage=steps.usage,
-        implied=_implied_payload(implied),
     )
     return generation_output_json(files, output=models.as_posix(), target=payload)
 
