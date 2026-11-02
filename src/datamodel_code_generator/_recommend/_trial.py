@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._recommend._metrics import NameMetrics, NameRecord, NameStability, SchemaVocabulary
-    from datamodel_code_generator._recommend._rules import OptionValue
+    from datamodel_code_generator._recommend_vocabulary import OptionValue
     from datamodel_code_generator._shared_types import DefaultPutDict
     from datamodel_code_generator.enums import InputFileType
 

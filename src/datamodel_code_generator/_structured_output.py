@@ -8,6 +8,12 @@ from pydantic import VERSION, ConfigDict, Field, TypeAdapter
 
 from datamodel_code_generator import _StructuredOutputUnavailableError
 from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, schema_document
+from datamodel_code_generator._recommend_vocabulary import (  # noqa: TC001 - pydantic evaluates the payload annotations.
+    DisagreementKind,
+    InputSource,
+    OptionValue,
+    RecommendMode,
+)
 from datamodel_code_generator.prompt import PromptPayload, _Envelope, _Payload
 
 try:
@@ -237,13 +243,10 @@ class BatchOutputPayload(_Envelope):
     jobs: list[BatchJobPayload]
 
 
-RecommendOptionValue: TypeAlias = bool | str | list[str]
-
-
 class RecommendInputPayload(_Payload):
     """The input a recommendation read and whether its schema rules could analyse it."""
 
-    source: Literal["file", "url", "stdin", "directory", "input-model"]
+    source: InputSource
     input_file_type: str | None = Field(description="The configured or detected input file type.")
     document: str | None = Field(
         description="The schema format and version, such as OpenAPI 3.1.0; null when not analysed."
@@ -324,7 +327,7 @@ class RecommendCandidatePayload(_Payload):
 
     label: str
     preset: str | None = Field(description="The preset the candidate starts from; null for the configuration as set.")
-    set: dict[str, RecommendOptionValue] = Field(description="Options added on top of the preset, as config values.")
+    set: dict[str, OptionValue] = Field(description="Options added on top of the preset, as config values.")
     arguments: list[str]
     selectable: bool = Field(description="False for the configuration as set without the recommended preset.")
     error: str | None
@@ -371,7 +374,7 @@ class RecommendOptionPayload(_Payload):
 
     rule: str
     decision: str
-    set: dict[str, RecommendOptionValue] = Field(description="Config fields and values, as pyproject.toml spells them.")
+    set: dict[str, OptionValue] = Field(description="Config fields and values, as pyproject.toml spells them.")
     arguments: list[str] = Field(
         description="The CLI arguments of the values; for not_recommended, the options the rule advises against."
     )
@@ -402,7 +405,7 @@ class RecommendDisagreementPayload(_Payload):
     """A configured value the recommendation keeps although the rules suggest another value."""
 
     field: str
-    kind: Literal["explicit", "preset", "newer-preset"] = Field(
+    kind: DisagreementKind = Field(
         description=(
             "explicit: the configuration sets the field; preset: the configured preset sets it and no option "
             "undoes it; newer-preset: a newer dated preset of the same family exists."
@@ -417,7 +420,7 @@ class RecommendOptionsPayload(_Envelope):
     """Structured JSON payload emitted by --recommend-options --output-format json (experimental)."""
 
     kind: Literal["recommend-options"]
-    mode: Literal["quick", "full"]
+    mode: RecommendMode
     rules_revision: str
     calibrated_presets: str
     input: RecommendInputPayload
