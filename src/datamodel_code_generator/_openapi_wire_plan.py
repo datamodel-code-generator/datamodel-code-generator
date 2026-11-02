@@ -42,6 +42,8 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     WireDeclaration,
     api_key_place,
+    children_of,
+    encoding_headers,
     fact,
     is_required,
     label,
@@ -502,14 +504,12 @@ def _planned(
 def _headers(operation: OperationContract, requested: frozenset[TypeUseId] | None) -> Iterator[WireDeclaration]:
     """Yield the headers of an operation's responses, then the requested ones its request body's encodings declare."""
     for response in operation.responses:
-        yield from (child for child in response.children if child.kind == "header")
-    for media in () if operation.request_body is None else operation.request_body.children:
-        for encoding in (child for child in media.children if child.kind == "encoding"):
-            yield from (
-                child
-                for child in encoding.children
-                if child.kind == "header" and (requested is None or not requested.isdisjoint(type_uses(child)))
-            )
+        yield from children_of(response, "header")
+    yield from (
+        header
+        for header in encoding_headers(operation)
+        if requested is None or not requested.isdisjoint(type_uses(header))
+    )
 
 
 def _header(

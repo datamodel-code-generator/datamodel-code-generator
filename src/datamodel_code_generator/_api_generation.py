@@ -6,7 +6,6 @@ import sys
 import tempfile
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
 from io import BytesIO, TextIOWrapper
 from pathlib import Path, PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Protocol, cast
@@ -27,6 +26,7 @@ from datamodel_code_generator._fastapi.packages import (
     implementations_owner,
     services_package,
 )
+from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
@@ -1138,7 +1138,7 @@ def plan_target(  # noqa: PLR0913
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
         effective._generation_timestamp = (  # noqa: SLF001
-            timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            timestamp or current_timestamp()
         )
     models = _run_models(input_, effective, config)
     try:

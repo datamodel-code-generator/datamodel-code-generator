@@ -62,6 +62,7 @@ from datamodel_code_generator._target_contract import (
     Requirement,
     UnionType,
     api_key_place,
+    children_of,
     fact,
     http_scheme,
     is_required,
@@ -474,7 +475,7 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
     """Return the problems of the operations' response links that reach no link naming an operation."""
     problems: list[Diagnostic] = []
     for operation in operations:
-        for link in (child for response in operation.responses for child in response.children if child.kind == "link"):
+        for link in (child for response in operation.responses for child in children_of(response, "link")):
             if (unresolved := _unresolved("F_LINK_INVALID", "link", link)) is not None:
                 problems.append(unresolved)
             elif (message := _link_operation_problem(link)) is not None:
@@ -508,7 +509,7 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
 def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
     """Return the encodings a media declares."""
-    return (child for child in media.declaration.children if child.kind == "encoding")
+    return children_of(media.declaration, "encoding")
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -1130,7 +1131,7 @@ class Planner:  # noqa: PLR0904
         FastAPI takes the JSON null of a required body for an omitted one, so an adapter reads a required JSON body
         whose type accepts null.
         """
-        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in children_of(declaration, "media"))
         for item in media:
             self.bound(item.use)
         spec = BodySpec(required=is_required(declaration), media=media, decision=Decision(transport="adapter"))
@@ -1341,7 +1342,7 @@ class Planner:  # noqa: PLR0904
 
         A response whose default media is JSON of a type that accepts null sends None as null, as the models decide.
         """
-        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in children_of(declaration, "media"))
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",

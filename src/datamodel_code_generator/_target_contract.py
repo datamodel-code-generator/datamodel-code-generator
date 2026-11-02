@@ -10,7 +10,7 @@ from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
     from datamodel_code_generator._generation_contract import AttemptId
@@ -554,13 +554,16 @@ class SourceReference:
     state: Literal["resolved", "document_not_observed", "pointer_missing", "invalid_pointer", "invalid_target", "cycle"]
 
 
+WireKind: TypeAlias = Literal[
+    "parameter", "request_body", "response", "header", "media", "encoding", "link", "callback", "security_scheme"
+]
+
+
 @dataclass(frozen=True, slots=True)
 class WireDeclaration:
     """Freeze non-schema wire facts while retaining original source/schema locations."""
 
-    kind: Literal[
-        "parameter", "request_body", "response", "header", "media", "encoding", "link", "callback", "security_scheme"
-    ]
+    kind: WireKind
     name: str | None
     declaration: DeclarationId
     use_site: SourceLocation
@@ -779,6 +782,26 @@ def label(operation: OperationContract) -> str:
 def type_uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     """Return the type uses of a declaration: its own, then those of its children."""
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+
+
+def children_of(declaration: WireDeclaration, kind: WireKind) -> Iterator[WireDeclaration]:
+    """Return the children of a declaration of one kind, in order."""
+    return (child for child in declaration.children if child.kind == kind)
+
+
+def request_media(operation: OperationContract) -> tuple[WireDeclaration, ...]:
+    """Return the media of an operation's request body, none without one."""
+    return () if operation.request_body is None else operation.request_body.children
+
+
+def encoding_headers(operation: OperationContract) -> Iterator[WireDeclaration]:
+    """Return the headers the encodings of an operation's request body declare, in order."""
+    return (
+        header
+        for media in request_media(operation)
+        for encoding in children_of(media, "encoding")
+        for header in children_of(encoding, "header")
+    )
 
 
 def uses_by_id(batch: GeneratedTypeContractBatch) -> dict[TypeUseId, TypeUseBinding]:
