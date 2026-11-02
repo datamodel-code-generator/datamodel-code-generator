@@ -10,12 +10,13 @@ from __future__ import annotations
 
 from functools import lru_cache
 from itertools import starmap
-from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, get_args
 
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._target_contract import (
+    BuiltinName,
     BuiltinType,
     GeneratedSymbolType,
     ImportedExpression,
@@ -45,20 +46,7 @@ if TYPE_CHECKING:
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
 
-_BUILTINS: Final = (
-    "bool",
-    "bytes",
-    "complex",
-    "dict",
-    "float",
-    "frozenset",
-    "int",
-    "list",
-    "object",
-    "set",
-    "str",
-    "tuple",
-)
+_BUILTINS: Final = get_args(BuiltinName)
 _LOCAL: Final = (None, "")
 _FLAGS: Final[tuple[dict[str, Any], ...]] = tuple({flag: True} for flag in ("is_list", "is_set", "is_frozen_set"))
 _PART: Final = "\x01"
