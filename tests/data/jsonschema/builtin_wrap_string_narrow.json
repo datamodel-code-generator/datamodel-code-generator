@@ -1,0 +1,18 @@
+{
+  "title": "NarrowWrap",
+  "type": "object",
+  "required": [
+    "text",
+    "hex"
+  ],
+  "properties": {
+    "text": {
+      "type": "string",
+      "description": "hello world and then a really long description"
+    },
+    "hex": {
+      "type": "string",
+      "description": "abc\u007f"
+    }
+  }
+}

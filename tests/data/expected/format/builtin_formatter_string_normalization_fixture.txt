@@ -20,6 +20,27 @@ value'''
 name = "value"
 value = f"item {name}"
 
+[f-string-shapes]
+name = "value"
+width = 8
+spec = f"{name!r:>{width}} é{{kept}}"
+prefixed = rf"{name}\d" + F"{name}"
+quoted = f'{name["key"]}' + f'{name:"^10}' + f'ends\\'
+nested = f'{f"nested {name}"}'
+joined = (f"one {name}"
+          f"two {name}")
+
+[f-string-multiline]
+name = "value"
+text = f'''first
+
+
+
+{name} second
+'''
+nested = f'''a {f"b {name}"}
+{name}''' + f"{name}"
+
 [control]
 value = "beforeformfeed"
 

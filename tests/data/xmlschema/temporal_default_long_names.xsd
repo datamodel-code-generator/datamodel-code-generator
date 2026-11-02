@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="aVeryLongEventTimestampFieldName" type="xs:dateTime" minOccurs="0" default="2026-06-04T12:34:56Z"/>
+        <xs:element name="aVeryLongEventCalendarDateFieldNameThatGoesOnAndOn" type="xs:date" minOccurs="0" default="2026-06-04"/>
+        <xs:element name="aShortTime" type="xs:time" minOccurs="0" default="12:34:56"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

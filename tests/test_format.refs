@@ -7,8 +7,7 @@
 [test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python]
 	builtin_formatter/target_identifiers.txt
 [test_builtin_formatter_string_normalization_fixture]
-	builtin_formatter/string_normalization.txt	?
-	builtin_formatter/string_normalization_legacy.txt	?
+	format/builtin_formatter_string_normalization_fixture.txt
 [test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors]
 	builtin_formatter/pep695_invalid.txt	?
 	builtin_formatter/pep695_invalid_legacy.txt	?
