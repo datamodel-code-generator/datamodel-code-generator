@@ -69,7 +69,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator._graph_links import add_child, drop_child
+from datamodel_code_generator._graph_links import add_child, drop_child, link_members
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
@@ -1734,10 +1734,7 @@ def _copy_data_type(data_type: DataType, *, register_references: bool = True, li
     if (dict_key := data_type.dict_key) is not None:
         copied.dict_key = _copy_data_type(dict_key, register_references=register_references, link_parents=link_parents)
     if link_parents:
-        for child in copied.data_types:
-            child.parent = copied
-        if copied.dict_key is not None:
-            copied.dict_key.parent = copied
+        link_members(copied)
     if register_references:
         copied.register_reference()
     return copied

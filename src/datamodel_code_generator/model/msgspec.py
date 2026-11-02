@@ -17,7 +17,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
-from datamodel_code_generator._graph_links import clear_parents
+from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
@@ -1392,8 +1392,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             copied = self._copy_data_type(member)
             for nested in copied.all_data_types:
                 nested.register_reference()
-                for child in nested.data_types:
-                    child.parent = nested
+                link_members(nested)
             return [copied]
         members = [
             unconstrained

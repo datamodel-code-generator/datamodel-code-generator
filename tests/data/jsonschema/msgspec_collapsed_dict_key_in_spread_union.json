@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "$defs": {
+    "Key": {"type": "string", "format": "uuid"},
+    "Alias": {
+      "anyOf": [
+        {"type": "integer", "minimum": 5},
+        {"type": "object", "propertyNames": {"$ref": "#/$defs/Key"}, "additionalProperties": {"type": "integer"}}
+      ]
+    }
+  },
+  "properties": {
+    "f": {"anyOf": [{"$ref": "#/$defs/Alias"}, {"type": "integer", "maximum": 3}]}
+  }
+}
