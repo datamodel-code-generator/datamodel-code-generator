@@ -57,6 +57,7 @@ __all__ = [
     "is_target_python_builtin_type",
     "mark_untaken_constraints",
     "override_annotation",
+    "override_spells_builtin",
     "python_type_data_type",
     "record_overridden_constraints",
     "reject_unavailable_imports",
@@ -361,6 +362,38 @@ def override_annotation(
     if (expression := _override_expression(parser, _import_path(override_import))) is None:
         return None
     return python_type_data_type(parser, expression, is_optional=is_optional)
+
+
+def override_spells_builtin(override_import: Import | None, names: frozenset[str]) -> bool:
+    """Return whether a ``--type-overrides`` value spells one of the builtins ``names``, alone or unioned with ``None``.
+
+    ``bytes``, ``builtins.bytes``, ``bytes | None``, ``None | bytes``, ``typing.Optional[bytes]`` and
+    ``Union[bytes, None]`` spell ``bytes``. A union of two builtins, ``bytes | Decimal``, ``list[bytes]`` and a class
+    path such as ``module.bytes`` spell none.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeName,
+        PythonTypeQualifiedName,
+        is_union_python_type_expr,
+        python_type_expr_arguments,
+    )
+
+    if override_import is None or (expression := _parse_override_annotation(_import_path(override_import))) is None:
+        return False
+    spelled: set[str] = set()
+    pending = [expression]
+    while pending:
+        member = pending.pop()
+        if is_union_python_type_expr(member):
+            pending.extend(python_type_expr_arguments(member))
+        elif isinstance(member, PythonTypeName):
+            spelled.add(member.value)
+        elif isinstance(member, PythonTypeQualifiedName) and member.parts[:-1] == ("builtins",):
+            spelled.add(member.parts[-1])
+        else:
+            return False
+    spelled.discard("None")
+    return len(spelled) == 1 and spelled <= names
 
 
 def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase, override_import: Import) -> None:
