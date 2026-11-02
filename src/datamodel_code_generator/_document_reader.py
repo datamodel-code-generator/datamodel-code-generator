@@ -5,7 +5,8 @@ header, media type, encoding property, link, scheme or message part must be a st
 must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-and the fields of an AsyncAPI channel that each hold an operation.
+the fields of an AsyncAPI channel that each hold an operation and the reference a discriminator mapping value names
+(``discriminator_mapping_ref``).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ __all__ = [
     "MemberRow",
     "as_mapping",
     "descend",
+    "discriminator_mapping_ref",
     "document_statuses",
     "member",
     "string_key",
@@ -147,6 +149,19 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
     """Require each of ``keys``, which name a ``kind``, to be a string (``string_key``), in order."""
     for key in keys:
         string_key(key, kind, error_path)
+
+
+def discriminator_mapping_ref(value: str) -> str:
+    """Return the reference a discriminator mapping value names.
+
+    A value with a ``/`` or a ``#`` is a reference or a path (``#/components/schemas/Pet``, ``./other.yaml#/Pet``,
+    ``schemas/Pet``) and stays as it is. Any other value, a dot included (``Pet``, ``Pet.V1``), names a schema of
+    ``#/components/schemas/``; a bare file name such as ``other.yaml`` is a schema name, so a file is written
+    ``./other.yaml``.
+    """
+    if "/" in value or "#" in value:
+        return value
+    return f"#/components/schemas/{value}"
 
 
 def document_statuses(responses: Mapping[Any, _T], error_path: Callable[[str], list[str]]) -> dict[str, _T]:

@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias
 from urllib.parse import unquote, urljoin, urlsplit
 
-from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
+from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, discriminator_mapping_ref
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS
@@ -333,15 +333,17 @@ class SourceDocument:
         copied = self.mapping({key: item for key, item in value.items() if key != "mapping"}, document, base, at, "any")
         if isinstance(mapping := value.get("mapping"), dict):
             copied["mapping"] = {
-                str(key): self.reference(item, document, base, "schema", (*at, "mapping", str(key)))
-                if "/" in item or "#" in item
-                else self.reference(
-                    f"#/components/schemas/{item}", document, self.uris[document], "schema", (*at, "mapping", str(key))
-                ).rpartition("/")[2]
+                str(key): self.discriminator_target(item, document, base, (*at, "mapping", str(key)))
                 for key, item in mapping.items()
                 if isinstance(item, str)
             }
         return copied
+
+    def discriminator_target(self, value: str, document: int, base: str, at: tuple[str, ...]) -> str:
+        """Return a mapping value as the served document spells it: a reference rewritten, a name as its component."""
+        if (ref := discriminator_mapping_ref(value)) == value:
+            return self.reference(value, document, base, "schema", at)
+        return self.reference(ref, document, self.uris[document], "schema", at).rpartition("/")[2]
 
     def json(self, value: YamlValue, at: tuple[str, ...]) -> bool:
         """Return whether a value has a JSON form, reporting one the served document leaves out.

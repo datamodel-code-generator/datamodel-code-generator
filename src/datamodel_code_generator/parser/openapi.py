@@ -29,7 +29,7 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
-from datamodel_code_generator._document_reader import string_key, string_keys
+from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
     PATHS_PARAMETERS,
@@ -622,41 +622,17 @@ class OpenAPIParser(JsonSchemaParser):
             warn_deprecated("schema.openapi-nullable", stacklevel=2)
         return super()._get_data_type(obj, localize_constraints=localize_constraints)
 
-    def _normalize_discriminator_mapping_ref(self, mapping_value: str) -> str:  # noqa: PLR6301
-        """Normalize a discriminator mapping value to a full $ref path.
-
-        Per OpenAPI spec, mapping values can be either:
-        - Full refs: "#/components/schemas/Pet" or "./other.yaml#/components/schemas/Pet"
-        - Short names: "Pet" or "Pet.V1" (relative to #/components/schemas/)
-        - Relative paths: "schemas/Pet" or "./other.yaml"
-
-        Values containing "/" or "#" are treated as paths/refs and passed through.
-        All other values (including those with dots like "Pet.V1") are treated as
-        short schema names and normalized to full refs.
-
-        Note: Bare file references without path separators (e.g., "other.yaml") will be
-        treated as schema names. Use "./other.yaml" format for file references.
-
-        Note: This could be a staticmethod, but @snooper_to_methods() decorator
-        converts staticmethods to regular functions when pysnooper is installed.
-        """
-        if "/" in mapping_value or "#" in mapping_value:
-            return mapping_value
-        return f"#/components/schemas/{mapping_value}"
-
-    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:
+    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR6301
         """Return a copy of the discriminator dict with normalized mapping refs."""
         result = discriminator.copy()
         mapping = discriminator.get("mapping")
         if mapping:
-            result["mapping"] = {
-                k: self._normalize_discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)
-            }
+            result["mapping"] = {k: discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)}
         return result
 
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
-        normalized = self._normalize_discriminator_mapping_ref(value)
+        normalized = discriminator_mapping_ref(value)
         return self._derived_ref(normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
