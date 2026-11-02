@@ -565,6 +565,11 @@ def _plain_class(tp: object) -> TypeIs[type]:
     return get_origin(tp) is None and isinstance(tp, type)
 
 
+def _model_class(tp: object) -> TypeIs[type[BaseModel]]:
+    """Return whether an object is a Pydantic model class (`BaseModel` itself included)."""
+    return isinstance(tp, type) and issubclass(tp, BaseModel)
+
+
 def _collect_core_type_identities(models: Iterable[type], core_types: dict[str, type]) -> None:
     """Recover legacy core-ref identities without discarding same-name types."""
     pending: list[Any] = list(models)
@@ -866,7 +871,7 @@ def _collect_nested_models(model: type, visited: set[type] | None = None) -> dic
 def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type]) -> None:
     """Recursively find BaseModel, Enum, dataclass, TypedDict, and msgspec in a type annotation."""
     if _plain_class(tp) and tp not in visited:
-        if issubclass(tp, BaseModel):
+        if _model_class(tp):
             result[tp.__name__] = tp
             result.update(_collect_nested_models(tp, visited))
         elif issubclass(tp, PyEnum) or _is_model_like(tp):
@@ -966,7 +971,7 @@ def _get_type_family(tp: type) -> str:  # noqa: PLR0911
     if isinstance(tp, type) and issubclass(tp, PyEnum):
         return _TYPE_FAMILY_ENUM
 
-    if isinstance(tp, type) and issubclass(tp, BaseModel):
+    if _model_class(tp):
         return _OutputModelFamily.PYDANTIC
 
     if hasattr(tp, "__pydantic_fields__") and is_dataclass(tp):  # pragma: no cover
@@ -1334,7 +1339,7 @@ def _model_schema_with_python_types(
 
 def _get_base_model_parents(model_class: type) -> list[type[BaseModel]]:
     """Get parent classes that are BaseModel subclasses (excluding BaseModel itself)."""
-    return [p for p in model_class.__bases__ if isinstance(p, type) and issubclass(p, BaseModel) and p is not BaseModel]
+    return [p for p in model_class.__bases__ if _model_class(p) and p is not BaseModel]
 
 
 def _partition_inherited_fields(
@@ -1573,7 +1578,7 @@ def _load_model_schema(  # noqa: PLR0914
     try:
         for input_model in input_models:
             _, obj = _load_input_model_object(input_model, loaded_modules, path_module_states)
-            if not (isinstance(obj, type) and issubclass(obj, BaseModel)):
+            if not _model_class(obj):
                 msg = f"Multiple --input-model only supports Pydantic v2 BaseModel classes, got {type(obj).__name__}"
                 raise Error(msg)
             model_classes.append(obj)
@@ -1665,7 +1670,7 @@ def _load_single_model_schema(
             return cast("dict[str, object]", json.loads(json.dumps(obj)))
 
         model = cast("type", obj)
-        if isinstance(obj, type) and issubclass(obj, BaseModel):
+        if _model_class(obj):
             _require_json_schema_input(input_file_type, "a Pydantic model")
             _try_rebuild_model(obj)
             nested_models, definition_types = _prepare_reused_model_types(obj, ref_strategy, output_family)
