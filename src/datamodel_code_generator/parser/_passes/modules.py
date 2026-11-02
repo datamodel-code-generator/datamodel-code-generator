@@ -59,6 +59,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _find_base_classes,
+    _has_root_field_constraints,
     _model_key_of_model,
     _ModelKeys,
     _reference_names_model,
@@ -110,7 +111,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _derived_models,
     _get_enum_from_base,
     _get_model_module_name,
-    _has_root_field_constraints,
     _is_discriminator_wrapper,
     _is_pydantic_v2_root_model,
     _ModelPositions,
@@ -1176,6 +1176,7 @@ def collapse_site_facts(
     field_constraints = parser.field_constraints
     root_field = root_model.fields[0]
     root_data_type = root_field.data_type
+    constrained_root_field = _has_root_field_constraints(root_field, row="declared")
     constrained_root = _has_root_field_constraints(root_field)
     return CollapseSiteFacts(
         has_root_field=True,
@@ -1184,8 +1185,7 @@ def collapse_site_facts(
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
         field_constraints=field_constraints,
         constrains_through_root_types=not field_constraints and _has_preservable_root_constraints(root_model),
-        constrained_root_field=isinstance(constraints := root_field.constraints, ConstraintsBase)
-        and bool(constraints.has_constraints),
+        constrained_root_field=constrained_root_field,
         constrained_root=constrained_root,
         root_type_is_map=root_data_type in MAPPINGS,
         root_type_names_model=root_data_type.reference is not None,

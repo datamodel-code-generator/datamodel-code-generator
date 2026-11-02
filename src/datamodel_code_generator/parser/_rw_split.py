@@ -602,11 +602,13 @@ def collect_inherited_fields_for_request_response(
         required_names = parser._get_inherited_required_names(base_classes)  # noqa: SLF001
         for field in result:
             if _field_source_name(field) in required_names:
-                field.required = True
-                field.use_default_with_required = uses_default_with_required(
-                    required=field.required,
-                    has_default=field.has_default,
-                    use_default=parser.apply_default_values_for_required_fields,
+                parser._graph_builder.require_field(  # noqa: SLF001
+                    field,
+                    use_default_with_required=uses_default_with_required(
+                        required=True,
+                        has_default=field.has_default,
+                        use_default=parser.apply_default_values_for_required_fields,
+                    ),
                 )
     return result
 
@@ -824,11 +826,13 @@ def get_raw_inherited_fields(
     if not parser.force_optional_for_required_fields:
         for field in result:
             if _field_source_name(field) in required_names:
-                field.required = True
-                field.use_default_with_required = uses_default_with_required(
-                    required=field.required,
-                    has_default=field.has_default,
-                    use_default=parser.apply_default_values_for_required_fields,
+                parser._graph_builder.require_field(  # noqa: SLF001
+                    field,
+                    use_default_with_required=uses_default_with_required(
+                        required=True,
+                        has_default=field.has_default,
+                        use_default=parser.apply_default_values_for_required_fields,
+                    ),
                 )
             parser.data_model_type.finalize_required_inherited_field(field)
 

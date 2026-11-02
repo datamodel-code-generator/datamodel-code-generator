@@ -1368,14 +1368,6 @@ def get_constructor_field_adjustment(
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = TYPE_DEPENDENT_CONSTRAINTS_KEY
 
 
-def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
-    """Return whether a root field has constraints, as Field() arguments or written inside its type."""
-    return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
-        data_type._consumed_constraints  # noqa: SLF001
-        for data_type in (root_field.data_type, *root_field.data_type.data_types)
-    )
-
-
 def _assign_module_name(
     model_path_to_module_name: dict[str, str], model: DataModel, module_name: str, *, keep: bool = False
 ) -> None:

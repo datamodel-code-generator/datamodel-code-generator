@@ -3500,6 +3500,22 @@ _ClassVarRow: TypeAlias = Literal["declared", "no-place"]
 """
 
 
+_RootConstraintRow: TypeAlias = Literal["declared", "with-consumed"]
+"""What constrains a root field: row ``declared`` the values its constraints set (``ConstraintsBase.has_constraints``:
+the collapse facts, an alias or root model a target checks), row ``with-consumed`` those or the keywords its type or a
+direct member of it writes itself (collapsing a root model, site models of constrained references)."""
+
+
+def _has_root_field_constraints(root_field: DataModelFieldBase, *, row: _RootConstraintRow = "with-consumed") -> bool:
+    """Return whether a root field has constraints as Field() arguments or, in row ``with-consumed``, in its type."""
+    if isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints:
+        return True
+    return row == "with-consumed" and any(
+        data_type._consumed_constraints  # noqa: SLF001
+        for data_type in (root_field.data_type, *root_field.data_type.data_types)
+    )
+
+
 def _named_field(field: DataModelFieldBase) -> str | None:
     return field.name or None
 
