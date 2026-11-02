@@ -70,11 +70,11 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    _builtin_renderer,
     _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
     _model_key_of_model,
-    _model_package_class,
     _ModelKeys,
     _uses_original_template_loader,
 )
@@ -2139,11 +2139,10 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             "schema_runtime_validation_base_class_name": base_class_name,
             **_helper_template_facts(runtime_validations),
         }
-        if custom_template_dir is None and _model_package_class(cls):
-            from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
-
-            if renderer := get_builtin_renderer(cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH):
-                return renderer(**context)
+        if renderer := _builtin_renderer(
+            cls, cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH, custom_template_dir
+        ):
+            return renderer(**context)
 
         if (
             (context["has_conditional_presence"] or context["has_not_required_groups"])
