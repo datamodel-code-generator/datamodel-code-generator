@@ -2262,6 +2262,8 @@ def _import_inflect_without_typeguard_instrumentation() -> Any:
     import importlib  # ruff: ignore[import-outside-top-level]
     import sys  # ruff: ignore[import-outside-top-level]
 
+    from datamodel_code_generator._module_paths import is_within_name  # ruff: ignore[import-outside-top-level]
+
     with _INFLECT_IMPORT_LOCK:
         if sys.modules.get("inflect") is None:
             if (inflect_module := sys.modules.get(_PRIVATE_INFLECT_MODULE)) is not None:
@@ -2272,7 +2274,7 @@ def _import_inflect_without_typeguard_instrumentation() -> Any:
             except BaseException as error:
                 # Failed imports must not leave a reusable partial private package.
                 for module_name in tuple(sys.modules):
-                    if module_name == _PRIVATE_INFLECT_MODULE or module_name.startswith(f"{_PRIVATE_INFLECT_MODULE}."):
+                    if is_within_name(module_name, _PRIVATE_INFLECT_MODULE):
                         sys.modules.pop(module_name, None)
                 if not isinstance(error, (AttributeError, ImportError, TypeError)):
                     raise

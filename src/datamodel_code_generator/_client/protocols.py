@@ -18,6 +18,7 @@ from datamodel_code_generator._api_types import Diagnostic, OperationRef, Schema
 from datamodel_code_generator._client.naming import helper_name_problem, token
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
@@ -69,6 +70,8 @@ _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 POLL_INTERVAL: Final = 1.0
 """The seconds a polling helper waits after each response before the next poll when its definition declares none."""
+COUNTED_CONTINUATIONS: Final = ("offset", "page")
+"""The continuation kinds that count a pagination helper's position, by item offset or page number."""
 
 
 class MessageCodec(NamedTuple):
@@ -186,7 +189,7 @@ def validate(
 
 
 def _collides(name: str, other: str) -> bool:
-    return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
+    return is_within_name(name, other) or is_within_name(other, name)
 
 
 class _Validator:  # noqa: PLR0904
@@ -494,8 +497,7 @@ class _Validator:  # noqa: PLR0904
                 "end": (self.ends, REQUIRED),
                 "empty_string": (self.choice("value", "end"), REQUIRED),
             },
-            "offset": count,
-            "page": count,
+            **dict.fromkeys(COUNTED_CONTINUATIONS, count),
             "next_url": {
                 "read": (self.selector, REQUIRED),
                 "end": (self.ends, REQUIRED),
@@ -509,7 +511,7 @@ class _Validator:  # noqa: PLR0904
             where = f"{at}.end[{selected['end'].index(_EMPTY_STRING)}]"
             self.conflict(where, f"{where} ends at the empty string, which empty_string decides alone")
             return INVALID
-        if selected["kind"] in {"offset", "page"} and ("has_more" in selected) == ("total" in selected):
+        if selected["kind"] in COUNTED_CONTINUATIONS and ("has_more" in selected) == ("total" in selected):
             if "total" in selected:
                 self.conflict(at, f"{at} needs has_more or total, not both")
                 return INVALID

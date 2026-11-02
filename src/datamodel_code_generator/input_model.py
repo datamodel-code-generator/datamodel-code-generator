@@ -44,7 +44,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_VALUE_KEYS,
     definition_ref,
 )
-from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeExpr,
     PythonTypeName,
@@ -76,7 +76,6 @@ class Error(Exception):
     """Error raised during input model loading."""
 
 
-_MISSING_MODULE = Sentinel("_MISSING_MODULE")
 _ModuleRestoreState = tuple[str, object]
 _ParentSchema = tuple[dict[str, object], dict[str, object], frozenset[str]]
 
@@ -129,7 +128,7 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
     """Import from the working directory, then drop the modules imported from there."""
     directory = Path(cwd_entry).resolve()
     environment_directory = Path(sys.prefix).resolve()
-    importer_cache_entry = sys.path_importer_cache.get(cwd_entry, _MISSING_MODULE)
+    importer_cache_entry = sys.path_importer_cache.get(cwd_entry, ABSENT)
     baseline_modules = sys.modules.copy()
     sys.path.insert(0, cwd_entry)
     try:
@@ -149,10 +148,7 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
         for module_name in local_module_names:
             _remove_local_module(module_name, current_modules[module_name])
         _remove_input_model_path(cwd_entry)
-        if importer_cache_entry is _MISSING_MODULE:
-            sys.path_importer_cache.pop(cwd_entry, None)
-        else:
-            sys.path_importer_cache[cwd_entry] = cast("Any", importer_cache_entry)
+        restore_entry(sys.path_importer_cache, cwd_entry, importer_cache_entry)
 
 
 def _load_model_schema_isolated(
@@ -173,10 +169,7 @@ def _load_model_schema_isolated(
 
 def _restore_path_module(state: _ModuleRestoreState) -> None:
     module_name, previous_module = state
-    if previous_module is _MISSING_MODULE:
-        sys.modules.pop(module_name, None)
-        return
-    sys.modules[module_name] = cast("types.ModuleType", previous_module)
+    restore_entry(sys.modules, module_name, previous_module)
 
 
 def _get_path_module_name(file_path: Path) -> str:
@@ -206,7 +199,7 @@ def _load_module_from_path(file_path: Path, modname: str) -> tuple[types.ModuleT
         msg = f"Cannot load module from {modname!r}"
         raise Error(msg)
 
-    previous_module = sys.modules.get(module_name, _MISSING_MODULE)
+    previous_module = sys.modules.get(module_name, ABSENT)
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     try:
