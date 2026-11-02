@@ -11738,6 +11738,24 @@ def test_main_openapi_item_schema(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "scopes",
+    [
+        pytest.param(["schemas", "paths", "requestbodies"], id="paths-and-request-bodies"),
+        pytest.param(["api"], id="api"),
+    ],
+)
+def test_main_openapi_item_schema_beside_null_schema(scopes: list[str], output_file: Path) -> None:
+    """Read the itemSchema of a media type object whose schema is null, as one with no schema."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_null_schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=["--disable-timestamp", "--openapi-scopes", *scopes],
+    )
+
+
 def test_main_openapi_item_schema_requires_32(output_file: Path) -> None:
     """Test OpenAPI 3.1 ignores OpenAPI 3.2 itemSchema in media type objects."""
     run_main_and_assert(

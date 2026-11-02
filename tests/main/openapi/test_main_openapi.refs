@@ -1343,6 +1343,9 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/openapi_include_paths/pets_only.py
 [test_main_openapi_item_schema]
 	main/openapi/item_schema.py
+[test_main_openapi_item_schema_beside_null_schema]
+api	main/openapi/openapi_item_schema_beside_null_schema.py
+paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	= main/openapi/openapi_item_schema_beside_null_schema~item_schema_beside_null_schema[paths-and-request-bodies].py
 [test_main_openapi_item_schema_requires_32]
 	main/openapi/item_schema_31.py
 [test_main_openapi_json_pointer]
