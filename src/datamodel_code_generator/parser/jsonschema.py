@@ -483,6 +483,74 @@ _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
 
 
 @record
+class _ConstraintSite:
+    """How a field site assembles its constraints, where an object property and a root field differ.
+
+    ``JsonSchemaParser._assemble_field_constraints`` is the one assembly; ``_PROPERTY_SITE`` is the field of an object
+    property (``get_object_field``), ``_ROOT_SITE`` the field of a root model (``_parse_root_type_with_context``).
+    """
+
+    keyword_gate: Literal["schema", "options"]
+    """Which declared keywords the field reads: by its ``schema`` (``is_constraints_field``: an array's always, under
+    ``--field-constraints`` none beside a ``$ref``, a combinator, an object or an enum; #1083, 0.17.1), or by the
+    ``options`` alone (all of them under ``--field-constraints`` or a preserved root, none otherwise): row
+    ``legacy-root-keywords-by-option``."""
+    numbers_keep_bounds: bool
+    """A type list of number kinds keeps the bounds its branches share on the field (#3971, 0.80.0), as the property
+    builds its type without them (``_build_field_shared_numeric_constraints``); a root's type carries them."""
+    array_unions_take_none: bool
+    """An array type union takes none (#3711, 0.72.2), as its type (``parse_array_fields``) keeps or drops them itself;
+    a root under ``--field-constraints`` leaves it out as any heterogeneous type list."""
+    consumed_at_property: bool
+    """The keywords a zero-bound class enforces are left out (row ``legacy-consumed-at-object-property``)."""
+    skip_covers_counts: bool
+    """A type list that takes no constraints leaves out its property counts and item counts too (#3669, 0.72.0), which
+    a root writes beside it: row ``legacy-property-counts-skipped``."""
+    array_counts: bool
+    """An array takes the item counts its boolean items and ``contains`` imply and leaves out the lengths of a fixed
+    tuple (#3167, 0.58.0); a root takes them only from the array builder (preserved), its own split of an array takes
+    neither: row ``legacy-root-array-plain-split``."""
+    records_by_option: bool
+    """It records the keywords it leaves out and those its type decides only under ``--field-constraints`` (#4997,
+    0.87.0), where a property records them once it assembled any: row ``legacy-root-records-by-option``."""
+    empty_record: bool
+    """It holds a constraints record even when it takes none (an empty one), as root models always did."""
+
+
+_PROPERTY_SITE = _ConstraintSite(
+    keyword_gate="schema",
+    numbers_keep_bounds=True,
+    array_unions_take_none=True,
+    consumed_at_property=True,
+    skip_covers_counts=True,
+    array_counts=True,
+    records_by_option=False,
+    empty_record=False,
+)
+_ROOT_SITE = _ConstraintSite(
+    keyword_gate="options",
+    numbers_keep_bounds=False,
+    array_unions_take_none=False,
+    consumed_at_property=False,
+    skip_covers_counts=False,
+    array_counts=False,
+    records_by_option=True,
+    empty_record=True,
+)
+
+
+@record
+class _AssembledConstraints:
+    """The constraints a field takes, those it leaves out and the property counts its map type dropped."""
+
+    constraints: Any
+    untaken: dict[str, Any]
+    dropped_counts: dict[str, int]
+    records: bool
+    """Whether the field records the keywords its type decides (``mark_type_dependent_constraints``)."""
+
+
+@record
 class _VersionSource:
     """Where a parser reads the version of its documents: a config field unless it is ``auto``, else ``detect``.
 
@@ -1744,32 +1812,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         default_value = effective_default if effective_has_default is not None else field.default
         has_default = effective_has_default if effective_has_default is not None else field.has_default
-        skip_constraints = (
-            self._should_skip_root_field_constraints_for_multiple_types(field)
-            and not self._has_shared_numeric_union_constraints(field)
-        ) or (isinstance(field.type, list) and bool(self._get_array_union_non_array_types(field)))
-        constraints = None
-        untaken: dict[str, Any] = {}
-        if not skip_constraints and self.is_constraints_field(field):
-            constraints, untaken = self._split_constraint_values(field, field_type)
-            for key in property_consumed_keywords(
-                self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, field_type.type
-            ):
-                constraints.pop(key, None)
-        if constraints is not None and self.field_constraints and field.format == "hostname":
-            constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
-        if (
-            not skip_constraints
-            and field_type in MAPPINGS
-            and (property_count_constraints := _value_keywords.get_property_count_constraints(type(self), field))
-        ):
-            constraints = constraints or {}
-            constraints.update(property_count_constraints)
-        dropped_counts = _value_keywords.dropped_property_counts(self, field, field_type)
-        if not skip_constraints and (array_items_constraints := self._get_array_items_constraints(field)):
-            constraints = constraints or {}
-            constraints.update(array_items_constraints)
-        _value_keywords.suppress_array_length_constraints(self, constraints, field)
+        assembled = self._assemble_field_constraints(field, field_type, _PROPERTY_SITE)
+        constraints = assembled.constraints
         nullable = self._null_facts(field, "field", required=required, has_default=has_default).admits_null
         extras = self.get_field_extras(field)
         read_only = _rw_split.resolve_field_flag(self, field, "readOnly")
@@ -1799,21 +1843,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = (
                 field.default if field.has_default else _RAW_SCHEMA_DEFAULT_UNDEFINED
             )
-        if constraints is not None:
-            _value_keywords.mark_type_dependent_constraints(self, model_field, field)
-        self._mark_untaken_constraints(
-            model_field,
-            {**untaken, **dropped_counts},
-            lambda minimum: (
-                self.data_type_manager.constraint_keywords(
-                    field_type,
-                    self.target_python_version.version_key,
-                    number_values=True,
-                    target_model_version=minimum,
-                )
-                - dropped_counts.keys()
-            ),
-        )
+        self._mark_assembled_constraints(model_field, assembled, field, field_type)
         if _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY in field.__dict__:
             model_field.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = field.__dict__[
                 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY
@@ -6231,16 +6261,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
         self._record_schema_object(reference, obj)
         self._record_derived_from(reference, constraint_obj)
-        constraints = array_constraints or {}
-        untaken: dict[str, Any] = {}
-        if not constraints and (self.field_constraints or preserve_constraints):
-            constraints, untaken = self._split_constraint_values(constraint_obj, data_type)
-        if self._should_skip_root_field_constraints_for_multiple_types(constraint_obj):
-            constraints = {}
-        elif self.field_constraints and constraint_obj.format == "hostname":
-            constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
-        if data_type in MAPPINGS:
-            constraints.update(_value_keywords.get_property_count_constraints(type(self), constraint_obj))
+        assembled = self._assemble_field_constraints(
+            constraint_obj, data_type, _ROOT_SITE, preserve=preserve_constraints, assembled=array_constraints
+        )
+        constraints = assembled.constraints
         fields = [
             self._build_field(
                 "root",
@@ -6255,25 +6279,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 has_default=has_default_override,
             )
         ]
-        takes_constraints = self.field_constraints and not self._should_skip_root_field_constraints_for_multiple_types(
-            constraint_obj
-        )
-        if takes_constraints:
-            _value_keywords.mark_type_dependent_constraints(self, fields[0], constraint_obj)
-        dropped_counts = _value_keywords.dropped_property_counts(self, constraint_obj, data_type)
-        self._mark_untaken_constraints(
-            fields[0],
-            {**(untaken if takes_constraints else {}), **dropped_counts},
-            lambda minimum: (
-                self.data_type_manager.constraint_keywords(
-                    data_type,
-                    self.target_python_version.version_key,
-                    number_values=True,
-                    target_model_version=minimum,
-                )
-                - dropped_counts.keys()
-            ),
-        )
+        self._mark_assembled_constraints(fields[0], assembled, constraint_obj, data_type)
         root_default = default_value if has_default_override else UNDEFINED
         if data_model_root_type is not None:
             JsonSchemaParser._register_root_model_as(
@@ -6295,6 +6301,88 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             default=root_default,
         )
         return self.data_type(reference=reference)
+
+    def _assemble_field_constraints(
+        self,
+        obj: JsonSchemaObject,
+        data_type: DataType,
+        site: _ConstraintSite,
+        *,
+        preserve: bool = False,
+        assembled: Any = None,
+    ) -> _AssembledConstraints:
+        """Assemble the constraints a field of ``site`` writes from ``obj`` for its ``data_type``.
+
+        The declared keywords the field takes, without those its type enforces at an object property, the hostname
+        pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple; a
+        heterogeneous type list takes none. ``preserve`` reads the keywords without ``--field-constraints`` and
+        ``assembled`` (the array builder's constraints of a preserved root) replaces the declared ones.
+        """
+        field_constraints = self.field_constraints
+        skip = (
+            self._should_skip_root_field_constraints_for_multiple_types(obj)
+            and not (site.numbers_keep_bounds and self._has_shared_numeric_union_constraints(obj))
+        ) or (
+            site.array_unions_take_none
+            and isinstance(obj.type, list)
+            and bool(self._get_array_union_non_array_types(obj))
+        )
+        constraints: Any = None
+        untaken: dict[str, Any] = {}
+        if not skip:
+            if assembled:
+                constraints = assembled
+            elif self.is_constraints_field(obj) if site.keyword_gate == "schema" else field_constraints or preserve:
+                constraints, untaken = self._split_constraint_values(obj, data_type)
+                if site.consumed_at_property:
+                    for key in property_consumed_keywords(
+                        self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, data_type.type
+                    ):
+                        constraints.pop(key, None)
+            if constraints is not None and field_constraints and obj.format == "hostname":
+                constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
+        counted = not (skip and site.skip_covers_counts)
+        if (
+            counted
+            and data_type in MAPPINGS
+            and (property_counts := _value_keywords.get_property_count_constraints(type(self), obj))
+        ):
+            constraints = constraints or {}
+            constraints.update(property_counts)
+        if site.array_counts:
+            if counted and (item_counts := self._get_array_items_constraints(obj)):
+                constraints = constraints or {}
+                constraints.update(item_counts)
+            _value_keywords.suppress_array_length_constraints(self, constraints, obj)
+        records = (field_constraints and not skip) if site.records_by_option else constraints is not None
+        dropped_counts = _value_keywords.dropped_property_counts(self, obj, data_type)
+        return _AssembledConstraints(
+            {} if constraints is None and site.empty_record else constraints,
+            {**(untaken if records else {}), **dropped_counts},
+            dropped_counts,
+            records,
+        )
+
+    def _mark_assembled_constraints(
+        self, field: DataModelFieldBase, assembled: _AssembledConstraints, obj: JsonSchemaObject, data_type: DataType
+    ) -> None:
+        """Record on ``field`` the keywords its type decides and the declared constraints it leaves out."""
+        if assembled.records:
+            _value_keywords.mark_type_dependent_constraints(self, field, obj)
+        dropped_counts = assembled.dropped_counts
+        self._mark_untaken_constraints(
+            field,
+            assembled.untaken,
+            lambda minimum: (
+                self.data_type_manager.constraint_keywords(
+                    data_type,
+                    self.target_python_version.version_key,
+                    number_values=True,
+                    target_model_version=minimum,
+                )
+                - dropped_counts.keys()
+            ),
+        )
 
     def _should_skip_root_field_constraints_for_multiple_types(self, obj: JsonSchemaObject) -> bool:
         """Avoid applying type-specific Field constraints to heterogeneous root unions."""
