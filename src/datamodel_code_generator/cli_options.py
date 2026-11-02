@@ -20,6 +20,8 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
+from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._option_rules import IMPLIED_OPTIONS
 from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.deprecations import cli_deprecations
 from datamodel_code_generator.enums import (
@@ -216,6 +218,11 @@ def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
     return tuple(CLIOptionRelation(name, **fields) for name in names.split())
 
 
+def _implied(field: str) -> tuple[CLIOptionRelation, ...]:
+    """Build the relation to the option that the option of ``field`` turns on (``IMPLIED_OPTIONS``)."""
+    return _relations(option_flag(IMPLIED_OPTIONS[field]), value=True)
+
+
 def _target_options(generate: str, value: str, *names: str) -> dict[str, CLIOptionMeta]:
     """Build the rows of the target options in ``names`` that only apply with ``generate value``."""
     return {
@@ -378,12 +385,10 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-standard-collections --no-use-standard-collections --use-generic-container-types",
         group=_G.COLLECTION_TYPES,
     ),
-    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_relations("--field-constraints", value=True)),
+    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_implied("use_annotated")),
     **_opts(_C.TYPING, "--no-use-annotated", group=_G.TYPE_SYNTAX),
     **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
-    **_opts(
-        _C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_relations("--use-type-alias", value=True)
-    ),
+    **_opts(_C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_implied("use_type_alias_type")),
     **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
     **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
     **_opts(
