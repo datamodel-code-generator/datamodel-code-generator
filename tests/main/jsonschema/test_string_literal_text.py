@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -65,5 +66,43 @@ def test_typed_dict_key_text(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--output-model-type", "typing.TypedDict"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_regex_literal_text(output_file: Path, output_type: str) -> None:
+    """Write a pattern as a raw literal when one holds it, and as a plain literal otherwise, on every Python.
+
+    The running Python's parser decided it: a null byte was a ``ValueError`` before Python 3.11, and a backslash
+    before the escaped quote let the rest of the pattern read as an expression or a comment.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "regex_literal_text.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", output_type],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_regex_literal_surrogate(output_file: Path, output_type: str) -> None:
+    """Write a pattern with a lone surrogate as a plain literal, as the ``Field`` form of the same pattern is.
+
+    The running Python's parser raised a ``UnicodeEncodeError`` on a raw literal that holds one, on every Python.
+    The schema is written here, as a YAML parser rejects the escape of a lone surrogate in a fixture file.
+    """
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "properties": {"surrogate": {"type": "string", "pattern": "^a\ud800b$"}},
+    }
+    (input_path := output_file.parent / "regex_literal_surrogate.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", output_type],
         force_exec_validation=True,
     )

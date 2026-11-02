@@ -5,7 +5,6 @@ Maps schema types to Pydantic v2 specific types with AwareDatetime, NaiveDatetim
 
 from __future__ import annotations
 
-import ast
 from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -18,6 +17,7 @@ from datamodel_code_generator._python_syntax import (
     RAW_SINGLE_QUOTED_ESCAPES,
     call_text,
     keyword_argument,
+    raw_single_quoted,
     subscript_text,
 )
 from datamodel_code_generator._requirements import pydantic_target_meets
@@ -191,13 +191,8 @@ def _decimal_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _get_regex_literal(pattern: str) -> str:
-    escaped_regex = pattern.translate(escape_characters)
-    raw_literal = f"r'{escaped_regex}'"
-    try:
-        ast.literal_eval(raw_literal)
-    except SyntaxError:
-        return pattern
-    return PythonCode(raw_literal, pattern)
+    raw_literal = raw_single_quoted(pattern)
+    return pattern if raw_literal is None else PythonCode(raw_literal, pattern)
 
 
 class DataTypeManager(_DataTypeManagerBase):
