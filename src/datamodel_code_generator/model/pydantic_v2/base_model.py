@@ -1838,7 +1838,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
     @override
     def refresh_field_config(self) -> None:
-        """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
+        """Select Python's regex engine for lookaround patterns, also those fields gained after ``__init__``.
 
         Collapsed root models inline their patterns; a config that already names an engine is kept.
         """
@@ -2262,9 +2262,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             )
         )
 
-        if has_lookaround_pattern(self.fields):
-            config_parameters["regex_engine"] = '"python-re"'
-
         if alias_generator := _alias_generator_name(self.extra_template_data.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY)):
             config_parameters[_ALIAS_GENERATOR_TEMPLATE_DATA_KEY] = alias_generator
             self._additional_imports.append(_ALIAS_GENERATOR_IMPORTS[alias_generator])
@@ -2284,6 +2281,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
 
+        self.refresh_field_config()
         self._process_schema_runtime_validation()
         self._process_validators()
 
