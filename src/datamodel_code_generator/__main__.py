@@ -120,6 +120,7 @@ from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
     CONFIG_TABLE,
+    GENERATE_FIELD_NAMES,
     SENSITIVE_FIELDS,
     TomlValue,
     config_table,
@@ -1651,9 +1652,14 @@ def _generation_config(  # noqa: PLR0913
     generation_timestamp: str | None = None,
     logical_output: Path | None = None,
 ) -> Config:
-    """Return the settings one generation runs with: the CLI config with its run values and no preset."""
+    """Return the settings one generation runs with: the CLI config with its run values and no preset.
+
+    The options ``generate()`` names differently carry their values under those names, and the run's
+    ``default_value_overrides`` replaces the one the ``default_values`` option gives.
+    """
     generation_config = config.model_copy(
         update={
+            **{GENERATE_FIELD_NAMES[option]: getattr(config, option) for option in GENERATE_FIELD_NAMES},
             "input_filename": input_filename,
             "output": output,
             "preset": None,
@@ -1661,8 +1667,6 @@ def _generation_config(  # noqa: PLR0913
             "aliases": aliases,
             "serialization_aliases": serialization_aliases,
             "command_line": command_line,
-            "apply_default_values_for_required_fields": config.use_default,
-            "force_optional_for_required_fields": config.force_optional,
             "custom_formatters_kwargs": custom_formatters_kwargs,
             "settings_path": settings_path,
             "validators": validators,

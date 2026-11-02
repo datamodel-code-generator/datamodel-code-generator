@@ -13,7 +13,7 @@ from datamodel_code_generator._config_fields import (
     PYPROJECT_PATH_FIELDS,
     TARGET_JSON_FIELDS,
 )
-from datamodel_code_generator._option_names import FIELD_ALIASES, field_name
+from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator.util import load_toml
 
@@ -150,13 +150,6 @@ def _resolve_pyproject_relative_paths(
     return {**config, **updates}
 
 
-_GENERATE_FIELD_NAMES = {
-    "use_default": "apply_default_values_for_required_fields",
-    "force_optional": "force_optional_for_required_fields",
-    "default_values": "default_value_overrides",
-}
-
-
 def load_pyproject_config(
     path: Path | str | None = None,
     profile: str | None = None,
@@ -197,7 +190,7 @@ def load_pyproject_config(
     options = {
         key: value
         for key, value in options.items()
-        if (field := _GENERATE_FIELD_NAMES.get(key, key)) in fields
+        if (field := GENERATE_FIELD_NAMES.get(key, key)) in fields
         and field not in explicit
         and (field != "parent_scoped_naming" or "naming_strategy" not in explicit)
     }
@@ -227,7 +220,7 @@ def load_pyproject_config(
     values = {
         name: getattr(config, field)
         for field in config.model_fields_set
-        if (name := _GENERATE_FIELD_NAMES.get(field, field)) in fields
+        if (name := GENERATE_FIELD_NAMES.get(field, field)) in fields
     }
     values.update(explicit)
     loaded = GenerateConfig.model_validate(values)

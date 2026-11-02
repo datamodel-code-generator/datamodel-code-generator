@@ -655,11 +655,6 @@ CLI_E2E_COVERED_GENERATE_KWARGS = {
 
 
 def _generate_call_keyword_source(value: ast.expr) -> str:
-    match value:
-        case ast.Attribute(value=ast.Name(id="config")):
-            return f"config.{value.attr}"
-        case ast.Name():
-            return value.id
     return ast.unparse(value)
 
 
@@ -711,10 +706,13 @@ def _run_generate_from_config_model_copy_updates() -> list[tuple[str, str]]:
 
     updates: list[tuple[str, str]] = []
     for key, value in zip(update_keyword.value.keys, update_keyword.value.values, strict=True):
-        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):  # pragma: no cover
-            msg = f"Unexpected model_copy update key: {ast.unparse(key) if key is not None else None}"
+        if key is None:
+            updates.append(("**", _generate_call_keyword_source(value)))
+        elif isinstance(key, ast.Constant) and isinstance(key.value, str):
+            updates.append((key.value, _generate_call_keyword_source(value)))
+        else:  # pragma: no cover
+            msg = f"Unexpected model_copy update key: {ast.unparse(key)}"
             raise TypeError(msg)
-        updates.append((key.value, _generate_call_keyword_source(value)))
     return updates
 
 
@@ -1813,6 +1811,10 @@ def test_run_generate_from_config_generate_kwargs_are_pinned() -> None:
         ("config", "cast('Any', generation_config)"),
     ])
     assert _run_generate_from_config_model_copy_updates() == snapshot([
+        (
+            "**",
+            "{GENERATE_FIELD_NAMES[option]: getattr(config, option) for option in GENERATE_FIELD_NAMES}",
+        ),
         ("input_filename", "input_filename"),
         ("output", "output"),
         ("preset", "None"),
@@ -1820,8 +1822,6 @@ def test_run_generate_from_config_generate_kwargs_are_pinned() -> None:
         ("aliases", "aliases"),
         ("serialization_aliases", "serialization_aliases"),
         ("command_line", "command_line"),
-        ("apply_default_values_for_required_fields", "config.use_default"),
-        ("force_optional_for_required_fields", "config.force_optional"),
         ("custom_formatters_kwargs", "custom_formatters_kwargs"),
         ("settings_path", "settings_path"),
         ("validators", "validators"),
