@@ -652,6 +652,37 @@ def _format_nested_literal(
     return None
 
 
+def _literal_block(opening: str, entries: list[str], indent: str, closing: str) -> str:
+    """Write a collection literal one entry per line; an empty one holds a blank line."""
+    return _block(opening, entries or [""], indent, closing)
+
+
+def _literal_entry_lines(  # noqa: PLR0913
+    head: str,
+    value: ast.AST,
+    indent: str,
+    source: str,
+    line_length: int,
+    *,
+    comma: str,
+    preserve_dict_trailing_comma: bool,
+    split_multiline: bool,
+) -> list[str]:
+    """Write one dict or tuple entry at ``indent``, splitting a dict or tuple value that is over the line length.
+
+    A tuple entry is split also when it spans lines (``split_multiline``); a dict entry is not.
+    """
+    prefix = f"{indent}{head}"
+    entry = f"{prefix}{_source_segment(source, value)}{comma}"
+    if (len(entry) > line_length or (split_multiline and "\n" in entry)) and (
+        nested_literal := _format_nested_literal(
+            value, indent, source, line_length, preserve_dict_trailing_comma=preserve_dict_trailing_comma
+        )
+    ) is not None:
+        return _nested_lines(nested_literal, prefix, comma)
+    return [entry]
+
+
 def _format_dict_literal(
     dict_node: ast.Dict,
     indent: str,
@@ -671,21 +702,19 @@ def _format_dict_literal(
             entries.append(f"{entry_indent}**{_source_segment(source, value)}{trailing_comma}")
             continue
 
-        key_prefix = f"{entry_indent}{_source_segment(source, key)}: "
-        entry = f"{key_prefix}{_source_segment(source, value)}{trailing_comma}"
-        if (
-            len(entry) > line_length
-            and (
-                nested_literal := _format_nested_literal(
-                    value, entry_indent, source, line_length, preserve_dict_trailing_comma=preserve_trailing_comma
-                )
+        entries.extend(
+            _literal_entry_lines(
+                f"{_source_segment(source, key)}: ",
+                value,
+                entry_indent,
+                source,
+                line_length,
+                comma=trailing_comma,
+                preserve_dict_trailing_comma=preserve_trailing_comma,
+                split_multiline=False,
             )
-            is not None
-        ):
-            entries.extend(_nested_lines(nested_literal, key_prefix, trailing_comma))
-        else:
-            entries.append(entry)
-    return "{\n" + "\n".join(entries) + f"\n{indent}}}"
+        )
+    return _literal_block("{", entries, indent, "}")
 
 
 def _format_tuple_literal(
@@ -697,22 +726,25 @@ def _format_tuple_literal(
     element_indent = f"{indent}    "
     elements: list[str] = []
     for element in tuple_node.elts:
-        element_line = f"{element_indent}{_source_segment(source, element)},"
-        if ("\n" in element_line or len(element_line) > line_length) and (
-            nested_literal := _format_nested_literal(
-                element, element_indent, source, line_length, preserve_dict_trailing_comma=True
+        elements.extend(
+            _literal_entry_lines(
+                "",
+                element,
+                element_indent,
+                source,
+                line_length,
+                comma=",",
+                preserve_dict_trailing_comma=True,
+                split_multiline=True,
             )
-        ) is not None:
-            elements.extend(_nested_lines(nested_literal, element_indent, ","))
-        else:
-            elements.append(element_line)
-    return "(\n" + "\n".join(elements) + f"\n{indent})"
+        )
+    return _literal_block("(", elements, indent, ")")
 
 
 def _format_list_literal(list_node: ast.List, indent: str, source: str) -> str:
     comma = "," if len(list_node.elts) > 1 else ""
-    elements = "\n".join(_item_lines((_source_segment(source, element) for element in list_node.elts), indent, comma))
-    return f"[\n{elements}\n{indent}]"
+    elements = _item_lines((_source_segment(source, element) for element in list_node.elts), indent, comma)
+    return _literal_block("[", list(elements), indent, "]")
 
 
 def _split_escaped_string_literal(content: str, max_length: int) -> list[str]:
