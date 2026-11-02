@@ -4421,6 +4421,47 @@ def test_all_exports_collision_resolved_successfully(output_dir: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("schema", "strategy", "export", "payload"),
+    [
+        pytest.param(
+            "all_exports_equal_prefixed_names", "full-prefix", "FooBarModel", {"b": "x"}, id="equal-prefixes-kept"
+        ),
+        pytest.param(
+            "all_exports_equal_prefixed_names", "full-prefix", "FooBarModel1", {"a": "x"}, id="equal-prefixes-added"
+        ),
+        pytest.param("all_exports_prefixed_name_of_export", "minimal-prefix", "FooBar", {"a": "x"}, id="minimal-kept"),
+        pytest.param(
+            "all_exports_prefixed_name_of_export", "minimal-prefix", "FooBar1", {"c": True}, id="minimal-added"
+        ),
+        pytest.param("all_exports_prefixed_name_of_export", "full-prefix", "FooBar", {"a": "x"}, id="full-kept"),
+        pytest.param("all_exports_prefixed_name_of_export", "full-prefix", "FooBar1", {"c": True}, id="full-added"),
+    ],
+)
+def test_all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name(
+    output_dir: Path, schema: str, strategy: str, export: str, payload: dict[str, object]
+) -> None:
+    """Keep every export when a prefixed name is also the name of another export.
+
+    The name keeps the export it referred to; the export it displaced takes the next free name.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{schema}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--disable-timestamp",
+            "--all-exports-scope",
+            "recursive",
+            "--all-exports-collision-strategy",
+            strategy,
+        ],
+        runtime_validation_module="",
+        runtime_validation_model_name=export,
+        runtime_validation_data=payload,
+    )
+
+
+@pytest.mark.parametrize(
     "strategy",
     ["minimal-prefix", "full-prefix"],
     ids=["minimal_prefix", "full_prefix"],

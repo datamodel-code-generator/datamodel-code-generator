@@ -1,0 +1,19 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Equal Prefixed Names Test
+paths: {}
+components:
+  schemas:
+    foo_bar.Model:
+      type: object
+      required: [a]
+      properties:
+        a:
+          type: string
+    foo.bar.Model:
+      type: object
+      required: [b]
+      properties:
+        b:
+          type: string

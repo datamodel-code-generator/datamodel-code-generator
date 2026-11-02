@@ -125,6 +125,12 @@ __all__ = ["user_types_ID", "order_types_ID"]
 
 All names use the full module path prefix.
 
+### A prefixed name that is another export's name
+
+A prefixed name that is also the name of another export is written over that export, as in every release. The export it
+replaces takes the next free name (`Name1`, `Name2`) instead of being left out, so every name keeps the model it has
+always referred to. A prefixed name that is the name of a model in the `__init__.py` itself is an error.
+
 ---
 
 ## `--treat-dot-as-module`

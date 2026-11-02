@@ -32,10 +32,12 @@ openapi/additional_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/alias.yaml	yaml_fast_constructor/parity.txt
 openapi/alias_description_property_names.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_collision_success.yaml	yaml_fast_constructor/parity.txt
+openapi/all_exports_equal_prefixed_names.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_local_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_multiple_collisions.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_no_child.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_prefix_collision.yaml	yaml_fast_constructor/parity.txt
+openapi/all_exports_prefixed_name_of_export.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_with_local_models.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_request_body.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_with_relative_ref/openapi.yaml	yaml_fast_constructor/parity.txt
