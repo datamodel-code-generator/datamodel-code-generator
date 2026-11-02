@@ -265,7 +265,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
         return False
 
     candidate = data_type
-    if not candidate.is_list and len(candidate.data_types) == 1 and candidate.data_types[0].is_list:
+    if candidate._wraps_one_list:  # noqa: SLF001
         candidate = candidate.data_types[0]
 
     if not candidate.is_list or len(candidate.data_types) != 1:
@@ -274,7 +274,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
     item_type = candidate.data_types[0]
     while len(item_type.data_types) == 1:
         inner = item_type.data_types[0]
-        if (not item_type.is_list and inner.is_list) or item_type.is_list:
+        if item_type.is_list or item_type._wraps_one_list:  # noqa: SLF001
             item_type = inner
         else:
             break

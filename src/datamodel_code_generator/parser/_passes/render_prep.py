@@ -292,22 +292,21 @@ def _iter_outermost_containers(
 
 def _only_groups_members(data_type: DataType) -> bool:
     """Return whether the type only groups its members, so an enclosing union can hold them directly."""
-    return bool(data_type.data_types) and not (
-        data_type.type
-        or data_type.reference
-        or data_type.alias
-        or data_type.is_func
-        or data_type.kwargs
-        or data_type.python_type
-        or data_type.literals
-        or data_type.enum_member_literals
-        or data_type.dict_key
-        or data_type.discriminator
-        or data_type.use_serialize_as_any
-        or data_type.is_custom_type
-        or data_type.is_tuple
-        or data_type._is_forward_reference  # noqa: SLF001
-        or _is_generic_class_container(data_type)
+    return (
+        bool(data_type.data_types)
+        and data_type._writes_nothing_of_its_own  # noqa: SLF001
+        and not (
+            data_type.is_func
+            or data_type.kwargs
+            or data_type.python_type
+            or data_type.literals
+            or data_type.enum_member_literals
+            or data_type.dict_key
+            or data_type.discriminator
+            or data_type.use_serialize_as_any
+            or data_type.is_custom_type
+            or data_type._is_forward_reference  # noqa: SLF001
+        )
     )
 
 
@@ -755,7 +754,7 @@ def disable_union_operator_for_forward_ref(
     while pending:
         node, writes_name = pending.pop()
         for holder in (node.parent, *inlined_holders(node)):
-            if not isinstance(holder, DataType) or id(holder) in seen or holder.alias or holder.type:
+            if not isinstance(holder, DataType) or id(holder) in seen or holder._own_text:  # noqa: SLF001
                 continue
             seen.add(id(holder))
             joins_members = holder.is_union and not holder.is_tuple

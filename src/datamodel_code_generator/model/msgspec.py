@@ -1369,13 +1369,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
     def _non_none_members(self, data_type: DataType) -> list[DataType]:
         """Return the members of a type other than None, spreading the unions and wrappers that render as them."""
-        if (
-            data_type.type is None
-            and data_type.reference is None
-            and data_type.alias is None
-            and data_type.data_types
-            and not data_type._is_container  # noqa: SLF001
-        ):
+        if data_type.data_types and data_type._writes_nothing_of_its_own:  # noqa: SLF001
             return [member for child in data_type.data_types for member in self._non_none_members(child)]
         return [] if self._data_type_renders_none(data_type) else [data_type]
 

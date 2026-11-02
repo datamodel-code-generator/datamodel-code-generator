@@ -175,6 +175,14 @@ class _DataTypeView(Protocol):  # noqa: PLR0904
         """Whether the type is a container."""
 
     @property
+    def _own_text(self) -> str | None:
+        """The text the type writes of its own: its alias, else its type."""
+
+    @property
+    def _writes_nothing_of_its_own(self) -> bool:
+        """Whether the type writes no text, names no model and is no container."""
+
+    @property
     def is_union(self) -> bool:
         """Whether the type is a union."""
 
@@ -622,22 +630,16 @@ def data_type_writes_hint(field_type: type[FieldImportsHost[_D]], data_type: _D)
 
 def mapping_writes_value(field_type: type[FieldImportsHost[_D]], data_type: _D) -> bool:
     """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
-    return bool(data_type.alias or data_type.type) or any(
+    return bool(data_type._own_text) or any(  # noqa: SLF001
         field_type._data_type_writes_hint(child)  # noqa: SLF001
         for child in data_type.data_types
     )
 
 
 def data_type_has_renderable_structure(data_type: _DataTypeView) -> bool:
-    if data_type.alias or data_type.type or data_type.reference:
+    if not data_type._writes_nothing_of_its_own:  # noqa: SLF001
         return True
-    return bool(
-        data_type.data_types
-        or data_type.dict_key
-        or data_type.literals
-        or data_type.enum_member_literals
-        or data_type._is_container  # noqa: SLF001
-    )
+    return bool(data_type.data_types or data_type.dict_key or data_type.literals or data_type.enum_member_literals)
 
 
 def field_admits_none(field: FieldImportsHost[_D]) -> bool:
@@ -730,6 +732,4 @@ def needs_optional_import_without_type_hint(field: FieldImportsHost[_D], *, data
 def has_renderable_data_type_without_type_hint(field: FieldImportsHost[_D], *, data_type: _D | None = None) -> bool:
     """Return whether this simple DataType renders to something other than None."""
     data_type = data_type or field.data_type
-    return bool(
-        data_type.alias or data_type.type or data_type.reference or data_type._is_container  # noqa: SLF001
-    )
+    return not data_type._writes_nothing_of_its_own  # noqa: SLF001
