@@ -100,6 +100,41 @@ def test_format_current_options_without_parser() -> None:
     assert _format_current_options(Namespace(disabled=False), None) == "(No options specified)"
 
 
+
+
+@pytest.mark.allow_direct_assert
+def test_format_current_options_with_empty_store_const() -> None:
+    """Format an empty store_const value using its negative option."""
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--deserialize-default-values",
+        nargs="+",
+        default=None,
+    )
+    parser.add_argument(
+        "--no-deserialize-default-values",
+        dest="deserialize_default_values",
+        action="store_const",
+        const=(),
+        default=None,
+    )
+    args = parser.parse_args(["--no-deserialize-default-values"])
+
+    assert _format_current_options(args, parser) == "--no-deserialize-default-values"
+
+
+@pytest.mark.allow_direct_assert
+def test_format_current_options_with_dictionary() -> None:
+    """Format dictionary options as valid JSON."""
+    parser = ArgumentParser()
+    parser.add_argument("--model-name-map", type=json.loads)
+    args = parser.parse_args(["--model-name-map", '{"A": "B"}'])
+
+    assert _format_current_options(args, parser) == '--model-name-map \'{"A": "B"}\''
+
+
+
+
 def test_generate_prompt_uses_default_parser_for_text_output() -> None:
     """Use the shared parser when generate_prompt is called without one."""
     prompt = generate_prompt(Namespace(output_format="text", generate_prompt="", input="schema.json"), "HELP")

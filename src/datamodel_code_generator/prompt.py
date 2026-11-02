@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from argparse import SUPPRESS, Action, ArgumentParser, BooleanOptionalAction
 from collections import defaultdict
 from pathlib import Path
@@ -275,9 +276,21 @@ def _format_current_option(key: str, value: Any, action: Action | None) -> str |
             case _:
                 return fallback if value else None
 
+    if isinstance(value, tuple) and not value and action is not None:
+        negative_option = next(
+            (option for option in action.option_strings if option.startswith("--no-")),
+            None,
+        )
+        if negative_option is not None and getattr(action, "const", None) == value:
+            return negative_option
+
     option = _positive_option(action, fallback) if action else fallback
+
+    if isinstance(value, dict):
+        return f"{option} {shlex.quote(json.dumps(_serialize_value(value)))}"
     if isinstance(value, list):
         return f"{option} {' '.join(str(v) for v in value)}"
+
     return f"{option} {value}"
 
 
