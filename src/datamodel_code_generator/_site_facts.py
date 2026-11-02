@@ -29,8 +29,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator.reference import SchemaLocation
 
-__all__ = ["ANNOTATION_KEYWORDS", "EMPTY_SITE", "Branch", "OthersSaid", "SiteFacts", "site_facts_of"]
+__all__ = ["ANNOTATION_KEYWORDS", "EMPTY_SITE", "Branch", "OthersSaid", "Projection", "SiteFacts", "site_facts_of"]
 
+Projection: TypeAlias = Literal["value", "item_stream_array"]
+"""How the walk reads a declared schema: as the value it declares, or as the array of the items of a stream."""
 Branch: TypeAlias = Literal["reference", "schema", "other"]
 """An allOf branch: a mapping with a `$ref`, any other mapping, or any other value."""
 OthersSaid: TypeAlias = Literal["absent", "false", "true", "empty", "schema", "other"]

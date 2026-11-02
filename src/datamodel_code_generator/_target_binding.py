@@ -3652,7 +3652,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
-    from datamodel_code_generator._site_facts import SiteFacts
+    from datamodel_code_generator._site_facts import Projection, SiteFacts
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendName,
@@ -3660,7 +3660,6 @@ if TYPE_CHECKING:
         DefaultKind,
         FrozenLiteral,
         LeafStep,
-        Projection,
         TypeArgument,
         TypeProjectionReason,
         TypeUseRole,
