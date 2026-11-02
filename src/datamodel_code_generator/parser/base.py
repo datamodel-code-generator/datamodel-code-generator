@@ -1963,28 +1963,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         is_multi_module_output: bool,
     ) -> CodeFormatter:
-        from datamodel_code_generator.format import CodeFormatter, resolve_use_type_checking_imports  # noqa: PLC0415
+        from datamodel_code_generator.format import CodeFormatter, _model_formatter_arguments  # noqa: PLC0415
 
-        effective_use_type_checking_imports = resolve_use_type_checking_imports(
-            self.use_type_checking_imports,
-            is_multi_module_output=is_multi_module_output,
-            formatters=self.formatters,
-            requires_runtime_imports_with_ruff_check=self.data_model_type.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
-        )
         return CodeFormatter(
-            self.target_python_version,
-            settings_path,
-            self.wrap_string_literal,
-            skip_string_normalization=not self.use_double_quotes,
+            settings_path=settings_path,
             known_third_party=self.known_third_party,
-            custom_formatters=self.custom_formatter,
-            custom_formatters_kwargs=self.custom_formatters_kwargs,
-            encoding=self.encoding,
-            formatters=self.formatters,
-            builtin_format_line_length=self.builtin_format_line_length,
-            use_type_checking_imports=effective_use_type_checking_imports,
             defer_formatting=self.defer_formatting,
             formatter_cwd=self.run_context.formatter_cwd,
+            **_model_formatter_arguments(
+                self,
+                custom_formatters=self.custom_formatter,
+                backend=self.data_model_type,
+                is_multi_module_output=is_multi_module_output,
+            ),
         )
 
     def _find_invalid_inferred_modules(self, sorted_data_models: SortedDataModels) -> set[ModulePath]:

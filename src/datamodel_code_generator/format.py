@@ -901,3 +901,31 @@ class CustomCodeFormatter:
     def apply(self, code: str) -> str:
         """Apply formatting to code. Must be implemented by subclasses."""
         raise NotImplementedError
+
+
+def _model_formatter_arguments(
+    settings: Any, *, custom_formatters: list[str] | None, backend: type[Any], is_multi_module_output: bool
+) -> dict[str, Any]:
+    """Return the arguments of a code formatter that the model settings give, by `CodeFormatter` parameter name.
+
+    `settings` is a `GenerateConfig` or a parser, read when called; the parser names its custom formatters
+    `custom_formatter`, so they are passed apart. Imports used only for type checking move into `TYPE_CHECKING` blocks
+    unless `settings` decides: the model class `backend` and whether the output has several modules give the default.
+    The caller adds the settings path, the third-party packages, deferred formatting and the formatter directory.
+    """
+    return {
+        "python_version": settings.target_python_version,
+        "wrap_string_literal": settings.wrap_string_literal,
+        "skip_string_normalization": not settings.use_double_quotes,
+        "custom_formatters": custom_formatters,
+        "custom_formatters_kwargs": settings.custom_formatters_kwargs,
+        "encoding": settings.encoding,
+        "formatters": settings.formatters,
+        "builtin_format_line_length": settings.builtin_format_line_length,
+        "use_type_checking_imports": resolve_use_type_checking_imports(
+            settings.use_type_checking_imports,
+            is_multi_module_output=is_multi_module_output,
+            formatters=settings.formatters,
+            requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
+        ),
+    }

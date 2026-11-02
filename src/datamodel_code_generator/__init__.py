@@ -1615,30 +1615,21 @@ def _format_deferred_output(
         return
 
     from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
-    from datamodel_code_generator.format import CodeFormatter, resolve_use_type_checking_imports  # noqa: PLC0415
+    from datamodel_code_generator.format import CodeFormatter, _model_formatter_arguments  # noqa: PLC0415
 
     if Formatter.RUFF_CHECK not in config.formatters and Formatter.RUFF_FORMAT not in config.formatters:
         return
 
-    effective_use_type_checking_imports = resolve_use_type_checking_imports(
-        config.use_type_checking_imports,
-        is_multi_module_output=True,
-        formatters=config.formatters,
-        requires_runtime_imports_with_ruff_check=(data_model_types.data_model.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK),
-    )
     code_formatter = CodeFormatter(
-        config.target_python_version,
-        settings_path,
-        config.wrap_string_literal,
-        skip_string_normalization=not config.use_double_quotes,
+        settings_path=settings_path,
         known_third_party=data_model_types.known_third_party,
-        custom_formatters=config.custom_formatters,
-        custom_formatters_kwargs=config.custom_formatters_kwargs,
-        encoding=config.encoding,
-        formatters=config.formatters,
-        builtin_format_line_length=config.builtin_format_line_length,
-        use_type_checking_imports=effective_use_type_checking_imports,
         defer_formatting=True,
+        **_model_formatter_arguments(
+            config,
+            custom_formatters=config.custom_formatters,
+            backend=data_model_types.data_model,
+            is_multi_module_output=True,
+        ),
     )
     code_formatter.format_directory(output)
 
