@@ -13,7 +13,7 @@ from datamodel_code_generator._config_fields import (
     PYPROJECT_PATH_FIELDS,
     TARGET_JSON_FIELDS,
 )
-from datamodel_code_generator._option_names import FIELD_ALIASES, field_name
+from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator.util import load_toml
 
@@ -150,13 +150,6 @@ def _resolve_pyproject_relative_paths(
     return {**config, **updates}
 
 
-_GENERATE_FIELD_NAMES = {
-    "use_default": "apply_default_values_for_required_fields",
-    "force_optional": "force_optional_for_required_fields",
-    "default_values": "default_value_overrides",
-}
-
-
 def load_pyproject_config(
     path: Path | str | None = None,
     profile: str | None = None,
@@ -197,7 +190,7 @@ def load_pyproject_config(
     options = {
         key: value
         for key, value in options.items()
-        if (field := _GENERATE_FIELD_NAMES.get(key, key)) in fields
+        if (field := GENERATE_FIELD_NAMES.get(key, key)) in fields
         and field not in explicit
         and (field != "parent_scoped_naming" or "naming_strategy" not in explicit)
     }
@@ -227,28 +220,17 @@ def load_pyproject_config(
     values = {
         name: getattr(config, field)
         for field in config.model_fields_set
-        if (name := _GENERATE_FIELD_NAMES.get(field, field)) in fields
+        if (name := GENERATE_FIELD_NAMES.get(field, field)) in fields
     }
     values.update(explicit)
     loaded = GenerateConfig.model_validate(values)
+    from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
+
+    directory = cast("Path", pyproject_path).parent
     if bases := {
-        field: _document_base(value, cast("Path", pyproject_path).parent)
+        field: document_base(value, directory, directory)
         for field, value in options.items()
         if field in TARGET_JSON_FIELDS
     }:
         loaded._target_document_bases = bases  # noqa: SLF001
     return loaded
-
-
-def _document_base(value: Any, directory: Path) -> Path:
-    """Return the directory the documents a target setting names resolve against, as on the command line.
-
-    A setting read from a JSON file resolves against that file's directory, inline JSON and tables against the
-    pyproject.toml directory.
-    """
-    if isinstance(value, str | Path):
-        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-
-        if (file := _json_file(value)) is not None:
-            return (directory / file).parent
-    return directory

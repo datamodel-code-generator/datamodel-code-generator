@@ -120,6 +120,7 @@ from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._option_names import (
     CONFIG_TABLE,
+    GENERATE_FIELD_NAMES,
     SENSITIVE_FIELDS,
     TomlValue,
     config_table,
@@ -1432,6 +1433,12 @@ def _recommend_lock_observer(config: Config, pyproject_path: Path | None) -> Any
     ).record_response
 
 
+def _imply_remote_refs(config: Config) -> None:
+    """Allow the remote references of a ``--url`` input unless ``--allow-remote-refs`` is given either way."""
+    if config.url and config.allow_remote_refs is None:
+        config.allow_remote_refs = True
+
+
 def _recommend_generation_config(config: Config, namespace: Namespace) -> Callable[[Mapping[str, Any]], Config]:
     """Return a function giving the config a generation run takes for the command's config with updates applied.
 
@@ -1445,8 +1452,7 @@ def _recommend_generation_config(config: Config, namespace: Namespace) -> Callab
     def generation_config(updates: Mapping[str, Any]) -> Config:
         if not prepared:
             base = config.model_copy()
-            if base.url and base.allow_remote_refs is None:
-                base.allow_remote_refs = True
+            _imply_remote_refs(base)
             prepared.append((base, _template_data(base)))
         base, extra_template_data = prepared[0]
         run_config = base.model_copy()
@@ -1651,9 +1657,14 @@ def _generation_config(  # noqa: PLR0913
     generation_timestamp: str | None = None,
     logical_output: Path | None = None,
 ) -> Config:
-    """Return the settings one generation runs with: the CLI config with its run values and no preset."""
+    """Return the settings one generation runs with: the CLI config with its run values and no preset.
+
+    The options ``generate()`` names differently carry their values under those names, and the run's
+    ``default_value_overrides`` replaces the one the ``default_values`` option gives.
+    """
     generation_config = config.model_copy(
         update={
+            **{GENERATE_FIELD_NAMES[option]: getattr(config, option) for option in GENERATE_FIELD_NAMES},
             "input_filename": input_filename,
             "output": output,
             "preset": None,
@@ -1661,8 +1672,6 @@ def _generation_config(  # noqa: PLR0913
             "aliases": aliases,
             "serialization_aliases": serialization_aliases,
             "command_line": command_line,
-            "apply_default_values_for_required_fields": config.use_default,
-            "force_optional_for_required_fields": config.force_optional,
             "custom_formatters_kwargs": custom_formatters_kwargs,
             "settings_path": settings_path,
             "validators": validators,
@@ -2682,8 +2691,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             table=CONFIG_TABLE if namespace.profile is None else config_table("profiles", namespace.profile),
         )
 
-    if config.url and config.allow_remote_refs is None:
-        config.allow_remote_refs = True
+    _imply_remote_refs(config)
 
     if option_errors := _generation_option_errors(config, namespace):
         for error in option_errors:

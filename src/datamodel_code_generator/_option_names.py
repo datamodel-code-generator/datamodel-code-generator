@@ -20,6 +20,12 @@ TomlKeyRow: TypeAlias = Literal["unicode", "legacy-ascii-table-keys"]
 _TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 CONFIG_TABLE: Final = ("tool", "datamodel-codegen")
 FIELD_ALIASES: Final = {"capitalize_enum_members": "capitalise_enum_members"}
+GENERATE_FIELD_NAMES: Final = {
+    "use_default": "apply_default_values_for_required_fields",
+    "force_optional": "force_optional_for_required_fields",
+    "default_values": "default_value_overrides",
+}
+"""The command-line config fields that ``generate()`` names differently, each with its ``generate()`` name."""
 SENSITIVE_FIELDS: Final = frozenset({"http_headers", "http_query_parameters"})
 
 

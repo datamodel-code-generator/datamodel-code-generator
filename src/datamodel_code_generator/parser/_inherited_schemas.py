@@ -19,6 +19,7 @@ from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._json_schema import (
     COMBINATOR_POSITIONS,
     MODELED_SCHEMA_MAPS,
@@ -865,7 +866,7 @@ def normalize_inherited_nested_schema_value(parser: InheritedSchemasHost, value:
                 else item
                 for key, item in members.items()
             }
-            if any(normalized[key] is not item for key, item in members.items()):
+            if not unchanged(normalized.values(), members.values()):
                 dumped = {key: _schema_dump(item) for key, item in normalized.items()}
                 return dumped if isinstance(value, dict) else list(dumped.values())
     return None

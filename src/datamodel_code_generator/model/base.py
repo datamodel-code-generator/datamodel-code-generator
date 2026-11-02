@@ -2799,14 +2799,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
-        if args or self._custom_template_dir is not None or not _model_package_class(type(self)):
-            return super()._render(*args, **kwargs)
-
-        from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
-
-        if renderer := get_builtin_renderer(self.TEMPLATE_FILE_PATH):
+        if not args and (renderer := _builtin_renderer(type(self), self.TEMPLATE_FILE_PATH, self._custom_template_dir)):
             return renderer(**kwargs)
-        return super()._render(**kwargs)
+        return super()._render(*args, **kwargs)
 
     @cached_property
     @override
@@ -3312,6 +3307,19 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 def _model_package_class(cls: type) -> bool:
     """Return whether ``cls`` is a built-in model, field or type class, one that the model package defines."""
     return cls.__module__.startswith("datamodel_code_generator.model.")
+
+
+def _builtin_renderer(cls: type, template_path: str, custom_template_dir: Path | None) -> Callable[..., str] | None:
+    """Return the compiled renderer of a built-in template, none where Jinja renders it.
+
+    A class that the model package defines renders its template with the compiled renderer, whose output equals the
+    Jinja output; a custom class or a custom template directory renders it with Jinja.
+    """
+    if custom_template_dir is not None or not _model_package_class(cls):
+        return None
+    from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
+
+    return get_builtin_renderer(template_path)
 
 
 def direct_base_models(model: DataModel, stand_ins: Mapping[int, Reference | None] | None = None) -> list[DataModel]:

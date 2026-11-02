@@ -248,9 +248,16 @@ def _target_payload(
         return None
     from datamodel_code_generator._structured_output import TargetPayload  # noqa: PLC0415
 
-    return TargetPayload(
-        package=target.package, dependencies=list(project.dependencies), implied=_implied_payload(implied)
-    )
+    return TargetPayload(**_payload_fields(target, project, implied))
+
+
+def _payload_fields(target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]) -> dict[str, Any]:
+    """Return what both JSON reports record of a target: its package, its runtime dependencies and what it implied."""
+    return {
+        "package": target.package,
+        "dependencies": list(project.dependencies),
+        "implied": _implied_payload(implied),
+    }
 
 
 def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
@@ -302,13 +309,11 @@ def _target_json(
             for item in steps.implementations
         ]
     payload = GeneratedTargetPayload(
-        package=target.package,
-        dependencies=list(project.dependencies),
+        **_payload_fields(target, project, implied),
         readme=shown(steps.readme, base).as_posix(),
         entrypoint=entrypoint,
         implementation=implementation,
         usage=steps.usage,
-        implied=_implied_payload(implied),
     )
     return generation_output_json(files, output=models.as_posix(), target=payload)
 
@@ -541,12 +546,14 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
     the file is given through one. Inline JSON and tables resolve against the pyproject.toml directory for its keys,
     and against the working directory for options.
     """
-    if (source := config._json_sources.get(field)) is not None:  # noqa: SLF001
-        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
 
-        if (file := _json_file(source)) is not None:
-            return (Path.cwd() / file).parent
-    return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
+    cwd = Path.cwd()
+    return document_base(
+        config._json_sources.get(field),  # noqa: SLF001
+        cwd,
+        cwd if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent,
+    )
 
 
 def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
