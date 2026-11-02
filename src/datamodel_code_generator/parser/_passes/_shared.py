@@ -2,8 +2,8 @@
 
 A helper that reads parser state takes it as arguments, or takes the parser through one of the narrow protocols below,
 which ``Parser`` satisfies structurally. This module imports no parser module but the generation store, the import
-ledger, the finality checks, the model graph ids, the model shapes, the shared keys and the run state, so it never
-imports ``parser/base.py``.
+ledger, the finality checks, the model graph ids, the allOf keyword rules, the model shapes, the shared keys and the run
+state, so it never imports ``parser/base.py``.
 """
 
 from __future__ import annotations
@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from typing_extensions import Protocol, final, override
 
-from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import ITEM_CONTAINERS
 from datamodel_code_generator._graph_links import clear_parents
@@ -58,6 +57,7 @@ from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._intersection import inherits_keyword
 from datamodel_code_generator.parser._model_shapes import skips_root_model
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
@@ -77,7 +77,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Unpack
 
-    from datamodel_code_generator import ReuseScope
+    from datamodel_code_generator import AllOfMergeMode, ReuseScope
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
@@ -555,6 +555,19 @@ def has_import_override(import_overrides: dict[str, str] | None, *imports: Impor
     )
 
 
+def inherited_default_source(
+    merge_mode: AllOfMergeMode, field: DataModelFieldBase, inherited_field: DataModelFieldBase
+) -> DataModelFieldBase:
+    """Return the field whose default the override ``field`` of ``inherited_field`` takes.
+
+    The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
+    ``field`` declares none.
+    """
+    if inherits_keyword(merge_mode.value, "default") and not declares_raw_schema_default(field):
+        return inherited_field
+    return field
+
+
 def apply_inherited_field_default(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
@@ -652,12 +665,10 @@ def override_required_field(
                     original_field, identity=placeholder_identity(model_field), required=True
                 )
             default_source = original_field
-            if (
-                not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY))
-                and (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY))
-                and (host.allof_merge_mode != AllOfMergeMode.All or declares_raw_schema_default(model_field))
+            if not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
+                class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
             ):
-                default_source = model_field
+                default_source = inherited_default_source(host.allof_merge_mode, model_field, original_field)
             if class_name:
                 apply_inherited_field_default(
                     copied_original_field,

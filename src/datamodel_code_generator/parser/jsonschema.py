@@ -168,7 +168,10 @@ from datamodel_code_generator._url_redaction import named_location, redact_path,
 from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import AliasGenerator  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.enums import (
+    AliasGenerator,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    _ref_siblings_apply,
+)
 from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
 from datamodel_code_generator.model import DataModel, DataModelFieldBase  # noqa: TC001  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.model._decisions.enum_kind import (
@@ -477,11 +480,6 @@ _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
 """The sites that read the answer ``JsonSchemaObject.type_has_null`` recorded when it was first asked."""
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
-_REF_SIBLING_KEYWORDS_DISABLED_VERSIONS = frozenset({
-    JsonSchemaVersion.Draft4,
-    JsonSchemaVersion.Draft6,
-    JsonSchemaVersion.Draft7,
-})
 
 
 @record
@@ -1110,7 +1108,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _ref_sibling_keywords_enabled_in(self, root: dict[str, YamlValue]) -> bool:
         """Return whether the draft of the root document ``root`` evaluates validation beside ``$ref``."""
-        return self._document_version(root, _JSON_SCHEMA_VERSION) not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
+        return _ref_siblings_apply(self._document_version(root, _JSON_SCHEMA_VERSION))
 
     @property
     def _ref_siblings_are_parts(self) -> bool:
@@ -4126,7 +4124,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if self.model_resolver.default_value_overrides:
                         self._apply_inherited_field_default(
                             resolved_field,
-                            _rw_split.inherited_default_source(self, field, inherited_field),
+                            _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
                             class_name=name,
                         )
                     fields[index] = resolved_field

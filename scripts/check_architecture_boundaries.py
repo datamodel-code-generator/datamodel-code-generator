@@ -258,6 +258,7 @@ _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser._field_rows",
     "datamodel_code_generator.parser._graph_ids",
     "datamodel_code_generator.parser._imports_plan",
+    "datamodel_code_generator.parser._intersection",
     "datamodel_code_generator.parser._model_shapes",
     "datamodel_code_generator.parser._null_facts",
     "datamodel_code_generator.parser._origins",

@@ -4,7 +4,8 @@ A YAML key such as ``1`` or ``200`` loads as a number. A key that names a compon
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
 must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
-JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member.
+JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
+and the fields of an AsyncAPI channel that each hold an operation.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
 
 __all__ = [
+    "CHANNEL_OPERATIONS",
     "MISSING",
     "ArrayIndexOutOfRangeError",
     "MemberRow",
@@ -35,6 +37,9 @@ __all__ = [
 ]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
+CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
+"""The fields of an AsyncAPI 2 channel that each hold an operation, in the order generation and the recommender read
+them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
 _T = TypeVar("_T")
 
 MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]

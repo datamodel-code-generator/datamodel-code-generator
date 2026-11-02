@@ -15,7 +15,7 @@ from datamodel_code_generator._constraint_applicability import (
     NUMBER_KEYWORDS,
     json_number,
 )
-from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
+from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, descend, string_key, string_keys
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
@@ -394,7 +394,7 @@ def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]
         *as_mapping(components.get("channels")).items(),
     ]:
         messages.extend(
-            (f"{name} {operation}", _operation_message(channel, operation)) for operation in ("publish", "subscribe")
+            (f"{name} {operation}", _operation_message(channel, operation)) for operation in CHANNEL_OPERATIONS
         )
         messages.extend(
             (f"{name} {key}", message) for key, message in as_mapping(as_mapping(channel).get("messages")).items()
@@ -421,7 +421,7 @@ def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
     return len(as_mapping(document.get("operations"))) + sum(
         isinstance(as_mapping(channel).get(operation), dict)
         for channel in as_mapping(document.get("channels")).values()
-        for operation in ("publish", "subscribe")
+        for operation in CHANNEL_OPERATIONS
     )
 
 
@@ -449,7 +449,7 @@ class _Dialect:
 
 def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     """Return how generation reads a document, from its declared or detected version, as the parsers decide it."""
-    from datamodel_code_generator.enums import JsonSchemaVersion  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ref_siblings_apply  # noqa: PLC0415
     from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
         OpenAPISchemaFeatures,
         detect_asyncapi_version,
@@ -461,7 +461,7 @@ def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     data_formats = get_data_formats(is_openapi=True)
     if kind == "jsonschema":
         version = detect_jsonschema_version(dict(document))
-        ref_siblings = version not in {JsonSchemaVersion.Draft4, JsonSchemaVersion.Draft6, JsonSchemaVersion.Draft7}
+        ref_siblings = _ref_siblings_apply(version)
         return _Dialect(data_formats, ref_siblings=ref_siblings, nullable_keyword=False)
     features = (
         OpenAPISchemaFeatures.from_openapi_version(detect_openapi_version(dict(document)))
