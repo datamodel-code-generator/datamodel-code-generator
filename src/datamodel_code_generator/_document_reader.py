@@ -5,7 +5,8 @@ header, media type, encoding property, link, scheme or message part must be a st
 must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-the fields of an AsyncAPI channel that each hold an operation and the reference a discriminator mapping value names
+the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
+(``is_multi_format_schema_object``) and the reference a discriminator mapping value names
 (``discriminator_mapping_ref``).
 """
 
@@ -33,6 +34,7 @@ __all__ = [
     "descend",
     "discriminator_mapping_ref",
     "document_statuses",
+    "is_multi_format_schema_object",
     "member",
     "string_key",
     "string_keys",
@@ -132,6 +134,19 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
     """Require each of ``keys``, which name a ``kind``, to be a string (``string_key``), in order."""
     for key in keys:
         string_key(key, kind, error_path)
+
+
+def is_multi_format_schema_object(value: object) -> bool:
+    """Return whether an AsyncAPI value is a Multi Format Schema Object, a wrapper of the schema in its ``schema``.
+
+    A mapping with a ``schemaFormat`` is one, and so is a mapping whose keys, but the ``x-`` extensions and the keys
+    that are no string, are ``schema`` alone. An OpenAPI or JSON Schema document has no such wrapper.
+    """
+    if not isinstance(value, dict):
+        return False
+    return "schemaFormat" in value or {key for key in value if isinstance(key, str) and not key.startswith("x-")} == {
+        "schema"
+    }
 
 
 def discriminator_mapping_ref(value: str) -> str:

@@ -14,7 +14,14 @@ from datamodel_code_generator._constraint_applicability import (
     NUMBER_KEYWORDS,
     json_number,
 )
-from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, descend, string_key, string_keys
+from datamodel_code_generator._document_reader import (
+    CHANNEL_OPERATIONS,
+    as_mapping,
+    descend,
+    is_multi_format_schema_object,
+    string_key,
+    string_keys,
+)
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
@@ -228,9 +235,7 @@ def _dereferenced(document: Mapping[str, Any], node: object) -> object:
 
 def _unwrap(node: object) -> object:
     """Return the schema of an AsyncAPI multi-format schema object, or the schema itself."""
-    if isinstance(node, dict) and ("schemaFormat" in node or node.keys() == {"schema"}):
-        return node.get("schema")
-    return node
+    return as_mapping(node).get("schema") if is_multi_format_schema_object(node) else node
 
 
 def _uses_definitions(kind: SchemaKind) -> bool:
@@ -252,7 +257,7 @@ def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = T
     schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
     if read:
         string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
-    return {str(key): _unwrap(value) for key, value in schemas.items()}
+    return {str(key): _unwrap(value) if kind == "asyncapi" else value for key, value in schemas.items()}
 
 
 def _key_path(pointer: str) -> Callable[[object], list[str]]:

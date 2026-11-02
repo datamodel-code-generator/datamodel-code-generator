@@ -240,6 +240,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="paths-scope-integer-schema-key",
         ),
         pytest.param("blank_union_titles.json", [], id="blank-union-titles"),
+        pytest.param("multi_format_extension.yaml", [], id="asyncapi-multi-format-extension"),
+        pytest.param("schema_key_component.yaml", [], id="openapi-schema-key-component"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -252,7 +254,8 @@ def test_recommend_options_for_schemas(
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
-    an error, and a blank title is no title of a union variant.
+    an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
+    schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))

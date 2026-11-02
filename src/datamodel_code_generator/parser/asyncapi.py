@@ -16,7 +16,12 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
-from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, string_keys
+from datamodel_code_generator._document_reader import (
+    CHANNEL_OPERATIONS,
+    as_mapping,
+    is_multi_format_schema_object,
+    string_keys,
+)
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import (
@@ -203,20 +208,11 @@ def _schema_format_media_type(schema_format: str) -> str:
     return schema_format.split(";", maxsplit=1)[0].strip().lower()
 
 
-def _is_multi_format_schema_object_candidate(raw_schema: YamlValue) -> bool:
-    if not isinstance(raw_schema, dict):
-        return False
-    if "schemaFormat" in raw_schema:
-        return True
-    fixed_keys = {key for key in raw_schema if isinstance(key, str) and not key.startswith("x-")}
-    return fixed_keys == {"schema"}
-
-
 def _parse_multi_format_schema_object(
     raw_schema: YamlValue,
     path: list[str],
 ) -> MultiFormatSchemaObject | None:
-    if not _is_multi_format_schema_object_candidate(raw_schema):
+    if not is_multi_format_schema_object(raw_schema):
         return None
     try:
         return MultiFormatSchemaObject.model_validate(raw_schema)
