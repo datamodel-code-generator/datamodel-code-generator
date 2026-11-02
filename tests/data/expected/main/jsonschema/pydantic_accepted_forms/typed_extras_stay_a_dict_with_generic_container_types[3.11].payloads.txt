@@ -1,0 +1,3 @@
+declared and extra values: valid
+extra value above the maximum: less_than_equal
+extra value that is no array: list_type

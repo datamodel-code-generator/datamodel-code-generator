@@ -75,8 +75,8 @@ class PatternPropertiesRule:
 
         A pattern of a type the rule names is checked by the adapter the helper builds for it, which has no model
         config; the adapter row of ``needs_python_engine`` selects the engine there (a model's row keeps the default
-        engine for a verbose pattern and for syntax newer than its target Python). A type alias has no config either,
-        so the string patterns of the aliases a type names count as its own.
+        engine for a verbose pattern that Rust accepts). A type alias has no config either, so the string patterns of
+        the aliases a type names count as its own.
         """
         return tuple(
             index for index, data_type in enumerate(self.data_types) if _needs_python_regex_engine(data_type, set())

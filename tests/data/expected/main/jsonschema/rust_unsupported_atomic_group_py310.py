@@ -6,16 +6,22 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import RootModel, constr
+from pydantic import ConfigDict, RootModel, constr
 
 
 class Model(RootModel[Any]):
     root: Any
 
 
-class AtomicGroup(RootModel[constr(pattern=r'^(?>[a-z]+)$')]):
+class AtomicGroup(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'^(?>[a-z]+)$')
 
 
-class PossessiveBackreference(RootModel[constr(pattern=r'^([a-z])\1[a-z]*+$')]):
+class PossessiveBackreference(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'^([a-z])\1[a-z]*+$')

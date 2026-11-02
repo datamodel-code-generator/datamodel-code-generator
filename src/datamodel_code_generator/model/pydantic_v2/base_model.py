@@ -679,10 +679,7 @@ def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
 
 
 def _pattern_needs_holder_engine(
-    root_type: type[DataModel],
-    pattern: str,
-    target_python: PythonVersion,
-    target_pydantic: TargetPydanticVersion | None,
+    root_type: type[DataModel], pattern: str, target_pydantic: TargetPydanticVersion | None
 ) -> bool:
     """Return whether a string pattern in a model of ``root_type`` needs the ``python-re`` engine of its users.
 
@@ -693,7 +690,7 @@ def _pattern_needs_holder_engine(
 
     if not issubclass(root_type, TypeAliasBase) or pydantic_target_meets("pydantic.compiled_pattern", target_pydantic):
         return False
-    return needs_python_engine(pattern, row="model", target_python=target_python.version_key)
+    return needs_python_engine(pattern, row="model")
 
 
 def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
@@ -1196,13 +1193,11 @@ def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataMod
     """Return whether a pattern emitted for ``field`` needs Python's ``re``: row ``model`` of ``needs_python_engine``.
 
     Lookaround keeps its long-standing textual check. Other syntax counts for string patterns Pydantic compiles,
-    keyed on the target Python and Pydantic versions, so the output never depends on the installed pydantic-core or
-    on the Python running the generator. A pattern Python's ``re`` also rejects fails at import either way.
+    keyed on the target Pydantic version, so the output never depends on the installed pydantic-core or on the Python
+    running the generator.
     """
     string_type = _string_pattern_data_type(data_type, field.parent)
-    return needs_python_engine(
-        pattern, row="model", target_python=None if string_type is None else field.target_version_key(string_type)
-    )
+    return needs_python_engine(pattern, row="model", compiled=string_type is not None)
 
 
 if TYPE_CHECKING:
@@ -2203,13 +2198,14 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         field_model: type[DataModelFieldBase],
         data_type: DataType,
     ) -> DataModelFieldBase:
-        """Create the Pydantic v2 typed extra field."""
+        """Create the Pydantic v2 typed extra field: a ``dict``, the one annotation Pydantic accepts for extras."""
         if (dict_key := data_type.dict_key) is not None and (
             (capability := cls._TYPED_EXTRA_DICT_KEY_CAPABILITY) is None or not capability(dict_key)
         ):
             drop_tree(dict_key)
             clear_parents(dict_key)
             data_type.dict_key = None
+        data_type.use_generic_container = False
 
         return field_model(
             name=cls.TYPED_EXTRA_FIELD_NAME,

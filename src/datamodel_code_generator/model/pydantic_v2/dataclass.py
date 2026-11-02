@@ -293,10 +293,14 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         """Set ``regex_engine`` in the dataclass config.
 
         Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
+        The dataclass gets a config of its own: the one in the template data may be shared with every model of the
+        same name (``--extra-template-data``).
         """
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
-        config = self.extra_template_data.setdefault("config", {})
-        config["regex_engine"] = '"python-re"'
+        self.extra_template_data["config"] = {
+            **self.extra_template_data.get("config", {}),
+            "regex_engine": '"python-re"',
+        }
         self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
         self._additional_imports.append(IMPORT_CONFIG_DICT)
 

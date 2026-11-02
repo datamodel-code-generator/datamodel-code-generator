@@ -49,6 +49,9 @@ _REGEX_TOKEN: Final = (
     rf"|(?:{_COUNTED_REPETITION}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
 )
 _REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])"
+_REGEX_VERBOSE_TOKEN: Final = rf"{_REGEX_TOKEN}|(?P<comment>#[^\n]*)"
+_REGEX_VERBOSE_CLASS_TOKEN: Final = rf"{_REGEX_CLASS_TOKEN}|(?P<comment>#[^\n]*)"
+_VERBOSE_FLAGS: Final = r"\(\?(?P<flags>[A-Za-z]*x[A-Za-z]*(?:-[A-Za-wyz]+)?)\)"
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
 _RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
 _RUST_REJECTED_FLAGS = frozenset("aL")
@@ -79,7 +82,7 @@ def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, in
     return match["brace"] is not None, _PY_311 if match["possessive"] else _PY_310
 
 
-def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
+def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool, tuple[int, int]] | None:
     r"""Return whether the Rust regex crate rejects a pattern's syntax, and the oldest Python that parses it.
 
     The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so it never reports a
@@ -89,13 +92,22 @@ def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
     octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
     ``a`` and ``L`` flags, and braces that cannot start a counted repetition. Atomic groups and possessive
     quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
-    whitespace and comments the scan does not model.
+    whitespace and comments the scan does not model, unless ``read_verbose`` reads the ones that start with a
+    global ``(?x)`` group. Their comments run to the end of the line, also inside a character class, where Rust
+    then reports the class unclosed; any other flag group that mentions ``x`` still gives None.
     """
     rejected = False
     minimum_python = _PY_310
     depth = 0
     position = 0
-    while (match := _compiled(_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
+    verbose = False
+    token, class_token = _REGEX_TOKEN, _REGEX_CLASS_TOKEN
+    if read_verbose and (start := _compiled(_VERBOSE_FLAGS).match(pattern)) is not None:
+        verbose = True
+        rejected = not _RUST_REJECTED_FLAGS.isdisjoint(start["flags"])
+        position = start.end()
+        token, class_token = _REGEX_VERBOSE_TOKEN, _REGEX_VERBOSE_CLASS_TOKEN
+    while (match := _compiled(class_token if depth else token).search(pattern, position)) is not None:
         position = match.end()
         if depth or match["open"]:
             depth += bool(match["open"]) - bool(depth and match["close"])
@@ -105,29 +117,24 @@ def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
             return None
         rejected |= requirements[0]
         minimum_python = max(minimum_python, requirements[1])
-    return (rejected, minimum_python)
+    return (rejected or (verbose and depth > 0), minimum_python)
 
 
-def needs_python_engine(pattern: str, *, row: EngineRow, target_python: tuple[int, int] | None = None) -> bool:
+def needs_python_engine(pattern: str, *, row: EngineRow, compiled: bool = True) -> bool:
     """Return whether pydantic needs Python's ``re`` (the ``python-re`` engine) for a pattern, decided statically.
 
-    A lookaround always does. Row ``adapter`` (a schema validator's adapter, 0.87.0): so does a pattern in which the
-    scan finds syntax Rust rejects, or which it cannot read (a verbose pattern). Row ``model`` (the config of a model,
-    or of the models that use a type alias, 0.84.0): so does syntax Rust rejects that Python's ``re`` reads at
-    ``target_python``, the target of the string type the pattern constrains; without one (None) only a lookaround
-    counts, and a verbose pattern keeps the default engine. The rows disagree on a verbose pattern and on syntax newer
-    than the target Python (#5636).
+    A lookaround always does, and so does syntax the Rust engine rejects, whichever Python reads the pattern (#5636):
+    Rust fails at import on every Python, and ``python-re`` works on the ones that parse the syntax. Row ``adapter`` (a
+    schema validator's adapter, 0.87.0) also selects it for a pattern the scan cannot read, which includes a verbose
+    pattern. Row ``model`` (the config of a model, or of the models that use a type alias, 0.84.0) reads a verbose
+    pattern that starts with ``(?x)`` and keeps the default engine for any other one; ``compiled`` tells whether
+    pydantic compiles the pattern (that of a string type), and a pattern it does not compile needs only a lookaround.
     """
     if has_lookaround(pattern):
         return True
     if row == "adapter":
         return (scan := scan_regex_syntax(pattern)) is None or scan[0]
-    return (
-        target_python is not None
-        and (scan := scan_regex_syntax(pattern)) is not None
-        and scan[0]
-        and target_python >= scan[1]
-    )
+    return compiled and (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
 
 
 def is_portable_pattern(pattern: str) -> bool:
