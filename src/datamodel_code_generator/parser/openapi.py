@@ -29,7 +29,7 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
-from datamodel_code_generator._document_reader import string_key, string_keys
+from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
     PATHS_PARAMETERS,
@@ -177,6 +177,11 @@ class RawMediaSchemaSource:
 
     schema: RawSchema
     from_item_schema: bool = False
+
+
+def _item_schema_array(items: RawSchema) -> dict[str, YamlValue]:
+    """Return the array schema OpenAPI 3.2 ``itemSchema`` stands for: an array whose items are the item schema."""
+    return {"type": "array", "items": items}
 
 
 class RawMediaObject(BaseModel):
@@ -617,41 +622,17 @@ class OpenAPIParser(JsonSchemaParser):
             warn_deprecated("schema.openapi-nullable", stacklevel=2)
         return super()._get_data_type(obj, localize_constraints=localize_constraints)
 
-    def _normalize_discriminator_mapping_ref(self, mapping_value: str) -> str:  # noqa: PLR6301
-        """Normalize a discriminator mapping value to a full $ref path.
-
-        Per OpenAPI spec, mapping values can be either:
-        - Full refs: "#/components/schemas/Pet" or "./other.yaml#/components/schemas/Pet"
-        - Short names: "Pet" or "Pet.V1" (relative to #/components/schemas/)
-        - Relative paths: "schemas/Pet" or "./other.yaml"
-
-        Values containing "/" or "#" are treated as paths/refs and passed through.
-        All other values (including those with dots like "Pet.V1") are treated as
-        short schema names and normalized to full refs.
-
-        Note: Bare file references without path separators (e.g., "other.yaml") will be
-        treated as schema names. Use "./other.yaml" format for file references.
-
-        Note: This could be a staticmethod, but @snooper_to_methods() decorator
-        converts staticmethods to regular functions when pysnooper is installed.
-        """
-        if "/" in mapping_value or "#" in mapping_value:
-            return mapping_value
-        return f"#/components/schemas/{mapping_value}"
-
-    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:
+    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR6301
         """Return a copy of the discriminator dict with normalized mapping refs."""
         result = discriminator.copy()
         mapping = discriminator.get("mapping")
         if mapping:
-            result["mapping"] = {
-                k: self._normalize_discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)
-            }
+            result["mapping"] = {k: discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)}
         return result
 
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
-        normalized = self._normalize_discriminator_mapping_ref(value)
+        normalized = discriminator_mapping_ref(value)
         return self._derived_ref(normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
@@ -798,7 +779,7 @@ class OpenAPIParser(JsonSchemaParser):
             raw_item_schema: RawSchema = item_schema
         else:
             raw_item_schema = cast("dict[str, YamlValue]", item_schema.model_dump(by_alias=True, exclude_none=True))
-        return JsonSchemaObject.model_validate({"type": "array", "items": raw_item_schema})
+        return JsonSchemaObject.model_validate(_item_schema_array(raw_item_schema))
 
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
         """Return the schema represented by an OpenAPI media type object.
@@ -831,7 +812,7 @@ class OpenAPIParser(JsonSchemaParser):
             return None
         return RawMediaSchemaSource(
             _located(
-                {"type": "array", "items": cast("dict[str, RawSchema]", media_obj)["itemSchema"]},
+                _item_schema_array(cast("dict[str, RawSchema]", media_obj)["itemSchema"]),
                 self._raw_location(media_obj),
             ),
             from_item_schema=True,
@@ -988,6 +969,20 @@ class OpenAPIParser(JsonSchemaParser):
         Default("data-type", _parse_unmodeled_operation_schema),
     )
 
+    def _parse_media_schema(self, name: str, media_obj: MediaObject, path: list[str]) -> DataType | None:
+        """Parse the schema of a media type object at ``path`` into a data type, none for one without a schema.
+
+        The array that stands for an ``itemSchema`` is parsed at the special path of ``path``.
+        """
+        if (media_schema := self._get_media_schema(media_obj)) is None:
+            return None
+        return self._parse_schema_or_ref(
+            name,
+            media_schema.schema,
+            self._media_schema_path(path, from_item_schema=media_schema.from_item_schema),
+            location=media_schema.location,
+        )
+
     def parse_request_body(
         self,
         name: str,
@@ -997,14 +992,8 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse request body content into data types by media type."""
         data_types: dict[str, DataType] = {}
         for media_type, media_obj in request_body.content.items():
-            media_schema = self._get_media_schema(media_obj)
-            if media_schema is None:
-                continue
-            schema_path = self._media_schema_path([*path, media_type], from_item_schema=media_schema.from_item_schema)
-            data_type = self._parse_schema_or_ref(
-                name, media_schema.schema, schema_path, location=media_schema.location
-            )
-            data_types[media_type] = data_type
+            if (data_type := self._parse_media_schema(name, media_obj, [*path, media_type])) is not None:
+                data_types[media_type] = data_type
         return data_types
 
     def parse_responses(
@@ -1031,14 +1020,8 @@ class OpenAPIParser(JsonSchemaParser):
 
             for content_type, obj in content.items():
                 response_path: list[str] = [*path, str(status_code), str(content_type)]
-                media_schema = self._get_media_schema(obj)
-                if media_schema is None:
-                    continue
-                schema_path = self._media_schema_path(response_path, from_item_schema=media_schema.from_item_schema)
-                data_type = self._parse_schema_or_ref(
-                    response_name, media_schema.schema, schema_path, location=media_schema.location
-                )
-                data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
+                if (data_type := self._parse_media_schema(response_name, obj, response_path)) is not None:
+                    data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
 
         return data_types
 
