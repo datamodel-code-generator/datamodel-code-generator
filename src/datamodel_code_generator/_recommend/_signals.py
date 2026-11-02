@@ -253,7 +253,7 @@ def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = T
     schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
     if read:
         string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
-    return {str(key): _unwrap(value) for key, value in schemas.items()}
+    return {str(key): _unwrap(value) if kind == "asyncapi" else value for key, value in schemas.items()}
 
 
 def _key_path(pointer: str) -> Callable[[object], list[str]]:
