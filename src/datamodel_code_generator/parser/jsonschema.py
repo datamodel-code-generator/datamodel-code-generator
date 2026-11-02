@@ -490,26 +490,23 @@ class _ConstraintSite:
     property (``get_object_field``), ``_ROOT_SITE`` the field of a root model (``_parse_root_type_with_context``).
     """
 
-    keyword_gate: Literal["schema", "options"]
-    """Which declared keywords the field reads: by its ``schema`` (``is_constraints_field``: an array's always, under
-    ``--field-constraints`` none beside a ``$ref``, a combinator, an object or an enum; #1083, 0.17.1), or by the
-    ``options`` alone (all of them under ``--field-constraints`` or a preserved root, none otherwise): row
-    ``legacy-root-keywords-by-option``."""
+    holds_schema: bool
+    """The field is the root of the model its schema becomes, so under ``--field-constraints`` (or as a preserved root)
+    it reads the keywords beside a ``$ref``, a combinator or an object too; an object property leaves them to the model
+    or the class its schema becomes (``is_constraints_field``)."""
     numbers_keep_bounds: bool
     """A type list of number kinds keeps the bounds its branches share on the field (#3971, 0.80.0), as the property
     builds its type without them (``_build_field_shared_numeric_constraints``); a root's type carries them."""
-    array_unions_take_none: bool
-    """An array type union takes none (#3711, 0.72.2), as its type (``parse_array_fields``) keeps or drops them itself;
-    a root under ``--field-constraints`` leaves it out as any heterogeneous type list."""
     consumed_at_property: bool
     """The keywords a zero-bound class enforces are left out (row ``legacy-consumed-at-object-property``)."""
-    skip_covers_counts: bool
-    """A type list that takes no constraints leaves out its property counts and item counts too (#3669, 0.72.0), which
-    a root writes beside it: row ``legacy-property-counts-skipped``."""
-    array_counts: bool
-    """An array takes the item counts its boolean items and ``contains`` imply and leaves out the lengths of a fixed
-    tuple (#3167, 0.58.0); a root takes them only from the array builder (preserved), its own split of an array takes
-    neither: row ``legacy-root-array-plain-split``."""
+    patterns_beside_literal: bool
+    """The pattern of an enum written as a ``Literal`` stays on the field: an object property writes none, as the
+    regex engine of its model is chosen for the patterns of string types, so a pattern the default engine rejects
+    would not import (row ``legacy-property-literal-pattern``)."""
+    keeps_tuple_lengths: bool
+    """Under ``--field-constraints`` (or as a preserved root) the lengths its schema declares for a fixed tuple stay on
+    the field, with no item counts added to it, where an object property and the array builder leave them out (the
+    tuple has them): row ``legacy-root-tuple-lengths``."""
     records_by_option: bool
     """It records the keywords it leaves out and those its type decides only under ``--field-constraints`` (#4997,
     0.87.0), where a property records them once it assembled any: row ``legacy-root-records-by-option``."""
@@ -518,22 +515,20 @@ class _ConstraintSite:
 
 
 _PROPERTY_SITE = _ConstraintSite(
-    keyword_gate="schema",
+    holds_schema=False,
     numbers_keep_bounds=True,
-    array_unions_take_none=True,
     consumed_at_property=True,
-    skip_covers_counts=True,
-    array_counts=True,
+    patterns_beside_literal=False,
+    keeps_tuple_lengths=False,
     records_by_option=False,
     empty_record=False,
 )
 _ROOT_SITE = _ConstraintSite(
-    keyword_gate="options",
+    holds_schema=True,
     numbers_keep_bounds=False,
-    array_unions_take_none=False,
     consumed_at_property=False,
-    skip_covers_counts=False,
-    array_counts=False,
+    patterns_beside_literal=True,
+    keeps_tuple_lengths=True,
     records_by_option=True,
     empty_record=True,
 )
@@ -1289,9 +1284,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _value_keywords.enum_literal(self, obj, written)
 
-    def is_constraints_field(self, obj: JsonSchemaObject) -> bool:
-        """Check if a field should include constraints."""
-        return _value_keywords.is_constraints_field(self, obj)
+    def is_constraints_field(self, obj: JsonSchemaObject, data_type: DataType | None = None) -> bool:
+        """Check if a field should include constraints; ``data_type`` is the type the field holds, if built."""
+        return _value_keywords.is_constraints_field(self, obj, data_type)
 
     def _has_effective_constraints(self, obj: JsonSchemaObject) -> bool:
         """Return whether direct or derived constraints require a generated field."""
@@ -6344,24 +6339,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The declared keywords the field takes, without those its type enforces at an object property, the hostname
         pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple; a
-        heterogeneous type list takes none. ``preserve`` reads the keywords without ``--field-constraints`` and
-        ``assembled`` (the array builder's constraints of a preserved root) replaces the declared ones.
+        heterogeneous type list takes none of the keywords and item counts, the property counts follow the map type.
+        ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
+        constraints of a preserved root) replaces the declared ones.
         """
         field_constraints = self.field_constraints
         skip = (
             self._should_skip_root_field_constraints_for_multiple_types(obj)
             and not (site.numbers_keep_bounds and self._has_shared_numeric_union_constraints(obj))
-        ) or (
-            site.array_unions_take_none
-            and isinstance(obj.type, list)
-            and bool(self._get_array_union_non_array_types(obj))
-        )
+        ) or bool(self._get_array_union_non_array_types(obj))
         constraints: Any = None
         untaken: dict[str, Any] = {}
+        built = not skip and bool(assembled)
         if not skip:
-            if assembled:
+            if built:
                 constraints = assembled
-            elif self.is_constraints_field(obj) if site.keyword_gate == "schema" else field_constraints or preserve:
+            elif self.is_constraints_field(obj, data_type) or (site.holds_schema and (field_constraints or preserve)):
                 constraints, untaken = self._split_constraint_values(obj, data_type)
                 if site.consumed_at_property:
                     for key in property_consumed_keywords(
@@ -6370,16 +6363,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         constraints.pop(key, None)
             if constraints is not None and field_constraints and obj.format == "hostname":
                 constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
-        counted = not (skip and site.skip_covers_counts)
-        if (
-            counted
-            and data_type in MAPPINGS
-            and (property_counts := _value_keywords.get_property_count_constraints(type(self), obj))
+            if (
+                constraints is not None
+                and not site.patterns_beside_literal
+                and obj.enum
+                and not self.ignore_enum_constraints
+            ):
+                constraints.pop("pattern", None)
+        if data_type in MAPPINGS and (
+            property_counts := _value_keywords.get_property_count_constraints(type(self), obj)
         ):
             constraints = constraints or {}
             constraints.update(property_counts)
-        if site.array_counts:
-            if counted and (item_counts := self._get_array_items_constraints(obj)):
+        keeps_lengths = (
+            site.keeps_tuple_lengths and (field_constraints or preserve) and self._is_fixed_length_tuple(obj)
+        )
+        if not (built or keeps_lengths):
+            if not skip and (item_counts := self._get_array_items_constraints(obj)):
                 constraints = constraints or {}
                 constraints.update(item_counts)
             _value_keywords.suppress_array_length_constraints(self, constraints, obj)

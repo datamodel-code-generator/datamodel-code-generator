@@ -34,8 +34,10 @@ class Model:
     rStringOrPatterns: StringOrPatterns
     pStringOrNames: dict[constr(pattern=r'^a'), int] | None
     rStringOrNames: StringOrNames
-    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None
     rArrayOrNamesCount: ArrayOrNamesCount
+    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None = Field(
+        ..., min_length=1
+    )
     iStringOrPatterns: list[dict[constr(pattern=r'^x'), int]] | None = None
     mStringOrPatterns: dict[str, dict[constr(pattern=r'^x'), int]] | None = None
     iStringOrNames: list[dict[constr(pattern=r'^a'), int]] | None = None

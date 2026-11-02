@@ -1,0 +1,11 @@
+{
+  "valid": [
+    {"named": {"ab": 1}},
+    {"named": {"ab": 1, "ac": 2}},
+    {"named": null}
+  ],
+  "invalid": [
+    {"named": {}},
+    {"named": {"ab": 1, "ac": 2, "ad": 3}}
+  ]
+}
