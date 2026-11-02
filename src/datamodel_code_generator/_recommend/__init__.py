@@ -12,14 +12,13 @@ import json
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import (
     Decision,
-    OptionValue,
     decide,
     load_rules,
     option_arguments,
@@ -33,11 +32,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
     from datamodel_code_generator._recommend._signals import SchemaKind, Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
+    from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.preset import ResolvedPresetConfig
 
-RecommendMode: TypeAlias = Literal["quick", "full"]
-InputSource: TypeAlias = Literal["file", "url", "stdin", "directory", "input-model"]
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
 _DOCUMENT_NAMES: dict[SchemaKind, str] = {
     "openapi": "an OpenAPI",
@@ -122,7 +120,7 @@ class Disagreement:
     configured: Any
     recommended: OptionValue
     decision: Decision | None
-    kind: Literal["explicit", "preset", "newer-preset"]
+    kind: DisagreementKind
 
 
 @dataclass(slots=True)

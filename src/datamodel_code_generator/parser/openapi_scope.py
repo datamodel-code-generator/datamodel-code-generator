@@ -24,7 +24,7 @@ from datamodel_code_generator._openapi_paths import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._site_facts import EMPTY_SITE, site_facts_of
+from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -102,7 +102,7 @@ class ApiDeclarationFrame:
     engine_path: tuple[str, ...] = ()
     raw_schema: YamlValue = None
     validated_schema: JsonSchemaObject | None = None
-    projection: Literal["value", "item_stream_array"] = "value"
+    projection: Projection = "value"
     raw_operation: dict[str, YamlValue] | None = None
     effective_operation: dict[str, YamlValue] | None = None
 
@@ -237,7 +237,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         declaration: SchemaLocation | None = None,
         raw_schema: YamlValue = None,
         validated_schema: JsonSchemaObject | None = None,
-        projection: Literal["value", "item_stream_array"] = "value",
+        projection: Projection = "value",
         role: SchemaRole | None = None,
     ) -> Generator[ApiDeclarationFrame, None, None]:
         parent = self.declaration_frames[-1] if self.declaration_frames else None

@@ -26,6 +26,9 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
   drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
   every constraint of a field whose type holds it outside a container when they write the field, with a warning.
+* ``legacy-msgspec-float-bounds`` (``integer_bound``): the check of a msgspec union reads the bound of a float member
+  as the float it is, so an integral bound past ``2**53`` is the integer of its binary value, where the schema models
+  read the decimal that is written.
 
 This module is a leaf (the standard library, ``typing_extensions``, ``enums`` and ``_requirements``): ``types.py``
 builds the public tables of ``DataTypeManager`` from it while it is imported, and the model package imports
@@ -37,7 +40,7 @@ from __future__ import annotations
 import operator
 from dataclasses import replace
 from fractions import Fraction
-from math import inf, isfinite
+from math import ceil, floor, inf, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
@@ -94,6 +97,7 @@ __all__ = [
     "inexact_float_divisor",
     "int_beyond_values",
     "int_constraint_beyond_values",
+    "integer_bound",
     "is_non_finite",
     "json_integer",
     "json_number",
@@ -905,6 +909,32 @@ def exact_float(number: int) -> float | None:
     except OverflowError:
         return None
     return float_value if float_value == number else None
+
+
+_INTEGER_BOUNDS: Final[Mapping[str, tuple[Literal["ge", "le"], Callable[[Any], int], int]]] = MappingProxyType({
+    "ge": ("ge", ceil, 0),
+    "gt": ("ge", floor, 1),
+    "le": ("le", floor, 0),
+    "lt": ("le", ceil, -1),
+})
+
+
+def integer_bound(
+    keyword: str, value: float, *, arithmetic: Literal["exact", "float"]
+) -> tuple[Literal["ge", "le"], int] | None:
+    """Return the ``ge`` or ``le`` that the integers a ``ge``, ``gt``, ``le`` or ``lt`` bound admits come to, or None.
+
+    The least integer a lower bound admits and the greatest an upper bound admits: the ceiling or the floor of the
+    bound, one more or less for an exclusive one. ``exact`` reads the bound as the decimal it is written (``1e300`` is
+    ``10**300``); ``float`` reads the float it is (``int(1e300)``).
+
+    Row ``legacy-msgspec-float-bounds``: the check of a msgspec union reads a bound ``float``, so an integral bound
+    past ``2**53`` is the integer of its binary value, where the schema models read it ``exact``.
+    """
+    if (row := _INTEGER_BOUNDS.get(keyword)) is None:
+        return None
+    side, rounding, offset = row
+    return side, rounding(Fraction(str(value)) if arithmetic == "exact" else value) + offset
 
 
 def is_non_finite(number: float) -> bool:

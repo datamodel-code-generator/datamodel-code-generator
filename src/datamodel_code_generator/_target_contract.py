@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._site_facts import Projection
     from datamodel_code_generator._target_naming import TargetNames
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.types import DataType
@@ -37,7 +38,6 @@ class FieldSlot:
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
-Projection: TypeAlias = Literal["value", "item_stream_array"]
 TypeUseRole: TypeAlias = Literal[
     "schema",
     "parameter",
