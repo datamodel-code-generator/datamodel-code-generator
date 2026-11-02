@@ -171,7 +171,7 @@ _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _RAW_MEDIA: Final = frozenset({"text", "binary"})
-_HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
+_HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
     "response_header",
     "request_encoding_header",
     "response_encoding_header",
@@ -628,7 +628,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         return visited if self._visits and isinstance(visited := self._visits[-1], _WalkedObject) else None
 
     def _acquire_schema(
-        self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
+        self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: TypeUseRole
     ) -> None:
         """Record the declaration's engine key, even when it was already generated, and what its schema says.
 
@@ -665,7 +665,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         projected: YamlValue,
         *,
         declaration: SchemaLocation,
-        role: SchemaRole,
+        role: TypeUseRole,
     ) -> None:
         """Record an item schema and its stream-array projection, even when they were already generated."""
         item_path = [*path, "itemSchema"]
@@ -2087,7 +2087,7 @@ class _Reader(_SchemaLocations):
             declaration, site = target, self.site(target)
         return declaration, site
 
-    def record(self, declaration: SchemaLocation, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
+    def record(self, declaration: SchemaLocation, role: TypeUseRole, locate: _Locate) -> _SchemaRecord:
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
 
         A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
@@ -3652,7 +3652,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
-    from datamodel_code_generator._site_facts import Projection, SiteFacts
+    from datamodel_code_generator._site_facts import Projection, SiteFacts, TypeUseRole
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendName,
@@ -3662,12 +3662,11 @@ if TYPE_CHECKING:
         LeafStep,
         TypeArgument,
         TypeProjectionReason,
-        TypeUseRole,
         TypeView,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
-    from datamodel_code_generator.parser.openapi_scope import ApiObjectKind, ApiParameterDeclaration, SchemaRole
+    from datamodel_code_generator.parser.openapi_scope import ApiObjectKind, ApiParameterDeclaration
     from datamodel_code_generator.reference import ModelResolver, Reference, _RwDirection
