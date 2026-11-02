@@ -114,7 +114,7 @@ from datamodel_code_generator._cli_config import (
     _RawConfigValue,
     _template_data,
 )
-from datamodel_code_generator._config_fields import JSON_FIELDS, MODEL_JSON_FIELDS, TARGET_SELECTORS
+from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTORS, names_path
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
@@ -141,6 +141,7 @@ from datamodel_code_generator._project_config import (
     _normalize_pyproject_config,
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
+    _resolve_relative_paths_from,
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import is_url, redact_url
@@ -890,15 +891,19 @@ def _record_raw_job_config_dependencies(
 ) -> None:
     """Register raw local inputs and JSON option files for failed-plan recovery.
 
-    As in a planned job, the JSON files of model options stay relative to the working directory.
+    Each value is read as the planned job reads it, by ``_resolve_relative_paths_from``: ``~`` expands, a path field is
+    relative to the pyproject.toml directory, the JSON files of model options stay relative to the working directory,
+    and inline JSON is a value, not a file. Only lexical, as the plan may have failed before it read any file; a
+    ``~user`` that names no user is left unwatched.
     """
     for raw_name, raw_value in config.items():
         if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (JSON_FIELDS | {"input"}):
             continue
-        if not isinstance(raw_value, str | Path):
+        if not names_path(name, raw_value):
             continue
-        path = Path(raw_value)
-        dependencies.add_recovery_file(path if path.is_absolute() or name in MODEL_JSON_FIELDS else base_path / path)
+        with suppress(RuntimeError):
+            path = _resolve_relative_paths_from({name: raw_value}, base_path)[name]
+            dependencies.add_recovery_file(Path(path))
 
 
 def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:

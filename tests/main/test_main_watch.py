@@ -2568,6 +2568,82 @@ client-operations = "operations.json"
     ] == [True, True, False, True, False]
 
 
+@pytest.mark.allow_direct_assert("checks which paths the failed plan's recovery graph accepts")
+def test_batch_watch_reads_raw_paths_as_the_planned_job_does(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed plan watches `~` in the home directory and no file for inline JSON, as a planned job reads them.
+
+    A `~user` that names no user is left unwatched without stopping the other values.
+    """
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen.jobs.invalid]
+client-protocols = "~no-such-user-for-datamodel-codegen/protocols.json"
+input = "~/input.json"
+aliases = "{}"
+client-operations = "~/operations.json"
+server-operation-names = "[]"
+""",
+        encoding="utf-8",
+    )
+    working_directory = tmp_path / "child"
+    working_directory.mkdir()
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(working_directory)
+    arg_parser.parse_args(["--all-jobs"], namespace=main_module.namespace)
+
+    assert main_module._main(["--all-jobs"], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (
+            home / "input.json",
+            tmp_path / "~" / "input.json",
+            home / "operations.json",
+            tmp_path / "~" / "operations.json",
+            working_directory / "{}",
+            tmp_path / "[]",
+        )
+    ] == [True, False, True, False, False, False]
+
+
+@pytest.mark.allow_direct_assert("checks which paths the failed run's recovery graph accepts")
+def test_watch_records_raw_inline_json_values_as_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed configuration watches the JSON file a value names, not a file named like an inline JSON value."""
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "input.json"
+aliases = "{}"
+client-protocols = "protocols.json"
+""",
+        encoding="utf-8",
+    )
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(tmp_path)
+    arg_parser.parse_args([], namespace=main_module.namespace)
+
+    assert main_module._main([], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (tmp_path / "input.json", tmp_path / "protocols.json", tmp_path / "{}")
+    ] == [True, True, False]
+
+
 @pytest.mark.allow_direct_assert
 def test_batch_watch_excludes_a_shared_update_lock_from_events(
     monkeypatch: pytest.MonkeyPatch,

@@ -17,6 +17,7 @@ from datamodel_code_generator._config_fields import (
     WATCHED_FILE_FIELDS,
     WATCHED_OUTPUT_FIELDS,
     WATCHED_PATH_FIELDS,
+    names_path,
 )
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, names_directory, same_file
@@ -125,7 +126,7 @@ def _path_fingerprint(path: Path) -> tuple[int, int, int]:
 def _configured_path(config_values: Mapping[str, Any], field_name: str, fallback: str | Path | None) -> Path | None:
     value = config_values.get(field_name, fallback)
     if isinstance(value, (str, Path)):
-        return Path(value)
+        return Path(value) if names_path(field_name, value) else None
     return Path(fallback) if isinstance(fallback, str) else fallback
 
 
