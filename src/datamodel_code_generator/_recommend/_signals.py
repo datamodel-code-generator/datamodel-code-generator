@@ -449,7 +449,7 @@ class _Dialect:
 
 def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     """Return how generation reads a document, from its declared or detected version, as the parsers decide it."""
-    from datamodel_code_generator.enums import JsonSchemaVersion  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ref_siblings_apply  # noqa: PLC0415
     from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
         OpenAPISchemaFeatures,
         detect_asyncapi_version,
@@ -461,7 +461,7 @@ def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     data_formats = get_data_formats(is_openapi=True)
     if kind == "jsonschema":
         version = detect_jsonschema_version(dict(document))
-        ref_siblings = version not in {JsonSchemaVersion.Draft4, JsonSchemaVersion.Draft6, JsonSchemaVersion.Draft7}
+        ref_siblings = _ref_siblings_apply(version)
         return _Dialect(data_formats, ref_siblings=ref_siblings, nullable_keyword=False)
     features = (
         OpenAPISchemaFeatures.from_openapi_version(detect_openapi_version(dict(document)))
