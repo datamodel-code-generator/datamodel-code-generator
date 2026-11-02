@@ -824,6 +824,13 @@ def _format_call(  # noqa: PLR0913
         inline := _joined_block(f"{call_name}(", arguments, indent, ")", line_length)
     ):
         return inline
+    return _call_per_argument(call_name, arguments, indent, force_trailing_comma=force_trailing_comma)
+
+
+def _call_per_argument(
+    call_name: str, arguments: Sequence[str], indent: str, *, force_trailing_comma: bool = False
+) -> str:
+    """Write a call one argument per line, each followed by a comma when there are several or one is forced."""
     comma = "," if force_trailing_comma or len(arguments) > 1 else ""
     return _block(f"{call_name}(", _item_lines(arguments, indent, comma), indent, ")")
 
@@ -838,7 +845,7 @@ def _format_constrained_call(call: ast.Call, indent: str, line_length: int, sour
     inline_call = call_text(call_name, arguments)
     if len(f"{indent}{inline_call}") <= line_length:
         return inline_call
-    return _block(f"{call_name}(", _item_lines(arguments, indent, "," if len(arguments) > 1 else ""), indent, ")")
+    return _call_per_argument(call_name, arguments, indent)
 
 
 def _is_call(node: ast.AST | None, name: str) -> TypeGuard[ast.Call]:
@@ -994,7 +1001,8 @@ def _format_bit_or_element(
     if _is_mapping_of_annotated(element):
         return _nested_lines(_format_subscript_value(element, indent, line_length, source), f"{indent}{prefix}")
     return _nested_lines(
-        _format_subscript(element, indent, 0, source, comma=_subscript_comma(element)), f"{indent}{prefix}"
+        _format_subscript(element, indent, line_length, source, comma=_subscript_comma(element), forced=True),
+        f"{indent}{prefix}",
     )
 
 
@@ -1109,12 +1117,16 @@ def _element_lines(  # noqa: PLR0913
     source: str,
     *,
     split: Callable[[ast.AST, str, str, int, str], list[str] | None] | None,
+    forced: bool = False,
 ) -> list[str]:
-    """Write an element on its own line at ``indent``, or as the lines ``split`` gives when that line is too long."""
+    """Write an element on its own line at ``indent``, or as the lines ``split`` gives when that line is too long.
+
+    A ``forced`` element takes the lines of ``split`` whatever the length of its line.
+    """
     line = f"{indent}{_source_segment(source, element)}{comma}"
     if (
         split is not None
-        and len(line) > line_length
+        and (forced or len(line) > line_length)
         and (lines := split(element, indent, comma, line_length, source)) is not None
     ):
         return lines
@@ -1131,20 +1143,22 @@ def _split_block(  # noqa: PLR0913
     source: str,
     comma: str,
     split: Callable[[ast.AST, str, str, int, str], list[str] | None] | None = None,
+    forced: bool = False,
 ) -> str:
     """Write the elements after ``head`` and before ``close`` in the layout black tries first that fits.
 
     That is all of them on one line under ``head``, else each on its own line followed by ``comma``, where ``split``
-    writes an element whose line is still too long. Without ``split``, a ``line_length`` of 0 only skips the one line.
+    writes an element whose line is still too long. A ``forced`` block skips the one line and ``split`` writes each
+    element whatever its length (``_element_lines``).
     """
     joined = (_source_segment(source, element) for element in elements)
-    if inline := _joined_block(head, joined, indent, close, line_length):
+    if not forced and (inline := _joined_block(head, joined, indent, close, line_length)):
         return inline
     continuation_indent = f"{indent}    "
     lines = (
         line
         for element in elements
-        for line in _element_lines(element, continuation_indent, comma, line_length, source, split=split)
+        for line in _element_lines(element, continuation_indent, comma, line_length, source, split=split, forced=forced)
     )
     return _block(head, lines, indent, close)
 
@@ -1158,12 +1172,15 @@ def _format_subscript(  # noqa: PLR0913
     *,
     comma: str,
     split: Callable[[ast.AST, str, str, int, str], list[str] | None] | None = None,
+    forced: bool = False,
 ) -> str:
     """Split a subscript after its ``value[`` (``_split_block``), with ``closing_suffix`` after its ``]``."""
     head = f"{_source_segment(source, subscript.value)}["
     elements = _iter_subscript_elements(subscript)
     close = f"]{closing_suffix}"
-    return _split_block(head, elements, indent, close, line_length=line_length, source=source, comma=comma, split=split)
+    return _split_block(
+        head, elements, indent, close, line_length=line_length, source=source, comma=comma, split=split, forced=forced
+    )
 
 
 def _split_subscript(element: ast.AST, indent: str, comma: str, line_length: int, source: str) -> list[str] | None:
@@ -1180,6 +1197,39 @@ def _split_type(element: ast.AST, indent: str, comma: str, line_length: int, sou
         lines[-1] = f"{lines[-1]}{comma}"
         return lines
     return _split_subscript(element, indent, comma, line_length, source)
+
+
+def _split_annotated(element: ast.AST, indent: str, comma: str, line_length: int, source: str) -> list[str] | None:
+    """Split an ``Annotated`` element as its own subscript (``_format_annotated``), with ``comma`` after its ``]``."""
+    assert _is_annotated(element)
+    return _nested_lines(_format_annotated(element, indent, line_length, source, comma), indent)
+
+
+def _split_union(element: ast.AST, indent: str, comma: str, line_length: int, source: str) -> list[str] | None:
+    """Split a ``Union[...]`` element one member per line whatever its length, with ``comma`` after its ``]``."""
+    assert _is_union(element)
+    return _nested_lines(_format_union_subscript(element, indent, source, comma, line_length, forced=True), indent)
+
+
+def _split_constrained_union(
+    element: ast.AST, indent: str, comma: str, line_length: int, source: str
+) -> list[str] | None:
+    """Split the two sides of a ``|`` beside a constrained string call, with ``comma`` after the last line.
+
+    The call is written as ``_format_constrained_call`` writes it at ``indent`` (a right-hand call checks its fit
+    without the ``| `` before it); the other side stays whole.
+    """
+    assert isinstance(element, ast.BinOp)
+    left = element.left
+    right = element.right
+    lines: list[str] = []
+    if _is_constrained_string_call(left):
+        call = _format_constrained_call(left, indent, line_length, source)
+        lines = [*_nested_lines(call, indent), f"{indent}| {_source_segment(source, right)}{comma}"]
+    elif _is_constrained_string_call(right):  # pragma: no branch
+        call = _format_constrained_call(right, indent, line_length, source)
+        lines = [f"{indent}{_source_segment(source, left)}", *_nested_lines(call, f"{indent}| ", comma)]
+    return lines
 
 
 def _split_metadata_call(  # noqa: PLR0913
@@ -1418,22 +1468,14 @@ def _format_constrained_call_union(
     return _source_segment(source, annotation)  # pragma: no cover
 
 
-def _format_annotated_line(annotated: ast.Subscript, indent: str, line_length: int, source: str) -> str:
-    """Write an ``Annotated`` element at ``indent``, split when it does not fit."""
-    if len(line := f"{indent}{_source_segment(source, annotated)}") <= line_length:
-        return line
-    return "\n".join(_nested_lines(_format_annotated(annotated, indent, line_length, source), indent))
-
-
 def _format_annotated_union(annotation: ast.BinOp, indent: str, line_length: int, source: str) -> str:
     left = _source_segment(source, annotation.left)
     right = _source_segment(source, annotation.right)
     if len(f"{indent}    {left} | {right}") <= line_length:
         return _parenthesized(f"{left} | {right}", indent)
     if _is_annotated(annotation.left):
-        return _parenthesized_union(
-            _format_annotated_line(annotation.left, f"{indent}    ", line_length, source), right, indent
-        )
+        left_lines = _element_lines(annotation.left, f"{indent}    ", "", line_length, source, split=_split_annotated)
+        return _parenthesized_union("\n".join(left_lines), right, indent)
     if _is_annotated(annotation.right):
         return _parenthesized_union(f"{indent}    {left}", right, indent)
     return _format_parenthesized_bit_or_annotation(annotation, indent, line_length, source)
@@ -1441,8 +1483,7 @@ def _format_annotated_union(annotation: ast.BinOp, indent: str, line_length: int
 
 def _format_list_of_annotated(annotation: ast.Subscript, indent: str, line_length: int, source: str) -> str:
     assert _is_annotated(annotation.slice)
-    formatted_annotated = _format_annotated_line(annotation.slice, f"{indent}    ", line_length, source)
-    return f"{_source_segment(source, annotation.value)}[\n{formatted_annotated}\n{indent}]"
+    return _format_subscript(annotation, indent, line_length, source, comma="", split=_split_annotated)
 
 
 def _format_closing_default(
@@ -1460,14 +1501,16 @@ def _format_closing_default(
     return value_source
 
 
-def _format_union_subscript(
+def _format_union_subscript(  # noqa: PLR0913
     union: ast.Subscript,
     indent: str,
     source: str,
     closing_suffix: str = "",
     line_length: int = DEFAULT_LINE_LENGTH,
+    *,
+    forced: bool = False,
 ) -> str:
-    return _format_subscript(union, indent, line_length, source, closing_suffix, comma=",")
+    return _format_subscript(union, indent, line_length, source, closing_suffix, comma=",", forced=forced)
 
 
 def _format_subscript_value(
@@ -1487,26 +1530,24 @@ def _format_type_alias_type_argument(
     line_length: int,
     source: str,
 ) -> Iterable[str]:
-    if _is_union(argument):
-        return _nested_lines(
-            _format_union_subscript(argument, continuation_indent, source, ",", 0), continuation_indent
-        )
+    """Write an argument of a ``TypeAliasType`` call on its own line, split when too long or always (forced).
 
-    if _is_optional(argument):
-        return _element_lines(argument, continuation_indent, ",", line_length, source, split=_split_subscript)
-    argument_line = f"{continuation_indent}{_source_segment(source, argument)},"
-    if not _is_annotated(argument):
-        return [argument_line]
-    match argument.slice:
-        case ast.Tuple(elts=[ast.BinOp(op=ast.BitOr()), *_]):
-            has_bit_or_value = True
-        case _:
-            has_bit_or_value = False
-    if not has_bit_or_value and "\n" not in argument_line and len(argument_line) <= line_length:
-        return [argument_line]
-    return _nested_lines(
-        _format_annotated(argument, continuation_indent, line_length, source, ","), continuation_indent
-    )
+    A union is always split, an ``Annotated`` value when its first element is a ``|`` chain or it spans lines.
+    """
+    split = None
+    forced = False
+    if _is_union(argument):
+        split = _split_union
+        forced = True
+    elif _is_optional(argument):
+        split = _split_subscript
+    elif _is_annotated(argument):
+        split = _split_annotated
+        match argument.slice:
+            case ast.Tuple(elts=[ast.BinOp(op=ast.BitOr()), *_]):
+                forced = True
+        forced = forced or "\n" in _source_segment(source, argument)
+    return _element_lines(argument, continuation_indent, ",", line_length, source, split=split, forced=forced)
 
 
 def _call_block(call: ast.Call, argument_lines: Iterable[str], indent: str, source: str) -> str:
@@ -1557,7 +1598,7 @@ def _format_type_alias_union_assignment(
             value=ast.Subscript() as value,
         ):
             if _is_union(value):
-                return f"{indent}{target}: TypeAlias = {_format_union_subscript(value, indent, source, line_length=0)}"
+                return f"{indent}{target}: TypeAlias = {_format_union_subscript(value, indent, source, forced=True)}"
             if _is_annotated(value) and not _is_multiline(statement):
                 return f"{indent}{target}: TypeAlias = {_format_annotated(value, indent, line_length, source)}"
     return None
@@ -1593,19 +1634,10 @@ def _format_root_model_constrained_union_base(
     line_length: int,
     source: str,
 ) -> str:
-    inner_indent = f"{indent}        "
-    union = base.slice
-    assert isinstance(union, ast.BinOp)
-    lines: list[str] = []
-    if _is_constrained_string_call(union.left):
-        formatted_call = _format_constrained_call(union.left, inner_indent, line_length, source)
-        lines.extend(_nested_lines(formatted_call, inner_indent))
-        lines.append(f"{inner_indent}| {_source_segment(source, union.right)}")
-    elif _is_constrained_string_call(union.right):  # pragma: no branch
-        lines.append(f"{inner_indent}{_source_segment(source, union.left)}")
-        formatted_call = _format_constrained_call(union.right, inner_indent, line_length, source)
-        lines.extend(_nested_lines(formatted_call, f"{inner_indent}| "))
-    return _block(f"{_source_segment(source, base.value)}[", lines, f"{indent}    ", "]")
+    assert isinstance(base.slice, ast.BinOp)
+    return _format_subscript(
+        base, f"{indent}    ", line_length, source, comma="", split=_split_constrained_union, forced=True
+    )
 
 
 def _format_root_model_union_base(
@@ -1615,8 +1647,7 @@ def _format_root_model_union_base(
     source: str,
 ) -> str:
     assert isinstance(base.slice, ast.BinOp)
-    lines = _format_bit_or_elements(base.slice, f"{indent}        ", line_length, source)
-    return _block(f"{_source_segment(source, base.value)}[", lines, f"{indent}    ", "]")
+    return _format_subscript(base, f"{indent}    ", line_length, source, comma="", split=_split_type, forced=True)
 
 
 def _format_generated_class_definition(
@@ -1631,7 +1662,9 @@ def _format_generated_class_definition(
     indent = _line_indent(line)
     if len(statement.bases) > 1:
         head = f"{indent}class {statement.name}("
-        return _split_block(head, statement.bases, indent, "):", line_length=0, source=source, comma=",")
+        return _split_block(
+            head, statement.bases, indent, "):", line_length=line_length, source=source, comma=",", forced=True
+        )
     if len(statement.bases) != 1:
         return None
 
