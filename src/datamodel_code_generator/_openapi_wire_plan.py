@@ -449,12 +449,12 @@ def _encoding(
                 raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
         shape, kind, fields, additional = _shape(planner, _member_shape(form, member))
-        chosen = str(style or "form")
+        chosen, exploded = _style_of(encoding, "query")
         return ParameterPlan(
             location="query",
             name=name,
             style=chosen,
-            explode=explode if isinstance(explode, bool) else chosen == "form",
+            explode=exploded,
             allow_reserved=reserved is True,
             shape=shape,
             kind=kind,
@@ -597,6 +597,16 @@ def parameter_collisions(
     return tuple(found)
 
 
+def _style_of(declaration: WireDeclaration, location: ParameterLocation) -> tuple[str, bool]:
+    """Return the style a parameter or a form member's encoding writes in a location, and whether it explodes.
+
+    The style defaults by the location, and a style that is not given explodes by default where it is form or cookie.
+    """
+    style = str(fact(declaration, "style") or _DEFAULT_STYLES[location])
+    explode = fact(declaration, "explode")
+    return style, explode if isinstance(explode, bool) else style in {"form", "cookie"}
+
+
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
     source = declaration.use_site
     location, name = parameter_place(declaration)
@@ -605,16 +615,15 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
-    style = str(fact(declaration, "style") or _DEFAULT_STYLES[location])
+    style, explode = _style_of(declaration, location)
     if style == "cookie" and not planner.version.startswith("3.2"):
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
-    explode = fact(declaration, "explode")
     try:
         return ParameterPlan(
             location=location,
             name=name,
             style=style,
-            explode=explode if isinstance(explode, bool) else style in {"form", "cookie"},
+            explode=explode,
             required=required,
             allow_reserved=_allow_reserved(planner.version, location, declaration),
             shape=shape,
