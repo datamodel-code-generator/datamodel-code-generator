@@ -20,12 +20,12 @@ from urllib.parse import unquote, urljoin, urlsplit
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, discriminator_mapping_ref
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
-from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS
+from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._source import YamlValue
@@ -84,6 +84,12 @@ _KINDS: Final = {
     "securityScheme": "securitySchemes",
 }
 _ROLES: Final = {kind: role for role, kind in _KINDS.items()}
+_HOLDERS: Final[dict[str, dict[str, Child]]] = {
+    **_CHILDREN,
+    "root": {"paths": ("map", "pathItem"), "webhooks": ("map", "pathItem"), "components": ("one", "components")},
+    "components": {kind: ("map", role) for kind, role in _ROLES.items()},
+}
+_DECLARING: Final = frozenset({"root", "schema"})
 _SINCE: Final = {"pathItems": (3, 1), "mediaTypes": (3, 2)}
 _KEPT: Final = "securitySchemes"
 _NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
@@ -122,27 +128,29 @@ class SourceDocument:
         self.selected: frozenset[str] = frozenset()
 
     def index(self, document: int, value: dict[str, YamlValue], names: tuple[str, ...]) -> None:
-        """Record a document's resources and anchors, walking it once with the resource each node belongs to."""
-        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...]]] = [((), value, names)]
-        seen: set[int] = set()
+        """Record a document's resources and anchors, walking its schemas once with the resource each belongs to.
+
+        The walk visits the objects that can hold schemas (see ``_holders``), never the data of `examples`, `default`
+        and the like. A document's root is an OpenAPI document or a schema.
+        """
+        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...], str]] = [((), value, names, "root")]
+        seen: set[tuple[int, str]] = set()
         for name in names:
             self.resources.setdefault(name, (document, ()))
         while pending:
-            at, node, around = pending.pop()
-            if not isinstance(node, dict | list) or id(node) in seen:
+            at, node, around, role = pending.pop()
+            if not isinstance(node, dict) or (identity := (id(node), role)) in seen:
                 continue
-            seen.add(id(node))
-            if isinstance(node, list):
-                pending.extend(((*at, str(index)), child, around) for index, child in enumerate(node))
-                continue
-            if isinstance(own := node.get("$id"), str) and self.version >= (3, 1) and at:
+            seen.add(identity)
+            if role == "schema" and isinstance(own := node.get("$id"), str) and self.version >= (3, 1):
                 around = (urljoin(around[0], own).partition("#")[0],)
                 self.resources.setdefault(around[0], (document, at))
-            for keyword in ("$anchor", "$dynamicAnchor"):
-                if isinstance(anchor := node.get(keyword), str):
-                    for name in around:
-                        self.anchors.setdefault((name, anchor), (document, at))
-            pending.extend(((*at, str(key)), child, around) for key, child in node.items())
+            if role in _DECLARING:
+                for keyword in ("$anchor", "$dynamicAnchor"):
+                    if isinstance(anchor := node.get(keyword), str):
+                        for name in around:
+                            self.anchors.setdefault((name, anchor), (document, at))
+            pending.extend(((*at, *path), child, around, member) for path, child, member in _holders(node, role))
 
     def resolve(self, document: int, base: str, ref: str) -> tuple[int, tuple[str, ...], str] | None:
         """Return the document, pointer tokens, and resource base of what a reference names, or None.
@@ -412,6 +420,31 @@ class SourceDocument:
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
         """Return the node a pointer names in a loaded document, which ``exists`` or the index found there."""
         return descend(self.documents[document], tokens, "canonical")
+
+
+def _holders(node: dict[str, YamlValue], role: str) -> Iterator[tuple[tuple[str, ...], YamlValue, str]]:
+    """Yield the members of an object of one role that can hold schemas, with their paths and roles.
+
+    A schema holds subschemas at its schema keywords only, so what `examples` and `default` hold is data. A callback
+    maps expressions to path items.
+    """
+    if role in _DECLARING:
+        for keyword, value in node.items():
+            for path, subschema in subschema_entries(str(keyword), value):
+                yield tuple(map(str, path)), subschema, "schema"
+    table = _HOLDERS.get(role, {})
+    for key, value in node.items():
+        name = str(key)
+        form, member = ("one", "pathItem") if role == "callback" else table.get(name, ("", ""))
+        match form, value:
+            case "one", _:
+                yield (name,), value, member
+            case "map", dict():
+                for item, child in value.items():
+                    yield (name, str(item)), child, member
+            case "list", list():
+                for index, child in enumerate(value):
+                    yield (name, str(index)), child, member
 
 
 def _uri(location: str) -> str:
