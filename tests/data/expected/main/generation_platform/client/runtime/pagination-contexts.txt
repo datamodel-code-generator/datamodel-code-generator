@@ -1,0 +1,71 @@
+# pagination pydantic_v2.BaseModel
+sync context: ValueError
+  explicit close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
+  block error identity kept: True; kind=ValueError
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  worker item = '1'
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  later item after worker = '2'
+  idle block error identity kept: True
+  item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  borrowed native client remains open: True
+sync context: Stop
+  explicit close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
+  block error identity kept: True; kind=Stop
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  worker item = '1'
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  later item after worker = '2'
+  idle block error identity kept: True
+  item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  borrowed native client remains open: True
+sync context: NoneType
+  explicit close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
+  block error identity kept: False; kind=ConfigurationError
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  worker item = '1'
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  later item after worker = '2'
+  item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  borrowed native client remains open: True
+async context: error
+  explicit async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
+  async block error identity kept: True; kind=ValueError
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async worker item = User(id='1', name=None)
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async later item after worker = User(id='2', name=None)
+  async idle block error identity kept: True
+  async item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.closed') [field_path=('anext', 'closed')] invalid_state
+  borrowed async native client remains open: True
+async context: cancel
+  explicit async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
+  async block error identity kept: True; kind=CancelledError
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async worker item = User(id='1', name=None)
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async later item after worker = User(id='2', name=None)
+  async idle block error identity kept: True
+  async item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.closed') [field_path=('anext', 'closed')] invalid_state
+  borrowed async native client remains open: True
+async context: normal
+  explicit async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
+  async block error identity kept: False; kind=ConfigurationError
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async worker item = User(id='1', name=None)
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async later item after worker = User(id='2', name=None)
+  async item after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.closed') [field_path=('anext', 'closed')] invalid_state
+  borrowed async native client remains open: True

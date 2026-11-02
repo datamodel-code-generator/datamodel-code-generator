@@ -79,6 +79,7 @@ oauth-refresh	main/generation_platform/client/runtime/oauth-refresh.txt
 pagination	main/generation_platform/client/runtime/pagination.txt
 pagination-auth	main/generation_platform/client/runtime/pagination-auth.txt
 pagination-backends	main/generation_platform/client/runtime/pagination-backends.txt
+pagination-contexts	main/generation_platform/client/runtime/pagination-contexts.txt
 pagination-count-defaults	main/generation_platform/client/runtime/pagination-count-defaults.txt
 pagination-count-values	main/generation_platform/client/runtime/pagination-count-values.txt
 pagination-counts	main/generation_platform/client/runtime/pagination-counts.txt

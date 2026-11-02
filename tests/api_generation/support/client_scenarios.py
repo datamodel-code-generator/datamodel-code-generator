@@ -56,7 +56,11 @@ from tests.api_generation.scenarios.client_pagination_count_values import (
 from tests.api_generation.scenarios.client_pagination_counts import pagination_counts
 from tests.api_generation.scenarios.client_pagination_links import pagination_links
 from tests.api_generation.scenarios.client_pagination_resume import pagination_resume
-from tests.api_generation.scenarios.client_pagination_sessions import pagination_auth, pagination_sessions
+from tests.api_generation.scenarios.client_pagination_sessions import (
+    pagination_auth,
+    pagination_contexts,
+    pagination_sessions,
+)
 from tests.api_generation.scenarios.client_pagination_targets import (
     pagination_paths,
     pagination_querystring,
@@ -926,6 +930,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination": ("pagination", ("pydantic_v2.BaseModel",), pagination),
     "pagination-backends": ("pagination", BACKENDS, pagination_backends),
     "pagination-sessions": ("pagination", ("pydantic_v2.BaseModel",), pagination_sessions),
+    "pagination-contexts": ("pagination", ("pydantic_v2.BaseModel",), pagination_contexts),
     "pagination-auth": ("pagination", ("pydantic_v2.BaseModel",), pagination_auth),
     "pagination-limits": ("pagination-limits", ("pydantic_v2.BaseModel",), pagination_limits),
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),

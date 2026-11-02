@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import json
+import threading
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -13,6 +14,7 @@ from tests.api_generation.scenarios.client_oauth import Response, Script
 from tests.api_generation.scenarios.client_pagination import Harness, adrained, drained, fetched, progress, users
 from tests.api_generation.support.client_runtime import (
     Exchange,
+    Stop,
     arecord,
     describe,
     injected,
@@ -473,3 +475,137 @@ async def _async_auth(harness: Harness, auth: ModuleType, lines: list[str]) -> N
             pager = api.protocols.secure.users.iterate(pagination_options=harness.protocols.PaginationOptions())
             await adrained(lines, f"async {label}", pager)
             lines.append(_auth_line(pager, script))
+
+
+def pagination_contexts(package: ModuleType, lines: list[str]) -> None:
+    """Exercise generated sync/async context managers without cancelling a step owned by another consumer."""
+    harness = Harness(package)
+    for error in (ValueError("block"), Stop("block"), None):
+        _sync(harness, lines, error)
+    run(lambda: _async(harness, lines))
+
+
+def _raise(error: BaseException | None) -> None:
+    """Raise the block's exact error instance, when it has one."""
+    if error is not None:
+        raise error
+
+
+def _sync(harness: Harness, lines: list[str], error: BaseException | None) -> None:
+    """Hold a real step in a worker thread, leave a block, then finish and close that same pager."""
+    entered, release = threading.Event(), threading.Event()
+
+    def hold(_request: httpx2.Request) -> None:
+        """Hold the worker's request until the main thread releases it, failing if the guard expires."""
+        entered.set()
+        if not release.wait(10):
+            msg = "pagination context scenario release guard expired"
+            raise RuntimeError(msg)
+
+    exchange = Exchange(lines)
+    with (
+        exchange.client(event_hooks={"request": [hold]}) as native,
+        harness.package.Client(http_client=native, **harness.client_options()) as api,
+    ):
+        lines.append(f"sync context: {type(error).__name__}")
+        exchange.respond(users("1", cursor="a"), users("2"))
+        pager = api.protocols.users.all.iterate()
+        worker = threading.Thread(target=lambda: record(lines, "worker item", lambda: next(pager).id))
+        worker.start()
+        try:
+            if not entered.wait(10):
+                msg = "pagination context scenario worker did not enter"
+                raise RuntimeError(msg)
+            record(lines, "explicit close while fetching", pager.close)
+            try:
+                with pager:
+                    _raise(error)
+            except (ValueError, Stop, harness.errors.ConfigurationError) as observed:
+                lines.append(f"  block error identity kept: {observed is error}; kind={type(observed).__name__}")
+        finally:
+            release.set()
+            worker.join(10)
+        if worker.is_alive():
+            msg = "pagination context scenario worker did not finish"
+            raise RuntimeError(msg)
+        record(lines, "later item after worker", lambda: next(pager).id)
+        _idle_close(pager, lines, error)
+        record(lines, "item after close", lambda: next(pager))
+        lines.append(f"  borrowed native client remains open: {not native.is_closed}")
+
+
+def _idle_close(pager: Any, lines: list[str], error: BaseException | None) -> None:
+    """Close an idle pager on both ordinary and exceptional exits."""
+    try:
+        with pager:
+            _raise(error)
+    except (ValueError, Stop) as observed:
+        lines.append(f"  idle block error identity kept: {observed is error}")
+
+
+async def _async(harness: Harness, lines: list[str]) -> None:
+    """Keep ordinary errors and an actual body-task cancellation while the separate fetch task goes on."""
+    for kind in ("error", "cancel", "normal"):
+        await _async_case(harness, lines, kind)
+
+
+async def _async_case(harness: Harness, lines: list[str], kind: str) -> None:
+    """Leave one block while its separately scheduled page fetch remains held by a request hook."""
+    entered, release, body_entered = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def hold(_request: httpx2.Request) -> None:
+        """Signal that the fetch has entered its request hook, then wait for release."""
+        entered.set()
+        await asyncio.wait_for(release.wait(), 10)
+
+    exchange = Exchange(lines)
+    async with (
+        exchange.async_client(event_hooks={"request": [hold]}) as native,
+        harness.package.AsyncClient(http_client=native, **harness.client_options()) as api,
+    ):
+        lines.append(f"async context: {kind}")
+        exchange.respond(users("1", cursor="a"), users("2"))
+        pager = api.protocols.users.all.iterate()
+        worker = asyncio.create_task(arecord(lines, "async worker item", lambda pager=pager: anext(pager)))
+        errors: list[BaseException] = []
+
+        async def body() -> None:
+            """Exercise the selected body exit while another task holds the pager's fetch."""
+            async with pager:
+                body_entered.set()
+                if kind == "cancel":
+                    try:
+                        await asyncio.Event().wait()
+                    except asyncio.CancelledError as cancelled:
+                        errors.append(cancelled)
+                        raise
+                elif kind == "error":
+                    error = ValueError("block")
+                    errors.append(error)
+                    raise error
+
+        try:
+            await asyncio.wait_for(entered.wait(), 10)
+            await arecord(lines, "explicit async close while fetching", pager.aclose)
+            leaving = asyncio.create_task(body())
+            await asyncio.wait_for(body_entered.wait(), 10)
+            if kind == "cancel":
+                leaving.cancel()
+            try:
+                await leaving
+            except (ValueError, asyncio.CancelledError, harness.errors.ConfigurationError) as observed:
+                lines.append(
+                    f"  async block error identity kept: {bool(errors) and observed is errors[0]}; "
+                    f"kind={type(observed).__name__}"
+                )
+        finally:
+            release.set()
+            await asyncio.wait_for(worker, 10)
+        await arecord(lines, "async later item after worker", lambda pager=pager: anext(pager))
+        try:
+            async with pager:
+                _raise(errors[0] if errors else None)
+        except (ValueError, asyncio.CancelledError) as observed:
+            lines.append(f"  async idle block error identity kept: {observed is errors[0]}")
+        await arecord(lines, "async item after close", lambda pager=pager: anext(pager))
+        lines.append(f"  borrowed async native client remains open: {not native.is_closed}")
