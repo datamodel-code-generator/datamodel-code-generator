@@ -420,6 +420,7 @@ jsonschema/msgspec_alias_default_controls.json	payloads/native_numeric_empty_err
 jsonschema/msgspec_alias_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_annotated_optional_imports.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_boolean_enum_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/msgspec_collapsed_dict_key_in_spread_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean_false.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean_first_alias.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2232,6 +2233,7 @@ jsonschema/msgspec_alias_default_controls.json	payloads/native_numeric_empty_err
 jsonschema/msgspec_alias_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_annotated_optional_imports.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_boolean_enum_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/msgspec_collapsed_dict_key_in_spread_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean_false.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/boolean_first_alias.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

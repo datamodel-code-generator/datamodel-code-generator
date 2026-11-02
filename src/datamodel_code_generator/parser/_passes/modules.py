@@ -125,7 +125,6 @@ from datamodel_code_generator.parser._passes._shared import (
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
     merge_duplicate,
-    merge_duplicate_in_module,
     module_members,
     record_renamed_type,
     removes_reuse_duplicate,
@@ -1048,7 +1047,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
             redirect_removed_reuse_users(parser, model, cached_model)
             duplicates.append(model)
         elif groups.is_typed_map_value(model):
-            merge_duplicate_in_module(parser, model, cached_model, models)
+            merge_duplicate(parser, model, cached_model, REUSE_MODEL, keeps_duplicate_tags=False)
             duplicates.append(model)
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
