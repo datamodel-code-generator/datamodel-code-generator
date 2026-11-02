@@ -1551,7 +1551,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (``_model_additional_properties``), as their extra_items type (``set_additional_properties``); that type
         generates no model, so the site names the keys of the models it names (``_extra_items_type``, row
         ``legacy-rw-extra-items-as-written``: as written, its false allOf values not read). Each property, item, value
-        and branch is a field site, typed as the row ``parse_item`` chooses for it declares (``_typed_field_site``).
+        and branch is a field site, typed as the row ``parse_item`` chooses for it declares (``typed_field_site``): a
+        property and a oneOf or anyOf member read a $ref beside sibling keywords merged with them before the table
+        chooses, the other sites after its python-type row.
         """
         schema, defining_ref, into = site.obj, site.path[0], site.parent
         if into is None:
@@ -1607,20 +1609,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             pattern_properties = {
                 pattern: value for pattern, value in pattern_properties.items() if not _is_false_all_of(value)
             }
-        for mapping in (
-            (schema.properties, pattern_properties)
+        for mapping, merges_ref_first in (
+            ((schema.properties, True), (pattern_properties, False))
             if self.generate_schema_validators
-            else (pattern_properties if types_map else schema.properties,)
+            else ((pattern_properties, False),)
+            if types_map
+            else ((schema.properties, True),)
         ):
             for item in (mapping or {}).values():
-                yield from _rw_split.typed_field_site(self, item, defining_ref)
+                yield from _rw_split.typed_field_site(self, item, defining_ref, merges_ref_first=merges_ref_first)
         if schema.is_array:
             with self._inherited_ref_context(defining_ref):
                 positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
             for item in positions.values():
                 yield from _rw_split.typed_field_site(self, item, defining_ref)
-        for item in (extras, *schema.oneOf, *schema.anyOf):
-            yield from _rw_split.typed_field_site(self, item, defining_ref)
+        yield from _rw_split.typed_field_site(self, extras, defining_ref)
+        for item in (*schema.oneOf, *schema.anyOf):
+            yield from _rw_split.typed_field_site(self, item, defining_ref, merges_ref_first=True)
         yield from (
             TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
         )
@@ -2433,15 +2438,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             pass
         return None
 
-    def _get_python_type_override(self, obj: JsonSchemaObject) -> DataType | None:
-        """Get DataType from x-python-type if it's incompatible with schema type."""
+    def _overriding_python_type(self, obj: JsonSchemaObject) -> PythonTypeExpr | None:
+        """Return the x-python-type of a schema when it is incompatible with the schema type, so it types the schema."""
         if (python_type := self._get_x_python_type(obj)) is None:
             return None
 
         schema_type = type_ if isinstance(type_ := _read_type(obj), str) else None
-        if self._is_compatible_python_type(schema_type, python_type):
-            return None
+        return None if self._is_compatible_python_type(schema_type, python_type) else python_type
 
+    def _get_python_type_override(self, obj: JsonSchemaObject) -> DataType | None:
+        """Get DataType from x-python-type if it's incompatible with schema type."""
+        if (python_type := self._overriding_python_type(obj)) is None:
+            return None
         return _type_overrides.python_type_data_type(self, python_type)
 
     def _apply_title_as_name(self, name: str, obj: JsonSchemaObject) -> str:
@@ -5435,28 +5443,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse a single JSON Schema item into a data type, within the schema resource it declares.
 
-        The name and the $ref sibling keywords are resolved here and the row of the field table (``_FIELD_TABLE``)
-        is built in this frame, so a nested schema costs no more frames than the parse methods it reaches. The type
-        returned records the location of ``item`` as its origin (``_origins.with_type_origin``).
+        The row of the field table (``_FIELD_TABLE``), after the steps before it, is built in this frame, so a nested
+        schema costs no more frames than the parse methods it reaches. A $ref merged with its sibling keywords is
+        built in the dynamic scope of the schema it names. The type returned records the location of ``item`` as its
+        origin (``_origins.with_type_origin``).
         """
         location = item.schema_location
         with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
-            item = self._site_schema(item)
-            python_type_override = self._get_python_type_override(item)
-            if python_type_override:
-                return with_type_origin(python_type_override, location)
-            if self.use_title_as_name and item.title:
-                name = sanitize_module_name(item.title, treat_dot_as_module=self.treat_dot_as_module)
-                singular_name = False
-            if self._should_create_type_alias_for_title(item, name):
-                return with_type_origin(self.parse_root_type(name, item, path), location)
-            merged_scope = None
-            if _merges_ref_siblings(item) and (merged_item := self._merge_ref_with_schema(item)) is not item:
-                item, merged_scope = self._read_false_all_of_values(merged_item), self._subschema_scope(merged_item)
-            with nullcontext() if merged_scope is None else merged_scope:
-                choice = self._FIELD_TABLE.choose(
-                    self, SchemaSite(name, item, path, singular_name=singular_name, parent=parent)
-                )
+            choice = self._FIELD_TABLE.choose(
+                self, SchemaSite(name, self._site_schema(item), path, singular_name=singular_name, parent=parent)
+            )
+            with nullcontext() if (merged_scope := choice.site.scope) is None else merged_scope:
                 return with_type_origin(choice.build(self, choice.site), location)
 
     def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
@@ -5587,6 +5584,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _field_ref_nullable_only_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.is_ref_with_nullable_only and site.obj.ref)
 
+    def _field_python_type_applies(self, site: _Site) -> bool:
+        return self._overriding_python_type(site.obj) is not None
+
+    def _build_field_python_type(self, site: _Site) -> DataType:
+        return cast("DataType", self._get_python_type_override(site.obj))
+
+    def _field_title_name_applies(self, site: _Site) -> bool:
+        return bool(self.use_title_as_name and site.obj.title)
+
+    def _rewrite_field_title_name(self, site: _Site) -> _Site:
+        return replace(
+            site,
+            name=sanitize_module_name(cast("str", site.obj.title), treat_dot_as_module=self.treat_dot_as_module),
+            singular_name=False,
+        )
+
+    def _field_title_alias_applies(self, site: _Site) -> bool:
+        return self._should_create_type_alias_for_title(site.obj, site.name)
+
+    def _field_ref_siblings_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return _merges_ref_siblings(site.obj)
+
+    def _merge_field_ref(self, site: _Site) -> _Site:
+        """Merge the `$ref` of a field site with its sibling keywords, in the dynamic scope the merged schema names."""
+        if (merged := self._merge_ref_with_schema(site.obj)) is site.obj:
+            return site
+        return replace(site, obj=self._read_false_all_of_values(merged), scope=self._subschema_scope(merged))
+
     def _field_custom_type_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.custom_type_path)
 
@@ -5642,6 +5667,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     _FIELD_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
+            Row("python-type", _field_python_type_applies, _build_field_python_type, typed=_types_nothing),
+            Step("title-name", _field_title_name_applies, _rewrite_field_title_name),
+            Row("title-alias", _field_title_alias_applies, _parse_root_type_site),
+            Step("ref-siblings", _field_ref_siblings_applies, _merge_field_ref),
             Row("constrained-item", _types_item_by_root_model, _parse_constrained_item),
             Row("dynamic-ref", _field_dynamic_ref_applies, _build_field_dynamic_ref),
             Row("ref-nullable-only", _field_ref_nullable_only_applies, _parse_ref_nullable_only_item),

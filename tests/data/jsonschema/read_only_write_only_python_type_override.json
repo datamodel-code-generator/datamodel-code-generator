@@ -12,6 +12,16 @@
         }
       }
     },
+    "Sized": {
+      "type": "object",
+      "x-python-type": "int",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
     "Extended": {
       "type": "object",
       "properties": {
@@ -47,6 +57,70 @@
           }
         }
       }
+    },
+    "Positions": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "x-python-type": "int",
+            "properties": {"id": {"type": "string", "readOnly": true}}
+          }
+        },
+        "pair": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "x-python-type": "int",
+              "properties": {"id": {"type": "string", "readOnly": true}}
+            },
+            {"type": "string"}
+          ],
+          "additionalItems": {
+            "type": "object",
+            "x-python-type": "int",
+            "properties": {"id": {"type": "string", "readOnly": true}}
+          }
+        },
+        "union": {
+          "anyOf": [
+            {
+              "type": "object",
+              "x-python-type": "int",
+              "properties": {"id": {"type": "string", "readOnly": true}}
+            },
+            {"type": "string"}
+          ]
+        },
+        "choice": {
+          "oneOf": [
+            {
+              "type": "object",
+              "x-python-type": "int",
+              "properties": {"id": {"type": "string", "readOnly": true}}
+            },
+            {"type": "null"}
+          ]
+        },
+        "ref": {"$ref": "#/$defs/Sized", "minProperties": 1}
+      }
+    },
+    "Extras": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "x-python-type": "int",
+        "properties": {"id": {"type": "string", "readOnly": true}}
+      }
+    },
+    "Sizes": {
+      "type": "object",
+      "properties": {
+        "sizes": {"type": "array", "items": {"$ref": "#/$defs/Sized", "minProperties": 1}}
+      }
     }
   },
   "type": "object",
@@ -59,6 +133,15 @@
     },
     "flagged": {
       "$ref": "#/$defs/Flagged"
+    },
+    "positions": {
+      "$ref": "#/$defs/Positions"
+    },
+    "extras": {
+      "$ref": "#/$defs/Extras"
+    },
+    "sizes": {
+      "$ref": "#/$defs/Sizes"
     }
   }
 }

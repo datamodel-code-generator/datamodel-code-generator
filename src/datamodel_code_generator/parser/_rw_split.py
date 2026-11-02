@@ -18,7 +18,6 @@ that tests call or that other parts of the parser call stay on the parser as del
 from __future__ import annotations
 
 from contextlib import ExitStack
-from dataclasses import replace
 from itertools import chain
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
@@ -1199,20 +1198,24 @@ def get_ref_schema_rw_model_reference_facts(
     return result
 
 
-def typed_field_site(parser: RwSplitHost, item: object, defining_ref: str) -> Iterable[TypedChild[JsonSchemaObject]]:
+def typed_field_site(
+    parser: RwSplitHost, item: object, defining_ref: str, *, merges_ref_first: bool = False
+) -> Iterable[TypedChild[JsonSchemaObject]]:
     """Return what a field site of a schema types, as the row ``parse_item`` chooses for it declares.
 
-    Row ``legacy-rw-field-site-as-written``: the row is chosen from the site as written, its $ref merged with its
-    sibling keywords only where the site itself writes a customTypePath.
+    A $ref beside sibling keywords is read merged with them, relative to the schema that defines the site: by the steps
+    of the field table, and before the table chooses at the positions that ``merges_ref_first`` names (a property,
+    ``parse_object_fields``, and a oneOf or anyOf member, ``parse_combined_schema``), where the python-type row reads
+    the schema the $ref names.
     """
     if not isinstance(item, JsonSchemaObject):
         return ()
     site = SchemaSite("", item, [defining_ref])
-    as_parsed = None
-    if item.custom_type_path and _merges_ref_siblings(item):
-        with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-            as_parsed = replace(site, obj=parser._merge_ref_with_schema(item))  # noqa: SLF001
-    return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
+    if not _merges_ref_siblings(item):
+        return parser._FIELD_TABLE.typed_children(parser, site)  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+        as_parsed = SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref]) if merges_ref_first else None  # noqa: SLF001
+        return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
 
 
 def merged_ref_model_schemas(
