@@ -305,14 +305,6 @@ def _contains_decimal(value: Any) -> bool:
             return False
 
 
-def _get_fraction_floor(value: Fraction) -> int:
-    return value.numerator // value.denominator
-
-
-def _get_fraction_ceil(value: Fraction) -> int:
-    return -(-value.numerator // value.denominator)
-
-
 def _get_constraint_number(value: Any) -> Any:
     return value.value if isinstance(value, UnionIntFloat) else value
 
@@ -327,7 +319,7 @@ def _non_finite_as_written(value: Any, *, as_float: bool) -> float | None:
     return _applicability.non_finite_written(_get_constraint_number(value), as_float=as_float)
 
 
-def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:  # noqa: PLR0911
+def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:
     """Return an integer-safe pydantic constraint for a numeric schema constraint."""
     number = _get_constraint_number(value)
     try:
@@ -342,14 +334,8 @@ def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any]
             return constraint, abs(fraction.numerator)
         case _ if fraction.denominator == 1:
             return constraint, int(fraction)
-        case "ge":
-            return "ge", _get_fraction_ceil(fraction)
-        case "gt":
-            return "ge", _get_fraction_floor(fraction) + 1
-        case "le":
-            return "le", _get_fraction_floor(fraction)
-        case "lt":
-            return "le", _get_fraction_ceil(fraction) - 1
+    if (bound := _applicability.integer_bound(constraint, number, arithmetic="exact")) is not None:
+        return bound
     return constraint, value
 
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
-from math import ceil, floor
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
@@ -127,19 +126,15 @@ _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 
 def _integer_bounds(constraints: tuple[tuple[str, Any], ...]) -> tuple[int | None, int | None]:
-    """Return the least and the greatest integer that numeric constraints admit, None where they set no bound."""
+    """Return the least and the greatest integer that numeric constraints admit, None where they set no bound.
+
+    Row ``legacy-msgspec-float-bounds``: it reads each bound as the number it is, a float as its binary value.
+    """
     lowers: list[int] = []
     uppers: list[int] = []
     for name, value in constraints:
-        match name:
-            case "ge":
-                lowers.append(ceil(value))
-            case "gt":
-                lowers.append(floor(value) + 1)
-            case "le":
-                uppers.append(floor(value))
-            case "lt":
-                uppers.append(ceil(value) - 1)
+        if (bound := _applicability.integer_bound(name, value, arithmetic="float")) is not None:
+            (lowers if bound[0] == "ge" else uppers).append(bound[1])
     return max(lowers, default=None), min(uppers, default=None)
 
 
