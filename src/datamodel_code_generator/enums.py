@@ -30,6 +30,11 @@ class DataclassArguments(TypedDict, total=False):
 MIN_VERSION: Final[int] = 10
 MAX_VERSION: Final[int] = 13
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
+_EXIT_OK: Final = 0
+_EXIT_DIFF: Final = 1
+_EXIT_ERROR: Final = 2
+_EXIT_INTERRUPTED: Final = 3
+"""The exit codes of the command line: `__main__.Exit`, and those its fast paths and target runs return as ints."""
 
 
 class InputFileType(Enum):
