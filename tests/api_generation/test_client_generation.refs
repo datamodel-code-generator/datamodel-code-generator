@@ -141,6 +141,7 @@ credential-name-errors	main/generation_platform/client/credential-name-errors.tx
 credential-name-errors	main/generation_platform/client/packages/credential-name-errors/pydantic_v2_BaseModel//*.py
 default-server	main/generation_platform/client/default-server.txt
 default-server	main/generation_platform/client/packages/default-server/pydantic_v2_BaseModel//*.py
+default-server-template	main/generation_platform/client/default-server-template.txt
 discriminator-copies	main/generation_platform/client/discriminator-copies.txt
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/dataclasses_dataclass//*.py	= main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/typing_TypedDict//*.py	= main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py

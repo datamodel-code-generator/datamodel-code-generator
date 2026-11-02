@@ -1,0 +1,93 @@
+{
+  "items.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1items/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    },
+    "bindings": [{"target": {"in": "query", "name": "filter"}, "value": {"literal": {"status": "open"}}}]
+  },
+  "search.pages": {
+    "kind": "pagination",
+    "operation": "/paths/~1search/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "querystring", "name": "criteria", "pointer": "/page"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  },
+  "search.fixed": {
+    "kind": "pagination",
+    "operation": "/paths/~1search/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Item"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "header", "name": "X-Cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    },
+    "bindings": [{"target": {"in": "querystring", "name": "criteria", "pointer": ""}, "value": {"literal": {"term": "fixed"}}}]
+  },
+  "items.live": {
+    "kind": "sse",
+    "operation": "/paths/~1feed/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Item"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1feed/get",
+      "delivery": "at_least_once",
+      "bindings": [{"target": {"in": "query", "name": "filter"}, "value": {"literal": {"status": "open"}}}]
+    }
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {"target": {"in": "path", "name": "jobId"}, "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}},
+      {"target": {"in": "query", "name": "filter"}, "value": {"literal": {"status": "open"}}}
+    ],
+    "state": {"from": "body", "pointer": "/state"},
+    "pending": ["running"],
+    "succeeded": ["done"],
+    "result": {"kind": "inline", "selector": {"from": "body", "pointer": "/state"}, "schema": {"pointer": "/components/schemas/Item"}},
+    "interval": {"seconds": 0.001}
+  },
+  "files.upload": {
+    "kind": "resumable_upload",
+    "profile": "offset",
+    "create": {"operation": "/paths/~1files~1{size}/post", "size": {"in": "path", "name": "size"}},
+    "probe": {
+      "operation": "/paths/~1uploads~1{fileId}/head",
+      "bindings": [{"target": {"in": "path", "name": "fileId"}, "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}}],
+      "remote_offset": {"from": "header", "name": "Upload-Offset"}
+    },
+    "append": {
+      "operation": "/paths/~1uploads~1{fileId}/patch",
+      "bindings": [
+        {"target": {"in": "path", "name": "fileId"}, "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}},
+        {"target": {"in": "query", "name": "filter"}, "value": {"literal": {"status": "open"}}}
+      ],
+      "offset": {"in": "header", "name": "Upload-Offset"}
+    },
+    "partial_commit": "allowed",
+    "completion": {"kind": "length"}
+  }
+}

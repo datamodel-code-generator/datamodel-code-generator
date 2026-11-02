@@ -1044,16 +1044,17 @@ class Planner:
         return media_type
 
     def servers(self, operation: OperationContract) -> tuple[ServerSpec, ...]:
-        """Resolve the operation's effective servers to absolute URL templates."""
+        """Resolve the operation's effective servers to absolute URL templates.
+
+        An operation without servers has the default base URL, or else `/`, as its one server without variables.
+        """
         entries = _servers(operation_literal(operation, "servers"))
         if entries is None:
             message = f"The servers of {label(operation)} are not server objects"
             self.problems.append(_problem("E_BASE_URL", message, operation.id.use_site))
             return ()
         if not entries:
-            if (default := self.config.default_base_url) is not None:
-                return (ServerSpec(url=default),)
-            entries = (("/", ()),)
+            entries = ((self.config.default_base_url or "/", ()),)
         document = (
             operation.declaration.location.document
             if operation.servers_declared

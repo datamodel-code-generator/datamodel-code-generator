@@ -63,6 +63,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "servers",
         "servers-single-value-enum",
         "default-server",
+        "default-server-template",
         "implicit-server",
         "names",
         "names-unpack",

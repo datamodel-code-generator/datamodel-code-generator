@@ -268,10 +268,9 @@ class PaginationPlan(Generic[T, P]):
     position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
     is written into the caller's encoded value. The values written skip their codecs, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
-    unless it repeats the request body with the operation's method. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is written
-    to, by each parameter's name, write, selector, and position, a caller's argument without a write; such a segment
-    must not encode to a dot segment. Generation refuses a helper writing a cookie or a credential position.
+    unless it repeats the request body with the operation's method. `dotted` names the path segments a read value is
+    written to, by each parameter's name, write, selector, and position, a caller's argument without a write; such a
+    segment must not encode to a dot segment. Generation refuses a helper writing a cookie or a credential position.
     """
 
     helper_id: str
@@ -284,8 +283,6 @@ class PaginationPlan(Generic[T, P]):
     bindings: tuple[PageBinding, ...] = ()
     follows: bool = field(init=False)
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
-    headers: frozenset[str] = field(init=False)
-    queries: frozenset[str] = field(init=False)
     dotted: ReadPaths = field(init=False)
     continued: OperationPlan[P] = field(init=False)
 
@@ -305,8 +302,6 @@ class PaginationPlan(Generic[T, P]):
         targeted = targeted_writes(self.call, sources)
         object.__setattr__(self, "follows", follows)
         object.__setattr__(self, "writes", targeted.writes)
-        object.__setattr__(self, "headers", targeted.headers)
-        object.__setattr__(self, "queries", targeted.queries)
         object.__setattr__(self, "dotted", targeted.dotted)
         object.__setattr__(self, "continued", _later(rule, targeted.call))
 
@@ -450,19 +445,21 @@ def _limits(
 
     A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is
     refused, since every page is a request of its own that needs its own key, and so are the headers or query names
-    of a parameter the helper writes that the call, the client, or a view sends, which would replace those values.
+    of a field the helper writes that the call, the client, or a view sends, which would replace those values.
     The client's and a view's default of a count's header or query position is the first request's position instead,
     so only the call's own one is refused.
     """
-    from .writes import written_names  # noqa: PLC0415 - A plan loaded the operation runtime.
+    from .writes import written_fields  # noqa: PLC0415 - A plan loaded the operation runtime.
 
     request, kinds = core.helper_layers(
         plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options
     )
-    rule = plan.continuation
-    header, query = written_names((rule.write,) if isinstance(rule, CountPlan) else ())
-    headers, queries = plan.headers - header, plan.queries - query
-    core.refuse_patched(plan.helper_id, request, (plan.call,), headers, queries.__contains__, (header, query))
+    call, writes = plan.call, plan.writes
+    counted = isinstance(plan.continuation, CountPlan)
+    shared, own = (writes[:-1], writes[-1:]) if counted else (writes, ())
+    core.refuse_patched(
+        plan.helper_id, request, (call,), written_fields(((call, shared),)), written_fields(((call, own),))
+    )
     return _Limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
         max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
@@ -973,7 +970,7 @@ def _first(plan: PaginationPlan[T, P], state: JSONValue) -> tuple[OperationPlan[
     targets = [binding.target for binding in literals]
     if isinstance(rule, (CursorPlan, CountPlan)):
         targets.append(rule.write)
-    continued, writes, _, _ = targeted(plan.call, targets)
+    continued, writes = targeted(plan.call, targets)
     return _later(rule, continued), writes, values
 
 

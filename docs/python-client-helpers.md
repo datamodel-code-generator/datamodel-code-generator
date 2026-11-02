@@ -502,7 +502,9 @@ caller's querystring or JSON body, encoded and checked as in any call, or into a
 a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then
 encoded once, so no query pair is added. The values a server gave are never checked against their targets' schemas;
 a header parameter still takes [header text](python-client-reference.md#model-codecs) only, as in any call. The
-headers and query of the client, a view, or the call must not name a header or a query parameter the helper writes:
+headers and query of the client, a view, or the call must not name a header or a query field the helper writes, which
+is a header or query parameter's name, a property an exploded form or deepObject object parameter writes, or a member
+of a form querystring:
 `iterate`, `page`, and `next_page` raise `ConfigurationError` with a `field_path` of `("options", "extra_headers" or
 "extra_query", <name>)`, or `("default_headers" or "default_query", <name>)`, before sending. A count helper's offset
 or page position is the exception: a client or view default of it is the first position, and only the call's own
@@ -739,7 +741,8 @@ earlier of its own and the session's. Each limit comes from the call's options, 
 A poll past a limit raises `SessionLimitError` with the reason `polls` and the progress so far, before sending; the
 handle's `checkpoint()` continues the operation. The options of `start` apply to
 every call of the handle. They must not fix an idempotency key, and the headers and query of the client, a view, or the call
-must not name a header or a query parameter a binding writes; `start` raises `ConfigurationError` before
+must not name a header or a query field a binding writes, a property of an exploded object or form querystring
+included; `start` raises `ConfigurationError` before
 sending, as it does for options of another type.
 
 ### Polling checkpoints and resume
@@ -1090,7 +1093,8 @@ By default, an upload session has no total lifetime limit. If a finite `total_ti
 `start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
 `UploadOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. The options must
 not fix an idempotency key, and the headers and query of the client, a view, or the call must not name a header or a
-query parameter the helper writes, the size included; `start` and `resume` raise `ConfigurationError` before reading or
+query field the helper writes, a property of an exploded object or form querystring included, and the size where it is
+a header or query parameter; `start` and `resume` raise `ConfigurationError` before reading or
 sending, as they do for options of another type.
 
 ### Upload generation checks

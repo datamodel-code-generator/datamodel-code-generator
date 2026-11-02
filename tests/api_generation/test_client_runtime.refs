@@ -27,6 +27,7 @@ body-replay-faults	main/generation_platform/client/runtime/body-replay-faults.tx
 cache	main/generation_platform/client/runtime/cache.txt
 cache-backends	main/generation_platform/client/runtime/cache-backends.txt
 cache-stores	main/generation_platform/client/runtime/cache-stores.txt
+call-layers	main/generation_platform/client/runtime/call-layers.txt
 codings	main/generation_platform/client/runtime/codings.txt
 compression	main/generation_platform/client/runtime/compression.txt
 deadline-cleanup	main/generation_platform/client/runtime/deadline-cleanup.txt

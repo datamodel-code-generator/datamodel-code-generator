@@ -24,6 +24,7 @@ from tests.api_generation.scenarios.client_bodies import bodies
 from tests.api_generation.scenarios.client_body_replay import body_replay, multipart_replay
 from tests.api_generation.scenarios.client_body_replay_faults import body_replay_faults
 from tests.api_generation.scenarios.client_caching import cache_backends, cache_stores, caching
+from tests.api_generation.scenarios.client_call_layers import call_layers
 from tests.api_generation.scenarios.client_compression import compression
 from tests.api_generation.scenarios.client_deadline_cleanup import deadline_cleanup
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
@@ -904,6 +905,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),
     "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
     "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
