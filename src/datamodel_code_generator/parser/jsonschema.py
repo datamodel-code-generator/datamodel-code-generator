@@ -4644,10 +4644,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 else self._rw_model_variant_references[reference.path, variant].source,
             )
             if item_type is not None:
-                arrays = ARRAYS.without("legacy-all-of-items-not-in-frozen-sets")
                 array_owner = root_model
                 array_type = next(
-                    (data_type for data_type in root_model.fields[0].data_type.all_data_types if data_type in arrays),
+                    (data_type for data_type in root_model.fields[0].data_type.all_data_types if data_type in ARRAYS),
                     None,
                 )
                 if array_type is None:
@@ -4658,7 +4657,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         and (array_model := cast("DataModel | None", array_ref.source)) is not None
                         and (array_model.IS_ALIAS or array_model.IS_ROOT_MODEL)
                         for nested in array_model.fields[0].data_type.all_data_types
-                        if nested in arrays
+                        if nested in ARRAYS
                     )
                 array_type.data_types = [item_type]
                 self._graph_builder.note_changed_models(array_owner)
