@@ -76,6 +76,7 @@ from datamodel_code_generator._target_unicode import (
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
     is_importable_part,
 )
+from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
@@ -2627,13 +2628,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if extra_template_data is not None:
             # The supplied defaultdict will either create a new entry,
             # or already contain a predefined entry for this type
-            self.extra_template_data = extra_template_data[self.reference.path]
-
-            # We use the full object reference path as dictionary key, but
-            # we still support `name` as key because it was used for
-            # `--extra-template-data` input file and we don't want to break the
-            # existing behavior.
-            self.extra_template_data.update(extra_template_data[self.name])
+            path_key, name_key = template_data_keys(self.reference.path, self.name)
+            self.extra_template_data = extra_template_data[path_key]
+            self.extra_template_data.update(extra_template_data[name_key])
         else:
             self.extra_template_data = defaultdict(dict)
 
