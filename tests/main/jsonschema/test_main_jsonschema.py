@@ -24354,6 +24354,34 @@ def test_main_jsonschema_model_extras_without_x_prefix(
     )
 
 
+def test_main_jsonschema_extras_without_x_prefix_strip_the_prefix_only(output_file: Path) -> None:
+    """Strip the ``x-`` prefix and nothing else from a model's and a field's extra keys (#5529).
+
+    A key that continues with ``x`` or ``-`` after the prefix (``x-xenon``, ``x--dash``, ``x-x-x``) keeps those
+    characters: the model wrote ``enon``, ``dash`` and ``x``, where the field wrote ``xenon``, ``-dash`` and ``x-x``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "model_extras_x_prefix_only.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--model-extra-keys-without-x-prefix",
+            "x-xenon",
+            "x--dash",
+            "x-x-x",
+            "--field-extra-keys-without-x-prefix",
+            "x-xenon",
+            "x--dash",
+            "x-x-x",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model", "expected_output"),
     [
