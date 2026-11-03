@@ -67,6 +67,7 @@ from datamodel_code_generator import (
     chdir,
     generate,
     generate_dynamic_models,
+    get_version,
     load_data,
     load_data_from_path,
 )
@@ -11016,6 +11017,16 @@ def test_version(capsys: pytest.CaptureFixture) -> None:
     captured = capsys.readouterr()
     assert captured.out != "0.0.0\n"
     assert not captured.err
+
+
+def test_version_text_is_the_same_with_other_arguments(capsys: pytest.CaptureFixture[str]) -> None:
+    """Print the program name and the version for `--version` beside other arguments, as it does alone."""
+    results = []
+    for args in (["--version"], ["--version", "--disable-warnings"]):
+        with pytest.raises(SystemExit) as error:
+            run_main_with_args(args)
+        results.append(f"{error.value.code}: {capsys.readouterr().out.replace(get_version(), 'VERSION')}")
+    assert_output("".join(results))
 
 
 def test_jsonschema_pattern_properties(output_file: Path) -> None:

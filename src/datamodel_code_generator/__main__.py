@@ -2529,7 +2529,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if namespace.version:
         from datamodel_code_generator import get_version  # noqa: PLC0415
 
-        print(get_version())  # noqa: T201
+        print(f"datamodel-codegen {get_version()}")  # noqa: T201
         sys.exit(Exit.OK)
 
     if namespace.output_format_json_schema is not None:

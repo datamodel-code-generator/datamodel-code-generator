@@ -14969,6 +14969,8 @@ child-api	main/jsonschema/validator_inheritance_child_first.py
 child-api	payloads/validator_runtime/inheritance.txt
 child-cli	main/jsonschema/validator_inheritance_child_first.py
 child-cli	payloads/validator_runtime/inheritance.txt
+[test_version_text_is_the_same_with_other_arguments]
+	main/jsonschema/main_jsonschema/version_text_is_the_same_with_other_arguments.txt
 [test_x_python_type_backend_import_collision]
 	main/jsonschema/x_python_type_backend_import_collision.py
 [test_x_python_type_binding_collisions]
