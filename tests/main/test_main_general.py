@@ -5340,6 +5340,68 @@ def test_ruff_batch_formatting_directory(output_dir: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_directory_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_dir: Path
+) -> None:
+    """Run Ruff over a model directory that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It sees the files as UTF-8, and they are written in the requested encoding.
+    """
+    (source := tmp_path / "modular.yaml").write_bytes(
+        (OPEN_API_DATA_PATH / "modular.yaml").read_text(encoding="utf-8").encode(encoding)
+    )
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--encoding", encoding, "--custom-file-header", "# Café"),
+            *("--formatters", *formatters, "--disable-timestamp"),
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check"], id="latin-1-check"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_file_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Run Ruff over a model file with a non-ASCII description that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It is given the code as UTF-8, and the file is written in the requested encoding.
+    """
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "description": "Café",
+        "properties": {"name": {"type": "string", "description": "Café"}, "tag": {"type": "integer"}},
+    }
+    (source := tmp_path / "pet.json").write_bytes(json.dumps(schema, ensure_ascii=False).encode(encoding))
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", encoding, "--formatters", *formatters, "--disable-timestamp"],
+        skip_code_validation=True,
+    )
+
+
 def test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff(output_dir: Path) -> None:
     """Test modular Pydantic output keeps runtime imports by default when Ruff formats a directory."""
     run_main_and_assert(

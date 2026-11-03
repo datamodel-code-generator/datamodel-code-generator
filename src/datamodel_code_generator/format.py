@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess  # noqa: S404
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import import_module, invalidate_caches
@@ -30,7 +31,7 @@ from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_d
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Iterator, Sequence
     from types import CodeType
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
@@ -794,20 +795,20 @@ class CodeFormatter:
 
     def apply_ruff_lint(self, code: str) -> str:
         """Run ruff check with auto-fix on code."""
-        return self._ruff_check(code).decode(self.encoding)
+        return self._ruff_check(code).decode("utf-8")
 
     def apply_ruff_formatter(self, code: str) -> str:
         """Format code using ruff format."""
-        return self._ruff_format(self._find_ruff_path(), code.encode(self.encoding)).decode(self.encoding)
+        return self._ruff_format(self._find_ruff_path(), code.encode("utf-8")).decode("utf-8")
 
     def apply_ruff_check_and_format(self, code: str) -> str:
         """Run ruff check and format sequentially for reliable processing."""
         ruff_path = self._find_ruff_path()
-        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode(self.encoding)
+        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode("utf-8")
 
     def _ruff_check(self, code: str, ruff_path: str | None = None) -> bytes:
         command = self._ruff_check_command("-", ruff_path=ruff_path)
-        return self._run_ruff_command(command, stdin=code.encode(self.encoding), allow_stdout_on_error=True).stdout
+        return self._run_ruff_command(command, stdin=code.encode("utf-8"), allow_stdout_on_error=True).stdout
 
     def _ruff_format(self, ruff_path: str, stdin: bytes) -> bytes:
         return self._run_ruff_command((ruff_path, "format", "-"), stdin=stdin).stdout
@@ -831,8 +832,8 @@ class CodeFormatter:
         )
         if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
             return result
-        if (message := result.stderr.decode(self.encoding, errors="replace").strip()) or (
-            message := result.stdout.decode(self.encoding, errors="replace").strip()
+        if (message := result.stderr.decode("utf-8", errors="replace").strip()) or (
+            message := result.stdout.decode("utf-8", errors="replace").strip()
         ):
             detail = message
         else:
@@ -875,17 +876,50 @@ class CodeFormatter:
             ).output
         return isort.code(code, config=self.isort_config)
 
-    def format_directory(self, directory: Path) -> None:
-        """Apply ruff formatting to all Python files in a directory."""
+    def format_directory(self, directory: Path, files: Iterable[Path] = ()) -> None:
+        """Apply ruff formatting to all Python files in a directory.
+
+        Ruff reads and writes UTF-8 only. `files` are the files of the directory written in `self.encoding`: Ruff sees
+        them as UTF-8, and they are written back in `self.encoding`. The other files of the directory are UTF-8.
+        """
         ruff_path = self._find_ruff_path()
-        if Formatter.RUFF_CHECK in self.formatters:
-            self._run_ruff_command(
-                self._ruff_check_command(str(directory), ruff_path=ruff_path),
-            )
-        if Formatter.RUFF_FORMAT in self.formatters:
-            self._run_ruff_command(
-                (ruff_path, "format", str(directory)),
-            )
+        with _held_as_utf8(files, self.encoding):
+            if Formatter.RUFF_CHECK in self.formatters:
+                self._run_ruff_command(
+                    self._ruff_check_command(str(directory), ruff_path=ruff_path),
+                )
+            if Formatter.RUFF_FORMAT in self.formatters:
+                self._run_ruff_command(
+                    (ruff_path, "format", str(directory)),
+                )
+
+
+def _read_by_ruff(raw: bytes, encoding: str) -> bool:
+    """Return whether Ruff, which reads UTF-8 and skips a byte order mark, reads the bytes as the text of `encoding`."""
+    try:
+        return raw.decode("utf-8-sig") == raw.decode(encoding)
+    except UnicodeDecodeError:
+        return False
+
+
+@contextmanager
+def _held_as_utf8(files: Iterable[Path], encoding: str) -> Iterator[None]:
+    """Hold the files that Ruff would misread as UTF-8 while it runs, and write them back in `encoding`.
+
+    Ruff reads and writes UTF-8 only. A file whose bytes it reads as the text they hold in `encoding` stays as it is.
+    The held files are written back also when the block raises.
+    """
+    held: list[Path] = []
+    try:
+        for path in files:
+            if _read_by_ruff(raw := path.read_bytes(), encoding):
+                continue
+            path.write_bytes(raw.decode(encoding).encode("utf-8"))
+            held.append(path)
+        yield
+    finally:
+        for path in held:
+            path.write_bytes(path.read_bytes().decode("utf-8").encode(encoding))
 
 
 class CustomCodeFormatter:

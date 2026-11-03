@@ -788,6 +788,15 @@ report	main/main_general/render_plan_whose_field_changes_after_render_preparatio
 	main/jsonschema/simple_string.py
 [test_ruff_check_only]
 	main/jsonschema/simple_string.py
+[test_ruff_formats_directory_written_in_another_encoding]
+latin-1-check-format	main/main_general/ruff_formats_directory_written_in_another_encoding[latin-1-check-format]/
+latin-1-format	main/main_general/ruff_formats_directory_written_in_another_encoding[latin-1-format]/
+utf-16-format	main/main_general/ruff_formats_directory_written_in_another_encoding[utf-16-format]/	= main/main_general/ruff_formats_directory_written_in_another_encoding[latin-1-format]/
+[test_ruff_formats_file_written_in_another_encoding]
+latin-1-check	main/main_general/ruff_formats_file_written_in_another_encoding[latin-1-check].py
+latin-1-check-format	main/main_general/ruff_formats_file_written_in_another_encoding[latin-1-check-format].py
+latin-1-format	main/main_general/ruff_formats_file_written_in_another_encoding[latin-1-format].py
+utf-16-format	main/main_general/ruff_formats_file_written_in_another_encoding[utf-16-format].py	= main/main_general/ruff_formats_file_written_in_another_encoding[latin-1-format].py
 [test_run_generate_from_config_json_mapping_file_like]
 	main/jsonschema/base_class_map.py
 [test_show_help]

@@ -13,7 +13,7 @@ import sys
 import threading
 import warnings
 from collections import defaultdict
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping
 from functools import lru_cache as _lru_cache
 from pathlib import Path
 from typing import (
@@ -1575,8 +1575,8 @@ def _write_results_to_output(  # noqa: PLR0913
     header_prefix: str,
     header_suffix: str | None,
     has_custom_file_header: bool,
-) -> None:
-    """Write one file or a sorted collection of generated modules to disk."""
+) -> list[Path]:
+    """Write one file or a sorted collection of generated modules to disk, and return the files written."""
     from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
 
     if isinstance(results, str):
@@ -1595,13 +1595,15 @@ def _write_results_to_output(  # noqa: PLR0913
     )
     for module_text in module_texts.values():
         _ensure_output_text_encodable(module_text, config.encoding)
+    paths: list[Path] = []
     for name, module_text in module_texts.items():
-        path = output.joinpath(*name)
+        paths.append(path := output.joinpath(*name))
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
         with path.open("wt", encoding=config.encoding) as file:
             file.write(module_text)
             file.write("\n")
+    return paths
 
 
 def _format_deferred_output(
@@ -1609,8 +1611,9 @@ def _format_deferred_output(
     config: GenerateConfig,
     data_model_types: DataModelSet,
     settings_path: Path,
+    files: Iterable[Path],
 ) -> None:
-    """Apply deferred Ruff formatting only when a Ruff formatter is configured."""
+    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding."""
     if not config.formatters:
         return
 
@@ -1631,7 +1634,7 @@ def _format_deferred_output(
             is_multi_module_output=True,
         ),
     )
-    code_formatter.format_directory(output)
+    code_formatter.format_directory(output, files)
 
 
 def _default_input_filename(input_: _GenerationInput) -> str:
@@ -1696,7 +1699,7 @@ def _emit_results(  # noqa: PLR0913
         return texts[()] if isinstance(results, str) else texts
 
     try:
-        _write_results_to_output(
+        written = _write_results_to_output(
             results,
             output,
             config,
@@ -1710,7 +1713,7 @@ def _emit_results(  # noqa: PLR0913
             raise
         raise Error(_MODULAR_OUTPUT_FILE_ERROR) from e
     if defer_formatting:
-        _format_deferred_output(output, config, data_model_types, settings_path)
+        _format_deferred_output(output, config, data_model_types, settings_path, written)
 
     return None
 
