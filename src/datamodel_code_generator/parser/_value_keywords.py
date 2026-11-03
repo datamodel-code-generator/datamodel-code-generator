@@ -596,8 +596,14 @@ def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
     return _locate(synthetic, original.schema_location)
 
 
-def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> bool:
-    """Check if a field should include constraints."""
+def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None) -> bool:
+    """Check if a field should include constraints.
+
+    An array's keywords are always written on its field; the others only under ``--field-constraints`` and not beside
+    a ``$ref``, a combinator, an object or an enum (#1083), whose model or class holds them. An enum written as a
+    ``Literal`` (``data_type``) leaves them to its field as a const does, unless the literal check removed the values
+    they reject.
+    """
     return obj.is_array or (
         parser.field_constraints
         and not (
@@ -606,8 +612,17 @@ def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> bo
             or obj.oneOf
             or obj.allOf
             or obj.is_object
-            or (obj.enum and not parser.ignore_enum_constraints)
+            or (obj.enum and not parser.ignore_enum_constraints and not _field_holds_literal(parser, data_type))
         )
+    )
+
+
+def _field_holds_literal(parser: ValueKeywordsHost, data_type: DataType | None) -> bool:
+    """Return whether a field types its values as a ``Literal`` that no literal check narrowed."""
+    return (
+        data_type is not None
+        and not parser.checks_literal_values
+        and all(literals for _, literals in _enforcing_leaves(data_type))
     )
 
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class Pet(BaseModel):
-    kind: Literal[1, 2, 3] | None = None
+    kind: Literal[1, 2, 3] | None = Field(None, ge=2)
 
 
 class Size(RootModel[Literal['s', 'mm', 'lll']]):
@@ -25,13 +25,13 @@ class PetModel(BaseModel):
 
 
 class LiteralConstraints(BaseModel):
-    size: Literal['s', 'mm', 'lll'] | None = None
-    named: Literal['a', 'bb', 'ccc'] | None = None
-    level: Literal[1, 2, 3, 4] | None = None
+    size: Literal['s', 'mm', 'lll'] | None = Field(None, min_length=2)
+    named: Literal['a', 'bb', 'ccc'] | None = Field(None, max_length=2)
+    level: Literal[1, 2, 3, 4] | None = Field(None, ge=2, lt=4)
     step: Literal[3] | float | None = None
-    maybe: Literal['a', 'bb'] | None = None
-    kept: Literal['aa', 'bb'] | None = None
-    none_met: Literal['a', 'b'] | None = None
+    maybe: Literal['a', 'bb'] | None = Field(None, min_length=2)
+    kept: Literal['aa', 'bb'] | None = Field(None, min_length=2)
+    none_met: Literal['a', 'b'] | None = Field(None, min_length=2)
     fixed: Literal['abc'] | None = Field(None, min_length=1)
     fixed_violated: Literal['a'] | None = Field(None, min_length=2)
     number_const: Literal[5] | None = Field(None, ge=1)
@@ -42,7 +42,7 @@ class LiteralConstraints(BaseModel):
     mixed: Literal['a', 'bb', 1, 5, True] | None = None
     size_ref: Size | None = None
     level_ref: Level | None = None
-    narrowed: Literal['a'] | None = None
-    narrowed_kept: Literal['bb'] | None = None
+    narrowed: Literal['a'] | None = Field(None, min_length=2)
+    narrowed_kept: Literal['bb'] | None = Field(None, min_length=2)
     pet: Pet | None = None
     pet_ref: PetModel | None = None

@@ -39,3 +39,57 @@ match = "^\\[payload-verdict\\] payload v\\d+: reject -> accept$"
 reason = "payloads valid for the schema were rejected by the float-rounded divisor or bound (2**64 beside multipleOf 2**64) and are accepted now (schema-mismatch fix)"
 decision = "#5214"
 release_note = "a value that is a multiple of an integer multipleOf past 2**53, or beyond an exclusive bound past 2**53, is accepted instead of being rejected as the float-rounded number"
+
+[[accepted]]
+input = "*allof_no_merge_constraint_type_shape*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:UnionArrayLengthValue: list\\[str\\] -> Annotated\\[list\\[str\\], MinLen\\(min_length=1\\)\\]|Child:unionArrayLengthValue: Union\\[Annotated\\[str, MinLen\\(min_length=1\\)\\], list\\[str\\]\\] -> Union\\[Annotated\\[list\\[str\\], MinLen\\(min_length=1\\)\\], Annotated\\[str, MinLen\\(min_length=1\\)\\]\\])$"
+reason = "the root model of an array item dropped the minItems of the item unless --field-constraints was given, so the model accepted the empty array that the schema rejects; it writes the keyword as the property of the same array does (schema-mismatch fix)"
+decision = "#5975"
+release_note = "the root model of an array item keeps the minItems and maxItems of the item without --field-constraints, as the property of the same array does, so it no longer accepts an array shorter or longer than the schema allows"
+
+[[accepted]]
+input = "*allof_no_merge_constraint_type_shape*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] Child:enum_value: Literal\\['ab'\\] -> Annotated\\[Literal\\['ab'\\], MinLen\\(min_length=1\\)\\]$"
+reason = "an object property typed as the Literal of an enum dropped the keywords beside the enum under --field-constraints and --use-annotated, where a root model writes them; it writes them as a root does (the one value 'ab' meets minLength 1 here, so only the keyword is new)"
+decision = "#5977"
+release_note = "a property typed as the Literal of an enum writes the length, bound and multipleOf keywords beside the enum under --field-constraints, as a root model does, so the model no longer accepts a value those keywords reject"
+
+[[accepted]]
+input = "*field_constraint_sites*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:array_item_roots:)?(?:Pair|ClosedItem|Model:pairs|Model:closed): .* -> .*(?:MinLen\\(min_length=[12]\\)|Meta\\(max_length=1,min_length=1\\))"
+reason = "the root model of an array item dropped the minItems of the item unless --field-constraints was given and, as a root model, the maxItems that items: false implies, so the model accepted arrays the schema rejects; it writes both as the property of the same array does (schema-mismatch fix)"
+decision = "#5975, #5978"
+release_note = "the root model of an array item keeps the minItems of the item without --field-constraints, and the maxItems that items: false implies, as the property of the same array does"
+
+[[accepted]]
+input = "*field_constraint_sites*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "default", "required", "probe" ]
+match = "^\\[(?:constraints|default|required)\\] (?:mixed_type_map_property:)?Model:named: |^\\[probe\\] (?:mixed_type_map_property:)?Model: accept -> reject$"
+reason = "a property map beside a type list that joins an array left out its minProperties and maxProperties, so the model accepted objects with too few or too many properties; it writes them as the root model of the same map does (schema-mismatch fix)"
+decision = "#5976"
+release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map, as the root model of the same map does"
+
+[[accepted]]
+input = "*object_maps*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "default", "required", "constructor-order" ]
+match = "^\\[(?:constraints|default|required)\\] type_array_maps:Model:pArrayOrNamesCount: |^\\[constructor-order\\] type_array_maps:Model: "
+reason = "a property map beside a type list that joins an array left out its minProperties, so the model accepted the empty object that the schema rejects; it writes it as the root model of the same map does, which a pydantic dataclass writes as a Field default and so places after the plain required fields (schema-mismatch fix)"
+decision = "#5976"
+release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map; a pydantic dataclass lists such a required field after its plain required fields, as it does any required field that carries a constraint"
+
+[[accepted]]
+input = "*type_union_constraints*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "default", "required", "probe" ]
+match = "^\\[(?:constraints|default|required)\\] keys_count_field:Root:value: |^\\[probe\\] keys_count_field:Root: accept -> reject$"
+reason = "a property map beside a type list that joins an array left out its minProperties, so the model accepted the empty object that the schema rejects; it writes it as the root model of the same map does (schema-mismatch fix)"
+decision = "#5976"
+release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map"
