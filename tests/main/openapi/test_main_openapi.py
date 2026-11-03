@@ -14915,6 +14915,36 @@ def test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself(output
     )
 
 
+def test_main_openapi_json_pointer_integer_keys(output_file: Path) -> None:
+    """Resolve JSON pointers through maps whose unquoted YAML keys (`200:`) load as integers (#6073).
+
+    A token names the integer key it spells when the map has no such string key, with and without an escaped `/` in
+    the pointer; up to 0.88.0 both references resolved to `Any` with an unresolved `$ref` warning.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "json_pointer_integer_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_json_pointer_integer_keys",
+        model_name="Created",
+        valid_json='{"code": "ab"}',
+        invalid_json='{"code": "abc"}',
+        expected_error_type="string_too_long",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_json_pointer_integer_keys_ok",
+        model_name="Ok",
+        valid_json='{"a": 1}',
+        invalid_json='{"a": "one"}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

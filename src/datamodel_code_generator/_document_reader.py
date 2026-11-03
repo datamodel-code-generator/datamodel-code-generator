@@ -99,16 +99,13 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
     """Return one token's member of a loaded value; raise one of the row's ``_ENDS_WALK`` errors when it has none.
 
     A list item is read by an RFC 6901 array index only (``0``, or ASCII digits without a leading zero: never ``-1``,
-    ``01`` or the character of a string), and any other value has no member. ``canonical`` (the locations the parser
-    recorded and the target readers) reads a mapping member by the token, as the parser's ``$ref`` does, else by the
-    integer YAML key the token is the index of (``member_key``), and every token that names no member is a miss.
-    ``refusing`` (the targets of the parser's ``$ref``) reads a mapping member by the token only: a missing member is a
-    ``KeyError``, a value that is no container a ``NotImplementedError``, a list token that is no index or is too long
-    an ``Error``, and an index past the end an ``ArrayIndexOutOfRangeError``.
+    ``01`` or the character of a string), and a mapping member by the token, else by the integer YAML key the token is
+    the index of (``member_key``). ``canonical`` (the locations the parser recorded and the target readers) reads any
+    other value as having no member, and every token that names no member is a miss. ``refusing`` (the targets of the
+    parser's ``$ref``): a missing member is a ``KeyError``, a value that is no container a ``NotImplementedError``, a
+    list token that is no index or is too long an ``Error``, and an index past the end an ``ArrayIndexOutOfRangeError``.
     """
-    if row == "refusing":
-        if isinstance(value, dict):
-            return value[token]
+    if row == "refusing" and not isinstance(value, dict):
         if isinstance(value, list):
             return _array_item(value, token)
         msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
