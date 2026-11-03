@@ -13,7 +13,7 @@ import dataclasses
 import operator
 from itertools import chain, repeat
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -100,7 +100,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model_metadata import ModelMetadata
@@ -1222,6 +1222,30 @@ def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None
     return path[:-1] if is_package_init(path[-1]) else None
 
 
+def _rebind_import(  # noqa: PLR0913
+    parser: ImportsHost[Any],
+    ctx: ModuleContextView,
+    binding: str,
+    reference: Reference,
+    import_key: _ImportKey,
+    *,
+    held_by: Literal["builtin", "submodule"],
+    producer: ImportProducer,
+) -> str:
+    """Give the import ``import_key``, which loses its name ``binding``, the name the module's resolver gives next.
+
+    The import releases ``binding`` to what keeps it (``held_by``: the builtin, a package's submodule), then takes the
+    name the resolver gives ``reference`` (``list_1``) as its alias, which is returned.
+    """
+    imports, resolver, ledger = ctx.imports, ctx.scoped_model_resolver, parser._import_ledger  # noqa: SLF001
+    ledger.release_names(imports, resolver, {binding})
+    ledger.add_name(imports, resolver, get_special_path(held_by, [binding]), binding)
+    alias = ledger.add_name(imports, resolver, [reference.path], reference.original_name).name
+    from_, import_ = import_key
+    ledger.apply_alias(imports, Import(from_=from_, import_=import_, alias=alias), producer)
+    return alias
+
+
 def _module_binding(expression: str | None) -> str | None:
     """Return the module binding of an expression ``<binding>.<Class>``, or None for another expression."""
     return expression.partition(".")[0] if expression and "." in expression else None
@@ -1313,23 +1337,24 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         }
     ):
         return
-    ledger = parser._import_ledger  # noqa: SLF001
-    ctx.scoped_model_resolver.exclude_names.update(shared_import_bindings(parser.imports))
-    aliases: dict[str, str] = {}
+    resolver.exclude_names.update(shared_import_bindings(parser.imports))
     written = {
         name
         for model in ctx.models
         for name in _bare_loads_of(model.render(), shadowing, rule="legacy-flat-bare-loads")
     }
-    for binding in sorted(written):
-        reference = held[binding]
-        ledger.release_names(ctx.imports, resolver, {binding})
-        ledger.add_name(ctx.imports, resolver, get_special_path("builtin", [binding]), binding)
-        alias = aliases[binding] = ledger.add_name(
-            ctx.imports, resolver, [reference.path], reference.original_name
-        ).name
-        from_, import_ = imported[binding]
-        ledger.apply_alias(ctx.imports, Import(from_=from_, import_=import_, alias=alias), _BUILTIN_MODULE_BINDINGS)
+    aliases = {
+        binding: _rebind_import(
+            parser,
+            ctx,
+            binding,
+            held[binding],
+            imported[binding],
+            held_by="builtin",
+            producer=_BUILTIN_MODULE_BINDINGS,
+        )
+        for binding in sorted(written)
+    }
     renamed: list[DataType] = []
     for data_type in references:
         if (binding := _module_binding(data_type.alias)) in aliases:
@@ -1379,9 +1404,9 @@ def _alias_imports_hidden_by_submodules(
     does that of a model named like its submodule (``from .A import A``), which binds the name once the submodule is
     loaded.
     """
-    imports, resolver, ledger = ctx.imports, ctx.scoped_model_resolver, parser._import_ledger  # noqa: SLF001
+    imports, resolver = ctx.imports, ctx.scoped_model_resolver
     held = {reference.name: reference for reference in resolver.references.values()}
-    users: dict[str, list[tuple[DataType, tuple[str | None, str]]]] = {}
+    users: dict[str, list[tuple[DataType, _ImportKey]]] = {}
     for model in ctx.models:
         for data_type in _named_data_types(model):
             if (
@@ -1397,12 +1422,15 @@ def _alias_imports_hidden_by_submodules(
     if users:
         resolver.exclude_names.update(shared_import_bindings(parser.imports))
     for binding, binding_users in sorted(users.items()):
-        reference = held[binding]
-        ledger.release_names(imports, resolver, {binding})
-        ledger.add_name(imports, resolver, get_special_path("submodule", [binding]), binding)
-        alias = ledger.add_name(imports, resolver, [reference.path], reference.original_name).name
-        from_, import_name = binding_users[0][1]
-        ledger.apply_alias(imports, Import(from_=from_, import_=import_name, alias=alias), _SUBMODULE_IMPORT_BINDINGS)
+        alias = _rebind_import(
+            parser,
+            ctx,
+            binding,
+            held[binding],
+            binding_users[0][1],
+            held_by="submodule",
+            producer=_SUBMODULE_IMPORT_BINDINGS,
+        )
         for data_type, _ in binding_users:
             parser._graph_builder.name_reference(  # noqa: SLF001
                 data_type, alias + (data_type.alias or binding)[len(binding) :]
@@ -1555,6 +1583,18 @@ def submodules_hidden_by_packages(
     return result
 
 
+def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -> Iterator[tuple[str, str, list[str]]]:
+    """Yield each relative import block of the module ``importer`` in order, with the module it names.
+
+    A block is its module text (``..pkg``), the dotted name of the module that text names (``absolute``) and the names
+    it imports, sorted; a name reaches the submodule of that name where the module has one. ``is_init`` makes
+    ``importer`` a package ``__init__``.
+    """
+    for from_ in sorted(name for name in imports if name and name.startswith(".")):
+        names = sorted(_stored_import(name)[0] for name in imports[from_])
+        yield from_, absolute(importer, from_, current_is_init=is_init), names
+
+
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
     """Return the dotted names of the modules that the written modules import or import from.
 
@@ -1568,11 +1608,9 @@ def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set
         if ctx.models and state.config.all_exports_scope is not None:
             loaded.add(importer)
         is_init = _written_package(ctx, treat_dot_as_module=treat_dot_as_module) is not None
-        for from_, names in ctx.imports.items():
-            if from_ and from_.startswith("."):
-                target = absolute(importer, from_, current_is_init=is_init)
-                loaded.add(target)
-                loaded.update(dotted_name(target, _stored_import(name)[0]) for name in names)
+        for _, target, names in relative_import_targets(importer, ctx.imports, is_init=is_init):
+            loaded.add(target)
+            loaded.update(dotted_name(target, name) for name in names)
     return loaded
 
 
@@ -1840,11 +1878,9 @@ def reject_unimportable_imports(
     """
     unimportable = (lambda part: not is_python_name(part, target_python_version)) if treat_dot_as_module else iskeyword
     importer = dotted_module(module)
-    for from_ in sorted(name for name in imports if name and name.startswith(".")):
+    for from_, target, names in relative_import_targets(importer, imports, is_init=is_init):
         written = from_.lstrip(".").split(".") if from_.strip(".") else []
-        names = sorted(_stored_import(name)[0] for name in imports[from_])
         if (part := next(filter(unimportable, (*written, *names)), None)) is not None:
-            target = absolute(importer, from_, current_is_init=is_init)
             path = target if part in written else dotted_name(target, part)
             where = f"module {importer!r}" if importer else "the root package"
             reason, hint = (
