@@ -264,7 +264,9 @@ def _load_json_source(
             return value
         case TextIOBase() as data:
             with data:
-                return _loads_json(data.read(), option_name=option_name, load_error_name=load_error_name)
+                return _loads_json(
+                    data.read(), option_name=option_name, load_error_name=load_error_name, max_depth=max_depth
+                )
 
     text = _read_json_or_inline(str(value))
     return _loads_json(text, option_name=option_name, load_error_name=load_error_name, max_depth=max_depth)
