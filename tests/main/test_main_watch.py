@@ -263,14 +263,15 @@ def _wait_for_watch_cli(
     condition: Callable[[], bool],
     description: str,
     *,
-    timeout: float = WATCH_CLI_TIMEOUT_SECONDS,
+    timeout: float | None = None,
 ) -> None:
     """Wait until the condition holds, failing when the process exits first or ``timeout`` seconds pass.
 
-    The default bounds a reaction of the watcher. The start waits ``WATCH_CLI_STARTUP_TIMEOUT_SECONDS``: it covers the
-    process's initial generation, whose first run under the coverage tracer takes seconds on a loaded runner.
+    The default, ``WATCH_CLI_TIMEOUT_SECONDS`` as it is when the wait starts, bounds a reaction of the watcher. The
+    start waits ``WATCH_CLI_STARTUP_TIMEOUT_SECONDS``: it covers the process's initial generation, whose first run under
+    the coverage tracer takes seconds on a loaded runner.
     """
-    end = time.monotonic() + timeout
+    end = time.monotonic() + (WATCH_CLI_TIMEOUT_SECONDS if timeout is None else timeout)
     while time.monotonic() < end:
         if condition():
             return

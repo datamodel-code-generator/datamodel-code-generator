@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import pickle
+from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
@@ -22,6 +24,7 @@ from .schema import (
     _apply_component_discriminator_payload_constraints,
     _apply_discriminator_payload_constraints,
     _has_dotted_openapi_component_name,
+    _has_read_only_exclusion,
     _normalize_schema_dialect,
     _openapi_components,
     _referenced_openapi_components,
@@ -150,8 +153,23 @@ def _make_openapi_case(path: Path, document: dict[str, Any], candidate_name: str
     )
 
 
+_SUPPORTED: dict[tuple[bytes, bool], bool] = {}
+"""Whether each schema met in this process has no exclusion reason, by its pickled form: equal schemas, one verdict."""
+
+
 def _schema_is_supported(schema: dict[str, Any], *, is_openapi: bool = False) -> bool:
-    return _schema_exclusion_reason(schema, is_openapi=is_openapi) is None
+    """Return whether ``_schema_exclusion_reason`` finds no reason, once per distinct schema of the process.
+
+    The checks that only read the schema run first: a schema one of them excludes has some reason in any order, so
+    it skips the metaschema validation. A check that fails on a schema leaves the verdict to the full order.
+    """
+    if (supported := _SUPPORTED.get(key := (pickle.dumps(schema), is_openapi))) is None:
+        with suppress(Exception):
+            if _has_read_only_exclusion(schema, is_openapi=is_openapi):
+                _SUPPORTED[key] = False
+                return False
+        supported = _SUPPORTED[key] = _schema_exclusion_reason(schema, is_openapi=is_openapi) is None
+    return supported
 
 
 def _case_is_supported(case: SchemaCase) -> bool:
