@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import GeneratedModules, _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_generation import TargetGenerator
-    from datamodel_code_generator._api_types import GeneratedArtifact, OperationSelector
+    from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.target import ClientTarget
     from datamodel_code_generator._fastapi.config import FastAPIConfig
@@ -195,7 +195,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
     """Render the target under a private directory of the working directory and publish only the side files."""
     from tempfile import TemporaryDirectory  # noqa: PLC0415
 
-    from datamodel_code_generator._api_generation import plan_target, publish_target  # noqa: PLC0415
+    from datamodel_code_generator._api_generation import artifact_text, plan_target, publish_target  # noqa: PLC0415
 
     selected = "server" if config.generate_client is None else "client"
     with TemporaryDirectory(prefix=".datamodel-codegen-", dir=cwd) as directory:
@@ -231,7 +231,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
             )
         )
         return {
-            item.path.relative_to(root).parts: _text(item, config.encoding)
+            item.path.relative_to(root).parts: artifact_text(item, config.encoding)
             for item in artifacts
             if item.kind in {"model", "target"}
         }
@@ -247,11 +247,3 @@ def _staged(error: APIGenerationError, root: str) -> APIGenerationError:
         for item in error.diagnostics
     )
     return error if diagnostics == error.diagnostics else APIGenerationError(diagnostics)
-
-
-def _text(artifact: GeneratedArtifact, encoding: str) -> str:
-    """Read a rendered file as its written file reads: Python files in the model encoding, other text as UTF-8."""
-    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
-
-    python = artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"}
-    return TextIOWrapper(BytesIO(artifact.content), encoding=encoding if python else "utf-8").read()

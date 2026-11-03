@@ -18,7 +18,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.pydantic_v2 import UnionMode
-from tests.checks.requirements import config_keys_without_requirement
+from tests.checks.requirements import config_keys_without_requirement, constructs_out_of_step
 from tests.conftest import assert_output
 from tests.main.conftest import OPEN_API_DATA_PATH, XML_SCHEMA_DATA_PATH, run_main_with_args
 
@@ -287,3 +287,12 @@ def test_pydantic_floor_config_key_without_row(monkeypatch: pytest.MonkeyPatch) 
     """A ``ConfigDict`` key of a newer Pydantic release that has no row is named."""
     monkeypatch.setattr(ConfigDict, "__optional_keys__", ConfigDict.__optional_keys__ | {"key_of_a_newer_release"})
     assert_output(_config_keys_without_row())
+
+
+def test_pydantic_floor_constructs_match_the_rows() -> None:
+    """The construct types list every row of the requirements table and no construct without one."""
+    without_member, without_row = constructs_out_of_step()
+    assert_output(
+        f"rows the construct types do not list: {', '.join(without_member) or '-'}\n"
+        f"constructs without a row: {', '.join(without_row) or '-'}\n"
+    )

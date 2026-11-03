@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "SpacedReversed": {
+      "type": "string",
+      "pattern": "^a{ 3 , 2 }$"
+    },
+    "VerboseSpacedReversed": {
+      "type": "string",
+      "pattern": "(?x) ^ a{ 3 , 2 } $"
+    },
+    "VerboseCommentedReversed": {
+      "type": "string",
+      "pattern": "(?x) ^ a{ 3 # at least\n , 2 # at most\n } $"
+    },
+    "SpacedOrdered": {
+      "type": "string",
+      "pattern": "^a{ 2 , 3 }$"
+    }
+  }
+}

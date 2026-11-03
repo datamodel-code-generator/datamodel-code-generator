@@ -1,0 +1,2 @@
+{"items": ["a"], "pop": {"name": "n"}}: accepted Holder(items=['a'], pop=Leaf(name='n'))
+{"pop": {"name": 1}}: rejected ValidationError

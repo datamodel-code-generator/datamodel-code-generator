@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info: {title: Multipart responses equal to their requests, version: "1"}
+servers: [{url: "https://parts.example.com"}]
+paths:
+  /files:
+    post:
+      operationId: attachFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+                file: {type: string, format: binary}
+      responses:
+        "204": {description: Attached.}
+    get:
+      operationId: readFiles
+      responses:
+        "200":
+          description: The files, as equal a schema as the request's.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  note: {type: string}
+                  file: {type: string, format: binary}

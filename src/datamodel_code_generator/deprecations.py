@@ -334,6 +334,11 @@ def deprecation_message(deprecation_id: DeprecationId) -> str:
     return get_deprecation(deprecation_id).message
 
 
+def cli_deprecations() -> dict[str, str]:
+    """Return the message of each deprecated CLI option, by the flag its entry targets."""
+    return {item.target: item.message for item in DEPRECATIONS.values() if item.kind == "cli-option"}
+
+
 def _format_removal_version(deprecation: Deprecation) -> str:
     """Return the display value for a removal version."""
     return deprecation.removal_version or "TBD"

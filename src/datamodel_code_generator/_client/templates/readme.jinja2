@@ -215,7 +215,7 @@ run it again when a new version of datamodel-code-generator changes them.
 ### Retries
 
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+The default status set is {{ retry_statuses }}. Server retry delays are respected by default.
 `retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 give it deliberately to the client, a view, or a call. This package does not embed that override.
 

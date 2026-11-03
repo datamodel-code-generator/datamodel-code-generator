@@ -23,7 +23,7 @@ import httpx2
 from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, TOKEN, normalized
+from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, fields_without, is_token, normalized
 from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
 from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
@@ -228,7 +228,7 @@ def _headers(
     for name, value in () if call is None else call.items():
         if name.lower() == "content-type":
             label = _relabel(value, media_type)
-    unlabelled = (pair for pair in generated if pair[0].lower() != "content-type")
+    unlabelled = fields_without(generated, ("content-type",))
     return HeadersView([*unlabelled, *(() if label is None else (("Content-Type", label),))])
 
 
@@ -244,8 +244,11 @@ def _query(lower: Pairs, explicit: list[str], call: Mapping[str, str | None] | N
     """Return a query with its layers applied: the client's and views' names, the explicit pairs, and the call's.
 
     A layer's names and values are percent-encoded once, and explicit pairs, a querystring parameter's split at each
-    `&`, compare by their names decoded as forms decode them, a plus sign being a space.
+    `&`, compare by their names decoded as forms decode them, a plus sign being a space. Without layers the explicit
+    pairs are the query as they are.
     """
+    if not lower and not call:
+        return "&".join(explicit)
     named: list[tuple[str, str | None]] = [
         (query_field(pair)[0], pair) for item in explicit for pair in item.split("&") if pair
     ]
@@ -374,7 +377,7 @@ def request_body(request: httpx2.Request) -> EncodedAttempt | None:
 
 def _checked_raw(method: object, url: object) -> tuple[str, str]:
     """Normalize the raw method and validate its native URL before sending."""
-    if not isinstance(method, str) or not TOKEN.fullmatch(method):
+    if not isinstance(method, str) or not is_token(method):
         raise ConfigurationError(field_path=("method",), reason="invalid_value")
     if not isinstance(url, str):
         raise ConfigurationError(field_path=("url",), reason="invalid_url")
@@ -420,7 +423,7 @@ def _compressed(
     attempt = request_body(request)
     body = None if attempt is None else coding.attempt(attempt, call.check)
     headers = HeadersView((
-        *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
+        *fields_without(request_fields(request), ("content-length",)),
         ("Content-Encoding", coding.token),
     ))
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
@@ -470,7 +473,7 @@ def _framing(
     if not isinstance(attempt, EncodedAttempt | None):
         media_type, length = attempt.content_type, attempt.content_length
     framed = {"host", "content-length", "transfer-encoding", *(() if media_type is None else ("content-type",))}
-    headers = [(name, value) for name, value in request_fields(request) if name.lower() not in framed]
+    headers = fields_without(request_fields(request), framed)
     if media_type is not None:
         headers.append(("Content-Type", media_type))
     if length is not None:
@@ -584,7 +587,7 @@ def strip_credentials(
     whether the auth placed them or a patch, a parameter, or the server's URL carried them.
     """
     names, query = secret_names(schemes)
-    kept = tuple((name, value) for name, value in headers if name.lower() not in names)
+    kept = tuple(fields_without(headers, names))
     return kept, strip_query(url, query)
 
 
@@ -987,11 +990,8 @@ class Core(Generic[AdapterT, HandleT]):
         return build_request(method=operation.method, url=url, headers=prepared, body=attempt), deferred
 
     def _call_query(self, pairs: list[str], options: RequestOptions | None) -> str:
-        """Return a typed call's query: its parameters' pairs, with the layers' names over them when there are any."""
-        call = None if options is None else options.extra_query
-        if not self._settings.query and not call:
-            return "&".join(pairs)
-        return _query(self._settings.query, pairs, call)
+        """Return a typed call's query: its parameters' pairs, with the layers' names over them."""
+        return _query(self._settings.query, pairs, None if options is None else options.extra_query)
 
     def _call_headers(
         self,
@@ -1001,13 +1001,11 @@ class Core(Generic[AdapterT, HandleT]):
         *,
         media_type: str | None,
     ) -> HeadersView:
-        """Return a typed call's headers: the parameters' over the generated ones, then the layers' over those."""
+        """Return a typed call's headers: the generated ones with each layer applied over them in order.
+
+        The client's and views' layer comes first, then the parameters', then the call's extra headers.
+        """
         call = None if options is None else options.extra_headers
-        if not self._settings.headers and not call:
-            generated.extend(params)
-            if media_type is not None:
-                generated.append(("Content-Type", media_type))
-            return HeadersView(generated)
         return _headers(generated, (self._settings.headers, params), call, media_type)
 
     def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object]) -> Settings:

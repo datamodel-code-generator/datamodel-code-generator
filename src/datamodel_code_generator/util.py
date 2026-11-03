@@ -15,6 +15,7 @@ from datamodel_code_generator.deprecations import warn_deprecated
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
+    from types import ModuleType
 
     from datamodel_code_generator._format_types import PythonVersion
 
@@ -46,11 +47,18 @@ def _find_pyproject_toml(settings_path: Path) -> Path | None:
     return None
 
 
-def record_watch_dependency(path: Path) -> None:
-    """Record an active watch dependency without importing watch support on normal paths."""
+def _collecting_watch_dependencies() -> ModuleType | None:
+    """Return watch support while it collects dependencies, without importing it on normal paths; else None."""
     if (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
         watch_dependencies.collector_is_active()
     ):
+        return watch_dependencies
+    return None
+
+
+def record_watch_dependency(path: Path) -> None:
+    """Record an active watch dependency without importing watch support on normal paths."""
+    if (watch_dependencies := _collecting_watch_dependencies()) is not None:
         watch_dependencies.record_local_dependency(path)
 
 

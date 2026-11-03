@@ -31,6 +31,7 @@ from urllib.parse import unquote, urljoin
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import escape_token, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
 from datamodel_code_generator._records import record
@@ -96,6 +97,7 @@ __all__ = [
     "get_ref_raw_schema",
     "graph",
     "has_ref_cycle",
+    "hold_document_root",
     "intersect_ref_siblings",
     "intersect_ref_siblings_schema",
     "is_local_ref",
@@ -114,6 +116,7 @@ __all__ = [
     "prepared_ref_document",
     "push_ref_cycle_frame",
     "read_as_schema",
+    "ref_file_document",
     "ref_key",
     "ref_path",
     "ref_target_dump",
@@ -235,6 +238,7 @@ class SchemaRefsHost(Protocol):
     _dynamic_scope_pointer: str
     _dynamic_specialization_paths: set[tuple[str, ...]]
     _dynamic_specializations: dict[tuple[_TargetNode, frozenset[tuple[str, str]]], Reference]
+    _document_roles: dict[str, dict[str, None]]
     _embedded_resources: dict[tuple[str, str], dict[str, str]]
     _false_schema_refs: set[str] | None
     _has_embedded_schema_resources: bool
@@ -472,12 +476,35 @@ def get_ref_raw_schema(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, Y
     return read_ref_value(parser, resolved_ref)
 
 
+def hold_document_root(parser: SchemaRefsHost, file_part: str, role: str) -> None:
+    """Record that a reference names the root of the document at ``file_part`` as an OpenAPI object of ``role``.
+
+    The root holds the object the reference's position expects (OpenAPI: "a document containing a referenceable
+    Object at its root based on the expected type of the reference"), so the schemas of that object are resources of
+    the document (``_schema_documents.implicit_schema_resources``). The reference records it where it is followed,
+    before it loads the document; a document that a pointer into it loaded first keeps the resources it was prepared
+    with.
+    """
+    parser._document_roles.setdefault(parser._schema_resource_document([file_part]), {})[role] = None  # noqa: SLF001
+
+
+def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None = None) -> dict[str, YamlValue]:
+    """Return the loaded document the file part of a reference key names: the document being parsed when it is empty.
+
+    A reference that names the root of another document as an OpenAPI object passes its ``role``
+    (``hold_document_root``).
+    """
+    if not file_part:
+        return parser.raw_obj
+    if role is not None:
+        hold_document_root(parser, file_part, role)
+    return parser._get_ref_body(file_part)  # noqa: SLF001
+
+
 def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
     """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    return parser._read_as_schema(  # noqa: SLF001
-        _fragment_value(parser._get_ref_body(file_part) if file_part else parser.raw_obj, fragment)  # noqa: SLF001
-    )
+    return parser._read_as_schema(_fragment_value(ref_file_document(parser, file_part), fragment))  # noqa: SLF001
 
 
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
@@ -500,8 +527,7 @@ def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefR
 def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     """Return whether a resolved JSON pointer identifies a source schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
-    return _fragment_value(raw_doc, fragment, or_missing=True) is not _MISSING_JSON_POINTER
+    return _fragment_value(ref_file_document(parser, file_part), fragment, or_missing=True) is not _MISSING_JSON_POINTER
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
@@ -778,19 +804,18 @@ def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[s
     """
     if not parser._dynamic_anchors or not (scope := parser._current_dynamic_scope()):  # noqa: SLF001
         return {}
-    if not (used := set(dynamic_anchors_used(parser, resolved_ref))):
+    if not (used := dynamic_anchors_used(parser, resolved_ref)):
         return {}
     target_document, _, target_pointer = parser._schema_location(resolved_ref).partition("#")  # noqa: SLF001
     defaults = dynamic_anchor_bindings(parser, target_document, target_pointer, {})
     bindings = {**defaults, **scope}
-    pending = [anchor for anchor in used if anchor in bindings]
-    while pending:
-        found = dynamic_anchors_used(parser, parser._location_ref(bindings[pending.pop()])) - used  # noqa: SLF001
-        used |= found
-        pending.extend(anchor for anchor in found if anchor in bindings)
+
+    def used_by_binding(anchor: str) -> Iterable[str]:
+        return dynamic_anchors_used(parser, parser._location_ref(bindings[anchor])) if anchor in bindings else ()  # noqa: SLF001
+
     return {
         anchor: bindings[anchor]
-        for anchor in sorted(used)
+        for anchor in sorted(reach(used, used_by_binding))
         if anchor in bindings and bindings[anchor] != defaults.get(anchor)
     }
 
@@ -1094,16 +1119,42 @@ def intersect_ref_siblings(
     return intersection.keywords, intersection.unsatisfiable
 
 
-def intersect_ref_siblings_schema(
-    parser: SchemaRefsHost, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
+def intersect_ref_siblings_schema(  # noqa: PLR0913
+    parser: SchemaRefsHost,
+    target: dict[str, Any],
+    siblings: dict[str, Any],
+    where: str,
+    *,
+    siblings_are_parts: bool,
+    holder: JsonSchemaObject | None = None,
+    target_ref: str | None = None,
 ) -> JsonSchemaObject:
-    """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref."""
+    """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref.
+
+    A ``holder`` of the ``$ref`` that has a ``contains`` of its own does not replace the referenced one: both apply,
+    so the item bounds the referenced contains keywords imply intersect with the holder's. The schema keeps the
+    reference ``target_ref`` it ends at, when given, for the dynamic scope of its anchors.
+    """
     merged, unsatisfiable = intersect_ref_siblings(
         parser, target, siblings, where, siblings_are_parts=siblings_are_parts
     )
     merged.pop("$ref", None)
+    if (
+        holder is not None
+        and "contains" in holder.extras
+        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(target))) is not None  # noqa: SLF001
+    ):
+        sibling_contains = _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & holder.extras.keys()
+        extras_key = JsonSchemaObject.__extra_key__
+        merged[extras_key] = {
+            **_without_contains_keywords(merged[extras_key]),
+            **{key: holder.extras[key] for key in sibling_contains},
+        }
+        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
     merged_schema = parser._schema_object(merged)  # noqa: SLF001
     parser._mark_reported_value_conflict(merged_schema, unsatisfiable)  # noqa: SLF001
+    if target_ref is not None:
+        merged_schema.__dict__[_MERGED_REF_TARGET_KEY] = target_ref
     return merged_schema
 
 
@@ -1137,29 +1188,15 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
 
     ref_dict, resolved_ref = parser._ref_target_dump(ref, resolved_ref)  # noqa: SLF001
     current_dict = obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
-    merged, unsatisfiable = intersect_ref_siblings(
+    merged_obj = intersect_ref_siblings_schema(
         parser,
         ref_dict,
         current_dict,
         where or named_location(obj.schema_location, redact_reference(obj.ref), row="legacy-unredacted-locations"),
         siblings_are_parts=parser._ref_siblings_are_parts_of(obj),  # noqa: SLF001
+        holder=obj,
+        target_ref=resolved_ref,
     )
-    merged.pop("$ref", None)
-    if (
-        "contains" in obj.extras
-        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(ref_dict))) is not None  # noqa: SLF001
-    ):
-        sibling_contains = _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & obj.extras.keys()
-        extras_key = JsonSchemaObject.__extra_key__
-        merged[extras_key] = {
-            **_without_contains_keywords(merged[extras_key]),
-            **{key: obj.extras[key] for key in sibling_contains},
-        }
-        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
-
-    merged_obj = parser._schema_object(merged)  # noqa: SLF001
-    parser._mark_reported_value_conflict(merged_obj, unsatisfiable)  # noqa: SLF001
-    merged_obj.__dict__[_MERGED_REF_TARGET_KEY] = resolved_ref
     return _locate(merged_obj, obj.schema_location)
 
 
@@ -1244,8 +1281,12 @@ def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[o
     """Yield the value ref_to_check names, resolving references relative to its document until closed."""
     file_part, _, fragment = ref_to_check.partition("#")
     with parser._ref_file_context(file_part):  # noqa: SLF001
-        raw_doc = parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
-        yield get_model_by_path(raw_doc, [p for p in fragment.split("/") if p]) if fragment else raw_doc
+        raw_doc = ref_file_document(parser, file_part)
+        yield (
+            get_model_by_path(raw_doc, [p for p in fragment.split("/") if p], refuse_scalar=True)
+            if fragment
+            else raw_doc
+        )
 
 
 def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:

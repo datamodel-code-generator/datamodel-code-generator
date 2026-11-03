@@ -33,6 +33,7 @@ tutorial	docs/tutorial/pytest.txt
 	main/generation_platform/fastapi/servers/entrypoint.txt
 	main/generation_platform/fastapi/servers/packages/entrypoint//*.py
 [test_fastapi_openapi]
+document-anchors	main/generation_platform/fastapi/openapi/document-anchors.txt
 document-bodies	main/generation_platform/fastapi/openapi/document-bodies.txt
 document-callbacks	main/generation_platform/fastapi/openapi/document-callbacks.txt
 document-legacy	main/generation_platform/fastapi/openapi/document-legacy.txt
@@ -115,6 +116,10 @@ nullable-results-alias	main/generation_platform/fastapi/servers/nullable-results
 nullable-results-alias	main/generation_platform/fastapi/servers/packages/nullable-results-alias/
 parameters	main/generation_platform/fastapi/servers/packages/parameters/
 parameters	main/generation_platform/fastapi/servers/parameters.txt
+patterns	main/generation_platform/fastapi/servers/packages/patterns/
+patterns	main/generation_platform/fastapi/servers/patterns.txt
+patterns-annotated	main/generation_platform/fastapi/servers/packages/patterns-annotated/
+patterns-annotated	main/generation_platform/fastapi/servers/patterns-annotated.txt
 pets	main/generation_platform/fastapi/servers/packages/pets/
 pets	main/generation_platform/fastapi/servers/pets.txt
 pets-type-checking	main/generation_platform/fastapi/servers/packages/pets-type-checking/
@@ -161,6 +166,10 @@ variants-reuse	main/generation_platform/fastapi/servers/variants-reuse.txt
 	main/generation_platform/fastapi/servers/uploads.txt
 [test_generated_client]
 bodies	main/generation_platform/cross/bodies.txt
+bound_parts	main/generation_platform/cross/bound_parts.txt
+bound_parts_variants	main/generation_platform/cross/bound_parts_variants.txt
+bound_texts	main/generation_platform/cross/bound_texts.txt
+bound_texts_reuse	main/generation_platform/cross/bound_texts_reuse.txt
 extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt

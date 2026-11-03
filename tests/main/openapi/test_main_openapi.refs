@@ -671,6 +671,12 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 	main/openapi/allof_with_required_inherited_nested_object.py
 [test_main_openapi_anchor_refs]
 	main/openapi/anchor_refs.py
+[test_main_openapi_anchor_refs_in_path_item_document]
+	main/openapi/main_openapi/anchor_refs_in_path_item_document.py
+[test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself]
+	main/openapi/main_openapi/anchor_refs_in_path_item_document_that_holds_itself.py
+[test_main_openapi_anchor_refs_in_referenced_object_documents]
+	main/openapi/main_openapi/anchor_refs_in_referenced_object_documents.py
 [test_main_openapi_api_scope_external_boolean_schema]
 	main/openapi/openapi_api_scope_external_boolean_schema.py
 [test_main_openapi_api_scope_parameter_type_aliases]
@@ -866,6 +872,8 @@ two-holders-exact-imports-child	main/openapi/main_openapi/collapse_root_models_n
 two-holders-exact-imports-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-parent]/
 two-modules-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-child]/
 two-modules-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-parent]/
+[test_main_openapi_collapse_root_models_package_init]
+	main/openapi/main_openapi/collapse_root_models_package_init/
 [test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice]
 dataclasses.dataclass	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py
 pydantic_v2.BaseModel	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py	= main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice~collapse_root_models_parent_wrapper_referenced_twice[pydantic_v2.BaseModel].py
@@ -1209,6 +1217,11 @@ extra_args1	main/openapi/main_openapi/discriminator_reuse_variant_module_base_fi
 	main/openapi/discriminator/short_mapping_names.py
 [test_main_openapi_discriminator_state_isolated_per_document]
 	main/openapi/discriminator_state_isolation//*.py
+[test_main_openapi_discriminator_typed_mapping_keys]
+	main/openapi/main_openapi/discriminator_typed_mapping_keys.py
+[test_main_openapi_discriminator_typed_mapping_keys_msgspec]
+	main/openapi/main_openapi/discriminator_typed_mapping_keys_msgspec.py
+	main/openapi/main_openapi/discriminator_typed_mapping_keys_msgspec.warnings.txt
 [test_main_openapi_discriminator_union_mode]
 left_to_right	main/openapi/discriminator/union_mode_left_to_right.py
 smart	main/openapi/discriminator/union_mode_smart.py
@@ -1327,6 +1340,8 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/fixed_length_array_tuples.py
 [test_main_openapi_fixed_length_array_tuples_disabled]
 	main/openapi/fixed_length_array_tuples_disabled.py
+[test_main_openapi_generic_base_class_other_packages]
+	main/openapi/main_openapi/generic_base_class_other_packages/
 [test_main_openapi_ignored_content_type_header_refs]
 	main/openapi/main_openapi/ignored_content_type_header_refs.py
 [test_main_openapi_include_info_version]
@@ -1339,10 +1354,15 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/openapi_include_paths/pets_only.py
 [test_main_openapi_item_schema]
 	main/openapi/item_schema.py
+[test_main_openapi_item_schema_beside_null_schema]
+api	main/openapi/openapi_item_schema_beside_null_schema.py
+paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	= main/openapi/openapi_item_schema_beside_null_schema~item_schema_beside_null_schema[paths-and-request-bodies].py
 [test_main_openapi_item_schema_requires_32]
 	main/openapi/item_schema_31.py
 [test_main_openapi_json_pointer]
 	main/openapi/json_pointer.py
+[test_main_openapi_json_pointer_through_scalar]
+	main/openapi/openapi_json_pointer_through_scalar.py
 [test_main_openapi_keep_model_order_same_short_name_in_another_module]
 	main/openapi/main_openapi/keep_model_order_same_short_name_in_another_module/
 [test_main_openapi_keyword_only_dataclass]

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, replace
-from functools import cached_property
 from itertools import starmap
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import urljoin, urlsplit
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
@@ -23,7 +23,6 @@ from datamodel_code_generator._openapi_wire_plan import (
     parameter_plans,
     property_members,
 )
-from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
 from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -33,6 +32,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     essence,
     media_kind,
     media_range,
+    most_specific,
     normalize_media_type,
     normalized,
     range_key,
@@ -46,15 +46,17 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     PartFacts,
     PartSchema,
-    SchemaSite,
     SourceLocation,
     TypeUseBinding,
+    children_of,
+    encoding_headers,
+    exact_status,
     fact,
     is_required,
     label,
     operation_literal,
     parameter_place,
-    schema_uses,
+    request_media,
     type_uses,
     uses_by_id,
 )
@@ -73,7 +75,6 @@ from datamodel_code_generator._target_operations import (
     declared_by,
     declared_media_type,
     derived_name,
-    exact_status,
     first_use,
     group_tag,
     json_null,
@@ -401,11 +402,6 @@ class Planner:
         )
         self.raise_problems()
         self.namespaces = self.tag_namespaces()
-
-    @cached_property
-    def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
-        """Return the value use of each schema occurrence by location and direction, which a body's part is bound as."""
-        return schema_uses(self.request.batch.type_uses)
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
@@ -752,7 +748,7 @@ class Planner:
         members = {} if use is None else {name: declared[name] for name, _, _ in _members(use)}
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
-        for encoding in (child for child in declaration.children if child.kind == "encoding"):
+        for encoding in children_of(declaration, "encoding"):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
             if name in members and (headers := self._headers(encoding)):
@@ -789,10 +785,8 @@ class Planner:
         """Return the headers with a schema a response or encoding declares, with the plans that read their values."""
         return tuple(
             HeaderSpec(name=child.name or "", required=is_required(child), use=use, plan=plan)
-            for child in declaration.children
-            if child.kind == "header"
-            and (use := self.use(type_uses(child))) is not None
-            and (plan := self.header_plans.get(use.id)) is not None
+            for child in children_of(declaration, "header")
+            if (use := self.use(type_uses(child))) is not None and (plan := self.header_plans.get(use.id)) is not None
         )
 
     def _sent(
@@ -861,9 +855,9 @@ class Planner:
     ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
         """Return the member plans of a form-data response with file parts, or None when its object is read whole.
 
-        A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats.
-        Any other part is read by the type of the other properties' values, as a request writes it, and a part of an
-        untyped extra keeps its bytes, as a file part does.
+        A part holding no file is read by the type the response gives its member's values, or their items when it
+        repeats. Any other part is read by the type of the other properties' values, as a request writes it, and a part
+        of an untyped extra keeps its bytes, as a file part does.
         """
         parts = _parts(use)
         declared = dict(parts.members)
@@ -878,19 +872,24 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):
+            leaf = (
+                self.wire.kinds.member(declared_extra.value)[1]
+                if isinstance(declared_extra, PartSchema) and declared_extra.value is not None
+                else extras.leaf
+            )
             additional = PartSpec(
                 plan=PartPlan("", extras.kind or "json", repeated=extras.repeated),
-                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.leaf, None)),
+                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", leaf, None)),
             )
         elif isinstance(declared_extra, PartSchema):
-            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, None, required=False)
+            additional = self._read(use, "", site, declared_extra, None, required=False)
         return tuple(
             self._read(
                 use,
                 name,
                 member,
                 declared[name],
-                facts.type,
+                declared[name].value,
                 required=facts.required,
                 excluded=_rw_variant_flag("response", facts.read_only, facts.write_only),
             )
@@ -908,7 +907,7 @@ class Planner:
         required: bool,
         excluded: bool = False,
     ) -> PartSpec:
-        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use.
+        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' type.
 
         A member the response leaves out (``excluded``) is not required.
         """
@@ -918,12 +917,13 @@ class Planner:
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
             )
         plan = self._part_plan(name, value, part)
-        read = _site(part, location, items=plan.repeated)
-        bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
-            body.id, "not_generated", None, None
+        bound = (
+            TypeUseBinding(body.id, "not_generated", None, None)
+            if value is None
+            else TypeUseBinding(body.id, "bound", self.wire.kinds.member(value)[1], None)
         )
         return PartSpec(
-            plan=plan, use=_part_use(body, read.location, name or None, bound), required=required, excluded=excluded
+            plan=plan, use=_part_use(body, location, name or None, bound), required=required, excluded=excluded
         )
 
     def _part_plans(self, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
@@ -974,9 +974,7 @@ class Planner:
         self, operation: OperationContract, declaration: WireDeclaration, *, request: bool
     ) -> tuple[MediaSpec, ...]:
         """Return the declared media of a body or response, rejecting media types that normalize alike."""
-        media = tuple(
-            self.media(operation, child, request=request) for child in declaration.children if child.kind == "media"
-        )
+        media = tuple(self.media(operation, child, request=request) for child in children_of(declaration, "media"))
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
@@ -992,7 +990,7 @@ class Planner:
         self, operation: OperationContract, declaration: WireDeclaration, success_statuses: tuple[int, ...]
     ) -> ResponseSpec:
         """Plan one declared response and classify it as a possible success or error."""
-        status = (declaration.name or "default").upper() if declaration.name != "default" else "default"
+        status = declaration.name or ""
         headers = self._headers(declaration)
         self.problems.extend(
             _problem(
@@ -1003,14 +1001,13 @@ class Planner:
             for name, count in Counter(header.name.lower() for header in headers).items()
             if count > 1
         )
-        exact = exact_status(status)
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
             headers=headers,
             success=_success(status, success_statuses),
             error=_error(status),
-            bodyless=response_bodyless(CLIENT, operation, exact),
+            bodyless=response_bodyless(operation, status),
         )
 
     def check_statuses(
@@ -1045,16 +1042,17 @@ class Planner:
         return media_type
 
     def servers(self, operation: OperationContract) -> tuple[ServerSpec, ...]:
-        """Resolve the operation's effective servers to absolute URL templates."""
+        """Resolve the operation's effective servers to absolute URL templates.
+
+        An operation without servers has the default base URL, or else `/`, as its one server without variables.
+        """
         entries = _servers(operation_literal(operation, "servers"))
         if entries is None:
             message = f"The servers of {label(operation)} are not server objects"
             self.problems.append(_problem("E_BASE_URL", message, operation.id.use_site))
             return ()
         if not entries:
-            if (default := self.config.default_base_url) is not None:
-                return (ServerSpec(url=default),)
-            entries = (("/", ()),)
+            entries = ((self.config.default_base_url or "/", ()),)
         document = (
             operation.declaration.location.document
             if operation.servers_declared
@@ -1229,12 +1227,6 @@ def schema_use(
     )
 
 
-def _site(part: PartSchema, location: SourceLocation, *, items: bool = False) -> SchemaSite:
-    """Return where a part's values are read: its schema's site, or its items' when it repeats, as recorded."""
-    found = part.items if items else part.own
-    return SchemaSite(location, location) if found is None else found
-
-
 def _part_use(
     body: TypeUseBinding, location: SourceLocation, name: str | None, bound: TypeUseBinding
 ) -> TypeUseBinding:
@@ -1253,9 +1245,8 @@ def _encoded(media: WireDeclaration) -> WireDeclaration | None:
     return next(
         (
             child
-            for child in media.children
-            if child.kind == "encoding"
-            and (
+            for child in children_of(media, "encoding")
+            if (
                 bool(child.children)
                 or fact(child, "contentType") is not None
                 or fact(child, "style") not in {None, "form"}
@@ -1273,33 +1264,23 @@ def _servers(
     if value is None:
         return ()
     entries = _plain(value)
-    if not _is_tuple(entries):
+    return all_or_none(map(_server, entries)) if _is_tuple(entries) else None
+
+
+def _server(entry: object) -> tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]] | None:
+    if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
         return None
-    servers: list[tuple[str, tuple[tuple[str, str, tuple[str, ...]], ...]]] = []
-    for entry in entries:
-        if not _is_dict(entry) or not isinstance(url := entry.get("url"), str):
-            return None
-        if (variables := _variables(entry.get("variables", {}))) is None:
-            return None
-        servers.append((url, variables))
-    return tuple(servers)
+    return None if (variables := _variables(entry.get("variables", {}))) is None else (url, variables)
 
 
 def _variables(value: object) -> tuple[tuple[str, str, tuple[str, ...]], ...] | None:
-    if not _is_dict(value):
+    return all_or_none(starmap(_variable, value.items())) if _is_dict(value) else None
+
+
+def _variable(name: object, variable: object) -> tuple[str, str, tuple[str, ...]] | None:
+    if not isinstance(name, str) or not _is_dict(variable) or not isinstance(default := variable.get("default"), str):
         return None
-    variables: list[tuple[str, str, tuple[str, ...]]] = []
-    for name, variable in value.items():
-        if (
-            not isinstance(name, str)
-            or not _is_dict(variable)
-            or not isinstance(default := variable.get("default"), str)
-        ):
-            return None
-        if not _strings(enum := variable.get("enum", ())):
-            return None
-        variables.append((name, default, enum))
-    return tuple(variables)
+    return (name, default, enum) if _strings(enum := variable.get("enum", ())) else None
 
 
 def _defaulted(url: str, variables: tuple[tuple[str, str, tuple[str, ...]], ...]) -> str:
@@ -1347,9 +1328,7 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
 def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
     """Yield the uses of the headers the encodings of the selected operations' request bodies declare."""
     for operation in request.operations:
-        for media in () if operation.request_body is None else operation.request_body.children:
-            for encoding in (child for child in media.children if child.kind == "encoding"):
-                yield from (use for header in encoding.children if header.kind == "header" for use in type_uses(header))
+        yield from (use for header in encoding_headers(operation) for use in type_uses(header))
 
 
 def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
@@ -1359,12 +1338,10 @@ def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDe
     """
     version = request.batch.openapi
     for operation in request.operations:
-        for media in () if operation.request_body is None else operation.request_body.children:
+        for media in request_media(operation):
             if _essence(media.name or "") == _FORM_DATA and (
                 encodings := tuple(
-                    child
-                    for child in media.children
-                    if child.kind == "encoding" and form_styled(child, version, multipart=True)
+                    child for child in children_of(media, "encoding") if form_styled(child, version, multipart=True)
                 )
             ):
                 yield from ((use, encodings) for use in media.schemas)
@@ -1378,12 +1355,10 @@ def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDec
     for operation in request.operations:
         declarations = (*(() if operation.request_body is None else (operation.request_body,)), *operation.responses)
         for declaration in declarations:
-            for child in declaration.children:
-                if child.kind == "media" and _form(child.name or ""):
+            for child in children_of(declaration, "media"):
+                if _form(child.name or ""):
                     encodings = tuple(
-                        item
-                        for item in child.children
-                        if item.kind == "encoding" and declaration.kind == "request_body"
+                        item for item in children_of(child, "encoding") if declaration.kind == "request_body"
                     )
                     yield from ((use, encodings) for use in child.schemas)
 

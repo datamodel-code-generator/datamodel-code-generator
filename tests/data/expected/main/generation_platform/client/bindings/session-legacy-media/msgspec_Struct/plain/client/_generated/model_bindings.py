@@ -26,23 +26,29 @@ codec_3: Final[MsgspecCodec[models.ObjectResponseItem]] = MsgspecCodec(models.Ob
 codec_4: Final[MsgspecCodec[models.EnumRequestItem]] = MsgspecCodec(models.EnumRequestItem)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[MsgspecCodec[models.EnumResponseItem]] = MsgspecCodec(models.EnumResponseItem)
+codec_5: Final[MsgspecCodec[models.EnumRequest1]] = MsgspecCodec(models.EnumRequest1)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[MsgspecCodec[models.EnumResponseItem]] = MsgspecCodec(models.EnumResponseItem)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[models.UnionRequestItem]] = MsgspecCodec(models.UnionRequestItem)
+codec_7: Final[MsgspecCodec[models.EnumResponse1]] = MsgspecCodec(models.EnumResponse1)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[MsgspecCodec[models.UnionRequestItem]] = MsgspecCodec(models.UnionRequestItem)
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[MsgspecCodec[models.UnionResponseItem]] = MsgspecCodec(models.UnionResponseItem)
+codec_9: Final[MsgspecCodec[models.UnionResponseItem]] = MsgspecCodec(models.UnionResponseItem)
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[MsgspecCodec[models.AnyRequestItem]] = MsgspecCodec(models.AnyRequestItem)
+codec_10: Final[MsgspecCodec[models.AnyRequestItem]] = MsgspecCodec(models.AnyRequestItem)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[MsgspecCodec[models.AnyResponseItem]] = MsgspecCodec(models.AnyResponseItem)
+codec_11: Final[MsgspecCodec[models.AnyResponseItem]] = MsgspecCodec(models.AnyResponseItem)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[MsgspecCodec[models.EmptyRequestItem]] = MsgspecCodec(models.EmptyRequestItem)
+codec_12: Final[MsgspecCodec[models.EmptyRequestItem]] = MsgspecCodec(models.EmptyRequestItem)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[MsgspecCodec[models.EmptyResponseItem]] = MsgspecCodec(models.EmptyResponseItem)
+codec_13: Final[MsgspecCodec[models.EmptyResponseItem]] = MsgspecCodec(models.EmptyResponseItem)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

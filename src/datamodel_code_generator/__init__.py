@@ -13,8 +13,7 @@ import sys
 import threading
 import warnings
 from collections import defaultdict
-from collections.abc import Callable, Generator, Mapping
-from datetime import datetime, timezone
+from collections.abc import Callable, Generator, Iterable, Mapping
 from functools import lru_cache as _lru_cache
 from pathlib import Path
 from typing import (
@@ -27,6 +26,7 @@ from typing import (
 )
 from urllib.parse import ParseResult
 
+from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
@@ -44,6 +44,7 @@ from datamodel_code_generator._source import (
     enable_parsed_source_cache,
     load_data,
     load_data_from_path,
+    load_text_data,
     load_yaml,
     load_yaml_dict,
     load_yaml_dict_from_path,
@@ -63,6 +64,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
     MIN_VERSION,
@@ -648,7 +650,7 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
     if not config.use_missing_sentinel:
         return config
 
-    if config.output_model_type not in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}:
+    if config.output_model_type not in _PYDANTIC_MODEL_TYPES:
         msg = (
             "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
             "or `pydantic_v2.dataclass`"
@@ -746,9 +748,11 @@ def _is_comment_only_source(source: str) -> bool:
 
     Split only at CR/LF: ``splitlines()`` adds Unicode boundaries the tokenizer does not treat as line breaks.
     """
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
     return all(
         not (content := line.lstrip(" \t\f")) or content.startswith("#")
-        for line in source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        for line in normalize_newlines(source).split("\n")
     )
 
 
@@ -892,7 +896,7 @@ def _build_file_header_parts(custom_file_header: str | None, config: GenerateCon
 #   filename:  """
     header_suffix = ""
     if not config.disable_timestamp:
-        timestamp = config._generation_timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
+        timestamp = config._generation_timestamp or current_timestamp()  # noqa: SLF001
         header_suffix += f"\n#   timestamp: {timestamp}"
     if config.enable_version_header:
         header_suffix += f"\n#   version:   {get_version()}"
@@ -1234,20 +1238,14 @@ def _convert_mcp_tools(
 
     from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema  # noqa: PLC0415
 
-    def load_mcp_tools_text(text: str) -> Any:
-        if _is_json_text(text):
-            with contextlib.suppress(json.JSONDecodeError):
-                return json.loads(text)
-        return load_yaml(text)
-
     def load_mcp_tools_data() -> Any:
         match input_:
             case Mapping() | list():
                 return input_
             case Path():
-                return load_mcp_tools_text(input_.read_text(encoding=config.encoding))
+                return load_text_data(input_.read_text(encoding=config.encoding), mapping=False)
         assert input_text is not None
-        return load_mcp_tools_text(input_text)
+        return load_text_data(input_text, mapping=False)
 
     try:
         mcp_tools_jsonschema = convert_mcp_tools_to_jsonschema(load_mcp_tools_data())
@@ -1359,7 +1357,9 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         source = input_text or input_
         assert not isinstance(source, Mapping)
 
-    defer_formatting = config.output is not None and not config.output.suffix
+    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
+
+    defer_formatting = config.output is not None and names_directory(config.output)
 
     target_datetime_class = config.output_datetime_class
     if target_datetime_class is None:
@@ -1575,11 +1575,13 @@ def _write_results_to_output(  # noqa: PLR0913
     header_prefix: str,
     header_suffix: str | None,
     has_custom_file_header: bool,
-) -> None:
-    """Write one file or a sorted collection of generated modules to disk."""
+) -> list[Path]:
+    """Write one file or a sorted collection of generated modules to disk, and return the files written."""
+    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
+
     if isinstance(results, str):
         _ensure_file_output_path(output, _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR)
-    elif output.suffix:
+    elif not names_directory(output):
         raise Error(_MODULAR_OUTPUT_FILE_ERROR)
     if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
         from itertools import starmap  # noqa: PLC0415
@@ -1593,13 +1595,15 @@ def _write_results_to_output(  # noqa: PLR0913
     )
     for module_text in module_texts.values():
         _ensure_output_text_encodable(module_text, config.encoding)
+    paths: list[Path] = []
     for name, module_text in module_texts.items():
-        path = output.joinpath(*name)
+        paths.append(path := output.joinpath(*name))
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
         with path.open("wt", encoding=config.encoding) as file:
             file.write(module_text)
             file.write("\n")
+    return paths
 
 
 def _format_deferred_output(
@@ -1607,38 +1611,30 @@ def _format_deferred_output(
     config: GenerateConfig,
     data_model_types: DataModelSet,
     settings_path: Path,
+    files: Iterable[Path],
 ) -> None:
-    """Apply deferred Ruff formatting only when a Ruff formatter is configured."""
+    """Apply deferred Ruff formatting only when a Ruff formatter is configured, to the files written in the encoding."""
     if not config.formatters:
         return
 
     from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
-    from datamodel_code_generator.format import CodeFormatter, resolve_use_type_checking_imports  # noqa: PLC0415
+    from datamodel_code_generator.format import CodeFormatter, _model_formatter_arguments  # noqa: PLC0415
 
     if Formatter.RUFF_CHECK not in config.formatters and Formatter.RUFF_FORMAT not in config.formatters:
         return
 
-    effective_use_type_checking_imports = resolve_use_type_checking_imports(
-        config.use_type_checking_imports,
-        is_multi_module_output=True,
-        formatters=config.formatters,
-        requires_runtime_imports_with_ruff_check=(data_model_types.data_model.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK),
-    )
     code_formatter = CodeFormatter(
-        config.target_python_version,
-        settings_path,
-        config.wrap_string_literal,
-        skip_string_normalization=not config.use_double_quotes,
+        settings_path=settings_path,
         known_third_party=data_model_types.known_third_party,
-        custom_formatters=config.custom_formatters,
-        custom_formatters_kwargs=config.custom_formatters_kwargs,
-        encoding=config.encoding,
-        formatters=config.formatters,
-        builtin_format_line_length=config.builtin_format_line_length,
-        use_type_checking_imports=effective_use_type_checking_imports,
         defer_formatting=True,
+        **_model_formatter_arguments(
+            config,
+            custom_formatters=config.custom_formatters,
+            backend=data_model_types.data_model,
+            is_multi_module_output=True,
+        ),
     )
-    code_formatter.format_directory(output)
+    code_formatter.format_directory(output, files)
 
 
 def _default_input_filename(input_: _GenerationInput) -> str:
@@ -1703,7 +1699,7 @@ def _emit_results(  # noqa: PLR0913
         return texts[()] if isinstance(results, str) else texts
 
     try:
-        _write_results_to_output(
+        written = _write_results_to_output(
             results,
             output,
             config,
@@ -1717,7 +1713,7 @@ def _emit_results(  # noqa: PLR0913
             raise
         raise Error(_MODULAR_OUTPUT_FILE_ERROR) from e
     if defer_formatting:
-        _format_deferred_output(output, config, data_model_types, settings_path)
+        _format_deferred_output(output, config, data_model_types, settings_path, written)
 
     return None
 
@@ -1908,9 +1904,9 @@ def _generate_with_atomic_remote_update(
 
 def _prepare_generation_config(config: GenerateConfig, caller_cwd: Path) -> tuple[GenerateConfig, Path, Path]:
     """Resolve configuration paths before any process-relative generation work."""
-    config = _absolute_config_paths(
-        config, ("output", "emit_model_metadata", "custom_file_header_path", "custom_template_dir"), caller_cwd
-    )
+    from datamodel_code_generator._config_fields import CALLER_RELATIVE_PATH_FIELDS  # noqa: PLC0415
+
+    config = _absolute_config_paths(config, CALLER_RELATIVE_PATH_FIELDS, caller_cwd)
     logical_output = _absolute_generation_path(config._logical_output, caller_cwd)  # noqa: SLF001
     output_context_path = _output_context_path(logical_output or config.output, caller_cwd)
     if (http_local_ref_path := _absolute_generation_path(config.http_local_ref_path, output_context_path)) is not (
@@ -1992,7 +1988,8 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     if not isinstance(input_, Path) or not input_.is_dir():
         return config
 
-    from datamodel_code_generator._paths import concrete  # noqa: PLC0415
+    from datamodel_code_generator._paths import concrete, names_directory  # noqa: PLC0415
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
     from datamodel_code_generator._source import DirectoryInputFilter  # noqa: PLC0415
 
     output = config._logical_output or config.output  # noqa: SLF001
@@ -2000,7 +1997,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     input_root = input_.resolve()
     files: set[Path] = set()
     output_directory = None
-    for target, is_directory in ((output, output is not None and not output.suffix), (metadata, False)):
+    for target, is_directory in ((output, output is not None and names_directory(output)), (metadata, False)):
         if target is None:
             continue
         paths = (
@@ -2040,7 +2037,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     config._directory_input_filter = DirectoryInputFilter(  # noqa: SLF001
         frozenset(files),
         output_directory,
-        tuple(header.replace("\r\n", "\n").replace("\r", "\n") for header in headers),
+        tuple(normalize_newlines(header) for header in headers),
     )
     return config
 
@@ -2120,22 +2117,11 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         case str():
             input_text: str | None = input_
         case ParseResult():
-            from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, get_body  # noqa: PLC0415
+            from datamodel_code_generator.http import _get_configured_body  # noqa: PLC0415
 
-            timeout = config.http_timeout if config.http_timeout is not None else DEFAULT_HTTP_TIMEOUT
             input_text = remote_text_cache.get_or_put(
                 input_.geturl(),
-                default_factory=lambda url: get_body(
-                    url,
-                    config.http_headers,
-                    config.http_ignore_tls,
-                    config.http_query_parameters,
-                    timeout,
-                    allow_private_network=config.allow_private_network,
-                    http_backend=config.http_backend,
-                    response_observer=response_observer,
-                    encoding=config.encoding,
-                ),
+                default_factory=lambda url: _get_configured_body(url, config, response_observer=response_observer),
             )
         case _:
             input_text = None

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -17,6 +18,7 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator import Error, InputFileType, SchemaParseError, snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
+from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import (
     ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
 )
@@ -47,7 +49,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import SchemaLocation
 
 
-OPERATION_NAMES: tuple[str, ...] = ("publish", "subscribe")
+OPERATION_NAMES: tuple[str, ...] = CHANNEL_OPERATIONS
 BINDING_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset({"headers", "query", "key", "groupId", "clientId"})
 ASYNCAPI_SCHEMA_FORMATS: frozenset[str] = frozenset({
     "application/vnd.aai.asyncapi",
@@ -201,20 +203,11 @@ def _schema_format_media_type(schema_format: str) -> str:
     return schema_format.split(";", maxsplit=1)[0].strip().lower()
 
 
-def _is_multi_format_schema_object_candidate(raw_schema: YamlValue) -> bool:
-    if not isinstance(raw_schema, dict):
-        return False
-    if "schemaFormat" in raw_schema:
-        return True
-    fixed_keys = {key for key in raw_schema if isinstance(key, str) and not key.startswith("x-")}
-    return fixed_keys == {"schema"}
-
-
 def _parse_multi_format_schema_object(
     raw_schema: YamlValue,
     path: list[str],
 ) -> MultiFormatSchemaObject | None:
-    if not _is_multi_format_schema_object_candidate(raw_schema):
+    if not is_multi_format_schema_object(raw_schema):
         return None
     try:
         return MultiFormatSchemaObject.model_validate(raw_schema)
@@ -256,11 +249,13 @@ def _move_json_schema_definitions_to_components(
     if isinstance(definitions := schema.pop("definitions", None), dict):
         schema["components"] = {"schemas": definitions}
 
+    definitions_ref = definition_ref("definitions")
+
     def update_refs(value: YamlValue) -> None:
         match value:
             case dict():
-                if (ref := value.get("$ref")) and isinstance(ref, str) and ref.startswith("#/definitions/"):
-                    value["$ref"] = f"{ref_prefix}/{ref.removeprefix('#/definitions/')}"
+                if (ref := value.get("$ref")) and isinstance(ref, str) and ref.startswith(definitions_ref):
+                    value["$ref"] = f"{ref_prefix}/{ref.removeprefix(definitions_ref)}"
                 else:
                     for item in value.values():
                         update_refs(item)
@@ -587,7 +582,7 @@ class AsyncAPIParser(OpenAPIParser):
         if not path_pointer:
             return AsyncAPIResolvedRef(raw_doc, [*root_parts, "#/"], context)
         target = get_model_by_path(raw_doc, pointer)
-        return AsyncAPIResolvedRef(target, [*root_parts, f"#/{path_pointer[0]}", *path_pointer[1:]], context)
+        return AsyncAPIResolvedRef(target, self._pointer_parse_path(root_parts, path_pointer), context)
 
     def _iter_message_payload_schemas(
         self,
@@ -609,10 +604,9 @@ class AsyncAPIParser(OpenAPIParser):
         )
         headers_name = None if "headers" in message else _make_model_name(name, "Headers")
         schemas.extend(self._member_format_schemas(message, "headers", _make_model_name(name, "Headers"), path))
-        if "traits" in message:
-            schemas.extend(
-                self._iter_message_trait_schemas(message["traits"], headers_name, name, [*path, "traits"], seen_paths)
-            )
+        schemas.extend(
+            _member_schemas(message, "traits", self._iter_trait_schemas, name, path, seen_paths, headers_name)
+        )
         schemas.extend(_member_schemas(message, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         return schemas
 
@@ -662,25 +656,25 @@ class AsyncAPIParser(OpenAPIParser):
             return schemas
         return self._member_format_schemas(parameter, "schema", name, path)
 
-    def _iter_message_trait_schemas(
+    def _iter_trait_schemas(
         self,
         traits: Any,
-        headers_name: str | None,
-        binding_name: str,
+        name: str,
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
+        headers_name: str | None = None,
     ) -> list[AsyncAPISchema]:
+        """Return the schemas of a trait or a list of traits of a message or an operation.
+
+        A trait that is a new reference gives the schemas of its target; any other gives its headers, as
+        ``headers_name``, when a message trait may define them (at most one trait does), then its bindings, named
+        after ``name`` with the suffix ``Trait``.
+        """
         schemas: list[AsyncAPISchema] = []
         for trait, trait_path in _iter_trait_items(traits, path):
             if (
                 followed := self._recurse_into_ref(
-                    trait,
-                    binding_name,
-                    seen_paths,
-                    lambda value, _, ref_path, seen: self._iter_message_trait_schemas(
-                        value, headers_name, binding_name, ref_path, seen
-                    ),
-                    rename=False,
+                    trait, name, seen_paths, partial(self._iter_trait_schemas, headers_name=headers_name), rename=False
                 )
             ) is not None:
                 schemas.extend(followed)
@@ -695,34 +689,10 @@ class AsyncAPIParser(OpenAPIParser):
                     trait,
                     "bindings",
                     self._iter_binding_schemas,
-                    _make_model_name(binding_name, "Trait"),
-                    trait_path,
-                    seen_paths,
-                )
-            )
-        return schemas
-
-    def _iter_operation_trait_schemas(
-        self,
-        traits: Any,
-        name: str,
-        path: list[str],
-        seen_paths: set[tuple[str, ...]] | None = None,
-    ) -> list[AsyncAPISchema]:
-        schemas: list[AsyncAPISchema] = []
-        for trait, trait_path in _iter_trait_items(traits, path):
-            followed = self._recurse_into_ref(trait, name, seen_paths, self._iter_operation_trait_schemas, rename=False)
-            schemas.extend(
-                _member_schemas(
-                    trait,
-                    "bindings",
-                    self._iter_binding_schemas,
                     _make_model_name(name, "Trait"),
                     trait_path,
                     seen_paths,
                 )
-                if followed is None
-                else followed
             )
         return schemas
 
@@ -761,7 +731,7 @@ class AsyncAPIParser(OpenAPIParser):
         if (schemas := self._follow(operation, name, seen_paths, self._iter_operation_schemas)) is not None:
             return schemas
         return [
-            *_member_schemas(operation, "traits", self._iter_operation_trait_schemas, name, path, seen_paths),
+            *_member_schemas(operation, "traits", self._iter_trait_schemas, name, path, seen_paths),
             *_member_schemas(operation, "bindings", self._iter_binding_schemas, name, path, seen_paths),
             *_member_schemas(operation, "messages", self._iter_operation_message_schemas, name, path),
             *_member_schemas(operation, "reply", self._iter_operation_reply_schemas, name, path),
@@ -798,8 +768,7 @@ class AsyncAPIParser(OpenAPIParser):
         path_parts: list[str],
     ) -> list[AsyncAPISchema]:
         """Return the schemas of a document: its component schemas, then those of each of its maps, in that order."""
-        components = specification.get("components", {})
-        components = components if isinstance(components, dict) else {}
+        components = as_mapping(specification.get("components", {}))
         component_schemas = components.get("schemas")
         schemas = [
             schema
@@ -816,8 +785,8 @@ class AsyncAPIParser(OpenAPIParser):
             ("messages", self._iter_message_payload_schemas, ""),
             (
                 "messageTraits",
-                lambda trait, name, path: self._iter_message_trait_schemas(
-                    trait, name, name.removesuffix("Headers") or name, path
+                lambda trait, name, path: self._iter_trait_schemas(
+                    trait, name.removesuffix("Headers") or name, path, headers_name=name
                 ),
                 "Headers",
             ),
@@ -825,7 +794,7 @@ class AsyncAPIParser(OpenAPIParser):
             ("channels", self._iter_channel_schemas, ""),
             ("replies", self._iter_operation_reply_schemas, ""),
             ("operations", self._iter_operation_schemas, ""),
-            ("operationTraits", self._iter_operation_trait_schemas, ""),
+            ("operationTraits", self._iter_trait_schemas, ""),
         )
         for key, walker, suffix in component_maps:
             path = [*path_parts, "#/components", key]

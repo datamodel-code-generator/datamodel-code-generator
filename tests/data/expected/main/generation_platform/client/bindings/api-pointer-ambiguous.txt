@@ -1,3 +1,4 @@
 # api-pointer-ambiguous
 render pydantic_v2.BaseModel default
-  diagnostic Error: Error at schema path 'pointer-ambiguous.json#/components/schemas/a/b': API_REF_NONCANONICAL_POINTER: '#/components/schemas/a%2Fb'
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default

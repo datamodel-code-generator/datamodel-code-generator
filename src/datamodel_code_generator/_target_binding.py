@@ -1,29 +1,30 @@
 """Bind target operations to the emitted models through recorded model replacements.
 
 Only target generation imports this module. A target parser records the two reference redirects of the generation
-store, the API schema acquisitions with their engine keys, the operations and reference objects its walk resolves,
-where each schema it walks declares its members, and each emitted module's final models. After parsing,
-`bind_operations` reads the final model graph and these records once, before disposal, and returns an immutable contract
-batch; it reads no schema of the loaded documents.
+store, the API schema acquisitions with their engine keys, the objects of each operation where its walk visits them,
+and each emitted module's final models. After parsing, `bind_operations` reads the final model graph and these records
+once, before disposal, and returns an immutable contract batch; it locates members and nested types through the
+parser's origins (``reference.field_origin_of``, ``reference.type_origin_of``) and reads no schema of the loaded
+documents.
 """
 
 from __future__ import annotations
 
-from contextlib import suppress
-from dataclasses import dataclass, is_dataclass, replace
-from dataclasses import fields as dataclass_fields
+from contextlib import contextmanager, suppress
+from dataclasses import dataclass, replace
 from decimal import Decimal
-from functools import cached_property, partial
+from functools import cached_property
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
-from urllib.parse import ParseResult, unquote
+from urllib.parse import ParseResult
 
 from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
+    CONTAINERS,
     ITEM_CONTAINERS,
     MAPPINGS,
     SLOT_CLASSES,
@@ -33,20 +34,13 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
-from datamodel_code_generator._json_schema import (
-    COMBINATOR_POSITIONS,
-    MODEL_VALUE_POSITIONS,
-    MODELED_SCHEMA_MAPS,
-    SCHEMA_SHAPES,
-    SEQUENCE_SCHEMA_SHAPES,
-    SINGLE_SCHEMA_SHAPES,
-)
+from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
 from datamodel_code_generator._openapi_paths import inherited_security
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
+from datamodel_code_generator._site_facts import ANNOTATION_KEYWORDS
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BackendFieldFacts,
@@ -72,7 +66,7 @@ from datamodel_code_generator._target_contract import (
     IgnoredDeclaration,
     ImportedExpression,
     ImportedType,
-    KindSite,
+    KindAt,
     KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
@@ -89,7 +83,6 @@ from datamodel_code_generator._target_contract import (
     PartFacts,
     PartSchema,
     RuntimeBackendValue,
-    SchemaSite,
     SourceDocument,
     SourceDocumentId,
     SourceExpression,
@@ -103,24 +96,35 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
+    response_key,
+    wrapped_type,
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import admits_none, is_none, present
+from datamodel_code_generator._target_types import (
+    admits_none,
+    contained,
+    is_none,
+    lexical_kind,
+    present,
+    sole_present,
+    untyped,
+    unwrapped,
+)
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
-from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
+from datamodel_code_generator.model._decisions.enum_kind import json_type
 from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import (
     _REUSE_PATH_SUFFIX,
     UNDEFINED,
-    ConstraintsBase,
     DataModel,
     DataModelFieldBase,
+    _has_root_field_constraints,
 )
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
@@ -139,14 +143,18 @@ from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
-    SPECIAL_PATH_MARKER,
+    Reference,
     SchemaLocation,
     _is_special_path,
+    _rw_direction,
     _rw_variant_flag,
     _rw_variant_of,
     _rw_variant_path,
     _source_path,
+    binary_content_of,
+    field_origin_of,
     location_of,
+    type_origin_of,
 )
 from datamodel_code_generator.types import DataType, Types, reference_names_nullable
 
@@ -165,22 +173,14 @@ _ENUMS: Final = frozenset({Enum, IntEnum, StrEnum})
 _ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement, PydanticCompatibleTypeAlias})
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
 _BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in get_args(BuiltinName)}
-_NULL: Final = frozenset({"null"})
-_ARRAY: Final = frozenset({"array"})
-_STRING: Final = frozenset({"string"})
-_OBJECT: Final = frozenset({"object"})
-_NESTED: Final = _ARRAY | _OBJECT
-_IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
-_ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _RAW_MEDIA: Final = frozenset({"text", "binary"})
-_HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
+_HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
     "response_header",
     "request_encoding_header",
     "response_encoding_header",
 })
-_SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 _DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
 _DEFAULT_KINDS: Final = cast(
     "dict[type, Literal['bool', 'int', 'float', 'str']]", {kind: kind.__name__ for kind in (bool, int, float, str)}
@@ -339,18 +339,44 @@ class _Union:
 
 
 @dataclass(slots=True)
-class _WalkedOperation:
-    """An operation as the target parser walked it, with the parameters in effect in their order."""
+class _WalkedHolder:
+    """A resolved object of the walk, where the document spells it, and the objects the walk visited in it, in order."""
 
-    raw: dict[str, YamlValue]
     declaration: SchemaLocation
+    value: dict[str, YamlValue]
+    objects: list[_WalkedObject]
+
+    def below(self, kind: ApiObjectKind) -> Iterator[_WalkedObject]:
+        """Yield the objects of ``kind`` the walk visited in this one, in order."""
+        return (found for found in self.objects if found.kind == kind)
+
+
+@dataclass(slots=True)
+class _WalkedObject(_WalkedHolder):
+    """An object of an operation as the walk visited it.
+
+    ``key`` names it in its holder as the document spells it, so a YAML status such as ``200:`` is a number; the other
+    names are checked to be text before the bindings read them: a parameter's name, a media type, an encoding's
+    property, a header's or a callback's name. ``schemas`` are the schemas the walk acquired in it, with their
+    projections; a callback is kept as written, since its metadata follows its references itself.
+    """
+
+    kind: ApiObjectKind
+    key: Any
+    schemas: dict[SchemaLocation, tuple[Projection, ...]]
+
+
+@dataclass(slots=True)
+class _WalkedOperation(_WalkedHolder):
+    """An operation as the target parser walked it: the objects the walk visited in it and the parameters in effect."""
+
     use_site: SchemaLocation
     origin: SchemaLocation
     item: _WalkedPathItem
     parent: int | None
     security: YamlValue
     shared: dict[int, SchemaLocation]
-    parameters: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]]
+    parameters: list[tuple[SchemaLocation, _WalkedObject]]
 
 
 class TargetApiOpenAPIParser(ApiOpenAPIParser):
@@ -372,40 +398,20 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
         self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
-        self.resolutions: dict[SchemaLocation, tuple[SchemaLocation, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
+        self.left_out: dict[str, tuple[tuple[DataModelFieldBase, ...], tuple[DataModelFieldBase, ...]]] = {}
         self.schema_records: dict[SchemaLocation, _SchemaRecord] = {}
-        self.schema_locations: dict[SchemaLocation, _SchemaNode] = {}
         self.free_schemas: dict[SchemaLocation, JsonSchemaObject] = {}
+        self.object_facts: dict[SchemaLocation | None, _ObjectFacts] = {}
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
-        self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
+        self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
-        self._walked_schemas: list[tuple[int, SchemaLocation, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(
-            self._api_documents,
-            self.schema_locations,
-            versions=[],
-            binary=self._binary_formats(encoded=False),
-            encoded=self._binary_formats(encoded=True),
-            follow=self._schema_reference_location,
-        )
-
-    def _binary_formats(self, *, encoded: bool) -> frozenset[str]:
-        """Return the string formats the models type as bytes, as `--type-mappings` leaves or makes them.
-
-        They are the formats of raw bytes, or those of bytes the models write as base64 text.
-        """
-        return frozenset(
-            found
-            for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
-            if self._get_type_with_mappings("string", found) == Types.binary
-            and self._is_base64_encoded_binary_mapping("string", found) is encoded
-        )
+        self._reader = _Reader(self._site_facts, versions=[])
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -429,13 +435,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             f"Input directory: {base}\nResolved path: {resolved}\n"
             "Move the referenced schemas under the input directory."
         )
-
-    def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
-        """Record the declaration a reference object resolves to."""
-        target = super()._resolve_api_object(value, path)
-        if target.value is not value:
-            self.resolutions[self._declared(value)] = (target.declaration, target.value)
-        return target
 
     def _walk_path_item(
         self,
@@ -465,34 +464,50 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             shared.update(
                 (id(entry.target), item.origin.child("parameters", entry.occurrence.tokens[-1])) for entry in common[1]
             )
-        self.operations.append(
-            _WalkedOperation(
-                operation,
-                self._declared(operation),
-                use_site,
-                item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
-                item,
-                self._walked_operations[-1] if self._walked_operations else None,
-                self._api_security,
-                shared,
-                [],
-            )
+        walked = _WalkedOperation(
+            self._declared(operation),
+            operation,
+            [],
+            use_site,
+            item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
+            item,
+            self._walked_operations[-1] if self._walked_operations else None,
+            self._api_security,
+            shared,
+            [],
         )
+        self.operations.append(walked)
         self._walked_operations.append(len(self.operations) - 1)
+        self._visits.append(walked)
         super()._walk_api_operation(operation, path, use_site, prefix, common)
+        self._visits.pop()
         self._walked_operations.pop()
 
-    def _walk_parameter(self, name: str, target: Any, *, header: bool = False, role: SchemaRole = "parameter") -> None:
-        """Record each parameter in effect for the operation under the walk at its place in the document."""
-        if self._walked_operations and role == "parameter" and not header:
+    @override
+    @contextmanager
+    def _visiting(self, kind: ApiObjectKind, key: object, target: Any) -> Generator[None, None, None]:
+        """Record an object of the operation under the walk below the object it is in, a parameter at its place."""
+        if not self._visits:
+            yield
+            return
+        declaration, value = (
+            (self._declared(target), target) if isinstance(target, dict) else (target.declaration, target.value)
+        )
+        node = _WalkedObject(declaration, value, [], kind, key, {})
+        if kind == "parameter":
             operation = self.operations[self._walked_operations[-1]]
             operation.parameters.append((
                 operation.shared.get(id(target))
                 or operation.origin.child("parameters", str(len(operation.parameters))),
-                target.declaration,
-                target.value,
+                node,
             ))
-        super()._walk_parameter(name, target, header=header, role=role)
+        else:
+            self._visits[-1].objects.append(node)
+        self._visits.append(node)
+        try:
+            yield
+        finally:
+            self._visits.pop()
 
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Keep where the document spells the callback while its path items are walked."""
@@ -505,43 +520,21 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         super()._walk_callback(raw, path, prefix, use_site)
         self._callback_origin = previous
 
-    def _traverse_schema_objects(
-        self,
-        obj: JsonSchemaObject,
-        path: list[str],
-        callback: Callable[[JsonSchemaObject, list[str]], None],
-    ) -> None:
-        """Record where each schema the reference walk visits declares its members, at its place in its document.
+    def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
+        """Record what a model's schema says of its other and pattern properties, as the parser reads them.
 
-        The walk starts at the location the parser recorded for the schema object; a visited schema below another sits
-        at its parent's declaration and the raw keys the walk descends by. The model-free type of a typed additional
-        property needs its schema too.
+        The other properties are the model's (``_model_additional_properties``), and the schema of the typed ones
+        binds model-free. A schema the parser read at no location is recorded under None, which no model's location
+        looks up.
         """
-        if callback != self._resolve_ref_callback:
-            super()._traverse_schema_objects(obj, path, callback)
-            return
-        walked = self._walked_schemas
-        if walked and (parent := walked[-1]) is not None:
-            tokens = path[parent[0] :]
-            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, "legacy-int-tokens")
-        else:
-            declaration = cast("SchemaLocation", obj.schema_location)
-            value = self._reader.borrow(declaration)
-        if self._reader.node(declaration, value) is not None and path[-1] == "additionalProperties":
-            self.free_schemas.setdefault(declaration, obj)
-        walked.append((len(path), declaration, value))
-        try:
-            super()._traverse_schema_objects(obj, path, callback)
-        finally:
-            walked.pop()
-
-    def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
-        """Resolve a visited schema's references; a document they load is walked from its own roots."""
-        self._walked_schemas.append(None)
-        try:
-            super()._resolve_ref_callback(obj, path)
-        finally:
-            self._walked_schemas.pop()
+        super()._record_schema_object(reference, obj)
+        location = obj.schema_location
+        if isinstance(additional := obj.additionalProperties, JsonSchemaObject) and location is not None:
+            self.free_schemas.setdefault(location.child("additionalProperties"), additional)
+        self.object_facts.setdefault(
+            location,
+            _ObjectFacts(_others_read(self._model_additional_properties(obj)), obj.patternProperties is not None),
+        )
 
     def parse_combined_schema(
         self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
@@ -584,6 +577,24 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.copies[id(copied)] = (copied, inherited_field)
         return copied
 
+    def _create_variant_model(  # noqa: PLR0913
+        self,
+        base_reference: Reference,
+        suffix: Literal["Request", "Response"],
+        model_fields: list[DataModelFieldBase],
+        obj: JsonSchemaObject,
+        data_model_type_class: type[DataModel],
+        *,
+        source_fields: Sequence[DataModelFieldBase] = (),
+    ) -> None:
+        """Record, by the variant's reference key, the split's fields and those of them the variant leaves out."""
+        super()._create_variant_model(
+            base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
+        )
+        kept = {id(field) for field in model_fields}
+        key = self.model_resolver.join_path(tuple(_rw_variant_path(base_reference.path, _rw_direction(suffix))))
+        self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
+
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
         self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
@@ -610,19 +621,24 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Return True: the bindings locate every medium by its media type, so walking one reads it."""
         return True
 
+    def _visited(self) -> _WalkedObject | None:
+        """Return the object of an operation the walk is visiting, None where it visits none."""
+        return visited if self._visits and isinstance(visited := self._visits[-1], _WalkedObject) else None
+
     def _acquire_schema(
-        self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
+        self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: TypeUseRole
     ) -> None:
         """Record the declaration's engine key, even when it was already generated, and what its schema says.
 
-        Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
-        documents spell them, since its model types do not say them.
+        Once a parameter's schema is generated, its default and keywords are recorded as the documents spell them,
+        since its model types do not say them.
         """
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
+        if (visited := self._visited()) is not None:
+            visited.schemas.setdefault(declaration, ("value",))
         super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
-        self._reader.node(declaration, raw)
         if declaration not in self.schema_records:
-            self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
+            self.schema_records[declaration] = self._reader.record(declaration, role)
         if declaration not in self._declaration_types:
             self._free(declaration, "value", raw, path)
 
@@ -634,11 +650,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         ):
             self.free_schemas[declaration] = self._validate_schema_object(raw, path)
 
-    def _locate(self, declaration: SchemaLocation) -> SourceLocation:
-        """Return a declaration's location, its document identified in the order the records first name them."""
-        document = self.record_documents.setdefault(declaration.document, SourceDocumentId(len(self.record_documents)))
-        return SourceLocation(document, declaration.pointer, "schema")
-
     def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
         self,
         name: str,
@@ -647,7 +658,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         projected: YamlValue,
         *,
         declaration: SchemaLocation,
-        role: SchemaRole,
+        role: TypeUseRole,
     ) -> None:
         """Record an item schema and its stream-array projection, even when they were already generated."""
         item_path = [*path, "itemSchema"]
@@ -657,6 +668,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.model_resolver.join_path(tuple(self._media_schema_path(path, from_item_schema=True))),
         )
         super()._acquire_item_schema(name, item, path, projected, declaration=declaration, role=role)
+        if (visited := self._visited()) is not None:
+            visited.schemas[declaration] = ("value", "item_stream_array")
         self._free(declaration, "item_stream_array", item, item_path)
 
     def _generate_module_output(  # noqa: PLR0913, PLR0917
@@ -710,20 +723,17 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs.clear()
         self.model_imports.clear()
         self.operations.clear()
-        self.resolutions.clear()
         self.unions.clear()
         self.copies.clear()
         self.schema_records.clear()
-        self.schema_locations.clear()
-        self._reader.binaries.clear()
-        self._reader.encodings.clear()
+        self._schema_sites.clear()
         self.free_schemas.clear()
+        self.object_facts.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
-        self.record_documents.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
-        self._walked_schemas.clear()
+        self._visits.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
@@ -739,43 +749,52 @@ def _imported_names(imports: Imports) -> Iterator[str]:
             yield from (f"{module}.{member}" for member in members)
 
 
-_Locate: TypeAlias = "Callable[[SchemaLocation], SourceLocation]"
-_Follow: TypeAlias = "Callable[[str, str], SchemaLocation | None]"
+_OthersRead: TypeAlias = Literal["absent", "closed", "allowed", "schema"]
 
 
 @dataclass(frozen=True, slots=True)
-class _PartsRecord:
-    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's.
+class _ObjectFacts:
+    """What the parser reads a model's schema to say of its other properties, and whether it has pattern properties.
 
-    `binary` is where the first raw binary string sits inside a part that holds no files, which carries it as text.
+    `others` is what its additionalProperties say as the model's (``_model_additional_properties``): nothing, none
+    (`false`, or an inline allOf branch that closes the model), any value (`true` or `{}`), or a schema of their values.
     """
 
-    object: bool
-    members: tuple[tuple[SourceLocation, PartSchema], ...]
-    extra: PartSchema | Literal["closed"] | None
-    binary: SourceLocation | None = None
+    others: _OthersRead
+    patterns: bool
+
+
+def _others_read(said: JsonSchemaObject | bool | None) -> _OthersRead:  # noqa: FBT001
+    """Return what a model's additionalProperties say (``_ObjectFacts.others``)."""
+    if said is None:
+        return "absent"
+    if isinstance(said, bool):
+        return "allowed" if said else "closed"
+    return "schema" if said.model_fields_set else "allowed"
+
+
+@dataclass(frozen=True, slots=True)
+class _Others:
+    """What the model a type holds says of its other properties, and where their schema is and its values' type.
+
+    `kept` is the member whose field the model keeps typed ones in, and `free` their schema when the model keeps
+    none, which binds model-free.
+    """
+
+    said: _OthersRead
+    patterns: bool = False
+    source: SourceLocation | None = None
+    values: TypeView | None = None
+    kept: FieldUseBinding | None = None
+    free: SchemaLocation | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class _SchemaRecord:
-    """What the walk recorded of an acquired schema that its model types do not say.
-
-    `binary` is where the first raw binary string sits that the schema's values carry as text. Of a body's schema,
-    `string` says its whole value may be a string, which its models may type as raw bytes, `spelled` that it is
-    written as one binary string, and `base64` that it reaches bytes the models write as base64 text. `form` is the
-    branch of a form's union with null alone that declares the form's members, which its parts and encoding are read
-    from.
-    """
+    """What the walk recorded of an acquired parameter schema that its model types do not say."""
 
     default: LiteralScalar | None
     keywords: tuple[tuple[str, FrozenLiteral], ...]
-    parts: _PartsRecord | None
-    encoding: EncodingFacts | None
-    binary: SourceLocation | None = None
-    string: bool = False
-    spelled: bool = False
-    base64: bool = False
-    form: SchemaLocation | None = None
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -799,7 +818,7 @@ def _default(value: YamlValue) -> LiteralScalar | None:
 
 
 def _keywords(
-    raw: dict[str, YamlValue], keys: tuple[str, ...] = _SCHEMA_KEYWORDS
+    raw: Mapping[str, YamlValue], keys: tuple[str, ...] = ANNOTATION_KEYWORDS
 ) -> tuple[tuple[str, FrozenLiteral], ...]:
     """Return each of ``keys`` an object declares, with its literal; by default a schema's documentation keywords."""
     found: list[tuple[str, FrozenLiteral]] = []
@@ -810,97 +829,21 @@ def _keywords(
     return tuple(found)
 
 
-def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumentId]) -> object:
-    """Return a record with each location's document identity the one the attempt's documents give it."""
-    match value:
-        case SourceLocation():
-            return replace(value, document=documents[value.document])
-        case tuple():
-            return tuple(_relocated(item, documents) for item in value)
-        case _ if is_dataclass(value) and not isinstance(value, type):
-            return replace(
-                value,
-                **{field.name: _relocated(getattr(value, field.name), documents) for field in dataclass_fields(value)},
-            )
-        case _:
-            pass
-    return value
-
-
-_UNRECORDED: Final = _SchemaRecord(None, (), None, None)
+_UNRECORDED: Final = _SchemaRecord(None, ())
 _NOT_OBJECT: Final = "A URL-encoded value must be an object"
+_SCALAR_SYMBOLS: Final = frozenset({"enum", *WRAPPER_KINDS})
 _PATTERNS: Final = "Pattern properties have no builtin parameter encoding"
-_UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
-_NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 
 
-def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
-    """Decode a reference's JSON pointer fragment, or return None for a named anchor."""
-    return fragment_tokens(unquote(ref.partition("#")[2]))
+def _pointer_tokens(ref: str, *, strict: bool = False) -> tuple[str, ...] | None:
+    """Read a reference's JSON pointer fragment (`reference_tokens`), or return None for a named anchor.
 
-
-def _schema_use(location: SourceLocation) -> TypeUseId:
-    return TypeUseId(
-        location,
-        "schema",
-        replace(location, role="use"),
-        location,
-        DeclarationId(replace(location, role="declaration")),
-        "neutral",
-    )
-
-
-_JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
-    "none": "null",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
-    "str": "string",
-}
-_VALUE_SCHEMA_LISTS = tuple(
-    keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SEQUENCE_SCHEMA_SHAPES
-)
-_VALUE_SCHEMAS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SINGLE_SCHEMA_SHAPES)
-
-
-def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
-    """Return the JSON types a schema declares, none when it declares none."""
-    match declared := schema.get("type"):
-        case str():
-            return frozenset({declared})
-        case list():
-            return frozenset(str(item) for item in declared)
-        case _:
-            pass
-    return frozenset()
-
-
-def _valued_types(schema: dict[str, YamlValue]) -> frozenset[str]:
-    """Return the JSON types of a schema's enum members and const value."""
-    values = schema.get("enum")
-    members = [*(values if isinstance(values, list) else ()), *((schema["const"],) if "const" in schema else ())]
-    return frozenset(map(_json_type, members))
-
-
-def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
-    """Return whether a schema is written as a string of one of the formats, its values telling the type it omits."""
-    format_ = schema.get("format")
-    return (
-        isinstance(format_, str) and format_ in formats and "string" in (_json_types(schema) or _valued_types(schema))
-    )
-
-
-def _json_type(value: object, other: str | None = None) -> str:
-    """Return the JSON type of an enum or const value by its literal kind.
-
-    Any other value is ``other``, or by default a number when it is a Decimal, an object when it is a dict, and an
-    array otherwise.
+    Under `strict`, a spelling that is no canonical pointer (a stray `%` or `~`, octets that are no UTF-8) is None too.
     """
-    if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
-        return found
-    if other is not None:
-        return other
-    return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
+    try:
+        return reference_tokens(ref.partition("#")[2], strict=strict)
+    except ValueError:
+        return None
 
 
 def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
@@ -1112,23 +1055,33 @@ class _Binder:
             self.anchors.append(node)
         return identity
 
-    def source(self, reference: Reference) -> str:
-        """Return the path of the schema a model is generated from, through read and write variants and reuse.
+    def reuse_origin(self, reference: Reference) -> str | None:
+        """Return the path of the reference reuse replaced with this one, or None if reuse did not make it.
 
         A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
         """
         path = reference.path
-        return _source_path(path.removesuffix(_REUSE_PATH_SUFFIX) if id(reference) not in self.keys else path)
+        if id(reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX):
+            return None
+        return path.removesuffix(_REUSE_PATH_SUFFIX)
+
+    def source(self, reference: Reference) -> str:
+        """Return the path of the schema a model is generated from, through read and write variants and reuse."""
+        origin = self.reuse_origin(reference)
+        return _source_path(reference.path if origin is None else origin)
 
     def reused(self, model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
-        path = model.reference.path
-        original = (
-            None
-            if id(model.reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX)
-            else self.parser.model_resolver.references.get(path.removesuffix(_REUSE_PATH_SUFFIX))
-        )
+        origin = self.reuse_origin(model.reference)
+        original = None if origin is None else self.parser.model_resolver.references.get(origin)
         return original.source if original is not None and isinstance(original.source, DataModel) else None
+
+    def kept(self, model: DataModel) -> DataModel:
+        """Return the model that reuse kept in place of ``model``: the one a model that reuse made inherits."""
+        if model.reused_reference is None:
+            return model
+        kept = self.final(cast("Reference", model.base_classes[0].reference))
+        return model if kept is None else _source(kept)
 
     def emitted(self, model: object) -> bool:
         return isinstance(model, DataModel) and id(model) in self.symbols
@@ -1213,8 +1166,7 @@ class _Binder:
         return (
             self.policies[id(model)].backend not in _UNCHECKED
             and (field := self.root_field(model)) is not None
-            and isinstance(constraints := field.constraints, ConstraintsBase)
-            and constraints.has_constraints
+            and _has_root_field_constraints(field, row="declared")
         )
 
     def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
@@ -1796,11 +1748,12 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
     return "literal", value
 
 
-def _constructor_keywords(
-    field: DataModelFieldBase, backend: BackendName
-) -> tuple[tuple[str, FrozenLiteral | SourceExpression], ...]:
-    """Return the keyword arguments of the builtin field call, read from the field's structured render data."""
-    keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
+def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tuple[tuple[str, TypeArgument], ...]:
+    """Return the keyword arguments of the builtin field call, read from the field's structured render data.
+
+    A runtime expression, such as the ``compile(...)`` of a pattern that needs Python's regex engine, keeps its import.
+    """
+    keywords: list[tuple[str, TypeArgument]] = []
     match field:
         case PydanticField() if backend in {"pydantic", "pydantic_dataclass"}:
             data, factory = field._get_field_data_and_default_factory()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
@@ -1821,7 +1774,7 @@ def _constructor_keywords(
             frozen = _freeze_argument(value)
         except _UnsupportedError:
             frozen = SourceExpression(repr(value))
-        keywords.append((name, frozen if not isinstance(frozen, ImportedExpression) else SourceExpression(str(value))))
+        keywords.append((name, frozen))
     return tuple(keywords)
 
 
@@ -1836,13 +1789,13 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
     return tuple(qualifiers)
 
 
-def _setting(
-    name: str, keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...], *, fallback: bool | None
-) -> BackendValue:
+def _setting(name: str, keywords: tuple[tuple[str, TypeArgument], ...], *, fallback: bool | None) -> BackendValue:
     for key, value in reversed(keywords):
         if key == name:
             return (
-                RuntimeBackendValue("expression") if isinstance(value, SourceExpression) else KnownBackendValue(value)
+                RuntimeBackendValue("expression")
+                if isinstance(value, SourceExpression | ImportedExpression)
+                else KnownBackendValue(value)
             )
     return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
 
@@ -1963,595 +1916,73 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
-def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
-    node: _SchemaNode, data_type: DataType
-) -> list[tuple[tuple[str, ...], DataType]]:
-    """Pair a type's member types with the subschemas they were generated from."""
+def _members_of(data_type: DataType) -> list[DataType]:
+    """Return the types a type holds as items, values or union members, below the wrappers that hold one type."""
     inner = data_type
     while (
         len(inner.data_types) == 1 and inner.reference is None and not inner._is_container  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
     ):
         inner = inner.data_types[0]
-    if inner.is_tuple:
-        for keyword, count in (("prefixItems", node.prefix_items), ("items", node.item_list)):
-            if count == len(inner.data_types):
-                return [((keyword, str(index)), child) for index, child in enumerate(inner.data_types)]
-    if len(inner.data_types) == 1:
-        child = inner.data_types[0]
-        if inner in ITEM_CONTAINERS:
-            if node.item_schema:
-                return [(("items",), child)]
-            if node.prefix_items == 1:
-                return [(("prefixItems", "0"), child)]
-            return []
-        if inner in MAPPINGS and node.additional == "schema":
-            return [(("additionalProperties",), child)]
-        if inner in MAPPINGS and len(node.patterns) == 1:
-            return [(("patternProperties", node.patterns[0]), child)]
-        return []
-    for keyword, branches in (("anyOf", node.any_of), ("oneOf", node.one_of)):
-        if branches is None:
-            continue
-        if len(branches) == len(inner.data_types):
-            return [((keyword, str(index)), child) for index, child in enumerate(inner.data_types)]
-        schemas = [index for index, schema in enumerate(branches) if schema]
-        if len(schemas) == len(inner.data_types):
-            return [((keyword, str(index)), child) for index, child in zip(schemas, inner.data_types, strict=True)]
-    return []
+    return inner.data_types
+
+
+def _map_values(data_type: DataType) -> DataType | None:
+    """Return the value type of the mapping a type is, or holds directly, if any."""
+    mapping = next((child for child in (data_type, *data_type.data_types) if child.is_dict), None)
+    return mapping.data_types[-1] if mapping is not None and mapping.data_types else None
+
+
+def _below(location: SchemaLocation, schema: SchemaLocation) -> bool:
+    """Return whether a location is a schema's own or one inside it."""
+    return location.document == schema.document and location.tokens[: len(schema.tokens)] == schema.tokens
+
+
+def _rebased(location: SchemaLocation, origin: SchemaLocation, schema: SchemaLocation) -> SchemaLocation:
+    """Return the place below ``schema`` that ``location`` has below ``origin``; a location elsewhere stays."""
+    if not _below(location, origin):
+        return location
+    return SchemaLocation(schema.document, (*schema.tokens, *location.tokens[len(origin.tokens) :]))
 
 
 def _wire_name(field: DataModelFieldBase) -> str:
     return field_source_name(name=field.name, original_name=field.original_name, alias=field.alias) or ""
 
 
-class _ShapeError(Exception):
-    """A schema whose values no builtin parameter or form encoding writes, at the location that says so."""
+class _Reader:
+    """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
 
-    def __init__(self, declaration: SchemaLocation, message: str) -> None:
-        super().__init__(message)
-        self.declaration = declaration
-
-
-_Branch: TypeAlias = Literal["reference", "schema", "other"]
-
-
-@dataclass(frozen=True, slots=True)
-class _SchemaNode:
-    """Where a schema declares its members, as the walk read it: its reference, properties, branches and items.
-
-    `target` is where its `$ref` leads, as the parser resolves it. Each tuple of branches says, item by item, whether
-    it is a schema; None says the keyword holds no list.
+    It reads the site of each location (``ApiOpenAPIParser._site_facts``).
     """
 
-    target: SchemaLocation | None = None
-    has_ref: bool = False
-    has_properties: bool = False
-    properties: tuple[str, ...] = ()
-    all_of: tuple[_Branch, ...] = ()
-    required: tuple[str, ...] = ()
-    additional: Literal["absent", "false", "schema", "other"] = "absent"
-    read_only: bool = False
-    write_only: bool = False
-    item_schema: bool = False
-    item_list: int | None = None
-    prefix_items: int | None = None
-    patterns: tuple[str, ...] = ()
-    any_of: tuple[bool, ...] | None = None
-    one_of: tuple[bool, ...] | None = None
-
-    @classmethod
-    def of(cls, value: YamlValue, follow: Callable[[str], SchemaLocation | None]) -> _SchemaNode:
-        """Read a loaded schema's member locations, following its `$ref`; any value but a mapping declares none."""
-        if not isinstance(value, dict) or not value:
-            return _LEAF
-        properties = value.get("properties")
-        branches = value.get("allOf")
-        required = value.get("required")
-        additional = value.get("additionalProperties", MISSING)
-        items = value.get("items")
-        prefix = value.get("prefixItems")
-        node = cls(
-            follow(ref) if isinstance(ref := value.get("$ref"), str) else None,
-            "$ref" in value,
-            "properties" in value,
-            tuple(properties) if isinstance(properties, dict) else (),
-            tuple(
-                ("reference" if "$ref" in branch else "schema") if isinstance(branch, dict) else "other"
-                for branch in (branches if isinstance(branches, list) else ())
-            ),
-            tuple(name for name in required if isinstance(name, str)) if isinstance(required, list) else (),
-            "absent"
-            if additional is MISSING
-            else "false"
-            if additional is False
-            else "schema"
-            if isinstance(additional, dict)
-            else "other",
-            value.get("readOnly") is True,
-            value.get("writeOnly") is True,
-            isinstance(items, dict),
-            len(items) if isinstance(items, list) else None,
-            len(prefix) if isinstance(prefix, list) else None,
-            tuple(as_mapping(value.get("patternProperties"))),
-            _schema_branches(value.get("anyOf")),
-            _schema_branches(value.get("oneOf")),
-        )
-        return _LEAF if node == _LEAF else node
-
-
-def _schema_branches(value: YamlValue) -> tuple[bool, ...] | None:
-    return tuple(isinstance(branch, dict) for branch in value) if isinstance(value, list) else None
-
-
-_LEAF: Final = _SchemaNode()
-
-
-class _SchemaLocations:
-    """Locate schema members through the schema locations the walk recorded, following references where they lead.
-
-    A declaration the walk recorded no location of declares nothing.
-    """
-
-    def __init__(self, nodes: dict[SchemaLocation, _SchemaNode]) -> None:
-        self.nodes = nodes
-
-    def node(self, declaration: SchemaLocation) -> _SchemaNode | None:
-        """Return where a schema declares its members, None when the walk found no schema there."""
-        return self.nodes.get(declaration)
-
-    def at(self, declaration: SchemaLocation) -> _SchemaNode:
-        """Return where a schema declares its members, nothing when the walk found no schema there."""
-        return self.node(declaration) or _LEAF
-
-    def resolve(self, declaration: SchemaLocation) -> tuple[SchemaLocation, _SchemaNode]:
-        """Follow a schema's reference chain, whatever keywords sit beside them, to the schema it leads to."""
-        node = self.at(declaration)
-        seen = {declaration}
-        while (target := node.target) is not None and target not in seen:
-            seen.add(target)
-            declaration, node = target, self.at(target)
-        return declaration, node
-
-    def property_location(
-        self, schema: SchemaLocation, name: str, active: set[SchemaLocation]
-    ) -> SchemaLocation | None:
-        """Find the property declaration a field was generated from, through allOf branches and references."""
-        if schema in active:
-            return None
-        active.add(schema)
-        node = self.at(schema)
-        if name in node.properties:
-            return schema.child("properties", name)
-        for index, branch in reversed(list(enumerate(node.all_of))):
-            if branch != "other" and (found := self.property_location(schema.child("allOf", str(index)), name, active)):
-                return found
-        if (
-            len(schema.tokens) > 1
-            and schema.tokens[-2] in {"anyOf", "oneOf"}
-            and name in self.at(parent := SchemaLocation(schema.document, schema.tokens[:-2])).properties
-        ):
-            return parent.child("properties", name)
-        if (target := node.target) is not None:
-            return self.property_location(target, name, active)
-        return None
-
-    def additional_owner(self, schema: SchemaLocation, active: set[SchemaLocation]) -> SchemaLocation | None:
-        """Find the schema that says what a schema's other properties are, through allOf branches and references.
-
-        A schema that says anything of its other properties itself hides what its branches and references say, and
-        one that its own branches or references lead back to says nothing more.
-        """
-        node = _LEAF if schema in active else self.at(schema)
-        active.add(schema)
-        if node.additional != "absent":
-            return schema
-        for index, branch in reversed(list(enumerate(node.all_of))):
-            if branch != "other" and (found := self.additional_owner(schema.child("allOf", str(index)), active)):
-                return found
-        if (target := node.target) is not None:
-            return self.additional_owner(target, active)
-        return None
-
-    def own_property(self, schema: SchemaLocation, name: str) -> bool:
-        """Return whether a schema declares a property itself or in an inline allOf branch."""
-        node = self.at(schema)
-        return name in node.properties or any(
-            branch == "schema" and self.own_property(schema.child("allOf", str(index)), name)
-            for index, branch in enumerate(node.all_of)
-        )
-
-    def required(self, schema: SchemaLocation, name: str, *, inherited: bool) -> bool:
-        """Return whether a schema requires a name itself, in an inline allOf branch, or through a reference."""
-        node = self.at(schema)
-        if name in node.required or any(
-            (branch == "schema" or (inherited and branch == "reference"))
-            and self.required(schema.child("allOf", str(index)), name, inherited=inherited)
-            for index, branch in enumerate(node.all_of)
-        ):
-            return True
-        return inherited and (target := node.target) is not None and self.required(target, name, inherited=inherited)
-
-    def properties(
-        self, schema: SchemaLocation, active: set[SchemaLocation] | None = None
-    ) -> dict[str, SchemaLocation]:
-        """Return a schema's properties in declaration order, allOf branches and references included.
-
-        A schema that its own branches or references lead back to adds its properties once.
-        """
-        active = set() if active is None else active
-        if schema in active:
-            return {}
-        active.add(schema)
-        node = self.at(schema)
-        found: dict[str, SchemaLocation] = {}
-        if (target := node.target) is not None:
-            found.update(self.properties(target, active))
-        for index in range(len(node.all_of)):
-            found.update(self.properties(schema.child("allOf", str(index)), active))
-        found.update((name, schema.child("properties", name)) for name in node.properties)
-        return found
-
-    def members(self, schema: SchemaLocation) -> dict[str, SchemaLocation]:
-        """Return the property declaration of each name a schema declares, as its model's fields are located."""
-        return {
-            name: found
-            for name in self.properties(schema)
-            if (found := self.property_location(schema, name, set())) is not None
-        }
-
-
-class _Reader(_SchemaLocations):
-    """Read the loaded API documents by declaration while the walk reads them, recording each schema's locations.
-
-    The target parser reads with it while it walks, to record what the model types do not say and where each schema
-    it visits declares its members; the binder locates members through those records alone.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        documents: dict[str, dict[str, YamlValue]],
-        nodes: dict[SchemaLocation, _SchemaNode],
-        *,
-        versions: list[str],
-        binary: frozenset[str],
-        encoded: frozenset[str],
-        follow: _Follow,
-    ) -> None:
-        super().__init__(nodes)
-        self.loaded = documents
+    def __init__(self, site: Callable[[SchemaLocation], SiteFacts], *, versions: list[str]) -> None:
+        self.site = site
         self.versions = versions
-        self.formats = binary
-        self.encoded = encoded
-        self.follow = follow
-        self.binaries: dict[SchemaLocation, SchemaLocation | None] = {}
-        self.encodings: dict[SchemaLocation, SchemaLocation | None] = {}
 
     @property
     def legacy(self) -> bool:
         """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
         return next(iter(self.versions), "").startswith("3.0")
 
-    def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
-        """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.loaded.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
+    def chain(self, declaration: SchemaLocation) -> SiteFacts:
+        """Follow a schema's reference chain to the schema it leads to, and return its site.
 
-    def node(self, declaration: SchemaLocation, raw: YamlValue = MISSING) -> _SchemaNode | None:
-        """Record and return where a loaded schema declares its members, None when its document lacks it."""
-        if (node := self.nodes.get(declaration)) is not None:
-            return node
-        if (value := self.borrow(declaration) if raw is MISSING else raw) is None:
-            return None
-        node = self.nodes[declaration] = _SchemaNode.of(value, partial(self.follow, declaration.document))
-        return node
-
-    def whole(self, declaration: SchemaLocation) -> tuple[SchemaLocation, dict[str, YamlValue]]:
-        """Follow a schema that is nothing but a reference to the schema it names, through such schemas.
-
-        Identification keywords beside a reference say nothing of its values, and in OpenAPI 3.0 no sibling does.
+        The chain follows a reference beside which identification keywords alone sit, or in OpenAPI 3.0 any keywords,
+        which say nothing of its values there. It does not read the keywords beside a reference with its target, as
+        the parser does (`legacy-target-ref-chain`).
         """
-        raw = as_mapping(self.borrow(declaration))
+        site = self.site(declaration)
         seen = {declaration}
-        while (
-            (self.legacy or raw.keys() - _IDENTIFIERS == {"$ref"})
-            and isinstance(ref := raw.get("$ref"), str)
-            and (target := self.follow(declaration.document, ref)) is not None
-            and target not in seen
-        ):
+        while (target := site.ref) is not None and target not in seen and (self.legacy or site.bare):
             seen.add(target)
-            declaration, raw = target, as_mapping(self.borrow(target))
-        return declaration, raw
+            site = self.site(target)
+        return site
 
-    def record(self, declaration: SchemaLocation, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
-        """Record what an acquired schema says that its model types do not, as the walk acquires it.
-
-        A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
-        and any schema read as parameter or form text how its values are written. A body's schema that is not a
-        multipart one says whether its models may type its whole value as raw bytes, which they decide.
-        """
-        media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
-        kind = None if media is None else _media_kind(media)
-        parameter = role == "parameter"
-        text = parameter or role in _HEADER_ROLES
-        form = found[0] if kind in _FORMS and len(found := self.choices(declaration)) == 1 else None
-        declared = form or declaration
-        parts = self.parts(declared, locate) if media is not None and _multipart(media) else None
-        item = declaration.tokens[-1] == "itemSchema"
-        body = kind is not None and parts is None and not (text or item)
-        whole = self.whole(declaration)[1] if parameter or body else {}
-        if text or item or kind in _TEXT_MEDIA:
-            binary = None if (found := self.binary(declaration)) is None else locate(found)
-        else:
-            binary = None if parts is None else parts.binary
-        types = _json_types(whole)
-        return _SchemaRecord(
-            _default(whole.get("default")) if parameter else None,
-            _keywords(whole) if parameter else (),
-            parts,
-            self.encoding(declared, locate, members=kind in _FORMS)
-            if text or media is None or kind in _FORMS
-            else None,
-            binary,
-            body and (not types or "string" in types),
-            body and _spelled(whole, self.formats),
-            body and self.base64(declaration),
-            form,
-        )
-
-    def choices(self, declaration: SchemaLocation) -> list[SchemaLocation]:
-        """Return the branches beside null of a schema that is a union, by anyOf or oneOf, and none of another schema.
-
-        A schema that declares properties or combines schemas with allOf beside its union is no union of its branches.
-        """
-        location, raw = self.whole(declaration)
-        if "properties" in raw or "allOf" in raw:
-            return []
-        keyword, branches = next(
-            ((key, value) for key in ("anyOf", "oneOf") if isinstance(value := raw.get(key), list)), ("", [])
-        )
-        found = (location.child(keyword, str(index)) for index in range(len(branches)))
-        return [branch for branch in found if self.kinds(branch) != _NULL]
-
-    def part(self, declaration: SchemaLocation, locate: _Locate) -> PartSchema:
-        """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
-
-        A string is binary by its binary format, or by a content media type without a content encoding. The member's
-        values are read where its schema is, or where its items' is when it repeats.
-        """
-        target, raw = self.whole(declaration)
-        own = SchemaSite(locate(declaration), locate(target))
-        items: SchemaSite | None = None
-        if repeated := _json_types(raw) - _NULL == _ARRAY:
-            items = SchemaSite(locate(found := target.child("items")), locate(self.whole(found)[0]))
-            raw = self.whole(found)[1]
-        types = _json_types(raw) - _NULL
-        binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
-        return PartSchema(
-            file=types == _STRING and binary,
-            repeated=repeated,
-            text=bool(types) and not types & _NESTED,
-            structured=bool(types & _NESTED),
-            own=own,
-            items=items,
-        )
-
-    def parts(self, schema: SchemaLocation, locate: _Locate) -> _PartsRecord:
-        """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
-        location, raw = self.whole(schema)
-        declared = raw.get("additionalProperties", True)
-        additional = location.child("additionalProperties")
-        extra: PartSchema | Literal["closed"] | None = None
-        if declared is False:
-            extra = "closed"
-        elif isinstance(declared, dict) and declared:
-            extra = self.part(additional, locate)
-        members = tuple((found, self.part(found, locate)) for found in self.members(schema).values())
-        others = ((additional, extra),) if isinstance(extra, PartSchema) else ()
-        binary = next(
-            (hit for found, part in (*members, *others) if not part.file and (hit := self.binary(found)) is not None),
-            None,
-        )
-        return _PartsRecord(
-            _json_types(raw) - _NULL <= _OBJECT and not self.choices(schema)[1:],
-            tuple((locate(found), part) for found, part in members),
-            extra,
-            None if binary is None else locate(binary),
-        )
-
-    def binary(self, declaration: SchemaLocation) -> SchemaLocation | None:
-        """Return where the first string the models type as raw bytes sits in a schema's values, None without one.
-
-        The walk follows references, combined branches, properties, items and other properties.
-        """
-        return self._reach(declaration, {}, self.formats, self.binaries)[0]
-
-    def base64(self, declaration: SchemaLocation) -> bool:
-        """Return whether a schema's values hold a string the models type as bytes yet write as base64 text."""
-        return bool(self.encoded) and self._reach(declaration, {}, self.encoded, self.encodings)[0] is not None
-
-    def _reach(
-        self,
-        declaration: SchemaLocation,
-        walked: dict[SchemaLocation, int],
-        formats: frozenset[str],
-        known: dict[SchemaLocation, SchemaLocation | None],
-    ) -> tuple[SchemaLocation | None, int]:
-        """Return the first string of the formats a schema reaches, and the earliest walked schema it leads back to.
-
-        `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
-        string, or leads back to none walked before it, settles itself and every pending schema walked after it,
-        since they all reach it; each schema is walked once, and `known` holds the settled answers.
-        """
-        if declaration in known:
-            return known[declaration], len(walked)
-        if (order := walked.get(declaration)) is not None:
-            return None, order
-        order = walked[declaration] = len(walked)
-        low = order
-        raw = as_mapping(self.borrow(declaration))
-        found = declaration if self.raw_bytes(raw, formats) else None
-        for child in self._subschemas(declaration, raw):
-            if found is not None:
-                break
-            found, reached = self._reach(child, walked, formats, known)
-            low = min(low, reached)
-        while (found is not None or low == order) and len(walked) > order:
-            known[walked.popitem()[0]] = found
-        return found, low
-
-    @staticmethod
-    def raw_bytes(raw: dict[str, YamlValue], formats: frozenset[str]) -> bool:
-        """Return whether a schema is a string of one of the formats, as those the models type as raw bytes.
-
-        The models type an enum or a const of such strings as text.
-        """
-        return _spelled(raw, formats) and "enum" not in raw and "const" not in raw
-
-    def _subschemas(self, declaration: SchemaLocation, raw: dict[str, YamlValue]) -> Iterator[SchemaLocation]:
-        """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
-        for keyword in ("$ref", "$dynamicRef"):
-            if isinstance(ref := raw.get(keyword), str) and (target := self.follow(declaration.document, ref)):
-                yield target
-        if self.legacy and "$ref" in raw:
-            return
-        for keyword in _VALUE_SCHEMA_LISTS:
-            if isinstance(branches := raw.get(keyword), list):
-                yield from (declaration.child(keyword, str(index)) for index in range(len(branches)))
-        for keyword in MODELED_SCHEMA_MAPS:
-            yield from (declaration.child(keyword, str(name)) for name in as_mapping(raw.get(keyword)))
-        for keyword in _VALUE_SCHEMAS:
-            if isinstance(raw.get(keyword), dict):
-                yield declaration.child(keyword)
-
-    def encoding(self, schema: SchemaLocation, locate: _Locate, *, members: bool) -> EncodingFacts:
-        """Return how a schema's values are written as text: as one value, as form members, and member by member.
-
-        Only a form's members, which its encodings can give a style, are written member by member, and only a form
-        has other properties of its own.
-        """
-        extras, declared = self.extras(schema, locate) if members else (None, False)
-        return EncodingFacts(
-            self.kinds(schema),
-            self.shape(schema, locate, form=False),
-            self.shape(schema, locate, form=True),
-            tuple((locate(found), self.shape(found, locate, form=False)) for found in self.members(schema).values())
-            if members
-            else (),
-            extras,
-            declared=declared,
-        )
-
-    def extras(self, schema: SchemaLocation, locate: _Locate) -> tuple[KindSite | None, bool]:
-        """Return where an object schema types the values of its other properties, and whether it allows them itself.
-
-        Both are its allOf branches' or references' when it says nothing of them. `true` allows them and types none,
-        as does a schema of any value.
-        """
-        _, resolved = self.resolved(schema)
-        owner = (
-            self.additional_owner(resolved, set()) if (self.kinds(resolved) or frozenset()) - _NULL == _OBJECT else None
-        )
-        said = "absent" if owner is None else self.at(owner).additional
-        declared = said in {"schema", "other"}
-        if owner is None or said != "schema" or not self.borrow(found := owner.child("additionalProperties")):
-            return None, declared
-        return self.field(found, "", locate, (locate(schema), locate(resolved)), form=True).kind, declared
-
-    def resolved(self, declaration: SchemaLocation) -> tuple[dict[str, YamlValue], SchemaLocation]:
-        """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
-        location = self.resolve(declaration)[0]
-        return as_mapping(self.borrow(location)), location
-
-    def kinds(
-        self, declaration: SchemaLocation, active: frozenset[SchemaLocation] = frozenset()
-    ) -> frozenset[str] | None:
-        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
-
-        A branch that leads back to a schema being read says nothing of its values.
-        """
-        value, declaration = self.resolved(declaration)
-        if declaration in active:
-            return None
-        active |= {declaration}
-        kinds = _json_types(value) if isinstance(value.get("type"), str | list) else None
-        if kinds is None and isinstance(
-            values := value.get("enum", [value["const"]] if "const" in value else None), list
-        ):
-            kinds = frozenset(_json_type(item, "object") for item in values)
-        for keyword in COMBINATOR_POSITIONS:
-            branches = value.get(keyword)
-            if not isinstance(branches, list) or not branches:
-                continue
-            found_kinds = [self.kinds(declaration.child(keyword, str(index)), active) for index in range(len(branches))]
-            if keyword == "allOf":
-                for found in found_kinds:
-                    kinds = found if kinds is None else kinds if found is None else kinds & found
-            elif all(found is not None for found in found_kinds):
-                union = frozenset[str]().union(*(found for found in found_kinds if found is not None))
-                kinds = union if kinds is None else kinds & union
-        return kinds
-
-    def shape(self, declaration: SchemaLocation, locate: _Locate, *, form: bool) -> TextShape:
-        """Return how a schema's values are written as one parameter value, or as the members of a URL-encoded form.
-
-        A schema no builtin encoding writes keeps the members found before the problem.
-        """
-        members: list[MemberShape] = []
-        try:
-            return self._shape(declaration, locate, members, form=form)
-        except _ShapeError as error:
-            return TextShape("object", members=tuple(members), problem=(locate(error.declaration), str(error)))
-
-    def _shape(
-        self, declaration: SchemaLocation, locate: _Locate, members: list[MemberShape], *, form: bool
-    ) -> TextShape:
-        source = locate(declaration)
-        value, resolved = self.resolved(declaration)
-        location = locate(resolved)
-        kinds = (self.kinds(resolved) or frozenset()) - _NULL
-        if kinds == _ARRAY and not form:
-            return TextShape("array", KindSite(locate(resolved.child("items")), ((source, _ITEMS), (location, _ITEMS))))
-        if kinds != _OBJECT:
-            if form:
-                raise _ShapeError(resolved, _NOT_OBJECT)
-            return TextShape("scalar", KindSite(location, ((source, ()), (location, ()))))
-        if "patternProperties" in value:
-            raise _ShapeError(resolved, _PATTERNS)
-        properties = value.get("properties")
-        members.extend(
-            self.field(resolved.child("properties", name), name, locate, (source, location), form=form)
-            for name in as_mapping(properties)
-        )
-        declared = value.get("additionalProperties", True)
-        additional = (
-            None
-            if declared is False
-            else MemberShape("")
-            if declared is True or declared == {}
-            else self.field(resolved.child("additionalProperties"), "", locate, (source, location), form=form)
-        )
-        return TextShape("object", members=tuple(members), additional=additional)
-
-    def field(
-        self,
-        declaration: SchemaLocation,
-        name: str,
-        locate: _Locate,
-        owners: tuple[SourceLocation, ...],
-        *,
-        form: bool,
-    ) -> MemberShape:
-        """Return a member's shape: its kind by the type bound at its schema, or as a value of a mapping at an owner.
-
-        An array member of a form repeats, in its items' kind.
-        """
-        _, resolved = self.resolved(declaration)
-        steps: tuple[LeafStep, ...] = ()
-        location = locate(declaration)
-        source = location
-        if repeated := form and (self.kinds(declaration) or frozenset()) - _NULL == _ARRAY:
-            steps, source = _ITEMS, locate(resolved.child("items"))
-        leaves = ((location, steps), (locate(resolved), steps), *((owner, ("values", *steps)) for owner in owners))
-        return MemberShape(name, KindSite(source, leaves), repeated=repeated)
+    def record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
+        """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
+        if role != "parameter":
+            return _UNRECORDED
+        annotations = self.chain(declaration).annotations
+        return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
 
 class _Documents:
@@ -2575,7 +2006,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.documents.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, "canonical", missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -2596,7 +2027,6 @@ class _Models:
     ) -> None:
         self.binder = _Binder(parser, results)
         self.documents = _Documents(parser)
-        self.schemas = _SchemaLocations(parser.schema_locations)
         self.parser = parser
         self.attempt = attempt
         self.output = output
@@ -2613,16 +2043,25 @@ class _Models:
         ] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
         self.helpers: dict[SchemaLocation, list[TypeProjection]] = {}
+        self.texts: dict[TypeUseId, bool] = {}
+        self.excluded: dict[tuple[SymbolId, str], DataModelFieldBase] = {}
+        self.binaries: dict[tuple[SymbolId, Direction], SchemaLocation | None] = {}
+        self.symbol_table: dict[SymbolId, FinalModelSymbol] = {}
+        self.copies = {
+            location
+            for old, _, merged in cast("RecordingGenerationStore", parser.generation_store).redirects
+            if merged and (location := location_of(old)) is not None
+        }
         self.variants = any(_rw_variant_of(key) for key in self.parser.model_resolver.references)
 
-    def model_location(self, model: DataModel) -> SchemaLocation | None:
-        """Return the location the parser recorded for the schema a model is built from, where the walk read it.
+    @staticmethod
+    def model_location(model: DataModel) -> SchemaLocation | None:
+        """Return the location the parser recorded for the schema a model is built from (``reference.location_of``).
 
         A read or write variant shares its base schema's location and a model that reuse made shares the replaced
-        model's; the binder reads a schema's members only through what the walk recorded.
+        model's.
         """
-        location = location_of(model.reused_reference or model.reference)
-        return location if location is not None and self.schemas.node(location) is not None else None
+        return location_of(model.reused_reference or model.reference)
 
     def address(self, module: ModulePath, result: Result) -> ModelArtifactAddress:
         if isinstance(results := self.binder.results, str):
@@ -2639,26 +2078,40 @@ class _Models:
         self, declaration: SchemaLocation, direction: Direction = "neutral", *, inline: bool = False
     ) -> TypeProjection:
         """Project a subschema that no model field holds: a referenced model, or the parser's model-free type."""
-        parser = self.parser
         projector = self.binder.projector(direction, inline=inline)
-        resolved, _ = self.schemas.resolve(declaration)
-        key = _resolver_key(parser.model_resolver, resolved)
-        if resolved != declaration and (reference := parser.model_resolver.references.get(key)) is not None:
-            return projector.declaration(reference)
+        with self.free_type(declaration) as found:
+            if isinstance(found, DataType):
+                return projector.project(found)
+            return TypeProjection(None, _NotEmittedError.reason) if found is None else projector.declaration(found)
+
+    @contextmanager
+    def free_type(self, declaration: SchemaLocation) -> Generator[Reference | DataType | None, None, None]:
+        """Yield what a subschema no model field holds binds: the model it references, or the parser's model-free type.
+
+        The model-free type is built for the caller and dropped when it is done.
+        """
+        parser = self.parser
+        schema = parser.free_schemas[declaration]
+        if (
+            schema.ref is not None
+            and (target := parser._schema_reference_location(declaration.document, schema.ref)) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            and (reference := parser.model_resolver.references.get(_resolver_key(parser.model_resolver, target)))
+            is not None
+        ):
+            yield reference
+            return
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
-            data_type = parser._build_lightweight_type(parser.free_schemas[declaration])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-        projected = (
-            projector.project(data_type) if data_type is not None else TypeProjection(None, _NotEmittedError.reason)
-        )
+            data_type = parser._build_lightweight_type(schema)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
         from datamodel_code_generator._graph_links import drop_tree  # noqa: PLC0415
 
-        drop_tree(data_type)
-        return projected
+        try:
+            yield data_type
+        finally:
+            drop_tree(data_type)
 
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
-        special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
+        return variant[1] if (variant := _rw_variant_of(key)) else "neutral"
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
@@ -2699,7 +2152,7 @@ class _Models:
                         tuple(map(_literal_scalar, values)),
                         binder.source(model.reference),
                         self.reused_discriminator(model),
-                        tuple(map(_json_type, values)),
+                        tuple(map(json_type, values)),
                     )
                 )
         return tuple(symbols), tuple(artifacts)
@@ -2714,6 +2167,7 @@ class _Models:
         )
 
     def field_facts(self, symbols: tuple[FinalModelSymbol, ...]) -> None:
+        self.symbol_table.update((symbol.id, symbol) for symbol in symbols)
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             self.locations[symbol.id] = self.model_location(model)
         projector = self.binder.projector("neutral")
@@ -2728,32 +2182,37 @@ class _Models:
     def context(
         self, model: DataModel, field: DataModelFieldBase
     ) -> tuple[FieldKind, SchemaLocation | None, str | None, _FieldContext | None]:
-        """Return a field's member kind, property declaration, wire name and, for a property, its producer facts."""
+        """Return a field's member kind, property declaration, wire name and, for a property, its producer facts.
+
+        The property declaration is where the parser built the field (``reference.field_origin_of``); a tag the
+        discriminator pass appends is declared where the model's schema declares the property. A field typed as a
+        literal is a synthetic tag when the model's own schema does not declare it.
+        """
         if (known := self.contexts_by_field.get(id(field))) is not None:
             return known
         location = self.locations.get(self.binder.symbols[id(model)])
         wire_name: str | None = _wire_name(field)
         kind: FieldKind = "property"
         schema: SchemaLocation | None = None
+        origin = field_origin_of(field)
         if model.IS_ALIAS or model.IS_ROOT_MODEL:
             kind, wire_name, schema = "root_value", None, location
             if (
                 location is not None
-                and not (node := self.schemas.at(location)).has_properties
-                and node.additional not in {"absent", "false"}
-                and (field.data_type.is_dict or any(child.is_dict for child in field.data_type.data_types))
+                and (values := _map_values(field.data_type)) is not None
+                and type_origin_of(values) == (additional := location.child("additionalProperties"))
             ):
-                schema = location.child("additionalProperties")
+                schema = additional
         elif field.name is not None and field.name == model.TYPED_EXTRA_FIELD_NAME:
             kind = "additional_properties"
             schema = None if location is None else location.child("additionalProperties")
-        elif location is not None and wire_name is not None:
-            schema = self.schemas.property_location(location, wire_name, set())
+        elif location is not None and wire_name is not None and origin is not None:
+            schema = self.declaration(model, wire_name) if origin.kind == "tag" else origin.location
             if (field.data_type.literals or field.data_type.enum_member_literals) and (
-                schema is None or (model.base_classes and not self.schemas.own_property(location, wire_name))
+                schema is None or (model.base_classes and not _below(schema, location))
             ):
                 kind = "discriminator_synthetic"
-            elif schema is None and self.schemas.required(location, wire_name, inherited=True):
+            elif origin.kind == "required-only":
                 kind = "required_only"
         context = (
             _FieldContext(self.parser.nullable(field) or field.nullable is True, self.preexisting_null(field.data_type))
@@ -2762,6 +2221,24 @@ class _Models:
         )
         known = self.contexts_by_field[id(field)] = kind, schema, wire_name, context
         return known
+
+    def declaration(self, model: DataModel, wire_name: str) -> SchemaLocation | None:
+        """Return where the schema of a model declares a property, as the field its bases build for it is located.
+
+        A model that reuse made declares its properties as the model it replaced does.
+        """
+        pending = [model]
+        while pending:
+            for field in (replaced := self.binder.reused(current := pending.pop()) or current).fields:
+                origin = field_origin_of(field)
+                if _wire_name(field) == wire_name and origin is not None and origin.kind == "property":
+                    return origin.location
+            pending.extend(
+                source
+                for base in reversed(replaced.base_classes)
+                if base.reference is not None and isinstance(source := base.reference.source, DataModel)
+            )
+        return None
 
     def preexisting_null(self, data_type: DataType) -> bool | None:
         """Return whether a field's own type accepts None before the field adds optionality.
@@ -2913,34 +2390,29 @@ class _Models:
     def variant_exclusions(
         self, model: DataModel, symbol: FinalModelSymbol, members: list[FieldUseBinding]
     ) -> list[FieldUseBinding]:
-        """Add the schema properties a request or response variant leaves out, in the schema's property order."""
-        if (direction := self.variant_direction(model)) == "neutral" or (
-            location := self.locations.get(symbol.id)
-        ) is None:
+        """Add the properties the split of a request or response variant left out, in the order of its fields."""
+        split = self.parser.left_out.get(self.binder.keys.get(id(model.reference), model.reference.path))
+        if split is None or not split[1] or (direction := self.variant_direction(model)) == "neutral":
             return members
-        properties = self.schemas.properties(location)
-        kept = {member.wire_name for member in members}
+        location = self.locations.get(symbol.id)
         excluded: list[FieldUseBinding] = []
-        for name, declaration in properties.items():
-            node = self.schemas.resolve(declaration)[1]
-            if name in kept or not _rw_variant_flag(direction, node.read_only, node.write_only):
-                continue
-            schema = self.documents.location(declaration, "schema")
+        for field in split[1]:
+            origin = field_origin_of(field)
+            schema = None if location is None or origin is None else origin.location
+            self.excluded[symbol.id, _wire_name(field)] = field
             excluded.append(
                 FieldUseBinding(
                     "property",
-                    name,
+                    _wire_name(field),
                     symbol.id,
                     None,
                     None,
-                    schema,
+                    None if schema is None else self.documents.location(schema, "schema"),
                     direction,
                     _rw_variant_flag(direction, "read_only", "write_only"),
                 )
             )
-        if not excluded:
-            return members
-        positions = {name: index for index, name in enumerate(properties)}
+        positions = {name: index for index, name in enumerate(map(_wire_name, split[0]))}
         return sorted((*members, *excluded), key=lambda member: positions.get(member.wire_name or "", len(positions)))
 
 
@@ -2963,6 +2435,24 @@ class _SchemaUses(_Models):
         root model as the type it stands for, and a nullable one, a value an operation sends or receives in a media
         that can carry null, takes the null its schema admits; a form or multipart body has no null to send.
         """
+        projector = self.binder.projector(direction, inline=inline)
+        match self.bound_node(declaration, projection, direction):
+            case Reference() as reference:
+                return projector.declaration(reference, nullable=nullable)
+            case DataType() as data_type:
+                return projector.project(data_type)
+            case _:
+                pass
+        return self.lightweight(declaration, direction, inline=inline)
+
+    def bound_node(
+        self, declaration: SchemaLocation, projection: Projection, direction: Direction
+    ) -> Reference | DataType | None:
+        """Return what a use of a declaration binds: its emitted model's reference, or the declaration's own type.
+
+        None is a declaration the parser emitted nothing for, which binds its schema's model-free type
+        (``free_type``).
+        """
         binder = self.binder
         parser = self.parser
         engine = parser.acquisitions.get((declaration, projection))
@@ -2970,22 +2460,31 @@ class _SchemaUses(_Models):
             engine = _resolver_key(parser.model_resolver, declaration)
         reference = parser.model_resolver.references.get(engine) if engine is not None else None
         data_type = binder.declaration_types.get(declaration) if projection == "value" else None
-        projector = binder.projector(direction, inline=inline)
         if reference is not None and (
             data_type is None
             or binder.final(reference, direction) is not None
             or binder.unwrapped(reference) is not None
         ):
-            return projector.declaration(reference, nullable=nullable)
-        if data_type is not None:
-            return projector.project(data_type)
-        return self.lightweight(declaration, direction, inline=inline)
+            return reference
+        return data_type
+
+    @contextmanager
+    def bound(
+        self, declaration: SchemaLocation, projection: Projection, direction: Direction
+    ) -> Generator[Reference | DataType | None, None, None]:
+        """Yield what a use of a declaration binds (``bound_node``), its schema's model-free type when nothing else."""
+        if (found := self.bound_node(declaration, projection, direction)) is not None or (
+            declaration not in self.parser.free_schemas
+        ):
+            yield found
+            return
+        with self.free_type(declaration) as free:
+            yield free
 
     def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
         """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
         if isinstance(value, UnionType):
-            members = present(value)
-            value = members[0] if len(members) == 1 else None
+            value = sole_present(value)
         symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
         members = () if symbol is None else self.members.get(symbol, ())
         root = next(
@@ -2998,31 +2497,82 @@ class _SchemaUses(_Models):
         )
         return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
 
-    def members_at(self, symbol: SymbolId, schema: SchemaLocation, direction: Direction) -> tuple[FieldUseBinding, ...]:
-        """Return a model's members anchored at the properties of the schema a use reads."""
+    def members_at(
+        self, symbol: SymbolId, schema: SchemaLocation | None, direction: Direction
+    ) -> tuple[FieldUseBinding, ...]:
+        """Return a model's members anchored at the schema a use reads, None where its own schema is read.
+
+        A member is where the model's schema declares it, as the parser built its fields
+        (``reference.field_origin_of``); a model that reuse made declares them as the model it replaced. A use whose
+        schema the parser read as a schema of its own, while the model stands for an equal one at another place, holds
+        each member at the same place below its schema.
+        """
         members: list[FieldUseBinding] = []
-        resolved = self.schemas.resolve(schema)[0]
+        model = self.binder.models[symbol]
+        location = self.locations.get(symbol)
+        copy = location is not None and schema is not None and schema != location and schema in self.copies
         for member in self.members.get(symbol, ()):
             match member.member_kind:
                 case "property" if member.wire_name is not None and member.exclusion != "tag":
-                    found = self.schemas.property_location(schema, member.wire_name, set())
+                    found = self.declaration(model, member.wire_name)
                 case "root_value" if member.schema is not None and member.schema.pointer.endswith(
                     "/additionalProperties"
                 ):
-                    found = resolved.child("additionalProperties")
+                    found = None if location is None else location.child("additionalProperties")
                 case "root_value":
-                    found = resolved
+                    found = location
                 case "additional_properties":
-                    found = resolved.child("additionalProperties")
+                    found = None if location is None else location.child("additionalProperties")
                 case _:
                     found = None
-            if found is not None and (location := self.documents.location(found, "schema")) != member.schema:
+            if copy and found is not None and location is not None and schema is not None:
+                found = _rebased(found, location, schema)
+            if found is not None and (anchored := self.documents.location(found, "schema")) != member.schema:
                 member = replace(  # noqa: PLW2901
                     member,
-                    schema=location,
+                    schema=anchored,
                 )
             members.append(replace(member, direction=direction) if direction != member.direction else member)
         return tuple(members)
+
+    def use_id(  # ruff: ignore[too-many-arguments]
+        self,
+        owner: OperationId | SourceLocation,
+        role: TypeUseRole,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
+        schema_use: SchemaLocation,
+        *,
+        projection: Projection = "value",
+        location: str | None = None,
+        name: str | None = None,
+        status: str | None = None,
+        media: str | None = None,
+        direction: Direction | None = None,
+    ) -> TypeUseId:
+        """Return the id of a use, in the direction its role reads or sends unless one is given."""
+        direction = direction or (
+            "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
+        )
+        locate = self.documents.location
+        return TypeUseId(
+            owner,
+            role,
+            locate(use_site, "use"),
+            locate(schema_use, "schema"),
+            DeclarationId(locate(declaration, "declaration")),
+            direction,
+            projection,
+            location,
+            name,
+            status,
+            media,
+        )
+
+    def own_use(self, declaration: SchemaLocation) -> TypeUseId:
+        """Return the id of a schema's neutral value use of itself, the use `schema_uses` binds first."""
+        owner = self.documents.location(declaration, "schema")
+        return self.use_id(owner, "schema", declaration, declaration, declaration)
 
     def use(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
@@ -3040,30 +2590,32 @@ class _SchemaUses(_Models):
         media: str | None = None,
         direction: Direction | None = None,
     ) -> TypeUseId:
-        direction = direction or (
-            "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
-        )
-        locate = self.documents.location
-        use = TypeUseId(
+        use = self.use_id(
             owner,
             role,
-            locate(use_site, "use"),
-            locate(schema_use, "schema"),
-            DeclarationId(locate(declaration, "declaration")),
-            direction,
-            projection,
-            location,
-            name,
-            status,
-            media,
+            declaration,
+            use_site,
+            schema_use,
+            projection=projection,
+            location=location,
+            name=name,
+            status=status,
+            media=media,
+            direction=direction,
         )
-        nullable = role != "schema" and (media is None or _media_kind(media) not in _FORMS)
+        direction = use.direction
+        locate = self.documents.location
+        form = media is not None and _media_kind(media) in _FORMS
+        nullable = role != "schema" and not form
         projected = self.projection(schema, projection, direction, nullable=nullable)
-        members = (
-            self.members_at(projected.value.symbol, schema, direction)
+        held = (
+            self.held(projected.value)
+            if form or role == "parameter" or role in _HEADER_ROLES
+            else projected.value.symbol
             if isinstance(projected.value, GeneratedSymbolType)
-            else ()
+            else None
         )
+        members = () if held is None else self.members_at(held, schema, direction)
         argument = (
             self.projection(schema, projection, direction, inline=True, nullable=nullable).value
             if role == "parameter" and projected.value is not None
@@ -3096,7 +2648,7 @@ class _SchemaUses(_Models):
             if (
                 acquired
                 and isinstance(value := self.uses[neutral].type, GeneratedSymbolType)
-                and not self.schemas.at(declaration).has_ref
+                and declaration not in self.binder.declaration_types
             ):
                 self.relocate(declaration, value.symbol)
             directional = [
@@ -3112,10 +2664,8 @@ class _SchemaUses(_Models):
                     continue
                 match kind:
                     case "additional_properties" | "root_value" if schema.tokens[-1:] == ("additionalProperties",):
-                        if values := [
-                            child for child in (field.data_type, *field.data_type.data_types) if child.is_dict
-                        ]:
-                            self.nested(schema, values[0].data_types[-1])
+                        if (values := _map_values(field.data_type)) is not None:
+                            self.nested(schema, values)
                     case "root_value":
                         self.nested(schema, field.data_type, own=False)
                     case _:
@@ -3148,10 +2698,12 @@ class _SchemaUses(_Models):
     def extras(self) -> None:
         """Bind each model's typed additional properties that no field holds."""
         for symbol, location in self.locations.items():
-            if location is None or self.schemas.at(location).additional != "schema":
+            if (
+                location is None
+                or (declaration := location.child("additionalProperties")) not in self.parser.free_schemas
+            ):
                 continue
-            declaration = location.child("additionalProperties")
-            use = _schema_use(self.documents.location(declaration, "schema"))
+            use = self.own_use(declaration)
             if (
                 use in self.uses
                 or (
@@ -3175,12 +2727,25 @@ class _SchemaUses(_Models):
             use.schema_site,
         )
 
-    def nested(self, declaration: SchemaLocation, data_type: DataType, *, own: bool = True) -> None:
-        """Collect the type a field holds at a schema below a model, items, values and branches included."""
-        node = self.schemas.at(declaration)
-        if not node.has_ref:
-            for keyword, child in _children(node, data_type):
-                self.nested(declaration.child(*keyword), child)
+    def nested(
+        self,
+        declaration: SchemaLocation,
+        data_type: DataType,
+        *,
+        own: bool = True,
+        moved: tuple[SchemaLocation, SchemaLocation] | None = None,
+    ) -> None:
+        """Collect the type a field holds at a schema below a model, items, values and branches included.
+
+        Each type below it is held at the subschema the parser built it from (``reference.type_origin_of``), when that
+        subschema is below the schema; ``moved`` places the types of an equal schema at another place.
+        """
+        for child in _members_of(data_type):
+            origin = type_origin_of(child)
+            if moved is not None and origin is not None:
+                origin = _rebased(origin, *moved)
+            if origin is not None and origin != declaration and _below(origin, declaration):
+                self.nested(origin, child, moved=moved)
         if not own:
             return
         projected = self.binder.projector("neutral").project(data_type)
@@ -3188,36 +2753,595 @@ class _SchemaUses(_Models):
         if projected in candidates:
             return
         candidates.append(projected)
-        if isinstance(value := projected.value, GeneratedSymbolType) and not node.has_ref:
+        if isinstance(value := projected.value, GeneratedSymbolType) and declaration in self.copies:
             self.relocate(declaration, value.symbol)
 
     def relocate(self, declaration: SchemaLocation, symbol: SymbolId) -> None:
-        """Collect a model's property types at another schema it was generated from."""
-        if self.locations.get(symbol) == declaration:
+        """Collect a model's property types at an equal schema the parser read as its own, at the same places in it.
+
+        A model that reuse made holds no field of its own: the model reuse kept holds the properties.
+        """
+        model = self.binder.kept(self.binder.models[symbol])
+        if (location := self.locations.get(self.binder.symbols[id(model)])) is None or location == declaration:
             return
-        model = self.binder.models[symbol]
         for field in model.fields:
-            kind, _, wire_name, _ = self.context(model, field)
-            if (
-                kind == "property"
-                and wire_name is not None
-                and (found := self.schemas.property_location(declaration, wire_name, set()))
-            ):
-                self.nested(found, field.data_type)
+            kind, schema, _, _ = self.context(model, field)
+            if kind == "property" and schema is not None and _below(schema, location):
+                self.nested(_rebased(schema, location, declaration), field.data_type, moved=(location, declaration))
 
     def helper_uses(self) -> None:
         """Bind each collected schema to its one type, or refuse it when fields hold it as different types."""
         for declaration, candidates in self.helpers.items():
-            use = _schema_use(location := self.documents.location(declaration, "schema"))
+            use = self.own_use(declaration)
             self.uses.setdefault(
                 use,
-                TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=location)
+                TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=use.schema_site)
                 if len(candidates) > 1
                 else self.binding(use, candidates[0]),
             )
 
 
-class _Contracts(_SchemaUses):
+class _UseFacts(_SchemaUses):
+    """Read how a use's value is written as text from the type and members it binds, once every schema use is bound.
+
+    A value is laid out as its type is (``layout``), its kinds are those of its types (``_target_types.lexical_kind``),
+    and its other properties are what the parser reads the schema of the model it holds to say (``others``).
+    """
+
+    def layout(self, value: TypeView | None) -> Literal["object", "array", "scalar"]:
+        """Return how a type's values are laid out, through aliases, root models and a union with None alone.
+
+        A class model or a mapping is an object, an item container an array, a union of members laid out alike is laid
+        out as they are, and any other type is a scalar.
+        """
+        found = unwrapped(value, self.symbol_table, self.members)
+        if isinstance(found, UnionType):
+            layouts = {self.layout(member) for member in present(found)}
+            return layouts.pop() if len(layouts) == 1 else "scalar"
+        if (
+            isinstance(found, GeneratedSymbolType) and self.symbol_table[found.symbol].kind not in _SCALAR_SYMBOLS
+        ) or contained(found, "values", self.symbol_table, self.members) is not None:
+            return "object"
+        return "array" if self.items(found) is not None else "scalar"
+
+    def kind(self, value: TypeView | None) -> LexicalKind | None:
+        """Return the lexical kind of a text leaf's type (``_target_types.lexical_kind``)."""
+        return lexical_kind(value, self.symbol_table, self.members)
+
+    def items(self, value: TypeView | None) -> TypeView | None:
+        """Return the items type of the item container a type stands for (``_target_types.contained``)."""
+        return contained(value, "items", self.symbol_table, self.members)
+
+    def named_models(self, value: TypeView | None) -> list[SymbolId]:
+        """Return the models a type names, then those the aliases and root models among them stand for, in order.
+
+        A union with None alone names what its other member names.
+        """
+        found: list[SymbolId] = []
+        while True:
+            if (member := sole_present(value)) is not None:
+                value = member
+            elif isinstance(value, GeneratedSymbolType) and value.symbol not in found:
+                found.append(symbol := value.symbol)
+                if self.symbol_table[symbol].kind not in WRAPPER_KINDS:
+                    return found
+                value = wrapped_type(self.members, symbol)
+            else:
+                return found
+
+    def holder(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
+        """Return where the schema of a type's values is: the last named model's (``named_models``), else ``source``."""
+        location = next(
+            (
+                found
+                for symbol in reversed(self.named_models(value))
+                if (found := self.locations.get(symbol)) is not None
+            ),
+            None,
+        )
+        return source if location is None else self.documents.location(location, "schema")
+
+    def object_symbols(self, value: TypeView | None) -> list[SymbolId]:
+        """Return the models a type names (``named_models``), then the bases of the class it holds.
+
+        The bases are in method resolution order (``_mro.linearize``).
+        """
+        found = self.named_models(value)
+        if found and self.symbol_table[found[-1]].kind not in WRAPPER_KINDS:
+            order = linearize([found[-1]], lambda item: item, lambda item: self.symbol_table[item].bases, rule="python")
+            found.extend(base for base in (order or [])[1:] if base not in found)
+        return found
+
+    def others(
+        self, value: TypeView | None, members: tuple[FieldUseBinding, ...], holder: SourceLocation, direction: Direction
+    ) -> _Others:
+        """Return what the model a type holds says of its other properties, and the type of their values.
+
+        The first of the models it names and their bases (``object_symbols``) whose schema says anything of them says
+        it, as the parser reads that schema (``_ObjectFacts``); any of them with pattern properties gives the type
+        them. A mapping no model says anything for types them by its values. Typed ones are the values of the field
+        the model keeps them in, else of the model-free type their schema has in the use's direction, else of its
+        mapping.
+        """
+        facts = [
+            (symbol, found)
+            for symbol in self.object_symbols(value)
+            if (schema := self.locations.get(symbol)) is not None
+            and (found := self.parser.object_facts.get(schema)) is not None
+        ]
+        patterns = any(found.patterns for _, found in facts)
+        owner, said = next(
+            ((symbol, found.others) for symbol, found in facts if found.others != "absent"), (None, "absent")
+        )
+        mapping = contained(value, "values", self.symbol_table, self.members)
+        if said == "absent" and mapping is not None:
+            said = "schema"
+        if said != "schema":
+            return _Others(said, patterns)
+        if (location := None if owner is None else self.locations.get(owner)) is None:
+            return _Others(said, patterns, _child(holder, "additionalProperties"), mapping)
+        declaration = location.child("additionalProperties")
+        kept = next(
+            (
+                (member, found)
+                for member in members
+                if member.member_kind == "additional_properties"
+                and (facts := member.model_facts) is not None
+                and (found := contained(facts.type, "values", self.symbol_table, self.members)) is not None
+            ),
+            None,
+        )
+        free = declaration if kept is None and declaration in self.parser.free_schemas else None
+        values = (
+            kept[1] if kept is not None else None if free is None else self.lightweight(free, direction).value
+        ) or mapping
+        source = self.documents.location(declaration, "schema")
+        return _Others(said, patterns, source, values, None if kept is None else kept[0], free)
+
+    def member_shape(self, name: str, value: TypeView | None, source: SourceLocation, *, form: bool) -> MemberShape:
+        """Return how a member of a type is written as text, its kind reported where its schema is.
+
+        An item container member of a form repeats, in its items' kind, reported where its items' schema is
+        (``repeated``).
+        """
+        if form and (item := self.items(value)) is not None:
+            return MemberShape(name, KindAt(self.repeated(value, source), self.kind(item)), repeated=True)
+        return MemberShape(name, KindAt(source, self.kind(value)))
+
+    def repeated(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
+        """Return where the schema of the items of a form member's values is, its own where it does not repeat."""
+        return source if self.items(value) is None else _child(self.holder(value, source), "items")
+
+    def shape(
+        self,
+        value: TypeView | None,
+        source: SourceLocation,
+        members: tuple[FieldUseBinding, ...],
+        direction: Direction,
+        *,
+        form: bool,
+    ) -> TextShape:
+        """Return how a type's values are written as one parameter value, or as the members of a URL-encoded form.
+
+        `source` is where the use's schema is, and `members` those of the model the type holds. An array has its
+        items' kind and a scalar its own; an object has the model's members, then its other properties
+        (``others``): none when it allows none, those of its typed values' kind, else any string. A form that is no
+        object, and an object with pattern properties, have no builtin encoding.
+        """
+        holder = self.holder(value, source)
+        layout = self.layout(value)
+        if layout == "array" and not form:
+            return TextShape("array", KindAt(_child(holder, "items"), self.kind(self.items(value))))
+        if layout != "object":
+            return (
+                TextShape("object", problem=(holder, _NOT_OBJECT))
+                if form
+                else TextShape("scalar", KindAt(holder, self.kind(value)))
+            )
+        others = self.others(value, members, holder, direction)
+        if others.patterns:
+            return TextShape("object", problem=(holder, _PATTERNS))
+        additional = (
+            None
+            if others.said == "closed"
+            else MemberShape("")
+            if others.source is None
+            else self.member_shape("", others.values, others.source, form=form)
+        )
+        return TextShape(
+            "object",
+            members=tuple(
+                self.member_shape(name, facts.type, schema, form=form) for name, schema, facts in _typed(members)
+            ),
+            additional=additional,
+        )
+
+    def encoding(self, use: TypeUseBinding, *, members: bool) -> EncodingFacts:
+        """Return how a use's value is written as text: as one value, as form members, and member by member.
+
+        Only a form's members, which its encodings can give a style, are written member by member, each with the
+        members of the model its type holds, and only a form has other properties of its own.
+        """
+        value, direction = use.type, use.id.direction
+        source = use.schema or use.id.schema_site
+        extras: tuple[SourceLocation, TypeView] | None = None
+        declared = False
+        if members and self.layout(value) == "object":
+            others = self.others(value, use.members, self.holder(value, source), direction)
+            declared = others.said in {"allowed", "schema"}
+            if others.source is not None and others.values is not None:
+                extras = self.repeated(others.values, others.source), others.values
+        return EncodingFacts(
+            self.shape(value, source, use.members, direction, form=False),
+            self.shape(value, source, use.members, direction, form=True),
+            tuple(
+                (name, self.shape(facts.type, schema, self.held_members(facts.type, direction), direction, form=False))
+                for name, schema, facts in _typed(use.members)
+            )
+            if members
+            else (),
+            extras,
+            declared=declared,
+        )
+
+    def held_members(self, value: TypeView | None, direction: Direction) -> tuple[FieldUseBinding, ...]:
+        """Return the members of the model a type holds (``held``), where its own schema declares them."""
+        return () if (symbol := self.held(value)) is None else self.members_at(symbol, None, direction)
+
+    def takes_object(self, value: TypeView | None) -> bool:
+        """Return whether a multipart body's type is one object, takes any value, or is no type the use binds.
+
+        A union of several objects declares no members its parts could be read by.
+        """
+        return (
+            value is None
+            or untyped(value, self.symbol_table, self.members)
+            or (
+                self.layout(value) == "object"
+                and not isinstance(unwrapped(value, self.symbol_table, self.members), UnionType)
+            )
+        )
+
+    def encodings(self) -> None:
+        """Record how each parameter, header and form use's value is written as text, once every use is bound."""
+        for use, members in self.texts.items():
+            self.uses[use] = replace(self.uses[use], encoding=self.encoding(self.uses[use], members=members))
+
+
+class _Octets(_UseFacts):
+    """Read which values the models hold as raw octets: a multipart body's files, a raw body, and bytes sent as text.
+
+    A value holds them where the parser reads a string as raw octets (``reference.binary_content_of``).
+    """
+
+    def field_of(self, member: FieldUseBinding) -> DataModelFieldBase:
+        """Return the field a member binds: its slot's, or the one the split of a read or write variant left out."""
+        if (slot := member.slot) is not None:
+            return self.binder.models[slot.symbol].fields[slot.index]
+        return self.excluded[member.consumer, member.wire_name or ""]
+
+    def alternatives(
+        self,
+        node: Reference | DataType,
+        direction: Direction,
+        constrained: bool = False,  # noqa: FBT001, FBT002
+        active: frozenset[SymbolId] = frozenset(),
+    ) -> Iterator[tuple[Reference | DataType, bool]]:
+        """Yield the nodes a value is one of, None aside, and whether a model it is read through constrains it.
+
+        A union is each of its members, and an alias or root model the type it stands for, as an inlining projector
+        reads them (``_Projector._reference_value``); a container, a scalar and a reference to any other model are one
+        node each.
+        """
+        reference = node if isinstance(node, Reference) else node.reference
+        if isinstance(node, DataType):
+            if node in CONTAINERS or node.python_type is not None or node.type is not None:
+                if node.type != "None":
+                    yield node, constrained
+                return
+            if node.data_types:
+                for child in node.data_types:
+                    yield from self.alternatives(child, direction, constrained, active)
+                return
+            if node.literals or node.enum_member_literals:
+                reference = None
+        binder = self.binder
+        if reference is None:
+            yield node, constrained
+            return
+        if (final := binder.final(reference, direction)) is None:
+            root = binder.unwrapped(reference)
+            yield from () if root is None else self.alternatives(root, direction, constrained, active)
+            return
+        model = _source(final)
+        if (
+            (symbol := binder.symbols[id(model)]) not in active
+            and binder.policies[id(model)].kind in WRAPPER_KINDS
+            and (field := binder.root_field(model)) is not None
+        ):
+            wrapped = constrained or binder.constrains(model)
+            yield from self.alternatives(field.data_type, direction, wrapped, active | {symbol})
+            return
+        yield node, constrained
+
+    def view(self, leaf: Reference | DataType, direction: Direction, *, inline: bool = True) -> TypeView | None:
+        """Return the type the models give one node of a value, each alias and root model by the type it stands for.
+
+        Without `inline`, aliases and root models are the types they name.
+        """
+        projector = self.binder.projector(direction, inline=inline)
+        return (projector.declaration(leaf) if isinstance(leaf, Reference) else projector.project(leaf)).value
+
+    @cached_property
+    def binary_type(self) -> TypeView | None:
+        """Return the type the models give a raw binary string."""
+        binary = self.parser.data_type_manager.get_data_type(Types.binary)
+        return self.binder.projector("neutral", inline=True).project(binary).value
+
+    def octet(self, leaf: Reference | DataType, direction: Direction) -> bool:
+        """Return whether the models hold a node's values as raw octets.
+
+        They do for a string the parser reads as raw octets (``reference.binary_content_of``) that they type as bytes:
+        their raw binary string, or bytes they constrain.
+        """
+        return (
+            isinstance(leaf, DataType)
+            and binary_content_of(leaf)
+            and (value := self.view(leaf, direction)) is not None
+            and any(
+                member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
+                for member in present(value)
+            )
+        )
+
+    def part_of(self, node: Reference | DataType | None, value: TypeView | None, direction: Direction) -> PartSchema:
+        """Return how the values of a type are sent as parts.
+
+        They are files when every node they, or their items when they repeat, are one of holds raw octets as the
+        parser reads them (``reference.binary_content_of``); they repeat as an item container, one part for each item;
+        and they are structured when one of their alternatives is a model, a mapping or an item container.
+        """
+        leaves = [] if node is None else [leaf for leaf, _ in self.alternatives(node, direction)]
+        if (item := self.items(value)) is not None:
+            leaves = [
+                inner
+                for leaf in leaves
+                if isinstance(leaf, DataType) and leaf in ITEM_CONTAINERS and leaf.data_types
+                for inner, _ in self.alternatives(leaf.data_types[0], direction)
+            ]
+        found = unwrapped(value if item is None else item, self.symbol_table, self.members)
+        return PartSchema(
+            file=bool(leaves) and all(isinstance(leaf, DataType) and binary_content_of(leaf) for leaf in leaves),
+            repeated=item is not None,
+            structured=found is not None and any(self.layout(member) != "scalar" for member in present(found)),
+            value=value,
+        )
+
+    def part(self, member: FieldUseBinding) -> PartSchema:
+        """Return how a member of a multipart body is sent as parts, by the field it binds in the body's direction."""
+        field = self.field_of(member)
+        direction = member.direction
+        return self.part_of(field.data_type, self.view(field.data_type, direction, inline=False), direction)
+
+    def mapped(self, node: Reference | DataType, direction: Direction) -> DataType | None:
+        """Return the values node of the mapping a value is (``alternatives``), None for any other value."""
+        return next(
+            (
+                leaf.data_types[-1]
+                for leaf, _ in self.alternatives(node, direction)
+                if isinstance(leaf, DataType) and leaf in MAPPINGS and leaf.data_types
+            ),
+            None,
+        )
+
+    @contextmanager
+    def values_node(
+        self, others: _Others, node: Reference | DataType | None, direction: Direction
+    ) -> Generator[Reference | DataType | None, None, None]:
+        """Yield the node of the typed other properties of a value (``others``).
+
+        It is the values of its model's kept field, its model-free schema's type, or the values of its mapping.
+        """
+        if others.free is not None:
+            with self.free_type(others.free) as found:
+                yield found
+            return
+        holder = node if others.kept is None else self.field_of(others.kept).data_type
+        yield None if holder is None else self.mapped(holder, direction)
+
+    def parts(
+        self, use: TypeUseBinding, node: Reference | DataType | None, schema: SchemaLocation
+    ) -> tuple[PartFacts, SourceLocation | None]:
+        """Return how a multipart body's use encodes the parts of its members and of its other properties.
+
+        It is an object as its type is (``takes_object``), each property member's parts are its field's
+        (``part``), and the other parts are none when the model allows no other properties, those of their typed
+        values when it types them (``others``), and any value otherwise. Also return where the first raw binary
+        string sits in a part holding no files, which carries it as text (``first``); a member the body's direction
+        leaves out is never sent.
+        """
+        direction = use.id.direction
+        members = [
+            (member.wire_name, member, self.part(member))
+            for member in use.members
+            if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+        ]
+        refused = next(
+            (
+                found
+                for _, member, part in members
+                if not part.file
+                and member.exclusion is None
+                and (
+                    found := self.first(
+                        (field := self.field_of(member)).data_type, direction, self.origin(field, schema)
+                    )
+                )
+                is not None
+            ),
+            None,
+        )
+        extra: PartSchema | Literal["closed"] | None = None
+        value = use.type
+        if self.layout(value) == "object":
+            others = self.others(value, use.members, self.holder(value, use.schema or use.id.schema_site), direction)
+            if others.said == "closed":
+                extra = "closed"
+            elif others.source is not None:
+                with self.values_node(others, node, direction) as values:
+                    typed = others.values if values is None else self.view(values, direction, inline=False)
+                    extra = self.part_of(values, typed, direction)
+                    if refused is None and not extra.file and values is not None:
+                        refused = self.first(values, direction, others.free or schema)
+        named = tuple((name, part) for name, _, part in members)
+        return PartFacts(self.takes_object(value), named, extra), refused
+
+    @staticmethod
+    def origin(field: DataModelFieldBase, fallback: SchemaLocation) -> SchemaLocation:
+        """Return where the parser built a field (``reference.field_origin_of``), ``fallback`` where it records none."""
+        return fallback if (origin := field_origin_of(field)) is None or origin.location is None else origin.location
+
+    def first(
+        self, node: Reference | DataType | None, direction: Direction, fallback: SchemaLocation
+    ) -> SourceLocation | None:
+        """Return where the first value the models hold as raw octets sits in a value, None without one (``octet``).
+
+        The walk reads the value's nodes, then the members of each model it references and the model-free type of
+        the other properties a model keeps no field for; each node reports where the parser built it
+        (``reference.type_origin_of``), else where the field it is in was built, else ``fallback``.
+        """
+        found = None if node is None else self.reach(node, direction, fallback, {})[0]
+        return None if found is None else self.documents.location(found, "schema")
+
+    def reach(
+        self, node: Reference | DataType, direction: Direction, fallback: SchemaLocation, walked: dict[SymbolId, int]
+    ) -> tuple[SchemaLocation | None, int]:
+        """Return the first raw octets a value reaches (``first``), and the earliest walked model it leads back to."""
+        low = len(walked)
+        pending: list[Reference | DataType] = [node]
+        binder = self.binder
+        while pending:
+            current = pending.pop()
+            reference = current if isinstance(current, Reference) else current.reference
+            if isinstance(current, DataType):
+                if self.octet(current, direction):
+                    return type_origin_of(current) or fallback, low
+                if reference is None or current.literals or current.enum_member_literals:
+                    pending.extend(reversed(current.data_types))
+                    continue
+            if (final := binder.final(cast("Reference", reference), direction)) is None:
+                pending.extend(() if (root := binder.unwrapped(cast("Reference", reference))) is None else (root,))
+                continue
+            model = _source(final)
+            if binder.policies[id(model)].kind == "enum":
+                continue
+            found, reached = self.reach_model(binder.symbols[id(model)], direction, fallback, walked)
+            low = min(low, reached)
+            if found is not None:
+                return found, low
+        return None, low
+
+    def reach_model(
+        self, symbol: SymbolId, direction: Direction, fallback: SchemaLocation, walked: dict[SymbolId, int]
+    ) -> tuple[SchemaLocation | None, int]:
+        """Return the first raw octets a model's members reach, then those of its model-free other properties.
+
+        `walked` holds the models of the walk whose answer is pending, in their walk order. A model that finds them,
+        or leads back to none walked before it, settles itself and every pending model walked after it, since they
+        all reach it; each model is walked once per direction (``binaries``).
+        """
+        if (key := (symbol, direction)) in self.binaries:
+            return self.binaries[key], len(walked)
+        if (order := walked.get(symbol)) is not None:
+            return None, order
+        order = walked[symbol] = len(walked)
+        low = order
+        found: SchemaLocation | None = None
+        location = self.locations.get(symbol)
+        members = self.members.get(symbol, ())
+        for member in members:
+            if member.slot is None:
+                continue
+            field = self.field_of(member)
+            found, reached = self.reach(field.data_type, direction, self.origin(field, location or fallback), walked)
+            low = min(low, reached)
+            if found is not None:
+                break
+        free = None if location is None else location.child("additionalProperties")
+        if (
+            found is None
+            and free in self.parser.free_schemas
+            and not any(member.member_kind == "additional_properties" for member in members)
+        ):
+            with self.free_type(cast("SchemaLocation", free)) as values:
+                if values is not None:
+                    found, reached = self.reach(values, direction, cast("SchemaLocation", free), walked)
+                    low = min(low, reached)
+        while (found is not None or low == order) and len(walked) > order:
+            self.binaries[walked.popitem()[0], direction] = found
+        return found, low
+
+    def whole(
+        self, node: Reference | DataType | None, direction: Direction, kind: MediaKind | None
+    ) -> tuple[bool, bool, bool, bool]:
+        """Return how a body travels by the models' types of its whole value (``alternatives``).
+
+        A text or binary media carries it as the raw body when the models hold every alternative as raw octets
+        (``octet``), checked by the model when they constrain those bytes, in a type or in a model it is read through.
+        Any other body that holds them in part carries them as text, which is refused. A binary media whose
+        alternatives are all enums or literals of strings carries text read by the model.
+        """
+        leaves = [] if node is None else list(self.alternatives(node, direction))
+        raw = [self.octet(leaf, direction) for leaf, _ in leaves]
+        octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
+        checked = octets and any(
+            constrained or isinstance(self.view(leaf, direction), ConstructorType) for leaf, constrained in leaves
+        )
+        text = (
+            kind == "binary"
+            and not any(raw)
+            and bool(leaves)
+            and all(self.strings(self.view(leaf, direction)) for leaf, _ in leaves)
+        )
+        return octets, not octets and any(raw), checked, text
+
+    def strings(self, value: TypeView | None) -> bool:
+        """Return whether a type is an enum or literal of strings alone, None aside."""
+        return value is not None and all(
+            (isinstance(member, GeneratedSymbolType) and self.string_enum(member.symbol))
+            or (
+                isinstance(member, LiteralType)
+                and all(
+                    self.string_enum(item.symbol) if isinstance(item, GeneratedEnumMember) else item.kind == "str"
+                    for item in member.values
+                )
+            )
+            for member in present(value)
+        )
+
+    def string_enum(self, symbol: SymbolId) -> bool:
+        """Return whether a symbol is an enum of strings alone."""
+        return (declared := self.symbol_table[symbol]).kind == "enum" and set(declared.value_types) == {"string"}
+
+
+def _child(location: SourceLocation, token: str) -> SourceLocation:
+    """Return the location of a keyword's schema below a schema's location."""
+    return replace(location, pointer=f"{location.pointer}/{token}")
+
+
+def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:
+    """Yield each property of a model with a field, its allOf branches' included, with its wire name and schema."""
+    for member in members:
+        if (
+            member.member_kind == "property"
+            and member.wire_name is not None
+            and member.schema is not None
+            and (facts := member.model_facts) is not None
+        ):
+            yield member.wire_name, member.schema, facts
+
+
+class _Contracts(_Octets):
     """Bind every type use of the operations the target parser walked."""
 
     def observed(self, document: str) -> bool:
@@ -3234,32 +3358,9 @@ class _Contracts(_SchemaUses):
         self.documents.documents[document] = raw
         return True
 
-    @cached_property
-    def relocations(self) -> dict[SourceDocumentId, SourceDocumentId]:
-        """Map the document identities the walk's records use to the attempt's."""
-        return {provisional: self.documents.ids[uri] for uri, provisional in self.parser.record_documents.items()}
-
     def record(self, schema: SchemaLocation) -> _SchemaRecord:
-        """Return what the walk recorded of an acquired schema, located in the attempt's documents."""
-        return cast("_SchemaRecord", _relocated(self.parser.schema_records.get(schema, _UNRECORDED), self.relocations))
-
-    def parts(self, schema: SchemaLocation, members: tuple[FieldUseBinding, ...]) -> PartFacts:
-        """Return how a multipart body's schema encodes the parts of its use's members, as the walk recorded it."""
-        record = self.record(schema).parts or _UNDECLARED_PARTS
-        declared = dict(record.members)
-        return PartFacts(
-            record.object,
-            tuple(
-                (member.wire_name, declared.get(member.schema, _NO_PART))
-                for member in members
-                if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
-            ),
-            record.extra,
-        )
-
-    def declared(self, declaration: SchemaLocation, raw: YamlValue) -> tuple[SchemaLocation, dict[str, YamlValue]]:
-        """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
-        return self.parser.resolutions.get(declaration) or (declaration, as_mapping(raw))
+        """Return what the walk recorded of an acquired schema."""
+        return self.parser.schema_records.get(schema, _UNRECORDED)
 
     @staticmethod
     def named(raw: YamlValue, holder: SchemaLocation, kind: str) -> Iterator[tuple[str, YamlValue]]:
@@ -3297,9 +3398,7 @@ class _Contracts(_SchemaUses):
             if document is not None and not self.observed(document):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
                 break
-            fragment = ref.partition("#")[2]
-            noncanonical = NONCANONICAL_PERCENT.search(fragment) or NONCANONICAL_ESCAPE.search(unquote(fragment))
-            if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
+            if document is None or (tokens := _pointer_tokens(ref, strict=True)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break
             target = SchemaLocation(document, tokens)
@@ -3328,64 +3427,46 @@ class _Contracts(_SchemaUses):
     def media_facts(
         self, uses: tuple[TypeUseId, ...], schema: SchemaLocation, role: TypeUseRole, media: str
     ) -> tuple[TypeUseId, ...]:
-        """Record what the walk recorded of the media's own schema keyword on its uses.
+        """Record what the models say of the media's own schema keyword on its uses, and a parameter's defaults.
 
-        A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
-        text encoding of its schema. A body's models decide how it travels: a text or binary media carries it as the
-        raw body when they type its whole value as raw binary strings alone, none written as base64, checked by the
-        model when they constrain those strings. A binary media whose schema is written as one binary string they type
-        otherwise carries text read by the model, and any other body whose whole value they type as raw bytes in part
-        carries them as text, which is refused.
+        A multipart media's uses get its parts (``parts``) and a parameter's content its default and keywords; the
+        uses of a parameter's, a header's or a form's media get the text encoding of their values (``encodings``). A
+        body's models decide how it travels (``whole``), and a use that carries its values as text is refused where
+        the first raw binary string sits in them (``first``), as a multipart body is in a part holding no files.
         """
         multipart = _multipart(media)
         record = self.record(schema)
         kind = _media_kind(media)
+        text = role == "parameter" or role in _HEADER_ROLES
+        item = schema.tokens[-1] == "itemSchema"
         for use in uses:
             binding = self.uses[use]
-            if record.form is not None and (held := self.held(binding.type)) is not None:
-                binding = replace(binding, members=self.members_at(held, record.form, use.direction))
-            raw, constrained = self.raw(schema, use.direction) if record.string and not record.base64 else ((), False)
-            octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
-            partly = not octets and any(raw)
+            if text or kind in _FORMS:
+                self.texts[use] = kind in _FORMS
+            with self.bound(schema, use.projection, use.direction) as node:
+                parts, refused = self.parts(binding, node, schema) if multipart else (None, None)
+                octets, partly, checked, read = (
+                    self.whole(node, use.direction, kind)
+                    if kind is not None and not (multipart or text or item)
+                    else (False, False, False, False)
+                )
+                if text or item or kind in _TEXT_MEDIA:
+                    refused = self.first(node, use.direction, schema)
             self.uses[use] = replace(
                 binding,
-                parts=self.parts(schema, binding.members) if multipart else None,
+                parts=parts,
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
-                encoding=record.encoding,
-                binary=None if octets else record.binary or (use.schema_site if partly else None),
+                binary=None if octets else refused or (use.schema_site if partly else None),
                 octets=octets,
-                checked=octets and constrained,
-                text=kind == "binary" and record.spelled and not (octets or partly),
+                checked=checked,
+                text=read,
             )
         return uses
 
-    @cached_property
-    def binary_type(self) -> TypeView | None:
-        """Return the type the models give a raw binary string."""
-        binary = self.parser.data_type_manager.get_data_type(Types.binary)
-        return self.binder.projector("neutral", inline=True).project(binary).value
-
-    def raw(self, schema: SchemaLocation, direction: Direction) -> tuple[tuple[bool, ...], bool]:
-        """Return whether each type the models type a schema's whole value as, null aside, is a raw binary string.
-
-        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it, and a string
-        may be constrained; a backend that keeps the constraints of a string in its type holds two such strings where
-        another holds one. Also return whether the models constrain the value, in a type or in a wrapper's field.
-        """
-        projector = self.binder.projector(direction, inline=True)
-        projector.constrained = False
-        value = self.projection(schema, "value", direction, inline=True).value
-        members = [member for member in (() if value is None else _members(value)) if not is_none(member)]
-        return tuple(
-            member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
-            for member in members
-        ), projector.constrained or any(isinstance(member, ConstructorType) for member in members)
-
     def media(  # noqa: PLR0913
         self,
-        raw: YamlValue,
-        declaration: SchemaLocation,
+        holder: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
@@ -3395,20 +3476,13 @@ class _Contracts(_SchemaUses):
         parameter_location: str | None = None,
     ) -> tuple[WireDeclaration, ...]:
         locate = self.documents.location
+        declaration = holder.declaration
         values: list[WireDeclaration] = []
-        for name, value in as_mapping(raw).items():
-            medium = as_mapping(value)
-            media_declaration, media_use = declaration.child("content", name), use_site.child("content", name)
+        for medium in holder.below("media"):
+            name = medium.key
+            media_declaration, media_use = medium.declaration, use_site.child("content", name)
             uses: list[TypeUseId] = []
-            for keyword in ("schema", "itemSchema"):
-                schema = media_declaration.child(keyword)
-                if keyword not in medium or (schema, "value") not in self.parser.acquisitions:
-                    continue
-                projections: tuple[Projection, ...] = (
-                    ("value", "item_stream_array")
-                    if (schema, "item_stream_array") in self.parser.acquisitions
-                    else ("value",)
-                )
+            for schema, projections in medium.schemas.items():
                 uses.extend(
                     self.media_facts(
                         tuple(
@@ -3418,7 +3492,7 @@ class _Contracts(_SchemaUses):
                                 declaration,
                                 use_site,
                                 schema,
-                                media_use.child(keyword),
+                                media_use.child(schema.tokens[-1]),
                                 projection=projection,
                                 name=parameter_name,
                                 location=parameter_location,
@@ -3434,15 +3508,16 @@ class _Contracts(_SchemaUses):
                 )
             encodings: list[WireDeclaration] = []
             encoding_declaration = media_declaration.child("encoding")
-            if "encoding" in medium and encoding_declaration not in self.ignored_declarations:
+            if encoding_declaration not in self.ignored_declarations:
                 header_role: TypeUseRole = (
                     "response_encoding_header" if role.startswith("response") else "request_encoding_header"
                 )
-                for property_name, encoding_value in self.named(
-                    medium.get("encoding"), encoding_declaration, "encoding property name"
+                walked = {encoding.key: encoding for encoding in medium.below("encoding")}
+                for property_name, _ in self.named(
+                    medium.value.get("encoding"), encoding_declaration, "encoding property name"
                 ):
-                    encoding = as_mapping(encoding_value)
-                    declared = encoding_declaration.child(property_name)
+                    encoding = walked[property_name]
+                    declared = encoding.declaration
                     used = media_use.child("encoding", property_name)
                     encodings.append(
                         WireDeclaration(
@@ -3450,10 +3525,9 @@ class _Contracts(_SchemaUses):
                             property_name,
                             DeclarationId(locate(declared, "declaration")),
                             locate(used, "use"),
-                            _facts(encoding, ("contentType", "style", "explode", "allowReserved"), declared),
+                            _facts(encoding.value, ("contentType", "style", "explode", "allowReserved"), declared),
                             children=self.headers(
-                                encoding.get("headers"),
-                                declared.child("headers"),
+                                encoding,
                                 used.child("headers"),
                                 owner,
                                 header_role,
@@ -3468,7 +3542,7 @@ class _Contracts(_SchemaUses):
                     name,
                     DeclarationId(locate(media_declaration, "declaration")),
                     locate(media_use, "use"),
-                    _facts(medium, ("example", "examples"), media_declaration),
+                    _facts(medium.value, ("example", "examples"), media_declaration),
                     tuple(uses),
                     tuple(encodings),
                 )
@@ -3477,23 +3551,20 @@ class _Contracts(_SchemaUses):
 
     def parameter(  # noqa: PLR0913
         self,
-        declared: SchemaLocation,
-        value: dict[str, YamlValue],
+        walked: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
         *,
-        name: str | None = None,
         status: str | None = None,
         media: str | None = None,
         placeholders: Container[str] = (),
     ) -> WireDeclaration:
         """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
-        wire_name = name if name is not None else str(value.get("name", ""))
+        declared, value, wire_name = walked.declaration, walked.value, walked.key
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
-        if "schema" in value:
-            schema = declared.child("schema")
+        if (schema := next(iter(walked.schemas), None)) is not None:
             use = self.use(
                 owner,
                 role,
@@ -3507,23 +3578,18 @@ class _Contracts(_SchemaUses):
                 media=media,
             )
             record = self.record(schema)
+            with self.bound(schema, "value", use.direction) as node:
+                binary = self.first(node, use.direction, schema)
             self.uses[use] = replace(
                 self.uses[use],
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
-                encoding=record.encoding,
-                binary=record.binary,
+                binary=binary,
             )
+            self.texts[use] = False
             schemas = (use,)
         children = self.media(
-            value.get("content"),
-            declared,
-            use_site,
-            owner,
-            role,
-            status=status,
-            parameter_name=wire_name,
-            parameter_location=location,
+            walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )
         locate = self.documents.location
         return WireDeclaration(
@@ -3542,8 +3608,7 @@ class _Contracts(_SchemaUses):
 
     def headers(  # noqa: PLR0913
         self,
-        raw: YamlValue,
-        declaration: SchemaLocation,
+        holder: _WalkedObject,
         use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
@@ -3551,33 +3616,20 @@ class _Contracts(_SchemaUses):
         status: str | None = None,
         media: str | None = None,
     ) -> tuple[WireDeclaration, ...]:
+        """Bind the headers the walk visited in ``holder``; every name of its headers is checked, in order."""
+        walked = {header.key: header for header in holder.below("header")}
         return tuple(
-            self.parameter(
-                *self.declared(declaration.child(name), value),
-                use_site.child(name),
-                owner,
-                role,
-                name=name,
-                status=status,
-                media=media,
-            )
-            for name, value in self.named(raw, declaration, "header name")
-            if declaration.child(name) not in self.ignored_declarations
+            self.parameter(header, use_site.child(name), owner, role, status=status, media=media)
+            for name, _ in self.named(holder.value.get("headers"), holder.declaration.child("headers"), "header name")
+            if (header := walked.get(name)) is not None
         )
 
     def response(
-        self, raw: YamlValue, declaration: SchemaLocation, use_site: SchemaLocation, owner: OperationId, status: str
+        self, walked: _WalkedObject, use_site: SchemaLocation, owner: OperationId, status: str
     ) -> WireDeclaration:
-        declared, value = self.declared(declaration, raw)
-        content = self.media(value.get("content"), declared, use_site, owner, "response_body", status=status)
-        headers = self.headers(
-            value.get("headers"),
-            declared.child("headers"),
-            use_site.child("headers"),
-            owner,
-            "response_header",
-            status=status,
-        )
+        declared, value = walked.declaration, walked.value
+        content = self.media(walked, use_site, owner, "response_body", status=status)
+        headers = self.headers(walked, use_site.child("headers"), owner, "response_header", status=status)
         links = tuple(
             self.metadata("link", name, declared.child("links", name), use_site.child("links", name), link)
             for name, link in self.named(value.get("links"), declared.child("links"), "link name")
@@ -3600,11 +3652,10 @@ class _Contracts(_SchemaUses):
             contracts.append(self.operation(walked, len(contracts), parent))
         return tuple(contracts)
 
-    def operation(  # ruff: ignore[too-many-locals]
-        self, walked: _WalkedOperation, order: int, parent: OperationId | None
-    ) -> OperationContract:
+    def operation(self, walked: _WalkedOperation, order: int, parent: OperationId | None) -> OperationContract:
         locate = self.documents.location
-        raw, declaration, use_site, item = walked.raw, walked.declaration, walked.use_site, walked.item
+        use_site, item = walked.use_site, walked.item
+        raw, declaration = walked.value, walked.declaration
         kind: Literal["path", "webhook", "callback"] = (
             "callback" if parent is not None else "webhook" if use_site.tokens[0] == "webhooks" else "path"
         )
@@ -3616,43 +3667,39 @@ class _Contracts(_SchemaUses):
         )
         placeholders = frozenset(path_placeholders(item.use_site.tokens[-1]))
         parameters = tuple(
-            self.parameter(target, value, used, identity, "parameter", placeholders=placeholders)
-            for used, target, value in walked.parameters
-            if target not in self.ignored_declarations
+            self.parameter(parameter, used, identity, "parameter", placeholders=placeholders)
+            for used, parameter in walked.parameters
+            if parameter.declaration not in self.ignored_declarations
         )
         body: WireDeclaration | None = None
-        if "requestBody" in raw:
+        if (requested := next(walked.below("request_body"), None)) is not None:
             used = use_site.child("requestBody")
-            declared, value = self.declared(declaration.child("requestBody"), raw["requestBody"])
             body = WireDeclaration(
                 "request_body",
                 None,
-                DeclarationId(locate(declared, "declaration")),
+                DeclarationId(locate(requested.declaration, "declaration")),
                 locate(used, "use"),
-                _facts(value, ("required", "description"), declared),
-                children=self.media(value.get("content"), declared, used, identity, "request_body"),
+                _facts(requested.value, ("required", "description"), requested.declaration),
+                children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(
-            self.response(
-                value,
-                declaration.child("responses", status),
-                use_site.child("responses", status),
-                identity,
-                status,
-            )
-            for status, value in document_statuses(
-                as_mapping(raw.get("responses")), lambda status: [str(declaration.child("responses", status))]
+            self.response(response, use_site.child("responses", status), identity, key)
+            for status, response in document_statuses(
+                {response.key: response for response in walked.below("response")},
+                response_key,
+                lambda status: [str(declaration.child("responses", status))],
             ).items()
+            if (key := response_key(status)) is not None
         )
         callbacks = tuple(
             self.metadata(
                 "callback",
-                name,
-                declaration.child("callbacks", name),
-                use_site.child("callbacks", name),
-                callback,
+                callback.key,
+                callback.declaration,
+                use_site.child("callbacks", callback.key),
+                callback.value,
             )
-            for name, callback in as_mapping(raw.get("callbacks")).items()
+            for callback in walked.below("callback")
         )
         root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)
@@ -3734,6 +3781,7 @@ def bind_operations(
     builder.schema_uses()
     builder.helper_uses()
     builder.extras()
+    builder.encodings()
     security_schemes = builder.security_schemes()
     documents = builder.documents
     return BoundAttempt(
@@ -3784,29 +3832,26 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Mapping
+    from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
-    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
+    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
+    from datamodel_code_generator._site_facts import Projection, SiteFacts, TypeUseRole
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendName,
         BackendValue,
         DefaultKind,
         FrozenLiteral,
-        LeafStep,
-        Projection,
         TypeArgument,
         TypeProjectionReason,
-        TypeUseRole,
         TypeView,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model._decisions.enum_kind import LiteralValueKind
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
-    from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
-    from datamodel_code_generator.reference import ModelResolver, Reference, _RwDirection
+    from datamodel_code_generator.parser.openapi_scope import ApiObjectKind, ApiParameterDeclaration
+    from datamodel_code_generator.reference import ModelResolver, _RwDirection

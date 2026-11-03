@@ -44,6 +44,7 @@ from .errors import (
     StreamInterruptedError,
     configuration_error,
     data_refusal,
+    state_error,
 )
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
@@ -157,24 +158,19 @@ class StreamResumePlan:
     expires_at: HeaderSelector | None = None
     reopened: OperationPlan[object] = field(init=False)
     writes: Writes = field(init=False)
-    headers: frozenset[str] = field(init=False)
-    queries: frozenset[str] = field(init=False)
     dotted: ReadPaths = field(init=False)
 
     def __post_init__(self) -> None:
         """Derive the operation of a reopen taking the bindings' values and then the cursor as wire values.
 
-        The header and query parameters it writes are those a call's options must not patch.
+        The header and query fields it writes are those a call's options must not patch.
         """
         from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         sources = tuple((binding.target, binding.selector) for binding in self.bindings)
         targeted = targeted_writes(self.call, sources, (self.write,))
-        reopened, writes, headers, queries = targeted.call, targeted.writes, targeted.headers, targeted.queries
-        object.__setattr__(self, "reopened", reopened)
-        object.__setattr__(self, "writes", writes)
-        object.__setattr__(self, "headers", headers)
-        object.__setattr__(self, "queries", queries)
+        object.__setattr__(self, "reopened", targeted.call)
+        object.__setattr__(self, "writes", targeted.writes)
         object.__setattr__(self, "dotted", targeted.dotted)
 
 
@@ -293,7 +289,7 @@ def _limits(
 
     An idle timeout either layer sets replaces the call's merged stream idle timeout. Reconnecting needs resume
     metadata, so a stream of a helper without it that would reconnect is refused. A helper with it refuses a call's
-    idempotency key, since each reopen is a child call of its own, and extra headers or query names of a parameter a
+    idempotency key, since each reopen is a child call of its own, and extra headers or query names of a field a
     reopen writes.
     """
     request, kinds = core.helper_layers(plan.helper_id, "stream_options", stream_options, StreamOptions, options)
@@ -320,15 +316,15 @@ def _limits(
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
-    """Refuse a fixed idempotency key, and headers or query names of a parameter a reopen writes.
+    """Refuse a fixed idempotency key, and headers or query names of a field a reopen writes.
 
     The names are the call's own extra ones and the client's and its views' default ones, each of which every reopen
     sends; the refusal names the layer that gave one.
     """
-    from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
+    from .writes import written_fields  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    queried = partial(query_written, resume.call, resume.writes)
-    core.refuse_patched(plan.helper_id, request, (plan.call, resume.call), resume.headers, queried)
+    written = written_fields(((resume.call, resume.writes),))
+    core.refuse_patched(plan.helper_id, request, (plan.call, resume.call), written)
 
 
 @dataclass(frozen=True, slots=True)
@@ -740,7 +736,7 @@ class _Events(Generic[T]):
         return held
 
     def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return configuration_error(self._plan.helper_id, (action, state), "invalid_state")
+        return state_error(self._plan.helper_id, action, state)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
         """Give a failure of the stream the helper's context, the stream call's operation, and its measurements."""

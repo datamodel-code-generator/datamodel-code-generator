@@ -33,7 +33,9 @@ class Area(Enum):
     """The model graph that the generation store records keeps its invariants (``model_graph.py``)."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
-    """No reader writes a schema object the schema graph validated once and shares (``schema_graph.py``)."""
+    """No reader writes a schema object the schema graph validated once and shares, every schema site the target
+    bindings read again equals the documents then, and no string `$ref` of a site leads to no loaded schema
+    (``schema_graph.py``)."""
 
     MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
     """The imports of every module, and those all modules share, equal the replay of their import ledger when the

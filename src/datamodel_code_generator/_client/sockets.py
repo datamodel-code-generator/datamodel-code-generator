@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
 DEPENDENCY: Final = "httpx2[ws]>=2.13.0"
-_JSON: Final = "application/json"
 _DIRECTIONS: Final = ("send", "receive")
 
 
@@ -78,10 +78,10 @@ class _Sockets(_Streams):
         return SocketSpec(
             helper=helper,
             operation=spec,
-            send=None if (sent := locations.get("send")) is None else self.bind(spec, sent, "request", _JSON),
+            send=None if (sent := locations.get("send")) is None else self.bind(spec, sent, "request", JSON_MEDIA_TYPE),
             receive=None
             if (received := locations.get("receive")) is None
-            else self.bind(spec, received, "response", _JSON),
+            else self.bind(spec, received, "response", JSON_MEDIA_TYPE),
             schemas=tuple(self.protocols.source(reference) for _, _, reference in _references(helper)),
         ), problems
 

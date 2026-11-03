@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info: {title: Discriminator forms, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /owners:
+    get:
+      operationId: getOwner
+      responses:
+        "200":
+          description: The owner and their pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Owner'}
+  /cats:
+    post:
+      operationId: addCat
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/Cat'}
+      responses:
+        "204": {description: Stored.}
+  /dogs:
+    post:
+      operationId: addDog
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/Dog'}
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Dog'}
+      responses:
+        "200":
+          description: The stored dog.
+          content:
+            multipart/form-data:
+              schema: {$ref: '#/components/schemas/Dog'}
+components:
+  schemas:
+    Pet:
+      type: object
+      discriminator:
+        propertyName: kind
+        mapping: {cat: '#/components/schemas/Cat', dog: '#/components/schemas/Dog'}
+      properties:
+        kind: {type: string}
+      required: [kind]
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            meow: {type: boolean}
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Pet'
+        - type: object
+          properties:
+            kind: {type: string}
+            bark: {type: boolean}
+    Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+            mapping: {cat: '#/components/schemas/Cat', dog: '#/components/schemas/Dog'}

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias
 
-from datamodel_code_generator._runtime.model_codecs.media import TOKEN
+from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._target_naming import explicit_name, windows_device
 from datamodel_code_generator._target_unicode import is_nfkc, is_python_name
 
@@ -98,7 +98,7 @@ def namespace_problem(value: object, target_python_version: PythonVersion) -> st
 
 def token(value: object) -> bool:
     """Return whether a value is an HTTP token, such as a header name."""
-    return isinstance(value, str) and TOKEN.fullmatch(value) is not None
+    return isinstance(value, str) and is_token(value)
 
 
 def helper_name_problem(value: str, target_python_version: PythonVersion) -> str | None:

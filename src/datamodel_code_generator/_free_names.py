@@ -6,7 +6,8 @@ feature's sequence that its scope does not hold. Each sequence is released outpu
 
 - ``underscore``: ``name``, ``name_1``, ``name_2``: duplicate fields, names of target scopes and target module
   imports, ``_internal`` modules, merged class names, validator functions, import aliases;
-- ``joined``: ``Name``, ``Name1``, ``Name2``: duplicate classes of the models and of target scopes;
+- ``joined``: ``Name``, ``Name1``, ``Name2``: duplicate classes of the models and of target scopes, and the exports of
+  an ``__init__.py`` whose name a prefixed name takes;
 - ``joined-from-2``: ``Name``, ``Name2``, ``Name3``: converted definitions (Avro, XML Schema, MCP), schema validator
   helper classes;
 - ``underscore-from-2``: ``name``, ``name_2``, ``name_3``: input model definitions, components the served document

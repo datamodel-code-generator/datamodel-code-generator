@@ -1,0 +1,9 @@
+{
+  "title": "Fish",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string"},
+    "fins": {"type": "integer"}
+  },
+  "required": ["kind"]
+}

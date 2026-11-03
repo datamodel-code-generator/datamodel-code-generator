@@ -1,0 +1,33 @@
+{
+  "title": "EmptyLiteralDefaults",
+  "type": "object",
+  "properties": {
+    "some_really_long_field_name_that_goes_on_and_on_and_on_and_on": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "another_really_long_list_field_name_that_goes_on_and_on_and_on_and_on": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "mapping": {
+      "type": "object",
+      "default": {},
+      "description": "x"
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "y"
+    }
+  }
+}

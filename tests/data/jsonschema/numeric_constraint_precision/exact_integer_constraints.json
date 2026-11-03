@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "divisor": {
+      "type": "integer",
+      "multipleOf": 18446744073709551616
+    },
+    "above": {
+      "type": "integer",
+      "exclusiveMinimum": 18446744073709551616
+    },
+    "below": {
+      "type": "integer",
+      "exclusiveMaximum": -18446744073709551616
+    },
+    "nullable": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "multipleOf": 4611686018427387904
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "multipleOf": 18446744073709551616
+      }
+    },
+    "number": {
+      "type": "number",
+      "multipleOf": 18446744073709551616
+    },
+    "literal": {
+      "type": "integer",
+      "enum": [
+        18446744073709551616,
+        36893488147419103232,
+        5
+      ],
+      "multipleOf": 18446744073709551616
+    },
+    "merged": {
+      "$ref": "#/$defs/Merged"
+    }
+  },
+  "$defs": {
+    "Divisor": {
+      "type": "integer",
+      "multipleOf": 18446744073709551616
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Divisor"
+        },
+        {
+          "type": "integer",
+          "multipleOf": 3
+        }
+      ]
+    }
+  }
+}

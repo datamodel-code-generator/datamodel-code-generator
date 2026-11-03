@@ -164,6 +164,7 @@ def _callbacks(package: ModuleType, auth: ModuleType, exchange: Exchange, lines:
             lambda: auth.OauthRefreshToken(auth.TokenSet("a"), client_id="c", client_auth_method="client_secret_post"),
         ),
         ("empty client id", lambda: auth.OauthRefreshToken(auth.TokenSet("a"), client_id="")),
+        ("refresh token lone surrogate", lambda: auth.TokenSet("a", "r\udcff")),
         ("unknown method", lambda: auth.OauthRefreshToken(auth.TokenSet("a"), client_id="c", client_auth_method="tls")),
         ("clock of another type", lambda: auth.OauthRefreshToken(auth.TokenSet("a"), client_id="c", clock=object())),
     ):

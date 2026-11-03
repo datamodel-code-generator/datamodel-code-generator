@@ -12,7 +12,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES
+from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -33,11 +33,12 @@ from datamodel_code_generator.model._decisions.nullability import imported_name_
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._container_kinds import ContainerSlot
+    from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
+        LeafStep,
         LiteralScalar,
         SymbolId,
         TypeView,
@@ -46,12 +47,17 @@ if TYPE_CHECKING:
 __all__ = [
     "CONSTRAINED_SCALARS",
     "admits_none",
+    "contained",
     "container_slot",
     "is_none",
     "lexical_kind",
+    "member_kind",
     "present",
+    "sole_present",
     "takes_null",
     "type_identity",
+    "untyped",
+    "unwrapped",
     "without_none",
 ]
 
@@ -79,6 +85,8 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
     **CONSTRAINED_SCALARS,
 }
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
+_ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
 
 
 def is_none(value: TypeView) -> bool:
@@ -98,6 +106,11 @@ def admits_none(value: TypeView | None) -> bool:
 def present(value: TypeView) -> tuple[TypeView, ...]:
     """Return the members of a union besides None, or the type itself when it is neither a union nor None."""
     return tuple(member for member in _members(value) if not is_none(member))
+
+
+def sole_present(value: TypeView | None) -> TypeView | None:
+    """Return the one member of a union besides None, or None for any other type and a union with several others."""
+    return members[0] if isinstance(value, UnionType) and len(members := present(value)) == 1 else None
 
 
 def without_none(value: TypeView) -> TypeView:
@@ -162,6 +175,71 @@ def type_identity(value: TypeView) -> tuple[str | None, str]:
 def container_slot(value: TypeView) -> ContainerSlot | None:
     """Return the container slot whose generic class a type is, or None for a fixed tuple or any other type."""
     return CONTAINER_CLASSES.get(type_identity(value.base)) if isinstance(value, GenericType) else None
+
+
+def unwrapped(
+    value: TypeView | None,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> TypeView | None:
+    """Return the type a type stands for, through aliases, root models and a union with None alone."""
+    seen: set[SymbolId] = set()
+    while True:
+        if (member := sole_present(value)) is not None:
+            value = member
+        elif (
+            isinstance(value, GeneratedSymbolType)
+            and value.symbol not in seen
+            and symbols[value.symbol].kind in WRAPPER_KINDS
+        ):
+            seen.add(value.symbol)
+            value = wrapped_type(members, value.symbol)
+        else:
+            return value
+
+
+def contained(
+    value: TypeView | None,
+    step: LeafStep,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> TypeView | None:
+    """Return the items type of the item container, or the values type of the mapping, a type stands for.
+
+    The type stands for it through aliases, root models and a union with None alone (``unwrapped``).
+    """
+    count, kind = _ARGUMENTS[step]
+    value = unwrapped(value, symbols, members)
+    return (
+        value.arguments[-1]
+        if isinstance(value, GenericType) and len(value.arguments) == count and container_slot(value) in kind.slots
+        else None
+    )
+
+
+def untyped(
+    value: TypeView | None,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> bool:
+    """Return whether a type takes any value, as the type of an untyped schema does, through ``unwrapped``."""
+    return (found := unwrapped(value, symbols, members)) is not None and type_identity(found) in _ANY
+
+
+def member_kind(
+    value: TypeView,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> tuple[LexicalKind | None, TypeView, bool]:
+    """Return how a form member of a type is written: the kind of its text, each value's type, and its repeats.
+
+    A list type repeats, each of its values one of its items. A value type without one kind, such as a model, a
+    mapping, or a union of text and an object, has no text of its own: a form-data part carries such a value as
+    JSON, and a URL-encoded form cannot carry it.
+    """
+    item = contained(value, "items", symbols, members)
+    leaf = value if item is None else item
+    return lexical_kind(leaf, symbols, members), leaf, item is not None
 
 
 def lexical_kind(

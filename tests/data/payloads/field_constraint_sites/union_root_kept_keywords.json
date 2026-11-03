@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"text": "abc", "count": 3},
+    {}
+  ],
+  "invalid": [
+    {"text": "abcd"},
+    {"count": 1},
+    {"code": "bbbbbb"},
+    {"code": "abcd"}
+  ]
+}

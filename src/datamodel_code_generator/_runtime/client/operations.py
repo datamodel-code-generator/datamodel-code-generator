@@ -14,7 +14,6 @@ from ..model_codecs.media import (
     NO_CONTENT,
     SUCCESS_STATUSES,
     bodyless,
-    charset,
     declaring,
     decode_form,
     encode_form,
@@ -23,6 +22,7 @@ from ..model_codecs.media import (
     form_pairs,
     json_value,
     media_range,
+    most_specific,
     normalized,
     status_key,
 )
@@ -30,7 +30,7 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
 from .errors import APIStatusError, ConfigurationError, DecodeError, request_failure, response_failure, status_error
-from .media import encode_text, most_specific, with_charset
+from .media import charset_text, encode_text, with_charset
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -235,8 +235,8 @@ class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
     A form-data body is written by the package's form encoder, from a call's parts or an object's members. A binary
-    body has a codec only when its models constrain its bytes. `null` marks the JSON media of an optional body whose
-    schema admits null, which sends None as null.
+    body has a codec only when its models constrain its bytes. `null` marks the JSON media whose body type takes null,
+    which sends None as null.
     """
 
     media_type: str
@@ -331,7 +331,8 @@ class RequestBody:
         """Select the media and encode the argument; an omitted optional body sends nothing.
 
         None for an optional body is left out as UNSET is, unless the media the call names, or the default one, takes
-        null; without either, unless any declared media takes it. A call never names a media range such as image/*.
+        null; without either, unless any declared media takes it. A required body given None is refused unless the
+        media it selects takes null. A call never names a media range such as image/*.
         """
         if value is None and not self.required and not self._takes_null(operation_id, media_type):
             value = UNSET
@@ -344,6 +345,8 @@ class RequestBody:
         selected, sent = (
             (value.media, value.sent) if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
         )
+        if value is None and not selected.null:
+            raise request_failure(("body",), operation_id)
         try:
             if selected.kind == "multipart":
                 parts, multipart = selected.multipart(value, sent)
@@ -486,7 +489,7 @@ def _json(body: bytes, _: ResponseInfo) -> JSONValue:
 
 def _text(body: bytes, info: ResponseInfo) -> str:
     try:
-        return body.decode(charset(info.content_type or ""))
+        return charset_text(body, info.content_type)
     except UnicodeDecodeError as error:
         raise InvalidBodyError(error) from None
 

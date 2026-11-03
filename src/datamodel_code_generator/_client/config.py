@@ -18,7 +18,7 @@ from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
-from datamodel_code_generator._target_contract import LOCATIONS
+from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name
 
 if TYPE_CHECKING:
@@ -365,15 +365,11 @@ def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientO
 
 
 def _parameter_name(key: object, python_name: object, at: str) -> ParameterName:
-    location, separator, name = key.partition(":") if _text(key) else ("", "", "")
-    if not separator or not _is_location(location):
+    if not _text(key) or (selected := parameter_name_key(key)) is None:
         message = f"{at} key {key!r} must be a location (path, query, querystring, header, or cookie), ':', and a name"
         raise _EntryError(at, message)
+    location, name = selected
     return ParameterName(in_=location, name=name, python_name=cast("str", python_name))
-
-
-def _is_location(value: str) -> TypeIs[ParameterLocation]:
-    return value in LOCATIONS
 
 
 def _runtime(value: object, at: str) -> RuntimeOperationMetadata:

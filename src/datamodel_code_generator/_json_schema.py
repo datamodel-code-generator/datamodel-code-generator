@@ -5,12 +5,13 @@ keyword plays. Every walker reads it, by shape or through a view of its roles (`
 visits another set or order than a role gives keeps it as a named view here. ``DEFINITION_KEYS`` and
 ``INSTANCE_DATA_KEYWORDS`` name the keywords that hold schemas only for references and those whose values are instance
 data. ``subschema_entries`` reads the subschemas one keyword holds by its shape, and ``json_nodes`` walks every value of
-a loaded JSON value.
+a loaded JSON value. ``declared_types`` reads the types a ``type`` keyword lists, ``admitted_types`` what they admit,
+and ``non_null_types`` which of them are not ``null``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from copy import deepcopy
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias
@@ -197,6 +198,36 @@ In the legacy order it meets references in, which the names of the references it
 """
 
 
+def declared_types(value: object) -> tuple[str, ...]:
+    """Return the JSON types a ``type`` keyword lists, in order: the one a string names, or a list's string items."""
+    match value:
+        case str():
+            return (value,)
+        case list():
+            return tuple(item for item in value if isinstance(item, str))
+    return ()
+
+
+def admitted_types(types: Iterable[str]) -> frozenset[str]:
+    """Return the JSON types a ``type`` keyword admits: the ones it lists, and ``integer`` where it lists ``number``."""
+    listed = frozenset(types)
+    return listed | {"integer"} if "number" in listed else listed
+
+
+def non_null_types(types: Iterable[str], /, *, distinct: bool = False) -> list[str]:
+    """Return the types a ``type`` list holds other than ``null``, in their order; ``distinct`` keeps one of each."""
+    listed = [type_ for type_ in types if type_ != "null"]
+    return list(dict.fromkeys(listed)) if distinct else listed
+
+
+def definition_ref(key: DefinitionKey, name: str = "") -> str:
+    """Return the local reference to the definition ``name`` under ``key``, the name as the reference writes it.
+
+    Without a name, it is the text every local reference to a definition under ``key`` starts with.
+    """
+    return f"#/{key}/{name}"
+
+
 def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
     if not ref.startswith("#"):
         return None
@@ -205,7 +236,7 @@ def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:
 
         ref = unquote(ref)
     for key in DEFINITION_KEYS:
-        prefix = f"#/{key}/"
+        prefix = definition_ref(key)
         if not ref.startswith(prefix):
             continue
         escaped_name, separator, suffix = ref[len(prefix) :].partition("/")
@@ -218,7 +249,7 @@ def _rewrite_local_definition_ref(ref: str, ref_map: Mapping[str, str], referenc
         name, escaped_name, suffix = local_ref
         definition_name = ref_map.get(name, escaped_name)
         references.add(definition_name)
-        return f"#/$defs/{definition_name}{suffix}"
+        return f"{definition_ref('$defs', definition_name)}{suffix}"
     return ref
 
 

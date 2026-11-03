@@ -1,0 +1,263 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Response keys",
+  "version": "1.0.0"
+ },
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "paths": {
+  "/range": {
+   "get": {
+    "operationId": "getRange",
+    "responses": {
+     "2XX": {
+      "description": "Any success.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Item"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/fallback": {
+   "get": {
+    "operationId": "getFallback",
+    "responses": {
+     "default": {
+      "description": "Whatever the server answers.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Item"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/lowercase": {
+   "get": {
+    "operationId": "getLowercase",
+    "responses": {
+     "200": {
+      "description": "Success.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Item"
+        }
+       }
+      }
+     },
+     "4xx": {
+      "description": "The range written with a lower-case x, which keeps working.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plain"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/media": {
+   "get": {
+    "operationId": "getMedia",
+    "responses": {
+     "200": {
+      "description": "The tagged version is declared first.",
+      "content": {
+       "application/json;profile=v1": {
+        "schema": {
+         "$ref": "#/components/schemas/Tagged"
+        }
+       },
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plain"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/invalid": {
+   "get": {
+    "operationId": "getInvalid",
+    "responses": {
+     "200": {
+      "description": "The only response key that is a status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "integer"
+        }
+       }
+      }
+     },
+     "\u00b200": {
+      "description": "A superscript digit.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "AXX": {
+      "description": "Letters in a range.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "boolean"
+        }
+       }
+      }
+     },
+     "": {
+      "description": "An empty key."
+     },
+     "0204": {
+      "description": "A padded status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "099": {
+      "description": "A status below 100.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     },
+     "1000": {
+      "description": "A status above 599.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "x-note": {
+      "description": "An extension."
+     }
+    }
+   }
+  },
+  "/informational": {
+   "get": {
+    "operationId": "getInformational",
+    "responses": {
+     "101": {
+      "description": "Switching protocols.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Switch"
+        }
+       }
+      }
+     },
+     "1XX": {
+      "description": "Any other informational response.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Hint"
+        }
+       }
+      }
+     },
+     "200": {
+      "description": "The final response.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Item"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Item": {
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "properties": {
+     "name": {
+      "type": "string"
+     }
+    }
+   },
+   "Tagged": {
+    "type": "object",
+    "required": [
+     "tagged"
+    ],
+    "properties": {
+     "tagged": {
+      "type": "string"
+     }
+    }
+   },
+   "Plain": {
+    "type": "object",
+    "required": [
+     "plain"
+    ],
+    "properties": {
+     "plain": {
+      "type": "string"
+     }
+    }
+   },
+   "Switch": {
+    "type": "object",
+    "properties": {
+     "protocol": {
+      "type": "string"
+     }
+    }
+   },
+   "Hint": {
+    "type": "object",
+    "properties": {
+     "link": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

@@ -604,6 +604,30 @@ def test_fact_finality_reports_a_base_field_that_changes_after_constructor_order
     assert_output(_reported(report))
 
 
+class BaseClassStrictingParser(JsonSchemaParser):
+    """Makes the base classes of every model strict while it reports parse diagnostics, a pass that writes no fact."""
+
+    def _report_parse_diagnostics(self) -> None:
+        super()._report_parse_diagnostics()
+        for model in self.results:
+            for base_class in model.base_classes:
+                base_class.strict = True
+
+
+def test_fact_finality_reports_a_type_fact_of_a_base_class_as_the_bases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A type fact of a model's base class is ``BASES`` for the model: a pass that does not declare it is reported."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+    schema = tmp_path / "inheritance.json"
+    schema.write_text(json.dumps(INHERITANCE_SCHEMA), encoding="utf-8")
+
+    BaseClassStrictingParser(schema, formatters=[Formatter.BUILTIN]).parse()
+
+    assert_output(_reported(report))
+
+
 def test_fact_finality_reports_a_decision_write_it_does_not_declare(monkeypatch: pytest.MonkeyPatch) -> None:
     """A decision that writes a fact other than the ones it declares is reported as any pass is."""
     _finality_only(monkeypatch, "1")

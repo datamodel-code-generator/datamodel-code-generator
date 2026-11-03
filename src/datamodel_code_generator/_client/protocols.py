@@ -16,8 +16,10 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import helper_name_problem, token
+from datamodel_code_generator._constraint_applicability import is_non_finite, json_number
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
@@ -67,6 +69,10 @@ _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+POLL_INTERVAL: Final = 1.0
+"""The seconds a polling helper waits after each response before the next poll when its definition declares none."""
+COUNTED_CONTINUATIONS: Final = ("offset", "page")
+"""The continuation kinds that count a pagination helper's position, by item offset or page number."""
 
 
 class MessageCodec(NamedTuple):
@@ -184,7 +190,7 @@ def validate(
 
 
 def _collides(name: str, other: str) -> bool:
-    return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
+    return is_within_name(name, other) or is_within_name(other, name)
 
 
 class _Validator:  # noqa: PLR0904
@@ -284,7 +290,7 @@ class _Validator:  # noqa: PLR0904
         return value if value is True else self.value(at, f"{at} must be true")
 
     def seconds(self, value: object, at: str) -> object:
-        if isinstance(value, int | float) and not isinstance(value, bool) and isfinite(value) and value > 0:
+        if json_number(value) and not is_non_finite(value) and value > 0:
             return float(value)
         return self.value(at, f"{at} must be positive finite seconds")
 
@@ -492,8 +498,7 @@ class _Validator:  # noqa: PLR0904
                 "end": (self.ends, REQUIRED),
                 "empty_string": (self.choice("value", "end"), REQUIRED),
             },
-            "offset": count,
-            "page": count,
+            **dict.fromkeys(COUNTED_CONTINUATIONS, count),
             "next_url": {
                 "read": (self.selector, REQUIRED),
                 "end": (self.ends, REQUIRED),
@@ -507,7 +512,7 @@ class _Validator:  # noqa: PLR0904
             where = f"{at}.end[{selected['end'].index(_EMPTY_STRING)}]"
             self.conflict(where, f"{where} ends at the empty string, which empty_string decides alone")
             return INVALID
-        if selected["kind"] in {"offset", "page"} and ("has_more" in selected) == ("total" in selected):
+        if selected["kind"] in COUNTED_CONTINUATIONS and ("has_more" in selected) == ("total" in selected):
             if "total" in selected:
                 self.conflict(at, f"{at} needs has_more or total, not both")
                 return INVALID
@@ -538,7 +543,7 @@ class _Validator:  # noqa: PLR0904
                 "failed": (self.states(nonempty=False), ()),
                 "cancelled": (self.states(nonempty=False), ()),
                 "result": (self.result, REQUIRED),
-                "interval": (self.interval, {"seconds": 1.0, "retry_after_header": None}),
+                "interval": (self.interval, {"seconds": POLL_INTERVAL, "retry_after_header": None}),
                 "remote_cancel": (self.remote_cancel, OMITTED),
                 "immediate_result": (self.immediate, OMITTED),
                 "expires_at": (self.selector, OMITTED),
@@ -571,7 +576,7 @@ class _Validator:  # noqa: PLR0904
         return self.tagged(value, at, "kind", variants, "a result")
 
     def interval(self, value: object, at: str) -> object:
-        spec: Spec = {"seconds": (self.seconds, 1.0), "retry_after_header": (self.optional_header, None)}
+        spec: Spec = {"seconds": (self.seconds, POLL_INTERVAL), "retry_after_header": (self.optional_header, None)}
         return self.record(value, at, spec, "an interval")
 
     def remote_cancel(self, value: object, at: str) -> object:

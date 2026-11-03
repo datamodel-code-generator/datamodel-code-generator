@@ -417,6 +417,13 @@
     },
     "config": {}
   },
+  "multipart-split-all": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "config": {}
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
     "config": {}
@@ -479,6 +486,12 @@
     "input": "default-server.yaml",
     "config": {
       "default_base_url": "https://default.example.com/base"
+    }
+  },
+  "default-server-template": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/{tenant}"
     }
   },
   "implicit-server": {
@@ -1098,6 +1111,26 @@
         "models.py"
       ]
     ]
+  },
+  "pointer-references": {
+    "input": "pointer-references.yaml",
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "pointer-errors": {
+    "input": "pointer-errors.yaml"
   },
   "references": {
     "input": "references.yaml",
@@ -2338,6 +2371,19 @@
   },
   "auth-errors": {
     "input": "auth-errors.yaml"
+  },
+  "auth-roles": {
+    "input": "auth-roles.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
+  "auth-roles-30": {
+    "input": "auth-roles-30.yaml"
   },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
@@ -4573,6 +4619,16 @@
     },
     "modules": false
   },
+  "protocols-cache-bodyless": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/cache-bodyless.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-bodyless.json"
+    },
+    "modules": false
+  },
   "caching-typing": {
     "input": "caching.yaml",
     "references": [
@@ -4915,6 +4971,16 @@
         "bool"
       ]
     }
+  },
+  "codec-docstrings": {
+    "input": "codec-docstrings.json",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
   },
   "docstrings": {
     "input": "docstrings.yaml",
@@ -5408,6 +5474,18 @@
       "reuse_model": true
     }
   },
+  "discriminator-forms": {
+    "input": "discriminator-forms.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "parameter-content-defaults-30": {
     "input": "parameter-content-defaults-30.yaml",
     "modules": [
@@ -5441,6 +5519,59 @@
   },
   "multipart-referenced-items": {
     "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-reuse-response": {
+    "input": "forms-reuse-response.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "forms-allof-cycle": {
+    "input": "forms-allof-cycle.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-member-locations": {
+    "input": "forms-member-locations.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-boolean-properties": {
+    "input": "forms-boolean-properties.yaml",
     "modules": [
       [
         "client",
@@ -5577,6 +5708,129 @@
       ],
       [
         "models.py"
+      ]
+    ]
+  },
+  "call-layers": {
+    "input": "call-layers.yaml",
+    "references": [
+      "protocols/call-layers.json"
+    ],
+    "config": {
+      "protocols": "protocols/call-layers.json"
+    },
+    "modules": false
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/response-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/response-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types": {
+    "input": "text-bound-types.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-reuse": {
+    "input": "text-bound-types.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-errors": {
+    "input": "text-bound-types-errors.yaml"
+  },
+  "parts-bound-types": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-reuse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-collapse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-errors": {
+    "input": "parts-bound-types-errors.yaml"
+  },
+  "parts-bound-responses": {
+    "input": "parts-bound-responses.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-responses-reuse": {
+    "input": "parts-bound-responses.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
       ]
     ]
   }

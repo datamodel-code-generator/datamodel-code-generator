@@ -32,7 +32,7 @@ PLAN_0: Final[PaginationPlan[models.Thing, ListThingsResponse]] = PaginationPlan
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, has_more=BodySelector(pointer='/has_more')),
-    fingerprint='964ce05e02759d2c737720461ac4c5ea9e265a8ec81b071c2c97c8ced9b69e9f',
+    fingerprint='a976e0815119c52996749258fedcb100e18c6ad7b891c1261152fd83c2157e91',
 )
 
 
@@ -42,5 +42,5 @@ PLAN_1: Final[CachePlan[ListThingsResponse]] = CachePlan(
     call=_operations.OPERATION_0,
     validator='etag',
     authenticated=False,
-    fingerprint='f3c580a3b6e13937a602b1738c9a326d6491bf3dc9a685c09def109d3aa48785',
+    fingerprint='273e77917c6d3f222d0a0dc38054713f8c1e6f15c954f2f00bb699b7e3cd8ad2',
 )

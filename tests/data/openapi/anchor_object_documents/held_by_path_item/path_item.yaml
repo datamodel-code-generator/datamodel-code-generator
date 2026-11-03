@@ -1,0 +1,25 @@
+get:
+  parameters:
+    - name: tag
+      in: query
+      schema:
+        $id: https://example.com/tag.json
+        type: object
+        properties:
+          label:
+            $anchor: label
+            type: string
+            maxLength: 5
+          alias:
+            $ref: "#label"
+    - $ref: parameter.yaml
+      schema:
+        $id: https://example.com/tag.json
+        $anchor: label
+        type: integer
+  responses:
+    "200":
+      description: The tags.
+      content:
+        text/plain:
+          schema: true

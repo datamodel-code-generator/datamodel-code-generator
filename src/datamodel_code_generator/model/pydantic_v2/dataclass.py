@@ -16,7 +16,9 @@ from datamodel_code_generator.model import DataModelFieldBase, _rebuild_model_wi
 from datamodel_code_generator.model import dataclass as _dataclass_module
 from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
+    excluded_from_init,
     participates_in_constructor,
+    requires_value,
 )
 from datamodel_code_generator.model._render_plan import FORCED_ASSIGNMENT, CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
@@ -88,7 +90,7 @@ def _get_pydantic_dataclass_field_default_info(field: DataModelFieldBase) -> tup
 def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a Pydantic dataclass field participates in __init__."""
     return participates_in_constructor(
-        "pydantic-dataclass", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
+        "pydantic-dataclass", init_excluded=excluded_from_init(field), class_var=field.is_class_var
     )
 
 
@@ -291,10 +293,14 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         """Set ``regex_engine`` in the dataclass config.
 
         Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
+        The dataclass gets a config of its own: the one in the template data may be shared with every model of the
+        same name (``--extra-template-data``).
         """
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
-        config = self.extra_template_data.setdefault("config", {})
-        config["regex_engine"] = '"python-re"'
+        self.extra_template_data["config"] = {
+            **self.extra_template_data.get("config", {}),
+            "regex_engine": '"python-re"',
+        }
         self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
         self._additional_imports.append(IMPORT_CONFIG_DICT)
 
@@ -351,9 +357,7 @@ class DataModelField(DataModelFieldV2):
     @override
     def _call_default_factory(self, args: _FieldArguments) -> Kwarg | None:
         """Use dataclass-safe factories for mutable schema defaults."""
-        if (factory := super()._call_default_factory(args)) is not None or (
-            self.required and not self.use_default_with_required
-        ):
+        if (factory := super()._call_default_factory(args)) is not None or requires_value(self):
             return factory
         match self.default:
             case list() | dict() | set() as default:
@@ -424,8 +428,7 @@ class DataModelField(DataModelFieldV2):
         """Return whether a required ``Annotated`` field is an assignment only because of its alias."""
         return (
             self.use_annotated
-            and self.required
-            and not self.use_default_with_required
+            and requires_value(self)
             and self._alias_requires_assignment
             and not self._metadata_requires_assignment(self._get_field_render_plan().default_factory)
         )
@@ -439,11 +442,7 @@ class DataModelField(DataModelFieldV2):
         """Render a dataclass assignment from an already computed plan."""
         if not plan.rendered:
             return None
-        if (
-            plan.default_factory
-            or (self.required and not self.use_default_with_required)
-            or self.should_strip_default_none(keep_optional=True)
-        ):
+        if plan.default_factory or requires_value(self) or self.should_strip_default_none(keep_optional=True):
             return plan.rendered
         if not self.use_annotated:
             return plan.assignment
@@ -508,16 +507,27 @@ class DataModelFieldBackport(DataModelField):
     def __init__(self, **data: Any) -> None:
         """Initialize and make non-identifier aliases safe for dataclass signatures."""
         super().__init__(**data)
-        if self.alias is None or is_python_name(self.alias, self.data_type.python_version):
-            return
+        for attribute, value in self.alias_form().items():
+            setattr(self, attribute, value)
 
+    @override
+    def alias_form(self, *, inherits: bool = False) -> dict[str, Any]:
+        """Return a non-identifier alias as the validation and serialization aliases the dataclass signature accepts.
+
+        A class with a generated base class takes the signature of that Pydantic dataclass, so the alias stays an
+        ``alias=`` there; only a class without a base class builds a signature from the alias, which must be an
+        identifier.
+        """
+        if inherits or self.alias is None or is_python_name(self.alias, self.data_type.python_version):
+            return {}
         validation_aliases = list(self.validation_aliases or ())
         if self.alias not in validation_aliases:
             validation_aliases.insert(0, self.alias)
-        if self.serialization_alias is None:
-            self.serialization_alias = self.alias
-        self.validation_aliases = validation_aliases
-        self.alias = None
+        return {
+            "alias": None,
+            "validation_aliases": validation_aliases,
+            "serialization_alias": self.alias if self.serialization_alias is None else self.serialization_alias,
+        }
 
 
 _rebuild_model_with_datamodel_namespace(DataModelField)

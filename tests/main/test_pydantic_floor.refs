@@ -37,3 +37,5 @@ invalid-dotted-stdout-repair	main/pydantic_floor/command_line[invalid-dotted-std
 	main/pydantic_floor/config_key_without_row.txt
 [test_pydantic_floor_config_keys_have_rows]
 	main/pydantic_floor/config_keys_have_rows.txt
+[test_pydantic_floor_constructs_match_the_rows]
+	main/pydantic_floor/constructs_match_the_rows.txt

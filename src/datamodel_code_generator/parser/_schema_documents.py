@@ -33,8 +33,11 @@ from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
+from datamodel_code_generator._document_reader import member_key
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
+from datamodel_code_generator._openapi_objects import held_schemas
+from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -215,6 +218,7 @@ class SchemaDocumentsHost(Protocol):
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
     _cache_local_sources: bool
+    _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
     _has_embedded_schema_resources: bool
     _implicit_documents: set[str]
@@ -625,7 +629,7 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
         if resolved != reference:
             result = {**schema, "$ref": resolved}
     children = parser._iter_schema_resource_children(schema)  # noqa: SLF001
-    for path, child in chain(children, implicit_schema_resources(parser, schema)) if is_root else children:
+    for path, child in chain(children, implicit_schema_resources(parser, schema, document)) if is_root else children:
         rewritten = rewrite_schema_resource_refs(parser, child, document, base, root_base, id_field)
         if rewritten is child:
             continue
@@ -633,31 +637,31 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
             result = dict(schema)
         parent: Any = result
         original: Any = schema
-        for part in path[:-1]:
+        for token in path[:-1]:
+            part = member_key(original, str(token))
             if parent[part] is original[part]:
                 parent[part] = copy(original[part])
             parent, original = parent[part], original[part]
-        if isinstance(parent, list):
-            parent[cast("int", path[-1])] = rewritten
-        else:
-            cast("dict[str, Any]", parent)[cast("str", path[-1])] = rewritten
+        parent[member_key(original, str(path[-1]))] = rewritten
     return result
 
 
 def implicit_schema_resources(
-    parser: SchemaDocumentsHost, raw: dict[str, Any]
+    parser: SchemaDocumentsHost, raw: dict[str, Any], document: str
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
     """Yield the paths and schemas that a document evaluates as schema resources without an $id.
 
-    Formats such as OpenAPI evaluate each component schema independently.
+    Formats such as OpenAPI evaluate each component schema independently, and each schema of the object a reference
+    names the document's root as (``_schema_refs.hold_document_root``), such as the schema of a Parameter Object.
     """
-    if not parser._component_schemas_are_resources:  # noqa: SLF001
-        return
-    match raw.get("components"):
-        case {"schemas": dict() as schemas}:
-            for name, schema in schemas.items():
-                if isinstance(schema, dict):
-                    yield ("components", "schemas", name), schema
+    if parser._component_schemas_are_resources:  # noqa: SLF001
+        match raw.get("components"):
+            case {"schemas": dict() as schemas}:
+                for name, schema in schemas.items():
+                    if isinstance(schema, dict):
+                        yield ("components", "schemas", name), schema
+    roles = parser._document_roles.get(document, ())  # noqa: SLF001
+    yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 
 
 def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
@@ -683,7 +687,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     )
     resources = walk_schema_resources(
         raw,
-        tuple(implicit_schema_resources(parser, raw)),
+        tuple(implicit_schema_resources(parser, raw, document)),
         document=DocumentId(document),
         base=base,
         id_field=id_field,
@@ -803,9 +807,7 @@ def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:
         return
     match parser.source:
         case Path() as path if path.is_dir():
-            yield from (
-                file_path for file_path in sorted(path.rglob("*"), key=lambda item: item.name) if file_path.is_file()
-            )
+            yield from files_under(path, order="name")
         case list() as paths:
             yield from ((parser.base_path / path) for path in paths)
 

@@ -27,7 +27,10 @@ class MidPatternFlag(RootModel[str]):
     root: constr(pattern=r'^([a-z])\1(?i)$')
 
 
-class VerboseFlag(RootModel[constr(pattern=r'(?x)^([a-z])\1$')]):
+class VerboseFlag(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'(?x)^([a-z])\1$')
 
 

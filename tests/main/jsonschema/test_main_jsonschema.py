@@ -3805,6 +3805,41 @@ def test_main_jsonschema_module_import_named_like_builtin(output_model_type: Dat
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2BaseModel, DataModelType.DataclassesDataclass, DataModelType.MsgspecStruct],
+    ids=["pydantic-v2", "dataclass", "msgspec"],
+)
+def test_main_jsonschema_module_import_named_like_builtin_enum_default(
+    output_model_type: DataModelType, output_dir: Path
+) -> None:
+    """Write the enum members of a default by the alias ``list_1`` that the module import ``list`` takes.
+
+    ``pop`` and ``pops`` of ``holder.Holder`` default to members of the enum ``app.list.Pop``
+    (``--set-default-enum-member``), which the module names through ``from .app import list as list_1`` once the
+    builtin ``list`` holds its own name.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_enum_default.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--set-default-enum-member",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "holder") as module:
+        holder = module.Holder()
+    assert_output(f"tags {holder.tags}, pop {holder.pop}, pops {holder.pops}\n", name="payloads")
+
+
 def test_main_jsonschema_module_import_named_like_builtin_type_alias(output_dir: Path) -> None:
     """Alias the module import ``list`` of ``holder`` that a type statement writes ``list[...]`` beside.
 
@@ -3905,6 +3940,486 @@ def test_main_jsonschema_module_import_named_like_builtin_package_keeps_local_na
             "builtin",
             "--disable-timestamp",
         ],
+    )
+
+
+def _decode_with_generated_model(output_model_type: str, model: Any, payload: str) -> str:
+    """Decode the payload with a generated Pydantic model, dataclass or Struct and describe the result."""
+    decode = (
+        partial(msgspec.json.decode, type=model)
+        if output_model_type == "msgspec.Struct"
+        else _model_json_validator(model)
+    )
+    try:
+        decoded = decode(payload)
+    except (msgspec.ValidationError, ValidationError) as error:
+        return f"{payload}: rejected {type(error).__name__}"
+    return f"{payload}: accepted {decoded!r}"
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize("target_python_version", ["3.10", "3.11"])
+def test_main_jsonschema_class_named_like_builtin_beside_submodule(
+    output_dir: Path, output_model_type: str, target_python_version: str
+) -> None:
+    """Name the class, not the builtin, where a package defines a builtin's name and has a submodule of that name.
+
+    ``pkg/__init__.py`` defines the classes ``Warning`` and ``ExceptionGroup`` and imports the submodules of the same
+    names; up to 0.88.0 the bare names that the fields write were taken for the builtins and imported from ``builtins``
+    under an alias, so the fields were typed by the builtin classes. ``ExceptionGroup`` is a builtin of Python 3.11 and
+    later only, which the target 3.10 has not (#5772).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "class_named_like_builtin_beside_submodule.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = [
+        '{"errors": {"count": 1}, "detail": {"message": "m"}, "group": {"size": 2}, "group_detail": {"reason": "r"}}',
+        '{"errors": {"count": "one"}}',
+    ]
+    with _generated_package_module(output_dir, "pkg") as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.Report, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "module_path"),
+    [
+        pytest.param("builtin_type_override_beside_module", "pkg.A", id="module"),
+        pytest.param("builtin_type_override_beside_submodule.json", "pkg", id="submodule"),
+    ],
+)
+def test_main_jsonschema_builtin_type_override_beside_module(
+    output_dir: Path, output_model_type: str, input_name: str, module_path: str
+) -> None:
+    """Keep the builtin ``list`` of a type override and alias the module ``list`` that the same module imports.
+
+    ``--type-overrides`` with ``builtins.list`` imports the builtin where ``from . import list`` imports the module that
+    ``list.L`` names; up to 0.88.0 the builtin's import was the one aliased and ``list.L`` followed it, so the field
+    ``l`` was written as the alias, which was no name of the module (#5986).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--type-overrides",
+            '{"A.items": "builtins.list"}',
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = ['{"items": ["a", 1], "l": {"a": "x"}}', '{"l": {"a": 1}}']
+    with _generated_package_module(output_dir, module_path) as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.A, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "extra_args", "payloads"),
+    [
+        pytest.param(
+            "imported_class_named_like_submodule.json",
+            ["--use-exact-imports"],
+            ['{"errors": {"count": 1}, "detail": {"message": "m"}}', '{"errors": {"count": "one"}}'],
+            id="class",
+        ),
+        pytest.param(
+            "imported_module_named_like_submodule.json",
+            [],
+            ['{"a": {"n": 1}, "b": {"s": "x"}}', '{"a": {"n": "one"}}'],
+            id="module",
+        ),
+        pytest.param(
+            "imported_enum_named_like_submodule.json",
+            ["--use-exact-imports", "--set-default-enum-member"],
+            ['{"detail": {"message": "m"}}', '{"status": "bad", "history": []}', '{"status": "worse"}'],
+            id="enum-default",
+        ),
+    ],
+)
+def test_main_jsonschema_import_named_like_submodule(
+    output_dir: Path, output_model_type: str, input_name: str, extra_args: list[str], payloads: list[str]
+) -> None:
+    """Give a new name to what a package imports by the name of one of its own submodules.
+
+    ``pkg/__init__.py`` imports the class ``Warning`` of ``other`` (``--use-exact-imports``) or the module ``x`` of
+    ``other``, and the submodules ``pkg.Warning`` and ``pkg.x`` bind the same names in ``pkg`` once anything imports
+    them, so the fields named the submodules, or the builtin ``Warning`` that the bare name was taken for (#6003).
+    The enum members that a default takes from the imported enum (``--set-default-enum-member``) follow the new name.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "pkg") as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.Report, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "module_path", "model_name", "payloads"),
+    [
+        pytest.param(
+            "package_init_input_builtin_submodule",
+            "pkg",
+            "Holder",
+            ['{"items": ["a"], "pop": {"name": "n"}}', '{"pop": {"name": 1}}'],
+            id="init-input",
+        ),
+        pytest.param(
+            "builtin_submodule_beside_root_model.json",
+            "",
+            "Root",
+            ['{"items": ["a"], "l": {"a": "x"}}', '{"items": [1]}'],
+            id="root",
+        ),
+    ],
+)
+def test_main_jsonschema_builtin_submodule_beside_package_init(
+    output_dir: Path, output_model_type: str, input_name: str, module_path: str, model_name: str, payloads: list[str]
+) -> None:
+    """Import the builtin ``list`` under an alias in a package whose ``__init__.py`` is no module of the import paths.
+
+    The input ``pkg/__init__.json`` and the root package write an ``__init__.py`` that the submodule ``list`` hides the
+    builtin in, as it does in a package that has no such input (#6004).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, module_path) as module:
+        verdicts = [
+            _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+            for payload in payloads
+        ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+_ITEM_PAYLOADS = ['{"item": {"sku": "s", "kind": "book"}}', '{"item": {"sku": 1}}']
+_CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": "t"}}}', '{"featured": {"sku": 1}}']
+_DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
+_NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
+_ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "target_python_version", "extra_args", "decoded"),
+    [
+        *(
+            pytest.param(
+                "module_named_annotations.json",
+                output_model_type,
+                "3.10",
+                [],
+                _ANNOTATIONS_DECODED,
+                id=f"future-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "msgspec.Struct",
+            "3.14",
+            [],
+            _ANNOTATIONS_DECODED,
+            id="future-of-module-msgspec.Struct",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ["--read-const-beside-enum"],
+            [*_ANNOTATIONS_DECODED, ("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
+            id="future-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            _ANNOTATIONS_DECODED,
+            id="future-all-exports",
+        ),
+        pytest.param(
+            "module_named_annotations_exported.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            [
+                ("api", "Order", ['{"items": [{"sku": "s"}]}', '{"items": [{"sku": 1}]}']),
+                ("", "Catalog", ['{"order": {"items": [{"sku": "s"}]}}']),
+            ],
+            id="future-all-exports-imported-first",
+        ),
+        *(
+            pytest.param(
+                "module_named_annotations_enum_defaults.json",
+                output_model_type,
+                "3.10",
+                ["--set-default-enum-member"],
+                [
+                    ("api", "Order", ["{}", '{"kind": "disc"}', '{"kinds": ["other"]}']),
+                    ("", "Catalog", ["{}"]),
+                ],
+                id=f"future-enum-defaults-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations_beside_shared_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--additional-imports", "collections.Counter"],
+            [
+                ("api", "Order", ['{"counter": {"n": 1}, "tally": {"a": 2}}', '{"counter": {"n": "x"}}']),
+                ("", "Catalog", ['{"tally": {"a": 1}}']),
+            ],
+            id="future-beside-shared-import",
+        ),
+        pytest.param(
+            "module_named_annotations_beside_shared_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [],
+            [
+                ("api", "Order", ['{"counter": {"n": 1}, "tally": {"a": 2}}', '{"counter": {"n": "x"}}']),
+                ("", "Catalog", ['{"tally": {"a": 1}}']),
+            ],
+            id="future-beside-module-import",
+        ),
+        pytest.param(
+            "module_named_like_package_class_literal.json",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ["--read-const-beside-enum"],
+            [
+                ("pkg.api", "Order", _DETAIL_PAYLOADS),
+                ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
+            ],
+            id="class-loaded-by-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        *(
+            pytest.param(
+                "module_named_like_package_class.json",
+                output_model_type,
+                "3.10",
+                [],
+                [("pkg.api", "Order", _DETAIL_PAYLOADS), ("pkg", "Report", ['{"warn": {"detail": {"message": "m"}}}'])],
+                id=f"class-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations_in_empty_package.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [],
+            [("pkg.api", "Order", _ITEM_PAYLOADS)],
+            id="empty-package",
+        ),
+    ],
+)
+def test_main_jsonschema_submodule_hidden_by_package(
+    output_dir: Path,
+    input_name: str,
+    output_model_type: str,
+    target_python_version: str,
+    extra_args: list[str],
+    decoded: list[tuple[str, str, list[str]]],
+) -> None:
+    """Import a model of a submodule from the submodule where its package's ``__init__.py`` binds the submodule's name.
+
+    ``from . import annotations`` gave the ``__future__`` feature where the package's ``__init__.py`` writes
+    ``from __future__ import annotations``, the shared import or on Python 3.14 its own, and ``from . import Warn`` the
+    class ``Warn`` that ``pkg/__init__.py`` defines (#6009). The ``__init__.py`` keeps its own import of ``pkg.Warn``,
+    which runs before the class is defined and keeps the class bound once ``pkg.api`` imports the submodule, a package
+    whose ``__init__.py`` writes no model binds no such name, and a module that names an enum of ``annotations`` by an
+    enum member literal (``Literal[annotations.Kind.book]``) keeps importing the module, which the ``__init__.py``
+    loads first. Under ``--all-exports-scope`` the export imports of the ``__init__.py`` load the submodule: where they
+    run before ``api`` the old import worked and only its form changes; where ``from . import api`` runs first it
+    failed. The enum members that ``--set-default-enum-member`` writes into defaults follow the new import
+    (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared one takes
+    another name (``Counter_1`` beside ``collections.Counter``), and an ``__init__.py`` that loads ``pkg.Warn`` only for
+    the class of an enum member literal keeps its class bound too. The models are decoded after the first module named
+    is imported, in one import of the package.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    verdicts = []
+    with _generated_package_module(output_dir, decoded[0][0]):
+        for module_path, model_name, payloads in decoded:
+            module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
+            verdicts += [
+                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+                for payload in payloads
+            ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+@pytest.mark.parametrize(
+    ("input_name", "model_name", "payloads"),
+    [
+        pytest.param(
+            "additional_import_named_like_model.json",
+            "IPv4Address1",
+            ['{"host": "10.0.0.1", "tags": ["a"], "owner": {"name": "n"}}', '{"host": "not an address"}'],
+            id="written",
+        ),
+        pytest.param(
+            "additional_import_named_like_unused_model.json",
+            "IPv4Address",
+            ['{"tags": ["a"], "owner": {"name": "n"}}'],
+            id="unused",
+        ),
+        pytest.param(
+            "additional_import_named_like_model_qualified.json",
+            "IPv4Address",
+            ['{"hosts": ["10.0.0.1"], "owner": {"name": "n"}}', '{"hosts": ["not an address"]}'],
+            id="qualified",
+        ),
+    ],
+)
+def test_main_jsonschema_additional_import_named_like_model(
+    output_file: Path, output_model_type: str, input_name: str, model_name: str, payloads: list[str]
+) -> None:
+    """Rename the model that takes the name of an additional import that a type of its module writes (#6010).
+
+    ``--additional-imports ipaddress.IPv4Address`` is written by every module, and ``x-python-type: IPv4Address``
+    names it, so ``host`` named the model ``IPv4Address`` itself; the model takes another name. A model whose module
+    writes no such name keeps its own, and so does one whose module writes the name only after its module
+    (``ipaddress.IPv4Address``), which the model cannot shadow.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "additional_import_named_like_model", model_name) as model:
+        verdicts = [_decode_with_generated_model(output_model_type, model, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+def test_main_jsonschema_additional_import_named_like_model_beside_import(output_file: Path) -> None:
+    """Give the renamed model a name that no import every module writes binds.
+
+    ``--additional-imports ipaddress.IPv4Address,mymod.IPv4Address1``: the model ``IPv4Address`` is renamed for the
+    type ``host`` that writes the first import's name, and ``IPv4Address1``, the next name, is the second import's,
+    which ``other`` writes.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "additional_import_named_like_model_beside_import.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address,mymod.IPv4Address1",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param(
+            "imported_enum_named_like_submodule.json",
+            ["--use-exact-imports", "--set-default-enum-member", "--additional-imports", "mymod.Status_1"],
+            id="submodule",
+        ),
+        pytest.param(
+            "module_import_named_like_builtin_enum_default.json",
+            ["--set-default-enum-member", "--additional-imports", "mymod.list_1"],
+            id="builtin",
+        ),
+    ],
+)
+def test_main_jsonschema_renamed_import_beside_shared_import(
+    output_dir: Path, input_name: str, extra_args: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Give the import that a package names anew a name that no import every module writes binds.
+
+    The import ``Status`` of a package with a submodule ``Status``, and the module import ``list`` of a module that
+    writes the builtin, take the next name their module's resolver gives (``Status_1``, ``list_1``), which an
+    additional import binds, so they take the one after it. The additional imports name a module the test provides,
+    so the output is imported on the target Python.
+    """
+    (tmp_path / "mymod.py").write_text("Status_1 = object()\nlist_1 = object()\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--formatters", "builtin", "--disable-timestamp"],
     )
 
 
@@ -4585,6 +5100,34 @@ def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) 
         extra_args=["--strict-refs", "--disable-timestamp"],
         force_exec_validation=True,
     )
+
+
+def test_main_json_pointer_through_scalar(output_file: Path) -> None:
+    """A pointer through a scalar, a null or a string names nothing, as a missing member does."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "json_pointer_through_scalar.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
+
+
+def test_main_json_pointer_empty_token(output_file: Path) -> None:
+    """A pointer with an empty token names the member of the key `""`, or nothing, and never keeps the run looping."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "json_pointer_empty_token.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/definitions//k", "#/definitions//m")
 
 
 def test_main_nested_json_pointer(output_file: Path) -> None:
@@ -6978,6 +7521,114 @@ def test_main_type_overrides_rejects_bracketed_non_annotation(
     )
 
 
+_TYPE_OVERRIDES_BUILTINS = {
+    "TypeOverridesLiterals.integer_values": "int",
+    "TypeOverridesLiterals.string_values": "str",
+    "TypeOverridesLiterals.nullable_values": "int | None",
+    "TypeOverridesLiterals.optional_value": "int | str",
+    "TypeOverridesLiterals.values": "list",
+    "TypeOverridesLiterals.amount": "Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("pydantic_v2.dataclass", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("typing.TypedDict", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write a field override without brackets that is an annotation, such as ``str``, as ``x-python-type`` writes it.
+
+    Up to 0.87.0 every value without brackets was split at its last dot as a class path, so ``str`` wrote
+    ``import str``, ``Decimal`` wrote ``import Decimal`` and ``int | None`` wrote ``import int | None``, and the module
+    failed to import. A builtin needs no import, a standard-library name takes the import of the registry, and a union
+    writes the imports of its names; each field takes the keywords that annotation takes.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"--type-overrides writes (int|str) in place of con(int|str)\(")
+        if output_model == "pydantic_v2.BaseModel" and not extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                *extra_args,
+                "--type-overrides",
+                json.dumps(_TYPE_OVERRIDES_BUILTINS),
+                "--target-python-version",
+                "3.11",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_type_overrides_builtin_annotations_for_models(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a model-level override that is a builtin or a union, such as ``str | None``, where the model is named."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--type-overrides",
+            json.dumps({"Level": "int", "Mode": "str | None", "Ratio": "float"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_type_overrides_unknown_bare_name_is_imported(output_file: Path) -> None:
+    """Keep a bare name that no builtin and no standard-library type of the registry has as a module to import."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literals.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"TypeOverridesLiterals.amount": "json"}),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
@@ -8087,6 +8738,33 @@ def test_main_jsonschema_allof_enum_ref(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
+    )
+
+
+def test_main_jsonschema_allof_array_enum_items_in_sets(output_file: Path) -> None:
+    """Type the enum items of an allOf array in a frozen set as in a set."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "all_of_array_enum_items_sets.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="all_of_array_enum_items_sets",
+        model_name="Model",
+        valid_json='{"frozen": ["a", "b"], "tags": ["b"]}',
+        invalid_json='{"frozen": ["a", "c"]}',
+        expected_error_type="value_error",
     )
 
 
@@ -22256,35 +22934,50 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture", "target_python_version", "expected_file", "switched"),
+    ("fixture", "target_python_version", "expected_file", "parses_from"),
     [
-        ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
-        ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
+        pytest.param(
+            "rust_unsupported_atomic_group",
+            "3.10",
+            "rust_unsupported_atomic_group_py310.py",
+            (3, 11),
+            id="atomic-group-3.10",
+        ),
+        pytest.param(
+            "rust_unsupported_atomic_group",
+            "3.11",
+            "rust_unsupported_atomic_group_py311.py",
+            (3, 11),
+            id="atomic-group-3.11",
+        ),
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.13",
             "rust_unsupported_end_of_string_py313.py",
-            False,
+            (3, 14),
             marks=BLACK_PY313_SKIP,
+            id="end-of-string-3.13",
         ),
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.14",
             "rust_unsupported_end_of_string_py314.py",
-            True,
+            (3, 14),
             marks=BLACK_PY314_SKIP,
+            id="end-of-string-3.14",
         ),
     ],
 )
 def test_main_rust_unsupported_target_python(
-    fixture: str, target_python_version: str, expected_file: str, switched: bool, output_file: Path
+    fixture: str, target_python_version: str, expected_file: str, parses_from: tuple[int, int], output_file: Path
 ) -> None:
-    r"""Python-only regex syntax selects Python's regex engine only when the target Python's ``re`` parses it.
+    r"""Select Python's regex engine for Python-only regex syntax whichever Python the module targets.
 
-    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The decision
-    depends on ``--target-python-version``, never on the Python running the generator. Switched models are
-    imported when the running Python is at least the target.
+    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The Rust engine rejects
+    the pattern on every Python, so the decision depends on neither ``--target-python-version`` nor the Python running
+    the generator. The module is imported when the running Python parses the syntax.
     """
+    runs = sys.version_info >= parses_from
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
         output_path=output_file,
@@ -22297,32 +22990,33 @@ def test_main_rust_unsupported_target_python(
             "--target-python-version",
             target_python_version,
         ],
-        skip_code_validation=not switched,
-        force_exec_validation=switched,
+        skip_code_validation=not runs,
+        force_exec_validation=runs,
     )
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "collapse_args", "expected_file", "switched"),
+    ("target_python_version", "collapse_args", "expected_file"),
     [
-        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", False, id="python-3.10"),
-        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", True, id="python-3.11"),
+        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", id="python-3.10"),
+        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", id="python-3.11"),
         pytest.param(
             "3.11",
             ["--collapse-root-models"],
             "rust_unsupported_typed_extra_py311.py",
-            True,
             id="python-3.11-collapse-root-models",
         ),
     ],
 )
 def test_main_rust_unsupported_typed_extra_target_python(
-    target_python_version: str, collapse_args: list[str], expected_file: str, switched: bool, output_file: Path
+    target_python_version: str, collapse_args: list[str], expected_file: str, output_file: Path
 ) -> None:
-    """Select Python's regex engine for a pattern of typed extra values by the target Python, as for declared fields.
+    """Select Python's regex engine for a pattern of typed extra values whichever Python is targeted, as for fields.
 
-    Switched models are imported, so a pattern pydantic-core rejects fails the test when the engine is not switched.
+    The module is imported where the running Python parses the atomic group, so a pattern pydantic-core rejects fails
+    the test when the engine is not switched.
     """
+    runs = sys.version_info >= (3, 11)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
         output_path=output_file,
@@ -22339,8 +23033,8 @@ def test_main_rust_unsupported_typed_extra_target_python(
             "--disable-timestamp",
             *collapse_args,
         ],
-        skip_code_validation=not switched,
-        force_exec_validation=switched,
+        skip_code_validation=not runs,
+        force_exec_validation=runs,
     )
 
 
@@ -22349,8 +23043,8 @@ def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
 
     Such a model fails at import with either engine, and the decision never depends on the Python running the
     generator: unknown character names, global flags after the start, non-ASCII conditional references,
-    overflowing repetitions, and deeply nested groups are switched without compiling the pattern. Verbose
-    patterns keep the default engine because the scan does not model their whitespace and comments.
+    overflowing repetitions, and deeply nested groups are switched without compiling the pattern, and so is a verbose
+    pattern that starts with ``(?x)``, whose whitespace and comments the scan reads.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
@@ -28160,6 +28854,327 @@ def test_main_read_only_write_only_custom_type_path(
     with pytest.raises(SchemaValidationError):
         validator.validate(invalid)
     with _generated_model(output_file, "rw_custom_type_path", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_custom_type_ref_siblings(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites are a $ref with sibling keywords to a schema typed by its customTypePath.
+
+    The $ref of each property, item, additionalItems, anyOf and oneOf member and additionalProperties of ``Holder`` and
+    ``Extras`` is merged with its siblings first, so the site takes the customTypePath of ``Item`` (or of ``Alias``,
+    which names it) and names no model: ``Holder`` and ``Extras`` keep one class while ``Item`` splits.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_ref_siblings.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "ref": {"any": 1},
+            "alias": {"other": 1},
+            "list": [{"a": 1}],
+            "pair": [{"b": 1}, "s", {"c": 1}],
+            "union": 1,
+            "choice": True,
+            "count": 1,
+        },
+        "extras": {"k": {"d": 1}},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_custom_type_ref_siblings", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("typing.TypedDict", ["--field-constraints"], id="typing.TypedDict"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_item(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose items are a $ref with a constraint beside it, built as root models.
+
+    An item, tuple item, additionalItems, anyOf and oneOf member of ``Holder`` that is a $ref with a constraint sibling
+    is a root model of its own, which holds one type and no fields, so the readOnly property of ``Item`` is no field of
+    it and ``Holder`` keeps one class. The items of ``Wrapping`` are root models of an array of ``Item`` or of an allOf
+    that names it, which name ``Item``, so ``Wrapping`` splits with it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_item.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "list": [{"name": "a"}],
+            "alias": [{"name": "b"}],
+            "inline": [{"name": "c"}],
+            "pair": [{"name": "d"}, "s", {"name": "e"}],
+            "union": {"name": "f"},
+            "choice": {"name": "g"},
+            "count": 1,
+        },
+        "wrapping": {"rows": [[{"name": "h"}]], "listed": [[{"name": "i"}]]},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_constrained_item", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_root_map(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Split the holder of an item that is a root model of an object map, whose values name a model with variants.
+
+    An item with properties and propertyNames, or a type list of object and null with properties under
+    ``--use-typed-nullable-map-values``, is the root model of a dict that additionalProperties types, so the walk reads
+    those values as the root model builds them and ``Holder`` splits with ``Value``; it stopped with "A Parser can not
+    resolve classes".
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_root_map.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--use-typed-nullable-map-values",
+        ],
+    )
+    valid = {
+        "holder": {
+            "inline": [{"b": {"name": "x"}}],
+            "named": [{"c": {"name": "y"}}],
+            "nullable": [{"d": {"name": "z"}}, None],
+            "count": 1,
+        }
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_constrained_root_map", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("typing.TypedDict", ["--field-constraints"], id="typing.TypedDict"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_value(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose map values and union members are read as the model build reads them.
+
+    The additionalProperties of ``Holder`` are a $ref with a constraint beside it, which the output builds as a root
+    model (a field with constraints, or a root model that preserves them), and a oneOf or anyOf member of ``Unions`` is
+    mixed with the constraint of its parent, so it is one too: they hold one type and no fields, so the readOnly
+    property of ``Item`` is no field of them and neither holder splits. The values of ``Wrapping`` are root models of
+    an array of ``Item`` or object models with fields, and an anyOf member that is a $ref stays one, so ``Wrapping``
+    splits with ``Item``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_value.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = [
+        {
+            "holder": {
+                "map": {"a": {"name": "a"}},
+                "alias": {"b": {"name": "b"}},
+                "free": ["x", 1],
+                "count": 1,
+                "more": {"name": "c"},
+            },
+            "unions": {"choice": {"name": "d"}, "union": {"name": "e"}},
+            "wrapping": {
+                "rows": {"r": [{"name": "f"}]},
+                "inline": {"i": {"name": "g"}},
+                "members": [{"name": "h"}],
+            },
+            "item": {"name": "n"},
+        },
+        {"unions": {"choice": 1, "union": True}, "wrapping": {"members": 2}},
+    ]
+    invalid = [
+        {"holder": {"count": "x"}},
+        {"unions": {"choice": "x"}},
+        {"wrapping": {"rows": {"r": "x"}}},
+    ]
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    for payload in valid:
+        validator.validate(payload)
+    for payload in invalid:
+        with pytest.raises(SchemaValidationError):
+            validator.validate(payload)
+    with _generated_model(output_file, "rw_constrained_value", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for payload in valid:
+            validate(json.dumps(payload))
+        for payload in invalid:
+            with pytest.raises(error_type):
+                validate(json.dumps(payload))
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_python_type_override(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites an x-python-type types, over an object with a readOnly property.
+
+    The inline objects of the properties, items, additionalItems, anyOf and oneOf members and additionalProperties of
+    ``Extended``, ``Other``, ``Positions`` and ``Extras`` are typed ``int``, and so is the property of ``Positions``
+    that is a $ref with sibling keywords to ``Sized`` (a property reads the merged schema first), so they generate no
+    model and keep one class while ``Flagged`` splits. The items of ``Sizes`` are such a $ref too, but the items are
+    merged after the python-type row, so they name a model of their own that splits with ``Sizes``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_python_type_override.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "extended": {"a": "s", "flagged": 1},
+        "other": {"b": "s", "flagged": 2},
+        "flagged": {"name": "n"},
+        "positions": {"list": [1], "pair": [1, "s", 2], "union": 3, "choice": None, "ref": 4},
+        "extras": {"k": 5},
+        "sizes": {"sizes": [{}]},
+    }
+    invalid = {"extended": {"flagged": "x"}}
+    with _generated_model(output_file, "rw_python_type_override", "ModelRequest") as model:
         validate = partial(msgspec.json.decode, type=model)
         error_type: type[Exception] = msgspec.ValidationError
         if output_model_type != "typing.TypedDict":
@@ -35220,3 +36235,365 @@ def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) ->
         invalid_json=json.dumps({"copy": {"children": [1]}}),
         expected_error_type="model_type",
     )
+
+
+def test_main_jsonschema_collapse_root_models_module_class_collision(output_dir: Path) -> None:
+    """Import the class an array alias inlines from a module named like it, as a direct reference imports it.
+
+    ``BarStatsList`` is an array of ``datatypes/BarStats.json``, whose class ``BarStats`` its module ``BarStats``
+    writes; up to 0.88.0 the holder imported the module (``from ..datatypes import BarStats``) for
+    ``list[BarStats]`` (#5450).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--collapse-root-models"], id="collapse-root-models")],
+)
+def test_main_jsonschema_hyphenated_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a hyphenated directory from the package the output writes, ``my_dir``.
+
+    Up to 0.88.0 the import read the directory as written in the input (``from .my-dir import b``), a syntax error;
+    a collapsed array of ``my-dir/b.json`` too (#5709).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "hyphenated_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_main_jsonschema_non_identifier_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a directory that is not named as Python imports it from the package the output writes.
+
+    A directory with a space, a symbol, a leading digit or a dot and a leading digit (``my dir``, ``a+b``, ``3d``,
+    ``1.0``) is written as the name of a file is (``my_dir``, ``a_b``, ``_3d``, ``_1_0``); up to 0.88.0 it kept its
+    name and ``from .my dir import b`` was a syntax error (#5999). A directory named with Unicode letters keeps its
+    name.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "non_identifier_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args", "message"),
+    [
+        pytest.param(
+            "non_identifier_directory_reference",
+            [],
+            "Cannot import the module '_1.0' from module 'a_b.symbol': '0' is not a Python identifier",
+            id="directory",
+        ),
+        pytest.param(
+            "dotted_file_name_reference",
+            [],
+            "Cannot import the module 'v2.1' from module 'root': '1' is not a Python identifier",
+            id="file-name",
+        ),
+        pytest.param(
+            "no_treat_dot_single",
+            ["--all-exports-scope", "recursive"],
+            "Cannot import the module 'v0.0.39.job' from the root package: '0' is not a Python identifier",
+            id="all-exports",
+        ),
+    ],
+)
+def test_main_jsonschema_treat_dot_as_module_refuses_unimportable_module(
+    output_dir: Path, capsys: pytest.CaptureFixture[str], input_name: str, extra_args: list[str], message: str
+) -> None:
+    """Refuse a generated module that imports a module whose path has a part that is not an identifier.
+
+    ``--treat-dot-as-module`` writes each dot of a directory or file name as a package, so ``1.0/version.json`` is
+    ``_1/0/`` and ``v2.1.json`` is ``v2/1.py``, and the imports ``from ._1.0 import version`` and ``from .v2 import 1``
+    are syntax errors. The layout is the released one, so the run fails and names the module and the part (#6050).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--treat-dot-as-module", *extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("dotted_file_name_reference", ["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(
+            "collapsed_unimportable_directory_reference",
+            ["--treat-dot-as-module", "--collapse-root-models"],
+            id="dropped-import",
+        ),
+    ],
+)
+def test_main_jsonschema_treat_dot_as_module_writes_importable_modules(
+    output_dir: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Write the modules whose imports Python can read.
+
+    Without ``--treat-dot-as-module`` the dots are ``_``. A root model that ``--collapse-root-models`` inlines writes no
+    import of ``1.0/code.json``, so the run is not refused though the planned import named ``_1.0`` (#6050).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(["--treat-dot-as-module"], id="treat-dot-as-module"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_main_jsonschema_dotted_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a directory named with a dot from the package the output writes.
+
+    Without ``--treat-dot-as-module`` the dots of a directory are written as ``_`` (``api_v2``), as those of a file
+    name; up to 0.88.0 the directory kept them, and ``from .api.v2 import b`` named no module (#5710). With the option
+    each dot is a package (``api/v2``), as before.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dotted_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+def test_main_jsonschema_additional_import_named_like_module(output_dir: Path) -> None:
+    """Import the models of a module from it where an additional import binds the name of the module.
+
+    ``--additional-imports ipaddress.IPv4Address`` is written by every module, the ``__init__.py`` of each package
+    included, so ``from . import IPv4Address`` bound the name twice and gave what the package binds, not the module
+    ``IPv4Address`` (#5773).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "additional_import_named_like_module.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_shared_import_named_like_module_and_model(output_dir: Path) -> None:
+    """Import a model from its module under an alias where a shared import binds the model's name too.
+
+    ``--additional-imports ipaddress.IPv4Address`` makes every module import the model ``OrderedDict`` from its module
+    ``IPv4Address``, and ``--external-ref-mapping common.json=collections`` makes every module write
+    ``from collections import OrderedDict``. The model keeps the name of the mapped type: it was bound after the import
+    of ``collections`` and gave the field typed by the mapped type the model.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "shared_import_named_like_model" / "api.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--external-ref-mapping",
+            "common.json=collections",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],
+)
+def test_main_jsonschema_builtin_named_fields(output_file: Path, output_model_type: str) -> None:
+    """Import under an alias each builtin class that a field name hides from an annotation of its class.
+
+    The fields ``set``, ``dict``, ``tuple`` and ``str`` hide the builtins that ``tags``, ``counts``, ``pair`` and
+    ``name`` write; up to 0.88.0 only ``list`` was imported under an alias, so the annotations failed to evaluate
+    (#5524). A TypedDict assigns no field in its class body, so nothing is hidden there.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_named_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--use-unique-items-as-set",
+            "--use-tuple-for-fixed-items",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(
+        output_file, f"builtin_named_fields_{output_model_type.replace('.', '_')}", "Holder"
+    ) as model:
+        get_type_hints(model)
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_dot_directory(output_dir: Path, extra_args: list[str]) -> None:
+    """Tag the variants a discriminator mapping names through a directory whose name starts with a dot.
+
+    The mapping paths ``./.defs/cat.json``, ``./sub/../.defs/dog.json`` and, from ``sub/main.json``,
+    ``../.defs/bird.json`` are compared with the schema paths segment by segment; up to 0.88.0 the leading dots and
+    slashes were stripped as characters, so ``.defs`` read as ``defs``, no path matched and each variant was tagged by
+    its file name, ``Literal['cat.json#']``, which no payload the mapping selects it for carries (#5530).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_dot_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+INHERITED_SCHEMA_TAG_DOCUMENTS: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("Call", {"type": "function", "name": "n"}),
+    ("Call", {"type": "custom", "input": "x"}),
+    ("Call", {"type": "FunctionCall"}),
+    ("NamedOrCustom", {"type": "function", "label": "l"}),
+    ("NamedOrCustom", {"type": "NamedCall"}),
+)
+"""Documents per union of ``discriminator_inherited_schema_tag.json``, some valid against the schema and some not."""
+
+
+def _inherited_schema_tag_verdict(validate: ABCCallable[[Any], Any], document: Any) -> str:
+    """Return whether a generated union decodes a document."""
+    try:
+        validate(document)
+    except ValidationError:
+        return "rejects"
+    return "accepts"
+
+
+def _inherited_schema_tag_verdicts(output_file: Path, module_name: str) -> str:
+    """Return whether the schema and each generated union accept each document, one line per document.
+
+    The tag ``FunctionType.function`` is also given as the Enum member itself, from Python, which no JSON document
+    carries.
+    """
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json").read_text(encoding="utf-8"))
+    lines: list[str] = []
+    with _generated_model(output_file, module_name, "Session") as session:
+        namespace = vars(sys.modules[session.__module__])
+        for name, document in INHERITED_SCHEMA_TAG_DOCUMENTS:
+            validator = Draft202012Validator({"$ref": f"#/$defs/{name}", "$defs": schema["$defs"]})
+            schema_verdict = "accepts" if validator.is_valid(document) else "rejects"
+            model_verdict = _inherited_schema_tag_verdict(_model_json_validator(namespace[name]), json.dumps(document))
+            lines.append(f"{name} {json.dumps(document)}: schema {schema_verdict}, model {model_verdict}\n")
+        member = {"type": namespace["FunctionType"].function}
+        for name in ("Call", "NamedOrCustom"):
+            model_verdict = _inherited_schema_tag_verdict(TypeAdapter(namespace[name]).validate_python, member)
+            lines.append(f"{name} {{'type': FunctionType.function}} from Python: model {model_verdict}\n")
+    return "".join(lines)
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic_v2"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic_v2_dataclass"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-enum-values-in-discriminator"],
+            id="use-enum-values-in-discriminator",
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, extra_args: list[str]) -> None:
+    """Tag a discriminated union's variant with the value the schema of an allOf parent fixes for the tag property.
+
+    ``FunctionCall`` inherits ``type`` from ``FunctionBase``, a one-value enum, ``CustomCall`` from ``CustomBase``, a
+    ``const``, and ``NamedCall`` from ``FunctionCall`` two levels down; up to 0.88.0 each was tagged by its schema
+    name, ``Literal['FunctionCall']``, so the union rejected every payload the schema accepts (#5338). ``Dog`` and
+    ``Cat`` keep their names: the ``Literal['Pet']`` of their base is a tag the union ``Pets`` wrote, which ``Pet``'s
+    schema does not fix. Under ``--use-enum-values-in-discriminator`` both ``FunctionCall`` and ``NamedCall`` spell the
+    tag ``Literal[FunctionType.function]``, as the option spells the tag of a variant whose own field the Enum types:
+    the Enum that types the tag field a variant inherits is read from the nearest ancestor that declares it, where
+    ``NamedCall`` read only its direct base and wrote ``Literal['function']``. A plain Enum member is no JSON string,
+    so these unions take the member from Python, not ``"function"`` from JSON, as they do for an own Enum field.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_output(
+        _inherited_schema_tag_verdicts(
+            output_file,
+            f"discriminator_inherited_schema_tag_{'_'.join(extra_args).replace('.', '_').replace('-', '_')}",
+        ),
+        name="payloads",
+    )
+
+
+def test_main_jsonschema_discriminator_inherited_schema_tag_msgspec(output_file: Path) -> None:
+    """Write the value an allOf parent's schema fixes as the tag literal of a msgspec Struct variant (#5338).
+
+    msgspec still cannot decode these unions: their base Structs keep ``type`` as a field, so no Struct is tagged.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the discriminated union"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )

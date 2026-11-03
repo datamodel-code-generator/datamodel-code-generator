@@ -301,6 +301,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.RENDER,
         store_ops=("use_typing_generics",),
     ),
+    AttributeFact(
+        "Member",
+        "alias",
+        FactKind.PRESENTATION,
+        (RenderFact.IMPORT_ALIASES,),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+        store_ops=("name_enum_member",),
+    ),
     AttributeFact("DataType", "use_generic_container", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
         "DataType",
@@ -377,6 +386,10 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         Phase.MODULES,
         FreezePoint.B1,
         access=Access.DICT_KEY,
+    ),
+    AttributeFact("DataType", "TYPE_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact(
+        "DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
         "DataType",
@@ -683,6 +696,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModelFieldBase",
+        "UNION_SIBLING_CONSTRAINTS_KEY",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_constraints",),
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
         "_UNCONSTRAINED_UNION_MEMBERS_KEY",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
@@ -788,6 +811,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         Phase.MODULES,
         None,
         access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
     ),
     AttributeFact(
         "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY

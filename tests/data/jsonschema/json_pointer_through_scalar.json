@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "inMapping": {"$ref": "#/x-ext/k/j"},
+    "inList": {"$ref": "#/x-ext/items/0/j"},
+    "inNull": {"$ref": "#/x-ext/none/j"},
+    "inString": {"$ref": "#/x-ext/text/0"}
+  },
+  "x-ext": {"k": 5, "items": [5], "none": null, "text": "abc"}
+}

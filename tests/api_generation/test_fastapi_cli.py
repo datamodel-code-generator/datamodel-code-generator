@@ -975,12 +975,22 @@ def test_fastapi_cli_check_after_generate(
         ),
         ("encoding", ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]),
         ("formatters", ["--formatters", "ruff-format", "--enable-command-header"]),
+        (
+            "ruff-latin-1",
+            [
+                *("--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"),
+                *("--formatters", "ruff-check", "ruff-format"),
+            ],
+        ),
     ],
 )
 def test_fastapi_cli_output_options(
     case: str, options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Head, format, and encode the server files with the model output options, exactly like the models."""
+    """Head, format, and encode the server files with the model output options, exactly like the models.
+
+    Ruff reads only UTF-8, so the server files are formatted whatever encoding they are written in.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),

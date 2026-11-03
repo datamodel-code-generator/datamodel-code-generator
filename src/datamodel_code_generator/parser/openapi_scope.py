@@ -4,16 +4,17 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
-from urllib.parse import ParseResult, unquote
+from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
 
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
-from datamodel_code_generator._document_reader import string_key
-from datamodel_code_generator._json_pointer import fragment_tokens
+from datamodel_code_generator._document_reader import descend, string_key
+from datamodel_code_generator._json_pointer import reference_tokens
+from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
     PATHS_PARAMETERS,
@@ -24,6 +25,7 @@ from datamodel_code_generator._openapi_paths import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
+from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -35,6 +37,7 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -58,6 +61,7 @@ from datamodel_code_generator.types import DataType  # noqa: TC001 - Public anno
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
+    from datamodel_code_generator._site_facts import SiteFacts
     from datamodel_code_generator.model import DataModel
 
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in PATH_ITEM_METHODS)
@@ -72,15 +76,8 @@ def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
     raise SchemaParseError(msg, path=list(path))
 
 
-SchemaRole: TypeAlias = Literal[
-    "schema",
-    "parameter",
-    "request_body",
-    "response_body",
-    "response_header",
-    "request_encoding_header",
-    "response_encoding_header",
-]
+SchemaRole: TypeAlias = TypeUseRole
+ApiObjectKind: TypeAlias = Literal["parameter", "request_body", "response", "media", "encoding", "header", "callback"]
 
 
 @record
@@ -98,7 +95,7 @@ class ApiDeclarationFrame:
     engine_path: tuple[str, ...] = ()
     raw_schema: YamlValue = None
     validated_schema: JsonSchemaObject | None = None
-    projection: Literal["value", "item_stream_array"] = "value"
+    projection: Projection = "value"
     raw_operation: dict[str, YamlValue] | None = None
     effective_operation: dict[str, YamlValue] | None = None
 
@@ -115,6 +112,9 @@ class _ApiObject:
     def path(self) -> list[str]:
         """Return raw resolver tokens without reconstructing them from names."""
         return [self.declaration.document, "#", *self.declaration.tokens]
+
+
+_Visited: TypeAlias = "_ApiObject | dict[str, YamlValue]"
 
 
 @record
@@ -186,6 +186,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._processed_declarations: set[SchemaLocation] = set()
         self._projected_declarations: set[SchemaLocation] = set()
         self._declaration_types: dict[SchemaLocation, DataType] = {}
+        self._schema_sites: dict[SchemaLocation, SiteFacts] = {}
         self._api_roots: set[str] = set()
         self._api_security: YamlValue = None
         self.declaration_uses: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]] = []
@@ -229,7 +230,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         declaration: SchemaLocation | None = None,
         raw_schema: YamlValue = None,
         validated_schema: JsonSchemaObject | None = None,
-        projection: Literal["value", "item_stream_array"] = "value",
+        projection: Projection = "value",
         role: SchemaRole | None = None,
     ) -> Generator[ApiDeclarationFrame, None, None]:
         parent = self.declaration_frames[-1] if self.declaration_frames else None
@@ -343,32 +344,36 @@ class ApiOpenAPIParser(OpenAPIParser):
             raise SchemaParseError(msg, path=[ref])
         return list(tokens)
 
-    def _resolve_api_object(self, value: YamlValue, path: list[str]) -> _ApiObject:
-        """Resolve each object-reference edge once, retaining its declaration identity."""
-        raw = _mapping(value, path)
-        return self._follow_references(_ApiObject(self._declared(raw), self.raw_obj, raw), set())
+    def _resolve_api_object(self, value: YamlValue, path: list[str], role: str) -> _ApiObject:
+        """Resolve each object-reference edge once, retaining its declaration identity.
 
-    def _follow_references(self, target: _ApiObject, seen: set[str]) -> _ApiObject:
+        ``role`` is the OpenAPI object the position of ``value`` holds, which a document a reference names at its root
+        holds too.
+        """
+        raw = _mapping(value, path)
+        return self._follow_references(_ApiObject(self._declared(raw), self.raw_obj, raw), set(), role)
+
+    def _follow_references(self, target: _ApiObject, seen: set[str], role: str | None) -> _ApiObject:
         """Follow an object's references, each in the context of the document that spells it."""
         while "$ref" in target.value:
             if not isinstance(ref := target.value["$ref"], str):
                 msg = "API_INVALID_OBJECT: reference must be a string"
                 raise SchemaParseError(msg, path=target.path)
             with self._api_object_context(target):
-                target = self._reference_target(ref, seen, target.path)
+                target = self._reference_target(ref, seen, target.path, role)
         return target
 
-    def _reference_target(self, ref: str, seen: set[str], path: list[str]) -> _ApiObject:
-        """Resolve one reference in the current document context to the object it names."""
+    def _reference_target(self, ref: str, seen: set[str], path: list[str], role: str | None) -> _ApiObject:
+        """Resolve one reference in the current document context to the object it names, an object of ``role``."""
         resolved = self._ref_path(ref)
         if resolved in seen:
             msg = "API_REFERENCE_CYCLE: object references do not reach a declaration"
             raise SchemaParseError(msg, path=path)
         seen.add(resolved)
-        document = resolved.partition("#")[0]
+        document, _, fragment = resolved.partition("#")
         raw_document = self._api_documents.get(document)
         if raw_document is None:
-            raw_document = self._get_ref_body(document) if document else self.raw_obj
+            raw_document = ref_file_document(self, document, None if fragment else role)
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
@@ -382,13 +387,28 @@ class ApiOpenAPIParser(OpenAPIParser):
         """
         with self._home_context(holder):
             document, _, fragment = self._ref_key(ref).key.partition("#")
-        tokens = fragment_tokens(unquote(fragment))
+        tokens = reference_tokens(fragment)
         return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
 
-    def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
+    def _site_facts(self, location: SchemaLocation) -> SiteFacts:
+        """Return the site of a schema object of a loaded document, read once, with its references resolved.
+
+        A location that holds no value reads as the empty schema, and is read again when it is asked again, so a
+        document loaded later is read then.
+        """
+        if (site := self._schema_sites.get(location)) is None and (site := self._located_site(location)) is not None:
+            self._schema_sites[location] = site
+        return EMPTY_SITE if site is None else site
+
+    def _located_site(self, location: SchemaLocation) -> SiteFacts | None:
+        """Read the site of a location of a loaded document anew, None where it holds no value."""
+        value = descend(self._api_documents.get(location.document), location.tokens, "canonical", None)
+        return None if value is None else site_facts_of(value, location, self._schema_reference_location)
+
+    def get_ref_model(self, ref: str, role: str | None = None) -> dict[str, YamlValue]:
         """Use the same object-reference boundary for ordinary parser leaves, resolving in the current context."""
         seen: set[str] = set()
-        return self._follow_references(self._reference_target(ref, seen, [ref]), seen).value
+        return self._follow_references(self._reference_target(ref, seen, [ref], role), seen, role).value
 
     @contextmanager
     def _api_object_context(self, target: _ApiObject) -> Generator[None, None, None]:
@@ -480,7 +500,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             entries = _mapping(components.get(category, {}), ["#/components", category])
             for key, value in self._named_components(entries, [*path_parts, "#/components", category]).items():
                 path = [*path_parts, "#/components", category, key]
-                target = self._resolve_api_object(value, path)
+                target = self._resolve_api_object(value, path, COMPONENT_ROLES[category])
                 name = self._get_model_name(key, "", suffix)
                 match category:
                     case "parameters" | "headers":
@@ -614,6 +634,16 @@ class ApiOpenAPIParser(OpenAPIParser):
         ):
             self.parse_raw_obj(name, array_schema, projected_path)
 
+    def _visiting(self, kind: ApiObjectKind, key: object, target: _Visited) -> AbstractContextManager[None]:  # ruff: ignore[no-self-use, unused-method-argument]
+        """Return the context the walk visits an object of an operation in; ``key`` names it in its holder.
+
+        ``key`` is as the document spells it, so a YAML status such as ``200:`` is a number.
+
+        ``target`` is the object a reference resolves to, or a media type, encoding or callback object as written. The
+        API walk keeps nothing of it; the target walk records it.
+        """
+        return nullcontext()
+
     def _walk_parameter(
         self, name: str, target: _ApiObject, *, header: bool = False, role: SchemaRole = "parameter"
     ) -> None:
@@ -675,27 +705,28 @@ class ApiOpenAPIParser(OpenAPIParser):
                 medium = _mapping(value, media_path)
                 if not isinstance(media, str) and self._reads_media_type(medium, [*content_path, str(media)], owner):
                     self._key_name(content, media, content_path, "media type")
-                if (schema := self._get_raw_media_schema(medium)) is not None:
-                    if schema.from_item_schema:
-                        declaration = self._declared(medium).child("itemSchema")
-                        self._acquire_item_schema(
-                            name,
-                            medium["itemSchema"],
-                            media_path,
-                            schema.schema,
-                            declaration=declaration,
-                            role=schema_role,
-                        )
-                        self._record_boolean_schema_location(
-                            medium["itemSchema"], [*media_path, "itemSchema"], declaration
-                        )
-                    else:
-                        declaration = self._declared(medium).child("schema")
-                        self._acquire_schema(
-                            name, schema.schema, [*media_path, "schema"], declaration=declaration, role=schema_role
-                        )
-                        self._record_boolean_schema_location(schema.schema, [*media_path, "schema"], declaration)
-                self._walk_encoding(name, medium, media, media_path, owner)
+                with self._visiting("media", media, medium):
+                    if (schema := self._get_raw_media_schema(medium)) is not None:
+                        if schema.from_item_schema:
+                            declaration = self._declared(medium).child("itemSchema")
+                            self._acquire_item_schema(
+                                name,
+                                medium["itemSchema"],
+                                media_path,
+                                schema.schema,
+                                declaration=declaration,
+                                role=schema_role,
+                            )
+                            self._record_boolean_schema_location(
+                                medium["itemSchema"], [*media_path, "itemSchema"], declaration
+                            )
+                        else:
+                            declaration = self._declared(medium).child("schema")
+                            self._acquire_schema(
+                                name, schema.schema, [*media_path, "schema"], declaration=declaration, role=schema_role
+                            )
+                            self._record_boolean_schema_location(schema.schema, [*media_path, "schema"], declaration)
+                    self._walk_encoding(name, medium, media, media_path, owner)
 
     def _reads_media_type(self, medium: dict[str, YamlValue], path: list[str], owner: MediaOwner) -> bool:
         """Return whether walking ``medium`` at ``path`` builds a schema path from its media type or parses it.
@@ -717,8 +748,8 @@ class ApiOpenAPIParser(OpenAPIParser):
             for key, value in headers.items():
                 if self._ignores_content_type(target.value, headers, key, headers_path, "header"):
                     continue
-                header = self._resolve_api_object(value, [*target.path, "headers", key])
-                with self._api_object_context(header):
+                header = self._resolve_api_object(value, [*target.path, "headers", key], "header")
+                with self._visiting("header", key, header), self._api_object_context(header):
                     self._walk_parameter(
                         self._get_model_name((header_name or name) + key, "", "Header"),
                         header,
@@ -736,7 +767,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         for index, value in enumerate(raw):
             parameter_path = [*path, str(index)]
             declared = _mapping(value, parameter_path)
-            parameter = self._resolve_api_object(declared, parameter_path)
+            parameter = self._resolve_api_object(declared, parameter_path, "parameter")
             with self._api_object_context(parameter):
                 key = self._parameter_key(parameter.value)
             if key is None:
@@ -772,7 +803,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 continue
             path = [*base_path, item_name]
             item = _mapping(value, path)
-            target = self._resolve_api_object(item, path)
+            target = self._resolve_api_object(item, path, "pathItem")
             candidate = self._get_model_name(item_name, "", "PathItem") if scope == "pathItems" else prefix or item_name
             self._walk_path_item(target, self._declared(item), candidate, global_parameters)
 
@@ -859,6 +890,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._processed_declarations.clear()
             self._projected_declarations.clear()
             self._declaration_types.clear()
+            self._schema_sites.clear()
             self._api_documents.clear()
             self._api_roots.clear()
             self._api_security = None
@@ -922,21 +954,20 @@ class ApiOpenAPIParser(OpenAPIParser):
                     + location.capitalize()
                     + (self._get_model_name(wire_name, "", "Parameter") if wire_name else "")
                 )
-                self._walk_parameter(candidate, parameter)
+                with self._visiting("parameter", wire_name, parameter):
+                    self._walk_parameter(candidate, parameter)
             if "requestBody" in operation:
-                self._walk_content(
-                    name + "Request",
-                    self._resolve_api_object(operation["requestBody"], [*path, "requestBody"]),
-                    owner="request_body",
-                )
-            for status, response in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
+                body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"], "requestBody")
+                with self._visiting("request_body", "requestBody", body):
+                    self._walk_content(name + "Request", body, owner="request_body")
+            for status, value in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
                 response_path = [*path, "responses", str(status)]
                 suffix = str(status).capitalize() if self.use_status_code_in_response_name else ""
-                self._walk_response(
-                    name + "Response" + suffix,
-                    self._resolve_api_object(response, response_path),
-                    header_name=name + "Response" + str(status).capitalize(),
-                )
+                response = self._resolve_api_object(value, response_path, "response")
+                with self._visiting("response", status, response):
+                    self._walk_response(
+                        name + "Response" + suffix, response, header_name=name + "Response" + str(status).capitalize()
+                    )
             callbacks_path = [*path, "callbacks"]
             callbacks = _mapping(operation.get("callbacks", {}), callbacks_path)
             for callback_name, value in callbacks.items():
@@ -944,12 +975,11 @@ class ApiOpenAPIParser(OpenAPIParser):
                     *callbacks_path,
                     self._key_name(callbacks, callback_name, callbacks_path, "callback name"),
                 ]
-                self._walk_callback(
-                    _mapping(value, callback_path),
-                    callback_path,
-                    name + self._get_model_name(callback_name, "", "Callback"),
-                    use_site,
-                )
+                callback = _mapping(value, callback_path)
+                with self._visiting("callback", callback_name, callback):
+                    self._walk_callback(
+                        callback, callback_path, name + self._get_model_name(callback_name, "", "Callback"), use_site
+                    )
             if OpenAPIScope.Tags in self.open_api_scopes:
                 tags = operation.get("tags", [])
                 if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
@@ -961,7 +991,7 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Traverse callback expressions in declaration order without expanding cycles."""
-        target = self._resolve_api_object(raw, path)
+        target = self._resolve_api_object(raw, path, "callback")
         with self._visit_once(use_site, target) as walks:
             if walks:
                 ordinal = 0
@@ -970,7 +1000,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                         continue
                     ordinal += 1
                     expression_path = [*target.path, expression]
-                    child = self._resolve_api_object(_mapping(value, expression_path), expression_path)
+                    child = self._resolve_api_object(_mapping(value, expression_path), expression_path, "pathItem")
                     child_use = use_site.child("callbacks", path[-1], expression)
                     self._walk_path_item(child, child_use, prefix + str(ordinal), [])
 
@@ -1025,33 +1055,34 @@ class ApiOpenAPIParser(OpenAPIParser):
         for property_name, value in (encodings := _mapping(medium["encoding"], encoding_path)).items():
             property_path = [*encoding_path, property_name]
             encoding = _mapping(value, property_path)
-            headers = encoding.get("headers", {})
-            if parsed_media.type != "multipart":
-                if isinstance(headers, dict):
-                    for key in headers:
-                        self._ignore_declaration(
-                            self._declared(encoding).child("headers", key),
-                            "oas_non_multipart_encoding_headers",
-                            owner,
-                            media=media,
-                            wire_name=key,
-                        )
-                continue
-            headers_path = [*property_path, "headers"]
-            for key, header_value in (headers := _mapping(headers, headers_path)).items():
-                if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
+            with self._visiting("encoding", property_name, encoding):
+                headers = encoding.get("headers", {})
+                if parsed_media.type != "multipart":
+                    if isinstance(headers, dict):
+                        for key in headers:
+                            self._ignore_declaration(
+                                self._declared(encoding).child("headers", key),
+                                "oas_non_multipart_encoding_headers",
+                                owner,
+                                media=media,
+                                wire_name=key,
+                            )
                     continue
-                property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
-                header = self._resolve_api_object(header_value, [*property_path, "headers", key])
-                with self._api_object_context(header):
-                    candidate = (
-                        name
-                        + self._get_model_name(property_key, "", "")
-                        + self._get_model_name(key, "", "EncodingHeader")
-                    )
-                    self._walk_parameter(
-                        candidate,
-                        header,
-                        header=True,
-                        role="response_encoding_header" if owner == "response" else "request_encoding_header",
-                    )
+                headers_path = [*property_path, "headers"]
+                for key, header_value in (headers := _mapping(headers, headers_path)).items():
+                    if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
+                        continue
+                    property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
+                    header = self._resolve_api_object(header_value, [*property_path, "headers", key], "header")
+                    with self._visiting("header", key, header), self._api_object_context(header):
+                        candidate = (
+                            name
+                            + self._get_model_name(property_key, "", "")
+                            + self._get_model_name(key, "", "EncodingHeader")
+                        )
+                        self._walk_parameter(
+                            candidate,
+                            header,
+                            header=True,
+                            role="response_encoding_header" if owner == "response" else "request_encoding_header",
+                        )

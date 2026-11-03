@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info: {title: Multipart parts a read-only property leaves out, version: "1"}
+servers: [{url: "https://parts.example.com"}]
+paths:
+  /uploads:
+    post:
+      operationId: sendUpload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo, note]
+              properties:
+                photo: {type: string, format: binary}
+                note: {$ref: "#/components/schemas/Note"}
+                thumb:
+                  description: A stored preview whose raw bytes a request never sends.
+                  readOnly: true
+                  type: object
+                  properties:
+                    data: {type: string, format: binary}
+      responses:
+        "204": {description: Stored.}
+components:
+  schemas:
+    Note:
+      type: object
+      required: [text, secret]
+      properties:
+        text: {type: string}
+        id: {type: integer, readOnly: true}
+        secret: {type: string, writeOnly: true}

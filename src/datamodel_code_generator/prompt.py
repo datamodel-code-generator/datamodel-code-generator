@@ -23,7 +23,7 @@ from datamodel_code_generator._json_output import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest
+from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest, _no_option
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
@@ -259,10 +259,7 @@ def _positive_option(action: Action, fallback: str) -> str:
 
 def _negative_option(action: Action, fallback: str) -> str:
     """Return the negative CLI flag for a BooleanOptionalAction."""
-    for option in action.option_strings:
-        if option.startswith("--no-"):
-            return option
-    return fallback
+    return _no_option(action) or fallback
 
 
 def _format_current_option(key: str, value: Any, action: Action | None) -> str | None:

@@ -70,6 +70,8 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "kinds-annotated",
         "kinds-decimal",
         "kinds-literal",
+        "patterns",
+        "patterns-annotated",
         "errors",
         "bodies",
         "nullable",
@@ -138,6 +140,10 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "reused_forms",
         "forms",
         "forms_30",
+        "bound_texts",
+        "bound_texts_reuse",
+        "bound_parts",
+        "bound_parts_variants",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

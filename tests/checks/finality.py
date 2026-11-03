@@ -20,7 +20,10 @@ writes and store operations reached during the pass, and the models the pass rep
 (``GenerationStore.note_changed_models``, ``DataModelFieldBase.invalidate_semantic_caches``). With
 ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP`` on as well, a global pass that transforms or repairs compares
 every model. Every model is compared whenever the pipeline enters a phase (``GenerationStore.enter_phase``), which
-includes the freeze points B1 and B2. A changed row is
+includes the freeze points B1 and B2. A fingerprint keeps the state it was read from (``_Shape``): by identity, the
+class and the ``__dict__`` of each object, the entries its rows read there, the items of every list, set and dict
+``_freeze`` read and the attributes it read of other values. A comparison reads a model anew only when some of that
+state changed: while none did, the reading gives the same fingerprint. A changed row is
 
 * ``undeclared`` when the pass declares none of the row's facts,
 * ``other-module`` when a module pass changed a model of another module,
@@ -67,23 +70,26 @@ from __future__ import annotations
 
 import re
 import sys
+from abc import get_cache_token
 from collections.abc import Mapping
-from contextlib import contextmanager, nullcontext
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 from contextvars import ContextVar
 from dataclasses import dataclass, field, fields, is_dataclass
 from decimal import Decimal
 from enum import Enum, unique
 from functools import wraps
 from inspect import getattr_static
-from itertools import takewhile, zip_longest
+from itertools import chain, repeat, takewhile, zip_longest
+from operator import is_, methodcaller
 from pathlib import Path
 from threading import Lock
 from traceback import walk_stack
+from types import MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, Final, SupportsIndex
 from weakref import ref
 
 from pydantic import BaseModel
-from typing_extensions import Sentinel, final, override
+from typing_extensions import Sentinel, TypeIs, final, override
 
 import datamodel_code_generator
 from datamodel_code_generator._records import record
@@ -114,8 +120,7 @@ from tests.checks import areas
 from tests.checks.areas import Area, Mode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
-    from contextlib import AbstractContextManager
+    from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Sequence
     from types import FrameType
 
     from datamodel_code_generator.parser.generation import GenerationStore
@@ -182,6 +187,18 @@ def _rows_by_owner() -> dict[str, tuple[frozenset[str], frozenset[str]]]:
 
 
 _ROWS_BY_OWNER: Final = _rows_by_owner()
+
+
+def _guarded_names(cls: type) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the guarded attributes of ``cls`` and its container attributes, from the rows of its classes."""
+    rows = [
+        _ROWS_BY_OWNER[base.__name__]
+        for base in cls.__mro__
+        if base.__name__ in _ROWS_BY_OWNER and base.__module__.startswith(f"{_PACKAGE}.")
+    ]
+    return frozenset().union(*(names for names, _ in rows)), frozenset().union(*(containers for _, containers in rows))
+
+
 _STORE_OPERATIONS: Final = frozenset(store_op for row in ATTRIBUTE_FACTS for store_op in row.store_ops)
 
 
@@ -461,60 +478,167 @@ _SEQUENCE: Final = Sentinel("_SEQUENCE")
 _MAPPING: Final = Sentinel("_MAPPING")
 _SET: Final = Sentinel("_SET")
 _PLAIN_TYPES: Final = frozenset({str, int, bool, type(None), bytes})
+_KEPT_TYPES: Final = _PLAIN_TYPES | {type(_MISSING)}
+"""The types whose values ``_freeze`` returns as they are: the plain types and the sentinel of a missing value."""
 _BUILTIN_VALUE_TYPES: Final = (bool, int, float, complex, Decimal, str, bytes)
 _DESCENDED: Final = (DataType, DataModelFieldBase)
 _GRAPH_CLASSES: Final = (DataType, DataModelFieldBase, Reference, DataModel)
+_BRANCHES: Final[dict[type | tuple[type], tuple[_Branch, Any]]] = {}
+"""The branch of ``_freeze`` of each type met, and of each class met as a value (by a tuple of the class), with the
+built-in base or the dataclass field names it reads."""
+_NO_ENTRIES: Final[Mapping[int, Any]] = MappingProxyType({})
 _ORDERING_READS: Final = decls.FIX_CONSTRUCTOR_FIELD_ORDERING.reads
+_BASE_CLASSES: Final = "base_classes"
+_BASE_LISTS: Final = frozenset({list, tuple, _GuardedList})
+"""The types of ``base_classes`` whose items a shape records; ``_entries`` reads their ids for the base flags."""
+_OBJECT_GETATTRIBUTE: Final = object.__getattribute__
+_TYPE_DICT: Final = type.__dict__["__dict__"]
+_TYPE_MRO: Final = type.__dict__["__mro__"]
+_PYDANTIC_GETATTR: Final = getattr_static(BaseModel, "__getattr__", None)
+_COLLECTIONS: Final = frozenset({list, tuple, set, frozenset, _GuardedList})
+"""The sequence and set types whose items a shape records."""
+_IMMUTABLE_COLLECTIONS: Final = (tuple, frozenset)
+_MODEL_TYPES: Final[dict[tuple[object, type, type], bool]] = {}
+"""Whether objects are a ``DataModel``, by ABC cache token, type and ``__class__`` (``_is_data_model``)."""
 _FIELDS_ROW: Final = next(row for row in ATTRIBUTE_FACTS if (row.owner, row.attribute) == ("DataModel", "fields"))
+
+
+@unique
+class _Branch(Enum):
+    """The way ``_freeze`` copies the values of one type."""
+
+    GRAPH = 1
+    SEQUENCE = 2
+    MAPPING = 3
+    SET = 4
+    ENUM = 5
+    BUILTIN = 6
+    MODEL = 7
+    DATACLASS = 8
+    KEPT = 9
+
+
+_IDENTITY_BRANCHES: Final = frozenset({_Branch.GRAPH, _Branch.KEPT})
+"""The branches whose frozen value is the identity of the value or the value itself: nothing past it is read."""
 
 
 def _freeze(value: Any, nested: list[Any]) -> Any:  # ruff: ignore[too-many-return-statements]
     """Return a comparable copy of ``value``; graph objects become their identity and are appended to ``nested``.
 
     Numbers, strings and bytes compare by their built-in text, so that NaN equals itself and subclasses never run their
-    own hash or equality; any other object is kept as it is and compares by its own equality.
+    own hash or equality; any other object is kept as it is and compares by its own equality. Which of these a value
+    takes depends on its type alone, and a class's on the class itself, so ``_BRANCHES`` keeps it for each of them.
     """
     kind = type(value)
     if kind in _PLAIN_TYPES:
         return value
-    if isinstance(value, _GRAPH_CLASSES):
-        nested.append(value)
-        return _IDENTITY, id(value)
-    if isinstance(value, (list, tuple)):
-        return _SEQUENCE, kind is tuple, tuple(_freeze(item, nested) for item in value)
-    if isinstance(value, dict):
-        return _MAPPING, tuple((_freeze(key, nested), _freeze(item, nested)) for key, item in value.items())
-    if isinstance(value, (set, frozenset)):
-        return _SET, frozenset(_freeze(item, nested) for item in value)
-    if isinstance(value, Enum):
-        return kind, value.name
-    if isinstance(value, _BUILTIN_VALUE_TYPES):
-        return kind, repr(next(base for base in _BUILTIN_VALUE_TYPES if isinstance(value, base))(value))
-    if isinstance(value, BaseModel):
-        state = value.__dict__
-        return kind, tuple(_freeze(state.get(name), nested) for name in kind.model_fields)
-    if is_dataclass(value):
-        return kind, tuple(_freeze(getattr(value, item.name), nested) for item in fields(value))
+    branch = _branch_of(value, kind)
+    match branch[0]:
+        case _Branch.GRAPH:
+            nested.append(value)
+            return _IDENTITY, id(value)
+        case _Branch.SEQUENCE:
+            return (
+                _SEQUENCE,
+                kind is tuple,
+                tuple([item if type(item) in _KEPT_TYPES else _freeze(item, nested) for item in value]),
+            )
+        case _Branch.MAPPING:
+            return _MAPPING, tuple([
+                (
+                    key if type(key) in _KEPT_TYPES else _freeze(key, nested),
+                    item if type(item) in _KEPT_TYPES else _freeze(item, nested),
+                )
+                for key, item in value.items()
+            ])
+        case _Branch.SET:
+            return _SET, frozenset([item if type(item) in _KEPT_TYPES else _freeze(item, nested) for item in value])
+        case _Branch.ENUM:
+            return kind, value.name
+        case _Branch.BUILTIN:
+            return kind, repr(branch[1](value))
+        case _Branch.MODEL:
+            state = value.__dict__
+            return kind, tuple([
+                item if type(item := state.get(name)) in _KEPT_TYPES else _freeze(item, nested)
+                for name in kind.model_fields
+            ])
+        case _Branch.DATACLASS:
+            return kind, tuple([_freeze(getattr(value, name), nested) for name in branch[1]])
     return value
+
+
+def _branch_of(value: Any, kind: type) -> tuple[_Branch, Any]:
+    """Return the branch of ``_freeze`` for ``value`` of type ``kind``, kept per type and per class met as a value."""
+    if (branch := _BRANCHES.get(held := (value,) if isinstance(value, type) else kind)) is None:
+        branch = _BRANCHES[held] = _branch(value)
+    return branch
+
+
+def _branch(value: Any) -> tuple[_Branch, Any]:  # ruff: ignore[too-many-return-statements]
+    """Return the branch of ``_freeze`` for the type of ``value``, tested in the order its cases had."""
+    if isinstance(value, _GRAPH_CLASSES):
+        return _Branch.GRAPH, None
+    if isinstance(value, (list, tuple)):
+        return _Branch.SEQUENCE, None
+    if isinstance(value, dict):
+        return _Branch.MAPPING, None
+    if isinstance(value, (set, frozenset)):
+        return _Branch.SET, None
+    if isinstance(value, Enum):
+        return _Branch.ENUM, ("name",)
+    if isinstance(value, _BUILTIN_VALUE_TYPES):
+        return _Branch.BUILTIN, next(base for base in _BUILTIN_VALUE_TYPES if isinstance(value, base))
+    if isinstance(value, BaseModel):
+        return _Branch.MODEL, None
+    if is_dataclass(value):
+        return _Branch.DATACLASS, tuple(item.name for item in fields(value))
+    return _Branch.KEPT, None
 
 
 def _dict_keys() -> dict[str, str]:
     """Return the ``__dict__`` key that each constant a dict-key row names stands for, from the loaded modules.
 
-    A module that is not loaded puts no key into any object, so its constants are not needed.
+    A module that is not loaded puts no key into any object, so its constants are not needed. The first module by
+    name that holds a constant gives its key. A plain module, whose attributes are its namespace, is read only for the
+    constants its namespace holds; any other entry is asked for every constant still missing, in the same order, and a
+    ``None`` entry holds none.
     """
     names = {row.attribute for row in ATTRIBUTE_FACTS if row.access is Access.DICT_KEY}
     keys: dict[str, str] = {}
-    for module_name, module in sorted(sys.modules.items()):
-        if module_name.startswith(f"{_PACKAGE}.") and module is not None:
-            keys.update(
-                (name, value) for name in names - keys.keys() if isinstance(value := getattr(module, name, None), str)
-            )
+    remaining = set(names)
+    modules = sys.modules
+    for module_name in sorted(filter(methodcaller("startswith", f"{_PACKAGE}."), modules)):
+        module = modules[module_name]
+        namespace = vars(module) if type(module) is ModuleType else None
+        if namespace is None or "__getattr__" in namespace:
+            asked = names - keys.keys()
+        elif remaining.isdisjoint(namespace):
+            continue
+        else:
+            asked = namespace.keys() & remaining
+        found = {name: value for name in asked if isinstance(value := getattr(module, name, None), str)}
+        keys.update(found)
+        remaining.difference_update(found)
     return keys
 
 
-def _getter(row: AttributeFact, dict_keys: dict[str, str], item_keys: frozenset[str]) -> Callable[[Any], Any]:
-    """Return how to read the value of ``row`` on an object.
+@unique
+class _Read(Enum):
+    """Where the getter of a row reads its value: what a shape records of it (``_Shape``)."""
+
+    KEY = 1
+    """A key of the object's ``__dict__``."""
+    ATTRIBUTE = 2
+    """An attribute of the object."""
+    ITEMS = 3
+    """The items of the dict an attribute of the object holds."""
+
+
+def _getter(
+    row: AttributeFact, dict_keys: dict[str, str], item_keys: frozenset[str]
+) -> tuple[Callable[[Any], Any], _Read, str]:
+    """Return how to read the value of ``row`` on an object, where that reads it from, and the name it reads.
 
     A dict-key row whose constant no loaded module defines reads its name, which no object holds.
     """
@@ -522,25 +646,28 @@ def _getter(row: AttributeFact, dict_keys: dict[str, str], item_keys: frozenset[
         case Access.ITEM:
             match = _ITEM_ROW.fullmatch(row.attribute)
             container, key = match.groups() if match else (row.attribute, "")
-            return lambda owner: getattr(owner, container, {}).get(key, _MISSING)
+            return (lambda owner: getattr(owner, container, {}).get(key, _MISSING)), _Read.ITEMS, container
         case Access.DICT_KEY:
             key = dict_keys.get(row.attribute, row.attribute)
-            return lambda owner: owner.__dict__.get(key, _MISSING)
-        case _ if row.access is Access.CONTAINER and item_keys:
-            name = row.attribute
-            return lambda owner: {key: item for key, item in getattr(owner, name, {}).items() if key not in item_keys}
-        case _:
-            name = row.attribute
-            return lambda owner: getattr(owner, name, _MISSING)
+            return (lambda owner: owner.__dict__.get(key, _MISSING)), _Read.KEY, key
+    name = row.attribute
+    if row.access is Access.CONTAINER and item_keys:
+        return (
+            (lambda owner: {key: item for key, item in getattr(owner, name, {}).items() if key not in item_keys}),
+            _Read.ITEMS,
+            name,
+        )
+    return (lambda owner: getattr(owner, name, _MISSING)), _Read.ATTRIBUTE, name
 
 
 @final
 @record
 class _ClassRows:
-    """The fact rows of one class and how to read them."""
+    """The fact rows of one class, how to read them, and where each getter reads (``_getter``)."""
 
     rows: tuple[AttributeFact, ...]
     getters: tuple[Callable[[Any], Any], ...]
+    reads: tuple[tuple[_Read, str], ...]
 
     @classmethod
     def of(cls, owner_class: type, dict_keys: dict[str, str]) -> _ClassRows:
@@ -560,10 +687,8 @@ class _ClassRows:
             for row in rows
             if row.kind is FactKind.FACT and not isinstance(getattr_static(owner_class, row.attribute, None), property)
         )
-        return cls(
-            readable,
-            tuple(_getter(row, dict_keys, frozenset(item_keys.get(row.attribute, ()))) for row in readable),
-        )
+        getters = [_getter(row, dict_keys, frozenset(item_keys.get(row.attribute, ()))) for row in readable]
+        return cls(readable, tuple(getter for getter, *_ in getters), tuple((read, name) for _, read, name in getters))
 
 
 @final
@@ -580,6 +705,254 @@ class _Entry:
     """Whether the object belongs to a type alias, the only model whose rows hold ``TYPE_ALIAS_BODY``."""
 
 
+@unique
+class _Lookup(Enum):
+    """How ``getattr`` finds a name on the objects of a class, besides a key of their ``__dict__``."""
+
+    DICT = 1
+    """Only through the ``__dict__``: no class attribute, no ``__getattr__``."""
+    EXTRA = 2
+    """As ``DICT``, and when the ``__dict__`` lacks it, through pydantic's ``__getattr__``, which reads the object's
+    ``__pydantic_extra__``."""
+    CLASS = 3
+    """As ``DICT``, and when the ``__dict__`` lacks it, through a class attribute that is no descriptor."""
+    HOOK = 4
+    """Through a descriptor of the class, or another ``__getattr__`` when the ``__dict__`` lacks it."""
+
+
+def _class_attributes(cls: type, names: Collection[str]) -> dict[str, Any]:
+    """Return what the classes of ``cls`` hold under each of ``names`` they hold, first in method resolution order."""
+    found: dict[str, Any] = {}
+    for base in reversed(_TYPE_MRO.__get__(cls)):
+        namespace = _TYPE_DICT.__get__(base)
+        found.update((name, namespace[name]) for name in namespace.keys() & names)
+    return found
+
+
+def _lookup(attributes: Mapping[str, Any], private: Container[str], name: str) -> _Lookup:
+    """Return how ``getattr`` finds ``name`` on objects whose classes hold ``attributes`` (``_class_attributes``)."""
+    if (static := attributes.get(name, _MISSING)) is not _MISSING:
+        kind = type(static)
+        return (
+            _Lookup.HOOK
+            if hasattr(kind, "__get__") or hasattr(kind, "__set__") or hasattr(kind, "__delete__")
+            else _Lookup.CLASS
+        )
+    if (hook := attributes.get("__getattr__")) is None:
+        return _Lookup.DICT
+    return _Lookup.EXTRA if hook is _PYDANTIC_GETATTR and name not in private else _Lookup.HOOK
+
+
+_DICT_LOOKUPS: Final = frozenset({_Lookup.DICT, _Lookup.EXTRA})
+"""The lookups that find nothing the object holds outside its ``__dict__``, but pydantic's extra fields."""
+
+
+@final
+@record
+class _ClassPlan:
+    """What a shape (``_Shape``) records of the objects of one class."""
+
+    plain: tuple[str, ...]
+    """The names of the rows whose value is the ``__dict__`` entry of that name."""
+    reads: tuple[tuple[_Read, str, _Lookup], ...]
+    """The other rows: where the getter reads, the name it reads and how ``getattr`` finds that name."""
+    fetched: tuple[str, ...]
+    """The keys read from the ``__dict__`` of every object: those its rows read, those of the guarded container
+    attributes (``ParseChecks._guard_lists``) and ``base_classes``."""
+    bases: _Lookup
+    """How ``getattr`` finds ``base_classes``, whose ids ``_entries`` reads for the base flags of an object's types."""
+    extras: frozenset[str]
+    """The names of the rows that pydantic's ``__getattr__`` finds when the ``__dict__`` lacks them."""
+
+    @classmethod
+    def of(cls, owner_class: type, rows: _ClassRows) -> _ClassPlan | None:
+        """Return the plan of ``owner_class``, or None when ``getattr`` may run code of the class for what it reads.
+
+        That is a ``__getattribute__`` of its own, a descriptor or a ``__getattr__`` other than pydantic's: the objects
+        of such a class are read anew at every comparison.
+        """
+        names = {name for read, name in rows.reads if read is not _Read.KEY} | {_BASE_CLASSES}
+        attributes = _class_attributes(owner_class, {*names, "__getattr__", "__getattribute__"})
+        private = getattr(owner_class, "__private_attributes__", ())
+        lookups = {name: _lookup(attributes, private, name) for name in names}
+        reads = [(read, name, _Lookup.DICT if read is _Read.KEY else lookups[name]) for read, name in rows.reads]
+        return (
+            None
+            if attributes.get("__getattribute__") is not _OBJECT_GETATTRIBUTE or _Lookup.HOOK in lookups.values()
+            else cls(
+                tuple(name for read, name, lookup in reads if read is not _Read.ITEMS and lookup in _DICT_LOOKUPS),
+                tuple(item for item in reads if item[0] is _Read.ITEMS or item[2] not in _DICT_LOOKUPS),
+                tuple(
+                    dict.fromkeys((*(name for _, name in rows.reads), *_guarded_names(owner_class)[1], _BASE_CLASSES))
+                ),
+                lookups[_BASE_CLASSES],
+                frozenset(name for read, name, lookup in reads if lookup is _Lookup.EXTRA),
+            )
+        )
+
+
+@final
+class _Shape:
+    """The state the fingerprint of one model was read from, after its lists were guarded.
+
+    Reading the model anew gives an equal fingerprint, with the same objects in the same order, while: each object of
+    it keeps its class and ``__dict__``, and every key its rows, its guarded lists and its base lookup read there holds
+    the same object or stays missing, as does a class attribute a row reads instead; every list, set and dict that
+    ``_freeze`` read keeps the same items in the same order; and every other value it read keeps its type and the
+    attributes it read. Only the classes themselves are taken as they were (their descriptors, ``__getattr__`` and
+    pydantic fields), as ``_BRANCHES`` and ``_ClassRows`` take them; an ABC that registers a class drops every shape.
+    """
+
+    __slots__ = (
+        "_seen",
+        "attributes",
+        "fetched",
+        "held",
+        "holders",
+        "items",
+        "keys",
+        "lengths",
+        "sequences",
+        "sources",
+        "token",
+        "typed",
+        "types",
+    )
+
+    def __init__(self) -> None:
+        self.token = get_cache_token()
+        """The ABC cache token: an ABC that registers a class may change what ``isinstance`` tells of the objects."""
+        self.typed: list[object] = []
+        """Every object and value whose type the fingerprint depends on."""
+        self.types: list[type] = []
+        self.sources: list[dict[str, Any]] = []
+        self.keys: list[str] = []
+        self.fetched: list[Any] = []
+        self.holders: list[object] = []
+        self.attributes: list[str] = []
+        self.held: list[Any] = []
+        self.sequences: list[Collection[Any]] = []
+        """The lists and sets ``_freeze`` read, and the keys and the values of the dicts it read."""
+        self.lengths: list[int] = []
+        self.items: list[Any] = []
+        self._seen: set[int] = set()
+
+    def unchanged(self) -> bool:
+        """Return whether nothing the fingerprint was read from changed."""
+        return (
+            get_cache_token() == self.token
+            and all(map(is_, map(type, self.typed), self.types))
+            and all(map(is_, map(dict.get, self.sources, self.keys, repeat(_MISSING)), self.fetched))
+            and all(map(is_, map(getattr, self.holders, self.attributes, repeat(_MISSING)), self.held))
+            and list(map(len, self.sequences)) == self.lengths
+            and all(map(is_, chain.from_iterable(self.sequences), self.items))
+        )
+
+    def seal(self) -> None:
+        """Forget what only recording needs."""
+        self._seen.clear()
+
+    def hold(self, entry: _Entry, plan: _ClassPlan) -> bool:
+        """Record the state of the object of ``entry``; False when no record holds what its rows read."""
+        owner = entry.owner
+        return type(state := getattr(owner, "__dict__", None)) is dict and self._hold_state(entry, plan, state)
+
+    def _hold_state(self, entry: _Entry, plan: _ClassPlan, state: dict[str, Any]) -> bool:
+        owner = entry.owner
+        self._object(owner, state)
+        self.sources.extend(repeat(state, len(plan.fetched)))
+        self.keys.extend(plan.fetched)
+        self.fetched.extend(map(state.get, plan.fetched, repeat(_MISSING)))
+        return (
+            self._note_all(map(state.get, plan.plain, repeat(_MISSING)))
+            and all(
+                (read is not _Read.ITEMS or value is _MISSING or type(value) is dict) and self.note(value)
+                for read, name, lookup in plan.reads
+                for value in (self._row_value(owner, state, name, lookup),)
+            )
+            and (entry.base or self._hold_bases(state, plan.bases))
+            and (
+                (
+                    state.keys() >= plan.extras
+                    and (entry.base or plan.bases is not _Lookup.EXTRA or _BASE_CLASSES in state)
+                )
+                or self.note(self._hold(owner, "__pydantic_extra__"))
+            )
+        )
+
+    def _row_value(self, owner: object, state: dict[str, Any], name: str, lookup: _Lookup) -> Any:
+        """Return what the getter of a row finds under ``name``: the ``__dict__`` entry, or the class attribute."""
+        value = state.get(name, _MISSING)
+        return self._hold(owner, name) if value is _MISSING and lookup is _Lookup.CLASS else value
+
+    def _hold_bases(self, state: dict[str, Any], lookup: _Lookup) -> bool:
+        """Record the ``base_classes`` an object holds; False when its class answers the lookup."""
+        bases = state.get(_BASE_CLASSES, _MISSING)
+        return lookup in _DICT_LOOKUPS if bases is _MISSING else type(bases) in _BASE_LISTS and self.note(bases)
+
+    def note(self, value: Any) -> bool:
+        """Record what ``_freeze`` reads of ``value`` past its identity; False when no record holds it."""
+        if (kind := type(value)) in _KEPT_TYPES:
+            return True
+        branch, names = _branch_of(value, kind)
+        if branch in _IDENTITY_BRANCHES or id(value) in self._seen:
+            return True
+        self._seen.add(id(value))
+        noted = True
+        match branch:
+            case _Branch.SEQUENCE | _Branch.SET:
+                noted = kind in _COLLECTIONS and self._note_collection(value)
+            case _Branch.MAPPING:
+                noted = kind is dict and self._note_mapping(value)
+            case _Branch.MODEL:
+                self._object(value, state := value.__dict__)
+                fields_ = tuple(kind.model_fields)
+                self.sources.extend(repeat(state, len(fields_)))
+                self.keys.extend(fields_)
+                self.fetched.extend(map(state.get, fields_, repeat(_MISSING)))
+                noted = self._note_all(map(state.get, fields_))
+            case _Branch.ENUM | _Branch.DATACLASS:
+                self._type(value, kind)
+                noted = self._note_all([self._hold(value, name) for name in names])
+            case _:
+                self._type(value, kind)
+        return noted
+
+    def _note_mapping(self, value: dict[Any, Any]) -> bool:
+        self._sequence(value.keys())
+        self._sequence(value.values())
+        return self._note_all(value.keys()) and self._note_all(value.values())
+
+    def _note_collection(self, value: Collection[Any]) -> bool:
+        if not isinstance(value, _IMMUTABLE_COLLECTIONS):
+            self._sequence(value)
+        return self._note_all(value)
+
+    def _note_all(self, values: Iterable[Any]) -> bool:
+        return all(self.note(value) for value in values if type(value) not in _KEPT_TYPES)
+
+    def _object(self, value: object, state: dict[str, Any]) -> None:
+        self.holders.append(value)
+        self.attributes.append("__dict__")
+        self.held.append(state)
+        self._type(value, type(value))
+
+    def _sequence(self, items: Collection[Any]) -> None:
+        self.sequences.append(items)
+        self.lengths.append(len(items))
+        self.items.extend(items)
+
+    def _hold(self, value: object, name: str) -> Any:
+        self.holders.append(value)
+        self.attributes.append(name)
+        self.held.append(held := getattr(value, name))
+        return held
+
+    def _type(self, value: object, kind: type) -> None:
+        self.typed.append(value)
+        self.types.append(kind)
+
+
 @final
 @record
 class _ModelPrint:
@@ -589,6 +962,8 @@ class _ModelPrint:
     entries: dict[int, _Entry]
     referenced: tuple[object, ...]
     """The references and models the fingerprint names, through which new models are found."""
+    shape: _Shape | None
+    """What the fingerprint was read from, or None when some object of it reads what no shape records."""
 
 
 def _row_name(row: AttributeFact) -> str:
@@ -690,6 +1065,7 @@ class _Finality:
         """Models that guarded writes outside every pass reached, to compare when the next pass starts."""
         self.ordering_reads: list[_OrderingRead] = []
         self._classes: dict[type, _ClassRows] = {}
+        self._plans: dict[type, _ClassPlan | None] = {}
         self._guarded_rows: dict[type, dict[str, tuple[AttributeFact, ...]]] = {}
         self._dict_keys = _dict_keys()
         self._reported: set[tuple[str, Rule, str]] = set()
@@ -700,44 +1076,91 @@ class _Finality:
             rows = self._classes[cls] = _ClassRows.of(cls, self._dict_keys)
         return rows
 
+    def _shape(self, entries: dict[int, _Entry]) -> _Shape | None:
+        """Return the shape of a fingerprint with ``entries``, after their lists were guarded, or None."""
+        shape = _Shape()
+        held = all(
+            (plan := self._plan(type(entry.owner))) is not None and shape.hold(entry, plan)
+            for entry in entries.values()
+        )
+        shape.seal()
+        return shape if held else None
+
+    def _plan(self, cls: type) -> _ClassPlan | None:
+        if cls not in self._plans:
+            self._plans[cls] = _ClassPlan.of(cls, self._rows(cls))
+        return self._plans[cls]
+
     def _entries(
-        self, owner: object, entries: dict[int, _Entry], referenced: list[object], *, alias: bool = False
-    ) -> None:
+        self,
+        owner: object,
+        entries: dict[int, _Entry],
+        referenced: list[object],
+        *,
+        alias: bool = False,
+        stored: Mapping[int, _Entry] = _NO_ENTRIES,
+    ) -> bool:
         """Add the entries of ``owner`` and of the fields and data types it holds; data types of bases are ``base``.
 
-        With ``alias``, ``owner`` is a type alias and the entries outside its bases are ``alias``.
+        With ``alias``, ``owner`` is a type alias and the entries outside its bases are ``alias``. An object whose entry
+        in ``stored`` holds what its new entry would hold keeps that entry; return whether an object of ``stored`` got a
+        new entry. An object reads its base classes only when it holds a field or data type and belongs to no base.
         """
         pending: list[tuple[object, bool]] = [(owner, False)]
+        renewed = False
         while pending:
             item, base = pending.pop()
-            if id(item) in entries:
+            if (item_id := id(item)) in entries:
                 continue
             rows = self._rows(type(item))
             nested: list[Any] = []
-            values = tuple(
-                value if type(value := getter(item)) in _PLAIN_TYPES else _freeze(value, nested)
+            values = tuple([
+                value if type(value := getter(item)) in _KEPT_TYPES else _freeze(value, nested)
                 for getter in rows.getters
-            )
-            entries[id(item)] = _Entry(item, rows.rows, values, base, alias and not base)
-            base_ids = {id(base_class) for base_class in getattr(item, "base_classes", ())}
+            ])
+            own_alias = alias and not base
+            if (
+                (before := stored.get(item_id)) is not None
+                and values == before.values
+                and before.rows is rows.rows
+                and before.base is base
+                and before.alias is own_alias
+            ):
+                entries[item_id] = before
+            else:
+                entries[item_id] = _Entry(item, rows.rows, values, base, own_alias)
+                renewed = renewed or before is not None
+            base_ids: set[int] | None = None
             for child in nested:
-                if isinstance(child, _DESCENDED):
-                    pending.append((child, base or id(child) in base_ids))
-                else:
+                if not isinstance(child, _DESCENDED):
                     referenced.append(child)
+                    continue
+                if base_ids is None:
+                    base_ids = set() if base else {id(base_class) for base_class in getattr(item, "base_classes", ())}
+                pending.append((child, base or id(child) in base_ids))
+        return renewed
 
-    def _print(self, model: DataModel) -> _ModelPrint:
-        """Return the fingerprint of ``model``: the model, its fields and their types, and its bases."""
+    def _print(self, model: DataModel, old: _ModelPrint | None) -> tuple[_ModelPrint, bool]:
+        """Return the fingerprint of ``model`` (the model, its fields and their types, and its bases), given ``old``.
+
+        Also return whether an object of ``old`` got a new entry. The objects of ``old`` are held and name ``model``
+        as their owner already. While nothing that ``old`` was read from changed (``_Shape``), reading ``model`` anew
+        gives ``old`` again, so ``old`` is the fingerprint.
+        """
+        if old is not None and (shape := old.shape) is not None and shape.unchanged():
+            return old, False
         entries: dict[int, _Entry] = {}
         referenced: list[object] = []
-        self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase))
+        stored = _NO_ENTRIES if old is None else old.entries
+        renewed = self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase), stored=stored)
         model_id = id(model)
         lists: dict[int, _GuardedList] = {}
         for object_id, entry in entries.items():
-            self.owners.setdefault(object_id, {})[model_id] = model
-            self.held[object_id] = entry.owner
+            if object_id not in stored:
+                self.owners.setdefault(object_id, {})[model_id] = model
+                self.held[object_id] = entry.owner
             self._guard_lists(entry.owner, lists)
-        return _ModelPrint(model, entries, tuple(referenced))
+        return _ModelPrint(model, entries, tuple(referenced), self._shape(entries)), renewed
 
     def _settle(self, models: Iterable[DataModel], run: _PassRun | None = None, *, reach: bool = False) -> None:
         """Compare ``models`` with their stored fingerprints, report what changed, and store the new ones.
@@ -753,13 +1176,12 @@ class _Finality:
                 continue
             settled.add(model_id)
             self.loose.pop(model_id, None)
-            new = self._print(current)
-            old = self.prints.get(model_id)
+            new, renewed = self._print(current, old := self.prints.get(model_id))
             self.prints[model_id] = new
-            if old is not None:
+            if renewed and old is not None:
                 self._compare(old, new, run)
             for item in new.referenced:
-                if not isinstance(source := item.source if isinstance(item, Reference) else item, DataModel):
+                if not _is_data_model(source := item.source if isinstance(item, Reference) else item):
                     continue
                 if id(source) not in self.prints:
                     pending.append(source)
@@ -828,7 +1250,7 @@ class _Finality:
 
     def models_of(self, owner: object) -> Iterable[DataModel]:
         """Return the models whose fingerprint holds ``owner``, or the model its parents lead to."""
-        if isinstance(owner, DataModel):
+        if _is_data_model(owner):
             return (owner,)
         if models := self.owners.get(id(owner)):
             return models.values()
@@ -837,7 +1259,7 @@ class _Finality:
             node = node.parent
         if isinstance(node, DataModelFieldBase):
             node = node.parent
-        return (node,) if isinstance(node, DataModel) else ()
+        return (node,) if _is_data_model(node) else ()
 
     def touch(self, owner: object) -> None:
         """Note that the running pass writes ``owner``; a model of another module is compared before the write.
@@ -872,9 +1294,12 @@ class _Finality:
         """Note the fingerprinted models of ``owner`` changed outside every pass, to compare when the next starts."""
         self.loose.update((id(model), model) for model in self.models_of(owner) if id(model) in self.prints)
 
-    @contextmanager
-    def pass_scope(self, decl: PassDecl, models: Sequence[DataModel] | None) -> Generator[None, None, None]:
+    def pass_scope(self, decl: PassDecl, models: Sequence[DataModel] | None) -> AbstractContextManager[None]:
         """Run one pass and compare the models it touched when it ends; a pass inside another is a pass of its own."""
+        return _PassScope(self, decl, models)
+
+    def enter_pass(self, decl: PassDecl, models: Sequence[DataModel] | None) -> _PassRun:
+        """Start the pass ``decl`` declares and return its run (``pass_scope``)."""
         if self.loose:
             self._settle(tuple(self.loose.values()))
         if decl.phase is not self.store.phase:
@@ -882,20 +1307,21 @@ class _Finality:
         own = {id(model) for model in models or ()}
         if decl.scope is Scope.MODULE and (module := self.module) is not None:
             own.update(module)
-        outer, run = self.run, _PassRun(decl, own)
+        run = _PassRun(decl, own)
         self.run = run
-        try:
-            yield
-            checked: dict[int, DataModel] = {}
-            if models is not None:
-                run.own.update(id(model) for model in models)
-                checked.update((id(model), model) for model in models)
-            checked.update(run.touched)
-            if self.sweep and decl.scope is Scope.GLOBAL and decl.kind in _SWEEPING_KINDS:
-                checked.update((model_id, model_print.model) for model_id, model_print in self.prints.items())
-            self._settle(checked.values(), run, reach=decl.scope is Scope.MODULE)
-        finally:
-            self.run = outer
+        return run
+
+    def end_pass(self, run: _PassRun, models: Sequence[DataModel] | None) -> None:
+        """Compare the models the pass of ``run`` ran for and touched, once it ended without raising."""
+        decl = run.decl
+        checked: dict[int, DataModel] = {}
+        if models is not None:
+            run.own.update(id(model) for model in models)
+            checked.update((id(model), model) for model in models)
+        checked.update(run.touched)
+        if self.sweep and decl.scope is Scope.GLOBAL and decl.kind in _SWEEPING_KINDS:
+            checked.update((model_id, model_print.model) for model_id, model_print in self.prints.items())
+        self._settle(checked.values(), run, reach=decl.scope is Scope.MODULE)
 
     @contextmanager
     def module_scope(self, models: list[DataModel]) -> Generator[None, None, None]:
@@ -1010,6 +1436,43 @@ class _Finality:
             if changed is not None:
                 row = changed[1]
                 self._violation(name, Rule.ORDERING_INPUT, row, read.model, row.facts, base=before.base.class_name)
+
+
+def _is_data_model(value: object) -> TypeIs[DataModel]:
+    """Return ``isinstance(value, DataModel)``: an ABC check, kept per type, ``__class__`` and ABC cache token."""
+    if (known := _MODEL_TYPES.get(key := (get_cache_token(), type(value), value.__class__))) is None:
+        known = _MODEL_TYPES[key] = isinstance(value, DataModel)
+    return known
+
+
+@final
+class _PassScope(AbstractContextManager[None]):
+    """The scope ``_Finality.pass_scope`` runs one pass in, restoring the pass around it when it ends."""
+
+    __slots__ = ("_decl", "_finality", "_models", "_outer", "_run")
+
+    def __init__(self, finality: _Finality, decl: PassDecl, models: Sequence[DataModel] | None) -> None:
+        self._finality = finality
+        self._decl = decl
+        self._models = models
+        self._outer: _PassRun | None = None
+        self._run: _PassRun | None = None
+
+    @override
+    def __enter__(self) -> None:
+        """Start the pass."""
+        outer = self._finality.run
+        self._run = self._finality.enter_pass(self._decl, self._models)
+        self._outer = outer
+
+    @override
+    def __exit__(self, kind: type[BaseException] | None, error: BaseException | None, traceback: object) -> None:
+        """Compare what the pass changed when it ended without raising; restore the pass around it in any case."""
+        try:
+            if kind is None and (run := self._run) is not None:
+                self._finality.end_pass(run, self._models)
+        finally:
+            self._finality.run = self._outer
 
 
 def _same_value(old: Any, new: Any) -> bool:
@@ -1186,6 +1649,8 @@ class ParseChecks:
     operations: list[str] = field(default_factory=list)
     """The store operations running now, innermost last."""
     _store: GenerationStore | None = None
+    passes: dict[int, tuple[object, object]] = field(default_factory=dict)
+    """The instrumented spec of each pass that ran, by the id of its spec, with the spec (``parse.run_pass``)."""
     _reported: set[tuple[str, int, str, str, str | None]] = field(default_factory=set)
     _attributes: dict[type, tuple[frozenset[str], frozenset[str]]] = field(default_factory=dict)
 
@@ -1253,15 +1718,7 @@ class ParseChecks:
     def _guarded(self, cls: type) -> tuple[frozenset[str], frozenset[str]]:
         """Return the guarded attributes of ``cls`` and its container attributes, from the rows of its classes."""
         if (guarded := self._attributes.get(cls)) is None:
-            rows = [
-                _ROWS_BY_OWNER[base.__name__]
-                for base in cls.__mro__
-                if base.__name__ in _ROWS_BY_OWNER and base.__module__.startswith(f"{_PACKAGE}.")
-            ]
-            guarded = self._attributes[cls] = (
-                frozenset().union(*(names for names, _ in rows)),
-                frozenset().union(*(containers for _, containers in rows)),
-            )
+            guarded = self._attributes[cls] = _guarded_names(cls)
         return guarded
 
     def _guard_lists(self, owner: object, lists: dict[int, _GuardedList]) -> None:
@@ -1390,7 +1847,7 @@ def guarded_facts(finality: _Finality, facts: FinalFacts) -> FinalFacts:
     """Return ``facts`` with each model as the guarded view a decision reads; it reports the render facts read."""
     view = _ReadGuard(finality).view
     modules = tuple(ModuleFacts(item.module, tuple(map(view, item.live_models))) for item in facts.modules)
-    return FinalFacts(modules, tuple(model for item in modules for model in item.live_models))
+    return FinalFacts(modules, tuple(model for item in modules for model in item.live_models), facts.member_keywords)
 
 
 @contextmanager

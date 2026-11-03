@@ -7,13 +7,25 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
-from urllib.parse import unquote
 
-from datamodel_code_generator._constraint_applicability import LENGTH_KEYWORDS, NUMBER_BOUND_KEYWORDS, NUMBER_KEYWORDS
-from datamodel_code_generator._document_reader import as_mapping, descend, string_key, string_keys
-from datamodel_code_generator._json_pointer import pointer_tokens
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, schema_positions
-from datamodel_code_generator._openapi_paths import OPERATION_METHODS, path_selected
+from datamodel_code_generator._constraint_applicability import (
+    LENGTH_KEYWORDS,
+    NUMBER_BOUND_KEYWORDS,
+    NUMBER_KEYWORDS,
+    json_number,
+)
+from datamodel_code_generator._document_reader import (
+    CHANNEL_OPERATIONS,
+    as_mapping,
+    descend,
+    is_multi_format_schema_object,
+    string_key,
+    string_keys,
+)
+from datamodel_code_generator._graph import reach
+from datamodel_code_generator._json_pointer import reference_tokens
+from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
+from datamodel_code_generator._openapi_paths import OPERATION_METHODS, holds_path_item, path_selected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -138,11 +150,7 @@ def _redundant_constraint(node: Mapping[str, Any], *, at_property: bool) -> bool
     """
     if ("const" in node or _is_enum(node)) and not _LITERAL_CHECKED_KEYWORDS.isdisjoint(node):
         return True
-    zero_bounds = [
-        key
-        for key in NUMBER_BOUND_KEYWORDS
-        if isinstance(value := node.get(key), int | float) and not isinstance(value, bool) and value == 0
-    ]
+    zero_bounds = [key for key in NUMBER_BOUND_KEYWORDS if json_number(value := node.get(key)) and value == 0]
     return len(zero_bounds) == 1 and (not at_property or "null" in _types(node) or node.get("nullable") is True)
 
 
@@ -175,10 +183,7 @@ def _unmodeled_pattern_properties(node: Mapping[str, Any]) -> bool:
 
 def _types(node: Mapping[str, Any]) -> frozenset[str]:
     """Return the JSON types a schema declares, from a type name or a list of them."""
-    declared = node.get("type")
-    return frozenset(
-        name for name in (declared if isinstance(declared, list) else (declared,)) if isinstance(name, str)
-    )
+    return frozenset(declared_types(node.get("type")))
 
 
 def _title(node: Mapping[str, Any]) -> str:
@@ -213,7 +218,7 @@ def _local_tokens(ref: object) -> tuple[str, ...] | None:
     """Return the tokens a local JSON Pointer reference names, its fragment percent-decoded as generation reads it."""
     if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
-    return pointer_tokens(unquote(ref[1:]))
+    return reference_tokens(ref[1:])
 
 
 def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
@@ -230,9 +235,7 @@ def _dereferenced(document: Mapping[str, Any], node: object) -> object:
 
 def _unwrap(node: object) -> object:
     """Return the schema of an AsyncAPI multi-format schema object, or the schema itself."""
-    if isinstance(node, dict) and ("schemaFormat" in node or node.keys() == {"schema"}):
-        return node.get("schema")
-    return node
+    return as_mapping(node).get("schema") if is_multi_format_schema_object(node) else node
 
 
 def _uses_definitions(kind: SchemaKind) -> bool:
@@ -254,7 +257,7 @@ def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = T
     schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
     if read:
         string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
-    return {str(key): _unwrap(value) for key, value in schemas.items()}
+    return {str(key): _unwrap(value) if kind == "asyncapi" else value for key, value in schemas.items()}
 
 
 def _key_path(pointer: str) -> Callable[[object], list[str]]:
@@ -280,13 +283,17 @@ def _path_items(
     """Yield the name and path item of each path and webhook of the sections that ``--openapi-include-paths`` keeps.
 
     A path item that is a local reference is the item it names, as generation resolves it; remote ones are not read. A
-    key that is no string is an error, as it is in generation.
+    key that is no string is an error, as it is in generation. A key of ``paths`` that holds no path item is skipped as
+    the paths scope skips it (row ``legacy-object-extension-paths``), also for the api scope, whose walk skips an
+    extension key that holds an object too.
     """
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
             string_key(path, kind, error_path)
-            if section == "webhooks" or path_selected(path, include_paths):
+            if section == "webhooks" or (
+                holds_path_item(path, item, "legacy-object-extension-paths") and path_selected(path, include_paths)
+            ):
                 yield path, as_mapping(_dereferenced(document, item))
 
 
@@ -391,7 +398,7 @@ def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]
         *as_mapping(components.get("channels")).items(),
     ]:
         messages.extend(
-            (f"{name} {operation}", _operation_message(channel, operation)) for operation in ("publish", "subscribe")
+            (f"{name} {operation}", _operation_message(channel, operation)) for operation in CHANNEL_OPERATIONS
         )
         messages.extend(
             (f"{name} {key}", message) for key, message in as_mapping(as_mapping(channel).get("messages")).items()
@@ -418,7 +425,7 @@ def _count_operations(document: Mapping[str, Any], kind: SchemaKind) -> int:
     return len(as_mapping(document.get("operations"))) + sum(
         isinstance(as_mapping(channel).get(operation), dict)
         for channel in as_mapping(document.get("channels")).values()
-        for operation in ("publish", "subscribe")
+        for operation in CHANNEL_OPERATIONS
     )
 
 
@@ -446,7 +453,7 @@ class _Dialect:
 
 def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     """Return how generation reads a document, from its declared or detected version, as the parsers decide it."""
-    from datamodel_code_generator.enums import JsonSchemaVersion  # noqa: PLC0415
+    from datamodel_code_generator.enums import _ref_siblings_apply  # noqa: PLC0415
     from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
         OpenAPISchemaFeatures,
         detect_asyncapi_version,
@@ -458,7 +465,7 @@ def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     data_formats = get_data_formats(is_openapi=True)
     if kind == "jsonschema":
         version = detect_jsonschema_version(dict(document))
-        ref_siblings = version not in {JsonSchemaVersion.Draft4, JsonSchemaVersion.Draft6, JsonSchemaVersion.Draft7}
+        ref_siblings = _ref_siblings_apply(version)
         return _Dialect(data_formats, ref_siblings=ref_siblings, nullable_keyword=False)
     features = (
         OpenAPISchemaFeatures.from_openapi_version(detect_openapi_version(dict(document)))
@@ -506,8 +513,7 @@ class _Walker:
         counts["unique_items"] += node.get("uniqueItems") is True
         counts["pattern_properties"] += isinstance(patterns := node.get("patternProperties"), dict) and bool(patterns)
         counts["unmodeled_pattern_properties"] += _unmodeled_pattern_properties(node)
-        divisor = node.get("multipleOf")
-        counts["multiple_of"] += isinstance(divisor, int | float) and not isinstance(divisor, bool)
+        counts["multiple_of"] += json_number(node.get("multipleOf"))
 
     def count_keywords(self, node: Mapping[str, Any]) -> None:
         """Count a one-value enum, an enum beside a const, the validation keywords and a format generation maps.
@@ -687,14 +693,7 @@ class _Walker:
 
 
 def _reachable(start: str, edges: Mapping[str, set[str]]) -> set[str]:
-    seen: set[str] = set()
-    stack = [start]
-    while stack:
-        for target in edges.get(stack.pop(), ()):
-            if target not in seen:
-                seen.add(target)
-                stack.append(target)
-    return seen
+    return set(reach(edges.get(start, ()), lambda target: edges.get(target, ())))
 
 
 def _reference_cycles(references: Mapping[str, set[str]]) -> int:
@@ -753,11 +752,13 @@ def _walk_components(walker: _Walker, components: Mapping[str, Any], roots: Iter
         else sorted({target for root in roots for target in walker.references[root]})
     )
     walked: dict[str, Any] = {}
-    while pending:
-        if (key := pending.pop()) not in walked:
-            walked[key] = components[key]
-            walker.walk_named(key, components[key])
-            pending.extend(sorted(walker.references[key] - walked.keys()))
+
+    def visit(key: str) -> list[str]:
+        walked[key] = components[key]
+        walker.walk_named(key, components[key])
+        return sorted(walker.references[key] - walked.keys())
+
+    reach(pending, visit)
     return dict(sorted(walked.items()))
 
 

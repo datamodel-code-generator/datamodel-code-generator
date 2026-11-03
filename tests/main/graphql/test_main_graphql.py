@@ -424,6 +424,18 @@ def test_main_graphql_enums(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("description_option", ["--use-field-description", "--use-inline-field-description"])
+def test_main_graphql_enum_member_descriptions(output_file: Path, description_option: str) -> None:
+    """Write the description of a GraphQL enum value beside its member, as a JSON Schema enum value gets it."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "enums.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=[description_option],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "22",
     reason="Installed black doesn't support the old style",

@@ -22,6 +22,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
@@ -258,6 +259,16 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         self._graph_builder.register_model(data_model_type)
 
+    def _enum_member_extras(self, value: graphql.GraphQLEnumValue) -> dict[str, Any]:
+        """Return the extras of an enum member: the description of its value where a docstring option writes it.
+
+        A member never writes ``Field(description=...)``, but a Pydantic field with a description registers the
+        ``Field`` import, so a description that no docstring option writes stays out and the module imports keep order.
+        """
+        if value.description is None or not (self.use_field_description or self.use_inline_field_description):
+            return {}
+        return {"description": value.description}
+
     def parse_enum_as_enum_class(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum values as an Enum class."""
         enum_fields: list[DataModelFieldBase] = []
@@ -273,7 +284,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
             enum_fields.append(
                 self._build_field(
-                    "graphql-enum-member",
+                    "enum-member",
                     self.data_type_manager.get_data_type(
                         Types.string,
                     ),
@@ -281,7 +292,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                     default=default,
                     required=True,
                     has_default=True,
-                    use_field_description=value.description is not None,
+                    extras=self._enum_member_extras(value),
                     original_name=None,
                 )
             )
@@ -604,15 +615,14 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 row="rename",
             )
 
-        visited: set[graphql.GraphQLObjectType | graphql.GraphQLInterfaceType] = set()
-        pending = list(collisions)
-        while pending:
-            obj = pending.pop()
-            if obj in visited:
-                continue
-            visited.add(obj)
+        def visit(
+            obj: graphql.GraphQLObjectType | graphql.GraphQLInterfaceType,
+        ) -> list[graphql.GraphQLObjectType | graphql.GraphQLInterfaceType]:
+            implementations: list[graphql.GraphQLObjectType | graphql.GraphQLInterfaceType] = []
             if isinstance(obj, graphql.GraphQLInterfaceType):
-                implementations = schema.get_implementations(obj)
-                pending.extend(implementations.objects)
-                pending.extend(implementations.interfaces)
+                found = schema.get_implementations(obj)
+                implementations = [*found.objects, *found.interfaces]
             resolve(obj)
+            return implementations
+
+        reach(collisions, visit)

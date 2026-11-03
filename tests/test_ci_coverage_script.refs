@@ -7,8 +7,11 @@ entrypoint-data-directory	ci_coverage/data-directory.txt	= ci_coverage/empty.txt
 entrypoint-duplicate	ci_coverage/duplicate.txt
 entrypoint-empty	ci_coverage/empty.txt
 entrypoint-invalid-json	ci_coverage/invalid-json.txt
+entrypoint-main-only-missing	ci_coverage/main-only-missing.txt
 entrypoint-missing	ci_coverage/missing.txt
 entrypoint-missing-root	ci_coverage/missing-root.txt
+entrypoint-pull-request-complete	ci_coverage/pull-request-complete.txt
+entrypoint-pull-request-main-only	ci_coverage/pull-request-main-only.txt
 entrypoint-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 entrypoint-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 entrypoint-record-unknown	ci_coverage/record-unknown.txt
@@ -16,6 +19,7 @@ entrypoint-report-complete	ci_coverage/report-complete.txt
 entrypoint-report-missing-input	ci_coverage/report-missing-input.txt
 entrypoint-report-missing-lines	ci_coverage/report-missing-lines.txt
 entrypoint-report-no-source	ci_coverage/report-no-source.txt
+entrypoint-report-pull-request	ci_coverage/report-pull-request.txt
 entrypoint-stale-destination	ci_coverage/stale-destination.txt
 entrypoint-unexpected	ci_coverage/unexpected.txt
 entrypoint-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt
@@ -27,8 +31,11 @@ subprocess-data-directory	ci_coverage/data-directory.txt	= ci_coverage/empty.txt
 subprocess-duplicate	ci_coverage/duplicate.txt
 subprocess-empty	ci_coverage/empty.txt
 subprocess-invalid-json	ci_coverage/invalid-json.txt
+subprocess-main-only-missing	ci_coverage/main-only-missing.txt
 subprocess-missing	ci_coverage/missing.txt
 subprocess-missing-root	ci_coverage/missing-root.txt
+subprocess-pull-request-complete	ci_coverage/pull-request-complete.txt
+subprocess-pull-request-main-only	ci_coverage/pull-request-main-only.txt
 subprocess-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 subprocess-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 subprocess-record-unknown	ci_coverage/record-unknown.txt
@@ -36,6 +43,7 @@ subprocess-report-complete	ci_coverage/report-complete.txt
 subprocess-report-missing-input	ci_coverage/report-missing-input.txt
 subprocess-report-missing-lines	ci_coverage/report-missing-lines.txt
 subprocess-report-no-source	ci_coverage/report-no-source.txt
+subprocess-report-pull-request	ci_coverage/report-pull-request.txt
 subprocess-stale-destination	ci_coverage/stale-destination.txt
 subprocess-unexpected	ci_coverage/unexpected.txt
 subprocess-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt

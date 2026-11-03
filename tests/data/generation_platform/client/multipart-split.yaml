@@ -18,6 +18,7 @@ paths:
               properties:
                 photo: {type: string, format: binary}
                 note: {$ref: "#/components/schemas/Note"}
+                thumb: {$ref: "#/components/schemas/Thumb"}
               additionalProperties: {$ref: "#/components/schemas/Note"}
       responses:
         "204":
@@ -35,6 +36,7 @@ paths:
                 properties:
                   photo: {type: string, format: binary}
                   note: {$ref: "#/components/schemas/Note"}
+                  scan: {$ref: "#/components/schemas/Scan"}
                 additionalProperties: {$ref: "#/components/schemas/Note"}
 components:
   schemas:
@@ -45,3 +47,15 @@ components:
         text: {type: string}
         id: {type: integer, readOnly: true}
         secret: {type: string, writeOnly: true}
+    Thumb:
+      description: A stored preview whose raw bytes a request never sends.
+      readOnly: true
+      type: object
+      properties:
+        data: {type: string, format: binary}
+    Scan:
+      description: An uploaded scan whose raw bytes a response never sends.
+      writeOnly: true
+      type: object
+      properties:
+        data: {type: string, format: binary}

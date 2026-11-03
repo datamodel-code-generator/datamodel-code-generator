@@ -1,0 +1,11 @@
+description: The note.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        count:
+          $anchor: count
+          type: integer
+        total:
+          $ref: "#count"

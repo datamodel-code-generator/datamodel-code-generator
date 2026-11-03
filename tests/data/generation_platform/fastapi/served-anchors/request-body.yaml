@@ -1,0 +1,9 @@
+content:
+  application/json:
+    schema:
+      $id: https://example.com/note.json
+      type: object
+      required: [title]
+      properties:
+        title: {$anchor: title, type: string, maxLength: 20}
+        subtitle: {$ref: "#title"}

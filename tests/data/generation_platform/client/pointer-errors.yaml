@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info: {title: Pointer errors, version: "1.0"}
+servers: [{url: https://api.example.com}]
+paths:
+  /negative:
+    get:
+      operationId: negative
+      security:
+        - negative: []
+      responses:
+        "204": {description: Done.}
+  /leading:
+    get:
+      operationId: leading
+      security:
+        - leading: []
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    negative: {$ref: "#/x-schemes/-1"}
+    leading: {$ref: "#/x-schemes/01"}
+x-schemes:
+  - {type: http, scheme: bearer}

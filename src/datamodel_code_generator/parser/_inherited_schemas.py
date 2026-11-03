@@ -19,7 +19,14 @@ from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator import AllOfMergeMode, Error
 from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS, keyword_kinds
-from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS, MODELED_SCHEMA_MAPS, schema_positions
+from datamodel_code_generator._copy_on_change import unchanged
+from datamodel_code_generator._json_schema import (
+    COMBINATOR_POSITIONS,
+    MODELED_SCHEMA_MAPS,
+    admitted_types,
+    non_null_types,
+    schema_positions,
+)
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.imports import IMPORT_ANY
@@ -35,6 +42,7 @@ from datamodel_code_generator.parser._intersection import (
     merge_inherited_value,
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
+from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
     _MODELED_POSITIONS,
@@ -568,6 +576,7 @@ class InheritedSchemasHost(Protocol):
         source_name: str,
         class_name: str,
         row: FieldAliasRow,
+        inherits: bool | None = None,
     ) -> None:
         """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
 
@@ -858,7 +867,7 @@ def normalize_inherited_nested_schema_value(parser: InheritedSchemasHost, value:
                 else item
                 for key, item in members.items()
             }
-            if any(normalized[key] is not item for key, item in members.items()):
+            if not unchanged(normalized.values(), members.values()):
                 dumped = {key: _schema_dump(item) for key, item in normalized.items()}
                 return dumped if isinstance(value, dict) else list(dumped.values())
     return None
@@ -906,10 +915,7 @@ def is_inherited_type_narrowing(
     parent_types: frozenset[str],
 ) -> bool:
     """Return whether explicit child JSON types are contained by the inherited types."""
-    if not parent_types:
-        return True
-    compatible_parent_types = parent_types | (frozenset(("integer",)) if "number" in parent_types else frozenset())
-    return child_types <= compatible_parent_types
+    return not parent_types or child_types <= admitted_types(parent_types)
 
 
 def is_partial_inherited_property(
@@ -1175,10 +1181,8 @@ def merge_inherited_type_shape_dict(  # noqa: PLR0914
     distributed_fields = get_inherited_distributed_fields(parser, child_obj)
     child_shape = child
     parent_type_shape = parent_shape.get("type")
-    if excludes_null and isinstance(parent_type_shape, list):
-        filtered_types = [schema_type for schema_type in parent_type_shape if schema_type != "null"]
-        if filtered_types:
-            parent_shape["type"] = filtered_types[0] if len(filtered_types) == 1 else filtered_types
+    if excludes_null and isinstance(parent_type_shape, list) and (filtered_types := non_null_types(parent_type_shape)):
+        parent_shape["type"] = filtered_types[0] if len(filtered_types) == 1 else filtered_types
     if (union_key := next((key for key in ("anyOf", "oneOf") if parent_shape.get(key)), None)) is not None:
         merged_branches = [
             merged_branch
@@ -1902,7 +1906,10 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     class_name: str,
     inherited_fields: dict[str, DataModelFieldBase] | None = None,
 ) -> DataModelFieldBase:
-    """Build a field for a required name that is not declared in properties."""
+    """Build a field for a required name that is not declared in properties.
+
+    A copy of the inherited field keeps that field's origin; a new field records the origin ``required-only``.
+    """
     field_name, alias = parser.model_resolver.get_valid_field_name_and_alias(
         required_field_name,
         excludes=excludes,
@@ -1921,6 +1928,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
             source_name=required_field_name,
             class_name=class_name,
             row="required-copy",
+            inherits=bool(base_classes),
         )
         parser._prepare_required_inherited_field(copied_field, inherited_field)  # noqa: SLF001
         parser._apply_inherited_field_default(copied_field, inherited_field, class_name=class_name)  # noqa: SLF001
@@ -1940,6 +1948,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         required=True,
         original_name=required_field_name,
     )
+    with_field_origin(field, "required-only", None)
     if deferred:
         field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = class_name
     return field

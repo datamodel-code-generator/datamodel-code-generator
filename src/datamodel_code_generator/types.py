@@ -69,7 +69,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator._graph_links import add_child, drop_child
+from datamodel_code_generator._graph_links import add_child, drop_child, link_members
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
@@ -200,6 +200,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -218,7 +219,7 @@ else:
 
 def _preserve_float_constraint_precision(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
     """Retain legacy floats except when conversion would lose integer precision (``exact_float``)."""
-    if isinstance(value, int) and not isinstance(value, bool):
+    if _applicability.json_integer(value):
         return value if (float_value := _applicability.exact_float(value)) is None else float_value
     return handler(value)
 
@@ -305,14 +306,6 @@ def _contains_decimal(value: Any) -> bool:
             return False
 
 
-def _get_fraction_floor(value: Fraction) -> int:
-    return value.numerator // value.denominator
-
-
-def _get_fraction_ceil(value: Fraction) -> int:
-    return -(-value.numerator // value.denominator)
-
-
 def _get_constraint_number(value: Any) -> Any:
     return value.value if isinstance(value, UnionIntFloat) else value
 
@@ -327,7 +320,7 @@ def _non_finite_as_written(value: Any, *, as_float: bool) -> float | None:
     return _applicability.non_finite_written(_get_constraint_number(value), as_float=as_float)
 
 
-def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:  # noqa: PLR0911
+def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:
     """Return an integer-safe pydantic constraint for a numeric schema constraint."""
     number = _get_constraint_number(value)
     try:
@@ -342,14 +335,8 @@ def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any]
             return constraint, abs(fraction.numerator)
         case _ if fraction.denominator == 1:
             return constraint, int(fraction)
-        case "ge":
-            return "ge", _get_fraction_ceil(fraction)
-        case "gt":
-            return "ge", _get_fraction_floor(fraction) + 1
-        case "le":
-            return "le", _get_fraction_floor(fraction)
-        case "lt":
-            return "le", _get_fraction_ceil(fraction) - 1
+    if (bound := _applicability.integer_bound(constraint, number, arithmetic="exact")) is not None:
+        return bound
     return constraint, value
 
 
@@ -1078,7 +1065,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _names_none_alias(self, chain: tuple[Reference, ...]) -> bool:
         """Return ``names_none_alias``, following the aliases of ``chain`` once, so aliases that name each other end."""
-        if self.alias or self.type:
+        if self._own_text:
             return False
         reference = self.reference
         if reference is not None and (
@@ -1102,6 +1089,21 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _is_container(self) -> bool:
         """Return whether the type is a dict, list, set, frozen set, mapping, sequence or tuple."""
         return self in CONTAINERS
+
+    @property
+    def _own_text(self) -> str | None:
+        """Return the text the type writes of its own: its alias, else its type; none when its members write it."""
+        return self.alias or self.type
+
+    @property
+    def _writes_nothing_of_its_own(self) -> bool:
+        """Return whether the type writes no text, names no model and is no container, so only its members write."""
+        return not (self._own_text or self.reference or self._is_container)
+
+    @property
+    def _wraps_one_list(self) -> bool:
+        """Return whether the type is not a list and holds one member, which is a list."""
+        return not self.is_list and len(self.data_types) == 1 and self.data_types[0].is_list
 
     @property
     def _is_bare_none(self) -> bool:
@@ -1170,14 +1172,14 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def _iter_hint_member_nulls(self) -> Iterator[bool]:
         """Yield whether the union, as ``type_hint`` renders it, takes the None of its members."""
-        if not (self.alias or self.type) and self._takes_member_null(_nullability_core()):
+        if not self._own_text and self._takes_member_null(_nullability_core()):
             yield _merge_union_members(
                 self, tuple(type_expr_of(member, base=False) for member in self.data_types)
             ).takes_null
 
     def _gives_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
-        verdict = core.member_null(is_none=self.type == NONE and not self.data_types, is_any=self.type == ANY)
+        verdict = core.member_null(is_none=_is_plain_none(self), is_any=self.type == ANY)
         return self._rendered_null_source() is not None if verdict is None else verdict
 
     def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
@@ -1356,13 +1358,13 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
     The base hint writes a constrained call as the base type the backend's ``_CONSTRAINED_TYPE_TO_BASE`` gives it, or
     as the type hint when it gives none.
     """
-    if base and data_type.is_func and data_type.kwargs and (written := data_type.alias or data_type.type):
+    if base and data_type.is_func and data_type.kwargs and (written := data_type._own_text):  # noqa: SLF001
         if (base_type := data_type._CONSTRAINED_TYPE_TO_BASE.get(written)) is None:  # noqa: SLF001
             return type_expr_of(data_type, base=False)
         return TypeApply(data_type, "base", (TypeLeaf(base_type),), base=True)
     form: TypeForm = "written"
     args: tuple[TypeExpr, ...] = ()
-    if not (data_type.alias or data_type.type):
+    if not data_type._own_text:  # noqa: SLF001
         members = data_type.data_types
         if data_type.is_tuple:
             count = data_type.tuple_item_count
@@ -1401,7 +1403,7 @@ def render_type_expr(expr: TypeExpr, /) -> str:
 def _render_apply(expr: TypeApply) -> str:
     """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call."""
     node = expr.node
-    text = node.alias or node.type
+    text = node._own_text  # noqa: SLF001
     member_null = False
     if expr.form == "base":
         text = render_type_expr(expr.args[0])
@@ -1733,13 +1735,15 @@ def _copy_data_type(data_type: DataType, *, register_references: bool = True, li
     if (dict_key := data_type.dict_key) is not None:
         copied.dict_key = _copy_data_type(dict_key, register_references=register_references, link_parents=link_parents)
     if link_parents:
-        for child in copied.data_types:
-            child.parent = copied
-        if copied.dict_key is not None:
-            copied.dict_key.parent = copied
+        link_members(copied)
     if register_references:
         copied.register_reference()
     return copied
+
+
+def _is_plain_none(data_type: DataType) -> bool:
+    """Return whether a type is the type None with no members of its own, the None that a union member adds."""
+    return data_type.type == NONE and not data_type.data_types
 
 
 def _is_value_literal(data_type: DataType) -> bool:
@@ -1907,7 +1911,7 @@ class DataTypeManager(ABC):
                         target_model_version=target_model_version,
                     )
                     for member in data_type.data_types
-                    if member.type != NONE or member.data_types
+                    if not _is_plain_none(member)
                 ),
                 number_values=number_values,
             )
@@ -1934,6 +1938,51 @@ class DataTypeManager(ABC):
             target_version,
             number_values=number_values,
             target_model_version=target_model_version,
+        )
+
+    @classmethod
+    def member_constraint_keywords(
+        cls,
+        data_type: DataTypeView,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None],
+        seen: frozenset[int] = frozenset(),
+    ) -> frozenset[str] | None:
+        """Return the type-dependent keywords the value a union member validates to takes, or None for None.
+
+        A union takes what every member other than None takes, and an alias of None counts as None. A type alias
+        (``ModelView.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
+        ``StrEnum``, an ``IntEnum``) takes what that type takes; any other model, a root model, an object model, a
+        dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A type that names no
+        model takes what ``constraint_keywords`` answers, and so do a model ``model_of`` does not hold, an alias
+        without a field and an alias the type names again inside itself, which take them all.
+        """
+        node = cast("DataType", data_type)
+        if (reference := data_type.reference) is None:
+            if _is_plain_none(node):
+                return None
+            if not data_type.data_types or cls._shape_constraint_keywords(node) is not None:
+                return cls.constraint_keywords(node, target_version)
+            members = [
+                keywords
+                for member in data_type.data_types
+                if (keywords := cls.member_constraint_keywords(member, target_version, model_of, seen)) is not None
+            ]
+            return _applicability.member_keywords(members, number_values=False) if members else None
+        if (model := None if id(reference) in seen else model_of(reference)) is None:
+            return cls.constraint_keywords(node, target_version)
+        if model.form == "alias":
+            fields = model.fields
+            return (
+                cls.member_constraint_keywords(fields[0].data_type, target_version, model_of, seen | {id(reference)})
+                if fields
+                else cls.constraint_keywords(node, target_version)
+            )
+        value_base = model.value_base
+        return (
+            _applicability.NO_KEYWORDS
+            if value_base is None
+            else cls.type_constraint_keywords(value_base, target_version)
         )
 
     @classmethod
@@ -2026,13 +2075,13 @@ class DataTypeManager(ABC):
         """Yield the type path of each value of a ``Literal`` other than ``None``, or ``""`` for an unclassified one."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeLiteralValue,
-            PythonTypeSubscript,
+            is_literal_python_type_expr,
             python_type_expr_arguments,
             python_type_expr_base_name,
         )
 
         for argument in python_type_expr_arguments(expression):
-            if isinstance(argument, PythonTypeSubscript) and python_type_expr_base_name(argument) == "Literal":
+            if is_literal_python_type_expr(argument):
                 yield from DataTypeManager._literal_value_paths(argument)
             elif python_type_expr_base_name(argument) != NONE:
                 yield (

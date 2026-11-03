@@ -1413,7 +1413,8 @@ def check_default_targets(
     """Check the default targets and the table; also return the scan for ``--write-allowlist``.
 
     Every allowlist entry under the default targets must match, including entries of files that were deleted or renamed.
-    A write the scan finds is listed with its count, never with a witness.
+    A write the scan finds is listed with its count, never with a witness. A ``__dict__`` key that only a store
+    operation writes keeps its row.
     """
     scan = scan_paths(ROOT / target for target in DEFAULT_TARGETS)
     active = load_allowlist() if allowlist is None else allowlist
@@ -1447,7 +1448,12 @@ def check_default_targets(
         for source, function, target in sorted(load_witnesses() if witnesses is None else witnesses)
         if found[source, function, target]
     )
-    return [*table_problems(dict_keys_written=scan.dict_keys_written), *hook_problems, *violations], scan
+    store_keys = scan_files([(ROOT / GENERATION_STORE_MODULE, "parser")]).dict_keys_written
+    return [
+        *table_problems(dict_keys_written=scan.dict_keys_written | store_keys),
+        *hook_problems,
+        *violations,
+    ], scan
 
 
 def write_allowlist(found: Counter[StoreKey], path: Path | None = None) -> list[StoreKey]:

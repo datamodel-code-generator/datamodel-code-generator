@@ -488,7 +488,12 @@ def test_main_openapi_discriminator_integer_mapping_use_enum(output_file: Path) 
     reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
-    """Unsupported discriminator enum values keep their mapping string values."""
+    """Write a union whose mapping keys name float values without ``discriminator=``, keeping the Enums of its tags.
+
+    The keys ``'1.5'`` and ``'3.5'`` name the members ``1.5`` and ``3.5``, which no ``Literal`` holds, so the union is a
+    plain one, as for float ``const`` tags. Up to 0.88.0 the variants were tagged ``Literal['1.5']``, which rejected
+    ``{"kind": 1.5}`` and accepted the string the schema rejects (#5091).
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "discriminator_float_mapping.yaml",
         output_path=output_file,
@@ -497,6 +502,19 @@ def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
         expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "float_mapping.py",
         extra_args=["--target-python-version", "3.10", "--output-model-type", "pydantic_v2.BaseModel"],
     )
+    for kind, expected_repr in (
+        (1.5, "Base(root=Foo(kind=<Kind.number_1_5: 1.5>))"),
+        (3.5, "Base(root=Bar(kind=<Kind1.number_3_5: 3.5>))"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="discriminator_float_mapping",
+            model_name="Base",
+            valid_json=json.dumps({"kind": kind}),
+            invalid_json=json.dumps({"kind": "1.5"}),
+            expected_error_type="enum",
+            expected_repr=expected_repr,
+        )
 
 
 @pytest.mark.skipif(
@@ -6256,6 +6274,20 @@ def test_main_openapi_json_pointer(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_json_pointer_through_scalar(output_file: Path) -> None:
+    """A pointer through a scalar names nothing, as a missing member does."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "json_pointer_through_scalar.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j")
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -11724,6 +11756,24 @@ def test_main_openapi_item_schema(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "scopes",
+    [
+        pytest.param(["schemas", "paths", "requestbodies"], id="paths-and-request-bodies"),
+        pytest.param(["api"], id="api"),
+    ],
+)
+def test_main_openapi_item_schema_beside_null_schema(scopes: list[str], output_file: Path) -> None:
+    """Read the itemSchema of a media type object whose schema is null, as one with no schema."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_null_schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=["--disable-timestamp", "--openapi-scopes", *scopes],
+    )
+
+
 def test_main_openapi_item_schema_requires_32(output_file: Path) -> None:
     """Test OpenAPI 3.1 ignores OpenAPI 3.2 itemSchema in media type objects."""
     run_main_and_assert(
@@ -14753,6 +14803,104 @@ def test_main_openapi_anchor_refs(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_anchor_refs_in_referenced_object_documents(output_file: Path) -> None:
+    """Resolve plain-name references to the $anchor of a schema that a document a reference names as an object holds.
+
+    A document named at its root as a Parameter, Request Body, Response or Path Item Object holds that object, so the
+    schemas the object holds declare its anchors, one below an `$id` included; up to 0.88.0 generation failed with
+    "Unresolved $id reference" (#6036).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_referenced_object_documents",
+        model_name="NotesPostRequest",
+        valid_json='{"title": "a", "subtitle": "b"}',
+        invalid_json=json.dumps({"subtitle": "x" * 21}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_anchor_refs_in_path_item_document(output_file: Path) -> None:
+    """Resolve a plain-name reference in the Path Item Object a reference names, to the schema that holds the anchor.
+
+    The schema of a parameter in a list declares an `$id`, so the reference to its anchor is rewritten at a position in
+    a list (it stopped the run with a TypeError). The Reference Object beside it holds no schema, so the `$id` and
+    `$anchor` of its ignored `schema` name no resource and the reference reads the anchor of the parameter above it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document",
+        model_name="TagsGetParametersQuery",
+        valid_json='{"tag": {"label": "ab", "alias": "cd"}}',
+        invalid_json=json.dumps({"tag": {"alias": "x" * 6}}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself(output_file: Path) -> None:
+    """Resolve a plain-name reference in a Path Item Object that a callback of its own operation holds again.
+
+    A YAML alias makes the object reach itself through the callback, so the walk of the schemas it holds descends into
+    each object once on its path; it ran to the recursion limit and stopped the run.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_cyclic_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document_that_holds_itself",
+        model_name="EventsGetParametersQuery",
+        valid_json='{"event": {"kind": "ab", "again": "cd"}}',
+        invalid_json=json.dumps({"event": {"again": "x" * 9}}),
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 
@@ -15998,4 +16146,110 @@ def test_main_openapi_ref_components_as_definitions(output_file: Path, extra_arg
         valid_json=json.dumps({"tree": {"children": [{"children": []}]}, "grove": {}, "byName": {"a": {}}}),
         invalid_json=json.dumps({"trees": [{"children": [1]}]}),
         expected_error_type="model_type",
+    )
+
+
+def test_main_openapi_collapse_root_models_package_init(output_dir: Path) -> None:
+    """Import a model that collapse inlines into a package ``__init__`` from the package above, as a reference does.
+
+    ``pkg/__init__.py`` inlines ``other.Root`` and types the dict key ``other.KindKey`` by its root type, which name
+    models of the top-level module ``third``; up to 0.88.0 it wrote ``from . import third``, which does not import
+    (#5465).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_root_models_package_init.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+def test_main_openapi_generic_base_class_other_packages(output_dir: Path) -> None:
+    """Import the generated base class from the module that writes it, as a base class of another module is imported.
+
+    The base class is written to ``c/d.py``; up to 0.88.0 ``a/b.py`` and ``top.py`` wrote ``from .d import
+    BaseModel``, which does not import (#5594).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_other_packages.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys(output_file: Path) -> None:
+    """Tag a variant with the value of its tag property's type that a mapping key names.
+
+    A mapping key is text, so ``'1'`` and ``'-2'`` of an integer property name ``1`` and ``-2``, ``'true'`` of a boolean
+    ``True``, and ``'0'`` and ``'10'`` of a number ``0`` and ``10``; up to 0.88.0 the variants were tagged
+    ``Literal['1']``, which rejected every payload the schema accepts (#5091). The keys ``'0.5'`` and ``'2.5e-1'`` name
+    floats, which no ``Literal`` holds, so that union is a plain one. ``ByIntegerAgain`` and ``ByBooleanAgain`` read
+    the keys as the ``Literal`` values the first unions wrote, so they agree with them on every tag.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_typed_mapping_keys",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "integer": {"code": -2, "extra": "x"},
+            "boolean": {"ok": False, "reason": "r"},
+            "whole": {"level": 10.0, "boost": 1},
+            "fraction": {"share": 0.25, "note": "n"},
+            "integerAgain": {"code": 1},
+            "booleanAgain": {"ok": True},
+        }),
+        invalid_json=json.dumps({"integer": {"code": "1"}}),
+        expected_error_type="union_tag_invalid",
+        expected_repr=(
+            "Holder(integer=ByInteger(root=Two(code=-2, extra='x')), "
+            "boolean=ByBoolean(root=No(ok=False, reason='r')), "
+            "whole=ByWholeNumber(root=High(level=10, boost=1)), "
+            "fraction=ByFraction(root=Quarter(share=0.25, note='n')), "
+            "integerAgain=ByIntegerAgain(root=One(code=1)), "
+            "booleanAgain=ByBooleanAgain(root=Yes(ok=True)))"
+        ),
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys_msgspec(output_file: Path) -> None:
+    """Tag msgspec Structs with the integers the mapping keys of an integer or a number property name (#5091).
+
+    msgspec takes no bool or float tag, so the unions whose keys name booleans or floats are left untagged, with the
+    warning that msgspec cannot decode them; up to 0.88.0 they were tagged ``tag='true'`` and ``tag='0.5'``, which
+    decode only the strings.
+    """
+    with pytest.warns(
+        UserWarning, match=r"msgspec cannot decode the union By(Boolean|BooleanAgain|Fraction):"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
     )

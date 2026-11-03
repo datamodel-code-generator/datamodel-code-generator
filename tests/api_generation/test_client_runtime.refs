@@ -27,6 +27,7 @@ body-replay-faults	main/generation_platform/client/runtime/body-replay-faults.tx
 cache	main/generation_platform/client/runtime/cache.txt
 cache-backends	main/generation_platform/client/runtime/cache-backends.txt
 cache-stores	main/generation_platform/client/runtime/cache-stores.txt
+call-layers	main/generation_platform/client/runtime/call-layers.txt
 codings	main/generation_platform/client/runtime/codings.txt
 compression	main/generation_platform/client/runtime/compression.txt
 deadline-cleanup	main/generation_platform/client/runtime/deadline-cleanup.txt
@@ -57,6 +58,7 @@ multipart	main/generation_platform/client/runtime/multipart.txt
 multipart-kinds	main/generation_platform/client/runtime/multipart-kinds.txt
 multipart-replay	main/generation_platform/client/runtime/multipart-replay.txt
 multipart-split	main/generation_platform/client/runtime/multipart-split.txt
+multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
 naming	main/generation_platform/client/runtime/naming.txt
 naming-full-path	main/generation_platform/client/runtime/naming-full-path.txt
 naming-parent-prefixed	main/generation_platform/client/runtime/naming-parent-prefixed.txt
@@ -105,6 +107,7 @@ querystring	main/generation_platform/client/runtime/querystring.txt
 raw	main/generation_platform/client/runtime/raw.txt
 redirect-head	main/generation_platform/client/runtime/redirect-head.txt
 redirects	main/generation_platform/client/runtime/redirects.txt
+response-keys	main/generation_platform/client/runtime/response-keys.txt
 retry-boundaries	main/generation_platform/client/runtime/retry-boundaries.txt
 retry-calls	main/generation_platform/client/runtime/retry-calls.txt
 retry-errors	main/generation_platform/client/runtime/retry-errors.txt

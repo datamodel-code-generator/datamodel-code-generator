@@ -1,0 +1,53 @@
+models shared True
+# bound_texts_reuse in-process sync, in-process async
+list_untyped
+  > GET /untyped?color=red&size=3
+  list_untyped(filter=UntypedGetQueryFilterParameter(color='red', size=3))
+  < 204 -
+  = None
+list_untyped raw
+  > GET /untyped?color=blue&size=x
+  < 422 application/json
+  = (422, [('int_parsing', ['query', 'filter', 'size'])])
+submit_untyped
+  > POST /untyped [application/x-www-form-urlencoded]
+  submit_untyped(body=UntypedPostRequest(name='n', count=2))
+  < 204 -
+  = None
+submit_untyped raw
+  > POST /untyped [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'count'])])
+list_merged
+  > GET /merged?color=red&size=3&flag=true
+  list_merged(filter=MergedGetQueryFilterParameter(color='red', size=3, flag=True))
+  < 204 -
+  = None
+list_merged raw
+  > GET /merged?color=blue&size=4&flag=maybe
+  < 422 application/json
+  = (422, [('bool_parsing', ['query', 'filter', 'flag'])])
+list_merged_deep
+  > GET /merged-deep?deep%5Bcolor%5D=red&deep%5Bpage%5D=2
+  list_merged_deep(deep=MergedDeepGetQueryDeepParameter(color='red', page=2))
+  < 204 -
+  = None
+submit_closed
+  > POST /closed [application/x-www-form-urlencoded]
+  submit_closed(body=ClosedPostRequest(name='n'))
+  < 204 -
+  = None
+submit_closed raw
+  > POST /closed [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('extra_forbidden', ['body', 'extra'])])
+read_a
+  > GET /a/kind,k?label%5Btone%5D=t&label%5Blevel%5D=1
+  read_a(name=ANameGetPathNameParameter(kind='k'), label=ANameGetQueryLabelParameter(tone='t', level=1))
+  < 204 -
+  = None
+read_b
+  > GET /b/kind,k?label%5Btone%5D=t&label%5Blevel%5D=2
+  read_b(name=BNameGetPathNameParameter(kind='k'), label=BNameGetQueryLabelParameter(tone='t', level=2))
+  < 204 -
+  = None

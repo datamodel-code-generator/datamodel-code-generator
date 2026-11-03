@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IPv4Address",
+  "type": "object",
+  "properties": {
+    "hosts": {"$ref": "#/$defs/Hosts"},
+    "owner": {"$ref": "#/$defs/Owner"}
+  },
+  "$defs": {
+    "Hosts": {
+      "x-python-import": {
+        "module": "builtins",
+        "name": "list",
+        "x-python-type": "list[pkg.Address]",
+        "symbols": {"pkg.Address": {"module": "ipaddress", "qualname": "IPv4Address"}}
+      }
+    },
+    "Owner": {"type": "object", "properties": {"name": {"type": "string"}}}
+  }
+}

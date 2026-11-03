@@ -12,7 +12,7 @@ from collections.abc import Callable, Container, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
-from typing import Final, Literal, TypeAlias, TypeVar, cast
+from typing import Final, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from typing_extensions import Self, TypeAliasType, TypeIs
@@ -22,6 +22,7 @@ from .errors import MalformedError, ParameterEncodingError
 __all__ = (
     "BODYLESS_STATUSES",
     "ERROR_STATUSES",
+    "JSON_MEDIA_TYPE",
     "LENIENT_QUOTED",
     "NOT_MODIFIED",
     "NO_CONTENT",
@@ -39,7 +40,6 @@ __all__ = (
     "JSONValue",
     "LexicalKind",
     "MediaKind",
-    "MediaOrder",
     "Unparsed",
     "ascii_digits",
     "bodyless",
@@ -49,9 +49,11 @@ __all__ = (
     "decode_text",
     "encode_form",
     "essence",
+    "fields_without",
     "finite",
     "form_encode",
     "form_pairs",
+    "is_token",
     "json_bytes",
     "json_integer",
     "json_number",
@@ -79,11 +81,11 @@ JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 JSONKind = Literal["object", "array", "string", "number", "boolean"]
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
-MediaOrder: TypeAlias = Literal["specific", "declared"]
 T = TypeVar("T")
 
 TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 TOKEN: Final = re.compile(TCHARS)
+JSON_MEDIA_TYPE: Final = "application/json"
 QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
 LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
 """A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
@@ -241,12 +243,9 @@ def range_key(status: int) -> str:
     return f"{status // 100}XX"
 
 
-def bodyless(status: int, *, head: bool = False, informational: bool = True) -> bool:
-    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one.
-
-    `informational=False` reads a status below 200 as one that may carry content (the client plan's row).
-    """
-    return head or status in BODYLESS_STATUSES or (informational and status < SUCCESS_STATUSES.start)
+def bodyless(status: int, *, head: bool = False) -> bool:
+    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one."""
+    return head or status in BODYLESS_STATUSES or status < SUCCESS_STATUSES.start
 
 
 def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[str, str, list[tuple[str, str]]]:
@@ -264,6 +263,16 @@ def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[st
         parameters.append((parameter["name"].lower(), parameter["value"]))
         position = parameter.end()
     return essence["type"].lower(), essence["subtype"].lower(), parameters
+
+
+def is_token(text: str) -> bool:
+    """Return whether text is an HTTP token as a whole, such as a method, a header field name or a cookie name."""
+    return TOKEN.fullmatch(text) is not None
+
+
+def fields_without(fields: Iterable[tuple[str, str]], names: Container[str]) -> list[tuple[str, str]]:
+    """Return header fields in order without those whose name, in lowercase, is one of the given lowercase names."""
+    return [(name, value) for name, value in fields if name.lower() not in names]
 
 
 def unquoted(value: str) -> str:
@@ -295,19 +304,16 @@ def media_range(media_type: str) -> bool:
     return "*" in essence(media_type)
 
 
-def most_specific(received: str, declared: Iterable[str], *, order: MediaOrder = "specific") -> str | None:
+def most_specific(received: str, declared: Iterable[str]) -> str | None:
     """Return the declared media type a received one falls under: itself, then its essence, type/*, and */*.
 
-    Among the declarations of one of these, the first without parameters wins (#4185); `order="declared"` instead takes
-    the first declaration of the most specific one in declared order (the client's row).
+    Among the declarations of one of these, the first without parameters wins (#4185).
     """
     declared = tuple(declared)
     if received in declared:
         return received
     bare = essence(received)
     candidates = (bare, f"{bare.partition('/')[0]}/*", "*/*")
-    if order == "declared":
-        return next((media for candidate in candidates for media in declared if essence(media) == candidate), None)
     return min((media for media in declared if essence(media) in candidates), key=_specificity, default=None)
 
 

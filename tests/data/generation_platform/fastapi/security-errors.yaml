@@ -40,8 +40,15 @@ paths:
       security: [{api_key: [1]}]
       responses:
         "204": {description: Done.}
+  /tokens:
+    get:
+      operationId: getTokens
+      security: [{oauth: [read write]}]
+      responses:
+        "204": {description: Done.}
 components:
   securitySchemes:
     api_key: {type: apiKey, in: header, name: X-API-Key}
     body_key: {type: apiKey, in: body, name: key}
     nameless: {type: apiKey, in: header}
+    oauth: {type: oauth2, flows: {clientCredentials: {tokenUrl: "https://auth.example.com/token", scopes: {}}}}

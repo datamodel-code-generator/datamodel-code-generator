@@ -42,6 +42,8 @@ from datamodel_code_generator._openapi_codec_plan import EXTRAS
 from datamodel_code_generator._python_syntax import (
     call_text,
     dict_display,
+    escape_docstring,
+    format_docstring,
     keyword_argument,
     list_display,
     set_display,
@@ -53,11 +55,9 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GenericType,
-    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralSequence,
-    SourceExpression,
     UnionType,
     fact,
 )
@@ -68,13 +68,12 @@ from datamodel_code_generator._target_operations import coded_use, described, ta
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
-    field_plan,
+    member_plan,
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none, type_identity
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
 if TYPE_CHECKING:
@@ -98,7 +97,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         Requirement,
-        TypeArgument,
         TypeView,
     )
     from datamodel_code_generator._target_module import TypeNames
@@ -215,10 +213,10 @@ def _keeps_extras(spec: OperationSpec) -> bool:
     """Return whether an operation's response media, or chosen primary media, writes extras of Pydantic dataclasses."""
     primary = spec.primary
     return any(
-        media is not None and media.extras and _body_status(spec, status)
-        for status, media in (
-            *((response.status, default_media(response)) for response in spec.responses),
-            *(((str(primary.status), primary.media),) if primary is not None else ()),
+        media is not None and media.extras and not bodyless
+        for bodyless, media in (
+            *((response.bodyless, default_media(response)) for response in spec.responses),
+            *(((primary.bodyless, primary.media),) if primary is not None else ()),
         )
     )
 
@@ -312,20 +310,6 @@ class Module(TargetModule):
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
-
-    def argument(self, value: TypeArgument) -> str:
-        """Return the Python expression of a recorded literal or source expression."""
-        match value:
-            case LiteralScalar(kind="decimal"):
-                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
-            case LiteralScalar():
-                return repr(value.value)
-            case SourceExpression():
-                return value.text
-            case _:
-                pass
-        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
-        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 
 class UserModule(Module):
@@ -1039,7 +1023,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         return Parameter(argument.name, subscript_text(annotated, (kind, f"{depends}({plan}.BODY)")))
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for a body, with None for an optional one."""
+        """Return the type the handler receives for a body, with None for an optional one.
+
+        A body that declares no media carries none, as the client takes none for it: its type is None, required or not.
+        """
+        if not body.media:
+            return "None"
         kinds = module.union(*(self.media_type(module, media) for media in body.media))
         if body.required or any(admits_none(_payload(media)) for media in body.media):
             return kinds
@@ -1131,7 +1120,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         payloads = dict.fromkeys(
             self.media_type(module, media)
             for response in spec.responses
-            if _body_status(spec, response.status) and (media := default_media(response)) is not None
+            if not response.bodyless and (media := default_media(response)) is not None
         )
         result = subscript_text(
             module.local("_runtime.server.responses", "HTTPResult"), (module.union(*payloads) or "None",)
@@ -1145,7 +1134,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         if (primary := spec.primary) is None:
             return []
-        if (media := primary.media) is None or not _body_status(spec, str(primary.status)):
+        if (media := primary.media) is None or primary.bodyless:
             return ["None"]
         payload = self.media_type(module, media)
         if primary.null and (value := _payload(media)) is not None and not admits_none(value):
@@ -1207,9 +1196,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
     responses = [
         (
             repr(response.status),
-            _declared(
-                module, default_media(response) if _body_status(spec, response.status) else None, null=response.null
-            ),
+            _declared(module, None if response.bodyless else default_media(response), null=response.null),
         )
         for response in spec.responses
     ]
@@ -1219,7 +1206,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
         if (
             (chosen := primary.media) is not None
             and chosen is not default_media(primary.response)
-            and _body_status(spec, status)
+            and not primary.bodyless
         ):
             media = _declared(module, chosen, null=primary.null)
     return ResponsesPlan(
@@ -1247,14 +1234,6 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
         if null:
             entries.append("null=True")
     return call_text(module.local("_runtime.server.responses", "Declared"), entries)
-
-
-def _body_status(spec: OperationSpec, status: str) -> bool:
-    """Return whether a declared response of an operation carries a body: not for HEAD, 1XX, 204, 205, or 304.
-
-    It reads the key text, which the plan reads as a number (#5604).
-    """
-    return not spec.head and not status.startswith("1") and status not in {"204", "205", "304"}
 
 
 def _implementation(group: GroupSpec) -> str:
@@ -1389,14 +1368,14 @@ def _body_media(module: Module, body: BodySpec) -> str:
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
-            entries.append(f"fields={tuple_display(field_plan(module.local, plan) for plan in fields)}")
+            entries.append(f"fields={tuple_display(member_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
             entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
         if (additional := item.additional) is not None:
             plan = (
                 _json_part(module, additional)
                 if isinstance(additional, JsonPartSpec)
-                else field_plan(module.local, additional)
+                else member_plan(module.local, additional)
             )
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:

@@ -1,0 +1,1 @@
+{"title": "Version", "type": "object", "properties": {"number": {"type": "number"}, "unicode": {"$ref": "../данные/unicode.json"}}}

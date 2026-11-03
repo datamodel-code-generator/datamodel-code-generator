@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Value": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Entries": {
+      "type": "object",
+      "properties": {"a": {"type": "string"}},
+      "propertyNames": {"pattern": "^[a-z]+$"},
+      "additionalProperties": {"$ref": "#/definitions/Value"},
+      "minProperties": 1
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "inline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {"a": {"type": "string"}},
+            "propertyNames": {"pattern": "^[a-z]+$"},
+            "additionalProperties": {"$ref": "#/definitions/Value"},
+            "minProperties": 1,
+            "minLength": 1
+          }
+        },
+        "named": {"type": "array", "items": {"$ref": "#/definitions/Entries", "minLength": 1}},
+        "nullable": {
+          "type": "array",
+          "items": {
+            "type": ["object", "null"],
+            "properties": {"a": {"type": "string"}},
+            "additionalProperties": {"$ref": "#/definitions/Value"},
+            "minLength": 1
+          }
+        },
+        "count": {"type": "integer"}
+      }
+    }
+  },
+  "type": "object",
+  "properties": {"holder": {"$ref": "#/definitions/Holder"}}
+}

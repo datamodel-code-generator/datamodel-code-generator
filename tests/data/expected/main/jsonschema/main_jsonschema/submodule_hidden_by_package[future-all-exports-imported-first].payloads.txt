@@ -1,0 +1,3 @@
+{"items": [{"sku": "s"}]}: accepted Order(items=Items(root=[Item(sku='s')]))
+{"items": [{"sku": 1}]}: rejected ValidationError
+{"order": {"items": [{"sku": "s"}]}}: accepted Catalog(order=Order(items=Items(root=[Item(sku='s')])))

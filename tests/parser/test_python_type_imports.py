@@ -11,7 +11,7 @@ from datamodel_code_generator._python_type_annotation import PythonTypeBoundName
 from datamodel_code_generator._python_type_binding import BoundPythonType, alias_bound_python_type
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.model.pydantic_v2.base_model import BaseModel, DataModelField
-from datamodel_code_generator.parser._passes._shared import (
+from datamodel_code_generator.parser._passes._import_aliases import (
     _alias_base_class_imports,
     _apply_structured_import_aliases,
     _ordinary_field_shadow_aliases,
@@ -313,9 +313,10 @@ def test_base_class_aliasing_skips_an_already_canonical_binding() -> None:
     model = BaseModel(reference=Reference(path="model", name="Model"), fields=[], base_classes=[reference])
     model.base_classes[0].import_ = original
 
-    _alias_base_class_imports(model, {("external", "Base"): canonical})
+    builder = GenerationStore().builder()
+    _alias_base_class_imports(builder, model, {("external", "Base"): canonical})
     first = model.base_classes[0].import_
-    _alias_base_class_imports(model, {("external", "Base"): canonical})
+    _alias_base_class_imports(builder, model, {("external", "Base"): canonical})
 
     assert (first, model.base_classes[0].import_, model.base_classes[0].type) == (canonical, canonical, "Base_aliased")
 

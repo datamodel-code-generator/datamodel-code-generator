@@ -444,7 +444,9 @@ class _PreparedModule(Generic[ConfigT]):
 class _FinalizeState(Generic[ContextT]):
     """The state of one ``_finalize_modules`` call.
 
-    ``all_models`` are the models of every module as they were before unused models left them.
+    ``all_models`` are the models of every module as they were before unused models left them. The configuration,
+    ``internal_modules`` and ``model_path_to_module_name`` are the run's; by the last two a module names a model of
+    another module (``ModuleNamesView``).
     """
 
     contexts: list[ContextT]
@@ -453,6 +455,9 @@ class _FinalizeState(Generic[ContextT]):
     module_to_import: dict[ModulePath, Imports]
     forwarder_modules: Collection[ModulePath]
     with_import: bool
+    config: ParseConfigView
+    internal_modules: set[ModulePath]
+    model_path_to_module_name: dict[str, str]
     all_models: list[DataModel] = dataclasses.field(init=False)
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False

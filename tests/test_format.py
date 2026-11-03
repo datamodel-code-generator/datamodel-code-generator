@@ -68,9 +68,6 @@ BUILTIN_FORMATTER_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / 
 BUILTIN_STRING_NORMALIZATION_INPUT_PATH = (
     Path(__file__).parent / "data" / "python" / "builtin_formatter_string_normalization.txt"
 )
-BUILTIN_STRING_NORMALIZATION_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
-    "string_normalization.txt" if sys.version_info[:2] >= (3, 12) else "string_normalization_legacy.txt"
-)
 BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_pep695_invalid.txt"
 BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
     "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
@@ -885,10 +882,7 @@ def test_builtin_formatter_string_normalization_fixture() -> None:
         )
         formatted_cases.append(f"[{name}]\n{formatted}")
 
-    assert_output(
-        "\n".join(formatted_cases),
-        BUILTIN_STRING_NORMALIZATION_EXPECTED_PATH,
-    )
+    assert_output("\n".join(formatted_cases))
 
 
 def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(

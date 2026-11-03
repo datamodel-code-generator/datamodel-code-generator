@@ -26,6 +26,7 @@ from datamodel_code_generator._constraint_applicability import (
     declared_string_keywords_taken,
     enforced_keywords,
     holds_number_format,
+    json_integer,
     literal_check,
     literal_enforces_every_keyword,
     split_declared_keywords,
@@ -33,12 +34,13 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,
     writes_beside_literal,
 )
-from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
+from datamodel_code_generator.model.base import ConstraintsBase
 from datamodel_code_generator.parser._intersection import declared_types, inherited_positional_tail
 from datamodel_code_generator.parser._null_facts import NullSources, dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
@@ -49,7 +51,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator.types import ANY, NONE, Types, _is_value_literal
+from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -103,6 +105,7 @@ __all__ = [
     "has_prefix_items_tail_schema_or_boolean",
     "is_constraints_field",
     "is_fixed_length_tuple",
+    "is_union_schema",
     "keywords_taken",
     "literal_written",
     "mark_type_dependent_constraints",
@@ -114,6 +117,7 @@ __all__ = [
     "split_constraint_values",
     "suppress_array_length_constraints",
     "type_enforced_keywords",
+    "union_sibling_constraints",
 ]
 
 _CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
@@ -205,11 +209,29 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
     """
     if data_type in CONTAINERS.without("legacy-abstract-containers-as-unions"):
         yield None, ()
-    elif members := [member for member in data_type.data_types if member.type != NONE or member.data_types]:
+    elif members := [member for member in data_type.data_types if not _is_plain_none(member)]:
         for member in members:
             yield from _enforcing_leaves(member)
     else:
         yield (None, data_type.literals) if _is_value_literal(data_type) else (data_type.type, ())
+
+
+def can_hold_array(data_type: DataType, *, models: bool) -> bool:
+    """Return whether a value of the type, but ``None``, is an array itself: an array, a custom type or a union of them.
+
+    A model (a ``$ref``) is one too when ``models`` says so, whose field Pydantic cannot apply an item count to.
+    """
+    return (
+        data_type in ARRAYS
+        or (models and data_type.reference is not None)
+        or data_type.python_type is not None
+        or any(can_hold_array(member, models=models) for member in data_type.data_types if not _is_plain_none(member))
+    )
+
+
+def admits_array(obj: JsonSchemaObject) -> bool:
+    """Return whether the types a schema declares admit an array: it declares none, or an array is one of them."""
+    return obj.type is None or "array" in declared_types(obj.type)
 
 
 def _imported_type_paths(data_type: DataType) -> Iterator[str]:
@@ -473,8 +495,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         case str():
             final_type = parent_type
         case list():
-            non_null_types = [t for t in parent_type if t != "null"]
-            final_type = non_null_types[0] if non_null_types else inferred_type
+            final_type = next(iter(non_null_types(parent_type)), inferred_type)
         case _:
             pass
 
@@ -596,18 +617,48 @@ def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
     return _locate(synthetic, original.schema_location)
 
 
-def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> bool:
-    """Check if a field should include constraints."""
+def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None) -> bool:
+    """Check if a field should include constraints.
+
+    An array's keywords are always written on its field; the others only under ``--field-constraints`` and not beside
+    a ``$ref``, a combinator, an object or an enum (#1083), whose model or class holds them. An enum written as a
+    ``Literal`` (``data_type``) leaves them to its field as a const does, unless the literal check removed the values
+    they reject.
+    """
     return obj.is_array or (
         parser.field_constraints
         and not (
             obj.ref
-            or obj.anyOf
-            or obj.oneOf
+            or is_union_schema(obj)
             or obj.allOf
             or obj.is_object
-            or (obj.enum and not parser.ignore_enum_constraints)
+            or (obj.enum and not parser.ignore_enum_constraints and not _field_holds_literal(parser, data_type))
         )
+    )
+
+
+def is_union_schema(obj: JsonSchemaObject) -> bool:
+    """Return whether a schema is a union of the schemas it lists (``anyOf`` or ``oneOf``)."""
+    return bool(obj.anyOf or obj.oneOf)
+
+
+def union_sibling_constraints(obj: JsonSchemaObject, constraints: object) -> dict[str, Any] | None:
+    """Return the constraint values a field writes from the keywords a union schema declares beside it, or None.
+
+    The decision phase decides them again once the members of the field's type are final
+    (``parser/_union_constraints.py``).
+    """
+    if not is_union_schema(obj) or not isinstance(constraints, ConstraintsBase):
+        return None
+    return constraints.model_dump(by_alias=True, exclude_none=True) or None
+
+
+def _field_holds_literal(parser: ValueKeywordsHost, data_type: DataType | None) -> bool:
+    """Return whether a field types its values as a ``Literal`` that no literal check narrowed."""
+    return (
+        data_type is not None
+        and not parser.checks_literal_values
+        and all(literals for _, literals in _enforcing_leaves(data_type))
     )
 
 
@@ -623,10 +674,8 @@ def has_effective_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject) 
     match obj.type:
         case str() as schema_type:
             pass
-        case list() as schema_types if (
-            schema_type := next((item for item in schema_types if item != "null"), None)
-        ) is not None and all(item in ("null", schema_type) for item in schema_types):  # noqa: PLR6201
-            pass
+        case list() as schema_types if len(distinct := non_null_types(schema_types, distinct=True)) == 1:
+            schema_type = distinct[0]
         case _:
             return False
 
@@ -957,12 +1006,12 @@ def get_contains_count_constraints(
     max_contains = obj.extras.get("maxContains")
     min_items = (
         min_contains
-        if isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+        if json_integer(min_contains) and min_contains > 0
         else 1
         if "minContains" not in obj.extras
         else None
     )
-    max_items = max_contains if isinstance(max_contains, int) and not isinstance(max_contains, bool) else None
+    max_items = max_contains if json_integer(max_contains) else None
     return min_items, max_items
 
 
@@ -972,7 +1021,7 @@ def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywords
     if "minContains" not in obj.extras:
         return True
     min_contains = obj.extras["minContains"]
-    return isinstance(min_contains, int) and not isinstance(min_contains, bool) and min_contains > 0
+    return json_integer(min_contains) and min_contains > 0
 
 
 def get_effective_array_length(cls: type[ValueKeywordsHost], obj: JsonSchemaObject) -> int | None:

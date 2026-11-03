@@ -26,7 +26,9 @@ from datamodel_code_generator.model._decisions.assignment import (
     DataclassItemInputs,
     DataclassWritten,
     dataclass_field_items,
+    excluded_from_init,
     participates_in_constructor,
+    requires_value,
     written_data,
 )
 from datamodel_code_generator.model._render_plan import (
@@ -51,6 +53,7 @@ from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
     _default_factory_type_name,
+    _default_state,
     _has_field_assignment,
     _model_key_of_model,
     _nested_model_factory,
@@ -88,7 +91,7 @@ def get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
 def field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a Python dataclass field participates in __init__."""
     return participates_in_constructor(
-        "dataclass", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
+        "dataclass", init_excluded=excluded_from_init(field), class_var=field.is_class_var
     )
 
 
@@ -106,9 +109,9 @@ def _construction_order_key(field: DataModelFieldBase) -> bool:
 
 def _has_constructor_default(field: DataModelFieldBase) -> bool:
     """Classify a constructor default without recursively rendering structured values."""
-    if field.required and not field.use_default_with_required:
+    if requires_value(field):
         return False
-    if field.default is not UNDEFINED and field.default is not None:
+    if _default_state(field.default) == "value":
         return True
     return get_field_default_info(field)[0]
 
@@ -310,7 +313,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             inherited_field,
             explicit_extras=explicit_extras,
         )
-        if inherited_field.extras.get("init") is False and "init" not in explicit_extras:
+        if excluded_from_init(inherited_field) and "init" not in explicit_extras:
             field.__dict__[_REQUIRED_INHERITED_INIT_KEY] = True
 
     @classmethod
@@ -423,7 +426,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
     def _nested_model_factory_argument(self) -> _NestedModelFactory | None:
         """Return the nested model's factory the field writes: optional, no declared factory, a factory found."""
-        if self._takes_nested_model_factory() and "default_factory" not in self.extras:
+        if self._takes_nested_model_factory() and not self.has_default_factory:
             return self._get_default_factory_for_nested_model()
         return None
 
@@ -433,12 +436,12 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return dataclass_field_items(
             DataclassItemInputs(
                 extra_keys=tuple(key for key in self.extras if key in self._FIELD_KEYS),
-                init_excluded=self.extras.get("init") is False,
+                init_excluded=excluded_from_init(self),
                 nested_model_factory=nested is not None,
-                default="none" if default is None else "value" if default != UNDEFINED else "undefined",
+                default=_default_state(default),
                 container_default=isinstance(default, (list, dict, set)),
                 strip_default_none=self.strip_default_none,
-                required=self.required and not self.use_default_with_required,
+                required=requires_value(self),
                 unbound=bool(self.__dict__.get(_UNBOUND_FIELD_KEY)),
             )
         )

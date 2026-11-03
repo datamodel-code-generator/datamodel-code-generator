@@ -32,6 +32,15 @@ MAX_VERSION: Final[int] = 13
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
 
 
+class _ExitCode:
+    """The exit codes of the command line: `__main__.Exit`, and those its fast paths and target runs return as ints."""
+
+    OK: Final = 0
+    DIFF: Final = 1
+    ERROR: Final = 2
+    INTERRUPTED: Final = 3
+
+
 class InputFileType(Enum):
     """Supported input file types for schema parsing."""
 
@@ -60,6 +69,9 @@ class DataModelType(Enum):
     MsgspecStruct = "msgspec.Struct"
 
 
+_PYDANTIC_MODEL_TYPES: Final = frozenset({DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass})
+
+
 class _OutputModelFamily(str, Enum):
     """Compatibility family used when preserving input-model references."""
 
@@ -71,9 +83,9 @@ class _OutputModelFamily(str, Enum):
 
 def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputModelFamily:
     """Resolve the reference-compatible family for an output model selection."""
+    if data_model_type is None or data_model_type in _PYDANTIC_MODEL_TYPES:
+        return _OutputModelFamily.PYDANTIC
     match data_model_type:
-        case None | DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
-            return _OutputModelFamily.PYDANTIC
         case DataModelType.DataclassesDataclass:
             return _OutputModelFamily.DATACLASS
         case DataModelType.TypingTypedDict:
@@ -366,6 +378,21 @@ class JsonSchemaVersion(Enum):
     Draft201909 = "2019-09"
     Draft202012 = "2020-12"
     Auto = "auto"
+
+
+_REF_SIBLING_KEYWORDS_DISABLED_VERSIONS: Final = frozenset({
+    JsonSchemaVersion.Draft4,
+    JsonSchemaVersion.Draft6,
+    JsonSchemaVersion.Draft7,
+})
+
+
+def _ref_siblings_apply(version: JsonSchemaVersion) -> bool:
+    """Return whether a JSON Schema document of ``version`` evaluates the keywords beside a ``$ref``.
+
+    Draft 4, 6 and 7 ignore them; every later draft evaluates them, and so does ``auto`` (no document to detect from).
+    """
+    return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
 
 
 class OpenAPIVersion(Enum):

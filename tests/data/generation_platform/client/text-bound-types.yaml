@@ -1,0 +1,122 @@
+openapi: 3.1.0
+info: {title: Parameter and form text by the types the models bind, version: "1"}
+servers: [{url: "https://texts.example.com"}]
+paths:
+  /untyped:
+    get:
+      operationId: listUntyped
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            properties:
+              color: {type: string}
+              size: {type: integer}
+      responses:
+        "204": {description: A query object written without type.}
+    post:
+      operationId: submitUntyped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              properties:
+                name: {type: string}
+                count: {type: integer}
+      responses:
+        "204": {description: A URL-encoded object written without type.}
+  /merged:
+    get:
+      operationId: listMerged
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Color"}
+              - {type: object, properties: {size: {type: integer}, flag: {type: boolean}}}
+      responses:
+        "204": {description: A query object built by allOf.}
+  /merged-deep:
+    get:
+      operationId: listMergedDeep
+      parameters:
+        - name: deep
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Color"}
+              - {type: object, properties: {page: {type: integer}}}
+      responses:
+        "204": {description: A deepObject query object built by allOf.}
+  /closed:
+    post:
+      operationId: submitClosed
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Closed"}
+      responses:
+        "204": {description: A URL-encoded object closed by the schema its allOf references.}
+  /a/{name}:
+    get:
+      operationId: readA
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: object
+            properties:
+              kind: {type: string}
+        - name: label
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              tone: {type: string}
+              level: {type: integer}
+      responses:
+        "204": {description: Parameter objects another operation repeats.}
+  /b/{name}:
+    get:
+      operationId: readB
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: object
+            properties:
+              kind: {type: string}
+        - name: label
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              tone: {type: string}
+              level: {type: integer}
+      responses:
+        "204": {description: Parameter objects equal to those of readA.}
+components:
+  schemas:
+    Color: {type: object, properties: {color: {type: string}}}
+    Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string}

@@ -53,6 +53,7 @@ from typing_extensions import deprecated, override
 from datamodel_code_generator._constraint_applicability import (
     DROPPED_MULTIPLE_OF_KEY,
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    UNION_SIBLING_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
 )
 from datamodel_code_generator._graph_links import (
@@ -91,7 +92,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
@@ -105,6 +108,7 @@ else:
     DataModel: TypeAlias = Any
     DataModelFieldBase: TypeAlias = Any
     DataType: TypeAlias = Any
+    Member: TypeAlias = Any
     OwnerModels: TypeAlias = Any
     CacheOwners: TypeAlias = Any
 
@@ -165,6 +169,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_forward_references",
     "mark_target_null",
     "override_type_import",
+    "name_enum_member",
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
@@ -210,6 +215,31 @@ def _bump_field_tree(field_: DataModelFieldBase) -> None:
     bump_field(field_)
     for data_type in field_.data_type.all_data_types:
         bump_node(data_type)
+
+
+def _write_alias_form(field_: DataModelFieldBase, *, inherits: bool | None) -> None:
+    """Write the aliases the field class writes in place of the ones a field built earlier took (``alias_form``).
+
+    ``inherits`` tells whether the class of the field has a generated base class; the model that holds the field says
+    so when it is not given, and a field outside any model has none.
+    """
+    if inherits is None:
+        inherits = field_.parent is not None and any(base.reference for base in field_.parent.base_classes)
+    if form := field_.alias_form(inherits=inherits):
+        for attribute, value in form.items():
+            setattr(field_, attribute, value)
+        bump_field(field_)
+
+
+def _settle_alias_forms(model: DataModel) -> None:
+    """Write the alias form of the fields of a model that has lost every base class.
+
+    A field that took its alias below a generated base class keeps ``alias=`` (``alias_form``); a model left without a
+    base class, as a root model leaves the bases of the models that inherit it, takes the form of a class without one.
+    """
+    if not model.base_classes:
+        for field_ in model.fields:
+            _write_alias_form(field_, inherits=False)
 
 
 def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
@@ -653,38 +683,14 @@ class GenerationIndexBuilder:
         return model_occurrences(model, self._model_key(model.reference), self._model_key)
 
     def _record_data_types(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
-        """Record the data type occurrences of a model in traversal order, as a full build visits them."""
-        facts = self._facts
-        data_type_ids: list[DataTypeId] = []
-        for occurrence in occurrences:
-            data_type, _, role = occurrence
-            if role == "base":
-                self._add_base_owner(id(data_type), model_id)
-            data_type_id = self._next_data_type_id
-            self._next_data_type_id += 1
-            fact = facts.data_type_facts[data_type_id] = _data_type_fact(data_type_id, model_id, occurrence)
-            if (current := facts.data_type_fact_by_object.get(object_id := id(data_type))) is not None:
-                facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(data_type_id)
-            facts.data_type_fact_by_object[object_id] = fact
-            data_type_ids.append(data_type_id)
-            if fact.reference:
-                facts.sites_by_target[self._model_key(fact.reference)][SiteKey(data_type_id)] = None
-        facts.data_types_by_model[model_id] = tuple(data_type_ids)
-
-    def _record_data_types_again(
-        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
-    ) -> None:
-        """Record a changed or appended model in the ids it had, replacing only the occurrences that differ.
+        """Record the data type occurrences of a model in the ids it had, replacing only the occurrences that differ.
 
         Keeping the ids keeps the dictionaries from growing with every change; occurrences beyond the old
-        count get new ids, which still follow every id the model keeps. The model's ``sites`` replace its old ones.
+        count get new ids, which still follow every id the model keeps. A full build records each model this way,
+        with no old ids.
         """
         data_type_facts = self._facts.data_type_facts
         old_ids = self._facts.data_types_by_model.get(model_id, ())
-        all_sites = self._facts.sites
-        old_sites = _OldSites(
-            site for data_type_id in old_ids if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
-        )
         data_type_ids = list(old_ids[: len(occurrences)])
         for _ in range(len(occurrences) - len(old_ids)):
             data_type_ids.append(self._next_data_type_id)
@@ -712,6 +718,18 @@ class GenerationIndexBuilder:
         for fact in fresh_facts:
             self._record_fact(fact)
         self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
+
+    def _record_data_types_again(
+        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
+    ) -> None:
+        """Record a changed or appended model in the ids it had; its ``sites`` replace its old ones."""
+        all_sites = self._facts.sites
+        old_sites = _OldSites(
+            site
+            for data_type_id in self._facts.data_types_by_model.get(model_id, ())
+            if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
+        )
+        self._record_data_types(model_id, occurrences)
         self._record_sites(model_id, sites, old_sites)
 
     def _record_sites(
@@ -805,9 +823,8 @@ class GenerationIndexBuilder:
             owners[base_class_id] = model_id
             return
         model_ids = [current] if isinstance(current, int) else current
-        if model_id not in model_ids:
-            insort(model_ids, model_id, key=self._facts.parse_order)
-            owners[base_class_id] = model_ids
+        insort(model_ids, model_id, key=self._facts.parse_order)
+        owners[base_class_id] = model_ids
 
     def _remove_base_owner(self, base_class_id: int, model_id: ModelId) -> None:
         owners = self._facts.base_owner_model_ids_by_object
@@ -1351,14 +1368,20 @@ class GenerationStore:  # noqa: PLR0904
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
-    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]]) -> FinalFacts:  # noqa: PLR6301
+    def seal_facts(  # noqa: PLR6301
+        self,
+        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
+        member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+    ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        A decision reads each model as its view (``model/_views.py``). This is the only construction of
-        ``FinalFacts``.
+        A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
+        ``member_keywords``. This is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
-        return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
+        return FinalFacts(
+            module_facts, tuple(model for facts in module_facts for model in facts.live_models), member_keywords
+        )
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)
     def register_model(self, model: DataModel) -> None:
@@ -1798,15 +1821,23 @@ class GenerationStore:  # noqa: PLR0904
         """Give a field a new Python name, and ``alias`` as its alias when it has none, so it keeps its wire name."""
         if alias is not None and field_.alias is None:
             field_.alias = alias
+            _write_alias_form(field_, inherits=None)
         field_.name = name
         bump_field(field_)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
-    def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity) -> None:
-        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out."""
+    def set_field_identity(
+        field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
+        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out.
+
+        The aliases are written in the form of the field class for a class that ``inherits`` a generated base class
+        or not (``DataModelFieldBase.alias_form``).
+        """
         for attribute, value in identity.items():
             setattr(field_, attribute, value)
+        _write_alias_form(field_, inherits=inherits)
         bump_field(field_)
 
     @staticmethod
@@ -1828,12 +1859,18 @@ class GenerationStore:  # noqa: PLR0904
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_constraints() instead.", category=None)
     def set_field_constraints(
-        field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
         field_.constraints = constraints
         if type_dependent is not None:
             field_.__dict__[TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent
+        if union_siblings is not None:
+            field_.__dict__[UNION_SIBLING_CONSTRAINTS_KEY] = union_siblings
         bump_field(field_)
 
     @staticmethod
@@ -1924,6 +1961,13 @@ class GenerationStore:  # noqa: PLR0904
         """
         data_type.alias = alias
         bump_node(data_type)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().name_enum_member() instead.", category=None)
+    def name_enum_member(field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
+        """Write the expression the enum member in the default of a field names its enum by, which the field sees."""
+        member.alias = alias
+        bump_field(field_)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().add_model_import() instead.", category=None)
@@ -2138,6 +2182,7 @@ class GenerationStore:  # noqa: PLR0904
         self._state_model_sites("set_base_classes", model)
         model.base_classes = list(base_classes)
         self._model_changed(model)
+        _settle_alias_forms(model)
 
     @deprecated("Use GenerationStore.builder().reset_base_classes() instead.", category=None)
     def reset_base_classes(self, model: DataModel) -> None:
@@ -2481,6 +2526,10 @@ class GraphBuilder:
         """Write the expression a reference type names its model by through ``GenerationStore.name_reference``."""
         self._store.name_reference(data_type, alias)  # ty: ignore[deprecated]
 
+    def name_enum_member(self, field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
+        """Write the expression the enum member in a default names its enum by through ``name_enum_member``."""
+        self._store.name_enum_member(field_, member, alias)  # ty: ignore[deprecated]
+
     def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""
         self._store.record_dropped_multiple_of(data_type, value)  # ty: ignore[deprecated]
@@ -2573,10 +2622,17 @@ class GraphBuilder:
         self._store.set_base_classes(model, base_classes)  # ty: ignore[deprecated]
 
     def set_field_constraints(
-        self, field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        self,
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
-        self._store.set_field_constraints(field_, constraints, type_dependent=type_dependent)  # ty: ignore[deprecated]
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
+        self._store.set_field_constraints(  # ty: ignore[deprecated]
+            field_, constraints, type_dependent=type_dependent, union_siblings=union_siblings
+        )
 
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
@@ -2590,9 +2646,11 @@ class GraphBuilder:
         """Give a field a new extras dict."""
         self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
 
-    def set_field_identity(self, field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+    def set_field_identity(
+        self, field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
         """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
-        self._store.set_field_identity(field_, identity)  # ty: ignore[deprecated]
+        self._store.set_field_identity(field_, identity, inherits=inherits)  # ty: ignore[deprecated]
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""

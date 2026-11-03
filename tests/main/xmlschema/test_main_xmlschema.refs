@@ -90,6 +90,8 @@ without-option	main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_co
 	main/xmlschema/constructs_matrix.py
 [test_main_xmlschema_temporal_default_import_alias]
 	main/xmlschema/temporal_default_import_alias.py
+[test_main_xmlschema_temporal_default_moves_to_parentheses_when_its_head_overflows]
+	main/xmlschema/main_xmlschema/temporal_default_moves_to_parentheses_when_its_head_overflows.py
 [test_main_xmlschema_temporal_defaults]
 	main/xmlschema/temporal_defaults.py
 [test_main_xmlschema_type_alias_with_field_description_py312]

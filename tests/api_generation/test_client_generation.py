@@ -50,6 +50,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "auth",
         "auth-no-root",
         "auth-errors",
+        "auth-roles",
+        "auth-roles-30",
         "auth-context",
         "auth-wire-conflicts",
         "credential-name-errors",
@@ -63,6 +65,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "servers",
         "servers-single-value-enum",
         "default-server",
+        "default-server-template",
         "implicit-server",
         "names",
         "names-unpack",
@@ -76,12 +79,17 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "method-collisions-suffix",
         "child-collision",
         "media-errors",
+        "response-keys",
         "form-name-errors",
         "form-name-kept",
         "media-item-parts",
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",
         "multipart-referenced-items",
+        "forms-reuse-response",
+        "forms-allof-cycle",
+        "forms-member-locations",
+        "forms-boolean-properties",
         "server-errors",
         "codec-errors",
         "binary-text",
@@ -90,16 +98,19 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "cookie-names",
         "header-names",
         "reference-errors",
+        "pointer-errors",
         "setting-errors",
         "empty",
         "empty-security",
         "querystring",
         "references",
+        "pointer-references",
         "evolution",
         "validation-ambiguous",
         "discriminator-copies",
         "discriminator-variants",
         "discriminator-reuse",
+        "discriminator-forms",
         "fields",
         "fields-structural",
         "fields-unpack",
@@ -143,6 +154,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compression",
+        "codec-docstrings",
         "docstrings",
         "route-text",
         "templates",
@@ -157,6 +169,15 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "typeddict-target-keys",
         "ref-instance-data",
         "ref-name-positions",
+        "text-bound-types",
+        "text-bound-types-reuse",
+        "text-bound-types-errors",
+        "parts-bound-types",
+        "parts-bound-types-reuse",
+        "parts-bound-types-collapse",
+        "parts-bound-types-errors",
+        "parts-bound-responses",
+        "parts-bound-responses-reuse",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -241,6 +262,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-unmodeled",
         "protocols-cache-errors",
         "protocols-cache-checks",
+        "protocols-cache-bodyless",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -443,16 +465,31 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
             ("_operations.py",),
         ),
+        (
+            "ruff-utf-16",
+            {"encoding": "utf-16", "formatters": ["ruff-check", "ruff-format"]},
+            ("resources", "pets", "__init__.py"),
+        ),
+        (
+            "ruff-latin-1",
+            {
+                "encoding": "latin-1",
+                "formatters": ["ruff-check", "ruff-format"],
+                "custom_file_header": "# -*- coding: latin-1 -*-\n# Café",
+            },
+            ("resources", "pets", "__init__.py"),
+        ),
     ],
 )
 def test_client_output_options(case: str, options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
     """Head, format, and encode the client files with the model output options, exactly like the models.
 
-    The formatters and their settings lay out the plan values the templates leave on one line.
+    The formatters and their settings lay out the plan values the templates leave on one line. Ruff reads only UTF-8,
+    so the client files are formatted whatever encoding they are written in.
     """
-    source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
-    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     encoding = str(options.get("encoding", "utf-8"))
+    (source := tmp_path / "pets.yaml").write_bytes((SOURCE / "pets.yaml").read_text(encoding="utf-8").encode(encoding))
+    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     text = (tmp_path / "client").joinpath(*module).read_bytes().decode(encoding)
     assert_output(
         text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),

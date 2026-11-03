@@ -89,6 +89,23 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
           }
         }
       }
+    },
+    "/api/notes": {
+      "get": {
+        "operationId": "getNote",
+        "responses": {
+          "200": {
+            "description": "The note.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -135,6 +152,38 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
               "$ref": "#/components/schemas/Tree"
             }
           }
+        }
+      },
+      "Label": {
+        "$anchor": "label",
+        "type": "string"
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "examples": {
+            "$anchor": "listed",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          },
+          "listed": {
+            "$ref": "#/components/schemas/Note/properties/examples"
+          }
+        },
+        "examples": [
+          {
+            "$anchor": "label",
+            "kind": "example-only"
+          },
+          {
+            "$id": "https://example.com/owner.json",
+            "kind": "example-only"
+          }
+        ],
+        "default": {
+          "$anchor": "node"
         }
       }
     }

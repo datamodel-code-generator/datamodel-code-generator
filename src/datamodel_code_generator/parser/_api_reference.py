@@ -4,17 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence  # noqa: TC003 - Public annotations support get_type_hints().
 from functools import cached_property, lru_cache
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
 from typing_extensions import override
 
 from datamodel_code_generator import SchemaParseError
-from datamodel_code_generator._json_pointer import (
-    NONCANONICAL_ESCAPE,
-    NONCANONICAL_PERCENT,
-    escape_token,
-    fragment_tokens,
-)
+from datamodel_code_generator._json_pointer import escape_token, reference_tokens
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._schema_reading import split_json_pointer
@@ -27,18 +22,12 @@ from datamodel_code_generator.reference import (
 
 
 def pointer_tokens(ref: str) -> tuple[str, ...] | None:
-    """Decode a URI fragment once, distinguishing named anchors from pointers."""
-    fragment = ref.partition("#")[2]
-    msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(ref)!r}"
-    if NONCANONICAL_PERCENT.search(fragment):
-        raise SchemaParseError(msg, path=[ref])
+    """Read a URI fragment strictly (``reference_tokens``), distinguishing named anchors from pointers."""
     try:
-        decoded = unquote(fragment, errors="strict")
-    except UnicodeError as exc:
+        return reference_tokens(ref.partition("#")[2], strict=True)
+    except ValueError as exc:
+        msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(ref)!r}"
         raise SchemaParseError(msg, path=[ref], original_error=exc) from exc
-    if (tokens := fragment_tokens(decoded)) and NONCANONICAL_ESCAPE.search(decoded):
-        raise SchemaParseError(msg, path=[ref])
-    return tokens
 
 
 def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resolved: str) -> None:

@@ -1,0 +1,23 @@
+&item
+get:
+  parameters:
+    - name: event
+      in: query
+      schema:
+        type: object
+        properties:
+          kind:
+            $anchor: kind
+            type: string
+            maxLength: 8
+          again:
+            $ref: "#kind"
+  callbacks:
+    onEvent:
+      "{$request.query.url}": *item
+  responses:
+    "200":
+      description: The events.
+      content:
+        text/plain:
+          schema: true

@@ -1,0 +1,2 @@
+{"host": "10.0.0.1", "tags": ["a"], "owner": {"name": "n"}}: accepted IPv4Address1(host=IPv4Address('10.0.0.1'), tags=['a'], owner=Owner(name='n'))
+{"host": "not an address"}: rejected ValidationError

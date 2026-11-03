@@ -1,0 +1,22 @@
+openapi: 3.2.0
+info:
+  title: Nameless querystring
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term:
+                    type: string
+      responses:
+        '200':
+          description: The matches.

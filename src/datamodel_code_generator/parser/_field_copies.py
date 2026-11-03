@@ -12,7 +12,7 @@ the names other modules import from it.
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model.base import _overlay_constraints
@@ -24,7 +24,7 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._shared import _InheritedTypeModifiers, placeholder_identity
 from datamodel_code_generator.parser.generation import GenerationStore
-from datamodel_code_generator.types import NONE, DataType, _copy_data_type, build_union, union_members
+from datamodel_code_generator.types import DataType, _copy_data_type, _is_plain_none, build_union, union_members
 
 if TYPE_CHECKING:
     from typing_extensions import Unpack
@@ -46,31 +46,9 @@ def _copy_data_model_field(
 
     The copy owns its extras, validation aliases and mutable default: copies of the source's, or the ones ``facts``
     gives. It takes every value ``identity`` and ``facts`` give when it is made, so no caller writes them on it later.
+    ``DataModelFieldBase.copy_owning`` makes it, the one copy that ``DataModelFieldBase.copy_deep`` makes too.
     """
-    copied_data_type = data_type or _copy_data_type(
-        field.data_type,
-        register_references=register_references,
-    )
-    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
-    if "extras" not in facts:
-        update["extras"] = deepcopy(field.extras)
-    if field.validation_aliases is not None:
-        update["validation_aliases"] = list(field.validation_aliases)
-    if "default" not in facts:
-        match field.default:
-            case dict() | list() | set():
-                update["default"] = deepcopy(field.default)
-    update.update(facts)
-    if identity is not None:
-        update.update(identity)
-    copied_field = field.model_copy(update=update)
-    copied_data_type.parent = copied_field
-    return copied_field
-
-
-def _wraps_one_list(data_type: DataType) -> bool:
-    """Return whether ``data_type`` is not a list and holds one member, which is a list."""
-    return not data_type.is_list and len(data_type.data_types) == 1 and data_type.data_types[0].is_list
+    return field.copy_owning(data_type=data_type, register_references=register_references, **facts, **(identity or {}))
 
 
 def _get_inherited_type_modifiers(
@@ -80,7 +58,7 @@ def _get_inherited_type_modifiers(
     drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = _copy_data_type(data_type, register_references=False) if _wraps_one_list(data_type) else None
+    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None  # noqa: SLF001
     return _InheritedTypeModifiers(
         null_rule=null_rule,
         is_optional=data_type.is_optional,
@@ -106,7 +84,7 @@ def _without_null_members(data_type: DataType, current_type: DataType | _Inherit
         and (members := union_members(data_type))
     ):
         return data_type
-    kept = [member for member in members if member.type != NONE or member.data_types]
+    kept = [member for member in members if not _is_plain_none(member)]
     rebuilt = data_type.model_copy(update={"data_types": build_union(DataType, kept).data_types})
     for member in rebuilt.data_types:
         member.parent = rebuilt
@@ -193,7 +171,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             wrapper_template = (
                 current_type.list_wrapper
                 if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if _wraps_one_list(current_type) else None)
+                else (current_type if current_type._wraps_one_list else None)  # noqa: SLF001
             )
             if wrapper_template is not None and copied_data_type.is_list:
                 wrapper = _copy_data_type(wrapper_template, register_references=register_references)

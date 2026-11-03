@@ -10,10 +10,11 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
+from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DEFAULT_WATCH_DELAY
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._option_names import split_external_ref_mapping
+from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AllExportsScope,
@@ -80,12 +81,6 @@ def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, 
     from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
 
     return _validate_additional_import_paths(additional_imports) or []
-
-
-def is_url(ref: str) -> bool:
-    """Check if a reference string is a URL (HTTP, HTTPS, or file scheme)."""
-    # Keep this local so importing the CLI does not import reference.py and its model stack.
-    return ref.startswith(("https://", "http://", "file://"))
 
 
 def _validate_http_key_value_options(
@@ -169,17 +164,7 @@ def _get_config_class() -> type[Config]:
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 
-        @field_validator(
-            "input",
-            "output",
-            "diff_against",
-            "custom_template_dir",
-            "custom_file_header_path",
-            "http_local_ref_path",
-            "server_output",
-            "client_output",
-            mode="before",
-        )
+        @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
         @classmethod
         def validate_path(cls, value: Any) -> Path | None:
             """Validate and resolve path."""
@@ -343,8 +328,9 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_root(self: Self) -> Self:
             """Validate root model configuration."""
-            if self.use_annotated:
-                self.field_constraints = True
+            from datamodel_code_generator._option_rules import enable_implied_options  # noqa: PLC0415
+
+            enable_implied_options(self, "use_annotated")
             return self
 
         @model_validator(mode="after")
@@ -377,12 +363,9 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_schema_validator_base_class_name(cls, v: str | None) -> str | None:
             """Validate schema validator base class name."""
-            if v is None:  # pragma: no cover
-                return v
-            from datamodel_code_generator._target_unicode import is_python_name  # noqa: PLC0415
+            from datamodel_code_generator.base_config import _schema_validator_base_class_name_error  # noqa: PLC0415
 
-            if not is_python_name(v, rule="legacy-host-identifiers"):
-                msg = f"--schema-validator-base-class-name '{v}' is not a valid Python identifier"
+            if (msg := _schema_validator_base_class_name_error(v)) is not None:
                 raise Error(msg)
             return v
 
@@ -410,7 +393,7 @@ def _get_config_class() -> type[Config]:
         openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: [OpenAPIScope.Schemas])  # noqa: UP045
         custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
         watch: bool = False
-        watch_delay: float = 0.5
+        watch_delay: float = DEFAULT_WATCH_DELAY
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
 
@@ -454,18 +437,10 @@ def _explicit_config_args(args: Namespace) -> dict[str, _RawConfigValue]:
 
 
 def _prepare_cli_config_args(set_args: Mapping[str, _RawConfigValue]) -> dict[str, _RawConfigValue]:
-    """Apply validation-time CLI config values before merging."""
-    if not set_args:
-        return {}
+    """Return the command-line values with the options they imply, as merging copies only the given fields."""
+    from datamodel_code_generator._option_rules import implied_options  # noqa: PLC0415
 
-    prepared_args = dict(set_args)
-    if prepared_args.get("use_annotated"):
-        prepared_args["field_constraints"] = True
-
-    if prepared_args.get("use_type_alias_type"):
-        prepared_args["use_type_alias"] = True
-
-    return prepared_args
+    return {**set_args, **implied_options(set_args)}
 
 
 def _apply_implicit_cli_config_values(
@@ -476,7 +451,7 @@ def _apply_implicit_cli_config_values(
     """Apply CLI defaults after pyproject, command-line, and preset values have merged."""
     from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
 
-    explicit_fields = {field.replace("-", "_") for field in pyproject_config} | set(cli_config_args)
+    explicit_fields = {field_name(field) for field in pyproject_config} | set(cli_config_args)
     for name, value in implied_model_settings(config, explicit_fields).items():
         setattr(config, name, value)
 

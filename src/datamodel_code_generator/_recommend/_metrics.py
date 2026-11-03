@@ -23,6 +23,7 @@ from datamodel_code_generator._json_schema import (
     NAMED_SCHEMA_MAPS,
     json_nodes,
 )
+from datamodel_code_generator._recommend._signals import normalize_name
 from datamodel_code_generator.reference import _special_token_pattern
 
 if TYPE_CHECKING:
@@ -61,7 +62,6 @@ OneOf AllOf Field Property Properties Schema Element Entry Payload Case Variant 
 AdditionalProperties Body Content Inner Json Default Other Kind Result Info Details Config Options Settings Params
 Parameters Input Output Response Request Status State Enum Key Member Members Union Choice Alternative Option Record
 Struct Elem Obj Anonymous Unnamed Untitled"""
-_NON_ALNUM: Final = re.compile(r"[^a-z0-9]")
 _NUMBER_WORD: Final = re.compile(r"[a-z0-9](One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)$")
 _GENERIC_NUMBER: Final = re.compile(
     r"(OneOf|AnyOf|AllOf|Inner|Case|Value|Item|Object|Model|Type|Variant|Option|Member|Alternative)\d+", re.IGNORECASE
@@ -81,7 +81,7 @@ _DEFINITION_DEPTH: Final = 2
 
 
 def _norm(text: object) -> str:
-    return _NON_ALNUM.sub("", str(text).lower())
+    return normalize_name(str(text))
 
 
 _GENERIC: Final = frozenset(map(_norm, _GENERIC_WORDS.split()))

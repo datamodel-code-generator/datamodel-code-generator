@@ -10,17 +10,21 @@ from __future__ import annotations
 
 from functools import lru_cache
 from itertools import starmap
-from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, get_args
 
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._target_contract import (
+    BuiltinName,
     BuiltinType,
     GeneratedSymbolType,
+    ImportedExpression,
     ImportedType,
+    LiteralScalar,
     ModelHint,
     NoneType,
+    SourceExpression,
     UnionType,
 )
 from datamodel_code_generator.imports import Import
@@ -30,26 +34,19 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, HintText, SymbolId, TypeView
+    from datamodel_code_generator._target_contract import (
+        GeneratedTypeContractBatch,
+        HintText,
+        SymbolId,
+        TypeArgument,
+        TypeView,
+    )
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.types import DataType
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
 
-_BUILTINS: Final = (
-    "bool",
-    "bytes",
-    "complex",
-    "dict",
-    "float",
-    "frozenset",
-    "int",
-    "list",
-    "object",
-    "set",
-    "str",
-    "tuple",
-)
+_BUILTINS: Final = get_args(BuiltinName)
 _LOCAL: Final = (None, "")
 _FLAGS: Final[tuple[dict[str, Any], ...]] = tuple({flag: True} for flag in ("is_list", "is_set", "is_frozen_set"))
 _PART: Final = "\x01"
@@ -289,6 +286,20 @@ class TargetModule:
             if self.qualified
             else self._claim(identity, name)
         )
+
+    def argument(self, value: TypeArgument) -> str:
+        """Return the Python expression of a recorded literal or source expression."""
+        match value:
+            case LiteralScalar(kind="decimal"):
+                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
+            case LiteralScalar():
+                return repr(value.value)
+            case SourceExpression():
+                return value.text
+            case _:
+                pass
+        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
+        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
     def symbol(self, symbol: SymbolId) -> str:
         """Return the spelling of a generated model: an attribute of its module, or its own name with exact imports.

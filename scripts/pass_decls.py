@@ -232,7 +232,9 @@ DELETE_DUPLICATE_MODELS = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP),
-    writes=_facts(Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES),
+    writes=_facts(
+        Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES
+    ),
     summary="Removes models of the module that render the same as another and redirects their users.",
 )
 REPLACE_DUPLICATE_NAME_IN_MODULE = PassDecl(
@@ -467,10 +469,14 @@ CHANGE_FIELD_NAME = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
-    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(
         After("collapse_root_models", "renames fields against the class names collapse settled"),
         After("record_decimal_alias_models", "the Decimal check reads the field names as parsed"),
+        After(
+            "set_default_enum_member", "enum defaults read the types before a rename gives a keyless one its model's"
+        ),
+        After("sort_models", "models are ordered by their types before a rename gives a keyless one its model's"),
     ),
 )
 RESTORE_INHERITED_FIELD_NAMES_FOR_UNIQUE_ALIASES = PassDecl(
@@ -487,7 +493,7 @@ APPLY_DISCRIMINATOR_TYPE = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
+    reads=_facts(Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
     writes=_facts(
         Fact.FIELD_SET,
         Fact.FIELD_TYPES,
@@ -501,6 +507,7 @@ APPLY_DISCRIMINATOR_TYPE = PassDecl(
     after=(
         After("sort_models", "models are ordered by their types before tags rewrite the variant types"),
         After("set_default_enum_member", "enum defaults read the types before tags rewrite them"),
+        After("change_field_name", "tags are written into the types that a rename gave a keyless one its model's"),
     ),
     summary="Writes the tag of each discriminated union into its variants, in any module.",
 )
@@ -548,7 +555,7 @@ RENAME_FIELDS_HIDING_TYPES = PassDecl(
         RenderFact.KEYWORD_ONLY,
         RenderFact.FORCED_ASSIGNMENT,
     ),
-    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),),
 )
 REMOVE_OVERRIDDEN_MODELS = PassDecl(
@@ -1209,11 +1216,14 @@ ALIAS_BUILTINS_HIDDEN_BY_SUBMODULES = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
-    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
     after=(
         After("alias_builtin_shadowing_module_imports", "aliases the builtins once the module imports are aliased"),
     ),
-    summary="Imports a builtin that a package's own submodule hides, e.g. ``list``, under an alias for its bare uses.",
+    summary=(
+        "Renames the import of a model that a package's own submodule hides the name of, and imports a builtin that "
+        "it hides, e.g. ``list``, under an alias for its bare uses."
+    ),
 )
 BIND_MODULE_FIELD_NAMES = PassDecl(
     "bind_module_field_names",
@@ -1234,9 +1244,45 @@ CHANGE_IMPORTED_MODEL_NAME = PassDecl(
     Phase.IMPORTS,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(RenderFact.MODULE_IMPORTS, RenderFact.CLASS_NAMES),
+    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.CLASS_NAMES),
     writes=_facts(RenderFact.CLASS_NAMES),
-    summary="Renames models that collide with imports, the last class-name change.",
+    summary=(
+        "Renames models that collide with imports, or with an import every module writes that a type of the module "
+        "names as text, the last class-name change."
+    ),
+)
+IMPORT_MODELS_OF_HIDDEN_SUBMODULES = PassDecl(
+    "import_models_of_hidden_submodules",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_TYPES,
+        Fact.FIELD_NAMES,
+        Fact.MODELS_EXIST,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.MODEL_ORDER,
+        RenderFact.UNBOUND_FIELDS,
+        RenderFact.BACKEND_CONFIG,
+        RenderFact.CLASS_NAMES,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
+    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
+    after=(
+        After(
+            "change_imported_model_name",
+            "decides on the final class names; the new imports take names that no class holds",
+        ),
+        After(
+            "bind_module_field_names",
+            "imports the models anew once field names are bound; the new imports take names that no field holds",
+        ),
+    ),
+    summary=(
+        "Imports a model of a submodule from the submodule where its package's ``__init__`` binds the submodule's name "
+        "itself, by its ``__future__`` import or a class, e.g. ``from .annotations import Item``."
+    ),
 )
 NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     "name_final_classes_of_additional_properties",
@@ -1245,6 +1291,13 @@ NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(RenderFact.CLASS_NAMES, RenderFact.IMPORT_ALIASES),
     writes=_facts(RenderFact.BACKEND_CONFIG),
+    after=(
+        After(
+            "import_models_of_hidden_submodules",
+            "names the classes of other modules through their final imports; backend config is written after the "
+            "hidden submodules are decided, as `decide_config_items` writes it later",
+        ),
+    ),
     condition="additional properties reference classes",
     summary="Renders backend settings that name the classes of additional properties (TypedDict extra_items) "
     "from their final names, a class of another module through its import (model hook).",
@@ -1262,6 +1315,11 @@ REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES = PassDecl(
             "name_final_classes_of_additional_properties",
             "both write backend config; the sequence interface is decided last",
         ),
+        After(
+            "import_models_of_hidden_submodules",
+            "backend config is written after the hidden submodules are decided, as `decide_config_items` writes it "
+            "later",
+        ),
     ),
     condition="use_root_model_sequence_interface and a model was renamed",
 )
@@ -1276,6 +1334,10 @@ REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES = PassDecl(
     after=(
         After("change_imported_model_name", "plans the validator helpers again for the renamed models"),
         After("bind_module_field_names", "binding reads the module imports before the helpers are planned again"),
+        After(
+            "import_models_of_hidden_submodules",
+            "adds the imports of the helpers once the models of hidden submodules are imported",
+        ),
     ),
     condition="generate_schema_validators and a model was renamed",
 )
@@ -1305,7 +1367,10 @@ REMAP_IMPORT_OVERRIDES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.MODULE_IMPORTS),
-    after=(After("replan_schema_validators_after_renames", "import overrides move the final imports"),),
+    after=(
+        After("replan_schema_validators_after_renames", "import overrides move the final imports"),
+        After("import_models_of_hidden_submodules", "import overrides move the final imports"),
+    ),
     condition="import_overrides",
 )
 REJECT_UNAVAILABLE_IMPORTS = PassDecl(
@@ -1490,6 +1555,19 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         writes=frozenset({Fact.FIELD_TYPES, Fact.NULLABLE}),
         summary="Drops the None a type restates of the model it names when that model holds null itself.",
         condition="--omit-redundant-reference-null",
+    ),
+    "omit_untaken_union_constraints": PassDecl(
+        "omit_untaken_union_constraints",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.MODEL_KIND, Fact.BASES}),
+        writes=frozenset({Fact.CONSTRAINTS}),
+        summary=(
+            "Drops the keywords beside a union that a member cannot take when every member keeps the check without"
+            " them."
+        ),
+        condition="--field-constraints",
     ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

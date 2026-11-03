@@ -18,7 +18,6 @@ that tests call or that other parts of the parser call stay on the parser as del
 from __future__ import annotations
 
 from contextlib import ExitStack
-from dataclasses import replace
 from itertools import chain
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
@@ -30,17 +29,16 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
-from datamodel_code_generator.parser._intersection import inherits_keyword
-from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
-from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
+from datamodel_code_generator.parser._field_rows import uses_default_with_required
+from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._shared import (
+    _detach_deferred_inherited_field_parents,
+    inherited_default_source,
+)
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, _merges_ref_siblings
-from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
-)
+from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
     _is_special_path,
@@ -48,6 +46,7 @@ from datamodel_code_generator.reference import (
     _rw_variant_flag,
     _rw_variant_of,
     _rw_variant_path,
+    field_origin_of,
     location_of,
 )
 
@@ -91,6 +90,7 @@ __all__ = [
     "inherited_default_source",
     "join_rw_model_property_flags",
     "legacy_rw_variants",
+    "lightweight_type_keys",
     "merge_inherited_field_overrides",
     "merged_ref_model_schemas",
     "merged_ref_sibling_schemas",
@@ -599,8 +599,14 @@ def collect_inherited_fields_for_request_response(
         required_names = parser._get_inherited_required_names(base_classes)  # noqa: SLF001
         for field in result:
             if _field_source_name(field) in required_names:
-                field.required = True
-                field.use_default_with_required = parser.apply_default_values_for_required_fields and field.has_default
+                parser._graph_builder.require_field(  # noqa: SLF001
+                    field,
+                    use_default_with_required=uses_default_with_required(
+                        required=True,
+                        has_default=field.has_default,
+                        use_default=parser.apply_default_values_for_required_fields,
+                    ),
+                )
     return result
 
 
@@ -696,7 +702,7 @@ def merge_inherited_field_overrides(
         if class_name := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
             parser._apply_inherited_field_default(resolved_field, inherited_field, class_name=class_name)  # noqa: SLF001
         elif class_name := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
-            source = inherited_default_source(parser, field, inherited_field)
+            source = inherited_default_source(parser.allof_merge_mode, field, inherited_field)
             parser._apply_inherited_field_default(resolved_field, source, class_name=class_name)  # noqa: SLF001
         result.append(resolved_field)
     return result
@@ -712,8 +718,9 @@ def overlay_inherited_field(
 ) -> DataModelFieldBase | None:
     """Return the copy of ``inherited_field`` that the deferred override ``field`` resolves to, else None.
 
-    The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``) and
-    the required state of the override, without the inherited constructor default.
+    The copy takes the overlay of both fields (``parser/_field_copies.py:_copy_resolved_inherited_field``), the
+    required state of the override, without the inherited constructor default, and the origin of an override that
+    declares the property (``reference.field_origin_of``): it is the field the override's property schema builds.
     """
     if (
         resolved_field := parser._copy_inherited_field(  # noqa: SLF001
@@ -726,23 +733,9 @@ def overlay_inherited_field(
         )
     ) is not None:
         parser._prepare_required_inherited_field(resolved_field, inherited_field, overriding_field=field)  # noqa: SLF001
+        if (origin := field_origin_of(field)) is not None and origin.kind == "property":
+            with_field_origin(resolved_field, origin.kind, origin.location)
     return resolved_field
-
-
-def inherited_default_source(
-    parser: RwSplitHost, field: DataModelFieldBase, inherited_field: DataModelFieldBase
-) -> DataModelFieldBase:
-    """Return the field whose default the override ``field`` of ``inherited_field`` takes.
-
-    The inherited one where the merge mode inherits ``default`` (``parser/_intersection.py:inherits_keyword``) and
-    ``field`` declares none.
-    """
-    if inherits_keyword(parser.allof_merge_mode.value, "default") and not (
-        _RAW_SCHEMA_DEFAULT_KEY in field.__dict__
-        and field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] is not _RAW_SCHEMA_DEFAULT_UNDEFINED
-    ):
-        return inherited_field
-    return field
 
 
 def prepare_required_inherited_field(
@@ -814,8 +807,14 @@ def get_raw_inherited_fields(
     if not parser.force_optional_for_required_fields:
         for field in result:
             if _field_source_name(field) in required_names:
-                field.required = True
-                field.use_default_with_required = parser.apply_default_values_for_required_fields and field.has_default
+                parser._graph_builder.require_field(  # noqa: SLF001
+                    field,
+                    use_default_with_required=uses_default_with_required(
+                        required=True,
+                        has_default=field.has_default,
+                        use_default=parser.apply_default_values_for_required_fields,
+                    ),
+                )
             parser.data_model_type.finalize_required_inherited_field(field)
 
     parser._raw_inherited_fields_cache[resolved_ref] = tuple(result)  # noqa: SLF001
@@ -1048,6 +1047,12 @@ def ref_schema_generates_variant(
     return result
 
 
+def _cache_request_response_split(parser: RwSplitHost, resolved_ref: str, *, splits: bool) -> None:
+    """Record whether the schema at a key splits under ``request-response``: for both variants, which split together."""
+    for suffix in ("Request", "Response"):
+        parser._rw_model_variant_requirement_cache[resolved_ref, suffix] = splits  # noqa: SLF001
+
+
 def request_response_ref_schema_generates_variant(
     parser: RwSplitHost,
     resolved_ref: str,
@@ -1077,13 +1082,11 @@ def request_response_ref_schema_generates_variant(
 
     if matched_ref is None:
         for evaluated_ref in parent_by_ref:
-            parser._rw_model_variant_requirement_cache[evaluated_ref, "Request"] = False  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache[evaluated_ref, "Response"] = False  # noqa: SLF001
+            _cache_request_response_split(parser, evaluated_ref, splits=False)
         return False
 
     while matched_ref is not None:
-        parser._rw_model_variant_requirement_cache[matched_ref, "Request"] = True  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[matched_ref, "Response"] = True  # noqa: SLF001
+        _cache_request_response_split(parser, matched_ref, splits=True)
         matched_ref = parent_by_ref[matched_ref]
     return True
 
@@ -1190,26 +1193,55 @@ def get_ref_schema_rw_model_reference_facts(
                     references.setdefault(cast("str", child.reference), None)
                 case _:
                     stack.append(
-                        SchemaSite("", cast("JsonSchemaObject", child.schema), [resolved_ref], parent=child.into)
+                        SchemaSite(
+                            "",
+                            cast("JsonSchemaObject", child.schema),
+                            [resolved_ref],
+                            parent=child.into,
+                            root=child.position == "root",
+                        )
                     )
     parser._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))  # noqa: SLF001
     return result
 
 
-def typed_field_site(parser: RwSplitHost, item: object, defining_ref: str) -> Iterable[TypedChild[JsonSchemaObject]]:
+def lightweight_type_keys(parser: RwSplitHost, data_type: DataType | None) -> tuple[str, ...]:
+    """Return the keys of the models a lightweight type names, and drop the type, which is built only to read them."""
+    keys = (
+        () if data_type is None else tuple(item.reference.path for item in data_type.all_data_types if item.reference)
+    )
+    unregister_temporary_type(parser, data_type)
+    return keys
+
+
+def typed_field_site(
+    parser: RwSplitHost,
+    item: object,
+    defining_ref: str,
+    *,
+    merges_ref_first: bool = False,
+    parent: JsonSchemaObject | None = None,
+) -> Iterable[TypedChild[JsonSchemaObject]]:
     """Return what a field site of a schema types, as the row ``parse_item`` chooses for it declares.
 
-    Row ``legacy-rw-field-site-as-written``: the row is chosen from the site as written, its $ref merged with its
-    sibling keywords only where the site itself writes a customTypePath.
+    A $ref beside sibling keywords is read merged with them, relative to the schema that defines the site: by the steps
+    of the field table, and before the table chooses at the positions that ``merges_ref_first`` names (a property,
+    ``parse_object_fields``), where the python-type row reads the schema the $ref names. ``parent`` is the schema
+    the item is an item, a member or a value of, as ``parse_item`` gets it there, which the rows that write the
+    constraints of an item on a root model read.
     """
     if not isinstance(item, JsonSchemaObject):
         return ()
-    site = SchemaSite("", item, [defining_ref])
-    as_parsed = None
-    if item.custom_type_path and _merges_ref_siblings(item):
-        with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-            as_parsed = replace(site, obj=parser._merge_ref_with_schema(item))  # noqa: SLF001
-    return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
+    site = SchemaSite("", item, [defining_ref], parent=parent)
+    if not _merges_ref_siblings(item):
+        return parser._FIELD_TABLE.typed_children(parser, site)  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+        as_parsed = (
+            SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref], parent=parent)  # noqa: SLF001
+            if merges_ref_first
+            else None
+        )
+        return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
 
 
 def merged_ref_model_schemas(
@@ -1556,8 +1588,7 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
     if request_response := parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
             parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[reference.path, "Request"] = True  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache[reference.path, "Response"] = True  # noqa: SLF001
+        _cache_request_response_split(parser, reference.path, splits=True)
         parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
         parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
             field_name for field in own_fields if (field_name := _field_source_name(field)) is not None

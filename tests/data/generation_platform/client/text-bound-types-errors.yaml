@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info: {title: Parameter text the types the models bind refuse, version: "1"}
+servers: [{url: "https://texts.example.com"}]
+paths:
+  /merged:
+    get:
+      operationId: listMerged
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Color"}
+              - {type: object, properties: {tags: {type: array, items: {type: string}}}}
+      responses:
+        "204": {description: A query object built by allOf whose array member no form style writes.}
+  /patterned:
+    get:
+      operationId: listPatterned
+      parameters:
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            allOf:
+              - {$ref: "#/components/schemas/Patterned"}
+              - {type: object, properties: {size: {type: integer}}}
+      responses:
+        "204": {description: A query object whose allOf base has pattern properties.}
+components:
+  schemas:
+    Color: {type: object, properties: {color: {type: string}}}
+    Patterned:
+      type: object
+      properties:
+        color: {type: string}
+      patternProperties:
+        "^x-": {type: string}

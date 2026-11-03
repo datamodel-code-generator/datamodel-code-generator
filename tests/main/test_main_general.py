@@ -34,6 +34,7 @@ from datamodel_code_generator import (
     DanglingRefWarning,
     DataModelType,
     Error,
+    FieldTypeCollisionStrategy,
     GeneratedModules,
     HTTPBackend,
     InputFileType,
@@ -655,11 +656,6 @@ CLI_E2E_COVERED_GENERATE_KWARGS = {
 
 
 def _generate_call_keyword_source(value: ast.expr) -> str:
-    match value:
-        case ast.Attribute(value=ast.Name(id="config")):
-            return f"config.{value.attr}"
-        case ast.Name():
-            return value.id
     return ast.unparse(value)
 
 
@@ -711,10 +707,13 @@ def _run_generate_from_config_model_copy_updates() -> list[tuple[str, str]]:
 
     updates: list[tuple[str, str]] = []
     for key, value in zip(update_keyword.value.keys, update_keyword.value.values, strict=True):
-        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):  # pragma: no cover
-            msg = f"Unexpected model_copy update key: {ast.unparse(key) if key is not None else None}"
+        if key is None:
+            updates.append(("**", _generate_call_keyword_source(value)))
+        elif isinstance(key, ast.Constant) and isinstance(key.value, str):
+            updates.append((key.value, _generate_call_keyword_source(value)))
+        else:  # pragma: no cover
+            msg = f"Unexpected model_copy update key: {ast.unparse(key)}"
             raise TypeError(msg)
-        updates.append((key.value, _generate_call_keyword_source(value)))
     return updates
 
 
@@ -915,6 +914,122 @@ def test_reference_built_outside_the_resolver_names_the_model_at_its_path() -> N
 
     parser = KeylessParser(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass],
+    ids=["model", "dataclass"],
+)
+@pytest.mark.parametrize("keyless_fields", [None, {"bars"}], ids=["all", "some"])
+def test_reference_built_outside_the_resolver_renames_the_model_at_its_path(
+    output_model_type: DataModelType, keyless_fields: set[str] | None
+) -> None:
+    """A custom parser that types fields with a Reference it builds itself, under ``rename-type``.
+
+    A field named like its type hides it. The model at the path of the references is renamed once, and the fields
+    that name it by a reference of their own use the new name, as they do for the references the resolver builds.
+    The parser types every field this way, or only the fields it names, so that a class holds the model by both
+    kinds of reference.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+
+    class KeylessParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if keyless_fields is not None and field.name not in keyless_fields:
+                        continue
+                    for data_type in field.data_type.all_data_types:
+                        if (reference := data_type.reference) is not None and reference.source is not None:
+                            keyless = Reference(path=reference.path, name=reference.name)
+                            self.generation_store.replace_data_type_ref(data_type, keyless)
+
+    model_types = get_data_model_types(output_model_type)
+    parser = KeylessParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "shared.json",
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_reference_built_outside_the_resolver_renames_the_model_that_replaced_a_root_model() -> None:
+    """A custom parser that types one field with a Reference it builds itself, under ``rename-type`` and collapse.
+
+    The ``parent`` strategy gives the inner model the path and the name of the root model it replaces, which stays
+    among the parsed models, after the inner model, at that path. The reference names the model that is emitted
+    there: it and the field that names the model by a reference of the resolver use one new name, and the class is
+    written, where the root model that collapse left is no class.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+
+    class KeylessParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if field.name != "bars":
+                        continue
+                    for data_type in field.data_type.all_data_types:
+                        if (reference := data_type.reference) is not None and reference.source is not None:
+                            keyless = Reference(path=reference.path, name=reference.name)
+                            self.generation_store.replace_data_type_ref(data_type, keyless)
+
+    model_types = get_data_model_types(DataModelType.PydanticV2BaseModel)
+    parser = KeylessParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "collapsed_root.json",
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        collapse_root_models=True,
+        collapse_root_models_name_strategy=CollapseRootModelsNameStrategy.Parent,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_reference_built_outside_the_resolver_names_no_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field named like its type with a Reference to a path where no model is.
+
+    ``rename-type`` has no model to rename, so the field keeps the type it names. The parser retypes the field in
+    its ``_process_single_module``, outside the passes, so the finality check (`0` here) does not report the write.
+    """
+    from typing_extensions import override
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    class NowhereParser(JsonSchemaParser):
+        @override
+        def _process_single_module(self, *args: Any) -> Any:
+            leaf = next(model for model in args[1] if model.class_name == "Leaf")
+            self.generation_store.replace_field_type(
+                leaf.fields[0], DataType(reference=Reference(path="#/Nowhere", name="Bar"))
+            )
+            return super()._process_single_module(*args)
+
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    parser = NowhereParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "speed.json",
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        formatters=[Formatter.BUILTIN],
     )
     assert_output(cast("str", parser.parse()))
 
@@ -1813,6 +1928,10 @@ def test_run_generate_from_config_generate_kwargs_are_pinned() -> None:
         ("config", "cast('Any', generation_config)"),
     ])
     assert _run_generate_from_config_model_copy_updates() == snapshot([
+        (
+            "**",
+            "{GENERATE_FIELD_NAMES[option]: getattr(config, option) for option in GENERATE_FIELD_NAMES}",
+        ),
         ("input_filename", "input_filename"),
         ("output", "output"),
         ("preset", "None"),
@@ -1820,8 +1939,6 @@ def test_run_generate_from_config_generate_kwargs_are_pinned() -> None:
         ("aliases", "aliases"),
         ("serialization_aliases", "serialization_aliases"),
         ("command_line", "command_line"),
-        ("apply_default_values_for_required_fields", "config.use_default"),
-        ("force_optional_for_required_fields", "config.force_optional"),
         ("custom_formatters_kwargs", "custom_formatters_kwargs"),
         ("settings_path", "settings_path"),
         ("validators", "validators"),
@@ -4421,6 +4538,47 @@ def test_all_exports_collision_resolved_successfully(output_dir: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("schema", "strategy", "export", "payload"),
+    [
+        pytest.param(
+            "all_exports_equal_prefixed_names", "full-prefix", "FooBarModel", {"b": "x"}, id="equal-prefixes-kept"
+        ),
+        pytest.param(
+            "all_exports_equal_prefixed_names", "full-prefix", "FooBarModel1", {"a": "x"}, id="equal-prefixes-added"
+        ),
+        pytest.param("all_exports_prefixed_name_of_export", "minimal-prefix", "FooBar", {"a": "x"}, id="minimal-kept"),
+        pytest.param(
+            "all_exports_prefixed_name_of_export", "minimal-prefix", "FooBar1", {"c": True}, id="minimal-added"
+        ),
+        pytest.param("all_exports_prefixed_name_of_export", "full-prefix", "FooBar", {"a": "x"}, id="full-kept"),
+        pytest.param("all_exports_prefixed_name_of_export", "full-prefix", "FooBar1", {"c": True}, id="full-added"),
+    ],
+)
+def test_all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name(
+    output_dir: Path, schema: str, strategy: str, export: str, payload: dict[str, object]
+) -> None:
+    """Keep every export when a prefixed name is also the name of another export.
+
+    The name keeps the export it referred to; the export it displaced takes the next free name.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{schema}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--disable-timestamp",
+            "--all-exports-scope",
+            "recursive",
+            "--all-exports-collision-strategy",
+            strategy,
+        ],
+        runtime_validation_module="",
+        runtime_validation_model_name=export,
+        runtime_validation_data=payload,
+    )
+
+
+@pytest.mark.parametrize(
     "strategy",
     ["minimal-prefix", "full-prefix"],
     ids=["minimal_prefix", "full_prefix"],
@@ -5178,6 +5336,68 @@ def test_ruff_batch_formatting_directory(output_dir: Path) -> None:
         output_path=output_dir,
         extra_args=["--formatters", "ruff-check", "ruff-format", "--disable-timestamp"],
         expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file_ruff",
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_directory_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_dir: Path
+) -> None:
+    """Run Ruff over a model directory that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It sees the files as UTF-8, and they are written in the requested encoding.
+    """
+    (source := tmp_path / "modular.yaml").write_bytes(
+        (OPEN_API_DATA_PATH / "modular.yaml").read_text(encoding="utf-8").encode(encoding)
+    )
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--encoding", encoding, "--custom-file-header", "# Café"),
+            *("--formatters", *formatters, "--disable-timestamp"),
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check"], id="latin-1-check"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_file_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Run Ruff over a model file with a non-ASCII description that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It is given the code as UTF-8, and the file is written in the requested encoding.
+    """
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "description": "Café",
+        "properties": {"name": {"type": "string", "description": "Café"}, "tag": {"type": "integer"}},
+    }
+    (source := tmp_path / "pet.json").write_bytes(json.dumps(schema, ensure_ascii=False).encode(encoding))
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", encoding, "--formatters", *formatters, "--disable-timestamp"],
         skip_code_validation=True,
     )
 

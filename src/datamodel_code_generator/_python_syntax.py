@@ -1,4 +1,4 @@
-"""How generated Python spells a call, a subscript, a keyword argument, a display, an import statement and a string.
+"""How generated Python spells calls, subscripts, keyword arguments, displays, imports, strings and docstrings.
 
 Every writer of generated code that joins a variable number of expression texts into a call, a subscript or a tuple,
 list, set or dict display, passes a value text under a keyword its data names, or imports names, goes through this
@@ -7,13 +7,18 @@ a set without items, the colon of a dict entry, the equals sign of a keyword arg
 statement are written once. A value becomes its text first (``python_literal.represent_python_value`` or a target's
 own writer), a type renderer decides which types a subscript holds, a keyword written in a call's source text is that
 text's own, and a writer of imports decides which names it imports, in which order, and when one takes another name.
-The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal; the caller
-or its template writes the quotes.
+The text between the quotes of a single-quoted string literal is escaped here, once per kind of literal, and the raw
+literal of a text is written here when one holds it; the caller or its template writes the quotes. So are the text of a
+docstring and of a comment: the escapes a triple-quoted docstring needs, its one-line and block forms, and the line
+endings a comment block keeps; templates read the public functions as filters through ``model.base``, which keeps
+their names. Every reader of text that ends its lines as Python's universal newlines do (CRLF and a lone CR read as
+LF), source text and comments alike, reads it through ``normalize_newlines``.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,6 +37,26 @@ literal (a Pydantic pattern) needs these only, as it reads a backslash as itself
 SINGLE_QUOTED_ESCAPES = str.maketrans({"\u0000": r"\x00", "\\": r"\\", **QUOTE_AND_CONTROL_ESCAPES})
 """The escapes of the text of a single-quoted literal that is not raw, as ``str.translate`` reads them (an enum value,
 a ``TypedDict`` key): the escapes above, the backslash, and the null byte, which a module cannot hold."""
+
+RAW_SINGLE_QUOTED_ESCAPES = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
+"""The escapes of the text of a raw single-quoted literal (a Pydantic pattern), as ``str.translate`` reads them."""
+
+_RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\'\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
+"""The escaped text a raw single-quoted literal holds: each character is a plain one or follows a backslash."""
+
+
+def raw_single_quoted(text: str, /) -> str | None:
+    r"""Return the raw single-quoted literal that holds ``text`` with its quote and control characters escaped.
+
+    A raw literal reads a backslash as itself, so it holds the text only when its closing quote stays the first one a
+    reader meets: no backslash left alone at the end or in front of the escaped quote, and no null byte or lone
+    surrogate, which a module cannot hold and a raw literal has no escape for. Any other text has no raw literal
+    (None); the caller writes it as a literal that is not raw. The result does not depend on the Python that runs.
+    A regex reads the escape of a control character in a raw literal as its own syntax (``\b`` is a word boundary), so
+    the caller of a pattern asks ``_regex_syntax.control_escapes_keep_meaning`` first.
+    """
+    escaped = text.translate(RAW_SINGLE_QUOTED_ESCAPES)
+    return f"r'{escaped}'" if _RAW_LITERAL_TEXT.fullmatch(escaped) else None
 
 
 def call_text(head: str, arguments: Iterable[str], /) -> str:
@@ -84,3 +109,121 @@ def from_import(module: str, names: Iterable[str], /) -> str:
 def aliased(name: str, alias: str, /) -> str:
     """Return an imported module or name as an import statement lists it when the import binds it to ``alias``."""
     return f"{name} as {alias}"
+
+
+def normalize_newlines(text: str) -> str:
+    """Return ``text`` with every CRLF and lone CR as LF, as Python's universal newlines read a file."""
+    return text.replace("\r\n", "\n").replace("\r", "\n") if "\r" in text else text
+
+
+def _normalize_string(value: str) -> str:
+    """Return the underlying built-in string without invoking subclass overrides."""
+    return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
+
+
+class _EscapedDocstring(str):  # noqa: FURB189
+    """Marker for values already escaped for a generated Python docstring."""
+
+    __slots__ = ()
+
+
+def escape_docstring(value: str | None) -> str | None:
+    r"""Escape special characters in a docstring to prevent syntax errors.
+
+    Handles:
+    - Backslashes: `\\` -> `\\\\` (must be escaped first)
+    - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
+    - Null bytes: written as `\\x00`, as a module cannot hold one
+
+    Args:
+        value: The string to escape, or None.
+
+    Returns:
+        The escaped string, or None if input was None.
+    """
+    if value is None:
+        return None
+    if type(value) is _EscapedDocstring:
+        return value
+    value = _normalize_string(value)
+    # Escape backslashes first, then triple quotes. Retain the original string
+    # when no escaping is needed so custom-template fast paths stay allocation-free.
+    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').replace("\0", "\\x00")
+    return _EscapedDocstring(escaped) if escaped != value else value
+
+
+def _ends_with_unescaped_quote(value: str) -> bool:
+    """Return whether *value* ends with a double quote that is not escaped."""
+    if not value.endswith('"'):
+        return False
+
+    backslash_count = 0
+    for char in reversed(value[:-1]):
+        if char != "\\":
+            break
+        backslash_count += 1
+    return backslash_count % 2 == 0
+
+
+def _single_line_docstring(escaped: str) -> str:
+    """Return the one-line docstring of escaped text, with its last double quote escaped so it cannot close it."""
+    if _ends_with_unescaped_quote(escaped):
+        escaped = f'{escaped[:-1]}\\"'
+    return f'"""{escaped}"""'
+
+
+def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_line_docstring: bool = False) -> str:
+    """Format *value* as a docstring as per PEP 257.
+
+    PEP 257 recommends that docstrings that can fit on one line should be formatted on a
+    single line, for consistency and readability. When use_single_line_docstring is
+    false, docstrings retain the historical multi-line formatting. It is assumed that
+    the opening triple-quotes are indented appropriately in the template. If it's a
+    multi-line docstring, each line including the closing triple-quotes will be indented
+    as per indent_spaces.
+
+    Args:
+        value: docstring text
+        indent_spaces: Spaces to indent for all lines after the opening triple-quotes
+        use_single_line_docstring: Use one-line docstrings when possible
+
+    Returns:
+        Empty string when `value` is falsy; otherwise the docstring block.
+    """
+    if value is None:
+        return ""
+    if type(value) is not _EscapedDocstring:
+        value = _normalize_string(value)
+    if not value.strip():
+        return ""
+
+    escaped = escape_docstring(value) or ""
+
+    if use_single_line_docstring and "\n" not in value and "\r" not in value:
+        return _single_line_docstring(escaped)
+
+    indent = max(indent_spaces, 0) * " "
+    if indent:
+        escaped = "\n".join(f"{indent}{line}" if line else "" for line in escaped.split("\n"))
+        return f'"""\n{escaped}\n{indent}"""'
+    return f'"""\n{escaped}\n"""'
+
+
+def comment_safe(value: str | None) -> str | None:
+    """Normalize line endings before rendering text in Python comments.
+
+    Built-in union templates already prefix LF continuation lines with ``# ``.
+    This helper converts CRLF and bare CR into LF so that existing template
+    behavior keeps the whole description inside the comment block.
+    """
+    if value is None:
+        return None
+    return normalize_newlines(_normalize_string(value))
+
+
+def inline_comment_safe(value: str | None) -> str | None:
+    """Make a value safe for a generated inline Python comment."""
+    if value is None:
+        return None
+    safe_value = comment_safe(value) or ""
+    return safe_value.replace("\v", "\n").replace("\f", "\n").replace("\n", "\n# ")

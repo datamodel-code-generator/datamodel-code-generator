@@ -8,7 +8,6 @@ from __future__ import annotations
 from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
-from math import ceil, floor
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
@@ -18,7 +17,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
-from datamodel_code_generator._graph_links import clear_parents
+from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
@@ -29,6 +28,7 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebui
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
 from datamodel_code_generator.model._decisions.assignment import (
     MsgspecWritten,
+    requires_value,
     struct_assigned,
     struct_construction_assigned,
     written_data,
@@ -68,6 +68,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _default_state,
     _find_base_classes,
     _has_opaque_custom_base,
     _keeps_stripped_place,
@@ -125,19 +126,15 @@ _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 
 def _integer_bounds(constraints: tuple[tuple[str, Any], ...]) -> tuple[int | None, int | None]:
-    """Return the least and the greatest integer that numeric constraints admit, None where they set no bound."""
+    """Return the least and the greatest integer that numeric constraints admit, None where they set no bound.
+
+    Row ``legacy-msgspec-float-bounds``: it reads each bound as the number it is, a float as its binary value.
+    """
     lowers: list[int] = []
     uppers: list[int] = []
     for name, value in constraints:
-        match name:
-            case "ge":
-                lowers.append(ceil(value))
-            case "gt":
-                lowers.append(floor(value) + 1)
-            case "le":
-                uppers.append(floor(value))
-            case "lt":
-                uppers.append(ceil(value) - 1)
+        if (bound := _applicability.integer_bound(name, value, arithmetic="float")) is not None:
+            (lowers if bound[0] == "ge" else uppers).append(bound[1])
     return max(lowers, default=None), min(uppers, default=None)
 
 
@@ -299,7 +296,7 @@ def has_field_assignment(field: DataModelFieldBase) -> bool:
 
     A Struct writes a default for every optional field, ``UNSET`` or ``None``, with ``--strip-default-none`` too.
     """
-    return struct_assigned(required=field.required and not field.use_default_with_required)
+    return struct_assigned(required=requires_value(field))
 
 
 def _construction_order_key(field: DataModelFieldBase) -> bool:
@@ -309,7 +306,7 @@ def _construction_order_key(field: DataModelFieldBase) -> bool:
     without one, unless ``--order-constructor-fields-by written-defaults`` is given.
     """
     return struct_construction_assigned(
-        required=field.required and not field.use_default_with_required,
+        required=requires_value(field),
         keeps_stripped_place=_keeps_stripped_place(field),
     )
 
@@ -942,17 +939,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if self.alias is not None:
             args.put("name", self.alias, EXPLICIT_ALIAS, ("alias",))
 
-        if self.default is not UNDEFINED and self.default is not None:
+        if _default_state(self.default) == "value":
             args.put("default", self.default, DEFAULT_VALUE)
         elif self._not_required and "default_factory" not in args:
             args.put("default", None if self.nullable else UNSET, _NONE_DEFAULT if self.nullable else _UNSET_DEFAULT)
 
-        if self.required and not self.use_default_with_required:
+        if requires_value(self):
             args.pop("default", "factory-not-applicable", REQUIRED_FIELD)
             args.pop("default_factory", "factory-not-applicable", REQUIRED_FIELD)
         elif (
-            self.default is not UNDEFINED
-            and self.default is not None
+            _default_state(self.default) == "value"
             and "default_factory" not in args
             and (conversion := self._get_default_as_struct_model()) is not None
         ):
@@ -1368,13 +1364,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
     def _non_none_members(self, data_type: DataType) -> list[DataType]:
         """Return the members of a type other than None, spreading the unions and wrappers that render as them."""
-        if (
-            data_type.type is None
-            and data_type.reference is None
-            and data_type.alias is None
-            and data_type.data_types
-            and not data_type._is_container  # noqa: SLF001
-        ):
+        if data_type.data_types and data_type._writes_nothing_of_its_own:  # noqa: SLF001
             return [member for child in data_type.data_types for member in self._non_none_members(child)]
         return [] if self._data_type_renders_none(data_type) else [data_type]
 
@@ -1402,8 +1392,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             copied = self._copy_data_type(member)
             for nested in copied.all_data_types:
                 nested.register_reference()
-                for child in nested.data_types:
-                    child.parent = nested
+                link_members(nested)
             return [copied]
         members = [
             unconstrained

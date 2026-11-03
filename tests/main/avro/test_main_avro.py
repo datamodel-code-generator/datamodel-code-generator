@@ -386,6 +386,47 @@ def test_avro_overridden_logical_defaults(output_file: Path, capsys: pytest.Capt
 
 
 @pytest.mark.parametrize(
+    ("fixture", "overrides"),
+    [
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "int"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes"}),
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "int | None"}),
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "typing.Optional[int]"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes | None"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "None | bytes"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "typing.Optional[bytes]"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes | Decimal"}),
+    ],
+)
+def test_avro_builtin_name_override_keeps_physical_default(
+    output_file: Path, capsys: pytest.CaptureFixture[str], fixture: str, overrides: dict[str, str]
+) -> None:
+    """Keep the physical default of a field that ``int`` or ``bytes`` replaces, alone or unioned with ``None``.
+
+    A bare name takes it as a ``builtins.*`` path does; a union with another type keeps the logical default.
+    """
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / f"{fixture}.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--type-overrides",
+            json.dumps(overrides),
+        ],
+        force_exec_validation=True,
+        capsys=capsys,
+        assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize(
     ("mappings", "expected_file", "runtime_file"),
     [
         (

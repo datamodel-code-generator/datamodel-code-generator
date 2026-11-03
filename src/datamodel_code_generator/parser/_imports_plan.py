@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from typing_extensions import final
 
+from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import, Imports, _ImportKey, _stored_import
 
@@ -92,6 +93,8 @@ ImportPass: TypeAlias = Literal[
     "import-conflicts",
     "builtin-module-bindings",
     "builtin-submodule-bindings",
+    "submodule-import-bindings",
+    "hidden-submodules",
     "field-name-bindings",
     "reused-variant-literal",
     "shadowed-imports",
@@ -108,7 +111,7 @@ ImportPass: TypeAlias = Literal[
   by ``_get_module_future_imports`` (L7).
 * ``change-from-import``: ``change_from_import`` (L5 prepare), the imports of each model and the models of other
   modules that it references.
-* ``collapse-root-models``: ``collapse_root_models_in_scope`` and ``import_collapsed_inner_models`` (L5), the
+* ``collapse-root-models``: ``collapse_root_models_in_scope`` and ``reimport_module_references`` (L5), the
   imports of inlined root types and of the inner models that holders are redirected to, without those of the roots.
 * ``discriminator``: ``apply_discriminator_type`` (L5), the imports of tag fields.
 * ``const-narrowed-values``: ``__type_const_narrowed_values`` (L5), the imports of the types a const gives its values.
@@ -133,6 +136,10 @@ ImportPass: TypeAlias = Literal[
   builtin that their module also writes bare.
 * ``builtin-submodule-bindings``: ``alias_builtins_hidden_by_submodules``, aliases of builtins that a package's own
   submodules hide and that the package writes bare.
+* ``submodule-import-bindings``: ``alias_builtins_hidden_by_submodules``, new names of the imports of models and
+  modules named like a submodule of the package that imports them.
+* ``hidden-submodules``: ``import_models_of_hidden_submodules``, the models of submodules that their package hides,
+  imported from the submodule instead of the module imports they replace.
 * ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.
@@ -405,7 +412,7 @@ class ModuleImportLedger:
         """
         entries = self._entries_of(imports)
         reduced = [_without_unrendered(entry) for entry in entries]
-        if all(entry is reduced_entry for entry, reduced_entry in zip(entries, reduced, strict=True)):
+        if unchanged(reduced, entries):
             return imports
         written = replay(entries, use_exact=imports.use_exact).counter
         kept = replay(reduced, use_exact=imports.use_exact).counter

@@ -23,6 +23,8 @@ from .constants import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
+_RE_GLOBAL_FLAGS_AFTER_START = "Flags not at the start of the expression"
+
 
 def _any_schema_node(value: Any, predicate: Callable[[dict[str, Any]], bool]) -> bool:
     result = False
@@ -231,12 +233,32 @@ def _has_unsatisfiable_property_count(value: Any) -> bool:
     return _any_schema_node(value, has_unsatisfiable_property_count)
 
 
+def _has_read_only_exclusion(schema: dict[str, Any], *, is_openapi: bool = False) -> bool:
+    """Return whether one of the reasons of ``_schema_exclusion_reason`` that only read the schema applies."""
+    return (
+        _has_external_ref(schema)
+        or _has_unresolved_internal_ref(schema)
+        or _has_unsupported_keyword(schema)
+        or _has_dotted_definition_name(schema)
+        or _has_allof_property_override(schema)
+        or _has_recursive_definition_ref(schema)
+        or _has_recursive_component_ref(schema)
+        or _has_default_on_combined_schema(schema)
+        or _has_unsatisfiable_contains_false(schema)
+        or _has_unsatisfiable_contains_bounds(schema)
+        or _has_unsatisfiable_property_count(schema)
+        or (not is_openapi and _has_object_keywords_without_object_type(schema))
+        or (not is_openapi and _has_array_keywords_without_array_type(schema))
+    )
+
+
 def _schema_exclusion_reason(schema: dict[str, Any], *, is_openapi: bool = False) -> str | None:  # noqa: PLR0911, PLR0912
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
+            warnings.filterwarnings("error", _RE_GLOBAL_FLAGS_AFTER_START, DeprecationWarning)
             validators.validator_for(schema).check_schema(schema)
-    except exceptions.SchemaError:
+    except (exceptions.SchemaError, DeprecationWarning):
         return "schema is invalid for its declared JSON Schema draft"
     if _has_external_ref(schema):
         return "contains external or non-fragment $ref values"

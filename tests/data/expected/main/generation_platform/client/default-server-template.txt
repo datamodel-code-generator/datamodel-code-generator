@@ -1,0 +1,3 @@
+# default-server-template
+render pydantic_v2.BaseModel
+  Error: /paths/~1status/get: A server of GET /status does not resolve to an absolute http or https URL

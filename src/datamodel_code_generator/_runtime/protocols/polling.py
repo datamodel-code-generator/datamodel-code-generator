@@ -15,12 +15,12 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, overload
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_refusal
-from .options import HelperLimits, PollOptions, StepLock, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, PollOptions, StepHandle, StepLock, layered, new_session
 from .pagination import saved_values, targeted_values
 from .records import (
     BodySelector,
@@ -36,7 +36,6 @@ from .values import MISSING, accessed, read_expiry, required
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
@@ -46,7 +45,7 @@ if TYPE_CHECKING:
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector
     from .references import OperationRef
-    from .writes import Targeted
+    from .writes import Targeted, Writer
 
 __all__ = (
     "AsyncLroHandle",
@@ -155,12 +154,11 @@ class PollingPlan(Generic[T, P, C]):
     kinds: frozenset[str] = field(init=False)
     polled: Targeted[P] = field(init=False)
     fetched: Targeted[T] | None = field(init=False)
-    headers: frozenset[str] = field(init=False)
-    queries: frozenset[str] = field(init=False)
+    writers: tuple[Writer, ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
-        from .writes import targeted_writes, written_names  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         phases = {
             canonical_json(value): phase
@@ -178,7 +176,7 @@ class PollingPlan(Generic[T, P, C]):
             None if fetch is None else targeted_writes(fetch, (binding.written for binding in self.fetch_bindings))
         )
         cancel = self.cancel
-        headers, queries = written_names(children=(polled, fetched, None if cancel is None else cancel.targeted))
+        children = (polled, fetched, None if cancel is None else cancel.targeted)
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(
             self,
@@ -187,8 +185,7 @@ class PollingPlan(Generic[T, P, C]):
         )
         object.__setattr__(self, "polled", polled)
         object.__setattr__(self, "fetched", fetched)
-        object.__setattr__(self, "headers", headers)
-        object.__setattr__(self, "queries", queries)
+        object.__setattr__(self, "writers", tuple(child.writer for child in children if child is not None))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -215,11 +212,13 @@ def _limits(
     The interval defaults to the helper's; one longer than the allowed wait, or not shorter than the session, could
     never be waited out, so it is refused before anything is sent. A fixed idempotency key, the call's own or a header
     of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
-    their own, and so are the headers or query names of a parameter the helper writes that any of them sends.
+    their own, and so are the headers or query names of a field the helper writes that any of them sends.
     """
     request, kinds = core.helper_layers(plan.helper_id, "poll_options", poll_options, PollOptions, options)
     operations = (plan.create, plan.poll, plan.fetch)
-    core.refuse_patched(plan.helper_id, request, operations, plan.headers, plan.queries.__contains__)
+    from .writes import written_fields  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    core.refuse_patched(plan.helper_id, request, operations, written_fields(plan.writers))
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),
@@ -368,29 +367,34 @@ class _Operation(StepLock, Generic[T, P]):
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
 
         The poll limit, for a poll, and the session's send slots are checked first. A wait longer than the allowed
-        wait, or not shorter than what remains of the deadline, raises SessionLimitError instead of sending early.
+        wait, or not shorter than what remains of the deadline, raises SessionLimitError instead of sending early,
+        naming the operation the wait comes before.
         """
-        if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
+        plan = self._plan
+        polling = call is plan.polled.call
+        if polling and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
         if (required := self._not_before - self._limits.clock.monotonic()) <= 0:
             return None
         limits = self._limits
+        operation = plan.poll_operation if polling else plan.fetch_operation
         if (allowed := limits.max_wait) is not None and required > allowed:
-            raise self._waited(required, allowed, "wait")
+            raise self._waited(required, allowed, "wait", operation)
         waiter = core.waiting(limits.options, self._session, call.operation_id)
         if (remaining := waiter.cut_short(required)) is not None:
-            raise self._waited(required, remaining, "deadline")
+            raise self._waited(required, remaining, "deadline", operation)
         return waiter
 
-    def _waited(self, required: float, limit: float, kind: Literal["wait", "deadline"]) -> SessionLimitError:
-        plan = self._plan
+    def _waited(
+        self, required: float, limit: float, kind: Literal["wait", "deadline"], operation: OperationRef | None
+    ) -> SessionLimitError:
         return SessionLimitError(
             reason=kind,
             limit=limit,
             progress=self.progress,
             required_wait=required,
-            helper_id=plan.helper_id,
-            operation=plan.poll_operation,
+            helper_id=self._plan.helper_id,
+            operation=operation,
         )
 
     def _after(self, info: ResponseInfo) -> float:
@@ -436,7 +440,7 @@ class _Operation(StepLock, Generic[T, P]):
             assert plan.immediate is not None
             assert plan.immediate_selector is not None
             result = accessed(plan.immediate, plan.immediate_selector, data, wire, refuse)
-            return _Step(_Phase.SUCCEEDED, not_before, result=result)
+            return _Step[T, P](_Phase.SUCCEEDED, not_before, result=result)
         raise refuse(StatusSelector(), "value")
 
     def _polled(
@@ -585,7 +589,7 @@ def _kept(data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url:
     return data
 
 
-class LroHandle(_Operation[T, P]):
+class LroHandle(_Operation[T, P], StepHandle):
     """A long-running operation a helper created: `status` polls it once, and `wait` polls until it settles.
 
     `close` only stops local polling; the remote operation goes on. Polling from two threads at once raises
@@ -694,18 +698,8 @@ class LroHandle(_Operation[T, P]):
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
 
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
-
-class AsyncLroHandle(_Operation[T, P]):
+class AsyncLroHandle(_Operation[T, P], AsyncStepHandle):
     """A long-running operation an asyncio helper created: `status` polls it once, and `wait` until it settles.
 
     `aclose` only stops local polling; the remote operation goes on. Polling from two tasks at once raises
@@ -813,16 +807,6 @@ class AsyncLroHandle(_Operation[T, P]):
     async def aclose(self) -> None:
         """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
-
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
 
 
 def _restored(

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from builtins import int as int_aliased
 from datetime import date as date_aliased
 from datetime import datetime
 from datetime import time as time_aliased
@@ -41,7 +42,7 @@ class Types(BaseModel):
     idref: str | None = None
     idrefs: list[str] | None = None
     int: conint(ge=-2147483648, le=2147483647) | None = None
-    integer: int | None = None
+    integer: int_aliased | None = None
     language: str | None = None
     long: conint(ge=-9223372036854775808, le=9223372036854775807) | None = None
     name: str | None = None

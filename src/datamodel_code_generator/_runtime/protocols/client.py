@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 
 import httpx2
@@ -51,7 +51,8 @@ if TYPE_CHECKING:
     from ..model_codecs.media import JSONValue
     from .options import HelperSettings
 
-_NO_NAMES: Final = (frozenset[str](), frozenset[str]())
+_Written: TypeAlias = "tuple[Callable[[str], bool], Callable[[str], bool]]"
+_NOTHING: Final = frozenset[str]().__contains__
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -301,28 +302,29 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
         return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
 
-    def refuse_patched(  # noqa: PLR0913, PLR0917
+    def refuse_patched(
         self,
         helper_id: str,
         options: RequestOptions | None,
         operations: Iterable[OperationPlan[object] | None],
-        headers: frozenset[str],
-        queried: Callable[[str], bool],
-        own: tuple[frozenset[str], frozenset[str]] = _NO_NAMES,
+        written: _Written,
+        own: _Written = (_NOTHING, _NOTHING),
     ) -> None:
-        """Refuse a call that fixes an idempotency key of the operations or patches a parameter a helper writes.
+        """Refuse a call that fixes an idempotency key of the operations or patches a field a helper writes.
 
-        A patch is a header named in `headers`, by its lowercase name, or a query name `queried` accepts, among the
-        call's own extra ones and the client's and its views' default ones, each of which every request sends, then a
-        header or query name of `own` among the call's own extra ones only.
+        `written` tells whether a header name, and whether a query name, names a field the helper writes, as
+        `written_fields` of its writes does. A patch is such a name among the call's own extra ones and the client's
+        and its views' default ones, each of which every request sends, then one `own` tells among the call's own
+        extra ones only.
         """
-        own_headers, own_queries = own
+        header, query = written
+        own_header, own_query = own
         path = (
             self.fixed_key(options, operations)
-            or self.named(options, lambda name, _: name.lower() in headers)
-            or self.named(options, lambda name, _: queried(name), query=True)
-            or self.named(options, lambda name, _: name.lower() in own_headers, defaults=False)
-            or self.named(options, lambda name, _: name in own_queries, query=True, defaults=False)
+            or self.named(options, lambda name, _: header(name))
+            or self.named(options, lambda name, _: query(name), query=True)
+            or self.named(options, lambda name, _: own_header(name), defaults=False)
+            or self.named(options, lambda name, _: own_query(name), query=True, defaults=False)
         )
         if path is not None:
             from .errors import configuration_error  # noqa: PLC0415 - Only a refused call loads the helper errors.

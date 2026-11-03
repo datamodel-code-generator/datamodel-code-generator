@@ -27,6 +27,8 @@ docstrings	main/generation_platform/fastapi/docstrings.txt
 docstrings	main/generation_platform/fastapi/packages/docstrings/
 empty	main/generation_platform/fastapi/empty.txt
 empty	main/generation_platform/fastapi/packages/empty/
+empty-body	main/generation_platform/fastapi/empty-body.txt
+empty-body	main/generation_platform/fastapi/packages/empty-body/
 encoding	main/generation_platform/fastapi/encoding.txt
 encoding	main/generation_platform/fastapi/packages/encoding/
 group-errors	main/generation_platform/fastapi/group-errors.txt
@@ -65,10 +67,16 @@ parameter-errors	main/generation_platform/fastapi/packages/parameter-errors/
 parameter-errors	main/generation_platform/fastapi/parameter-errors.txt
 parameters	main/generation_platform/fastapi/packages/parameters/
 parameters	main/generation_platform/fastapi/parameters.txt
+parts-bound-types-errors	main/generation_platform/fastapi/packages/parts-bound-types-errors/	= main/generation_platform/fastapi/packages/info/
+parts-bound-types-errors	main/generation_platform/fastapi/parts-bound-types-errors.txt	= main/generation_platform/client/parts-bound-types-errors.txt
 pets	main/generation_platform/fastapi/packages/pets/	= main/generation_platform/fastapi/packages/pets~fastapi_render[pets]/
 pets	main/generation_platform/fastapi/pets.txt
+pointer-references	main/generation_platform/fastapi/packages/pointer-references/
+pointer-references	main/generation_platform/fastapi/pointer-references.txt
 primary-errors	main/generation_platform/fastapi/packages/primary-errors/
 primary-errors	main/generation_platform/fastapi/primary-errors.txt
+querystring-nameless	main/generation_platform/fastapi/packages/querystring-nameless/
+querystring-nameless	main/generation_platform/fastapi/querystring-nameless.txt
 reference-errors	main/generation_platform/fastapi/packages/reference-errors/
 reference-errors	main/generation_platform/fastapi/reference-errors.txt
 references	main/generation_platform/fastapi/packages/references/
@@ -81,6 +89,8 @@ request	main/generation_platform/fastapi/packages/request/
 request	main/generation_platform/fastapi/request.txt
 required-alias-order	main/generation_platform/fastapi/packages/required-alias-order/
 required-alias-order	main/generation_platform/fastapi/required-alias-order.txt
+response-keys	main/generation_platform/fastapi/packages/response-keys/
+response-keys	main/generation_platform/fastapi/response-keys.txt
 responses	main/generation_platform/fastapi/packages/responses/
 responses	main/generation_platform/fastapi/responses.txt
 route-errors	main/generation_platform/fastapi/packages/route-errors/
@@ -91,6 +101,10 @@ security	main/generation_platform/fastapi/packages/security/
 security	main/generation_platform/fastapi/security.txt
 security-errors	main/generation_platform/fastapi/packages/security-errors/
 security-errors	main/generation_platform/fastapi/security-errors.txt
+security-roles	main/generation_platform/fastapi/packages/security-roles/
+security-roles	main/generation_platform/fastapi/security-roles.txt
+security-roles-30	main/generation_platform/fastapi/packages/security-roles-30/	= main/generation_platform/fastapi/packages/info/
+security-roles-30	main/generation_platform/fastapi/security-roles-30.txt
 selector-errors	main/generation_platform/fastapi/packages/selector-errors/
 selector-errors	main/generation_platform/fastapi/selector-errors.txt
 services	main/generation_platform/fastapi/packages/services/
@@ -101,6 +115,8 @@ template-invalid	main/generation_platform/fastapi/packages/template-invalid/
 template-invalid	main/generation_platform/fastapi/template-invalid.txt
 templates	main/generation_platform/fastapi/packages/templates/
 templates	main/generation_platform/fastapi/templates.txt
+text-bound-types-errors	main/generation_platform/fastapi/packages/text-bound-types-errors/	= main/generation_platform/fastapi/packages/info/
+text-bound-types-errors	main/generation_platform/fastapi/text-bound-types-errors.txt	= main/generation_platform/client/text-bound-types-errors.txt
 types	main/generation_platform/fastapi/packages/types/
 types	main/generation_platform/fastapi/types.txt
 unbound	main/generation_platform/fastapi/packages/unbound/

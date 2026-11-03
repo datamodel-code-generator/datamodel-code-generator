@@ -1,0 +1,7 @@
+valid: accepted
+valid: accepted
+invalid {"divisor": 4611686018427387905}: accepted
+invalid {"divisor": 1}: accepted
+invalid {"above": 4611686018427387904}: accepted
+invalid {"below": -4611686018427387904}: accepted
+invalid {"beyond": 18446744073709551617}: accepted

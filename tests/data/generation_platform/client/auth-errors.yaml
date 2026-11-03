@@ -121,7 +121,7 @@ paths:
         '204':
           description: Accepted
       security:
-        - bearer: [not a scope]
+        - oauth: [not a scope]
   /scope-shape:
     get:
       operationId: scope_shape
@@ -220,3 +220,9 @@ components:
     bearer:
       type: http
       scheme: bearer
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes: {}

@@ -1,0 +1,4 @@
+{}: accepted Order(kind=<Kind.book: 'book'>, kinds=[<Kind.book: 'book'>, <Kind.disc: 'disc'>])
+{"kind": "disc"}: accepted Order(kind=<Kind.disc: 'disc'>, kinds=[<Kind.book: 'book'>, <Kind.disc: 'disc'>])
+{"kinds": ["other"]}: rejected ValidationError
+{}: accepted Catalog(kind=<Kind.disc: 'disc'>)

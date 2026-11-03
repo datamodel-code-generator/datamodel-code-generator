@@ -32,10 +32,12 @@ openapi/additional_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/alias.yaml	yaml_fast_constructor/parity.txt
 openapi/alias_description_property_names.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_collision_success.yaml	yaml_fast_constructor/parity.txt
+openapi/all_exports_equal_prefixed_names.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_local_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_multiple_collisions.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_no_child.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_prefix_collision.yaml	yaml_fast_constructor/parity.txt
+openapi/all_exports_prefixed_name_of_export.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_with_local_models.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_request_body.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_with_relative_ref/openapi.yaml	yaml_fast_constructor/parity.txt
@@ -103,6 +105,17 @@ openapi/allof_with_required_inherited_coverage.yaml	yaml_fast_constructor/parity
 openapi/allof_with_required_inherited_edge_cases.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_with_required_inherited_fields.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_with_required_inherited_nested_object.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/global_parameter.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_by_cyclic_path_item/api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_by_cyclic_path_item/path_item.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_by_path_item/api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_by_path_item/parameter.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_by_path_item/path_item.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/parameter.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/path_item.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/request_body.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/response.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/annotated_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/annotated_property_use_annotated.yaml	yaml_fast_constructor/parity.txt
@@ -162,6 +175,7 @@ openapi/collapse_root_models_name_strategy/same_class_name.yaml	yaml_fast_constr
 openapi/collapse_root_models_name_strategy/two_holders.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_name_strategy/two_holders_modular.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_name_strategy/two_holders_one_module.yaml	yaml_fast_constructor/parity.txt
+openapi/collapse_root_models_package_init.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_recursive_invalid_dotted.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_ref_cycle_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/api.yaml	yaml_fast_constructor/parity.txt
@@ -245,6 +259,7 @@ openapi/discriminator_shared_variant_tags.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_short_mapping_names.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_state_isolation/a.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_state_isolation/b.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_typed_mapping_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_union_mode.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_with_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_without_mapping.yaml	yaml_fast_constructor/parity.txt
@@ -307,6 +322,7 @@ openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
 openapi/fixed_length_array_tuples.yaml	yaml_fast_constructor/parity.txt
+openapi/generic_base_class_other_packages.yaml	yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	yaml_fast_constructor/parity.txt
 openapi/ignored_content_type_header_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/include_path_parameters.yaml	yaml_fast_constructor/parity.txt
@@ -329,7 +345,9 @@ openapi/invalid_dotted_relative_import.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
+openapi/item_schema_null_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
+openapi/json_pointer_through_scalar.yaml	yaml_fast_constructor/parity.txt
 openapi/keep_model_order_same_short_name.yaml	yaml_fast_constructor/parity.txt
 openapi/lazy_resolved_models.yaml	yaml_fast_constructor/parity.txt
 openapi/map_keyword_bodies.yaml	yaml_fast_constructor/parity.txt

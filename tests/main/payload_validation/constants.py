@@ -95,6 +95,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "option-only e2e fixture; payload validation intentionally uses default generation, which tags the variants "
         "by schema name; test_use_enum_values_in_discriminator_without_member validates its payloads"
     ),
+    "jsonschema/field_constraint_sites/mixed_type_map_property.json": (
+        "an object map beside an array in its type list drops the array branch by default "
+        "(--use-single-dict-for-object-maps writes it); test_field_constraint_sites validates its map payloads"
+    ),
     "jsonschema/msgspec_number_limits/float_range_bounds.json": (
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
         "test_msgspec_number_limits validates its msgspec payloads"
@@ -330,10 +334,6 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/discriminator.yaml::components.schemas.Demo": (
         "discriminator branches overlap under JSON Schema validation; see payload_validation_future_work.md"
-    ),
-    "openapi/discriminator_float_mapping.yaml::components.schemas.Base": (
-        "numeric discriminator mapping needs an explicit backend compatibility policy; "
-        "see payload_validation_future_work.md"
     ),
     "openapi/discriminator_in_array_oneof.yaml::components.schemas.Demo": (
         "array item discriminator tags conflict with inherited JSON Schema constraints; "

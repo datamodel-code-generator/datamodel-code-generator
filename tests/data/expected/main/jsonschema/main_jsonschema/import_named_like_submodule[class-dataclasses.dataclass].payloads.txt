@@ -1,0 +1,2 @@
+{"errors": {"count": 1}, "detail": {"message": "m"}}: accepted Report(errors=Warning(count=1), detail=Detail(message='m'))
+{"errors": {"count": "one"}}: rejected ValidationError

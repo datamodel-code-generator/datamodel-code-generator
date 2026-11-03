@@ -22,6 +22,7 @@ from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     INSTANCE_DATA_KEYWORDS,
     SINGLE_SCHEMA_SHAPES,
+    non_null_types,
     schema_positions,
 )
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY
@@ -35,6 +36,7 @@ from datamodel_code_generator.parser._intersection import (
     concatenating_row,
     declared_types,
     intersect_enum_values,
+    intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._null_facts import dump_null_sources, null_schema
@@ -191,7 +193,7 @@ def _is_enumless_const(part: JsonSchemaObject) -> bool:
 
 def _non_null_types(type_: str | list[str] | None) -> str | list[str] | None:
     """Return a ``type`` keyword without null in its list."""
-    return [item for item in type_ if item != "null"] if isinstance(type_, list) else type_
+    return non_null_types(type_) if isinstance(type_, list) else type_
 
 
 def _excludes_objects(type_: str | list[str] | None) -> bool:
@@ -966,7 +968,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
         if obj.description:
             merged_dict["description"] = obj.description
         if isinstance(schema_type := merged_schema.type, list) and not merged_schema.has_multiple_types:
-            schema_type = next((item for item in schema_type if item != "null"), None)
+            schema_type = next(iter(non_null_types(schema_type)), None)
         if isinstance(schema_type, str):
             constraint_types = frozenset({schema_type})
             if (
@@ -1002,6 +1004,20 @@ def all_of_pattern_conjunction(parser: AllOfValuesHost) -> Callable[[Sequence[st
         None
         if "legacy-lookahead-patterns" in parser._legacy_intersection  # noqa: SLF001
         else partial(parser._conjoined_pattern, where="allOf")  # noqa: SLF001
+    )
+
+
+def _closes_properties(source: JsonSchemaObject) -> bool:
+    """Return whether ``source`` admits no property but its own: additionalProperties false and no patternProperties."""
+    return source.additionalProperties is False and not source.patternProperties
+
+
+def inline_sources_close(parser: AllOfValuesHost, schemas: Iterable[JsonSchemaObject]) -> bool:
+    """Return whether a schema of ``schemas`` or one of their inline allOf sources closes the object they combine."""
+    return any(
+        _closes_properties(source)
+        for schema in schemas
+        for source in parser._iter_schema_validation_sources(schema, include_references=False)  # noqa: SLF001
     )
 
 
@@ -1044,11 +1060,7 @@ def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonS
     )
     for resolved_item in resolved_items:
         merged_schema = merge_schema(merged_schema, resolved_item.model_dump(exclude_unset=True, by_alias=True))
-    if any(
-        source.additionalProperties is False and not source.patternProperties
-        for resolved_item in (obj, *resolved_items)
-        for source in parser._iter_schema_validation_sources(resolved_item, include_references=False)  # noqa: SLF001
-    ):
+    if inline_sources_close(parser, (obj, *resolved_items)):
         merged_schema["additionalProperties"] = False
 
     if "required" in merged_schema and isinstance(merged_schema["required"], list):
@@ -1109,7 +1121,9 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
         if not (allowed_types := reduce(common_types, typed, typed[0])):
             return False
         merged["type"] = allowed_types[0] if len(allowed_types) == 1 else sorted(allowed_types)
-    parser._merge_schema_constraints(merged, children, intersect=parser.allof_merge_mode != AllOfMergeMode.NoMerge)  # noqa: SLF001
+    parser._merge_schema_constraints(  # noqa: SLF001
+        merged, children, intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
+    )
     parser._merge_all_of_root_validation_keywords(merged, children)  # noqa: SLF001
     for keyword in ("properties", "patternProperties"):
         properties: dict[str, list[JsonSchemaObject | bool]] = {}
@@ -1120,7 +1134,7 @@ def merge_all_of_root_value_children(  # noqa: PLR0912
             if keyword == "properties":
                 forbidden = set()
                 for source in children:
-                    if source.additionalProperties is False and not source.patternProperties:
+                    if _closes_properties(source):
                         forbidden.update(name for name in properties if name not in (source.properties or {}))
                 if forbidden:
                     if any(name in source.required for name in forbidden for source in children):
@@ -1199,7 +1213,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
                 merged.update(item.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
                 merged.update(obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True))
                 parser._merge_schema_constraints(  # noqa: SLF001
-                    merged, [schema, item, obj], intersect=parser.allof_merge_mode != AllOfMergeMode.NoMerge
+                    merged, [schema, item, obj], intersect=intersects_all_of_constraints(parser.allof_merge_mode.value)
                 )
                 if supports_literal_validation or narrows_literals:
                     parser._merge_all_of_root_validation_keywords(merged, [referenced_schema, item, obj])  # noqa: SLF001
@@ -1347,7 +1361,7 @@ def all_of_site_schema(
     own = obj.model_dump(exclude={"allOf", *_ALL_OF_VALUE_KEYWORDS}, exclude_unset=True, by_alias=True)
     if value.pop("nullable", False) or parser._null_facts(obj, "all-of-value").admits_null:  # noqa: SLF001
         if (type_ := value.get("type")) is not None:
-            value["type"] = [*(item for item in declared_types(type_) if item != "null"), "null"]
+            value["type"] = [*non_null_types(declared_types(type_)), "null"]
         elif null_member:
             value = {"anyOf": [value, null_schema()]}
         else:
@@ -1415,12 +1429,7 @@ def patterns_need_holder_engine(parser: AllOfValuesHost, schema: JsonSchemaObjec
                 if isinstance(pattern := value.get("pattern"), str):
                     patterns.append(pattern)
                 if any(
-                    needs_engine(
-                        parser.data_model_root_type,
-                        pattern,
-                        parser.target_python_version,
-                        parser.target_pydantic_version,
-                    )
+                    needs_engine(parser.data_model_root_type, pattern, parser.target_pydantic_version)
                     for pattern in patterns
                 ):
                     return True

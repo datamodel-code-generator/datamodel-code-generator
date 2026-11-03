@@ -23,20 +23,21 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReimportHost,
+    generic_base_class_import,
+    register_reference_import,
+    reimport_references,
+    set_reference_expressions,
+)
 from datamodel_code_generator.parser._passes._shared import (
     GraphBuilderHost,
     ModuleScopeView,
-    ReferenceExpressionHost,
     RenamedTypesHost,
-    ReplacedRootsHost,
     _context_models,
-    _generic_base_class_module,
     _get_model_module_name,
     _named_data_types,
     module_members,
-    names_left_by_replaced_roots,
-    register_reference_import,
-    set_reference_expressions,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
@@ -65,7 +66,7 @@ __all__ = [
 ]
 
 
-class CrossModuleHost(ReferenceExpressionHost, RenamedTypesHost, ReplacedRootsHost, GraphBuilderHost, Protocol):
+class CrossModuleHost(ReimportHost, RenamedTypesHost, GraphBuilderHost, Protocol):
     """The options, run state and hooks of the parser that the cross-module passes read and write."""
 
     _generic_base_model: DataModel | None
@@ -247,9 +248,14 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
                     stale_import := next(filter(None, map(stale_imports.get, paths)), None)
                 ):
                     continue
-                producer = ImportProducer("import-removed-reuse-canonicals", model)
-                parser._import_ledger.remove(ctx.imports, stale_import, producer)  # noqa: SLF001
-                set_reference_expressions(parser, ctx, run, model, (data_type,), members=members, producer=producer)
+                reimport_references(
+                    parser,
+                    ctx,
+                    run,
+                    [(model, data_type, stale_import)],
+                    row="import-removed-reuse-canonicals",
+                    members=members,
+                )
 
 
 def renamed_types_of(parser: CrossModuleHost, reference: Reference) -> list[_RenamedType] | None:
@@ -273,7 +279,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
         members = module_members(parser, ctx.models)
         keyed_members = keyed_models(members, "module members")
         stale_users = [
-            (data_type, model, import_)
+            (model, data_type, import_)
             for model in members
             for data_type in _named_data_types(model)
             if (reference := data_type.reference) is not None
@@ -281,27 +287,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
             and keyed_members.key_of(reference) not in keyed_members.models
             and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
         ]
-        if not stale_users:
-            continue
-        for _, model, import_ in stale_users:
-            parser._import_ledger.remove(ctx.imports, import_, ImportProducer("import-renamed-types", model))  # noqa: SLF001
-        parser._import_ledger.release_names(  # noqa: SLF001
-            ctx.imports,
-            ctx.scoped_model_resolver,
-            {import_.binding_name for *_, import_ in stale_users}.union(
-                names_left_by_replaced_roots(parser, ctx.models, keyed_members)
-            ),
-        )
-        for data_type, model, _ in stale_users:
-            set_reference_expressions(
-                parser,
-                ctx,
-                run,
-                model,
-                (data_type,),
-                members=None,
-                producer=ImportProducer("import-renamed-types", model),
-            )
+        reimport_references(parser, ctx, run, stale_users, row="import-renamed-types")
 
 
 def _module_qualified_name(reference: Reference, model_path_to_module_name: Mapping[str, str]) -> str:
@@ -336,6 +322,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         producer=ImportProducer("import-enum-member-literal-classes", model),
                         treat_dot_as_module=parser.treat_dot_as_module,
                         import_ledger=parser._import_ledger,  # noqa: SLF001
+                        shared_imports=parser.imports,
                     )
                     or reference.short_name
                 )
@@ -348,10 +335,10 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
         return
 
     all_target_models: set[DataModel] = set()
-    modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports]] = []
+    modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
     for ctx in run.contexts:
         if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:  # noqa: SLF001
-            modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports))
+            modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
             all_target_models.update(target_models)
 
     if not modules_with_targets:
@@ -364,7 +351,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     if not root_modules:  # pragma: no cover
         root_modules = [modules_with_targets[0]]
 
-    first_root_module, first_root_models, first_root_target_models, _ = root_modules[0]
+    first_root_module, first_root_models, first_root_target_models, _, _ = root_modules[0]
     first_root_file_path = first_root_target_models[0].file_path
 
     base_class_ref = Reference(path=GENERIC_BASE_CLASS_PATH, name=GENERIC_BASE_CLASS_NAME)
@@ -389,7 +376,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
 
     original_base_class = parser.data_model_type.BASE_CLASS
     original_import = Import.from_full_path(original_base_class) if original_base_class else None
-    for module, _, target_models, imports in modules_with_targets:
+    for module, _, target_models, imports, init in modules_with_targets:
         for model in target_models:
             if original_import:  # pragma: no branch
                 additional_imports = model._additional_imports  # noqa: SLF001
@@ -404,6 +391,6 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
             parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)  # noqa: SLF001
             parser._import_ledger.append(  # noqa: SLF001
                 imports,
-                Import(from_=_generic_base_class_module(module, first_root_module), import_=base_class_ref.name),
+                generic_base_class_import(module, first_root_module, base_class_ref.name, init=init),
                 _GENERIC_BASE_CLASS,
             )

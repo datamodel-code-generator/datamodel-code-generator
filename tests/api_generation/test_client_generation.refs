@@ -61,8 +61,11 @@ custom-formatter-options6-module6	main/generation_platform/client/output-options
 encoding-options1-module1	main/generation_platform/client/output-options/encoding.py
 formatters-options2-module2	main/generation_platform/client/output-options/formatters.py
 header-quotes-options0-module0	main/generation_platform/client/output-options/header-quotes.py
+ruff-latin-1-options8-module8	main/generation_platform/client/output-options/ruff-latin-1.py
 ruff-line-length-options5-module5	main/generation_platform/client/output-options/ruff-line-length.py
+ruff-utf-16-options7-module7	main/generation_platform/client/output-options/ruff-utf-16.py	= main/generation_platform/client/output-options/formatters.py
 [test_client_protocols]
+protocols-cache-bodyless	main/generation_platform/client/protocols/protocols-cache-bodyless.txt
 protocols-cache-checks	main/generation_platform/client/protocols/protocols-cache-checks.txt
 protocols-cache-errors	main/generation_platform/client/protocols/protocols-cache-errors.txt
 protocols-deep-limit	main/generation_platform/client/protocols/protocols-empty.txt
@@ -120,6 +123,9 @@ auth-context	main/generation_platform/client/packages/auth-context/pydantic_v2_B
 auth-errors	main/generation_platform/client/auth-errors.txt
 auth-no-root	main/generation_platform/client/auth-no-root.txt
 auth-no-root	main/generation_platform/client/packages/auth-no-root/pydantic_v2_BaseModel//*.py
+auth-roles	main/generation_platform/client/auth-roles.txt
+auth-roles	main/generation_platform/client/packages/auth-roles/pydantic_v2_BaseModel//*.py
+auth-roles-30	main/generation_platform/client/auth-roles-30.txt
 auth-wire-conflicts	main/generation_platform/client/auth-wire-conflicts.txt
 binary-allowed	main/generation_platform/client/binary-allowed.txt
 binary-allowed	main/generation_platform/client/packages/binary-allowed/dataclasses_dataclass//*.py
@@ -132,6 +138,8 @@ binary-text	main/generation_platform/client/binary-text.txt
 caching	main/generation_platform/client/caching.txt
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.py
 child-collision	main/generation_platform/client/child-collision.txt
+codec-docstrings	main/generation_platform/client/codec-docstrings.txt
+codec-docstrings	main/generation_platform/client/packages/codec-docstrings/pydantic_v2_BaseModel//*.py
 codec-errors	main/generation_platform/client/codec-errors.txt
 compression	main/generation_platform/client/compression.txt
 compression	main/generation_platform/client/packages/compression/pydantic_v2_BaseModel//*.py
@@ -140,9 +148,12 @@ credential-name-errors	main/generation_platform/client/credential-name-errors.tx
 credential-name-errors	main/generation_platform/client/packages/credential-name-errors/pydantic_v2_BaseModel//*.py
 default-server	main/generation_platform/client/default-server.txt
 default-server	main/generation_platform/client/packages/default-server/pydantic_v2_BaseModel//*.py
+default-server-template	main/generation_platform/client/default-server-template.txt
 discriminator-copies	main/generation_platform/client/discriminator-copies.txt
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/dataclasses_dataclass//*.py	= main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/typing_TypedDict//*.py	= main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
+discriminator-forms	main/generation_platform/client/discriminator-forms.txt
+discriminator-forms	main/generation_platform/client/packages/discriminator-forms/pydantic_v2_BaseModel//*.py
 discriminator-reuse	main/generation_platform/client/discriminator-reuse.txt
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
@@ -179,6 +190,14 @@ fingerprint-write-only	main/generation_platform/client/fingerprint-write-only.tx
 fingerprint-write-only	main/generation_platform/client/packages/fingerprint-write-only/pydantic_v2_BaseModel//*.py
 form-name-errors	main/generation_platform/client/form-name-errors.txt
 form-name-kept	main/generation_platform/client/form-name-kept.txt
+forms-allof-cycle	main/generation_platform/client/forms-allof-cycle.txt
+forms-allof-cycle	main/generation_platform/client/packages/forms-allof-cycle/pydantic_v2_BaseModel//*.py
+forms-boolean-properties	main/generation_platform/client/forms-boolean-properties.txt
+forms-boolean-properties	main/generation_platform/client/packages/forms-boolean-properties/pydantic_v2_BaseModel//*.py
+forms-member-locations	main/generation_platform/client/forms-member-locations.txt
+forms-member-locations	main/generation_platform/client/packages/forms-member-locations/pydantic_v2_BaseModel//*.py
+forms-reuse-response	main/generation_platform/client/forms-reuse-response.txt
+forms-reuse-response	main/generation_platform/client/packages/forms-reuse-response/pydantic_v2_BaseModel//*.py
 header-names	main/generation_platform/client/header-names.txt
 helpers	main/generation_platform/client/helpers.txt
 helpers	main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py
@@ -244,6 +263,17 @@ parameter-content-defaults-30	main/generation_platform/client/packages/parameter
 parameter-content-defaults-30	main/generation_platform/client/parameter-content-defaults-30.txt
 parameter-content-defaults-31	main/generation_platform/client/packages/parameter-content-defaults-31/pydantic_v2_BaseModel//*.py
 parameter-content-defaults-31	main/generation_platform/client/parameter-content-defaults-31.txt
+parts-bound-responses	main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
+parts-bound-responses	main/generation_platform/client/parts-bound-responses.txt
+parts-bound-responses-reuse	main/generation_platform/client/packages/parts-bound-responses-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
+parts-bound-responses-reuse	main/generation_platform/client/parts-bound-responses-reuse.txt
+parts-bound-types	main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types	main/generation_platform/client/parts-bound-types.txt
+parts-bound-types-collapse	main/generation_platform/client/packages/parts-bound-types-collapse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types-collapse	main/generation_platform/client/parts-bound-types-collapse.txt
+parts-bound-types-errors	main/generation_platform/client/parts-bound-types-errors.txt
+parts-bound-types-reuse	main/generation_platform/client/packages/parts-bound-types-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types-reuse	main/generation_platform/client/parts-bound-types-reuse.txt
 pets	main/generation_platform/client/packages/pets/dataclasses_dataclass//*.py
 pets	main/generation_platform/client/packages/pets/msgspec_Struct//*.py
 pets	main/generation_platform/client/packages/pets/pydantic_v2_BaseModel//*.py
@@ -252,6 +282,9 @@ pets	main/generation_platform/client/packages/pets/typing_TypedDict//*.py
 pets	main/generation_platform/client/pets.txt
 pets-unpack	main/generation_platform/client/packages/pets-unpack/pydantic_v2_BaseModel//*.py
 pets-unpack	main/generation_platform/client/pets-unpack.txt
+pointer-errors	main/generation_platform/client/pointer-errors.txt
+pointer-references	main/generation_platform/client/packages/pointer-references/pydantic_v2_BaseModel//*.py
+pointer-references	main/generation_platform/client/pointer-references.txt
 polling	main/generation_platform/client/packages/polling/pydantic_v2_BaseModel//*.py
 polling	main/generation_platform/client/polling.txt
 polling-plans	main/generation_platform/client/packages/polling-plans/dataclasses_dataclass//*.py
@@ -270,6 +303,8 @@ ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt
+response-keys	main/generation_platform/client/packages/response-keys/pydantic_v2_BaseModel//*.py
+response-keys	main/generation_platform/client/response-keys.txt
 retries	main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 retries	main/generation_platform/client/retries.txt
 retry-header-conflicts	main/generation_platform/client/retry-header-conflicts.txt
@@ -301,6 +336,11 @@ templates-invalid	main/generation_platform/client/templates-invalid.txt
 templates-not-found	main/generation_platform/client/templates-not-found.txt
 templates-webhooks	main/generation_platform/client/packages/templates-webhooks/pydantic_v2_BaseModel//*.py
 templates-webhooks	main/generation_platform/client/templates-webhooks.txt
+text-bound-types	main/generation_platform/client/packages/text-bound-types/pydantic_v2_BaseModel//*.py
+text-bound-types	main/generation_platform/client/text-bound-types.txt
+text-bound-types-errors	main/generation_platform/client/text-bound-types-errors.txt
+text-bound-types-reuse	main/generation_platform/client/packages/text-bound-types-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/text-bound-types/pydantic_v2_BaseModel//*.py
+text-bound-types-reuse	main/generation_platform/client/text-bound-types-reuse.txt
 type-checking-imports	main/generation_platform/client/packages/type-checking-imports/msgspec_Struct//*.py
 type-checking-imports	main/generation_platform/client/type-checking-imports.txt
 type-checking-imports-off	main/generation_platform/client/type-checking-imports-off.txt

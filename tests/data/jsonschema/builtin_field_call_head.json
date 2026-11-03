@@ -1,0 +1,15 @@
+{
+  "title": "CallHead",
+  "type": "object",
+  "properties": {
+    "aCollectionFieldNameThatKeepsGoingAndGoingxxxxxxxxxxxxxxxxxx": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "a"
+      ]
+    }
+  }
+}

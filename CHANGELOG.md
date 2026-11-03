@@ -5,6 +5,289 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.88.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.88.0) - 2026-11-02
+
+## Breaking Changes
+
+### Code Generation Changes
+* Non-object allOf sites now generate the constrained value type instead of an empty model - Without `--intersect-allof-keywords`, some `allOf` sites used to be generated as an empty class (`class TwoRefsProp(BaseModel): pass`, or an empty `Struct`, dataclass or `TypedDict`) that rejected every valid value. These are sites whose parts admit no object, for example two integer `$ref`s with a sibling `minimum`, a `$ref` to an array schema with `minItems`, or two string schemas with a `pattern` each. They are now generated as the intersected value type: a `RootModel` such as `RootModel[conint(ge=3, le=5)]` or `RootModel[list[str]]` for Pydantic v2, and a type alias for dataclasses, msgspec and TypedDict output (for example `TwoPatterns: TypeAlias = str`). Fields that referenced those classes change with them. Under msgspec or `--collapse-root-models`, some models are inlined or no longer emitted (for example `two_prop: Annotated[int, Meta(ge=4, le=5)]`). Merged lookaround patterns add `model_config = ConfigDict(regex_engine="python-re")` or a `from re import compile` import, and a nullable site is now typed as a union with `None`. Code that imports, subclasses or instantiates these former empty classes, or passes dicts to them, must be updated: valid scalar and array values now validate and objects are rejected (#5406)
+* Defaults of affected properties follow their new value type with `--strip-default-none` or `--use-default-factory-for-optional-nested-models` - A property whose allOf of scalar schemas used to be an empty model now gets the default its value type gets. `--use-default-factory-for-optional-nested-models` no longer emits a default factory for it, and `--strip-default-none` keeps the `None` default only where the type admits null. This can change whether these fields are required and the order of constructor arguments in generated models and dataclasses (#5406)
+* Client and server targets keep a schema's own null rejection when it is merged into a nullable model - With `--generate-client` or `--generate-server` combined with `--reuse-model --collapse-reuse-models`, a schema that does not admit null but is merged into an equal nullable model (for example a non-nullable `Work` collapsed into a nullable `Home`) no longer takes on the merged model's null. Operations and fields that name it now type their body or result as `Home` instead of `Home | None`. Generated client codecs refuse to send or accept `None` for them, and generated FastAPI servers reject a null request body and answer a bare `None` result with a 500. Callers or service implementations that passed or returned `None` there must be updated (#5480)
+
+### Error Handling Changes
+* Client and view default headers or query that patch a helper-written parameter are now refused - The generated Python client's pagination helpers (`iterate`, `page`, `next_page`), polling helpers (`start`, `resume`) and upload helpers (`start`, `resume`) used to reject only a call's own `extra_headers` or `extra_query` naming a header or query parameter the helper writes. They now also raise `ConfigurationError` before sending when the client's or a view's (`with_options`) `default_headers` or `default_query` names such a parameter, with a `field_path` of `("default_headers", name)` or `("default_query", name)`. A client or view set up with such defaults, which used to send these requests, now fails; remove the conflicting default or use a client or view without it for helper calls. A count pagination helper's offset or page position is exempt: a client or view default of it is used as the first position, and only the call's own extra is still refused (#5502)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Accept an allowlist table whose base is an older release as accepting nothing, and replace the table for 0.87.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5425
+* Fit the CI test jobs to the runner concurrency so a run finishes in about five minutes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5409
+* Catch validation-time errors, order-dependent imports and project schemas in the behaviour diff gate by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5403
+* Import the builtins that a package's own submodules hide under aliases, so list[str] beside app/list.py names the builtin again by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5402
+* Write an allOf whose parts admit no object as the intersection of its parts instead of a model without fields by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5406
+* Run the render memo check from a pytest plugin and check the Pydantic config keys in a test by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5433
+* Run the fact finality and store write checks from the pytest plugin instead of the package by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5434
+* Keep the pass declarations and fact tables in scripts, so the package only runs passes by name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5443
+* Run the model graph and schema location checks from the pytest plugin by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5456
+* Run the module import and render plan checks from the pytest plugin by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5457
+* Delete the migration comparisons that kept the old computations beside the new ones by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5458
+* Keep each decision in one home: a checker that fails on a new site outside its home, and an inventory of the legacy rows by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5422
+* Read --intersect-allof-keywords in one place, as four named legacy rows of the intersection core by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5423
+* Give the client and server decisions their homes in the decision-home checker, so targets cannot re-read the document or re-decide model facts by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5429
+* Read every subschema position from one table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5440
+* Let the schema dispatch rows declare the child schemas they type, and split request and response models by asking them by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5441
+* Read the object map options in one place, as named legacy rows of the object map home by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5444
+* Merge inherited properties in one home of the intersection core by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5452
+* Build the $ref-sibling and allOf member rows in the intersection core and read the null of intersected parts from the null rule by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5459
+* Record a release's behaviour in its own sharded workflow, so the record cannot cancel Publish or skip the release benchmarks by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5466
+* Decide the number values each output can write in one place, with one int64 range for msgspec by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5445
+* Read and check the keys of an OpenAPI document in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5432
+* Bring the decision-home table in line with main: register the number row, drop the row and the sites the merged check moves removed by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5467
+* Record the null a reference keeps as one site fact that the nullability decisions read, instead of five markers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5436
+* Take the HTTP token, status, media type and charset rules of client and server packages from one runtime module by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5427
+* Resolve the class-keyed options through one home of key rules and one name allocation service by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5437
+* Decide collapse eligibility and whether later holders follow a parent-collapsed root in one pure core by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5448
+* Find discriminated union sites with one iterator and keep the tag passes' run state in one tag plan by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5454
+* Decide discriminated union tags in the tag plan, with the passes as thin adapters and the backend differences as capability rows by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5455
+* Answer recursion questions from one reference graph and one module quotient by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5461
+* Decide the struct tags of tagged bases in the tag plan and order the bases from the reference graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5462
+* Decide set-item hashability and dict-key root types in one home over the reference graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5463
+* Choose the canonical model of a reuse group from one ReuseGroups plan by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5464
+* Check the shared schema objects and the model owners from the pytest plugin, and delete the schema graph migration comparisons by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5472
+* Decide the constraint applicability of every field form, render drop and literal check in one home by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5473
+* Share the operation planning the client and the server compute the same way, with one policy row per difference by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5474
+* Route the null of the converters, GraphQL fields and the const, enum and inherited-type readers through the null facts home by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5479
+* Read the None of client and server types from one place, and type a merged nullable reference by the schema it names by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5480
+* Build the remaining unions through build_union and read nested unions through the union adapters by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5482
+* Declare the argparse flags through two small helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5483
+* Derive the dated preset name tables and families from the PresetName members by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5484
+* Share the protocol helpers' option checks, refusals, limits and error builders in the runtime options and errors modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5485
+* Build the pass host Protocols from shared member-group Protocols by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5487
+* Write the CLI option metadata as compact rows that share their category and group by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5488
+* Key the target Unicode change tables by code point ranges by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5489
+* Name the JSON config fields once and render both registries through one Markdown renderer by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5490
+* Check a data type for being a container through one DataType property by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5491
+* Share the client helper planning driver, refusals, schema sources and problem builder by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5492
+* Remove the duplicates in the leaf modules: runtime type expressions, Python literals, sources, regex syntax and graphs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5494
+* Share the repeated input-model loading, schema and type-fallback helpers and rebuild config models from one namespace table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5495
+* Run every CLI path through one schema table, one generation call and shared batch and lock helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5496
+* Run the release benchmarks for releases and on demand, not on every push to main by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5499
+* Build every client helper method from one call shape and drop the client renderer's forwarding wrappers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5498
+* Remove the duplicated code of the other input formats: one draft feature table, one Avro logical-type map and shared GraphQL and protobuf walks by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5500
+* Share the HTTP stack tables, the wire plan refusals, the target path collisions and plan_target by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5501
+* Share the protocol helpers' binding reads, expiry, dot-segment checks, step lock, checkpoints and step iterators by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5502
+* Share the store's invalidation steps, derive its mutation table from the two site-effect tables, and drop the no-op inlined replacement walk by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5503
+* Share the helpers that client, server and the wire plan compute the same way by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5505
+* Share the staging, publication and parse-retry steps of the API and the CLI by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5506
+* Share one helper per repeated step of the module, import and shared passes and of the import bindings by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5508
+* Share the runtime client's failure builders, request preparation and option layering, and drop its dead state by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5509
+* Copy data types through one function, share the constraint normalisation of the Pydantic and msgspec fields, and read the render-plan freeze from a class flag by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5510
+* Remove the duplicated code of the first part of parser/jsonschema.py: one type intersection core, one tuple position path and dynamic anchor components from _scc by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5511
+* Remove the duplicated code of the second part of parser/jsonschema.py and sort inherited bases through the model MRO helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5512
+* Walk loaded documents through one pointer reader, and build the target binding's tables, JSON types and wire names from their homes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5513
+* Share the XML Schema converter's particle and group occurrence, redefinition lookups, include walk, converter options and facet tables by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5514
+* Let a call of a decision home's core pass the decision-home check anywhere, and drop the adapters that only called it by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5515
+* Share the field-call writer, type maps and model sets of the small model modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5516
+* Drop the multipart codec protocol, part errors and failure builder that duplicate the client runtime's by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5517
+* Share the model-codec and server runtime helpers and inline their single-use helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5518
+* Share the builtin formatter's block layouts, predicates and pyproject lookup, and define its constants once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5519
+* Remove the duplicated code of the structured output payloads and the small CLI modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5520
+* Write PRESET_NAMES from the PresetName literal instead of listing the names twice by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5521
+* Remove the duplicated code of the third part of parser/jsonschema.py: one field parse beside the parents, one object model registration, one field option mapping, one nullable enum root, the version checks as loops and smaller copies by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5559
+* Delete the src code only tests used: the parser's legacy compatibility helpers and run-context setters, the store's compatibility properties, index queries, holder index and unused mutations, the uniqueItems path iterators and the compatibility re-export modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5560
+* Share the head of the three type-alias templates and loop the oneOf, anyOf and not required groups of the schema validator template by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5561
+* Share the Pydantic v2 model, config and type manager code: one base of BaseModel and the Pydantic dataclass, one config row builder, the type manager merged into one class, one alias generator lookup and the bases read through one helper by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5563
+* Remove the unread fields, the forwarding helpers and the repeated walks of the FastAPI server planner by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5564
+* Point the decision-home docstrings at decision_homes.toml for their adapter lists by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5565
+* Share the option spelling, the argparse index and the preset application of the CLI, the recommender, the prompt and generate() by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5566
+* Share the container import table, the dotted-name split, the reference name count and the wire name inside reference.py and types.py by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5567
+* Share the reference rebinding, the run arguments and the orderings of the structure, render preparation, settle and cross-module passes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5572
+* Share the wire-fact helpers of the targets and the OpenAPI wire plan through the target contract by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5573
+* Remove the duplicated code of the AsyncAPI and OpenAPI parsers: one walker table, one ref follow, one version source, one parameter field assembly and one discriminator subtype link by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5574
+* Share one render entry for the compiled template renderers and write each value inside its f-string by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5575
+* Write, split and decode JSON Pointer tokens in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5580
+* Spell the arguments of an option value in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5590
+* Plan the remote lock and stage its update in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5591
+* Build every parser field in one place, with the configured options each kind of field takes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5593
+* Read the member a JSON Pointer token names in one place, with the grammar each reader keeps by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5598
+* Import the models that collapsed root types and dict keys name through the reference import, under a named legacy row by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5600
+* Compute the C3 order of models, raw schemas, the inheritance check and the target bindings in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5602
+* Decide which declared media type a received one goes to and which statuses have no body in one place for the generator and both runtimes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5610
+* Read the member a parser JSON Pointer token names through the shared member reader, under the parser's own row by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5612
+* Resolve which declaration of an inherited name a model, a msgspec struct and a target binding take in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5614
+* Take the alias identity of a copied or renamed field in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5616
+* Define the JSON Schema object and its reference and discriminator models in a module of their own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5621
+* Stage a run's output and model metadata for publication in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5622
+* Write the identity of copied and renamed fields through the generation store by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5624
+* Apply each duplicate that deduplication and reuse find in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5629
+* Copy a data type's node state in one place for the tree copy and the leaf copy by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5634
+* Build and read the read/write model variant token of a reference path in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5635
+* Move the union tag reading of the JSON Schema parser into a module of its own, with the warning module and tracing every parser concern module keeps by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5623
+* Move the lightweight type reading of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5630
+* Move the object map reading of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5631
+* Move the schema validator planning of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5632
+* Decide in one place whether a pattern needs Python's regex engine by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5638
+* Move the schema reading helpers the JSON Schema parser concerns share into a module of their own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5639
+* Move the value keyword reading of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5642
+* Move how a model's rendered names are read into a module of their own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5643
+* Decide what a received codec failure means and which error a body failure raises in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5645
+* Spell a call, a tuple and a list of generated Python in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5646
+* Move the allOf value merging of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5647
+* Move how the parser copies fields into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5651
+* Identify a request parameter by its location and name in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5652
+* Move the inherited schema reading of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5653
+* Move how the parser checks model inheritance into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5654
+* Move how a model field decides its imports into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5655
+* Move the request and response model split of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5660
+* Decide whether text is a Python name in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5661
+* Read the pyproject values of preset items in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5663
+* Move how the parser applies type overrides into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5664
+* Move how the parser writes package init exports into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5667
+* Move how the parser repairs stdout output into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5668
+* Search for a free name in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5670
+* Move the reference reading of the JSON Schema parser into a module of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5671
+* Spell a set and a dict display of generated Python in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5674
+* Write and read back the request parts of the client runtime in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5679
+* Build a class name from the words of a text in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5685
+* Write the JSON text of a command-line output in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5686
+* Read and change the children of a reference in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5692
+* Balance the CI test shards on runner-speed-normalized medians of recent runs and split items into the parts that shorten the slowest shard by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5695
+* Move the document reading of the JSON Schema parser into a module of its own and turn option values into arguments in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5696
+* Write credentials, name helper kinds and read binding values of the client runtime in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5697
+* Refuse target type uses, read subschema position facts and the module of a written file in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5701
+* Combine CI coverage in parallel groups and write the XML and diff report beside the summary gate by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5703
+* Name a schema location and take an untrusted Python name in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5704
+* Name the response statuses and build a finished field copy in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5707
+* Compare duplicate model candidates and spell keyword arguments in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5708
+* Handle raw body bytes of the client runtime and write module file paths in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5711
+* Bound error bodies and layer and refuse helper call options of the client runtime in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5713
+* Read path item operation methods and test for special schema paths in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5716
+* Name the JSON schema outputs and write reference import names through one home each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5719
+* Parse JSON and restore saved values of the client runtime in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5721
+* Walk to an existing ancestor and place the staging directory in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5723
+* Read a loaded mapping in one place in the recommender by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5726
+* Find the field and model holding a data type node and decide SerializeAsAny in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5728
+* Spell the type subscripts of generated Python in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5729
+* Set and reset context variables in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5730
+* Read nested conjunctions in the mapping guard check and describe get_most_of_parent by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5731
+* End the parse of the input sources in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5735
+* Spell the type subscripts of the model writers in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5736
+* Write streamed JSON documents and model metadata payloads in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5737
+* Share the identical rows of the schema dispatch tables by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5738
+* Merge a module-scope reused typed map value through the duplicate home by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5739
+* Tell an unsent request and build call timeouts and deadlines in one place each in the client runtime by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5740
+* Define each Why row that several output backends write in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5741
+* Name the definitions of a converted schema in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5742
+* Check aware datetimes and callable options, match public-key signatures and read server credential text in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5749
+* Index the batch tables of a target contract and read the schema keyword sets in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5750
+* Write runtime JSON and read JSON numbers and header digits in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5751
+* Make a path concrete and resolve its parent directory in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5752
+* Decide the effective parameters and security of an operation and read a parameter's location in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5756
+* Build and spell the runtime records of client helpers in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5757
+* Fold generated file names into a file-system key in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5758
+* Spell a module-qualified name and test that a module is below a package in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5759
+* Name the package in the uvx commands of the agent skill by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5760
+* Report hand-written type subscripts and pick target template roles and runtime copies in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5762
+* Name the request parts a protocol helper writes in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5763
+* Decide the direction and dropped flag of a read/write variant in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5764
+* Name the containers a type node is in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5765
+* Let coding agents install the agent skill from the repository by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5766
+* Read whether a parameter, header or request body is required in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5774
+* Read responses, digest JSON, restore checkpoints and spell HTTP quoted strings in one place each in the client runtime by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5775
+* Spell datetime expressions and source-safe floats of converted schemas in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5776
+* Decide a target's builtin names and a module's bare loads in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5778
+* Read security requirements, resolve security schemes and place API key credentials in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5784
+* Read form pairs and multipart part text and name part codecs in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5785
+* Silence warnings, report a warning once and skip tracer frames in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5786
+* Read helper event routes and schemas and write operation registry records in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5787
+* Make a path lexical or resolved in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5788
+* Spell import statements and name a client package's modules and capabilities in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5789
+* Match the classes of two generations and list the registries in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5794
+* Share the union rows and the combined root of the schema dispatch tables, and build text constructors in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5795
+* Join dotted module paths, name the services package and client namespaces, and suffix duplicate names in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5798
+* Spell the path template grammar and read the pydantic imports of target bindings in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5799
+* Name the extras runtime, decide whether a model reads a body, and carry verified webhook signatures in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5800
+* List items in English and choose a word by count in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5804
+* Name binding projections, unquote parameter values and read multipart header parameters in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5805
+* Read target type kinds and container slots, name codec modules, and declare credential contracts in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5806
+* Detach temporary data type trees and read Avro defaults in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5807
+* Spell install hints, wrap report paragraphs and label recommender candidates and signals in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5809
+* Read a keyless reference's module name by its path in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5810
+* Code helper uses, refer to helper sources, bind helper inputs, read a response's JSON use, and write security records and helper result types in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5811
+* Test whether two paths overlap or name the same file, and write and read the server and services package docstrings in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5813
+* Read an import's key, stored alias, override and presence in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5822
+* Read a keyword's subschemas and walk a loaded JSON value in one place each, and pick a client direction's dropped property through the read/write variant home by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5825
+* Read the container kinds of partial slot lists, parse rendered code, find class bodies and walk name nodes in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5828
+* Count the collapse branch that carries a field's imports in coverage by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5829
+* Read the target versions, a construct's minimum and the signals' object schemas in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5830
+* Name a runtime import's binding and the class each container slot is written as in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5832
+* Key the reuse groups and the other model sets of a parse by model key by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5833
+* Keep the cause of an SDK error an OAuth client secret or token callback raises by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5834
+* Raise application failures and read a cache fetch's request headers and store decision in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5835
+* Keep a value built once per object, and read text and assemble fields of the model codecs, in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5836
+* Remove the decision-home checker and keep the legacy rows in the architecture page by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5853
+* Name asyncio twins, read a cut-short wait, an option count, a pager's end digests and a retry safety in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5854
+* Read builtin type attributes, loaded mappings and the codec type in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5857
+* Escape the null byte of a TypedDict key and the quote and null byte of an inline field docstring by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5862
+* Skip the parameters list and non-object extension keys under paths in the paths scope by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5863
+* Read local $ref holders, non-string keys, blank titles and YAML aliases in --recommend-options as generation does by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5864
+* Follow schema references where the parser resolves them in the target binding by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5865
+* Write docstring and comment text in the Python syntax module and read the keys of paths in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5867
+* Reduce a recommender name, hold a helper's step state and write the runtime defaults in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5868
+* Read loaded mappings and a helper's limit defaults in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5870
+* List the properties a read/write variant leaves out from the parser's own flag by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5872
+* Let pytest name the stored outputs of the recommend-options and validator test helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5874
+* Write the client renderer's runtime keyword arguments and a polling helper's default interval in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5885
+* Record where each field and leaf type is built in the parser by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5886
+* Walk AsyncAPI traits, read loaded component maps and list an output directory's files in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5887
+* Write TOML keys and config values, a target module's literal arguments and the typing-extensions requirement in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5890
+* Write base class import aliases through the generation store and import a model of another module in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5891
+* Read reused-type exports, target file encodings and watch support, write relative imports and import aliases, and locate target members through the parser's origins in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5895
+* Spell import aliases, write the codegen command and settings table, read parameter-name keys, sensitive options, config keys and input documents in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5897
+* Import again what a module imported under a stale import in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5899
+* List the files of a directory input, read the allOf intersection mode, the customized models, the closing allOf sources and the map key keywords in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5901
+* Record which strings carry raw octets in the parser by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5903
+* Read the line endings of a text as universal newlines, list the config fields that hold paths and the JSON fields of a target in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5904
+* Bound the most recently used caches and the seen keys, tell which models the passes leave out as unused in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5906
+* Check HTTP tokens, spell the JSON media type, read received text in its charset, leave out named header fields and fetch a URL input with its HTTP options in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5911
+* Tell whether a field must be given a value and whether a required field keeps its default in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5912
+* Tell whether a field's default is a value, whether it declares init=False and whether it declares a default factory in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5914
+* Visit the nodes a walk reaches, read the document a reference's file part names and spell a reference to a definition in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5917
+* Tell which JSON types a type keyword admits and which models reach some models in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5918
+* Read each schema object the client and server bindings use once, as one site with its references resolved by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5920
+* Tell which output model types are Pydantic, which arguments a dataclass decorator takes, list the choices of an enum option and empty the parse namespace in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5922
+* Read the types of a type list other than null, walk the parts of a Python type annotation and tell its Literal in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5924
+* Bind each operation's objects where the API walk visits them, by the location the walk recorded by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5925
+* Tell what a type writes of its own and whether it only groups its members, and lay out a split bracket in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5927
+* Put back replaced process-wide entries, tell whether a dotted name lies within a package, which continuations count a page position and write a member's plan in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5928
+* Tell whether a rewrite changed no part of a value and whether a JSON value is a number in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5930
+* Read the text a recorded literal holds and every item of a sequence, or none when one item gives none, in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5931
+* Take the current generation timestamp and read the children of a wire declaration by kind, the media of a request body and the headers its encodings declare in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5932
+* Read the type of a member of a type list in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5934
+* Make a field required through the store op and read whether a root field is constrained in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5940
+* Read deprecated options from the registry, the one member of a union besides None, whether an annotation names a class and whether a JSON value is an integer in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5943
+* Walk the references of parameter models and the dynamic anchors a binding uses with the one graph walk by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5944
+* Build the parse path of a JSON pointer target, read the sole present member of the union a type holds, tell whether a union member is the None it adds and walk a model's inheritance family in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5945
+* Tell whether an object is a Pydantic model class, read the path a file URI names to the targets and the exit codes of the command line in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5946
+* State the default encoding and watch delay, and read which option an enabled option turns on, in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5951
+* Read the schema default a field keeps, record a request-response split for both variants and read the types a type keyword lists in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5952
+* Tell whether a generation class is one of the built-ins in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5953
+* Build the type a Python type expression spells in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5954
+* Take the arguments of a code formatter from the model settings, check the schema validator base class name and tell a URL from a path in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5960
+* Pick the field whose default an inherited field override takes, tell which drafts read the keywords beside a $ref and name the operation fields of an AsyncAPI channel in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5961
+* Lay out the brackets and nested entries of a literal and map a field's facts to the None it writes in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5965
+* Write the array an itemSchema stands for, parse the schema of a media type, read the reference a discriminator mapping value names and build the schema of a reference beside its siblings in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5966
+* Build the id of a schema's own use, tell whether reuse made a model and name the builtins a type spells in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5967
+* Tell whether a rewrite changed nothing, pick the compiled renderer, write a parameter's style, record a model's data types and read four command-line config rules in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5970
+* Spell the recommendation words, select a BaseModel's regex engine, read the integer a number bound admits and name a declared schema's projection in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5974
+* Assemble the constraints of an object property and a root field, and lay out the brackets the builtin formatter always splits, in one place each by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5979
+* Name where the walk finds a declared schema in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5980
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.87.0...0.88.0
+
+---
+
 ## [0.87.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.87.0) - 2026-10-28
 
 ## Compatibility policy for 0.87.0

@@ -26,23 +26,29 @@ codec_3: Final[PydanticCodec[models.ObjectResponseItem]] = PydanticCodec(models.
 codec_4: Final[PydanticCodec[models.EnumRequestItem]] = PydanticCodec(models.EnumRequestItem)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[PydanticCodec[models.EnumResponseItem]] = PydanticCodec(models.EnumResponseItem)
+codec_5: Final[PydanticCodec[models.EnumRequest1]] = PydanticCodec(models.EnumRequest1)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[PydanticCodec[models.EnumResponseItem]] = PydanticCodec(models.EnumResponseItem)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticCodec[Union[int, str]]] = PydanticCodec(Union[int, str])
+codec_7: Final[PydanticCodec[models.EnumResponse1]] = PydanticCodec(models.EnumResponse1)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[PydanticCodec[Union[int, str]]] = PydanticCodec(Union[int, str])
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[PydanticCodec[Union[int, str]]] = PydanticCodec(Union[int, str])
+codec_9: Final[PydanticCodec[Union[int, str]]] = PydanticCodec(Union[int, str])
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[PydanticCodec[Any]] = PydanticCodec(Any)
+codec_10: Final[PydanticCodec[Any]] = PydanticCodec(Any)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[PydanticCodec[Any]] = PydanticCodec(Any)
+codec_11: Final[PydanticCodec[Any]] = PydanticCodec(Any)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[PydanticCodec[Any]] = PydanticCodec(Any)
+codec_12: Final[PydanticCodec[Any]] = PydanticCodec(Any)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[PydanticCodec[Any]] = PydanticCodec(Any)
+codec_13: Final[PydanticCodec[Any]] = PydanticCodec(Any)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

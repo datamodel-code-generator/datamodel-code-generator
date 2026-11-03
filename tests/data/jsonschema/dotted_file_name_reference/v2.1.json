@@ -1,0 +1,1 @@
+{"title": "DottedFileRelease", "type": "object", "properties": {"tag": {"type": "string"}}}

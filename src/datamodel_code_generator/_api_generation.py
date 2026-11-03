@@ -6,9 +6,8 @@ import sys
 import tempfile
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
 from io import BytesIO, TextIOWrapper
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 from urllib.parse import ParseResult
 
@@ -27,9 +26,11 @@ from datamodel_code_generator._fastapi.packages import (
     implementations_owner,
     services_package,
 )
+from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, lexical, overlaps, resolved
+from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     config_error,
@@ -402,7 +403,7 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
 
     if staged.is_file():
         return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
-    files = sorted((path.relative_to(staged).parts, path) for path in staged.rglob("*") if path.is_file())
+    files = sorted((path.relative_to(staged).parts, path) for path in files_under(staged))
     return tuple(ModelArtifact(parts, path.read_bytes(), encoding) for parts, path in files)
 
 
@@ -486,12 +487,24 @@ def _generate_models(
         )
 
 
-def _is_python(path: PurePosixPath) -> bool:
+def _is_python(path: PurePath) -> bool:
     return path.suffix in {".py", ".pyi"}
 
 
+def file_encoding(path: PurePath, encoding: str, kind: ArtifactKind | None = None) -> str:
+    """Return the encoding a generated file is written in: models and Python files in `encoding`, else UTF-8."""
+    return encoding if kind == "model" or _is_python(path) else "utf-8"
+
+
+def artifact_text(artifact: GeneratedArtifact, encoding: str) -> str:
+    """Read a rendered file as its written file reads, in the encoding it is written in."""
+    return TextIOWrapper(
+        BytesIO(artifact.content), encoding=file_encoding(artifact.path, encoding, artifact.kind)
+    ).read()
+
+
 def _normalized(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
+    text = normalize_newlines(text).rstrip("\n")
     return f"{text}\n" if text else ""
 
 
@@ -798,8 +811,8 @@ class _Planner:
         Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
         package is a multi-module output of the model backend, so the backend decides the default. The implementations
         are formatted the same way, without the generated header, returned second, and put where a text file holds
-        their `implementation_text`. Every text is checked against the encoding of its file before any is staged, as
-        model files are before any is written.
+        their `implementation_text`. Every final text, Ruff's output included (it stages UTF-8 whatever the encoding),
+        is checked against the encoding of its file before any is encoded, as model files are before any is written.
         """
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
@@ -808,7 +821,7 @@ class _Planner:
             _format_file_header,  # pyright: ignore[reportPrivateUsage]
         )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
-        from datamodel_code_generator.format import resolve_use_type_checking_imports  # noqa: PLC0415
+        from datamodel_code_generator.format import _model_formatter_arguments  # noqa: PLC0415
         from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         effective, models = self.effective, self.models
@@ -819,25 +832,14 @@ class _Planner:
         ).data_model
         files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
         formatter = TargetCodeFormatter(
-            effective.target_python_version,
-            models.settings_path,
-            effective.wrap_string_literal,
-            skip_string_normalization=not effective.use_double_quotes,
+            settings_path=models.settings_path,
             model_package=self.config.model_package,
             package=self.config.package,
-            custom_formatters=effective.custom_formatters,
-            custom_formatters_kwargs=effective.custom_formatters_kwargs,
-            encoding=effective.encoding,
-            formatters=effective.formatters,
-            builtin_format_line_length=effective.builtin_format_line_length,
-            use_type_checking_imports=resolve_use_type_checking_imports(
-                effective.use_type_checking_imports,
-                is_multi_module_output=True,
-                formatters=effective.formatters,
-                requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
-            ),
             defer_formatting=True,
             formatter_cwd=models.formatter_cwd,
+            **_model_formatter_arguments(
+                effective, custom_formatters=effective.custom_formatters, backend=backend, is_multi_module_output=True
+            ),
         )
         custom_header = models.custom_header
         header = _format_file_header(*_build_file_header_parts(custom_header, effective), models.filename)
@@ -851,19 +853,19 @@ class _Planner:
                 else body
             )
         own = {file.path: formatter.format_code(file.text) for file in rendered.implementations}
-        for path, text in (*texts.items(), *own.items()):
-            _ensure_output_text_encodable(text, self.encoding(path))
         self.defer(formatter, texts, formatted, own)
         for key, value in list(texts.items()):
             if not _is_python(key):
                 for path, text in own.items():
                     value = value.replace(implementation_text(path), text.rstrip("\n"))  # noqa: PLW2901
                 texts[key] = value
+        for path, text in (*texts.items(), *own.items()):
+            _ensure_output_text_encodable(text, self.encoding(path))
         return self.encoded(texts), self.encoded(own)
 
     def encoding(self, path: PurePosixPath) -> str:
         """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
-        return self.effective.encoding if _is_python(path) else "utf-8"
+        return file_encoding(path, self.effective.encoding)
 
     def encoded(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
         """Encode formatted texts as their files hold them."""
@@ -882,23 +884,23 @@ class _Planner:
         """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory.
 
         The staged package keeps the target directory's name, which Ruff reads as the package name, and the user
-        modules, `own`, are staged beside it as they lie beside the package.
+        modules, `own`, are staged beside it as they lie beside the package. Ruff reads and writes UTF-8 only, so the
+        staged files are UTF-8 whatever encoding the files are written in.
         """
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
 
         if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
             return
-        encoding = self.effective.encoding
         with ExitStack() as stack:
             staged = _staging(stack, self.config.output, self.cwd) / self.root.name
             files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
             for base, path, held in files:
                 (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
-                location.write_text(held[path], encoding=encoding)
+                location.write_text(held[path], encoding="utf-8")
             for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
                 formatter.format_directory(directory)
             for base, path, held in files:
-                held[path] = base.joinpath(*path.parts).read_text(encoding=encoding)
+                held[path] = base.joinpath(*path.parts).read_text(encoding="utf-8")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1125,7 +1127,7 @@ def plan_target(  # noqa: PLR0913
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
         effective._generation_timestamp = (  # noqa: SLF001
-            timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            timestamp or current_timestamp()
         )
     models = _run_models(input_, effective, config)
     try:

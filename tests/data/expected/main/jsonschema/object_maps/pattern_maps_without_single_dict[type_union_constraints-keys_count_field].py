@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, Field, constr
 
 
 class Root(BaseModel):
     before: bool | None = True
-    value: dict[constr(pattern=r'^a'), Any] | None
+    value: dict[constr(pattern=r'^a'), Any] | None = Field(..., min_length=1)
     after: int | None = 7
