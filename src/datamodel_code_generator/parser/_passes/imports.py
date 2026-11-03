@@ -318,6 +318,22 @@ def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     return alias
 
 
+def _alias_reserved_names(
+    models: Sequence[DataModel], imports: Imports, shared_imports: Imports, *, also: Iterable[str] = ()
+) -> set[str]:
+    """Return the names an alias that a module imports a name under takes none of.
+
+    The names of its classes and fields, those its imports and the shared imports bind, and ``also``.
+    """
+    return {
+        *also,
+        *(model.class_name for model in models),
+        *(field.name for model in models for field in model.fields if field.name is not None),
+        *_iter_import_bindings(imports),
+        *_iter_import_bindings(shared_imports),
+    }
+
+
 def _bind_module_field_names(
     models: list[DataModel],
     imports: Imports,
@@ -341,13 +357,11 @@ def _bind_module_field_names(
     if not shadowable_imports:
         return
     collisions: set[str] = set()
-    reserved_names = field_names | {model.class_name for model in models}
     for model in models:
         collisions.update(_model_field_name_collisions(model, shadowable_imports))
     if not collisions:
         return
-    reserved_names.update(_iter_import_bindings(imports))
-    reserved_names.update(_iter_import_bindings(shared_imports))
+    reserved_names = _alias_reserved_names(models, imports, shared_imports)
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
@@ -1115,19 +1129,18 @@ def alias_reused_variant_literal(parser: ImportsHost[Any], models: list[DataMode
         or any(IMPORT_LITERAL in field.imports for field in fields if tag_fields.get(id(field)) is not field)
     ):
         return False
-    reserved_names = {
-        *(model.class_name for model in models),
-        *(field.name for field in fields if field.name is not None),
-        *bindings.values(),
-        *_iter_import_bindings(parser.imports),
-        *(
+    reserved_names = _alias_reserved_names(
+        models,
+        imports,
+        parser.imports,
+        also=(
             name
             for model in models
             for decorator in model.decorators
             for name in _string_or_identifier_pattern(decorator, parser.target_python_version).findall(decorator)
             if name
         ),
-    }
+    )
     aliased_import = Import(
         from_=IMPORT_LITERAL.from_,
         import_=IMPORT_LITERAL.import_,
@@ -1417,13 +1430,7 @@ def _alias_builtins_hidden_by_submodules(
     module_code = parser.data_model_type.render_module_code(ctx.models)
     if not (written := {name for found in loads.values() for name in found} | _bare_loads_of(module_code, hidden)):
         return
-    reserved = {
-        *submodule_names,
-        *class_names,
-        *(field.name for model in ctx.models for field in model.fields if field.name is not None),
-        *_iter_import_bindings(ctx.imports),
-        *_iter_import_bindings(parser.imports),
-    }
+    reserved = _alias_reserved_names(ctx.models, ctx.imports, parser.imports, also=submodule_names)
     bindings = {name: _reserve_import_alias(name, reserved) for name in sorted(written)}
     parser._import_ledger.append(  # noqa: SLF001
         ctx.imports,
@@ -1609,13 +1616,7 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
             )
         ):
             continue
-        reserved = {
-            *names,
-            *(model.class_name for model in ctx.models),
-            *(field.name for model in ctx.models for field in model.fields if field.name is not None),
-            *_iter_import_bindings(ctx.imports),
-            *_iter_import_bindings(parser.imports),
-        }
+        reserved = _alias_reserved_names(ctx.models, ctx.imports, parser.imports, also=names)
         bindings = {binding: _reserve_import_alias(binding, reserved) for binding in hidden}
         for binding, alias in bindings.items():
             from_, name = imported[binding]
