@@ -483,6 +483,22 @@ _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
 """The sites that read the answer ``JsonSchemaObject.type_has_null`` recorded when it was first asked."""
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
+_RootTypeRow = Literal[
+    "ref",
+    "custom-type",
+    "constrained-type-union",
+    "array",
+    "combined",
+    "all-of",
+    "object-map",
+    "enum",
+    "typed-nullable-map",
+    "type",
+    "any",
+]
+"""The rows that build the root type of a schema (``JsonSchemaParser._root_type_row``)."""
+_ROOT_MAP_ROWS: frozenset[_RootTypeRow] = frozenset({"object-map", "typed-nullable-map"})
+"""The rows that build the root type of a schema as an object map."""
 
 
 @record
@@ -1588,7 +1604,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             into = model_schema
             builds_map = (
-                self._types_root_as_object_map(model_schema)
+                self._root_type_row(model_schema) in _ROOT_MAP_ROWS
                 if site.root
                 else _rw_split.schema_builds_map_model(self, model_schema, defining_ref)
             )
@@ -1651,7 +1667,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 yield from _rw_split.typed_field_site(self, item, defining_ref, parent=schema)
         yield from self._typed_additional_properties_value(extras, defining_ref, schema)
         yield from self._typed_combined_members(schema, defining_ref)
-        if site.root and schema.allOf and not (schema.is_array or schema.anyOf or schema.oneOf):
+        if site.root and self._root_type_row(schema, row="legacy-rw-allof-before-custom-type") == "all-of":
             with self._inherited_ref_context(defining_ref), quiet():
                 keys = _rw_split.lightweight_type_keys(self, self._build_lightweight_type(schema))
             yield from (TypedChild("key", reference=key) for key in keys)
@@ -5309,21 +5325,44 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or (obj.is_object and not obj.properties and isinstance(obj.additionalProperties, JsonSchemaObject))
         )
 
-    def _types_root_as_object_map(self, obj: JsonSchemaObject) -> bool:
-        """Return whether ``_parse_root_type_with_context`` builds the root type of a schema as an object map.
+    def _root_type_row(  # noqa: PLR0911
+        self,
+        obj: JsonSchemaObject,
+        *,
+        row: Literal["parse", "legacy-rw-allof-before-custom-type"] = "parse",
+    ) -> _RootTypeRow:
+        """Return the row that builds the root type of a schema (``_parse_root_type_with_context``).
 
-        The first row that takes the schema builds its root type, in the order of that method: a reference, a custom
-        type, a type list of constrained branches, an array, an anyOf or oneOf and an allOf take it before the map
-        keywords are read, then the map keywords (``_is_object_map_schema``), whatever properties the schema holds,
-        which a root model does not read; then an enum, and last a nullable map whose values are typed. A root that
-        builds an object map types its values by its additionalProperties (``_parse_object_map``).
+        The first row that takes the schema builds its root type, in this order: a reference, a custom type, a type
+        list whose branches take annotated aliases (``_localizes_constrained_type_union``), an array, an anyOf or
+        oneOf and an allOf take it before the map keywords are read, then the map keywords (``_is_object_map_schema``),
+        whatever properties the schema holds, which a root model does not read; then an enum the run reads (not under
+        --ignore-enum-constraints), a nullable map whose values are typed and a declared type; else the root holds any
+        value. A root that builds an object map (``_ROOT_MAP_ROWS``) types its values by its additionalProperties
+        (``_parse_object_map``). Row ``legacy-rw-allof-before-custom-type`` (the allOf of a root in the request/response
+        walk, ``_typed_model_children``) reads the rows from the array on, so an allOf beside a reference, a custom type
+        or such a type list takes the schema there.
         """
-        takes_other_row = any((obj.ref, obj.custom_type_path, obj.is_array, obj.anyOf, obj.oneOf, obj.allOf))
-        takes_other_row = takes_other_row or self._localizes_constrained_type_union(obj)
-        types_values = self._typed_nullable_map_value_schema(obj) is not None and not (
-            obj.enum and not self.ignore_enum_constraints
-        )
-        return not takes_other_row and (self._is_object_map_schema(obj) or types_values)
+        if row == "parse":
+            if obj.ref:
+                return "ref"
+            if obj.custom_type_path:
+                return "custom-type"
+            if self._localizes_constrained_type_union(obj):
+                return "constrained-type-union"
+        if obj.is_array:
+            return "array"
+        if obj.anyOf or obj.oneOf:
+            return "combined"
+        if obj.allOf:
+            return "all-of"
+        if self._is_object_map_schema(obj):
+            return "object-map"
+        if obj.enum and not self.ignore_enum_constraints:
+            return "enum"
+        if self._typed_nullable_map_value_schema(obj) is not None:
+            return "typed-nullable-map"
+        return "type" if obj.type else "any"
 
     def _parse_object_map(
         self,
@@ -5892,12 +5931,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and all(getattr(obj, key) is None for key in ("minItems", "maxItems", *STRING_KEYWORD_ORDER))
         )
 
-    def _parse_constrained_type_union(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType | None:
-        """Localize union branches that need annotated aliases instead of constrained scalar types."""
-        if not self._localizes_constrained_type_union(obj):
-            return None
-        return self._build_constrained_type_union(name, obj, path)
-
     def _localizes_constrained_type_union(self, obj: JsonSchemaObject) -> bool:
         """Return whether the branches of a type list need annotated aliases instead of constrained scalar types."""
         if (
@@ -6303,101 +6336,104 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         writes = (self.field_constraints or preserve_constraints) and not (
             self._should_skip_root_field_constraints_for_multiple_types(obj)
         )
-        if obj.ref:
-            data_type: DataType = self.get_ref_data_type(obj.ref)
-        elif obj.custom_type_path:
-            data_type = self.data_type_manager.get_data_type_from_full_path(
-                self._get_emitted_python_type_path(
-                    _validate_schema_python_import_path(
-                        obj.custom_type_path, "customTypePath", self.target_python_version
-                    )
-                ),
-                is_custom_type=True,
-            )  # pragma: no cover
-        elif (union_type := self._parse_constrained_type_union(name, obj, path)) is not None:
-            data_type = union_type
-        elif obj.is_array:
-            array_field = self.parse_array_fields(
-                name,
-                obj,
-                get_special_path("array", path),
-                use_annotated=use_annotated,
-            )
-            data_type = array_field.data_type  # pragma: no cover
-            if preserve_constraints:
-                array_constraints = array_field.constraints
-        elif obj.anyOf or obj.oneOf:
-            combined_items = obj.anyOf or obj.oneOf
-            if const_enum_type := self._parse_combined_const_enum(name, obj, combined_items, path, writes=writes):
-                data_type = const_enum_type  # pragma: no cover
-            else:
-                reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
-                if obj.anyOf:
-                    data_types: list[DataType] = self.parse_any_of(name, obj, get_special_path("anyOf", path))
+        match self._root_type_row(obj):
+            case "ref":
+                data_type: DataType = self.get_ref_data_type(cast("str", obj.ref))
+            case "custom-type":
+                data_type = self.data_type_manager.get_data_type_from_full_path(
+                    self._get_emitted_python_type_path(
+                        _validate_schema_python_import_path(
+                            obj.custom_type_path, "customTypePath", self.target_python_version
+                        )
+                    ),
+                    is_custom_type=True,
+                )  # pragma: no cover
+            case "constrained-type-union":
+                data_type = self._build_constrained_type_union(name, obj, path)
+            case "array":
+                array_field = self.parse_array_fields(
+                    name,
+                    obj,
+                    get_special_path("array", path),
+                    use_annotated=use_annotated,
+                )
+                data_type = array_field.data_type  # pragma: no cover
+                if preserve_constraints:
+                    array_constraints = array_field.constraints
+            case "combined":
+                combined_items = obj.anyOf or obj.oneOf
+                if const_enum_type := self._parse_combined_const_enum(name, obj, combined_items, path, writes=writes):
+                    data_type = const_enum_type  # pragma: no cover
                 else:
-                    data_types = self.parse_one_of(name, obj, get_special_path("oneOf", path))
+                    reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
+                    if obj.anyOf:
+                        data_types: list[DataType] = self.parse_any_of(name, obj, get_special_path("anyOf", path))
+                    else:
+                        data_types = self.parse_one_of(name, obj, get_special_path("oneOf", path))
 
-                if len(data_types) > 1:  # pragma: no cover
-                    data_type = build_union(self.data_type, data_types)
-                elif not data_types:  # pragma: no cover
-                    return EmptyDataType()
+                    if len(data_types) > 1:  # pragma: no cover
+                        data_type = build_union(self.data_type, data_types)
+                    elif not data_types:  # pragma: no cover
+                        return EmptyDataType()
+                    else:  # pragma: no cover
+                        data_type = data_types[0]
+            case "all-of":
+                value_obj = obj
+                parts: list[JsonSchemaObject] = []
+                if (
+                    "legacy-all-of-site-form" not in self._legacy_intersection
+                    and _all_of_values.collect_all_of_value_parts(self, obj, parts)
+                ):
+                    value_obj = inline_value = _all_of_values.intersect_all_of_value_parts(
+                        self,
+                        parts,
+                        _all_of_values.all_of_value_row(self, obj),
+                        named_location(obj.schema_location, "allOf"),
+                    )
+                    if not (inline_value.enum or "const" in inline_value.extras):
+                        constraint_obj = inline_value
+                elif (self.field_constraints or preserve_constraints) and (
+                    referenced_value := _all_of_values.all_of_reference_value_schema(self, obj)
+                ) is not None:
+                    value_obj = constraint_obj = referenced_value
+                data_type = (
+                    self._enum_literal(
+                        value_obj, _value_keywords.literal_written(self, constraint_obj, value_obj.enum, writes=writes)
+                    )
+                    if value_obj.enum and "const" not in value_obj.extras
+                    else self._build_lightweight_type(value_obj)
+                )
+                if data_type is None:  # pragma: no cover
+                    data_type = self.data_type_manager.get_data_type(Types.any)
+            case "object-map":
+                data_type = self._parse_object_map(name, obj, path, path)
+            case "enum":
+                if self._reads_enum_as_const(obj):
+                    data_type = self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)
+                elif self.should_parse_enum_as_literal(obj, property_name=name):
+                    narrowed = self._const_narrowed_enum(obj)
+                    data_type = self._enum_literal(
+                        narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
+                    )
                 else:  # pragma: no cover
-                    data_type = data_types[0]
-        elif obj.allOf:
-            value_obj = obj
-            parts: list[JsonSchemaObject] = []
-            if "legacy-all-of-site-form" not in self._legacy_intersection and _all_of_values.collect_all_of_value_parts(
-                self, obj, parts
-            ):
-                value_obj = inline_value = _all_of_values.intersect_all_of_value_parts(
-                    self,
-                    parts,
-                    _all_of_values.all_of_value_row(self, obj),
-                    named_location(obj.schema_location, "allOf"),
+                    data_type = self.parse_enum(name, obj, path)
+            case "typed-nullable-map":
+                typed_values = self._typed_nullable_map_value_schema(obj)
+                reference = self.model_resolver.add(
+                    path, self._apply_title_as_name(name, obj), loaded=True, class_name=True
                 )
-                if not (inline_value.enum or "const" in inline_value.extras):
-                    constraint_obj = inline_value
-            elif (self.field_constraints or preserve_constraints) and (
-                referenced_value := _all_of_values.all_of_reference_value_schema(self, obj)
-            ) is not None:
-                value_obj = constraint_obj = referenced_value
-            data_type = (
-                self._enum_literal(
-                    value_obj, _value_keywords.literal_written(self, constraint_obj, value_obj.enum, writes=writes)
-                )
-                if value_obj.enum and "const" not in value_obj.extras
-                else self._build_lightweight_type(value_obj)
-            )
-            if data_type is None:  # pragma: no cover
-                data_type = self.data_type_manager.get_data_type(Types.any)
-        elif self._is_object_map_schema(obj):
-            data_type = self._parse_object_map(name, obj, path, path)
-        elif obj.enum and not self.ignore_enum_constraints and self._reads_enum_as_const(obj):
-            data_type = self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)
-        elif obj.enum and not self.ignore_enum_constraints:
-            if self.should_parse_enum_as_literal(obj, property_name=name):
-                narrowed = self._const_narrowed_enum(obj)
-                data_type = self._enum_literal(
-                    narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
-                )
-            else:  # pragma: no cover
-                data_type = self.parse_enum(name, obj, path)
-        elif (typed_values := self._typed_nullable_map_value_schema(obj)) is not None:
-            reference = self.model_resolver.add(
-                path, self._apply_title_as_name(name, obj), loaded=True, class_name=True
-            )
-            self.typed_nullable_map_reference_ids.add(model_key_of(reference))
-            data_type = self._parse_object_map(name, obj, path, path, typed_values=typed_values)
-        elif obj.type:
-            if preserve_constraints and effective_use_annotated:
-                with self._temporarily_enable_field_constraints():
+                self.typed_nullable_map_reference_ids.add(model_key_of(reference))
+                data_type = self._parse_object_map(name, obj, path, path, typed_values=typed_values)
+            case "type":
+                if preserve_constraints and effective_use_annotated:
+                    with self._temporarily_enable_field_constraints():
+                        data_type = self.get_data_type(obj)
+                else:
                     data_type = self.get_data_type(obj)
-            else:
-                data_type = self.get_data_type(obj)
-        else:
-            data_type = self.data_type_manager.get_data_type(
-                Types.any,
-            )
+            case _:
+                data_type = self.data_type_manager.get_data_type(
+                    Types.any,
+                )
         selected_root_type = data_model_root_type or self.data_model_root_type
         is_type_alias = selected_root_type.IS_ALIAS
         root_null = self._null_facts(obj, "root-type")
