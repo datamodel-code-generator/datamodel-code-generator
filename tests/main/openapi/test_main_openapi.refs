@@ -1854,6 +1854,8 @@ base-override-gains-field-argument	main/openapi/main_openapi/type_overrides_cons
 [test_main_openapi_type_overrides_constructor_order_modules_default]
 base-override-drops-inherited-default	main/openapi/main_openapi/type_overrides_constructor_order_modules_default[base-override-drops-inherited-default]/	= main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-drops-inherited-default]/
 base-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order_modules_default[base-override-gains-field-argument]/	= main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-gains-field-argument]/
+[test_main_openapi_type_overrides_dotted_model_name]
+	main/openapi/main_openapi/type_overrides_dotted_model_name/
 [test_main_openapi_typed_dict_extra_items_final_name]
 base_class	main/openapi/main_openapi/typed_dict_extra_items_final_name[base_class].py
 dotted	main/openapi/main_openapi/typed_dict_extra_items_final_name[dotted].py

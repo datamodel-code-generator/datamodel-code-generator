@@ -1,0 +1,7 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    a.Pet: {type: object, properties: {name: {type: string}}}
+    b.Owner: {type: object, properties: {pet: {$ref: '#/components/schemas/a.Pet'}}}

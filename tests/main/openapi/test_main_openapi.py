@@ -3964,6 +3964,27 @@ def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[
     )
 
 
+def test_main_openapi_type_overrides_dotted_model_name(output_dir: Path) -> None:
+    """Replace the references to a model with a dotted schema name that a model-level --type-overrides key removes.
+
+    The key names the class (``Pet``), so the reference ``a.Pet`` in another module takes the override and that
+    module no longer imports the removed model's module.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_dotted_model_name.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            '{"Pet": "decimal.Decimal"}',
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("extra_args", _TYPE_OVERRIDES_CONSTRUCTOR_ORDER_MODULES)
 def test_main_openapi_type_overrides_constructor_order_modules_default(extra_args: list[str], output_dir: Path) -> None:
     """Order a subclass while the modules are processed: the base's own module has not applied --type-overrides yet.
