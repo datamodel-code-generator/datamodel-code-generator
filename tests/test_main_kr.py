@@ -1021,6 +1021,26 @@ def test_generate_pyproject_config_excludes_meta_options(capsys: pytest.CaptureF
     )
 
 
+@pytest.mark.parametrize(
+    "command_args",
+    [
+        pytest.param(
+            ["--generate-pyproject-config", "--input", "m.json", "--fail-on-multi-module-stdout"], id="config"
+        ),
+        pytest.param(["--generate-cli-command"], id="command"),
+    ],
+)
+def test_generated_config_leaves_out_the_option_only_the_command_line_reads(
+    command_args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Leave out of generated configuration and commands the stdout option that pyproject.toml does not read."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\ninput = "m.json"\nfail-on-multi-module-stdout = true\n', encoding="utf-8"
+    )
+    with chdir(tmp_path):
+        run_main_with_args(command_args, capsys=capsys, derived_stdout=True)
+
+
 def test_generate_pyproject_config_with_enum_option(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-pyproject-config with Enum option."""
     run_main_with_args(

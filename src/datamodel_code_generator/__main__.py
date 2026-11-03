@@ -210,6 +210,7 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "no_color",
     "output_format",
     "output_format_json_schema",
+    "fail_on_multi_module_stdout",
     "disable_warnings",
     "list_deprecations",
     "list_experimental",

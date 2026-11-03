@@ -92,6 +92,9 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 	main_kr/generate_pyproject_config/list_options.txt
 [test_generate_pyproject_config_with_multiple_options]
 	main_kr/generate_pyproject_config/multiple_options.txt
+[test_generated_config_leaves_out_the_option_only_the_command_line_reads]
+command	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[command].stdout.txt
+config	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[config].stdout.txt
 [test_help_shows_new_options]
 	main_kr/help_shows_new_options.txt	= main/help/color.txt
 [test_http_ignore_tls]
