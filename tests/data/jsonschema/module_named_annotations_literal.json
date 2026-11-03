@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {"n": {"type": "integer"}, "parent": {"$ref": "#"}, "Status": {"$ref": "#/$defs/Status"}},
+  "$defs": {
+    "api.Order": {
+      "type": "object",
+      "properties": {
+        "item": {"$ref": "#/$defs/annotations.Item"},
+        "kind": {"$ref": "#/$defs/annotations.Kind", "default": "book"}
+      }
+    },
+    "annotations.Item": {"type": "object", "properties": {"sku": {"type": "string"}}},
+    "annotations.Kind": {"type": "string", "enum": ["book", "disc"], "const": "book"},
+    "Status": {"type": "string", "enum": ["ok", "bad"]}
+  }
+}

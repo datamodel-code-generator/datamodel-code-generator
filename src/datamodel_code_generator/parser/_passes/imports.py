@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import operator
-from itertools import chain
+from itertools import chain, repeat
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 
@@ -56,7 +56,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, 
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
-from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer
+from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
 from datamodel_code_generator.parser._passes._import_binding import (
     ReferenceExpressionHost,
     reference_import_target,
@@ -115,7 +115,7 @@ if TYPE_CHECKING:
         SortedDataModels,
         _FinalizeState,
     )
-    from datamodel_code_generator.reference import ModelType
+    from datamodel_code_generator.reference import ModelType, Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -1210,6 +1210,23 @@ def _module_binding(expression: str | None) -> str | None:
     return expression.partition(".")[0] if expression and "." in expression else None
 
 
+def _written_reference(data_type: DataType) -> tuple[Reference, str | None] | None:
+    """Return the model a type names and the expression it writes for it, or None for a type that names none.
+
+    A reference names its model by its alias (``annotations.Item``), and an enum member literal its enum by the class
+    its members are written with (``annotations.Kind``), unless the literal is written as an alias.
+    """
+    if (reference := data_type.reference) is not None:
+        return reference, data_type.alias
+    if (
+        (reference := data_type._enum_member_literal_reference) is None  # noqa: SLF001
+        or not (literals := data_type.enum_member_literals)
+        or data_type.alias
+    ):
+        return None
+    return reference, literals[0][0]
+
+
 def _follow_renamed_enum_references(
     parser: ImportsHost[Any], models: Iterable[DataModel], renamed: Iterable[DataType]
 ) -> None:
@@ -1219,9 +1236,9 @@ def _follow_renamed_enum_references(
     names the enum by then, so a default would keep naming the import that was renamed.
     """
     aliases = {
-        id(source): data_type.alias
+        id(source): written[1]
         for data_type in renamed
-        if data_type.reference is not None and isinstance(source := data_type.reference.source, Enum)
+        if (written := _written_reference(data_type)) is not None and isinstance(source := written[0].source, Enum)
     }
     if not aliases:
         return
@@ -1472,9 +1489,7 @@ def submodules_hidden_by_packages(
     submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
     submodule, for a type or for the class of an enum member literal: the submodule is then loaded before the class
     takes the name, and no later import of it replaces the class. A module names the hidden modules by their module
-    names, as ``reference_import_target`` reads them. The class of an enum member literal is written before
-    (``import_enum_member_literal_classes``), so a module that names a model of the module by one keeps importing the
-    module.
+    names, as ``reference_import_target`` reads them.
     """
     treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
 
@@ -1525,7 +1540,7 @@ def submodules_hidden_by_packages(
             for hidden_package, (from_init, from_others) in hidden.items()
             for module in (from_init if hidden_package == package else from_others)
         }
-        if modules := modules.difference(named_modules(ctx.models, literals=True)):
+        if modules:
             result[ctx.module] = frozenset(modules)
     return result
 
@@ -1622,8 +1637,11 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     the ``__future__`` feature where the package's ``__init__.py`` writes ``from __future__ import annotations``, and a
     class where it defines one of that name (``submodules_hidden_by_packages``). Such a model is imported from its
     module (``from .annotations import Item``), as ``--use-exact-imports`` imports it, under the name the module's
-    resolver gives it once the module import released its name, and every use of the model follows, the enum members
-    that ``set_default_enum_member`` wrote into defaults included (``_follow_renamed_enum_references``). The name keeps
+    resolver gives it once the module import released its name, and every use of the model follows, the class of an
+    enum member literal (``Literal[annotations.Kind.book]``, ``_written_reference``) and the enum members that
+    ``set_default_enum_member`` wrote into defaults included (``_follow_renamed_enum_references``). A literal took the
+    place of a type that named its enum, whose import of the module stays counted, so a literal's enum drops every count
+    of its import of the module (``_held_count``). The name keeps
     off every name the module's imports bind already: the resolver holds those that no model import took through it,
     such as ``collections.Counter`` beside a model ``Counter``, and the shared ones are kept off as for a module named
     like a shared import (``ReferenceImportTarget.reserve_name``). The use keeps an expression, the class name where the
@@ -1641,15 +1659,22 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
             (model, data_type, reference, stale)
             for model in ctx.models
             for data_type in _named_data_types(model)
-            if (reference := data_type.reference) is not None
-            and tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1]) in modules
+            if (written := _written_reference(data_type)) is not None
+            and tuple(_get_data_type_target_full_name(data_type, reference := written[0], module_names).split(".")[:-1])
+            in modules
             and (stale := imports.reference_paths.get(reference.path)) is not None
-            and _module_binding(data_type.alias) == stale.binding_name
+            and _module_binding(written[1]) == stale.binding_name
         ]
         if not users:
             continue
         for model, *_, stale in users:
             ledger.remove(imports, stale, ImportProducer(_HIDDEN_SUBMODULES, model))
+        for model, stale in {
+            stale.reference_path: (model, stale) for model, data_type, _, stale in users if data_type.reference is None
+        }.values():
+            ledger.remove(
+                imports, repeat(stale, _held_count(ledger, imports, stale)), ImportProducer(_HIDDEN_SUBMODULES, model)
+            )
         resolver = ctx.scoped_model_resolver
         ledger.release_names(
             imports, resolver, {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports))
@@ -1661,7 +1686,6 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
             .difference(_iter_import_bindings(parser.imports))
         ):
             ledger.add_name(imports, resolver, get_special_path("import", [name]), name)
-        renamed: list[DataType] = []
         for model, data_type, reference, _ in users:
             expression = register_reference_import(
                 reference,
@@ -1677,9 +1701,20 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
                 shared_imports=parser.imports,
                 hidden_modules=modules,
             )
-            parser._graph_builder.name_reference(data_type, expression or reference.short_name)  # noqa: SLF001
-            renamed.append(data_type)
-        _follow_renamed_enum_references(parser, ctx.models, renamed)
+            if data_type.reference is None:
+                parser._graph_builder.name_enum_member_literal_class(data_type, expression or reference.short_name)  # noqa: SLF001
+            else:
+                parser._graph_builder.name_reference(data_type, expression or reference.short_name)  # noqa: SLF001
+        _follow_renamed_enum_references(parser, ctx.models, [data_type for _, data_type, *_ in users])
+
+
+def _held_count(ledger: ModuleImportLedger, imports: Imports, import_: Import) -> int:
+    """Return how often the ledger of ``imports`` holds the import: the times it was added less the times removed."""
+    return sum(
+        (1 if isinstance(operation, Added) else -1) * operation.imports.count(import_)
+        for entry in ledger.entries(imports)
+        if isinstance(operation := entry.operation, Added | Removed)
+    )
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:

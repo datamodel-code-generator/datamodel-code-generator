@@ -211,9 +211,6 @@ use_default_with_required = 1
 _additional_imports = 1
 file_path = 1
 
-["src/datamodel_code_generator/parser/_passes/cross_module.py"."import_enum_member_literal_classes"]
-enum_member_literals = 1
-
 ["src/datamodel_code_generator/parser/_passes/modules.py"."_replace_default_enum_list_members"]
 alias = 1
 

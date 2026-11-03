@@ -49,11 +49,11 @@ holds, an assignment that changes the attribute or a mutation of a guarded list 
 all of the row's facts for a write outside every pass. This covers presentation rows as well.
 
 A row is judged by the freeze points of the facts the pass declares: a pass that declares only ``IMPORT_ALIASES`` (final
-at render) can change ``DataType.type``, ``python_type``, ``kwargs`` or ``extras`` after B1 without a report, and one
-that declares only ``TYPE_ALIAS_BODY`` (final at B2) can change a type alias's ``data_type`` or ``data_types`` after B1,
-although ``FIELD_TYPES`` of those rows is final at B1. ``KNOWN_WRITES`` lists the violations of today's pipeline with a
-witness each; they are reported with ``report:<path>`` and never raise. Presentation rows, parser state, module imports
-and rows a model class computes with a property are not fingerprinted.
+at render) can change ``DataType.type``, ``python_type``, ``kwargs``, ``extras`` or ``enum_member_literals`` after B1
+without a report, and one that declares only ``TYPE_ALIAS_BODY`` (final at B2) can change a type alias's ``data_type``
+or ``data_types`` after B1, although ``FIELD_TYPES`` of those rows is final at B1. ``KNOWN_WRITES`` lists the
+violations of today's pipeline with a witness each; they are reported with ``report:<path>`` and never raise.
+Presentation rows, parser state, module imports and rows a model class computes with a property are not fingerprinted.
 
 Machinery shared by both areas: ``parse_checks`` opens the state of one parse when either area is on, and
 ``ParseChecks.arm`` arms it at the end of L1 (``parse.run_steps``): ``DataType``, ``DataModelFieldBase`` and

@@ -4140,6 +4140,7 @@ _CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": 
 _DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
 _NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
 _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
+_LITERAL_PAYLOADS = ['{"item": {"sku": "s"}}', '{"kind": "book"}', '{"kind": "disc"}', '{"item": {"sku": 1}}']
 
 
 @pytest.mark.parametrize(
@@ -4173,6 +4174,49 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
             [*_ANNOTATIONS_DECODED, ("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
             id="future-enum-member-literal",
             marks=_NEEDS_STR_ENUM,
+        ),
+        *(
+            pytest.param(
+                "module_named_annotations_literal.json",
+                "pydantic_v2.BaseModel",
+                "3.10",
+                ["--read-const-beside-enum", "--use-subclass-enum", "--set-default-enum-member", *extra_args],
+                [("api", "Order", _LITERAL_PAYLOADS), ("", "Catalog", ['{"n": 1, "parent": {"n": 2}}'])],
+                id=f"future-enum-member-literal-of-{name}",
+            )
+            for name, extra_args in (("module", []), ("dotted-module", ["--treat-dot-as-module"]))
+        ),
+        pytest.param(
+            "module_named_annotations_literal.json",
+            "dataclasses.dataclass",
+            "3.14",
+            ["--read-const-beside-enum", "--set-default-enum-member"],
+            [("api", "Order", _LITERAL_PAYLOADS)],
+            id="future-of-module-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_annotations_literal_only.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--read-const-beside-enum", "--use-subclass-enum"],
+            [("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
+            id="future-enum-member-literal-only",
+        ),
+        *(
+            pytest.param(
+                "module_named_annotations_discriminator.json",
+                output_model_type,
+                "3.11",
+                ["--use-enum-values-in-discriminator", *extra_args],
+                [("api", "Pet", ['{"kind": "cat", "meow": "m"}', '{"kind": "dog", "bark": 1}'])],
+                id=f"future-enum-member-discriminator-{output_model_type}",
+                marks=_NEEDS_STR_ENUM,
+            )
+            for output_model_type, extra_args in (
+                ("pydantic_v2.BaseModel", []),
+                ("msgspec.Struct", ["--use-msgspec-tagged-unions"]),
+            )
         ),
         pytest.param(
             "module_named_annotations.json",
@@ -4239,6 +4283,18 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
                 ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
             ],
             id="class-loaded-by-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_like_package_class_literals.json",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ["--read-const-beside-enum"],
+            [
+                ("pkg.api", "Order", ['{"detail": {"message": "m"}, "kind": "high"}', '{"kind": "low"}']),
+                ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
+            ],
+            id="class-enum-member-literals",
             marks=_NEEDS_STR_ENUM,
         ),
         *(
@@ -4313,10 +4369,12 @@ def test_main_jsonschema_submodule_hidden_by_package(
     ``from . import annotations`` gave the ``__future__`` feature where the package's ``__init__.py`` writes
     ``from __future__ import annotations``, the shared import or on Python 3.14 its own, and ``from . import Warn`` the
     class ``Warn`` that ``pkg/__init__.py`` defines (#6009). The ``__init__.py`` keeps its own import of ``pkg.Warn``,
-    which runs before the class is defined and keeps the class bound once ``pkg.api`` imports the submodule, a package
-    whose ``__init__.py`` writes no model binds no such name, and a module that names an enum of ``annotations`` by an
-    enum member literal (``Literal[annotations.Kind.book]``) keeps importing the module, which the ``__init__.py``
-    loads first. Under ``--all-exports-scope`` the export imports of the ``__init__.py`` load the submodule: where they
+    which runs before the class is defined and keeps the class bound once ``pkg.api`` imports the submodule, and a
+    package whose ``__init__.py`` writes no model binds no such name. An enum member literal names its enum through the
+    new import too (``Literal[Kind.book]``, not ``Literal[annotations.Kind.book]``, #6069), a const beside the enum and
+    a tag of ``--use-enum-values-in-discriminator`` alike, without the module import the type it replaced counted;
+    msgspec writes such tags as values and imports nothing for them. Under ``--all-exports-scope`` the export imports of
+    the ``__init__.py`` load the submodule: where they
     run before ``api`` the old import worked and only its form changes; where ``from . import api`` runs first it
     failed. The enum members that ``--set-default-enum-member`` writes into defaults follow the new import
     (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared one takes

@@ -326,7 +326,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                     )
                     or reference.short_name
                 )
-                data_type.enum_member_literals = [(enum_class, member) for _, member in data_type.enum_member_literals]
+                parser._graph_builder.name_enum_member_literal_class(data_type, enum_class)  # noqa: SLF001
 
 
 def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:  # noqa: PLR0912
