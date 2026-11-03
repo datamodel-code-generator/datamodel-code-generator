@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+from typing import List, Optional
+
+from pydantic.dataclasses import dataclass
+
+
+@dataclass
+class Bar_1:
+    x: Optional[int] = None
+
+
+@dataclass
+class Leaf:
+    Bar: Optional[Bar_1] = None
+    bars: Optional[List[Bar_1]] = None
+
+
+@dataclass
+class Values:
+    left: Optional[Leaf] = None
+
+
+@dataclass
+class Shared:
+    values: Optional[Values] = None

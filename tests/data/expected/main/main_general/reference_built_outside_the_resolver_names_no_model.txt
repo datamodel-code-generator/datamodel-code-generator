@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class Bar(BaseModel):
+    x: Optional[int] = None
+
+
+class Leaf(BaseModel):
+    Bar: Optional[Bar] = None
+
+
+class Values(BaseModel):
+    left: Optional[Leaf] = None
+
+
+class Speed(BaseModel):
+    values: Optional[Values] = None

@@ -467,10 +467,14 @@ CHANGE_FIELD_NAME = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
-    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(
         After("collapse_root_models", "renames fields against the class names collapse settled"),
         After("record_decimal_alias_models", "the Decimal check reads the field names as parsed"),
+        After(
+            "set_default_enum_member", "enum defaults read the types before a rename gives a keyless one its model's"
+        ),
+        After("sort_models", "models are ordered by their types before a rename gives a keyless one its model's"),
     ),
 )
 RESTORE_INHERITED_FIELD_NAMES_FOR_UNIQUE_ALIASES = PassDecl(
@@ -501,6 +505,7 @@ APPLY_DISCRIMINATOR_TYPE = PassDecl(
     after=(
         After("sort_models", "models are ordered by their types before tags rewrite the variant types"),
         After("set_default_enum_member", "enum defaults read the types before tags rewrite them"),
+        After("change_field_name", "tags are written into the types that a rename gave a keyless one its model's"),
     ),
     summary="Writes the tag of each discriminated union into its variants, in any module.",
 )
@@ -548,7 +553,7 @@ RENAME_FIELDS_HIDING_TYPES = PassDecl(
         RenderFact.KEYWORD_ONLY,
         RenderFact.FORCED_ASSIGNMENT,
     ),
-    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_NAMES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, RenderFact.CLASS_NAMES),
     after=(After("refresh_field_config", "the field config is refreshed with the aliases before renaming"),),
 )
 REMOVE_OVERRIDDEN_MODELS = PassDecl(

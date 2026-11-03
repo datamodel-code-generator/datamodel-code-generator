@@ -31,7 +31,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._internal_utils import get_most_of_parent
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of, names_by_path
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -2162,6 +2162,31 @@ def hides_named_type(
     return False
 
 
+def _adopt_keyless_references(
+    parser: ModulesHost, reference: Reference, all_models: Collection[DataModel]
+) -> DataModel | None:
+    """Return the model at the path of ``reference``, a reference that no model was built with, or None.
+
+    Row ``legacy-keyless-reference-by-path``: a reference built outside the resolver, such as by a parser extension,
+    names the model at its path among the parsed models and ``all_models``. The types that name that model by such a
+    reference use the model's own reference from now on, as a reference the resolver built does, so that the rename
+    of the model reaches them.
+    """
+    models = {id(model): model for model in chain(parser.results, all_models)}.values()
+    keyed = keyed_models(models, "renamed types")
+    if (source := keyed.models.get(keyed.key_at(reference.path))) is None:
+        return None
+    keyless = {
+        id(data_type): data_type
+        for model in models
+        for data_type in model.all_data_types
+        if (named := data_type.reference) is not None and names_by_path(named) and named.path == reference.path
+    }
+    for data_type in keyless.values():
+        parser._graph_builder.replace_data_type_ref(data_type, source.reference)  # noqa: SLF001
+    return source
+
+
 def rename_named_type(  # noqa: PLR0913, PLR0917
     parser: ModulesHost,
     field: DataModelFieldBase,
@@ -2174,7 +2199,13 @@ def rename_named_type(  # noqa: PLR0913, PLR0917
 
     The families are those of ``all_models`` that use the type, by ``derived_models``.
     """
-    source = cast("DataModel", reference.source)
+    source = (
+        _adopt_keyless_references(parser, reference, all_models)
+        if names_by_path(reference)
+        else cast("DataModel", reference.source)
+    )
+    if source is None:
+        return
     resolver = _field_type_resolver(parser, {*class_names, cast("str", field.name)})
     resolver.exclude_names.update(
         name
@@ -2236,6 +2267,7 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
     derived_models = _derived_models(all_models)
     rename_type = renames_colliding_types(parser)
     class_names = {model.class_name for model in models} if rename_type else set()
+    keyed = keyed_models(all_models if rename_type else (), "renamed types")
     for model, fields in declarations:
         for field in fields:
             field_name = field.name
@@ -2253,7 +2285,8 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                 continue
             if rename_type:
                 for named in {
-                    id(named): named for named in _same_named_references(model, field_name, skips_aliases=True)
+                    keyed.key_of(named): named
+                    for named in _same_named_references(model, field_name, skips_aliases=True)
                 }.values():
                     rename_named_type(parser, field, named, class_names, all_models, derived_models)
                 continue

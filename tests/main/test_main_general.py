@@ -34,6 +34,7 @@ from datamodel_code_generator import (
     DanglingRefWarning,
     DataModelType,
     Error,
+    FieldTypeCollisionStrategy,
     GeneratedModules,
     HTTPBackend,
     InputFileType,
@@ -913,6 +914,82 @@ def test_reference_built_outside_the_resolver_names_the_model_at_its_path() -> N
 
     parser = KeylessParser(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass],
+    ids=["model", "dataclass"],
+)
+@pytest.mark.parametrize("keyless_fields", [None, {"bars"}], ids=["all", "some"])
+def test_reference_built_outside_the_resolver_renames_the_model_at_its_path(
+    output_model_type: DataModelType, keyless_fields: set[str] | None
+) -> None:
+    """A custom parser that types fields with a Reference it builds itself, under ``rename-type``.
+
+    A field named like its type hides it. The model at the path of the references is renamed once, and the fields
+    that name it by a reference of their own use the new name, as they do for the references the resolver builds.
+    The parser types every field this way, or only the fields it names, so that a class holds the model by both
+    kinds of reference.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+
+    class KeylessParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if keyless_fields is not None and field.name not in keyless_fields:
+                        continue
+                    for data_type in field.data_type.all_data_types:
+                        if (reference := data_type.reference) is not None and reference.source is not None:
+                            keyless = Reference(path=reference.path, name=reference.name)
+                            self.generation_store.replace_data_type_ref(data_type, keyless)
+
+    model_types = get_data_model_types(output_model_type)
+    parser = KeylessParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "shared.json",
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_reference_built_outside_the_resolver_names_no_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field named like its type with a Reference to a path where no model is.
+
+    ``rename-type`` has no model to rename, so the field keeps the type it names. The parser retypes the field in
+    its ``_process_single_module``, outside the passes, so the finality check (`0` here) does not report the write.
+    """
+    from typing_extensions import override
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    class NowhereParser(JsonSchemaParser):
+        @override
+        def _process_single_module(self, *args: Any) -> Any:
+            leaf = next(model for model in args[1] if model.class_name == "Leaf")
+            self.generation_store.replace_field_type(
+                leaf.fields[0], DataType(reference=Reference(path="#/Nowhere", name="Bar"))
+            )
+            return super()._process_single_module(*args)
+
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    parser = NowhereParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "speed.json",
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        formatters=[Formatter.BUILTIN],
     )
     assert_output(cast("str", parser.parse()))
 
