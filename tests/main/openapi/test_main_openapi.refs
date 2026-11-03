@@ -1605,6 +1605,8 @@ pydantic-v2-dataclass	main/openapi/parameter_field_policy/pydantic_v2_dataclass.
 typed-dict	main/openapi/parameter_field_policy/typing_TypedDict.py
 [test_main_openapi_path_parameter_operation_override]
 	main/openapi/path_parameter_override.py
+[test_main_openapi_paths_header_override_is_case_insensitive]
+	main/openapi/main_openapi/paths_header_override_is_case_insensitive.txt
 [test_main_openapi_paths_keys_that_are_not_path_items]
 api	main/openapi/main_openapi/paths_keys_that_are_not_path_items[api].py
 paths	main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths].py
@@ -1752,6 +1754,12 @@ typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model_
 	main/openapi/request_bodies_scope_with_ref.py
 [test_main_openapi_reserved_target_parsed_from_the_prepared_tree]
 	main/openapi/main_openapi/reserved_target_parsed_from_the_prepared_tree.txt
+[test_main_openapi_responses_object_extension_holding_an_object_is_a_response]
+api	main/openapi/main_openapi/responses_object_extension_holding_an_object_is_a_response[api].py
+paths	main/openapi/main_openapi/responses_object_extension_holding_an_object_is_a_response[paths].py	= main/openapi/main_openapi/responses_object_extension_holding_an_object_is_a_response[api].py
+[test_main_openapi_responses_object_extensions_are_no_responses]
+api	main/openapi/main_openapi/responses_object_extensions_are_no_responses[api].py
+paths	main/openapi/main_openapi/responses_object_extensions_are_no_responses[paths].py	= main/openapi/main_openapi/responses_object_extensions_are_no_responses[api].py
 [test_main_openapi_reuse_model_cross_module_users]
 layout-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/layout_collapse_dataclasses//*.py
 layout-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/layout_collapse_pydantic_v2//*.py

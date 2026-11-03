@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Responses Object extension that holds an object
+  version: "1"
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+        x-note: internal
+        x-response:
+          description: An extension that holds an object is read as a response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hidden:
+                    type: string

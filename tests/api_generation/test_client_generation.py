@@ -240,6 +240,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-stream-errors",
         "protocols-references",
         "protocols-querystring",
+        "protocols-reserved-arguments",
         "protocols-pagination-checks",
         "protocols-pagination-querystring-checks",
         "protocols-querystring-target-checks",

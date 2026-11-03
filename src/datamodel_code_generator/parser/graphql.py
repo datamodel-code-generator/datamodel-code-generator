@@ -40,10 +40,7 @@ from datamodel_code_generator.types import Types
 try:
     import graphql
 except ImportError as exc:  # pragma: no cover
-    msg = (
-        f"Please run {install_command('graphql', row='legacy-graphql-quote')} "
-        "to generate data-model from a GraphQL schema."
-    )
+    msg = f"Please run {install_command('graphql')} to generate data-model from a GraphQL schema."
     raise Exception(msg) from exc  # noqa: TRY002
 
 

@@ -3359,6 +3359,29 @@
     },
     "modules": false
   },
+  "protocols-reserved-arguments": {
+    "input": "reserved-arguments.yaml",
+    "references": [
+      "protocols/reserved-arguments.json"
+    ],
+    "modules": false,
+    "config": {
+      "protocols": "protocols/reserved-arguments.json",
+      "operations": [
+        {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [
+            {"in_": "query", "name": "items", "python_name": "items"},
+            {"in_": "query", "name": "state", "python_name": "state"}
+          ]
+        },
+        {
+          "ref": "/paths/~1labels/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        }
+      ]
+    }
+  },
   "protocols-querystring": {
     "input": "querystring.yaml",
     "references": [

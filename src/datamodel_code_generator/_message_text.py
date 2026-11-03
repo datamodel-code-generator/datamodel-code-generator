@@ -17,7 +17,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Conjunction",
-    "InstallPrompt",
     "InstallRow",
     "ListForm",
     "counted",
@@ -31,9 +30,8 @@ __all__ = [
 
 Conjunction: TypeAlias = Literal["and", "or"]
 ListForm: TypeAlias = Literal["final", "serial", "each"]
-InstallPrompt: TypeAlias = Literal["$", "$ ", ""]
-InstallRow: TypeAlias = Literal["code", "plain", "legacy-graphql-quote"]
-"""How ``install_command`` writes the command: as a code span, as plain text, or as the GraphQL hint of 0.87.0 does."""
+InstallRow: TypeAlias = Literal["code", "plain"]
+"""How ``install_command`` writes the command: as a code span or as plain text."""
 
 _REPORT_WIDTH = 100
 
@@ -80,16 +78,14 @@ def extra_requirement(extra: str) -> str:
     return f"datamodel-code-generator[{extra}]"
 
 
-def install_command(extra: str, *, prompt: InstallPrompt = "$", row: InstallRow = "code") -> str:
-    """Return the pip command that installs the generator with ``extra``, written after ``prompt``.
+def install_command(extra: str, *, row: InstallRow = "code") -> str:
+    """Return the pip command that installs the generator with ``extra``, as a shell runs it: with no prompt.
 
-    Row ``code`` writes it as a code span (`` `$pip install 'datamodel-code-generator[x]'` ``), ``plain`` without the
-    backticks. Row ``legacy-graphql-quote`` writes the closing backtick before the closing quote.
+    Row ``code`` writes it as a code span (`` `pip install 'datamodel-code-generator[x]'` ``), ``plain`` without the
+    backticks.
     """
-    command = f"{prompt}pip install '{extra_requirement(extra)}"
-    if row == "plain":
-        return f"{command}'"
-    return f"`{command}`'" if row == "legacy-graphql-quote" else f"`{command}'`"
+    command = f"pip install '{extra_requirement(extra)}'"
+    return command if row == "plain" else f"`{command}`"
 
 
 def wrapped_lines(text: str, indent: str, subsequent_indent: str | None = None) -> list[str]:

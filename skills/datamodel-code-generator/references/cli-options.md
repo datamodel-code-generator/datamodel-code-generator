@@ -257,7 +257,7 @@ General utility, HTTP, checking, and project integration options.
 - `--module-split-mode`: Split generated models into separate files. 'single': generate one file per model class. Choices: `single`.
 - `--check`: Verify generated files are up-to-date without modifying them. Exits with code 1 if differences found, 0 if up-to-date. Useful for CI to ensure generated code is committed.
 - `--diff-against`: Generate BASELINE_INPUT and the current --input into temporary outputs, then show the generated-code diff from baseline to current. Requires --input and --output; --output is a virtual output path that selects file or directory layout and is never modified. Exits with code 1 when generated outputs differ.
-- `--debug`: show debug message (require "debug". `$ pip install 'datamodel-code-generator[debug]'`)
+- `--debug`: show debug message (require "debug". `pip install 'datamodel-code-generator[debug]'`)
 - `--disable-warnings`: disable warnings
 - `--list-deprecations`: List registered deprecations and scheduled breaking changes, then exit. Choices: `table`, `json`, `markdown`.
 - `--list-experimental`: List registered experimental features and their compatibility notes, then exit. Choices: `table`, `json`, `markdown`.

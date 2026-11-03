@@ -11982,6 +11982,60 @@ def test_main_openapi_one_of_body_without_member_types_beside_properties() -> No
     assert_output(str(parser.parse()))
 
 
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extensions_are_no_responses(scope: str, output_file: Path) -> None:
+    """Leave the `x-` extensions of a Responses Object out of the responses, in the paths scope and the api scope.
+
+    OpenAPI lets a Responses Object be extended with specification extensions. Up to 0.88.0 both walks read
+    `x-note: internal` as a response and refused the document.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_extensions.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extension_holding_an_object_is_a_response(scope: str, output_file: Path) -> None:
+    """Keep reading an `x-` extension of a Responses Object that holds an object as a response (legacy row).
+
+    The paths scope and the api scope have generated the models of its content since their releases, so they still do,
+    while `x-note: internal` beside it is skipped.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_object_extension.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
+def test_main_openapi_paths_header_override_is_case_insensitive() -> None:
+    """An operation's header overrides the path item's one that another case spells, as in the `api` scope.
+
+    Header names are case-insensitive (RFC 9110), so `parse_operation` gets the operation's `x-request-id` alone. A
+    query parameter is case-sensitive: `trace` and `Trace` stay two parameters. Up to 0.88.0 the paths scope handed
+    on `X-Request-Id` beside `x-request-id`.
+    """
+    seen: list[str] = []
+
+    class _OperationParametersParser(OpenAPIParser):
+        """Records the parameters each operation reaches parse_operation with."""
+
+        def parse_operation(self, raw_operation: dict[str, Any], path: list[str], **kwargs: Any) -> None:
+            seen.append(f"{path[-1]}: {[(item['name'], item['in']) for item in raw_operation.get('parameters', [])]}")
+            super().parse_operation(raw_operation, path, **kwargs)
+
+    _OperationParametersParser(
+        OPEN_API_DATA_PATH / "parameter_header_case.yaml",
+        openapi_scopes=[OpenAPIScope.Paths],
+        formatters=[Formatter.BUILTIN],
+    ).parse()
+    assert_output("\n".join(seen))
+
+
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:
     """Test OpenAPI generation with $ref to external webhook file containing relative schema refs."""
     run_main_and_assert(

@@ -1,0 +1,3 @@
+# protocols-reserved-arguments
+render pydantic_v2.BaseModel
+  Error: --client-protocols['tags.all']: The pagination helper 'tags.all' reserves the arguments 'items', 'state' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations; --client-protocols['labels.all']: The pagination helper 'labels.all' reserves the argument 'items' of GET /labels; rename it with the operation's parameter_names or body_field_names in --client-operations

@@ -7209,6 +7209,11 @@ schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[sche
 schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].py
 schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_jsonschema_prefix_items_unique_items_sequence]
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items_sequence[msgspec.Struct].py
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items_sequence[msgspec.Struct].warnings.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items_sequence[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items_sequence[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/main_jsonschema/prefix_items_unique_items_sequence[msgspec.Struct].warnings.txt
 [test_main_jsonschema_prefix_items_unsatisfiable_length]
 msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel].py

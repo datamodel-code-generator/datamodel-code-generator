@@ -862,7 +862,7 @@ class CodeFormatter:
             return ruff_path
         from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
 
-        msg = f"Ruff executable was not found. Install it with {install_command('ruff', prompt='')}."
+        msg = f"Ruff executable was not found. Install it with {install_command('ruff')}."
         raise RuntimeError(msg)
 
     def apply_isort(self, code: str) -> str:

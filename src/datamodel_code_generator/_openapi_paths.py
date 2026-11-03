@@ -6,10 +6,11 @@ added ``QUERY_METHOD``, which the paths scope, the API walk of an earlier docume
 ``parser.openapi.OPERATION_NAMES`` lists them in this order). ``path_item_operations`` reads the operations of a path
 item as the API walk does, ``additionalOperations`` of OpenAPI 3.2 included. ``holds_path_item`` tells which key of
 ``paths`` holds a path item; ``path_selected`` is the test of ``--openapi-include-paths`` that generation and the
-recommender apply to such a key. ``effective_parameters``, ``inherited_security`` and ``effective_operation`` give an
-operation as the paths scope's walk and the API walk hand it on: with the parameters of its path item it does not
-override and the document's security requirement unless it declares its own. This module imports only the standard
-library, so every layer may use it.
+recommender apply to such a key, and ``operation_responses`` tells which entries of an operation's Responses Object are
+responses. ``effective_parameters``, ``inherited_security`` and ``effective_operation`` give an operation as the paths
+scope's walk and the API walk hand it on: with the parameters of its path item it does not override and the document's
+security requirement unless it declares its own. This module imports only the standard library, so every layer may use
+it.
 """
 
 from __future__ import annotations
@@ -32,12 +33,14 @@ __all__ = [
     "effective_parameters",
     "holds_path_item",
     "inherited_security",
+    "operation_responses",
     "path_item_operations",
     "path_selected",
     "rooted_path",
 ]
 
 _T = TypeVar("_T")
+_K = TypeVar("_K")
 
 OPERATION_METHODS: Final = ("get", "put", "post", "delete", "patch", "head", "options", "trace")
 """The fields of a path item that hold an operation before OpenAPI 3.2."""
@@ -55,6 +58,11 @@ _EXTENSION_PREFIX: Final = "x-"
 PathKeyRow: TypeAlias = Literal["openapi", "legacy-object-extension-paths"]
 
 
+def _is_extension(key: object) -> bool:
+    """Return whether a key of an object is a specification extension: a string that begins with ``x-``."""
+    return isinstance(key, str) and key.startswith(_EXTENSION_PREFIX)
+
+
 def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> bool:
     """Return whether a key of ``paths`` holds a path item: not ``PATHS_PARAMETERS`` and not a specification extension.
 
@@ -63,9 +71,23 @@ def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> boo
     ``legacy-object-extension-paths`` (the paths scope's walk) reads such a key that holds an object as a path, as it
     always has, and skips the rest, which no path item can be.
     """
-    return not (key == PATHS_PARAMETERS or key.startswith(_EXTENSION_PREFIX)) or (
+    return not (key == PATHS_PARAMETERS or _is_extension(key)) or (
         row == "legacy-object-extension-paths" and isinstance(value, dict)
     )
+
+
+def operation_responses(responses: Mapping[_K, _T]) -> dict[_K, _T]:
+    """Return the responses of an operation's Responses Object, which both walks read: its status codes and ``default``.
+
+    OpenAPI: a Responses Object "MAY be extended with Specification Extensions", the fields that begin with ``x-``, so
+    an extension that holds no object is no response. Row ``legacy-object-extension-responses``: an extension that holds
+    an object is read as a response, as both walks always have.
+    """
+    return {
+        status: response
+        for status, response in responses.items()
+        if not _is_extension(status) or isinstance(response, dict)
+    }
 
 
 def path_item_operations(
@@ -111,9 +133,8 @@ def effective_parameters(own: Sequence[_T], inherited: Iterable[_T], key: Callab
     """Return the parameters in effect for an operation: its own in order, then each inherited one it does not override.
 
     ``inherited`` are the parameters of its path item (after those of ``paths``). An own parameter overrides each
-    inherited one with the same ``key``, the identity its walk gives a parameter: the API walk's ``parameter_key``
-    (location and name, a header's name without regard to case), the paths scope's walk the name as written (row
-    ``legacy-case-sensitive-parameter-override``). A parameter whose key is None overrides none.
+    inherited one with the same ``key``, the identity the caller's walk gives a parameter: its location and name, a
+    header's name without regard to case. A parameter whose key is None overrides none.
     """
     overridden = {found for parameter in own if (found := key(parameter)) is not None}
     return [*own, *(parameter for parameter in inherited if key(parameter) not in overridden)]

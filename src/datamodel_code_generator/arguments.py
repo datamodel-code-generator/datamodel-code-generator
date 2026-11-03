@@ -1293,7 +1293,7 @@ base_options.add_argument(
     "--formatters",
     help="Formatters (current default: black, isort; future default: builtin). "
     "For Ruff projects, use --formatters ruff-check ruff-format "
-    f"(install with {install_command('ruff', prompt='', row='plain')}). "
+    f"(install with {install_command('ruff', row='plain')}). "
     "Use --formatters builtin when no external formatter is used or generation speed takes priority. "
     "Keep --formatters black isort to preserve existing formatting. "
     "Presets dated 20260909 or later include builtin; explicit formatters override presets. "
@@ -1439,7 +1439,7 @@ general_options.add_argument(
 _flag(
     general_options,
     "--debug",
-    help=f'show debug message (require "debug". {install_command("debug", prompt="$ ")})',
+    help=f'show debug message (require "debug". {install_command("debug")})',
 )
 _flag(general_options, "--disable-warnings", help="disable warnings")
 for _registry, _contents in (

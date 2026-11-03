@@ -1148,7 +1148,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         modifying them. Exits with code 1 if differences
                         found, 0 if up-to-date. Useful for CI to ensure
                         generated code is committed.
-  --debug               show debug message (require "debug". `$ pip install
+  --debug               show debug message (require "debug". `pip install
                         'datamodel-code-generator[debug]'`)
   --diff-against BASELINE_INPUT
                         Generate BASELINE_INPUT and the current --input into

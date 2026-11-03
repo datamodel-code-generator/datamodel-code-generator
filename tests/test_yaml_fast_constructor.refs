@@ -431,6 +431,7 @@ openapi/oneof.yaml	yaml_fast_constructor/parity.txt
 openapi/override_required_all_of.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_content.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_field_policy.yaml	yaml_fast_constructor/parity.txt
+openapi/parameter_header_case.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
@@ -511,6 +512,8 @@ openapi/request_bodies_scope_with_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/required_null.yaml	yaml_fast_constructor/parity.txt
 openapi/resolved_models.yaml	yaml_fast_constructor/parity.txt
 openapi/response_header_ref.yaml	yaml_fast_constructor/parity.txt
+openapi/responses_extensions.yaml	yaml_fast_constructor/parity.txt
+openapi/responses_object_extension.yaml	yaml_fast_constructor/parity.txt
 openapi/reuse_model_cross_module_users.yaml	yaml_fast_constructor/parity.txt
 openapi/root_model.yaml	yaml_fast_constructor/parity.txt
 openapi/root_model_default_primitive.yaml	yaml_fast_constructor/parity.txt

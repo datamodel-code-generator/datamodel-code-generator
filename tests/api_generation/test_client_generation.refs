@@ -90,6 +90,7 @@ protocols-querystring-target-checks	main/generation_platform/client/protocols/pr
 protocols-references	main/generation_platform/client/protocols/protocols-references.txt
 protocols-relative	main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py
 protocols-relative	main/generation_platform/client/protocols/protocols-disabled.txt
+protocols-reserved-arguments	main/generation_platform/client/protocols/protocols-reserved-arguments.txt
 protocols-shared-errors	main/generation_platform/client/protocols/protocols-shared-errors.txt
 protocols-socket-checks	main/generation_platform/client/protocols/protocols-socket-checks.txt
 protocols-socket-errors	main/generation_platform/client/protocols/protocols-socket-errors.txt

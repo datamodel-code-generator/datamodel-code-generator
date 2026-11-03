@@ -95,6 +95,7 @@ from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
+    PROTOBUF_DATA_PATH,
     PYTHON_DATA_PATH,
     TIMESTAMP,
     _optional_test_parsed_source_cache,
@@ -1103,6 +1104,31 @@ def test_snooper_to_methods_without_pysnooper(mocker: MockerFixture, monkeypatch
     monkeypatch.setitem(sys.modules, "pysnooper", None)
     mock = mocker.Mock()
     assert snooper_to_methods()(mock) == mock
+
+
+def test_debug_without_pysnooper_names_a_command_a_shell_runs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the pip command that installs the debug extra as a shell runs it, with no prompt glued to it.
+
+    Up to 0.88.0 the hint wrote ``$pip install ...``, which a shell runs as the command ``$pip``, expanded to nothing.
+    """
+    monkeypatch.setitem(sys.modules, "pysnooper", None)
+    with pytest.raises(Exception, match=re.escape("Please run `pip install 'datamodel-code-generator[debug]'` to use")):
+        run_main_with_args(["--debug", "--input", str(JSON_SCHEMA_DATA_PATH / "person.json")])
+
+
+def test_protobuf_without_grpc_tools_names_the_command_that_installs_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Tell the pip command that installs the protobuf extra, where up to 0.88.0 the hint named only its requirement."""
+    monkeypatch.setitem(sys.modules, "grpc_tools", None)
+    run_main_with_args(
+        ["--input", str(PROTOBUF_DATA_PATH / "proto3_optional.proto"), "--input-file-type", "protobuf"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "protobuf input requires grpcio-tools. Please run `pip install 'datamodel-code-generator[protobuf]'`."
+        ),
+    )
 
 
 @pytest.mark.parametrize(argnames="no_color", argvalues=[False, True])

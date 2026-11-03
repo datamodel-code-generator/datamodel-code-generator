@@ -20,10 +20,10 @@ from datamodel_code_generator._openapi_paths import (
     effective_operation,
     effective_parameters,
     holds_path_item,
+    operation_responses,
     path_item_operations,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
@@ -49,6 +49,7 @@ from datamodel_code_generator.parser.openapi import (
     _mapping,
     _missing_operation_id,
     _parameter_array,
+    _parameter_identity,
 )
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
@@ -768,7 +769,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: parameter name/in required"
                 raise SchemaParseError(msg, path=parameter.path)
             name, location = key
-            key = parameter_key(location, name)[1], location
+            key = _parameter_identity(name, location)
             if key in seen:
                 msg = "API_INVALID_OBJECT: duplicate parameter identity"
                 raise SchemaParseError(msg, path=parameter_path)
@@ -948,7 +949,8 @@ class ApiOpenAPIParser(OpenAPIParser):
                 body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"], "requestBody")
                 with self._visiting("request_body", "requestBody", body):
                     self._walk_content(name + "Request", body, owner="request_body")
-            for status, value in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
+            responses = operation_responses(_mapping(operation.get("responses", {}), [*path, "responses"]))
+            for status, value in responses.items():
                 response_path = [*path, "responses", str(status)]
                 suffix = str(status).capitalize() if self.use_status_code_in_response_name else ""
                 response = self._resolve_api_object(value, response_path, "response")
