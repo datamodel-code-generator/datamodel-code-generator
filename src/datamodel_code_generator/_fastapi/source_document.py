@@ -22,6 +22,7 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
 from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
+from datamodel_code_generator._target_contract import openapi_release
 from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
@@ -55,8 +56,7 @@ class SourceDocument:
         self.uris = [_uri(location) for location, _ in held]
         self.documents = [document for _, document in held]
         root = self.documents[0]
-        version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
-        self.version = (int(version[1]), int(version[2])) if version else (3, 1)
+        self.version = openapi_release(str(root.get("openapi", "")), row="legacy-served-version-regex") or (3, 1)
         self.bases = [
             urljoin(uri, own) if isinstance(own := document.get("$self"), str) else uri
             for uri, document in zip(self.uris, self.documents, strict=True)

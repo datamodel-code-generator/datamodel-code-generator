@@ -20,8 +20,11 @@
   retry initial_delay none ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
   retry max_delay none ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
   retry initial_delay overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry initial_delay rounding to the largest float = RetryOptions(initial_delay=1.7976931348623157e+308, max_delay=UNSET, jitter=UNSET, statuses=UNSET, max_retry_after=UNSET, respect_retry_after=UNSET, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=UNSET)
   retry max_delay overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_delay rounding to the largest float = RetryOptions(initial_delay=UNSET, max_delay=1.7976931348623157e+308, jitter=UNSET, statuses=UNSET, max_retry_after=UNSET, respect_retry_after=UNSET, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=UNSET)
   retry max_retry_after overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry max_retry_after rounding to the largest float = RetryOptions(initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=UNSET, max_retry_after=1.7976931348623157e+308, respect_retry_after=UNSET, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=UNSET)
   retry cap zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
   retry delay order ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
   client max_retries bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range

@@ -211,6 +211,7 @@
   PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
@@ -230,6 +231,7 @@
   PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.max_wait None = None
   PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
@@ -241,6 +243,7 @@
   PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.total_timeout None = None
   PollOptions.total_timeout 0 = 0
@@ -252,6 +255,7 @@
   PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -263,6 +267,7 @@
   StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
@@ -287,6 +292,7 @@
   StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.total_timeout None = None
   StreamOptions.total_timeout 0 = 0
@@ -298,6 +304,7 @@
   StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
@@ -549,6 +556,7 @@
   PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
@@ -568,6 +576,7 @@
   PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.max_wait None = None
   PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
@@ -579,6 +588,7 @@
   PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.total_timeout None = None
   PollOptions.total_timeout 0 = 0
@@ -590,6 +600,7 @@
   PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -601,6 +612,7 @@
   StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
@@ -625,6 +637,7 @@
   StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.total_timeout None = None
   StreamOptions.total_timeout 0 = 0
@@ -636,6 +649,7 @@
   StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
@@ -887,6 +901,7 @@
   PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
@@ -906,6 +921,7 @@
   PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.max_wait None = None
   PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
@@ -917,6 +933,7 @@
   PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.total_timeout None = None
   PollOptions.total_timeout 0 = 0
@@ -928,6 +945,7 @@
   PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -939,6 +957,7 @@
   StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
@@ -963,6 +982,7 @@
   StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.total_timeout None = None
   StreamOptions.total_timeout 0 = 0
@@ -974,6 +994,7 @@
   StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
@@ -1225,6 +1246,7 @@
   PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
@@ -1244,6 +1266,7 @@
   PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.max_wait None = None
   PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
@@ -1255,6 +1278,7 @@
   PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.total_timeout None = None
   PollOptions.total_timeout 0 = 0
@@ -1266,6 +1290,7 @@
   PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -1277,6 +1302,7 @@
   StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
@@ -1301,6 +1327,7 @@
   StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.total_timeout None = None
   StreamOptions.total_timeout 0 = 0
@@ -1312,6 +1339,7 @@
   StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
@@ -1563,6 +1591,7 @@
   PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
@@ -1582,6 +1611,7 @@
   PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
   PollOptions.max_wait None = None
   PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
@@ -1593,6 +1623,7 @@
   PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
   PollOptions.total_timeout None = None
   PollOptions.total_timeout 0 = 0
@@ -1604,6 +1635,7 @@
   PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.idle_timeout None = None
   StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
@@ -1615,6 +1647,7 @@
   StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
   StreamOptions.reconnect True = True
   StreamOptions.reconnect False = False
@@ -1639,6 +1672,7 @@
   StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
   StreamOptions.total_timeout None = None
   StreamOptions.total_timeout 0 = 0
@@ -1650,6 +1684,7 @@
   StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout largest float + 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True

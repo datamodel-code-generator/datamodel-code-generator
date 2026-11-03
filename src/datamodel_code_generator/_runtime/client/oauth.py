@@ -8,7 +8,6 @@ to its `on_token_refreshed` callback.
 from __future__ import annotations
 
 import inspect
-import sys
 import threading
 import weakref
 from dataclasses import dataclass, field
@@ -20,7 +19,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import JSON_MEDIA_TYPE, SUCCESS_STATUSES, json_number
+from ..model_codecs.media import JSON_MEDIA_TYPE, SUCCESS_STATUSES
 from .auth import (
     OAUTH_ERROR_CODES,
     AuthError,
@@ -33,7 +32,7 @@ from .auth import (
 )
 from .errors import ConfigurationError, acalled, called
 from .security import SecurityScheme
-from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware
+from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware, usable_seconds
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
@@ -46,7 +45,6 @@ if TYPE_CHECKING:
 __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
 _LOOPBACK: Final = frozenset({"localhost", "127.0.0.1", "::1"})
-_LONGEST: Final = sys.float_info.max
 _BEARER: Final = SecurityScheme(name="oauth", kind="bearer", location="header", wire_name="Authorization")
 
 
@@ -149,7 +147,7 @@ def _expiry(fields: dict[str, object], received: float) -> float | None:
     if "expires_in" not in fields:
         return None
     seconds = fields["expires_in"]
-    if not json_number(seconds) or not 0 < seconds <= _LONGEST:
+    if not usable_seconds(seconds, allow_zero=False, row="legacy-compare-before-float"):
         raise AuthError(reason="invalid_expiry")
     return received + seconds
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
 from collections.abc import Set as AbstractSet  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field, fields, replace
@@ -126,9 +125,7 @@ class RetryOptions:
         if self.statuses is not UNSET:
             object.__setattr__(self, "statuses", _statuses(self.statuses))
         if self.max_retry_after is not None and self.max_retry_after is not UNSET:
-            path = ("retry", "max_retry_after")
-            if not 0 < (duration := seconds(self.max_retry_after, path)) < math.inf:
-                raise ConfigurationError(field_path=path, reason="out_of_range")
+            duration = seconds(self.max_retry_after, ("retry", "max_retry_after"), allow_zero=False)
             object.__setattr__(self, "max_retry_after", duration)
 
 
