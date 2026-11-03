@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, token
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
     SecurityRequirement,
@@ -115,8 +115,6 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
         return unavailable
     if (place := api_key_place(declaration)) is not None:
         location, wire_name = place
-        if location != "query" and not token(wire_name):
-            return unavailable
         return SecurityScheme(name=name, kind="api_key", location=location, wire_name=wire_name)
     if (scheme := http_scheme(declaration)) in {"basic", "bearer"}:
         return SecurityScheme(

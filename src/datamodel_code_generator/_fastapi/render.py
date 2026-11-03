@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
-from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, CONTAINER_FLAGS, MAPPINGS
+from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -72,7 +72,7 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none, type_identity
+from datamodel_code_generator._target_types import admits_none, container_slot
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
@@ -287,7 +287,9 @@ class Module(TargetModule):
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
-        flag = CONTAINER_FLAGS[CONTAINER_CLASSES[type_identity(value.base)]]
+        slot = container_slot(value)
+        assert slot is not None
+        flag = CONTAINER_FLAGS[slot]
         if flag in MAPPINGS.flags:
             return self.container(flag, arguments[-1], key=arguments[0])
         return self.container(flag, arguments[0])

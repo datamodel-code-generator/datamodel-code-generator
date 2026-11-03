@@ -258,6 +258,9 @@
   "header-names": {
     "input": "header-names.yaml"
   },
+  "required-body-errors": {
+    "input": "required-body-errors.yaml"
+  },
   "native": {
     "input": "native.yaml",
     "backends": [

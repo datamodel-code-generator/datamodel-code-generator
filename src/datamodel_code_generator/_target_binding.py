@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult
 
+from pydantic import ValidationError
 from typing_extensions import override
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
@@ -120,7 +121,6 @@ from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import (
-    _REUSE_PATH_SUFFIX,
     UNDEFINED,
     DataModel,
     DataModelFieldBase,
@@ -139,6 +139,7 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
+from datamodel_code_generator.parser.openapi import HeaderObject, ParameterObject, RequestBodyObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import (
@@ -198,6 +199,8 @@ _PARAMETER_FACTS: Final = (
     "example",
     "examples",
 )
+_HEADER_FACTS: Final = tuple(name for name in _PARAMETER_FACTS if name not in {"name", "in"})
+"""The facts of a Header Object: a parameter's but its name and location, which its headers map implies."""
 _OPERATION_FACTS: Final = (
     "operationId",
     "tags",
@@ -926,6 +929,26 @@ def _facts(
     return tuple(facts)
 
 
+def _read_required(
+    raw: dict[str, YamlValue],
+    declaration: SchemaLocation,
+    object_type: type[ParameterObject | HeaderObject | RequestBodyObject],
+) -> dict[str, YamlValue]:
+    """Return an object with its `required` read as the parser's ``object_type`` reads it, a boolean.
+
+    A value the parser reads as a boolean, such as `'yes'` or `1`, is that boolean; the parser refuses any other, and so
+    do the targets.
+    """
+    if isinstance(required := raw.get("required", False), bool):
+        return raw
+    try:
+        read = object_type.model_validate({"required": required}).required
+    except ValidationError as error:
+        message = f"API_INVALID_OBJECT: required {required!r} is not a boolean"
+        raise SchemaParseError(message, [str(declaration)]) from error
+    return {**raw, "required": read}
+
+
 def _backend_value(value: object) -> KnownBackendValue:
     return KnownBackendValue(_freeze_argument(value))
 
@@ -1055,25 +1078,22 @@ class _Binder:
             self.anchors.append(node)
         return identity
 
-    def reuse_origin(self, reference: Reference) -> str | None:
-        """Return the path of the reference reuse replaced with this one, or None if reuse did not make it.
+    @staticmethod
+    def reuse_origin(reference: Reference) -> Reference | None:
+        """Return the reference of the model reuse replaced with this one's model, or None if reuse did not make it.
 
-        A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
+        It is the model's `reused_reference`, wherever a later step moved either model.
         """
-        path = reference.path
-        if id(reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX):
-            return None
-        return path.removesuffix(_REUSE_PATH_SUFFIX)
+        return model.reused_reference if isinstance(model := reference.source, DataModel) else None
 
     def source(self, reference: Reference) -> str:
         """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-        origin = self.reuse_origin(reference)
-        return _source_path(reference.path if origin is None else origin)
+        return _source_path((self.reuse_origin(reference) or reference).path)
 
-    def reused(self, model: DataModel) -> DataModel | None:
+    @staticmethod
+    def reused(model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
-        origin = self.reuse_origin(model.reference)
-        original = None if origin is None else self.parser.model_resolver.references.get(origin)
+        original = model.reused_reference
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 
     def kept(self, model: DataModel) -> DataModel:
@@ -1631,7 +1651,7 @@ class _Projector:
         for modifier in WRITTEN_CONTAINERS:
             if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
-            written = SLOT_CLASSES[written_slot(modifier, generic=generic)]
+            written = SLOT_CLASSES[slot := written_slot(modifier, generic=generic)]
             base = (
                 ImportedType(Import(import_=written.name, from_=module))
                 if written.abstract
@@ -1641,9 +1661,9 @@ class _Projector:
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)
                 hint = self.hints.composed(data_type, base=value, key=key, container=flag)
-                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint)
+                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint, slot=slot)
             hint = self.hints.composed(data_type, base=value, container=flag)
-            return GenericType(base, (value,) if value is not None else (), hint=hint)
+            return GenericType(base, (value,) if value is not None else (), hint=hint, slot=slot)
         if value is None:
             raise _UnsupportedError
         return value
@@ -3562,7 +3582,8 @@ class _Contracts(_Octets):
     ) -> WireDeclaration:
         """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
         declared, value, wire_name = walked.declaration, walked.value, walked.key
-        location = str(value["in"]) if "in" in value else None
+        header = role != "parameter"
+        location = None if header or "in" not in value else str(value["in"])
         schemas: tuple[TypeUseId, ...] = ()
         if (schema := next(iter(walked.schemas), None)) is not None:
             use = self.use(
@@ -3582,7 +3603,7 @@ class _Contracts(_Octets):
                 binary = self.first(node, use.direction, schema)
             self.uses[use] = replace(
                 self.uses[use],
-                default=record.default if role == "parameter" else None,
+                default=None if header else record.default,
                 keywords=record.keywords,
                 binary=binary,
             )
@@ -3591,15 +3612,16 @@ class _Contracts(_Octets):
         children = self.media(
             walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )
+        read = _read_required(value, declared, HeaderObject if header else ParameterObject)
         locate = self.documents.location
         return WireDeclaration(
-            "parameter" if role == "parameter" else "header",
+            "header" if header else "parameter",
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
             _facts(
-                {**value, "required": True} if location == "path" and wire_name in placeholders else value,
-                _PARAMETER_FACTS,
+                {**read, "required": True} if location == "path" and wire_name in placeholders else read,
+                _HEADER_FACTS if header else _PARAMETER_FACTS,
                 declared,
             ),
             schemas,
@@ -3679,7 +3701,11 @@ class _Contracts(_Octets):
                 None,
                 DeclarationId(locate(requested.declaration, "declaration")),
                 locate(used, "use"),
-                _facts(requested.value, ("required", "description"), requested.declaration),
+                _facts(
+                    _read_required(requested.value, requested.declaration, RequestBodyObject),
+                    ("required", "description"),
+                    requested.declaration,
+                ),
                 children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(

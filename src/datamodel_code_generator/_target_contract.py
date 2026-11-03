@@ -8,12 +8,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
 from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -220,12 +222,17 @@ class BoundType:
 
 @dataclass(frozen=True, slots=True)
 class GenericType:
-    """Preserve ordered container arguments and fixed versus variadic tuple shape."""
+    """Preserve ordered container arguments and fixed versus variadic tuple shape.
+
+    `slot` is the container slot whose class `base` writes, decided from the container's kind before any import
+    override moves where `base` is imported from; None for a fixed tuple or any other generic type.
+    """
 
     base: TypeView
     arguments: tuple[TypeView, ...]
     tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
+    slot: ContainerSlot | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -695,12 +702,13 @@ def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | 
     """Return where an apiKey security scheme sends its credential: its location and its name.
 
     None when the declaration is not an apiKey scheme, or names no location of query, header or cookie or no nonempty
-    string name.
+    string name, or a header or cookie name that is no token (RFC 9110 section 5.6.2, RFC 6265 section 4.1.1), which
+    no request can send.
     """
     location, name = API_KEY_LOCATIONS.get(fact(declaration, "in")), fact(declaration, "name")
     if fact(declaration, "type") != "apiKey" or location is None or not isinstance(name, str) or not name:
         return None
-    return location, name
+    return (location, name) if location == "query" or is_token(name) else None
 
 
 def is_required(declaration: WireDeclaration) -> bool:

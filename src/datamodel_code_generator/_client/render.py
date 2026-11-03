@@ -78,7 +78,7 @@ from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UP
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_naming import PATH_PLACEHOLDER
+from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, NameScope
 from datamodel_code_generator._target_operations import coded_use, described
 from datamodel_code_generator._target_render import (
     Keyword,
@@ -1928,12 +1928,15 @@ class _Types(_Typing):
     """Render each resource's types module: result aliases, HTTP errors, and header accessors."""
 
     def module(self, resource: ResourceSpec) -> Templated:
-        """Return the types module of one resource."""
+        """Return the types module of one resource, whose scope claims each operation's header constant."""
         reserved = {name for spec in resource.operations for name in exports(spec)}
-        reserved.update(header_constant(spec.name) for spec in resource.operations)
-        module = TargetModule(self.types, reserved, level=len(resource.parts) + 2)
+        scope = NameScope(reserved)
+        constants = {
+            spec.name: scope.claim(header_constant(spec.name)) for spec in resource.operations if _header_names(spec)
+        }
+        module = TargetModule(self.types, (*reserved, *constants.values()), level=len(resource.parts) + 2)
         type_alias = module.name("typing", "TypeAlias")
-        aliases = [self.alias(module, spec) for spec in resource.operations]
+        aliases = [self.alias(module, spec, constants.get(spec.name)) for spec in resource.operations]
         overloaded = any(alias.headers is not None and alias.headers.overloads for alias in aliases)
         return templated(
             "types.jinja2",
@@ -1945,14 +1948,17 @@ class _Types(_Typing):
             imports=module.imports(),
         )
 
-    def alias(self, module: TargetModule, spec: OperationSpec) -> Alias:
-        """Return one operation's response alias, with its header decoders and accessor when it declares headers."""
+    def alias(self, module: TargetModule, spec: OperationSpec, constant: str | None) -> Alias:
+        """Return one operation's response alias, with its header decoders and accessor when it declares headers.
+
+        ``constant`` names the header decoders of an operation that declares headers.
+        """
         successes = self.union(module, self.successes(spec), "None")
-        headers = self.header_accessor(module, spec, names) if (names := _header_names(spec)) else None
+        headers = None if constant is None else self.header_accessor(module, spec, _header_names(spec), constant)
         return Alias(response_alias(spec.pascal), successes, headers)
 
-    def header_accessor(self, module: TargetModule, spec: OperationSpec, headers: _Headers) -> Headers:
-        """Return one operation's header decoders and its typed accessor function."""
+    def header_accessor(self, module: TargetModule, spec: OperationSpec, headers: _Headers, constant: str) -> Headers:
+        """Return one operation's header decoders, held by ``constant``, and its typed accessor function."""
         unset = module.local("options", "UNSET")
         results, every, entries = self.header_entries(module, headers)
         missing = any(not header.required for _, branches in headers.values() for _, header in branches)
@@ -1973,7 +1979,7 @@ class _Types(_Typing):
             else ()
         )
         return Headers(
-            constant=header_constant(spec.name),
+            constant=constant,
             annotation=annotation,
             decoders=decoders,
             operation_id=repr(spec.operation_id),

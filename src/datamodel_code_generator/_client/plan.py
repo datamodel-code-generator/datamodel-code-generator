@@ -1088,9 +1088,7 @@ class Planner:
                 children[namespace.rpartition(".")[0]].append(namespace)
         folded: dict[str, list[str]] = {}
         for namespace in members:
-            folded.setdefault(
-                fold_key(namespace, self.names.python_version, rule="legacy-fold-without-nfc"), []
-            ).append(namespace)
+            folded.setdefault(fold_key(namespace, self.names.python_version), []).append(namespace)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",

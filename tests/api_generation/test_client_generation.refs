@@ -303,6 +303,7 @@ ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt
+required-errors	main/generation_platform/client/required-errors.txt
 response-keys	main/generation_platform/client/packages/response-keys/pydantic_v2_BaseModel//*.py
 response-keys	main/generation_platform/client/response-keys.txt
 retries	main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
