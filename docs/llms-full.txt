@@ -68076,7 +68076,9 @@ relative to `src/datamodel_code_generator/`; names are given as `file:function` 
 
 `__init__.py:_parse_generation` may run L0–L8 again with a fresh parser (root-model collapse that stops before a
 data type cycle, yielding names that class-keyed options name, untyped nullable maps, invalid dotted stdout
-modules). These are retries around the whole pipeline, not passes inside it.
+modules, and a run that fails after a reference held a document it had prepared as an OpenAPI object of another role,
+which parses again with every role known at L0: `document_roles_to_seed`). These are retries around the whole
+pipeline, not passes inside it.
 
 **L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and, under
 `--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`

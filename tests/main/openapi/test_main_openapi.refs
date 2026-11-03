@@ -671,6 +671,9 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 	main/openapi/allof_with_required_inherited_nested_object.py
 [test_main_openapi_anchor_refs]
 	main/openapi/anchor_refs.py
+[test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer]
+parameter	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_pointer[parameter].py
+request-body	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_pointer[request-body].py
 [test_main_openapi_anchor_refs_in_path_item_document]
 	main/openapi/main_openapi/anchor_refs_in_path_item_document.py
 [test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself]
@@ -1576,6 +1579,15 @@ typed-dict	main/openapi/main_openapi/nullable_reuse_tree[typed-dict]/
 	main/openapi/nullable_strict_nullable_use_union_operator.py	= main/openapi/nullable_strict_nullable.py
 [test_main_openapi_oas_response_reference]
 	main/openapi/oas_response_reference.py
+[test_main_openapi_object_documents_loaded_by_pointer_parse_again]
+collapse-cycle	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[collapse-cycle].py
+collapse-cycle	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[collapse-cycle].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+dangling-fallback	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[dangling-fallback].py
+dangling-fallback	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[dangling-fallback].txt
+strict-refs	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[strict-refs].py
+strict-refs	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[strict-refs].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+two-documents	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[two-documents].py
+two-documents	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[two-documents].txt
 [test_main_openapi_one_of_body_without_member_types_beside_properties]
 	main/openapi/main_openapi/one_of_body_without_member_types_beside_properties.txt
 [test_main_openapi_override_required_all_of_field]

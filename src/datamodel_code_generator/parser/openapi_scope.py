@@ -36,7 +36,7 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
-from datamodel_code_generator.parser._schema_refs import ref_file_document
+from datamodel_code_generator.parser._schema_refs import hold_document_root, ref_file_document
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -361,7 +361,11 @@ class ApiOpenAPIParser(OpenAPIParser):
         return target
 
     def _reference_target(self, ref: str, seen: set[str], path: list[str], role: str | None) -> _ApiObject:
-        """Resolve one reference in the current document context to the object it names, an object of ``role``."""
+        """Resolve one reference in the current document context to the object it names, an object of ``role``.
+
+        A reference that names the root of a document loaded before holds it as that object too
+        (``hold_document_root``).
+        """
         resolved = self._ref_path(ref)
         if resolved in seen:
             msg = "API_REFERENCE_CYCLE: object references do not reach a declaration"
@@ -372,6 +376,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         if raw_document is None:
             raw_document = ref_file_document(self, document, None if fragment else role)
             self._api_documents[document] = raw_document
+        elif document and not fragment and role is not None:
+            hold_document_root(self, document, role)
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
         return _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))

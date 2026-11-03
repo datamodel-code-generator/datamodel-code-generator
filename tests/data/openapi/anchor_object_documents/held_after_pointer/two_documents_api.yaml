@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Two documents that pointers into them loaded first
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+            format: unknown-format
+        - name: amount
+          in: query
+          schema:
+            type: number
+            format: decimal
+            default: 1.5
+        - $ref: parameter.yaml
+      responses:
+        "200":
+          description: The notes.
+    post:
+      requestBody:
+        $ref: request_body.yaml
+      responses:
+        "200":
+          description: The note.
+components:
+  schemas:
+    Size:
+      $ref: parameter.yaml#/schema/properties/size
+    Title:
+      $ref: request_body.yaml#/content/application~1json/schema/properties/title

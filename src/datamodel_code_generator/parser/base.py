@@ -335,6 +335,8 @@ def __getattr__(name: str) -> Any:
 
 
 DroppedConstraintFields: TypeAlias = frozenset[tuple[ModulePath, str]]
+DocumentRoles: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
+"""The OpenAPI object roles that references held each document's root as, by document (``hold_document_root``)."""
 
 
 @dataclass(slots=True)
@@ -405,6 +407,7 @@ class ParserRunContext:
     suppress_parse_warnings: bool = False
     untyped_nullable_maps: bool = False
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = ()
+    document_roles: DocumentRoles = ()
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
@@ -615,6 +618,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         suppress_parse_warnings: bool = False,
         untyped_nullable_maps: bool = False,
         yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
+        document_roles: DocumentRoles = (),
     ) -> None:
         """Configure parser run state without exposing implementation attributes."""
         context = ParserRunContext(
@@ -625,9 +629,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             suppress_parse_warnings=suppress_parse_warnings,
             untyped_nullable_maps=untyped_nullable_maps,
             yielding_names=yielding_names,
+            document_roles=document_roles,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
+        if document_roles:
+            self._seed_document_roles(document_roles)
+
+    @property
+    def document_roles_to_seed(self) -> DocumentRoles:
+        """Return the roles of documents a new attempt of a failed run starts from: none for a parser without roles."""
+        return ()
+
+    def _seed_document_roles(self, document_roles: DocumentRoles) -> None:
+        """Start the roles of documents from those an earlier attempt recorded, where the parser reads roles."""
 
     @property
     def _field_option_kwargs(self) -> dict[str, Any]:

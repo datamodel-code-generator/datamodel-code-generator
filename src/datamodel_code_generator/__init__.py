@@ -151,7 +151,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model import DataModelSet
     from datamodel_code_generator.model_metadata import ModelMetadata
-    from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.base import DocumentRoles, Result
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 T = TypeVar("T")
@@ -1944,6 +1944,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     suppress_parse_warnings: bool = False,
     untyped_nullable_maps: bool = False,
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
+    document_roles: DocumentRoles = (),
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
     openapi_parser_factory: OpenAPIParserFactory | None = None,
@@ -1979,6 +1980,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         suppress_parse_warnings=suppress_parse_warnings,
         untyped_nullable_maps=untyped_nullable_maps,
         yielding_names=yielding_names,
+        document_roles=document_roles,
     )
     return parser
 
@@ -2296,6 +2298,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     openapi_parser_factory: OpenAPIParserFactory | None,
     untyped_nullable_maps: bool = True,
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
+    document_roles: DocumentRoles = (),
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
@@ -2310,52 +2313,98 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     models a collapse keeps; the decision covers the whole run, so every input of a directory run is then untyped.
     The first parse already reported its warnings, so this one reports none, and it ignores ``ignored_warnings`` (none
     are filtered when it is None). The caller disposes the parser it does not keep only after binding the kept one,
-    as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry.
+    as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry. The roles of
+    documents that an earlier attempt recorded after preparing them start the parse (``document_roles``); an attempt
+    with such roles that fails after recording more of them parses once more with every role, until none is new.
     """
     remote_text_cache, reference_cache, base_path = caches
     with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
-        data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
-            _prepare_parser_common_options(
-                input_,
-                input_text,
-                input_file_type,
-                source_override,
-                config,
-                extra_template_data,
-                dataclass_arguments,
-                skip_root_model=skip_root_model,
-                remote_text_cache=remote_text_cache,
+        while True:
+            data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
+                _prepare_parser_common_options(
+                    input_,
+                    input_text,
+                    input_file_type,
+                    source_override,
+                    config,
+                    extra_template_data,
+                    dataclass_arguments,
+                    skip_root_model=skip_root_model,
+                    remote_text_cache=remote_text_cache,
+                )
             )
-        )
-        parser_options["base_path"] = base_path
-        parser = _build_generation_parser(
-            input_,
-            input_file_type,
-            parser_source,
-            config,
-            parser_options,
-            data_model_types,
-            schema_versions,
-            diagnostic_source_path,
-            prefetched_source=prefetched_source,
-            formatter_cwd=formatter_cwd,
-            preserve_circular_root_models=preserve_circular_root_models,
-            suppress_parse_warnings=True,
-            untyped_nullable_maps=untyped_nullable_maps,
-            yielding_names=yielding_names,
-            reference_cache=reference_cache,
-            python_type_expressions=python_type_expressions,
-            openapi_parser_factory=openapi_parser_factory,
-        )
-        results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
-            input_,
-            parser,
-            config,
-            parser_settings_path=parser_settings_path,
-            collect_model_metadata=collect_model_metadata,
-            capture=capture,
-        )
+            parser_options["base_path"] = base_path
+            parser = _build_generation_parser(
+                input_,
+                input_file_type,
+                parser_source,
+                config,
+                parser_options,
+                data_model_types,
+                schema_versions,
+                diagnostic_source_path,
+                prefetched_source=prefetched_source,
+                formatter_cwd=formatter_cwd,
+                preserve_circular_root_models=preserve_circular_root_models,
+                suppress_parse_warnings=True,
+                untyped_nullable_maps=untyped_nullable_maps,
+                yielding_names=yielding_names,
+                document_roles=document_roles,
+                reference_cache=reference_cache,
+                python_type_expressions=python_type_expressions,
+                openapi_parser_factory=openapi_parser_factory,
+            )
+            try:
+                results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
+                    input_,
+                    parser,
+                    config,
+                    parser_settings_path=parser_settings_path,
+                    collect_model_metadata=collect_model_metadata,
+                    capture=capture,
+                )
+                break
+            except Error:
+                if not document_roles or not (recorded := parser.document_roles_to_seed):
+                    raise
+                document_roles = recorded
     return parser, results, data_model_types, defer_formatting, extra_template_data
+
+
+def _parse_with_document_roles(
+    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
+    config: GenerateConfig,
+    caches: tuple[DefaultPutDict[str, str], Any | None, Path],
+    document_roles: DocumentRoles,
+) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
+    """Parse again a run that failed after references held documents it had prepared as objects of other roles.
+
+    Such a document was prepared without the schemas its new role holds, so a reference to one failed; the parse starts
+    with every role the failed attempt recorded (``hold_document_root``). Its warnings are shown once: the parse
+    reports none of the parse warnings the failed attempt reported, and every later one. A collapse of root models
+    that needs its circular-reference fallback parses through that retry with the same roles.
+    """
+    try:
+        return parse_again(
+            config,
+            _prepare_generation_extra_template_data(config),
+            caches,
+            preserve_circular_root_models=False,
+            untyped_nullable_maps=False,
+            document_roles=document_roles,
+            ignored_warnings=None,
+        )
+    except _CollapseRootModelsRecursionError:
+        return parse_again(
+            config,
+            _prepare_generation_extra_template_data(config),
+            caches,
+            preserve_circular_root_models=True,
+            untyped_nullable_maps=False,
+            document_roles=document_roles,
+            ignored_warnings=None,
+            collapse_retry=True,
+        )
 
 
 def _reparse_caches(parser: Any) -> tuple[DefaultPutDict[str, str], Any | None, Path]:
@@ -2482,9 +2531,18 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 ignored_warnings=None,
                 collapse_retry=True,
             )
+        except Error:
+            if not (document_roles := parser.document_roles_to_seed):
+                raise
+            caches = _reparse_caches(parser)
+            del parser
+            parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_document_roles(
+                parse_again, config, caches, document_roles
+            )
         if yielding_names := parser.yielding_names_to_assign:
             caches = _reparse_caches(parser)
             preserve_circular_root_models = parser.run_context.preserve_circular_root_models
+            document_roles = parser.run_context.document_roles
             _dispose_capture_parser(parser, capture, discard=True)
             del parser
             parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
@@ -2494,6 +2552,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 preserve_circular_root_models=preserve_circular_root_models,
                 untyped_nullable_maps=False,
                 yielding_names=yielding_names,
+                document_roles=document_roles,
             )
         discarded_parser = None
         if parser.typed_nullable_maps and parser.typed_map_values_may_move_models:
@@ -2503,6 +2562,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                     _prepare_generation_extra_template_data(config),
                     _reparse_caches(parser),
                     preserve_circular_root_models=parser.run_context.preserve_circular_root_models,
+                    document_roles=parser.run_context.document_roles,
                 )
             except BaseException:
                 with contextlib.suppress(BaseException):
@@ -2524,6 +2584,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             retry_caches = _reparse_caches(parser)
             preserve_circular_root_models = parser.run_context.preserve_circular_root_models
             untyped_nullable_maps = parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps
+            document_roles = parser.run_context.document_roles
         if capture is None:
             parser.dispose()
         else:
@@ -2550,6 +2611,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                     retry_caches,
                     preserve_circular_root_models=preserve_circular_root_models,
                     untyped_nullable_maps=untyped_nullable_maps,
+                    document_roles=document_roles,
                     ignored_warnings=DanglingRefWarning,
                 )
                 retry_completed = True
