@@ -13,6 +13,14 @@ def _json_schema_path(name: str) -> str | None:
     return json_schema_path(name)
 
 
+def _skill_options_given(namespace: Namespace) -> bool:
+    """Return whether a parsed command gives ``--skill-scope`` or ``--overwrite-skill``, options of ``--install-skill``.
+
+    Without ``--install-skill`` the command line refuses them, so the fast paths of a parsed command step aside.
+    """
+    return namespace.skill_scope is not None or bool(namespace.overwrite_skill)
+
+
 def _print_json_schema(name: str) -> int:
     """Print a JSON Schema on a fast path and return the exit code, an error if Pydantic lacks JSON output support."""
     from datamodel_code_generator import _StructuredOutputUnavailableError  # noqa: PLC0415
@@ -59,7 +67,7 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
 
     sys.exit(run_agent_skill_installer(sys.argv[1:]))
 
-# Fast path for prompt helper outputs
+# Fast path for prompt helper outputs; a command with the options of --install-skill, which _main refuses, steps aside
 if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg.startswith(("--generate-prompt", "--output-format-json-schema=")) or arg == "--output-format-json-schema"
     for arg in sys.argv[1:]
@@ -69,9 +77,10 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     _reset_namespace(namespace)
     arg_parser.parse_args(namespace=namespace)
     schema_output_name = namespace.output_format_json_schema
-    if schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
+    steps_aside = _skill_options_given(namespace)
+    if not steps_aside and schema_output_name is not None and _json_schema_path(schema_output_name) != "main":
         sys.exit(_print_json_schema(schema_output_name))
-    if namespace.output_format_json_schema is None and namespace.generate_prompt is not None:
+    if not steps_aside and schema_output_name is None and namespace.generate_prompt is not None:
         from datamodel_code_generator.prompt import generate_prompt
 
         help_text = arg_parser.format_help()
@@ -2513,7 +2522,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 overwrite=namespace.overwrite_skill,
             )
         )
-    if namespace.skill_scope is not None or namespace.overwrite_skill:
+    if _skill_options_given(namespace):
         print("Error: --skill-scope and --overwrite-skill require --install-skill", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
 
