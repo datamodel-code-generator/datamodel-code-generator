@@ -1653,10 +1653,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def __postprocess_result_modules(
         cls, results: dict[tuple[str, ...], Result], *, empty_init: bool = False
     ) -> dict[tuple[str, ...], Result]:
+        """Give each package of the dotted modules an ``__init__.py``: the first written one, else an empty one.
 
+        An output without modules has no package, and stays empty.
+        """
         results = {expanded_path(k): v for k, v in results.items()}
-
-        init_result = Result(body="") if empty_init else next(v for k, v in results.items() if is_package_init(k[-1]))
+        inits = () if empty_init else (v for k, v in results.items() if is_package_init(k[-1]))
+        init_result = next(iter(inits), Result(body=""))
         folders = {t[:-1] if t[-1].endswith(".py") else t for t in results}
         for folder in folders:
             for i in range(len(folder)):
