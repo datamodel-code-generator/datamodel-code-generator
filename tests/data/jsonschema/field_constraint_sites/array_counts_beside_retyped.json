@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "retyped": {
+      "type": "string",
+      "format": "date",
+      "x-python-type": "datetime.date",
+      "contains": true,
+      "minContains": 2
+    },
+    "tally": {
+      "type": "object",
+      "additionalProperties": {"type": "array", "items": {"type": "string"}},
+      "contains": true,
+      "minContains": 2
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "x-python-type": "set[str]",
+      "contains": true,
+      "minContains": 2
+    }
+  }
+}

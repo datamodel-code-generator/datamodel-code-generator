@@ -38,6 +38,7 @@ LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
         ("mixed_type_map_property", []),
         ("array_counts_beside_other_types", []),
         ("array_counts_beside_other_types", ["--field-constraints"]),
+        ("array_counts_beside_retyped", []),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -48,7 +49,8 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     property under ``--field-constraints`` writes them as a const does, unless ``--filter-literal-values`` removed
     the values they reject; a map beside a type list that joins an array keeps its property counts; the item counts
     of ``contains`` belong to a field typed as an array, so a string or a model that carries them accepts what the
-    schema accepts.
+    schema accepts, and so does a field whose schema declares no array, as a string typed ``datetime.date`` or an
+    object with array values.
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(

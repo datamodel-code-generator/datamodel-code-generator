@@ -301,6 +301,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.RENDER,
         store_ops=("use_typing_generics",),
     ),
+    AttributeFact(
+        "Member",
+        "alias",
+        FactKind.PRESENTATION,
+        (RenderFact.IMPORT_ALIASES,),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+        store_ops=("name_enum_member",),
+    ),
     AttributeFact("DataType", "use_generic_container", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
         "DataType",
