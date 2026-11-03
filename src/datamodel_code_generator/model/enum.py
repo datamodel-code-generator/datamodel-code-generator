@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from math import isnan
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias
 
 from typing_extensions import Sentinel, override
 
@@ -21,7 +21,6 @@ from datamodel_code_generator.imports import (
     IMPORT_INT_ENUM,
     IMPORT_STR_ENUM,
     Import,
-    _import_path,
 )
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
@@ -30,7 +29,7 @@ from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
     from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
@@ -137,15 +136,36 @@ SUBCLASS_BASE_CLASSES: dict[Types, str] = {
 }
 _SUBCLASS_VALUE_BASES: frozenset[str] = frozenset(SUBCLASS_BASE_CLASSES.values())
 """The builtin bases ``--use-subclass-enum`` gives an enum for the values of its members."""
-_SPECIALIZED_VALUE_BASES: dict[str, str] = {_import_path(IMPORT_STR_ENUM): _STR, _import_path(IMPORT_INT_ENUM): _INT}
-"""The builtin type whose instances the members of a ``StrEnum`` and an ``IntEnum`` are, by the path of the class."""
 
 
-def _base_value_type(base: DataType) -> str | None:
-    """Return the builtin type a base of an enum makes the values of its members, or None."""
-    if (import_ := base.import_) is None:
-        return base.type if base.type in _SUBCLASS_VALUE_BASES else None
-    return _SPECIALIZED_VALUE_BASES.get(_import_path(import_))
+EnumValueBaseRow: TypeAlias = Literal["value-base", "legacy-merged-enum-specialized-only"]
+"""What tells the builtin type of the values of an enum's members (``enum_value_base``).
+
+* ``value-base``: the class of an ``IntEnum`` or a ``StrEnum``, whose members are ``int`` and ``str``, else the first
+  base that is a value type, the ``str``, ``int``, ``float`` or ``bytes`` that ``--use-subclass-enum`` writes before
+  ``Enum`` (``Enum.value_base``).
+* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a field-less model
+  inherits is a ``(T, Enum)``, the merged enum keeps the members ``T`` cannot hold, as it does for a plain ``Enum``
+  (``parser/_passes/modules.py:extract_inherited_enum``, row ``legacy-inherited-first-base-class`` of
+  ``decide_enum_kind``; ``parser/_all_of_values.py:merged_enum_fails`` predicts it).
+"""
+
+
+def enum_value_base(
+    enum_class: type[Enum], bases: Iterable[DataType] = (), /, *, row: EnumValueBaseRow = "value-base"
+) -> str | None:
+    """Return the builtin type the members of an enum of ``enum_class`` with ``bases`` are instances of, or None.
+
+    ``EnumValueBaseRow`` names what tells it. A member of an enum with a value base is an instance of that type and
+    equals its value; a member of a plain ``Enum`` equals only itself.
+    """
+    if issubclass(enum_class, IntEnum):
+        return _INT
+    if issubclass(enum_class, StrEnum):
+        return _STR
+    if row == "legacy-merged-enum-specialized-only":
+        return None
+    return next((base.type for base in bases if base.import_ is None and base.type in _SUBCLASS_VALUE_BASES), None)
 
 
 class Enum(DataModel):
@@ -226,7 +246,7 @@ class Enum(DataModel):
         It is the base ``--use-subclass-enum`` writes (``str`` of ``class E(str, Enum)``), or the value type of a
         ``StrEnum`` or an ``IntEnum``.
         """
-        return next((value for base in self.base_classes if (value := _base_value_type(base)) is not None), None)
+        return enum_value_base(type(self), self.base_classes)
 
     def get_member(self, field: DataModelFieldBase) -> Member:
         """Create a Member instance for the given field."""
