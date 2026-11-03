@@ -18,15 +18,15 @@ from typing_extensions import Protocol
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._module_paths import is_below, package_path
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
 from datamodel_code_generator.model.base import (
     DataModel,
     get_resolve_reference_action_capabilities,
     remember_nested_factory_order_before_nullability,
 )
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._init_exports import exported_names
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE
+from datamodel_code_generator.parser._passes._import_edges import _failing_import_cycles, module_dependency_graph
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
@@ -35,7 +35,6 @@ from datamodel_code_generator.parser._passes._shared import (
     RecursionFactsHost,
     RootModelTypeHost,
     TargetPythonVersionHost,
-    _parsed_rule_data_types,
     _sort_models_by_class_body_references,
     compared_models,
     merge_duplicate,
@@ -49,7 +48,7 @@ from datamodel_code_generator.parser._tag_plan import TagPlanHost, declared_unio
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
@@ -688,115 +687,6 @@ def rename_and_relocate_scc_models(
     return module_class_mappings
 
 
-def _failing_cycles(
-    nodes: set[tuple[tuple[str, ...], int]],
-    imports: dict[tuple[tuple[str, ...], int], set[tuple[tuple[str, ...], int]]],
-    packages: dict[tuple[tuple[str, ...], int], set[tuple[tuple[str, ...], int]]],
-    entered: frozenset[tuple[tuple[str, ...], int]] = frozenset(),
-) -> Iterator[set[tuple[tuple[str, ...], int]]]:
-    """Yield the import cycles among ``nodes`` that fail when one of their modules is imported first.
-
-    A cycle of a package and modules below it runs the package first, whichever of them is imported first, so it
-    imports unless a module of it imports from the package: the cycles left without running the packages of
-    ``entered`` are checked again. Any other cycle finds one of its modules half built.
-    """
-    graph = GroupGraph({node: (imports[node] | (packages[node] - entered)) & nodes for node in nodes})
-    for component in graph.components():
-        if len(component) == 1:
-            continue
-        top = min(component, key=lambda node: len(node[0]))
-        if top[1] < 0 and top not in entered and all(node == top or is_below(node[0], top[0]) for node in component):
-            yield from _failing_cycles(component, imports, packages, entered | {top})
-        else:
-            yield component
-
-
-def _exported_imports(
-    exporters: Iterable[tuple[tuple[str, ...], int]], scope: AllExportsScope
-) -> defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]]:
-    """Return the exporters that the ``__init__`` module of each package imports to re-export their names.
-
-    A package re-exports the modules directly below it, or all modules below it with the recursive scope.
-    """
-    imported: defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]] = defaultdict(set)
-    for node in exporters:
-        path = node[0]
-        first = max(len(path) - 1, 0) if scope == AllExportsScope.Children else 0
-        for size in range(first, len(path)):
-            imported[path[:size]].add(node)
-    return imported
-
-
-def _failing_import_cycles(
-    merges: list[set[tuple[str, ...]]],
-    module_graph: GroupGraph[tuple[str, ...]],
-    exporting: set[tuple[str, ...]],
-    all_exports_scope: AllExportsScope | None,
-    *,
-    dotted: bool,
-) -> list[set[tuple[tuple[str, ...], int]]]:
-    """Return the import cycles through an ``_internal`` module that fail once each merge moves into its own.
-
-    A node is a module path with ``-1``, or the path of the ``_internal`` module of a merge with the index of the
-    merge. A merged module imports its ``_internal`` module, which imports what the merged modules import; a module
-    that uses a merged model imports the ``_internal`` module. Importing a module runs the ``__init__`` module of each
-    package above it first. With ``all_exports_scope``, the ``__init__`` module of a package that is no merged module
-    imports the modules below it that ``exporting`` names, and the ``_internal`` modules, to re-export their names;
-    ``dotted`` places a module in the packages that the dots of its name make.
-    """
-    place = package_path if dotted else lambda module: module
-    internal_nodes = [(place(compute_internal_module_path(merge, set())), index) for index, merge in enumerate(merges)]
-    forwarded = {module: internal_nodes[index] for index, merge in enumerate(merges) for module in merge}
-
-    def node_of(module: tuple[str, ...]) -> tuple[tuple[str, ...], int]:
-        return forwarded.get(module, (place(module), -1))
-
-    imports = {
-        (place(module), -1): {forwarded[module]} if module in forwarded else set(map(node_of, targets))
-        for module, targets in module_graph.edges.items()
-    }
-    for node, merge in zip(internal_nodes, merges, strict=True):
-        imports[node] = set(map(node_of, {target for module in merge for target in module_graph.edges[module]} - merge))
-    exports: dict[tuple[tuple[str, ...], int], set[tuple[tuple[str, ...], int]]] = {}
-    if all_exports_scope is not None:
-        exporters = [(place(module), -1) for module in exporting if module not in forwarded]
-        merged_paths = set(map(place, forwarded))
-        exports = {
-            (package, -1): targets
-            for package, targets in _exported_imports([*exporters, *internal_nodes], all_exports_scope).items()
-            if package not in merged_paths
-        }
-    edges = {node: imports.get(node, set()) | exports.get(node, set()) for node in imports.keys() | exports.keys()}
-    packages = {
-        (path, index): {(path[:size], -1) for size in range(len(path)) if (path[:size], -1) in edges} - targets
-        for (path, index), targets in edges.items()
-    }
-    module_at = {place(module): module for module in module_graph.edges}
-    exported = set().union(*exports.values())
-
-    def moves(node: tuple[tuple[str, ...], int], cycle: set[tuple[tuple[str, ...], int]]) -> bool:
-        """Return whether the module of ``node`` joins a merge.
-
-        A package without a module of ``module_graph`` has an empty ``__init__`` module that stays. A module that a
-        package imports to re-export it, and a package that does so, join only if the cycle holds an import of
-        theirs: the package runs first and imports the module, whichever of them is imported first.
-        """
-        path, index = node
-        if index >= 0:
-            return True
-        if path not in module_at:
-            return False
-        if node not in exports and node not in exported:
-            return True
-        return bool(imports[node] & cycle) or any(node in imports.get(held, ()) for held in cycle)
-
-    return [
-        {(module_at[path] if index < 0 else path, index) for path, index in cycle if moves((path, index), cycle)}
-        for cycle in _failing_cycles(set(edges), edges, packages)
-        if any(index >= 0 for _, index in cycle)
-    ]
-
-
 def _joined_merges(
     merges: list[set[tuple[str, ...]]], cycles: list[set[tuple[tuple[str, ...], int]]]
 ) -> list[set[tuple[str, ...]]]:
@@ -843,37 +733,19 @@ def _module_merges(
     there without the merges stay as they are.
     With ``all_exports_scope``, the ``__init__`` module of a package that is no merged module imports the modules
     below it that have a name to export, so the import cycles through it fail too.
-    The models that the schema validator rules of a model name count as its field types do: its module imports them
-    for the class body that evaluates the rules, an alias written as a class for its rules included.
-    A stand-in is no member of its module: its module imports nothing for it, and nothing imports it.
+    The modules import each other as ``module_dependency_graph`` reads them. A stand-in is no member of its module: its
+    module imports nothing for it, and nothing imports it.
     """
     if parser._base_stand_in_imports:  # noqa: SLF001
         module_models_list = [(module, without_stand_ins(parser, models)) for module, models in module_models_list]
-    snapshot = GraphSnapshot.MODULE_DEPENDENCIES
-    keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
-    module_of: dict[ModelKey, tuple[str, ...]] = {}
-    for module, models in module_models_list:
-        for model in models:
-            module_of[model_key_of(model.reference)] = module
-    index = parser.generation_store.index
-    rule_references = {
-        key: keyed.keys_of(
-            reference for data_type in _parsed_rule_data_types(model) if (reference := data_type.reference) is not None
-        )
-        for key, model in keyed.models.items()
-    }
-    graph = index.reference_graph(snapshot, keyed, edges={EdgeKind.RULE_TYPE: rule_references})
-    module_graph = graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))
+    module_graph = module_dependency_graph(parser.generation_store.index, module_models_list)
     merges = module_graph.circular_components()
-    exporting = {
-        module
-        for module, models in module_models_list
-        if any(model.reference and not model.reference.short_name.startswith("_") for model in models)
-    }
+    exporting = {module for module, models in module_models_list if next(exported_names(models), None) is not None}
     released = merges
     while merges and (
         failing := _failing_import_cycles(
             merges,
+            [compute_internal_module_path(merge, set()) for merge in merges],
             module_graph,
             exporting,
             all_exports_scope,

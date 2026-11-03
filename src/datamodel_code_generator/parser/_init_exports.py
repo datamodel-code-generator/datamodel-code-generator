@@ -1,11 +1,13 @@
 """How the parser writes the exports of a package's ``__init__.py`` (``--all-exports-scope``).
 
 ``init_export_imports`` returns the imports by which an ``__init__.py`` exports the models of the modules below it:
-``collect_exports_for_init`` collects them by scope, ``resolve_export_collisions`` resolves the names that collide by
-``--all-exports-collision-strategy`` (``raise_collision_error`` reports them), and ``build_all_exports_code`` builds
-the imports. They take the parser through ``InitExportsHost``, which ``Parser`` satisfies structurally. ``Parser``
-keeps each method as the hook that calls its function here, and keeps ``_make_prefixed_name``, the staticmethod that
-builds a prefixed name.
+the names of a module's models it exports (``exported_names``) of each module below the package that its scope reaches
+(``exports_reach``), which ``collect_exports_for_init`` collects, ``resolve_export_collisions`` resolves the names that
+collide by ``--all-exports-collision-strategy`` (``raise_collision_error`` reports them), and ``build_all_exports_code``
+builds the imports; the import cycles that merge modules read the same exports (``parser/_passes/structure.py``). The
+functions take the parser through ``InitExportsHost``, which ``Parser`` satisfies structurally. ``Parser`` keeps each
+method as the hook that calls its function here, and keeps ``_make_prefixed_name``, the staticmethod that builds a
+prefixed name.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ __all__ = [
     "build_all_exports_code",
     "collect_exports_for_init",
     "exported_names",
+    "exports_reach",
     "init_export_imports",
     "raise_collision_error",
     "resolve_export_collisions",
@@ -111,6 +114,15 @@ def exported_names(models: Iterable[DataModel]) -> Iterator[str]:
     return (ref.short_name for model in models if (ref := model.reference) and not ref.short_name.startswith("_"))
 
 
+def exports_reach(depth: int, scope: AllExportsScope) -> bool:
+    """Return whether the exports of a package's ``__init__.py`` reach a module ``depth`` levels below the package.
+
+    The scope ``children`` reaches the modules directly below the package (``depth`` 1), ``recursive`` every module
+    below it.
+    """
+    return depth == 1 or (depth > 1 and scope != AllExportsScope.Children)
+
+
 def collect_exports_for_init(
     cls: type[InitExportsHost],  # noqa: ARG001
     module: tuple[str, ...],
@@ -128,7 +140,7 @@ def collect_exports_for_init(
         if not proc_models or normalized_proc_module == normalized_module:
             continue
         prefix = module_parts(normalized_proc_module)
-        if not is_below(prefix, base) or (scope == AllExportsScope.Children and len(prefix) - base_len != 1):
+        if not (is_below(prefix, base) and exports_reach(len(prefix) - base_len, scope)):
             continue
         rel = prefix[base_len:]
         exports.extend((name, rel, ".".join(rel)) for name in exported_names(proc_models))

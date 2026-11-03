@@ -22,11 +22,9 @@ from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, i
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
-    absolute,
     dotted_module,
     dotted_name,
     expanded_path,
-    is_package_init,
     is_within,
     is_within_name,
     module_parts,
@@ -63,6 +61,11 @@ from datamodel_code_generator.parser._passes._import_binding import (
     reference_import_target,
     register_reference_import,
     shared_import_bindings,
+)
+from datamodel_code_generator.parser._passes._import_edges import (
+    _written_package,
+    module_import_edges,
+    relative_import_targets,
 )
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
@@ -1212,16 +1215,6 @@ def resolve_module_import_conflicts(parser: ImportsHost[Any], state: _FinalizeSt
             parser.data_model_type.resolve_module_import_conflicts(ctx.models, state.model_imports, ctx.imports)
 
 
-def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
-    """Return the package whose ``__init__.py`` the module writes, by its written path, or None for another module.
-
-    The module writes it whatever the input that holds it was named: ``ctx.is_init`` is the module's place in the
-    import paths, which the root package and the models of an input ``__init__.json`` do not take.
-    """
-    path = written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
-    return path[:-1] if is_package_init(path[-1]) else None
-
-
 def _rebind_import(  # noqa: PLR0913
     parser: ImportsHost[Any],
     ctx: ModuleContextView,
@@ -1583,34 +1576,21 @@ def submodules_hidden_by_packages(
     return result
 
 
-def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -> Iterator[tuple[str, str, list[str]]]:
-    """Yield each relative import block of the module ``importer`` in order, with the module it names.
-
-    A block is its module text (``..pkg``), the dotted name of the module that text names (``absolute``) and the names
-    it imports, sorted; a name reaches the submodule of that name where the module has one. ``is_init`` makes
-    ``importer`` a package ``__init__``.
-    """
-    for from_ in sorted(name for name in imports if name and name.startswith(".")):
-        names = sorted(_stored_import(name)[0] for name in imports[from_])
-        yield from_, absolute(importer, from_, current_is_init=is_init), names
-
-
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
-    """Return the dotted names of the modules that the written modules import or import from.
+    """Return the dotted names of the modules that the written modules import or import from (``module_import_edges``).
 
     Under ``--all-exports-scope`` each written module with models counts too: an ``__init__.py`` imports the modules
     it exports from.
     """
     treat_dot_as_module = parser.treat_dot_as_module
-    loaded: set[str] = set()
-    for ctx in state.contexts:
-        importer = dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
-        if ctx.models and state.config.all_exports_scope is not None:
-            loaded.add(importer)
-        is_init = _written_package(ctx, treat_dot_as_module=treat_dot_as_module) is not None
-        for _, target, names in relative_import_targets(importer, ctx.imports, is_init=is_init):
-            loaded.add(target)
-            loaded.update(dotted_name(target, name) for name in names)
+    edges = module_import_edges(state.contexts, treat_dot_as_module=treat_dot_as_module)
+    loaded = {target for targets in edges.values() for target in targets}
+    if state.config.all_exports_scope is not None:
+        loaded.update(
+            dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+            for ctx in state.contexts
+            if ctx.models
+        )
     return loaded
 
 
