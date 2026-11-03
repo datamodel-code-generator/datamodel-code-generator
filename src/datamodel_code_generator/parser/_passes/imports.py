@@ -27,6 +27,7 @@ from datamodel_code_generator._module_paths import (
     dotted_name,
     expanded_path,
     is_package_init,
+    is_within_name,
     module_parts,
     normalized_path,
     written_path,
@@ -1518,6 +1519,91 @@ def submodules_hidden_by_packages(
     return result
 
 
+def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
+    """Return the dotted names of the modules that the written modules import or import from.
+
+    Under ``--all-exports-scope`` each written module with models counts too: an ``__init__.py`` imports the modules
+    it exports from.
+    """
+    treat_dot_as_module = parser.treat_dot_as_module
+    loaded: set[str] = set()
+    for ctx in state.contexts:
+        importer = dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        if ctx.models and state.config.all_exports_scope is not None:
+            loaded.add(importer)
+        is_init = _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+        for from_, names in ctx.imports.items():
+            if from_ and from_.startswith("."):
+                target = absolute(importer, from_, current_is_init=is_init)
+                loaded.add(target)
+                loaded.update(dotted_name(target, _stored_import(name)[0]) for name in names)
+    return loaded
+
+
+def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Import under an alias what a package's ``__init__.py`` imports by the name of a submodule the output loads.
+
+    Loading ``pkg/Any.py`` binds ``Any`` in ``pkg/__init__.py``, over what its ``from typing import Any`` bound, so
+    the classes of the ``__init__.py`` that name ``Any`` once it is loaded name the module, and before that
+    ``from . import Any`` gives the import, not the module. Where a written module imports the submodule or from it
+    (``_loaded_modules``), the submodule keeps the name and the import takes the alias form of field-name bindings
+    (``Any_aliased``), which every bare ``Any`` the models write follows, as the builtins a submodule hides do
+    (``_alias_builtins_hidden_by_submodules``). An import of another module of the output is a model's, which
+    ``_alias_imports_hidden_by_submodules`` names, a ``__future__`` import binds no name the code reads, and a module
+    import (``import x``) is named as the module of an attribute, which a bare load does not follow.
+    """
+    treat_dot_as_module = parser.treat_dot_as_module
+    submodule_names = _package_submodule_names(
+        state.contexts, state.forwarder_modules, treat_dot_as_module=treat_dot_as_module
+    )
+    loaded: set[str] | None = None
+    for ctx in state.contexts:
+        if not (
+            ctx.models
+            and _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+            and (
+                names := submodule_names.get(
+                    package := written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]
+                )
+            )
+            and (
+                imported := {
+                    binding: key
+                    for key, binding in _import_bindings(ctx.imports)
+                    if binding in names and key[0] and key[0] != "__future__" and not key[0].startswith(".")
+                }
+            )
+        ):
+            continue
+        loaded = _loaded_modules(parser, state) if loaded is None else loaded
+        package_name = ".".join(package)
+        if not (
+            hidden := sorted(
+                binding
+                for binding in imported
+                if any(is_within_name(module, dotted_name(package_name, binding)) for module in loaded)
+            )
+        ):
+            continue
+        reserved = {
+            *names,
+            *(model.class_name for model in ctx.models),
+            *(field.name for model in ctx.models for field in model.fields if field.name is not None),
+            *_iter_import_bindings(ctx.imports),
+            *_iter_import_bindings(parser.imports),
+        }
+        bindings = {binding: _reserve_import_alias(binding, reserved) for binding in hidden}
+        for binding, alias in bindings.items():
+            from_, name = imported[binding]
+            parser._import_ledger.apply_alias(  # noqa: SLF001
+                ctx.imports,
+                Import(from_=from_, import_=_stored_import(name)[0], alias=alias),
+                ImportProducer(_HIDDEN_SUBMODULES),
+            )
+        for model in ctx.models:
+            parser._graph_builder.bind_builtin_names(model, {**(model._builtin_name_bindings or {}), **bindings})  # noqa: SLF001
+
+
 def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
     """Import the models of a submodule from the submodule where its package hides it from the module.
 
@@ -1532,6 +1618,7 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     like a shared import (``ReferenceImportTarget.reserve_name``). The use keeps an expression, the class name where the
     import binds it, as the field render plans froze it written.
     """
+    _alias_imports_hidden_by_loaded_submodules(parser, state)
     if not (hidden := submodules_hidden_by_packages(parser, state.contexts, state, state.config)):
         return
     ledger, module_names = parser._import_ledger, state.model_path_to_module_name  # noqa: SLF001

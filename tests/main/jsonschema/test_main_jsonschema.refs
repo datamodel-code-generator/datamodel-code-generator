@@ -7565,6 +7565,26 @@ future-of-module-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden
 future-of-module-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-of-module-msgspec.Struct]/
 future-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
 future-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel]/
+import-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass]/
+import-dataclasses.dataclass-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass-all-exports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-dataclasses.dataclass-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass-all-exports]/
+import-dataclasses.dataclass-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-dataclasses.dataclass-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass-exact-imports]/
+import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct]/
+import-msgspec.Struct-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct-all-exports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-msgspec.Struct-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct-all-exports]/
+import-msgspec.Struct-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-msgspec.Struct-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-msgspec.Struct-exact-imports]/
+import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel]/
+import-pydantic_v2.BaseModel-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-all-exports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-pydantic_v2.BaseModel-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-all-exports]/
+import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-dataclasses.dataclass].payloads.txt
+import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-exact-imports]/
+import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded].payloads.txt
+import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]

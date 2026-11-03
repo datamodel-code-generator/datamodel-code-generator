@@ -4260,6 +4260,33 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
             [("pkg.api", "Order", _ITEM_PAYLOADS)],
             id="empty-package",
         ),
+        *(
+            pytest.param(
+                "module_named_like_package_import.json",
+                output_model_type,
+                "3.10",
+                extra_args,
+                [
+                    ("pkg.api", "Order", ['{"thing": {"n": 1}}', '{"thing": {"n": "x"}}']),
+                    ("pkg", "Report", ['{"extra": [1], "thing": {"n": 2}}']),
+                ],
+                id=f"import-{output_model_type}{suffix}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+            for extra_args, suffix in (
+                ([], ""),
+                (["--use-exact-imports"], "-exact-imports"),
+                (["--all-exports-scope", "children"], "-all-exports"),
+            )
+        ),
+        pytest.param(
+            "module_named_like_package_import_unloaded.json",
+            "msgspec.Struct",
+            "3.10",
+            [],
+            [("pkg", "Report", ['{"extra": [1]}'])],
+            id="import-unloaded",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4283,8 +4310,11 @@ def test_main_jsonschema_submodule_hidden_by_package(
     failed. The enum members that ``--set-default-enum-member`` writes into defaults follow the new import
     (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared one takes
     another name (``Counter_1`` beside ``collections.Counter``), and an ``__init__.py`` that loads ``pkg.Warn`` only for
-    the class of an enum member literal keeps its class bound too. The models are decoded after the first module named
-    is imported, in one import of the package.
+    the class of an enum member literal keeps its class bound too. Where ``pkg/__init__.py`` imports ``typing.Any``
+    and the output loads ``pkg/Any.py`` (#6066), ``from . import Any`` gave ``typing.Any``, and once the submodule
+    was loaded its name replaced the import that the classes of the ``__init__.py`` name: the import is now
+    ``Any_aliased``, unless no module loads ``pkg/Any.py``. The models are decoded after the first module named is
+    imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
