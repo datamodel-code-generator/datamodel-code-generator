@@ -333,6 +333,9 @@
       "collapse_root_models": true
     }
   },
+  "empty-body": {
+    "input": "empty-body.yaml"
+  },
   "argument-errors": {
     "input": "argument-errors.yaml",
     "model": {

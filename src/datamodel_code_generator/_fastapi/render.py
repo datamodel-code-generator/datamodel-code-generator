@@ -1023,7 +1023,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         return Parameter(argument.name, subscript_text(annotated, (kind, f"{depends}({plan}.BODY)")))
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for a body, with None for an optional one."""
+        """Return the type the handler receives for a body, with None for an optional one.
+
+        A body that declares no media carries none, as the client takes none for it: its type is None, required or not.
+        """
+        if not body.media:
+            return "None"
         kinds = module.union(*(self.media_type(module, media) for media in body.media))
         if body.required or any(admits_none(_payload(media)) for media in body.media):
             return kinds

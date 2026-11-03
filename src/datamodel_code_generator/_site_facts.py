@@ -89,9 +89,9 @@ class SiteFacts:
     types: frozenset[str] | None
     """The JSON types `type` names, as a string or each item of a list; None for any other value or none."""
     enum: frozenset[str] | None
-    """The JSON types of the members of a list `enum` (a value of no literal kind as an object); None without one."""
+    """The JSON types of the members of a list `enum`, as the models type them; None without one."""
     const: str | None
-    """The JSON type of `const` (a value of no literal kind as an object); None without one."""
+    """The JSON type of `const`, as the models type it; None without one."""
     format: str | None
     """`format` when it is a string."""
     all_of: tuple[Branch, ...]
@@ -184,8 +184,8 @@ def site_facts_of(
         follow(location.document, ref) if isinstance(ref := value.get("$ref"), str) else None,
         follow(location.document, ref) if isinstance(ref := value.get("$dynamicRef"), str) else None,
         frozenset(declared_types(types, items="text")) if isinstance(types, str | list) else None,
-        frozenset(json_type(item, "object") for item in enum) if isinstance(enum, list) else None,
-        json_type(value["const"], "object") if "const" in value else None,
+        frozenset(json_type(item) for item in enum) if isinstance(enum, list) else None,
+        json_type(value["const"]) if "const" in value else None,
         format_ if isinstance(format_, str) else None,
         tuple(
             ("reference" if "$ref" in branch else "schema") if isinstance(branch, dict) else "other"

@@ -743,7 +743,8 @@ same rule the generated FastAPI server reads a body and sends a response by, so 
 request: an `x-python-type` annotation admits `null` when it writes `None`, `object`, `Any` under any alias, or a
 `Literal` with `None`. The media a call names decides, or the default media without one; an operation with several
 media and no default leaves `None` out when none of them takes `null`, and otherwise needs `media_type`. A text, form,
-or binary body has no `null`, so its `None` is left out.
+or binary body has no `null`, so its `None` is left out. A required body has nothing to leave out: `None` for one is
+refused with a `DecodeError` whose reason is `unencodable`, unless the media it selects takes `null`.
 
 ### Responses
 

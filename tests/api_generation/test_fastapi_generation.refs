@@ -27,6 +27,8 @@ docstrings	main/generation_platform/fastapi/docstrings.txt
 docstrings	main/generation_platform/fastapi/packages/docstrings/
 empty	main/generation_platform/fastapi/empty.txt
 empty	main/generation_platform/fastapi/packages/empty/
+empty-body	main/generation_platform/fastapi/empty-body.txt
+empty-body	main/generation_platform/fastapi/packages/empty-body/
 encoding	main/generation_platform/fastapi/encoding.txt
 encoding	main/generation_platform/fastapi/packages/encoding/
 group-errors	main/generation_platform/fastapi/group-errors.txt

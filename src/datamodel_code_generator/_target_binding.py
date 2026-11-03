@@ -134,7 +134,6 @@ from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
-    SPECIAL_PATH_MARKER,
     SchemaLocation,
     _is_special_path,
     _rw_direction,
@@ -2293,8 +2292,7 @@ class _Reader(_SchemaLocations):
         """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
 
         A branch that leads back to a schema being read says nothing of its values. No other keyword says them, so a
-        schema with properties and no type has none, and a const of no literal kind is an object
-        (`legacy-target-written-kinds`), where the parser types its values.
+        schema with properties and no type has none (`legacy-target-written-kinds`), where the parser types its values.
         """
         declaration, site = self.chain(declaration, siblings=True)
         if declaration in active:
@@ -2493,8 +2491,7 @@ class _Models:
 
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
-        special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
+        return variant[1] if (variant := _rw_variant_of(key)) else "neutral"
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
