@@ -64,6 +64,20 @@ _RawConfigValue: TypeAlias = (
 )
 
 
+def _delimited_items(value: object) -> list[str] | None:
+    """Return the items of a delimited-list option, which the command line writes as one comma-separated string.
+
+    A string is split at its commas and a list of strings, how pyproject.toml writes the option, is its items; any other
+    value has none here, and validation of the field reports it.
+    """
+    match value:
+        case str():
+            return value.split(",")
+        case [*items] if all(isinstance(item, str) for item in items):
+            return cast("list[str]", items)
+    return None
+
+
 def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, Any]]) -> list[str]:
     """Extract additional_imports from extra_template_data entries."""
     additional_imports: list[str] = []
@@ -167,10 +181,10 @@ def _get_config_class() -> type[Config]:
         @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
         @classmethod
         def validate_path(cls, value: Any) -> Path | None:
-            """Validate and resolve path."""
-            if value is None or isinstance(value, Path):
+            """Validate and resolve path; a path the parser already built only expands ``~``."""
+            if value is None:
                 return value  # pragma: no cover
-            return resolved(Path(value))
+            return value.expanduser() if isinstance(value, Path) else resolved(Path(value))
 
         @field_validator("url", mode="before")
         @classmethod
@@ -225,9 +239,8 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_custom_formatters(cls, values: dict[str, Any]) -> dict[str, Any]:
             """Validate and split custom formatters."""
-            custom_formatters = values.get("custom_formatters")
-            if custom_formatters is not None:
-                values["custom_formatters"] = custom_formatters.split(",")
+            if (custom_formatters := _delimited_items(values.get("custom_formatters"))) is not None:
+                values["custom_formatters"] = custom_formatters
             return values
 
         @model_validator(mode="before")
@@ -252,16 +265,12 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_class_decorators(cls, values: dict[str, Any]) -> dict[str, Any]:
             """Validate and split class decorators, adding @ prefix if missing."""
-            class_decorators = values.get("class_decorators")
-            if class_decorators is not None:
-                decorators = []
-                for raw_decorator in class_decorators.split(","):
-                    stripped = raw_decorator.strip()
-                    if stripped:
-                        if not stripped.startswith("@"):
-                            stripped = f"@{stripped}"
-                        decorators.append(stripped)
-                values["class_decorators"] = decorators
+            if (class_decorators := _delimited_items(values.get("class_decorators"))) is not None:
+                values["class_decorators"] = [
+                    stripped if stripped.startswith("@") else f"@{stripped}"
+                    for decorator in class_decorators
+                    if (stripped := decorator.strip())
+                ]
             return values
 
         @model_validator(mode="before")
@@ -302,7 +311,7 @@ def _get_config_class() -> type[Config]:
         def validate_custom_file_header(self: Self) -> Self:
             """Validate custom file header options are mutually exclusive."""
             if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                msg = "`--custom_file_header_path` can not be used with `--custom_file_header`."
+                msg = "`--custom-file-header-path` can not be used with `--custom-file-header`."
                 raise Error(msg)
             return self
 

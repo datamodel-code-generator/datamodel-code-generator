@@ -24,17 +24,16 @@ if TYPE_CHECKING:
 def _resolve_profile_extends(
     profiles: Mapping[str, Any],
     profile_name: str,
-    visited: set[str] | None = None,
+    visited: tuple[str, ...] = (),
     *,
     missing: str | None = None,
 ) -> dict[str, Any]:
-    """Resolve profile inheritance via extends key; ``missing`` names a missing requested profile."""
-    if visited is None:
-        visited = set()
+    """Resolve profile inheritance via extends key; ``visited`` is the chain of profiles that led here, in order.
 
+    ``missing`` names a missing requested profile.
+    """
     if profile_name in visited:
-        chain = " -> ".join(visited) + f" -> {profile_name}"
-        msg = f"Circular extends detected: {chain}"
+        msg = f"Circular extends detected: {' -> '.join((*visited, profile_name))}"
         raise Error(msg)
 
     if profile_name not in profiles:
@@ -43,7 +42,7 @@ def _resolve_profile_extends(
         msg = f"{missing}. Available profiles: {available}"
         raise Error(msg)
 
-    visited.add(profile_name)
+    visited = (*visited, profile_name)
     profile = profiles[profile_name]
     if not isinstance(profile, Mapping):
         msg = f"Profile '{profile_name}' must be a table"
@@ -65,7 +64,7 @@ def _resolve_profile_extends(
         if parent == profile_name:
             msg = f"Profile '{profile_name}' cannot extend itself"
             raise Error(msg)
-        parent_config = _resolve_profile_extends(profiles, parent, visited.copy())
+        parent_config = _resolve_profile_extends(profiles, parent, visited)
         result.update(parent_config)
 
     result.update({k: v for k, v in profile.items() if k != "extends"})

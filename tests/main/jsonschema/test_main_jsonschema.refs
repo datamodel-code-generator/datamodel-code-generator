@@ -7783,6 +7783,8 @@ without_read-schema_with_applicator	main/jsonschema/main_jsonschema/unevaluated_
 [test_main_jsonschema_unique_items_schema_validators]
 	main/jsonschema/unique_items_python_values.snapshot
 	main/jsonschema/unique_items_schema_validators.py
+[test_main_jsonschema_unique_items_schema_validators_with_the_builtin_template_directory]
+	main/jsonschema/unique_items_schema_validators.py
 [test_main_jsonschema_use_missing_sentinel]
 	main/jsonschema/missing_sentinel.py
 [test_main_jsonschema_use_missing_sentinel_explicit_pydantic_v2_12]
@@ -14969,6 +14971,8 @@ child-api	main/jsonschema/validator_inheritance_child_first.py
 child-api	payloads/validator_runtime/inheritance.txt
 child-cli	main/jsonschema/validator_inheritance_child_first.py
 child-cli	payloads/validator_runtime/inheritance.txt
+[test_version_text_is_the_same_with_other_arguments]
+	main/jsonschema/main_jsonschema/version_text_is_the_same_with_other_arguments.txt
 [test_x_python_type_backend_import_collision]
 	main/jsonschema/x_python_type_backend_import_collision.py
 [test_x_python_type_binding_collisions]

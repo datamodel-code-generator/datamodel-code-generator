@@ -966,6 +966,25 @@ def test_generate_pyproject_config_float_round_trip(tmp_path: Path, output_file:
     assert_output(config_output_file.read_text(encoding="utf-8"), expected_output_path)
 
 
+def test_pyproject_delimited_list_options_accept_toml_lists(tmp_path: Path, output_file: Path) -> None:
+    """Read the options the command line writes as a comma-separated string from pyproject.toml as TOML lists too."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        'additional-imports = ["typing.final", "functools.lru_cache"]\n'
+        'class-decorators = ["lru_cache(maxsize=1, typed=True)", " final "]\n'
+        'custom-formatters = ["tests.data.python.custom_formatters.add_comment"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp"],
+            skip_code_validation=True,
+        )
+
+
 def test_generate_pyproject_config_with_multiple_options(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-pyproject-config with various option types."""
     run_main_with_args(
@@ -1000,6 +1019,26 @@ def test_generate_pyproject_config_excludes_meta_options(capsys: pytest.CaptureF
         capsys=capsys,
         expected_stdout_path=EXPECTED_GENERATE_PYPROJECT_CONFIG_PATH / "excludes_meta_options.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "command_args",
+    [
+        pytest.param(
+            ["--generate-pyproject-config", "--input", "m.json", "--fail-on-multi-module-stdout"], id="config"
+        ),
+        pytest.param(["--generate-cli-command"], id="command"),
+    ],
+)
+def test_generated_config_leaves_out_the_option_only_the_command_line_reads(
+    command_args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Leave out of generated configuration and commands the stdout option that pyproject.toml does not read."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\ninput = "m.json"\nfail-on-multi-module-stdout = true\n', encoding="utf-8"
+    )
+    with chdir(tmp_path):
+        run_main_with_args(command_args, capsys=capsys, derived_stdout=True)
 
 
 def test_generate_pyproject_config_with_enum_option(capsys: pytest.CaptureFixture[str]) -> None:
@@ -1106,6 +1145,22 @@ strict-types = ["str", "int"]
             capsys=capsys,
             expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "list_options.txt",
         )
+
+
+def test_generate_cli_command_writes_an_empty_list_as_the_option_off(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Write an empty list as the --no- option of the parser, and leave out one that has no --no- option."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+deserialize-default-values = []
+strict-types = []
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml)
+
+    with chdir(tmp_path):
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_multiple_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -1615,6 +1670,30 @@ def test_pyproject_jobs_json_is_one_ordered_payload(tmp_path: Path, capsys: pyte
     relative_outputs = [Path(job["result"]["output"]).relative_to(tmp_path).as_posix() for job in payload["jobs"]]
     assert_output("\n".join(relative_outputs) + "\n", EXPECTED_MAIN_KR_PATH / "jobs" / "ordered_outputs.txt")
     assert_output(_batch_json_summary(output), EXPECTED_MAIN_KR_PATH / "jobs" / "json_generation.txt")
+
+
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"], ids=["u2028", "u2029", "u0085"])
+def test_pyproject_jobs_json_keeps_unicode_line_separators_inside_strings(
+    separator: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Indent the JSON of a job without breaking a string that holds U+2028, U+2029 or U+0085 of the generated file."""
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "properties": {"name": {"type": "string", "description": f"a{separator}b"}},
+    }
+    (tmp_path / "schema.json").write_text(json.dumps(schema, ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen.jobs.pets]\n"
+        'input = "schema.json"\ninput-file-type = "jsonschema"\noutput = "out/pets.py"\n'
+        'disable-timestamp = true\nuse-field-description = true\nformatters = ["builtin"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", "--output-format", "json"])
+
+    content = json.loads(capsys.readouterr().out)["jobs"][0]["result"]["files"][0]["content"]
+    assert_output(content.replace(separator, f"\\u{ord(separator):04x}"))
 
 
 def test_pyproject_jobs_json_reports_check_results(
@@ -4757,12 +4836,15 @@ def test_generate_prompt_with_options(capsys: pytest.CaptureFixture[str]) -> Non
 
 
 def test_generate_prompt_with_list_options(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test --generate-prompt with list options (e.g., --strict-types)."""
+    """Test --generate-prompt with list options (e.g., --strict-types), a list turned off, and a JSON mapping."""
     run_main_with_args(
         [
             "--strict-types",
             "str",
             "int",
+            "--no-deserialize-default-values",
+            "--model-name-map",
+            '{"A": "B"}',
             "--generate-prompt",
         ],
         expected_exit=Exit.OK,
@@ -5479,7 +5561,7 @@ extends = "_middle"
 
 
 def test_profile_extends_circular_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test error when circular extends is detected."""
+    """Test error when circular extends is detected: the chain is named in the order the profiles extend."""
     pyproject_toml = """
 [tool.datamodel-codegen]
 
@@ -5487,6 +5569,9 @@ def test_profile_extends_circular_error(tmp_path: Path, capsys: pytest.CaptureFi
 extends = "b"
 
 [tool.datamodel-codegen.profiles.b]
+extends = "c"
+
+[tool.datamodel-codegen.profiles.c]
 extends = "a"
 """
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
@@ -5500,7 +5585,7 @@ extends = "a"
             ["--input", str(input_file), "--output", str(output_file), "--profile", "a"],
             expected_exit=Exit.ERROR,
         )
-        assert_error_message(capsys, "Circular extends detected")
+        assert_error_message(capsys, "Circular extends detected: a -> b -> c -> a")
 
 
 def test_profile_extends_not_found_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 
 AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
-Tilde = Literal["expand", "legacy-metadata-tilde-as-written"]
 Missing = Literal["none", "legacy-missing-input-raises"]
 FileOrder = Literal["path", "name"]
 
@@ -84,15 +83,9 @@ def concrete_parent(path: Path) -> Path:
     return path.expanduser().parent.resolve(strict=False)
 
 
-def concrete(path: Path, *, tilde: Tilde = "expand") -> Path:
-    """Return where ``path`` is published: its concrete parent joined with its last component as written.
-
-    Rows of ``tilde``: ``expand`` reads a leading ``~`` as the home directory; ``legacy-metadata-tilde-as-written``
-    (the files a directory input leaves out, fix C17-1) keeps it as a directory named ``~``, so the model metadata of a
-    staged command spelled ``~/...`` is looked for where a direct run writes it, not where the staged run publishes it.
-    """
-    parent = concrete_parent(path) if tilde == "expand" else path.parent.resolve(strict=False)
-    return parent / path.name
+def concrete(path: Path) -> Path:
+    """Return where ``path`` is published: its concrete parent joined with its last component as written."""
+    return concrete_parent(path) / path.name
 
 
 def overlaps(first: Path, second: Path) -> bool:

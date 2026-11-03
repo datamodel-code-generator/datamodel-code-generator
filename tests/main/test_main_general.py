@@ -58,6 +58,7 @@ from datamodel_code_generator.arguments import _dataclass_arguments, arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import DEPRECATIONS, Deprecation
 from datamodel_code_generator.format import CodeFormatter, Formatter, PythonVersion
+from datamodel_code_generator.json_config import JsonConfigError, load_json_config_field
 from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
@@ -7336,6 +7337,20 @@ def test_aliases_unparsable_json(
         expected_stderr_contains=message,
         file_should_not_exist=output_file,
     )
+
+
+def test_json_config_depth_limit_applies_to_a_file_object() -> None:
+    """Refuse a file object that nests deeper than the field allows, as the same text given as a string is.
+
+    Only the Python API can give a file object, so the command line cannot reach it.
+    """
+    text = '{"a":' * 70 + "1" + "}" * 70
+    messages = []
+    for source in (text, StringIO(text)):
+        with pytest.raises(JsonConfigError) as error:
+            load_json_config_field("client_protocols", source)
+        messages.append(str(error.value))
+    assert_output("\n".join(messages) + "\n")
 
 
 def test_default_values_non_dict(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:

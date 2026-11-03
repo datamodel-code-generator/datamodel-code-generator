@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 
 from datamodel_code_generator import cached_path_exists
-from datamodel_code_generator.model.base import TEMPLATE_DIR
+from datamodel_code_generator.model.base import overrides_builtin_templates
 from datamodel_code_generator.model.pydantic_v2.base_model import has_lookaround_pattern
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_ROOT_MODEL
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
@@ -47,7 +47,7 @@ def _root_model_constraints_fallback(
             cached_path_exists(custom_template_dir / RootModelTypeAlias.TEMPLATE_FILE_PATH)
             or cached_path_exists(custom_template_dir / RootModelTypeAlias.TEMPLATE_FILE_PATH.rsplit("/", 1)[-1])
         )
-        and custom_template_dir.resolve() != TEMPLATE_DIR.resolve()
+        and overrides_builtin_templates(custom_template_dir)
     ):
         return None
     return _constrained_root_model

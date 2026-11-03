@@ -38,7 +38,7 @@ class PathField:
 PATH_FIELDS: Final[tuple[PathField, ...]] = (
     PathField("input", cli_resolved=True, caller_relative=False, watched_as="input"),
     PathField("output", cli_resolved=True, caller_relative=True, watched_as="output"),
-    PathField("emit_model_metadata", cli_resolved=False, caller_relative=True, watched_as="file-output"),
+    PathField("emit_model_metadata", cli_resolved=True, caller_relative=True, watched_as="file-output"),
     PathField("server_output", cli_resolved=True, caller_relative=False, watched_as="directory-output"),
     PathField("client_output", cli_resolved=True, caller_relative=False, watched_as="directory-output"),
     PathField("custom_file_header_path", cli_resolved=True, caller_relative=True, watched_as="file"),

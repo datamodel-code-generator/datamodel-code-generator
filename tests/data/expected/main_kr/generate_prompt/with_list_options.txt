@@ -3,6 +3,8 @@
 ## Current CLI Options
 
 ```
+--no-deserialize-default-values
+--model-name-map '{"A":"B"}'
 --strict-types str int
 ```
 

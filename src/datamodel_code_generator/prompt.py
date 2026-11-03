@@ -7,8 +7,9 @@ about appropriate CLI options for datamodel-code-generator.
 from __future__ import annotations
 
 import re
-from argparse import SUPPRESS, Action, ArgumentParser, BooleanOptionalAction
+from argparse import SUPPRESS, Action, ArgumentParser
 from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -22,8 +23,8 @@ from datamodel_code_generator._json_output import (
     schema_document,
 )
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._option_names import option_flag
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest, _no_option
+from datamodel_code_generator._option_names import mapping_argument, option_arguments
+from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest, _negative_option
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
@@ -249,34 +250,16 @@ def _canonical_option(action: Action) -> str:
     return max(action.option_strings, key=lambda option: (len(option), option))
 
 
-def _positive_option(action: Action, fallback: str) -> str:
-    """Return the positive CLI flag for an action."""
-    for option in action.option_strings:
-        if option.startswith("--") and not option.startswith("--no-"):
-            return option
-    return fallback
+def _format_current_option(key: str, value: Any) -> str | None:
+    """Format a current CLI option as a shell-like line of the arguments that set it; none for an option left off.
 
-
-def _negative_option(action: Action, fallback: str) -> str:
-    """Return the negative CLI flag for a BooleanOptionalAction."""
-    return _no_option(action) or fallback
-
-
-def _format_current_option(key: str, value: Any, action: Action | None) -> str | None:
-    """Format a current CLI option as a shell-like line."""
-    fallback = option_flag(key)
-
-    if isinstance(value, bool):
-        match action:
-            case BooleanOptionalAction():
-                return _positive_option(action, fallback) if value else _negative_option(action, fallback)
-            case _:
-                return fallback if value else None
-
-    option = _positive_option(action, fallback) if action else fallback
-    if isinstance(value, list):
-        return f"{option} {' '.join(str(v) for v in value)}"
-    return f"{option} {value}"
+    A mapping is the JSON its option reads.
+    """
+    if (arguments := option_arguments(key, value, negative=_negative_option)) is None:
+        return None
+    return " ".join(
+        mapping_argument(key, argument) if isinstance(argument, Mapping) else str(argument) for argument in arguments
+    )
 
 
 def _current_options(args: Namespace, parser: ArgumentParser | None) -> Iterator[tuple[str, Any, Action | None, str]]:
@@ -286,7 +269,7 @@ def _current_options(args: Namespace, parser: ArgumentParser | None) -> Iterator
         if value is None or key in PROMPT_EXCLUDED_OPTIONS:
             continue
         action = actions.get(key)
-        if line := _format_current_option(key, value, action):
+        if line := _format_current_option(key, value):
             yield key, value, action, line
 
 

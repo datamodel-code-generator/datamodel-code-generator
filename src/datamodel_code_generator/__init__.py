@@ -2002,11 +2002,7 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     for target, is_directory in ((output, output is not None and names_directory(output)), (metadata, False)):
         if target is None:
             continue
-        paths = (
-            (target.resolve(),)
-            if is_directory
-            else (concrete(target, tilde="legacy-metadata-tilde-as-written"), target.resolve())
-        )
+        paths = (target.resolve(),) if is_directory else (concrete(target), target.resolve())
         for resolved in paths:
             if not resolved.is_relative_to(input_root):
                 continue

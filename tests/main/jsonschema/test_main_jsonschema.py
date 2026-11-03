@@ -67,6 +67,7 @@ from datamodel_code_generator import (
     chdir,
     generate,
     generate_dynamic_models,
+    get_version,
     load_data,
     load_data_from_path,
 )
@@ -11016,6 +11017,16 @@ def test_version(capsys: pytest.CaptureFixture) -> None:
     captured = capsys.readouterr()
     assert captured.out != "0.0.0\n"
     assert not captured.err
+
+
+def test_version_text_is_the_same_with_other_arguments(capsys: pytest.CaptureFixture[str]) -> None:
+    """Print the program name and the version for `--version` beside other arguments, as it does alone."""
+    results = []
+    for args in (["--version"], ["--version", "--disable-warnings"]):
+        with pytest.raises(SystemExit) as error:
+            run_main_with_args(args)
+        results.append(f"{error.value.code}: {capsys.readouterr().out.replace(get_version(), 'VERSION')}")
+    assert_output("".join(results))
 
 
 def test_jsonschema_pattern_properties(output_file: Path) -> None:
@@ -25413,6 +25424,45 @@ def test_main_jsonschema_generate_schema_validators(output_file: Path) -> None:
         expected_error_type="value_error",
         expected_attribute_path=("note",),
         expected_attribute_value="ok",
+    )
+
+
+def test_main_jsonschema_unique_items_schema_validators_with_the_builtin_template_directory(
+    output_file: Path,
+) -> None:
+    """Generate the uniqueItems validators when the custom template directory is the builtin one: no override."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_schema_validators.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="unique_items_schema_validators.py",
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-annotated",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--custom-template-dir",
+            str(TEMPLATE_DIR),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_builtin_template_directory",
+        model_name="UniqueItemsPayload",
+        valid_json=(
+            '{"strings":["first","second"],"objects":[{"id":1,"name":"first"}],'
+            '"jsonValues":[true,1],"nested":[["first","second"]]}'
+        ),
+        invalid_json=(
+            '{"strings":["first","first"],"objects":[{"id":1,"name":"first"}],'
+            '"jsonValues":[true,1],"nested":[["first","second"]]}'
+        ),
+        expected_error_type="value_error",
     )
 
 

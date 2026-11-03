@@ -598,6 +598,8 @@ multiple-options	main/cli_option_suggestions/multiple_options.txt
 no-match	main/cli_option_suggestions/unknown_option.txt
 option-terminator	main/cli_option_suggestions/option_terminator.txt
 positional	main/cli_option_suggestions/positional_argument.txt
+[test_json_config_depth_limit_applies_to_a_file_object]
+	main/main_general/json_config_depth_limit_applies_to_a_file_object.txt
 [test_list_deprecations]
 	main/list_deprecations.txt
 [test_list_deprecations_json]

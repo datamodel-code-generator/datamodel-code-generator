@@ -47,12 +47,16 @@ def field_name(key: str) -> str:
 def option_arguments(field: str, value: object, *, negative: Callable[[str], str | None]) -> list[Any] | None:
     """Return the arguments that set a config field to a value, or None when no option can express it.
 
-    True is the field's option and False the --no- option ``negative`` finds for the field (None when the parser has
-    none); a list or tuple is the option followed by its items, any other value the option followed by the value.
-    Items and values are returned as given, so that each writer spells them: ``str``, its quoting, an enum's value.
+    True is the field's option and False, or a list or tuple without items, the --no- option ``negative`` finds for the
+    field (None when the parser has none: the option is then left out); a list or tuple is the option followed by its
+    items, any other value the option followed by the value. Items and values are returned as given, so that each
+    writer spells them: ``str``, its quoting, an enum's value.
     """
-    if isinstance(value, bool):
-        return [option_flag(field)] if value else None if (flag := negative(field)) is None else [flag]
+    match value:
+        case True:
+            return [option_flag(field)]
+        case False | []:
+            return None if (flag := negative(field)) is None else [flag]
     return [option_flag(field), *(value if isinstance(value, list | tuple) else (value,))]
 
 
@@ -98,6 +102,23 @@ def json_ready(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {str(key): json_ready(item) for key, item in value.items()}
     return value
+
+
+def compact_json(value: Mapping[str, Any]) -> str:
+    """Return a mapping option as the compact JSON text its command-line option reads."""
+    return json.dumps(json_ready(value), ensure_ascii=False, separators=(",", ":"))
+
+
+def mapping_argument(field: str, value: Mapping[str, Any]) -> str:
+    """Return the shell words that give a mapping to the option of a config field: its compact JSON, quoted.
+
+    ``--external-ref-mapping`` reads ``FILE_PATH=PYTHON_PACKAGE`` words instead.
+    """
+    import shlex  # noqa: PLC0415
+
+    if field == "external_ref_mapping":
+        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
+    return shlex.quote(compact_json(value))
 
 
 def toml_text(value: TomlValue) -> str:
