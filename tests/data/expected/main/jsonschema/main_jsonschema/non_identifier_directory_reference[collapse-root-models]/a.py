@@ -10,6 +10,8 @@ from ._3d import digit as digit_1
 from .a_b import symbol as symbol_1
 from .my_dir import spaced as spaced_1
 from .данные import unicode as unicode_1
+from .данные_models import hyphenated as hyphenated_1
+from .другие_models import other as other_1
 
 
 class Root(BaseModel):
@@ -19,3 +21,5 @@ class Root(BaseModel):
     version: version_1.Version | None = None
     unicode: unicode_1.Unicode | None = None
     spaced_list: list[spaced_1.Spaced] | None = Field(None, title='SpacedList')
+    hyphenated: hyphenated_1.Hyphenated | None = None
+    other: other_1.Other | None = None

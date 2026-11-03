@@ -358,23 +358,41 @@ def is_literal_python_type_expr(expression: PythonTypeExpr) -> bool:
     return isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) == "Literal"
 
 
-def _iter_names(expression: PythonTypeExpr, *, qualified: bool) -> Iterator[str]:
+_NameForm: TypeAlias = Literal["terminal", "qualified", "head"]
+"""What a walk yields of a dotted name: its last name, all of it (a bare name yields nothing) or its first name."""
+
+
+def _iter_names(expression: PythonTypeExpr, *, form: _NameForm) -> Iterator[str]:
     match expression:
         case PythonTypeName() | PythonTypeBoundName():
-            if not qualified:
+            if form != "qualified":
                 yield expression.value
-        case PythonTypeQualifiedName():
-            yield ".".join(expression.parts) if qualified else expression.parts[-1]
-        case PythonTypeRuntimeSymbol():
-            yield _runtime_symbol_name(expression) if qualified else expression.qualname_parts[-1]
+        case PythonTypeQualifiedName() | PythonTypeRuntimeSymbol():
+            dotted = (
+                ".".join(expression.parts)
+                if isinstance(expression, PythonTypeQualifiedName)
+                else _runtime_symbol_name(expression)
+            )
+            match form:
+                case "qualified":
+                    yield dotted
+                case "head":
+                    yield dotted.partition(".")[0]
+                case _:
+                    yield dotted.rpartition(".")[2]
         case _:
             for child in _children(expression, "all") or ():
-                yield from _iter_names(child, qualified=qualified)
+                yield from _iter_names(child, form=form)
 
 
 def iter_python_type_expr_names(expression: PythonTypeExpr) -> Iterator[str]:
     """Yield semantic leaf names in stable structure order."""
-    return _iter_names(expression, qualified=False)
+    return _iter_names(expression, form="terminal")
+
+
+def iter_python_type_expr_head_names(expression: PythonTypeExpr) -> Iterator[str]:
+    """Yield the name each leaf binds where the expression is written: ``ipaddress`` of ``ipaddress.IPv4Address``."""
+    return _iter_names(expression, form="head")
 
 
 def python_type_expr_base_name(expression: PythonTypeExpr) -> str:
@@ -401,7 +419,7 @@ def python_type_expr_arguments(expression: PythonTypeExpr) -> tuple[PythonTypeEx
 
 def iter_python_type_expr_qualified_names(expression: PythonTypeExpr) -> Iterator[str]:
     """Yield dotted syntactic and runtime names in stable traversal order."""
-    return _iter_names(expression, qualified=True)
+    return _iter_names(expression, form="qualified")
 
 
 def rewrite_python_type_expr(
@@ -469,6 +487,7 @@ __all__ = [
     "is_literal_python_type_expr",
     "is_union_python_type_expr",
     "iter_literal_members",
+    "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
     "parse_python_type_annotation",

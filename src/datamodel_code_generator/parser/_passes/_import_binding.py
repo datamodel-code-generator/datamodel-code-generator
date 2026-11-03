@@ -95,14 +95,17 @@ class ReferenceImportTarget:
             resolver.exclude_names.add(self.import_)
 
 
-def _is_bound_by_shared_import(shared_imports: Imports | None, name: str) -> bool:
-    """Return whether an import every module shares binds ``name``.
+def shared_import_bindings(shared_imports: Imports) -> set[str]:
+    """Return the names that the imports every module shares bind.
 
     A ``__future__`` import binds a name too, but it is no import of a module's or a model's name.
     """
-    return shared_imports is not None and any(
-        binding == name for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__"
-    )
+    return {binding for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__"}
+
+
+def _is_bound_by_shared_import(shared_imports: Imports | None, name: str) -> bool:
+    """Return whether an import every module shares binds ``name``."""
+    return shared_imports is not None and name in shared_import_bindings(shared_imports)
 
 
 def _is_module_named_like_shared_import(shared_imports: Imports | None, module: str, name: str) -> bool:

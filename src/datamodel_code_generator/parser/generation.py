@@ -92,6 +92,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
@@ -105,6 +106,7 @@ else:
     DataModel: TypeAlias = Any
     DataModelFieldBase: TypeAlias = Any
     DataType: TypeAlias = Any
+    Member: TypeAlias = Any
     OwnerModels: TypeAlias = Any
     CacheOwners: TypeAlias = Any
 
@@ -165,6 +167,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_forward_references",
     "mark_target_null",
     "override_type_import",
+    "name_enum_member",
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
@@ -1913,6 +1916,13 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().name_enum_member() instead.", category=None)
+    def name_enum_member(field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
+        """Write the expression the enum member in the default of a field names its enum by, which the field sees."""
+        member.alias = alias
+        bump_field(field_)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().add_model_import() instead.", category=None)
     def add_model_import(model: DataModel, import_: Import) -> None:
         """Add an import to a model once."""
@@ -2467,6 +2477,10 @@ class GraphBuilder:
     def name_reference(self, data_type: DataType, alias: str | None) -> None:
         """Write the expression a reference type names its model by through ``GenerationStore.name_reference``."""
         self._store.name_reference(data_type, alias)  # ty: ignore[deprecated]
+
+    def name_enum_member(self, field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
+        """Write the expression the enum member in a default names its enum by through ``name_enum_member``."""
+        self._store.name_enum_member(field_, member, alias)  # ty: ignore[deprecated]
 
     def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""

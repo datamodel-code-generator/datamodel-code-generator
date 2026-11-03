@@ -5959,6 +5959,10 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 [test_main_jsonschema]
 	main/jsonschema/general.py	= main/jsonschema/autodetect.py
 [test_main_jsonschema_additional_import_named_like_model]
+qualified-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-dataclasses.dataclass].payloads.txt
+qualified-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-dataclasses.dataclass].py
+qualified-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-dataclasses.dataclass].payloads.txt
+qualified-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-pydantic_v2.BaseModel].py
 unused-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[unused-dataclasses.dataclass].payloads.txt
 unused-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[unused-dataclasses.dataclass].py
 unused-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_named_like_model[unused-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/additional_import_named_like_model[unused-dataclasses.dataclass].payloads.txt
@@ -5967,6 +5971,8 @@ written-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_
 written-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[written-dataclasses.dataclass].py
 written-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_named_like_model[written-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/additional_import_named_like_model[written-dataclasses.dataclass].payloads.txt
 written-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_named_like_model[written-pydantic_v2.BaseModel].py
+[test_main_jsonschema_additional_import_named_like_model_beside_import]
+	main/jsonschema/main_jsonschema/additional_import_named_like_model_beside_import.py
 [test_main_jsonschema_additional_import_named_like_module]
 	main/jsonschema/main_jsonschema/additional_import_named_like_module/
 [test_main_jsonschema_additional_items_false_empty_tuple]
@@ -6875,6 +6881,12 @@ class-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule
 class-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[class-msgspec.Struct]/
 class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[class-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
 class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[class-pydantic_v2.BaseModel]/
+enum-default-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-dataclasses.dataclass].payloads.txt
+enum-default-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-dataclasses.dataclass]/
+enum-default-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-msgspec.Struct].payloads.txt
+enum-default-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-msgspec.Struct]/
+enum-default-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-dataclasses.dataclass].payloads.txt
+enum-default-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[enum-default-pydantic_v2.BaseModel]/
 module-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass].payloads.txt
 module-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass]/
 module-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[module-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass].payloads.txt
@@ -6968,6 +6980,13 @@ msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec
 msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec]/
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2]/
+[test_main_jsonschema_module_import_named_like_builtin_enum_default]
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[dataclass].payloads.txt
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[dataclass]/
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[msgspec].payloads.txt
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[msgspec]/
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[dataclass].payloads.txt
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin_enum_default[pydantic-v2]/
 [test_main_jsonschema_module_import_named_like_builtin_package]
 dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass].payloads.txt
 dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass]/
@@ -7321,6 +7340,9 @@ target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].t
 	main/jsonschema/underscore_property.py
 [test_main_jsonschema_rename_preserves_source_alias]
 	main/jsonschema/rename_preserve_source_alias.py
+[test_main_jsonschema_renamed_import_beside_shared_import]
+builtin	main/jsonschema/main_jsonschema/renamed_import_beside_shared_import[builtin]/
+submodule	main/jsonschema/main_jsonschema/renamed_import_beside_shared_import[submodule]/
 [test_main_jsonschema_request_response_refs_of_other_documents]
 dynamic-ref-merged-generic	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[dynamic-ref-merged-generic].py	= main/jsonschema/dynamic_ref_merged_generic.py
 path-absolute-root-id-refs	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[path-absolute-root-id-refs].py

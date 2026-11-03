@@ -6345,7 +6345,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The declared keywords the field takes, without those its type enforces at an object property, the hostname
         pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple (a
-        field whose type is no array, such as a string, takes none); a heterogeneous type list takes none of the
+        field whose type is no array, such as a string, takes none, and neither does one whose schema declares types
+        that admit none, as a ``string`` typed ``datetime.date``); a heterogeneous type list takes none of the
         keywords and item counts, the property counts follow the map type.
         ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
         constraints of a preserved root) replaces the declared ones.
@@ -6389,6 +6390,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if (
                 not skip
                 and (item_counts := self._get_array_items_constraints(obj))
+                and _value_keywords.admits_array(obj)
                 and _value_keywords.can_hold_array(data_type, models=site.counts_beside_models)
             ):
                 constraints = constraints or {}

@@ -3805,6 +3805,41 @@ def test_main_jsonschema_module_import_named_like_builtin(output_model_type: Dat
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2BaseModel, DataModelType.DataclassesDataclass, DataModelType.MsgspecStruct],
+    ids=["pydantic-v2", "dataclass", "msgspec"],
+)
+def test_main_jsonschema_module_import_named_like_builtin_enum_default(
+    output_model_type: DataModelType, output_dir: Path
+) -> None:
+    """Write the enum members of a default by the alias ``list_1`` that the module import ``list`` takes.
+
+    ``pop`` and ``pops`` of ``holder.Holder`` default to members of the enum ``app.list.Pop``
+    (``--set-default-enum-member``), which the module names through ``from .app import list as list_1`` once the
+    builtin ``list`` holds its own name.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_enum_default.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--set-default-enum-member",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "holder") as module:
+        holder = module.Holder()
+    assert_output(f"tags {holder.tags}, pop {holder.pop}, pops {holder.pops}\n", name="payloads")
+
+
 def test_main_jsonschema_module_import_named_like_builtin_type_alias(output_dir: Path) -> None:
     """Alias the module import ``list`` of ``holder`` that a type statement writes ``list[...]`` beside.
 
@@ -4012,6 +4047,12 @@ def test_main_jsonschema_builtin_type_override_beside_module(
             ['{"a": {"n": 1}, "b": {"s": "x"}}', '{"a": {"n": "one"}}'],
             id="module",
         ),
+        pytest.param(
+            "imported_enum_named_like_submodule.json",
+            ["--use-exact-imports", "--set-default-enum-member"],
+            ['{"detail": {"message": "m"}}', '{"status": "bad", "history": []}', '{"status": "worse"}'],
+            id="enum-default",
+        ),
     ],
 )
 def test_main_jsonschema_import_named_like_submodule(
@@ -4022,6 +4063,7 @@ def test_main_jsonschema_import_named_like_submodule(
     ``pkg/__init__.py`` imports the class ``Warning`` of ``other`` (``--use-exact-imports``) or the module ``x`` of
     ``other``, and the submodules ``pkg.Warning`` and ``pkg.x`` bind the same names in ``pkg`` once anything imports
     them, so the fields named the submodules, or the builtin ``Warning`` that the bare name was taken for (#6003).
+    The enum members that a default takes from the imported enum (``--set-default-enum-member``) follow the new name.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -4109,6 +4151,12 @@ def test_main_jsonschema_builtin_submodule_beside_package_init(
             ['{"tags": ["a"], "owner": {"name": "n"}}'],
             id="unused",
         ),
+        pytest.param(
+            "additional_import_named_like_model_qualified.json",
+            "IPv4Address",
+            ['{"hosts": ["10.0.0.1"], "owner": {"name": "n"}}', '{"hosts": ["not an address"]}'],
+            id="qualified",
+        ),
     ],
 )
 def test_main_jsonschema_additional_import_named_like_model(
@@ -4118,7 +4166,8 @@ def test_main_jsonschema_additional_import_named_like_model(
 
     ``--additional-imports ipaddress.IPv4Address`` is written by every module, and ``x-python-type: IPv4Address``
     names it, so ``host`` named the model ``IPv4Address`` itself; the model takes another name. A model whose module
-    writes no such name keeps its own.
+    writes no such name keeps its own, and so does one whose module writes the name only after its module
+    (``ipaddress.IPv4Address``), which the model cannot shadow.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -4138,6 +4187,62 @@ def test_main_jsonschema_additional_import_named_like_model(
     with _generated_model(output_file, "additional_import_named_like_model", model_name) as model:
         verdicts = [_decode_with_generated_model(output_model_type, model, payload) for payload in payloads]
     assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+def test_main_jsonschema_additional_import_named_like_model_beside_import(output_file: Path) -> None:
+    """Give the renamed model a name that no import every module writes binds.
+
+    ``--additional-imports ipaddress.IPv4Address,mymod.IPv4Address1``: the model ``IPv4Address`` is renamed for the
+    type ``host`` that writes the first import's name, and ``IPv4Address1``, the next name, is the second import's,
+    which ``other`` writes.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "additional_import_named_like_model_beside_import.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address,mymod.IPv4Address1",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param(
+            "imported_enum_named_like_submodule.json",
+            ["--use-exact-imports", "--set-default-enum-member", "--additional-imports", "mymod.Status_1"],
+            id="submodule",
+        ),
+        pytest.param(
+            "module_import_named_like_builtin_enum_default.json",
+            ["--set-default-enum-member", "--additional-imports", "mymod.list_1"],
+            id="builtin",
+        ),
+    ],
+)
+def test_main_jsonschema_renamed_import_beside_shared_import(
+    output_dir: Path, input_name: str, extra_args: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Give the import that a package names anew a name that no import every module writes binds.
+
+    The import ``Status`` of a package with a submodule ``Status``, and the module import ``list`` of a module that
+    writes the builtin, take the next name their module's resolver gives (``Status_1``, ``list_1``), which an
+    additional import binds, so they take the one after it. The additional imports name a module the test provides,
+    so the output is imported on the target Python.
+    """
+    (tmp_path / "mymod.py").write_text("Status_1 = object()\nlist_1 = object()\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--formatters", "builtin", "--disable-timestamp"],
+    )
 
 
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:

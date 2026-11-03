@@ -30,7 +30,6 @@ from datamodel_code_generator._module_paths import (
     written_path,
 )
 from datamodel_code_generator._python_target_names import is_builtin_type_name
-from datamodel_code_generator._python_type_annotation import iter_python_type_expr_names
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
@@ -47,12 +46,16 @@ from datamodel_code_generator.model._decisions.enum_kind import literal_value_ki
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
-from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
-from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, reference_import_target
+from datamodel_code_generator.parser._passes._import_binding import (
+    ReferenceExpressionHost,
+    reference_import_target,
+    shared_import_bindings,
+)
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -1018,14 +1021,19 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
 
 
 def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
-    """Return the names that the types of the models write as text: those of the types that name no model."""
+    """Return the names that the types of the models write as text: those of the types that name no model.
+
+    A dotted name binds its first name where it is written (``ipaddress`` of ``ipaddress.IPv4Address``).
+    """
+    from datamodel_code_generator._python_type_annotation import iter_python_type_expr_head_names  # noqa: PLC0415
+
     names: set[str] = set()
     for model in models:
         for data_type in _named_data_types(model):
             if data_type.reference is not None:
                 continue
             if data_type.python_type:
-                names.update(iter_python_type_expr_names(data_type.python_type.expression))
+                names.update(iter_python_type_expr_head_names(data_type.python_type.expression))
             elif data_type.type:
                 names.add(data_type.type.partition(".")[0])
     return names
@@ -1037,7 +1045,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
     The imports every module writes (``--additional-imports``) shadow a model that a type of the module writes by
     their name as text (``x-python-type``); one that no type of the module writes keeps the model's name.
     """
-    shared_names = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ != "__future__"}
+    shared_names = shared_import_bindings(parser.imports)
     for ctx in state.contexts:
         models, imports = ctx.models, ctx.imports
         imported_names = {
@@ -1053,6 +1061,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
             if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
                 continue
 
+            ctx.scoped_model_resolver.exclude_names.update(shared_names)
             parser._graph_builder.rename_model(  # noqa: SLF001
                 model,
                 reference_name=parser._import_ledger.add_name(  # noqa: SLF001
@@ -1181,6 +1190,28 @@ def _module_binding(expression: str | None) -> str | None:
     return expression.partition(".")[0] if expression and "." in expression else None
 
 
+def _follow_renamed_enum_references(
+    parser: ImportsHost[Any], models: Iterable[DataModel], renamed: Iterable[DataType]
+) -> None:
+    """Write the enum members in the defaults of ``models`` by the new expression of their renamed enum types.
+
+    ``set_default_enum_member`` runs before the imports are named anew and writes a member by the expression its type
+    names the enum by then, so a default would keep naming the import that was renamed.
+    """
+    aliases = {
+        id(source): data_type.alias
+        for data_type in renamed
+        if data_type.reference is not None and isinstance(source := data_type.reference.source, Enum)
+    }
+    if not aliases:
+        return
+    for model in models:
+        for field in model.fields:
+            for value in field.default if isinstance(field.default, list) else [field.default]:
+                if isinstance(value, Member) and id(value.enum) in aliases:
+                    parser._graph_builder.name_enum_member(field, value, aliases[id(value.enum)])  # noqa: SLF001
+
+
 def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: ModuleContextView) -> None:
     """Alias the module imports named like a builtin that the module also writes bare, e.g. ``list[str]``.
 
@@ -1226,6 +1257,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     ):
         return
     ledger = parser._import_ledger  # noqa: SLF001
+    ctx.scoped_model_resolver.exclude_names.update(shared_import_bindings(parser.imports))
     aliases: dict[str, str] = {}
     written = {
         name
@@ -1241,11 +1273,14 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         ).name
         from_, import_ = imported[binding]
         ledger.apply_alias(ctx.imports, Import(from_=from_, import_=import_, alias=alias), _BUILTIN_MODULE_BINDINGS)
+    renamed: list[DataType] = []
     for data_type in references:
         if (binding := _module_binding(data_type.alias)) in aliases:
             parser._graph_builder.name_reference(  # noqa: SLF001
                 data_type, f"{aliases[binding]}{cast('str', data_type.alias)[len(binding) :]}"
             )
+            renamed.append(data_type)
+    _follow_renamed_enum_references(parser, ctx.models, renamed)
 
 
 def alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
@@ -1301,6 +1336,9 @@ def _alias_imports_hidden_by_submodules(
             ):
                 continue
             users.setdefault(binding, []).append((data_type, _import_key(import_)))
+    renamed: list[DataType] = []
+    if users:
+        resolver.exclude_names.update(shared_import_bindings(parser.imports))
     for binding, binding_users in sorted(users.items()):
         reference = held[binding]
         ledger.release_names(imports, resolver, {binding})
@@ -1312,6 +1350,8 @@ def _alias_imports_hidden_by_submodules(
             parser._graph_builder.name_reference(  # noqa: SLF001
                 data_type, alias + (data_type.alias or binding)[len(binding) :]
             )
+            renamed.append(data_type)
+    _follow_renamed_enum_references(parser, ctx.models, renamed)
 
 
 def _alias_builtins_hidden_by_submodules(

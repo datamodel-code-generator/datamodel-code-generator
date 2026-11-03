@@ -226,6 +226,11 @@ def can_hold_array(data_type: DataType, *, models: bool) -> bool:
     )
 
 
+def admits_array(obj: JsonSchemaObject) -> bool:
+    """Return whether the types a schema declares admit an array: it declares none, or an array is one of them."""
+    return obj.type is None or "array" in declared_types(obj.type)
+
+
 def _imported_type_paths(data_type: DataType) -> Iterator[str]:
     """Yield the path of every type that a type and its members import, as a type or inside an annotation."""
     for nested in data_type.all_data_types:

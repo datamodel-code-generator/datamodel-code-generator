@@ -1,0 +1,9 @@
+{
+  "valid": [
+    {"retyped": "2024-05-01", "tally": {"a": ["x"]}, "tags": ["x", "y"]},
+    {"tally": {}, "tags": ["x", "y", "z"]}
+  ],
+  "invalid": [
+    {"tags": ["x"]}
+  ]
+}
