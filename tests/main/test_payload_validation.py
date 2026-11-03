@@ -29,7 +29,7 @@ from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
 )
 from tests.main.payload_validation.codegen import PayloadAdapterError, generate_payload_runtime
-from tests.main.payload_validation.schema import _schema_exclusion_reason
+from tests.main.payload_validation.schema import _referenced_openapi_components, _schema_exclusion_reason
 
 from .payload_validation import (
     BACKEND_ACCEPTANCE_EXCLUDED_CASES,
@@ -417,6 +417,14 @@ def test_numeric_payload_sampling_reports_unrepresentable_interval(name: str, sc
         pytest.raises(ValueError, match="Numeric interval lies outside the finite multipleOf sampling domain"),
     ):
         payload_strategy(case)
+
+
+def test_payload_openapi_cases_keep_the_components_in_document_order() -> None:
+    """List the components of an OpenAPI case in the order of the document, whatever the hash seed is (#6018)."""
+    components = {f"Component{index}": {"type": "string"} for index in range(12)}
+    schema = {"oneOf": [{"$ref": f"#/components/schemas/{name}"} for name in reversed(components)]}
+
+    assert_output("\n".join(_referenced_openapi_components(schema, components)) + "\n")
 
 
 def test_payload_validation_cases_cover_discovered_schema_files() -> None:

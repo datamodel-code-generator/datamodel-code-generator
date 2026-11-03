@@ -3783,6 +3783,8 @@ unbounded_integer_multiple-schema28	payloads/native_numeric_empty_errors.txt	= m
 unbounded_number_integer_multiple-schema27	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 [test_payload_generation_reports_real_schema_failure]
 	main/payload_generation_missing_reference.txt
+[test_payload_openapi_cases_keep_the_components_in_document_order]
+	main/payload_validation/payload_openapi_cases_keep_the_components_in_document_order.txt
 [test_payload_runtime_alias_fallback]
 ambiguous-fixture2	main/runtime_compatibility/fallback_ambiguous.txt
 missing-fixture1	main/runtime_compatibility/fallback_missing.txt
