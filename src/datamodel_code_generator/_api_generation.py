@@ -419,6 +419,7 @@ def _generate_models(
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
+    from datamodel_code_generator._publication import staged_artifact_path  # noqa: PLC0415
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -430,12 +431,14 @@ def _generate_models(
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
-        staged_output = _staging(stack, output, cwd, target.output) / (output.name or "output")
-        if (cwd / output).is_dir():
-            staged_output.mkdir()
+        staged_output = staged_artifact_path(
+            _staging(stack, output, cwd, target.output), output, "output", make_directory=(cwd / output).is_dir()
+        )
         updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
-            updates["emit_model_metadata"] = _staging(stack, metadata, cwd) / (metadata.name or "model-metadata.json")
+            updates["emit_model_metadata"] = staged_artifact_path(
+                _staging(stack, metadata, cwd), metadata, "model-metadata.json", make_directory=False
+            )
         staged = prepared.model_copy(update=updates)
         staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
@@ -888,6 +891,7 @@ class _Planner:
         staged files are UTF-8 whatever encoding the files are written in.
         """
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
+        from datamodel_code_generator.format import _RUFF_ENCODING  # noqa: PLC0415
 
         if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
             return
@@ -896,11 +900,11 @@ class _Planner:
             files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
             for base, path, held in files:
                 (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
-                location.write_text(held[path], encoding="utf-8")
+                location.write_text(held[path], encoding=_RUFF_ENCODING)
             for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
                 formatter.format_directory(directory)
             for base, path, held in files:
-                held[path] = base.joinpath(*path.parts).read_text(encoding="utf-8")
+                held[path] = base.joinpath(*path.parts).read_text(encoding=_RUFF_ENCODING)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

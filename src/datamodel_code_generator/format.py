@@ -19,7 +19,7 @@ from importlib.machinery import ModuleSpec, PathFinder
 from importlib.util import source_from_cache
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 from warnings import warn
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
@@ -795,20 +795,20 @@ class CodeFormatter:
 
     def apply_ruff_lint(self, code: str) -> str:
         """Run ruff check with auto-fix on code."""
-        return self._ruff_check(code).decode("utf-8")
+        return self._ruff_check(code).decode(_RUFF_ENCODING)
 
     def apply_ruff_formatter(self, code: str) -> str:
         """Format code using ruff format."""
-        return self._ruff_format(self._find_ruff_path(), code.encode("utf-8")).decode("utf-8")
+        return self._ruff_format(self._find_ruff_path(), code.encode(_RUFF_ENCODING)).decode(_RUFF_ENCODING)
 
     def apply_ruff_check_and_format(self, code: str) -> str:
         """Run ruff check and format sequentially for reliable processing."""
         ruff_path = self._find_ruff_path()
-        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode("utf-8")
+        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode(_RUFF_ENCODING)
 
     def _ruff_check(self, code: str, ruff_path: str | None = None) -> bytes:
         command = self._ruff_check_command("-", ruff_path=ruff_path)
-        return self._run_ruff_command(command, stdin=code.encode("utf-8"), allow_stdout_on_error=True).stdout
+        return self._run_ruff_command(command, stdin=code.encode(_RUFF_ENCODING), allow_stdout_on_error=True).stdout
 
     def _ruff_format(self, ruff_path: str, stdin: bytes) -> bytes:
         return self._run_ruff_command((ruff_path, "format", "-"), stdin=stdin).stdout
@@ -832,8 +832,8 @@ class CodeFormatter:
         )
         if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
             return result
-        if (message := result.stderr.decode("utf-8", errors="replace").strip()) or (
-            message := result.stdout.decode("utf-8", errors="replace").strip()
+        if (message := result.stderr.decode(_RUFF_ENCODING, errors="replace").strip()) or (
+            message := result.stdout.decode(_RUFF_ENCODING, errors="replace").strip()
         ):
             detail = message
         else:
@@ -894,6 +894,10 @@ class CodeFormatter:
                 )
 
 
+_RUFF_ENCODING: Final = "utf-8"
+"""The encoding of the text Ruff reads and of the code and messages it writes: Ruff reads and writes UTF-8 only."""
+
+
 def _read_by_ruff(raw: bytes, encoding: str) -> bool:
     """Return whether Ruff, which reads UTF-8 and skips a byte order mark, reads the bytes as the text of `encoding`."""
     try:
@@ -914,12 +918,12 @@ def _held_as_utf8(files: Iterable[Path], encoding: str) -> Generator[None]:
         for path in files:
             if _read_by_ruff(raw := path.read_bytes(), encoding):
                 continue
-            path.write_bytes(raw.decode(encoding).encode("utf-8"))
+            path.write_bytes(raw.decode(encoding).encode(_RUFF_ENCODING))
             held.append(path)
         yield
     finally:
         for path in held:
-            path.write_bytes(path.read_bytes().decode("utf-8").encode(encoding))
+            path.write_bytes(path.read_bytes().decode(_RUFF_ENCODING).encode(encoding))
 
 
 class CustomCodeFormatter:

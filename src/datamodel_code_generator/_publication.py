@@ -181,6 +181,17 @@ def staging_directory_for(
     return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)
 
 
+def staged_artifact_path(directory: Path, target: Path, default_name: str, *, make_directory: bool) -> Path:
+    """Return where an artifact is staged in a private staging directory, created as an empty directory if asked.
+
+    The staged path takes the target's name, or ``default_name`` for a target without one.
+    """
+    staged = directory / (target.name or default_name)
+    if make_directory:
+        staged.mkdir()
+    return staged
+
+
 def stage_artifact(  # noqa: PLR0913
     target: Path,
     default_name: str,
@@ -197,9 +208,7 @@ def stage_artifact(  # noqa: PLR0913
     """
     context = staging_directory_for(target)
     contexts.append(context)
-    staged = Path(context.name) / (target.name or default_name)
-    if make_directory:
-        staged.mkdir()
+    staged = staged_artifact_path(Path(context.name), target, default_name, make_directory=make_directory)
     anchor = publication_anchor(anchor_path)
     anchors.append(anchor)
     return staged, anchor
