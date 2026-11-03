@@ -14955,6 +14955,23 @@ def test_main_openapi_reference_object_siblings(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_json_pointer_boolean_key(output_file: Path) -> None:
+    """A pointer token names no boolean YAML key equal to its integer (`true:`), so the reference stays unresolved."""
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "json_pointer_boolean_key.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
+
+
 def test_main_openapi_json_pointer_integer_keys(output_file: Path) -> None:
     """Resolve JSON pointers through maps whose unquoted YAML keys (`200:`) load as integers (#6073).
 
