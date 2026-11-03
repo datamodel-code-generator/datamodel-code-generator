@@ -588,6 +588,50 @@ def test_model_metadata_directory_is_a_clean_cli_error(
     )
 
 
+@pytest.mark.parametrize("scopes", [(), ("--openapi-scopes", "schemas", "api")], ids=["models", "api-scope"])
+@pytest.mark.parametrize(
+    ("documents", "location"),
+    [
+        pytest.param({"input.json": {"components": []}}, "input.json#/components", id="components-list"),
+        pytest.param({"input.json": {"components": None}}, "input.json#/components", id="components-null"),
+        pytest.param(
+            {"input.json": {"components": {"schemas": []}}}, "input.json#/components/schemas", id="schemas-list"
+        ),
+        pytest.param(
+            {
+                "input.json": {"components": {"schemas": {"S": {"$ref": "other.json#/definitions/X"}}}},
+                "other.json": {"components": [], "definitions": {"X": {"type": "string"}}},
+            },
+            "other.json#/components",
+            id="components-list-of-a-referenced-document",
+        ),
+    ],
+)
+def test_openapi_components_that_is_no_object_is_a_clean_cli_error(
+    documents: dict[str, dict[str, YamlValue]],
+    location: str,
+    scopes: tuple[str, ...],
+    tmp_path: Path,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Report components or its schemas section that is no object as the api scope does, in every scope (#6104)."""
+    head = {"openapi": "3.0.3", "info": {"title": "t", "version": "1"}, "paths": {}}
+    for name, document in documents.items():
+        (tmp_path / name).write_text(json.dumps({**head, **document}), encoding="utf-8")
+
+    run_main_and_assert(
+        input_path=tmp_path / "input.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=scopes,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Error at schema path '{location}': API_INVALID_OBJECT: expected an object",
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("input_path", "extra_args", "expected_stderr_contains"),
     [
@@ -635,19 +679,19 @@ _PETS = "  /pets:\n    get:\n      responses: {'200': {description: ok}}\n"
         pytest.param(
             f"{_OPENAPI_HEAD}paths: {{}}\ncomponents: []\n",
             ("schemas",),
-            "Error at schema path 'api.yaml/#/components': API_INVALID_OBJECT: expected an object\n",
+            "Error at schema path 'api.yaml#/components': API_INVALID_OBJECT: expected an object\n",
             id="components-list",
         ),
         pytest.param(
             f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n",
             ("schemas",),
-            "Error at schema path 'api.yaml/#/components': API_INVALID_OBJECT: expected an object\n",
+            "Error at schema path 'api.yaml#/components': API_INVALID_OBJECT: expected an object\n",
             id="components-null",
         ),
         pytest.param(
             f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  schemas: []\n",
             ("schemas",),
-            "Error at schema path 'api.yaml/#/components/schemas': API_INVALID_OBJECT: expected an object\n",
+            "Error at schema path 'api.yaml#/components/schemas': API_INVALID_OBJECT: expected an object\n",
             id="schemas-list",
         ),
         pytest.param(

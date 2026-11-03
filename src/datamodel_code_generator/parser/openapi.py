@@ -1388,10 +1388,8 @@ class OpenAPIParser(JsonSchemaParser):
             return
         self._discriminator_documents.add(document)
         self._register_discriminator_schema("#", raw)
-        components = _mapping(raw.get("components", {}), [*self.model_resolver.current_root, "#/components"])
-        schemas = _mapping(
-            components.get("schemas", {}), [*self.model_resolver.current_root, "#/components", "schemas"]
-        )
+        components = _mapping(raw.get("components", {}), [document, "components"])
+        schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
         potential_subtypes: list[tuple[str, dict[str, Any], list[str]]] = []
 
         for schema_name, schema in schemas.items():
