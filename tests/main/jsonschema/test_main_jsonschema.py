@@ -23036,6 +23036,49 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
     )
 
 
+@pytest.mark.parametrize("args", [["--field-constraints"], ["--use-annotated"]], ids=["field-constraints", "annotated"])
+@pytest.mark.parametrize(
+    ("format_", "valid", "invalid", "parsed"),
+    [("email", "aa@x.com", "ab@x.com", "aa@x.com"), ("byte", "YWE=", "YWI=", "aa")],
+    ids=["email", "base64"],
+)
+def test_main_rust_unsupported_pattern_on_string_like_types(
+    format_: str, valid: str, invalid: str, parsed: str, args: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """A pattern Rust rejects on ``EmailStr`` or ``Base64Str`` selects Python's regex engine, as on ``str``.
+
+    Pydantic compiles the pattern of every type that takes one; up to 0.88.0 the choice read only the plain string and
+    bytes types, and the module failed at import with ``backreferences are not supported``.
+    """
+    input_file = tmp_path / "string_like.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {"code": {"type": "string", "format": format_, "pattern": r"^(a)\1"}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args, "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"string_like_{format_}",
+        model_name="Model",
+        valid_json=json.dumps({"code": valid}),
+        invalid_json=json.dumps({"code": invalid}),
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("code",),
+        expected_attribute_value=parsed,
+    )
+
+
 _BYTES_PATTERN_RUST_ENGINE = ('{"code": "abc"}', '{"code": "abc\\n"}', ("code",), "abc")
 """Payloads showing the default engine: ``$`` does not match before a final newline."""
 _BYTES_PATTERN_RUST_ONLY_SYNTAX = ('{"name": "é"}', '{"name": "1"}', ("name",), "é")
