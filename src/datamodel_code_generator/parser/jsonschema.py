@@ -167,7 +167,7 @@ from datamodel_code_generator._source import (
     load_data_from_path,
 )
 from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
-from datamodel_code_generator._user_keys import template_data_keys
+from datamodel_code_generator._user_keys import class_key, template_data_keys
 from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -4222,7 +4222,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if obj.properties:
             fields.extend(
                 _inherited_schemas.parse_fields_beside_parents(
-                    self, obj, base_classes, inherited_properties, path, name
+                    self, obj, base_classes, inherited_properties, path, class_key("predicted", name)
                 )
             )
         if base_classes:
@@ -4276,12 +4276,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self._apply_inherited_field_default(
                             resolved_field,
                             _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
-                            class_name=name,
+                            class_name=class_key("predicted", name),
                         )
                     fields[index] = resolved_field
                     continue
                 if self.model_resolver.default_value_overrides:
-                    field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = name
+                    field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = class_key("predicted", name)
                 self._graph_builder.replace_field_type(field, self.data_type())
         original_class_name = name
         name = self._apply_title_as_name(name, obj)  # pragma: no cover
@@ -4316,14 +4316,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     required_name,
                     excludes={field.name for field in fields if field.name},
                     base_classes=base_classes,
-                    class_name=name,
+                    class_name=class_key("predicted", name),
                     inherited_fields=inherited_fields,
                 )
                 fields.append(field)
                 field_name_to_field[required_name] = field
         for field in fields:
             self.data_model_type.finalize_required_inherited_field(field)
-        self._apply_final_class_field_aliases(fields, reference.name, original_class_name, base_classes)
+        self._apply_final_class_field_aliases(
+            fields,
+            class_key("reference-name", reference),
+            class_key("predicted", original_class_name),
+            base_classes,
+        )
         if extra_field is not None:
             extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)
@@ -4414,7 +4419,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self.extra_template_data[ref.path]["is_base_class"] = True
             else:
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
-                    self, all_of_item, parent_refs, parent_properties, path, name
+                    self, all_of_item, parent_refs, parent_properties, path, class_key("predicted", name)
                 )
                 if object_fields:
                     fields.extend(object_fields)
@@ -4425,7 +4430,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             required_names=all_of_item.required,
                             fields=fields,
                             base_classes=parent_refs,
-                            class_name=name,
+                            class_name=class_key("predicted", name),
                             declared_property_names=declared_property_names,
                         )
                 self._parse_all_of_item(
@@ -4460,7 +4465,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference=reference,
             fields=[field],
             obj=obj,
-            custom_base_class_name=name,
+            custom_base_class_name=class_key("predicted", name),
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
@@ -4589,7 +4594,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         reference=variant_reference,
                         fields=variant_fields,
                         obj=obj,
-                        custom_base_class_name=variant_reference.name,
+                        custom_base_class_name=class_key("reference-name", variant_reference),
                         description=description,
                         default=default,
                     )
@@ -4913,7 +4918,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference=reference,
             fields=[field],
             obj=obj,
-            custom_base_class_name=name,
+            custom_base_class_name=class_key("predicted", name),
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
@@ -5239,7 +5244,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             singular_name=singular_name,
             loaded=True,
         )
-        class_name = reference.name
+        class_name = class_key("reference-name", reference)
         self.set_title(reference.path, obj)
         self.set_schema_id(reference.path, obj)
         self._preload_property_refs_for_rw_models(obj)
@@ -6305,7 +6310,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference=reference,
             fields=[field],
             obj=obj,
-            custom_base_class_name=name,
+            custom_base_class_name=class_key("predicted", name),
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
@@ -6507,7 +6512,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 reference=reference,
                 fields=fields,
                 obj=obj,
-                custom_base_class_name=name,
+                custom_base_class_name=class_key("predicted", name),
                 default=root_default,
             )
             return self.data_type(reference=reference)
@@ -6516,7 +6521,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference=reference,
             fields=fields,
             obj=obj,
-            custom_base_class_name=name,
+            custom_base_class_name=class_key("predicted", name),
             default=root_default,
         )
         return self.data_type(reference=reference)
@@ -6737,7 +6742,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             ],
             obj=obj,
-            custom_base_class_name=name,
+            custom_base_class_name=class_key("predicted", name),
             default=obj.default if obj.has_default else UNDEFINED,
         )
         return self.data_type(reference=reference)
@@ -6905,7 +6910,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return shared template data only when the enum reference has relevant entries."""
         if not (extra_template_data := self.extra_template_data):
             return None
-        if any(extra_template_data.get(key) for key in template_data_keys(reference.path, reference.name)):
+        if any(extra_template_data.get(key) for key in template_data_keys(reference)):
             return extra_template_data
         return None
 
@@ -7044,7 +7049,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._record_schema_object(reference, obj)
         if not enum_fields:
             data_type = self.data_type_manager.get_data_type(Types.null)
-            custom_base_class_name = name
+            custom_base_class_name = class_key("predicted", name)
         else:
             enum_reference = self.model_resolver.add(
                 [*path, "Enum"],
@@ -7058,7 +7063,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if message := _shifted_enum_entries_message(enum_reference.name, obj, named_values):
                 warn(message, stacklevel=2)
             data_type = create_enum(enum_reference)
-            custom_base_class_name = reference.name
+            custom_base_class_name = class_key("reference-name", reference)
 
         self._register_root_model(
             reference=reference,

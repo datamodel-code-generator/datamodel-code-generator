@@ -40,7 +40,7 @@ from datamodel_code_generator._reference_graph import (
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
-from datamodel_code_generator._user_keys import class_field_key
+from datamodel_code_generator._user_keys import class_field_key, class_key
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
@@ -1938,7 +1938,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                             alias=names.alias,
                             original_name=names.property_name,
                             source_name=names.property_name,
-                            class_name=discriminator_model.name,
+                            class_name=class_key("reference-name", discriminator_model.reference),
                             required=True,
                         ),
                         "tag",
@@ -1946,7 +1946,9 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     ),
                 )
                 if parser.config.aliases:
-                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = discriminator_model.class_name
+                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_key(
+                        "class-name", discriminator_model.reference
+                    )
                     parser.model_resolver.prepare_explicit_field_aliases(
                         [discriminator_field], discriminator_model.reference, parser.field_name_model_type
                     )

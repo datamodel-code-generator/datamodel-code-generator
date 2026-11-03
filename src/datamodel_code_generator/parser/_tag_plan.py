@@ -48,6 +48,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,
     MappingPath,
@@ -346,7 +347,7 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
                 variant_name = variant_field.name
                 break
         else:
-            variant_name, _ = namer(property_name, variant.class_name)
+            variant_name, _ = namer(property_name, class_key("class-name", variant.reference))
         if common_name is not None and common_name != variant_name:
             msg = (
                 f"Discriminator {stable_repr(property_name)} resolves to different field names "
@@ -1417,7 +1418,7 @@ def possible_tag_names(
         variant_names[id(model)] = {
             name
             for property_name in property_names
-            for class_name in (None, model.class_name)
+            for class_name in (None, class_key("class-name", model.reference))
             for name in (property_name, namer(property_name, class_name)[0])
         }
     return {

@@ -21,7 +21,7 @@ from datamodel_code_generator._avro_detection import (
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
-from datamodel_code_generator._user_keys import class_field_key
+from datamodel_code_generator._user_keys import class_field_key, class_key
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
@@ -849,7 +849,10 @@ class AvroParser(JsonSchemaParser):
                             continue
                         raw_field, physical_default = candidate
                         _, has_default_override = self.model_resolver.resolve_default_value(
-                            raw_field["name"], None, has_default=False, class_name=model.class_name
+                            raw_field["name"],
+                            None,
+                            has_default=False,
+                            class_name=class_key("class-name", model.reference),
                         )
                         if has_default_override:
                             continue
@@ -891,7 +894,10 @@ class AvroParser(JsonSchemaParser):
             if not isinstance(field, dict) or not isinstance(field.get("name"), str):
                 continue
             field_name, _ = self.model_resolver.get_valid_field_name_and_alias(
-                field["name"], excludes=excludes, model_type=self.field_name_model_type, class_name=class_name
+                field["name"],
+                excludes=excludes,
+                model_type=self.field_name_model_type,
+                class_name=class_key("predicted", class_name),
             )
             excludes.add(field_name)
             if override := self._type_override_imports.get(class_field_key(class_name, field_name)):

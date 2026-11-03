@@ -26,6 +26,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import AllOfMergeMode, Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph_links import drop_tree
+from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
@@ -1530,7 +1531,9 @@ def create_object_model(  # noqa: PLR0913
         reference=reference,
         fields=fields,
         base_classes=base_classes,
-        custom_base_class=parser._resolve_base_class(reference.name, obj.custom_base_path),  # noqa: SLF001
+        custom_base_class=parser._resolve_base_class(  # noqa: SLF001
+            class_key("reference-name", reference), obj.custom_base_path
+        ),
         custom_template_dir=parser.custom_template_dir,
         extra_template_data=parser.extra_template_data,
         path=parser.current_source_path,
