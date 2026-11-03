@@ -480,7 +480,7 @@ def write_pre_render_nullability(field: FieldImportsHost[_D], data_type: _D) -> 
     if data_type.dict_key:
         field._write_pre_render_nullability(data_type.dict_key)  # noqa: SLF001
 
-    if not data_type.is_union or data_type.preserve_union_member_order:
+    if not data_type.is_union or data_type.preserve_union_member_order or data_type._is_container:  # noqa: SLF001
         return
     if any(field._data_type_renders_none(child) for child in data_type.data_types):  # noqa: SLF001
         data_type._materialize_render_state("member-null")  # noqa: SLF001

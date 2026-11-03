@@ -76,7 +76,7 @@ class PrefixItemsClosedLength(Struct):
         Annotated[list[str | int], Meta(max_length=2, min_length=1)] | UnsetType
     ) = UNSET
     closed_by_type_list: (
-        Annotated[list[str] | None, Meta(max_length=2, min_length=2)] | UnsetType
+        Annotated[list[str | None], Meta(max_length=2, min_length=2)] | UnsetType
     ) = UNSET
     kept_apart_from_extension_keys: (
         Annotated[list[str], Meta(max_length=2, min_length=2)] | UnsetType
