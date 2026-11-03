@@ -217,6 +217,18 @@ def _bump_field_tree(field_: DataModelFieldBase) -> None:
         bump_node(data_type)
 
 
+def _write_alias_form(field_: DataModelFieldBase, *, inherits: bool | None) -> None:
+    """Write the aliases the field class writes in place of the ones a field built earlier took (``alias_form``).
+
+    ``inherits`` tells whether the class of the field has a generated base class; the model that holds the field says
+    so when it is not given, and a field outside any model has none.
+    """
+    if inherits is None:
+        inherits = field_.parent is not None and any(base.reference for base in field_.parent.base_classes)
+    for attribute, value in field_.alias_form(inherits=inherits).items():
+        setattr(field_, attribute, value)
+
+
 def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
     """Yield the nodes of the trees of ``roots`` in preorder, each after its items and dict key are taken."""
     stack = list(roots)
@@ -1796,15 +1808,23 @@ class GenerationStore:  # noqa: PLR0904
         """Give a field a new Python name, and ``alias`` as its alias when it has none, so it keeps its wire name."""
         if alias is not None and field_.alias is None:
             field_.alias = alias
+            _write_alias_form(field_, inherits=None)
         field_.name = name
         bump_field(field_)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
-    def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity) -> None:
-        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out."""
+    def set_field_identity(
+        field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
+        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out.
+
+        The aliases are written in the form of the field class for a class that ``inherits`` a generated base class
+        or not (``DataModelFieldBase.alias_form``).
+        """
         for attribute, value in identity.items():
             setattr(field_, attribute, value)
+        _write_alias_form(field_, inherits=inherits)
         bump_field(field_)
 
     @staticmethod
@@ -2612,9 +2632,11 @@ class GraphBuilder:
         """Give a field a new extras dict."""
         self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
 
-    def set_field_identity(self, field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+    def set_field_identity(
+        self, field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
         """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
-        self._store.set_field_identity(field_, identity)  # ty: ignore[deprecated]
+        self._store.set_field_identity(field_, identity, inherits=inherits)  # ty: ignore[deprecated]
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""

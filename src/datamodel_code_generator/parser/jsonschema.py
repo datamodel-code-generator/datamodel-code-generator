@@ -4209,7 +4209,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         )
                     if parent_field is not None:
                         alias = field_name if parent_field.name != field_name else None
-                        self._graph_builder.set_field_identity(field, {"name": parent_field.name, "alias": alias})
+                        self._graph_builder.set_field_identity(
+                            field, {"name": parent_field.name, "alias": alias}, inherits=True
+                        )
                     continue
                 inherited_field = inherited_fields.get(field_name) if field_name is not None else None
                 if (
@@ -4279,7 +4281,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 field_name_to_field[required_name] = field
         for field in fields:
             self.data_model_type.finalize_required_inherited_field(field)
-        self._apply_final_class_field_aliases(fields, reference.name, original_class_name)
+        self._apply_final_class_field_aliases(fields, reference.name, original_class_name, base_classes)
         if extra_field is not None:
             extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)

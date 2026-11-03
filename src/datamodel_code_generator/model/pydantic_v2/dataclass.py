@@ -507,16 +507,27 @@ class DataModelFieldBackport(DataModelField):
     def __init__(self, **data: Any) -> None:
         """Initialize and make non-identifier aliases safe for dataclass signatures."""
         super().__init__(**data)
-        if self.alias is None or is_python_name(self.alias, self.data_type.python_version):
-            return
+        for attribute, value in self.alias_form().items():
+            setattr(self, attribute, value)
 
+    @override
+    def alias_form(self, *, inherits: bool = False) -> dict[str, Any]:
+        """Return a non-identifier alias as the validation and serialization aliases the dataclass signature accepts.
+
+        A class with a generated base class takes the signature of that Pydantic dataclass, so the alias stays an
+        ``alias=`` there; only a class without a base class builds a signature from the alias, which must be an
+        identifier.
+        """
+        if inherits or self.alias is None or is_python_name(self.alias, self.data_type.python_version):
+            return {}
         validation_aliases = list(self.validation_aliases or ())
         if self.alias not in validation_aliases:
             validation_aliases.insert(0, self.alias)
-        if self.serialization_alias is None:
-            self.serialization_alias = self.alias
-        self.validation_aliases = validation_aliases
-        self.alias = None
+        return {
+            "alias": None,
+            "validation_aliases": validation_aliases,
+            "serialization_alias": self.alias if self.serialization_alias is None else self.serialization_alias,
+        }
 
 
 _rebuild_model_with_datamodel_namespace(DataModelField)

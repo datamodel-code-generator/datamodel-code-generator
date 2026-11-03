@@ -39,6 +39,9 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/different_types_of_fields.py
 [test_main_graphql_empty_list_default]
 	main/graphql/pydantic_v2_empty_list_default.py
+[test_main_graphql_enum_member_descriptions]
+--use-field-description	main/graphql/main_graphql/enum_member_descriptions[--use-field-description].py
+--use-inline-field-description	main/graphql/main_graphql/enum_member_descriptions[--use-inline-field-description].py
 [test_main_graphql_enums]
 	main/graphql/enums.py
 [test_main_graphql_enums_as_literals_all]
