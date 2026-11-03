@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "api.Order": {
+      "type": "object",
+      "properties": {
+        "item": {"$ref": "#/$defs/IPv4Address.OrderedDict"},
+        "other": {"$ref": "common.json#/$defs/OrderedDict"}
+      }
+    },
+    "IPv4Address.OrderedDict": {
+      "type": "object",
+      "properties": {"sku": {"type": "string"}}
+    }
+  }
+}

@@ -32,6 +32,13 @@ REPETITION_PAYLOADS = {
     "CommentBeforeUpperBound": ("a{,3}", "aaa"),
 }
 
+REVERSED_REPETITION_PAYLOADS = {
+    "SpacedReversed": ("a{ 3 , 2 }", "aaa"),
+    "VerboseSpacedReversed": ("a{3,2}", "aaa"),
+    "VerboseCommentedReversed": ("a{3,2}", "aaa"),
+    "SpacedOrdered": ("aa", "a{ 2 , 3 }"),
+}
+
 
 def _outcome(validate: Callable[[str], object], payload: object) -> str:
     """Return ``valid``, or the types of the errors that the validator reports for a JSON payload."""
@@ -137,6 +144,33 @@ def test_verbose_comments_inside_a_counted_repetition_keep_the_rust_engine(outpu
     outcomes = ""
     for name, payloads in REPETITION_PAYLOADS.items():
         with _generated_model(output_file, "rust_unsupported_verbose_repetition", name) as model:
+            outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
+    assert_output(outcomes, name="payloads")
+
+
+def test_counted_repetitions_with_a_minimum_above_the_maximum_select_the_python_engine(output_file: Path) -> None:
+    """Select ``python-re`` for a counted repetition whose minimum exceeds its maximum, which Rust rejects.
+
+    Python's ``re`` reads the braces as text where whitespace or a verbose comment is inside, so only that engine
+    imports the model. The same repetition in order stays on the default engine, which repeats.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_reversed_repetition.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = ""
+    for name, payloads in REVERSED_REPETITION_PAYLOADS.items():
+        with _generated_model(output_file, "rust_unsupported_reversed_repetition", name) as model:
             outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
     assert_output(outcomes, name="payloads")
 

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "label": {"$ref": "#/$defs/Label"},
+    "tag": {
+      "type": "string",
+      "contains": true,
+      "minContains": 2
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "contains": true,
+      "minContains": 2
+    },
+    "names": {"$ref": "#/$defs/Names"}
+  },
+  "$defs": {
+    "Label": {
+      "type": "string",
+      "contains": true,
+      "minContains": 2
+    },
+    "Names": {
+      "type": "array",
+      "items": {"type": "string"},
+      "contains": true,
+      "minContains": 2
+    }
+  }
+}

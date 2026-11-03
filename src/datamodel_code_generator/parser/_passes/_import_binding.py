@@ -74,6 +74,9 @@ class ReferenceImportTarget:
     from_: str
     import_: str
     written_from: str
+    beside_shared_import: bool = False
+    """The model is imported from its module because an import every module shares binds the module's name, and such
+    an import binds the model's name too: the import then binds another name (``reserve_name``)."""
 
     @property
     def same_module(self) -> bool:
@@ -86,17 +89,25 @@ class ReferenceImportTarget:
             return None
         return binding if name == self.import_ else f"{binding}.{name}"
 
+    def reserve_name(self, resolver: ModelResolver) -> None:
+        """Keep the resolver of the module from giving the import the name that a shared import binds."""
+        if self.beside_shared_import:
+            resolver.exclude_names.add(self.import_)
+
+
+def _is_bound_by_shared_import(shared_imports: Imports | None, name: str) -> bool:
+    """Return whether an import every module shares binds ``name``.
+
+    A ``__future__`` import binds a name too, but it is no import of a module's or a model's name.
+    """
+    return shared_imports is not None and any(
+        binding == name for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__"
+    )
+
 
 def _is_module_named_like_shared_import(shared_imports: Imports | None, module: str, name: str) -> bool:
-    """Return whether ``module``, which is not the ``name`` of the model it holds, is bound by a shared import.
-
-    A ``__future__`` import binds a name too, but it is no import of a module's name.
-    """
-    return (
-        shared_imports is not None
-        and module != name
-        and any(binding == module for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__")
-    )
+    """Return whether ``module``, which is not the ``name`` of the model it holds, is bound by a shared import."""
+    return module != name and _is_bound_by_shared_import(shared_imports, module)
 
 
 def reference_import_target(  # ruff: ignore[too-many-arguments]
@@ -118,8 +129,10 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     The module is imported by the path the output writes it at (``written_name``). A model is imported from its module,
     not through the module imported from its package, where an import every module shares (``shared_imports``) binds
     the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
-    name twice and ``from package import module`` would give what the package binds, not the module.
+    name twice and ``from package import module`` would give what the package binds, not the module. The import then
+    binds the model's name, which another shared import may bind too (``beside_shared_import``).
     """
+    beside_shared_import = False
     if base_class:
         left, right = relative(current_module_name, target_full_name)
         from_ = (
@@ -143,22 +156,21 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
         is_internal_module = row == "reference" and ref_module in internal_modules
+        imports_module = bool(from_) and not use_exact
+        named_like_shared_import = (
+            imports_module
+            and not (is_internal_module or is_module_class_collision)
+            and _is_module_named_like_shared_import(shared_imports, import_, name)
+        )
 
-        if (
-            from_
-            and not use_exact
-            and (
-                is_internal_module
-                or is_module_class_collision
-                or _is_module_named_like_shared_import(shared_imports, import_, name)
-            )
-        ):
+        if imports_module and (is_internal_module or is_module_class_collision or named_like_shared_import):
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
+            beside_shared_import = named_like_shared_import and _is_bound_by_shared_import(shared_imports, name)
     from_ = written_name(from_)
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
-    return ReferenceImportTarget(full_path, from_, import_, written_from)
+    return ReferenceImportTarget(full_path, from_, import_, written_from, beside_shared_import)
 
 
 def register_reference_import(  # noqa: PLR0913
@@ -197,6 +209,7 @@ def register_reference_import(  # noqa: PLR0913
     )
     if target.same_module:
         return None
+    target.reserve_name(scoped_model_resolver)
     alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
     import_ledger.append(
         imports,

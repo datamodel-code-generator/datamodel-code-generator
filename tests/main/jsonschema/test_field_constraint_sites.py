@@ -36,6 +36,8 @@ LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
         ("enum_literal_properties", LITERAL_ENUMS),
         ("enum_literal_properties", [*LITERAL_ENUMS, "--filter-literal-values"]),
         ("mixed_type_map_property", []),
+        ("array_counts_beside_other_types", []),
+        ("array_counts_beside_other_types", ["--field-constraints"]),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -44,7 +46,9 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     The root model of an array item reads its keywords whatever the options, takes the item counts its boolean items
     imply and writes no length beside a tuple, as the array of an object property does; the ``Literal`` of an enum
     property under ``--field-constraints`` writes them as a const does, unless ``--filter-literal-values`` removed
-    the values they reject; a map beside a type list that joins an array keeps its property counts.
+    the values they reject; a map beside a type list that joins an array keeps its property counts; the item counts
+    of ``contains`` belong to a field typed as an array, so a string or a model that carries them accepts what the
+    schema accepts.
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(
@@ -66,6 +70,22 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
             validate_json(json.dumps(payload))
         for change in payloads["invalid"]:
             _rejected(validate_json, {**payloads["valid"][0], **change})
+
+
+def test_root_model_of_a_reference_takes_no_item_counts(output_file: Path) -> None:
+    """Write no item count beside the model a root names, which Pydantic cannot apply it to.
+
+    ``min_length`` on a field whose type is a model raises ``Unable to apply constraint`` when the model validates any
+    array, and 0.88.0 wrote none at a root.
+    """
+    run_main_and_assert(
+        input_path=SITES / "array_counts_root_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin"],
+    )
+    with _generated_model(output_file, "field_constraint_sites_array_counts_root_reference", "Model") as model:
+        _model_json_validator(model)(json.dumps(["a", "b"]))
 
 
 def _rejected(validate_json: Any, document: object) -> None:

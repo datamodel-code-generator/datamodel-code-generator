@@ -254,6 +254,7 @@ older. A pattern in a type alias has no model that owns it, so the alias carries
 | Backspace in a character class | `[\b]` | `python-re` |
 | ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
 | Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Counted repetitions whose minimum exceeds their maximum | `a{ 3 , 2 }`, `a{3,2}` | `python-re`; Python's `re` reads the first as text, and rejects the second as Rust does (it still fails at import) |
 | Atomic groups | `(?>a+)` | `python-re`; Python's `re` parses them from 3.11 on |
 | Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
 | Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
