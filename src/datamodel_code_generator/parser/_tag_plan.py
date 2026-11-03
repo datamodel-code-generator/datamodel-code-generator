@@ -72,7 +72,7 @@ from datamodel_code_generator.model.base import (
     _ModelKeys,
     linearize_data_models,
 )
-from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum
+from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._passes._shared import (
     _FieldTagFacts,
     _format_tags,
@@ -603,25 +603,16 @@ def _is_enum_member_tag(
     return enum_source is not None and enum_source.find_member(value, coerce_strings=True) is not None
 
 
-def _members_equal_values(enum_source: Enum) -> bool:
-    """Return whether the members of an Enum equal their values at runtime, as Pydantic compares discriminator choices.
-
-    So do the members of an ``IntEnum``, a ``StrEnum`` and an Enum that subclasses its value type; a member of a plain
-    Enum equals only itself.
-    """
-    return isinstance(enum_source, (IntEnum, StrEnum)) or any(
-        base.reference is None and base.import_ is None for base in enum_source.base_classes
-    )
-
-
 def _written_enum_member_keys(
     model: DataModel, field_name: str, tag_name: str, values: list[DiscriminatorValue], *, use_field_name: bool
 ) -> list[object]:
     """Return the keys of the choices that the members a variant is written with make (``enum_discriminator_members``).
 
-    A member is its value where members equal their values, else only itself (its Enum and its value). A variant tagged
-    by no member takes every member, so its tags are their values whatever the Enum compares. A tag field that already
-    is the one ``Literal`` of the variant's tag is kept as it is.
+    A member is its value where members equal their values at runtime, as Pydantic compares discriminator choices: those
+    of an Enum with a value base (``Enum.value_base``: an ``IntEnum``, a ``StrEnum``, an Enum that subclasses its value
+    type), else only itself (its Enum and its value). A variant tagged by no member takes every member, so its tags are
+    their values whatever the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is
+    kept as it is.
     """
     literal_kept = any(
         _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
@@ -637,7 +628,7 @@ def _written_enum_member_keys(
     tags = enum_discriminator_members(enum_source, values)
     values_of_members = [tag_key(member.value, "legacy-python-equality") for member in tags.members]
     keys: list[object] = (
-        values_of_members if _members_equal_values(enum_source) else [(id(enum_source), v) for v in values_of_members]
+        values_of_members if enum_source.value_base is not None else [(id(enum_source), v) for v in values_of_members]
     )
     return [*keys, *values_of_members] if tags.rule == "all-members" else keys
 

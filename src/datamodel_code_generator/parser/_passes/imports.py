@@ -51,7 +51,7 @@ from datamodel_code_generator.model._decisions.enum_kind import literal_value_ki
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
-from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -730,19 +730,19 @@ def _msgspec_mixed_enum_message(model: Enum, *, literal_under_all: bool) -> str 
     The message recommends ``--enum-field-as-literal all`` only where that option writes the enum as a Literal
     (``literal_under_all``).
 
-    An ``IntEnum``, a ``StrEnum`` and an ``(int, Enum)`` or ``(str, Enum)`` make every value one of them, a
-    ``(float, Enum)`` or ``(bytes, Enum)`` every value a float or bytes. A plain ``Enum`` keeps the values as the
-    module writes them, where one equal to an earlier value is an alias of that member, as Python has it, so ``1`` and
-    ``True`` make one int member; msgspec skips a list or an object value, which has no hash, and refuses an enum left
-    without values.
+    The value base of an enum (``Enum.value_base``) makes every value one of its type: that of an ``IntEnum``, a
+    ``StrEnum`` and an ``(int, Enum)`` or ``(str, Enum)`` an int or a str, that of a ``(float, Enum)`` or
+    ``(bytes, Enum)`` a float or bytes. A plain ``Enum`` keeps the values as the module writes them, where one equal to
+    an earlier value is an alias of that member, as Python has it, so ``1`` and ``True`` make one int member; msgspec
+    skips a list or an object value, which has no hash, and refuses an enum left without values.
     """
     values = [value for field in model.fields if (value := get_raw_enum_member_value(field.default)) is not None]
-    value_types = {base.type for base in model.base_classes}
-    if not values or isinstance(model, (IntEnum, StrEnum)) or value_types & {"int", "str"}:
+    value_base = model.value_base
+    if not values or value_base in {"int", "str"}:
         return None
     kinds: set[str] = set()
-    if value_type := next((name for name in ("float", "bytes") if name in value_types), None):
-        kinds.add(value_type)
+    if value_base is not None:
+        kinds.add(value_base)
     else:
         members: dict[object, None] = {}
         for value in values:
@@ -781,14 +781,13 @@ def _msgspec_wide_int(values: Iterable[object]) -> int | None:
 def _msgspec_wide_int_enum_message(model: Enum) -> str | None:
     """Describe an enum holding an int that msgspec refuses (``_msgspec_wide_int``).
 
-    An ``IntEnum`` or an ``(int, Enum)`` makes every value an int, an integral float such as ``1e+19`` too; a
-    ``StrEnum`` or an enum on another value type holds no int.
+    The ``int`` value base of an ``IntEnum`` or an ``(int, Enum)`` (``Enum.value_base``) makes every value an int, an
+    integral float such as ``1e+19`` too; a ``StrEnum`` or an enum on another value type holds no int.
     """
-    value_types = {base.type for base in model.base_classes}
-    if isinstance(model, StrEnum) or value_types & {"str", "float", "bytes"}:
+    if (value_base := model.value_base) not in {None, "int"}:
         return None
     values = [get_raw_enum_member_value(field.default) for field in model.fields]
-    if isinstance(model, IntEnum) or "int" in value_types:
+    if value_base == "int":
         values = [int(value) if isinstance(value, float) and value.is_integer() else value for value in values]
     if (value := _msgspec_wide_int(values)) is None:
         return None

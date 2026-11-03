@@ -68,7 +68,7 @@ from datamodel_code_generator.model.base import (
     _share_path_identity,
     get_inherited_fields,
 )
-from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import Enum, Member, _enum_class, enum_value_base, get_raw_enum_member_value
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
@@ -999,7 +999,7 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
             if isinstance(source_model, Enum):
                 enums.append(source_model)
         if enums:
-            value_type = "int" if isinstance(enums[0], IntEnum) else "str" if isinstance(enums[0], StrEnum) else None
+            value_type = enum_value_base(type(enums[0]), row="legacy-merged-enum-specialized-only")
             kind = decide_enum_kind("merged", first_specialized=value_type is not None)
             merged_enum = _build_for_target(
                 model.target_python_version,
