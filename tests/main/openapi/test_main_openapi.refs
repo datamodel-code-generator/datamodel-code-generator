@@ -1699,6 +1699,8 @@ with-option	main/openapi/main_openapi/ref_components_as_definitions[with-option]
 without-option	main/openapi/main_openapi/ref_components_as_definitions[without-option].py	= main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py
 [test_main_openapi_ref_nullable_strict_nullable]
 	main/openapi/ref_nullable_strict_nullable.py
+[test_main_openapi_reference_object_siblings]
+	main/openapi/main_openapi/reference_object_siblings.py
 [test_main_openapi_reference_same_hierarchy_directory]
 	main/openapi/reference_same_hierarchy_directory.py
 [test_main_openapi_reference_to_component_without_model]

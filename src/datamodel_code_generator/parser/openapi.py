@@ -16,10 +16,10 @@ from functools import cache, cached_property, partial
 from operator import getitem
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Final, Optional, TypeVar, Union, cast
 from warnings import warn
 
-from pydantic import Field, StrictBool, ValidationError, field_validator
+from pydantic import Field, StrictBool, ValidationError, WrapValidator, field_validator
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
@@ -127,6 +127,22 @@ class ReferenceObject(BaseModel):
         return keep_resolved_ref(value, handler(value))
 
 
+def _reference_first(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+    """Validate a mapping whose ``$ref`` is a string as a Reference Object, and any other value as the union does.
+
+    The other members of a Reference Object are ignored (OpenAPI 3.0: they "SHALL be ignored"), whatever members of
+    the object they set; a smart union picks the member that sets more fields, which pydantic 2.8 counts.
+    """
+    if isinstance(value, dict) and isinstance(value.get("$ref"), str):
+        return ReferenceObject.model_validate(value)
+    return handler(value)
+
+
+_ObjectT = TypeVar("_ObjectT")
+OrReference = Annotated[Union[ReferenceObject, _ObjectT], WrapValidator(_reference_first)]  # noqa: UP007
+"""An OpenAPI object or a Reference Object, the reference for a mapping whose ``$ref`` is a string."""
+
+
 class ExampleObject(BaseModel):
     """Represent an OpenAPI example object."""
 
@@ -142,7 +158,7 @@ class MediaObject(BaseModel):
     schema_: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = Field(None, alias="schema")  # noqa: UP007, UP045
     itemSchema: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
     example: YamlValue = None
-    examples: Optional[Union[str, ReferenceObject, ExampleObject]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
 
     @classmethod
     @override
@@ -202,7 +218,7 @@ class ParameterObject(BaseModel):
     deprecated: bool = False
     schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")  # noqa: UP045
     example: YamlValue = None
-    examples: Optional[Union[str, ReferenceObject, ExampleObject]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
     content: dict[str, MediaObject] = Field(default_factory=dict)
 
 
@@ -214,7 +230,7 @@ class HeaderObject(BaseModel):
     deprecated: bool = False
     schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")  # noqa: UP045
     example: YamlValue = None
-    examples: Optional[Union[str, ReferenceObject, ExampleObject]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
     content: dict[str, MediaObject] = Field(default_factory=dict)
 
 
@@ -241,9 +257,9 @@ class Operation(BaseModel):
     summary: Optional[str] = None  # noqa: UP045
     description: Optional[str] = None  # noqa: UP045
     operationId: Optional[str] = None  # noqa: N815, UP045
-    parameters: list[Union[ReferenceObject, ParameterObject]] = Field(default_factory=list)  # noqa: UP007
-    requestBody: Optional[Union[ReferenceObject, RequestBodyObject]] = None  # noqa: N815, UP007, UP045
-    responses: dict[Union[str, int], Union[ReferenceObject, ResponseObject]] = Field(default_factory=dict)  # noqa: UP007
+    parameters: list[OrReference[ParameterObject]] = Field(default_factory=list)
+    requestBody: Optional[OrReference[RequestBodyObject]] = None  # noqa: N815, UP045
+    responses: dict[Union[str, int], OrReference[ResponseObject]] = Field(default_factory=dict)  # noqa: UP007
     deprecated: bool = False
 
 
@@ -251,10 +267,10 @@ class ComponentsObject(BaseModel):
     """Represent an OpenAPI components object."""
 
     schemas: dict[str, Union[ReferenceObject, JsonSchemaObject]] = Field(default_factory=dict)  # noqa: UP007
-    responses: dict[str, Union[ReferenceObject, ResponseObject]] = Field(default_factory=dict)  # noqa: UP007
-    examples: dict[str, Union[ReferenceObject, ExampleObject]] = Field(default_factory=dict)  # noqa: UP007
-    requestBodies: dict[str, Union[ReferenceObject, RequestBodyObject]] = Field(default_factory=dict)  # noqa: N815, UP007
-    headers: dict[str, Union[ReferenceObject, HeaderObject]] = Field(default_factory=dict)  # noqa: UP007
+    responses: dict[str, OrReference[ResponseObject]] = Field(default_factory=dict)
+    examples: dict[str, OrReference[ExampleObject]] = Field(default_factory=dict)
+    requestBodies: dict[str, OrReference[RequestBodyObject]] = Field(default_factory=dict)  # noqa: N815
+    headers: dict[str, OrReference[HeaderObject]] = Field(default_factory=dict)
 
 
 _HELD_OBJECTS: dict[type[BaseModel], tuple[tuple[str, type[BaseModel], bool], ...]] = {

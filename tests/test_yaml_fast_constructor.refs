@@ -474,6 +474,11 @@ openapi/ref_sibling_cycle_description.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/mapped.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/schema.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/shrubs.yaml	yaml_fast_constructor/parity.txt
+openapi/reference_object_siblings/api.yaml	yaml_fast_constructor/parity.txt
+openapi/reference_object_siblings/parameter.yaml	yaml_fast_constructor/parity.txt
+openapi/reference_object_siblings/path_item.yaml	yaml_fast_constructor/parity.txt
+openapi/reference_object_siblings/request_body.yaml	yaml_fast_constructor/parity.txt
+openapi/reference_object_siblings/response.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_same_hierarchy_directory/common/cat.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_same_hierarchy_directory/public/entities.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_to_object_properties.yaml	yaml_fast_constructor/parity.txt

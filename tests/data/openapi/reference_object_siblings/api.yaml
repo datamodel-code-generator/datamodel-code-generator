@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: Reference Objects with sibling members
+  version: "1.0"
+paths:
+  /notes:
+    $ref: path_item.yaml
+  /tags:
+    post:
+      parameters:
+        - $ref: parameter.yaml
+          name: ignored
+          in: query
+          schema:
+            type: string
+      requestBody:
+        $ref: request_body.yaml
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        "200":
+          $ref: response.yaml
+          content:
+            application/json:
+              schema:
+                type: string
