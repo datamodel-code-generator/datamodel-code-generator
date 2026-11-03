@@ -701,6 +701,7 @@ class OpenAPIParser(JsonSchemaParser):
             result["mapping"] = {k: discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)}
         return result
 
+    @override
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         normalized = discriminator_mapping_ref(value)

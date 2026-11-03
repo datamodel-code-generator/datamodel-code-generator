@@ -1075,6 +1075,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for k, v in obj.extras.items()
             if self.field_include_all_keys or k in self.field_keys
         }
+        if isinstance(discriminator := extras.get("discriminator"), dict) and isinstance(
+            mapping := discriminator.get("mapping"), dict
+        ):
+            refs = _union_tags.discriminator_mapping_refs(self, mapping)
+            extras["discriminator"] = {
+                **discriminator,
+                "mapping": _union_tags.located_mapping_paths(self, mapping, refs),
+            }
         if self.default_field_extras:
             extras.update(self.default_field_extras)
         if (default_factory := extras.get("default_factory", UNDEFINED)) is not UNDEFINED:
@@ -2632,6 +2640,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         its document. An object the schema graph does not locate gives no edge; a ``ResolvedRef`` keeps its own.
         """
         return _schema_refs.derived_ref(self, value, source, keyword, ref)
+
+    def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
+        """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
+        return self._derived_ref(value, mapping, name, value)
 
     @contextmanager
     def _home_context(self, document: str) -> Generator[None, None, None]:

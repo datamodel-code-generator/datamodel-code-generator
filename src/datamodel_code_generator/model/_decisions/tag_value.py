@@ -441,8 +441,10 @@ def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tup
 class MappingPath(str):  # noqa: FURB189 - it must be a str wherever a mapping path is read
     """A discriminator mapping path with the location it names, relative to the base of the parse (``located``).
 
-    The parser sets it where it reads the path from its document, as only that document says what a path names that
-    leaves its directory and comes back; it is None for a path that names no local file.
+    The parser sets it where it reads the mapping, to the key of the reference the path names from the document that
+    declares the mapping (``parser/_union_tags.py:located_mapping_paths``), as it resolves every reference: a path that
+    leaves its directory and comes back, or goes through a symlinked directory, names the file it leads to. It is None
+    for a path that names no local file.
     """
 
     __slots__ = ("located",)

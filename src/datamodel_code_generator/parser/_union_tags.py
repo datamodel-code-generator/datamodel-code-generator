@@ -12,9 +12,12 @@ from typing import TYPE_CHECKING, Any, Union
 
 from typing_extensions import Protocol, final
 
+from datamodel_code_generator._json_pointer import is_pointer_fragment
 from datamodel_code_generator._records import record
+from datamodel_code_generator._url_redaction import is_url
 from datamodel_code_generator.model._decisions.tag_value import (
     FieldTag,
+    MappingPath,
     distinct_tags,
     field_tag,
     tagged_union_discriminator,
@@ -35,6 +38,7 @@ __all__ = [
     "TaggedUnionValue",
     "UnionTagsHost",
     "all_of_adds_properties",
+    "discriminator_mapping_refs",
     "get_referenced_single_literal_value",
     "get_single_literal_value",
     "get_tagged_union_field_values",
@@ -46,6 +50,7 @@ __all__ = [
     "is_null_only_schema",
     "is_single_literal_schema",
     "iter_union_variant_literal_field_names",
+    "located_mapping_paths",
     "parse_combined_schema_items",
     "set_tagged_union_discriminator",
 ]
@@ -71,6 +76,12 @@ class UnionTagsHost(Protocol):
 
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names."""
+
+    def _raw_location(self, raw: object) -> SchemaLocation | None:
+        """Return the location of a JSON container of a loaded document."""
+
+    def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
+        """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
 
     def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
         """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
@@ -413,6 +424,48 @@ def get_tagged_union_field_values(
         ) is not None:
             return field_name, tag_values
     return None
+
+
+def discriminator_mapping_refs(parser: UnionTagsHost, mapping: Mapping[str, Any]) -> dict[str, str]:
+    """Return the reference each string value of a discriminator mapping names, by its key.
+
+    Each carries the edge of the mapping object (``_discriminator_mapping_ref``), so it resolves as the document that
+    declares the mapping resolves its references, whichever document holds the union. A mapping the schema graph does
+    not locate gives references without an edge, which resolve in the current context, as every such reference does.
+    """
+    location = parser._raw_location(mapping)  # noqa: SLF001
+    return {
+        tag: parser._discriminator_mapping_ref(tag, value, location)  # noqa: SLF001
+        for tag, value in mapping.items()
+        if isinstance(value, str)
+    }
+
+
+def located_mapping_paths(
+    parser: UnionTagsHost, paths: Mapping[str, str], refs: Mapping[str, str]
+) -> dict[str, MappingPath]:
+    """Return the paths of a discriminator mapping, each with the location the parser resolves it to (``MappingPath``).
+
+    The location of the path of a key is the reference key of ``refs`` under that key (``discriminator_mapping_refs``),
+    relative to the base of the parse, so a path through a symlinked directory names the file the link leads to, and a
+    path of a mapping that another document declares is resolved there. Only a path to a local file, whole or at a
+    JSON pointer, has one (``_names_local_file``); a path that resolves to a URL has none.
+    """
+    return {
+        tag: MappingPath(path, key if _names_local_file(path) and not is_url(key := parser._ref_path(ref)) else None)  # noqa: SLF001
+        for tag, ref in refs.items()
+        for path in (paths[tag],)
+    }
+
+
+def _names_local_file(path: str) -> bool:
+    """Return whether a mapping path names a local file, whole or at a JSON pointer, which resolves without reading it.
+
+    A bare name names a schema, a fragment a schema of the document itself, and a URL no local file; an anchor is
+    known only to the document it is in, which the mapping need not name a variant of.
+    """
+    file_part, _, fragment = path.partition("#")
+    return "/" in path and bool(file_part) and not is_url(path) and is_pointer_fragment(fragment)
 
 
 def set_tagged_union_discriminator(

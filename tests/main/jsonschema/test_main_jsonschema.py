@@ -37994,6 +37994,51 @@ def test_main_jsonschema_discriminator_mapping_reentered_directory_single_file(o
         )
 
 
+@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+@pytest.mark.parametrize(
+    ("extra_args", "decodes_structs"),
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], False, id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], True, id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_symlinked_directory(
+    tmp_path: Path, output_file: Path, extra_args: list[str], decodes_structs: bool
+) -> None:
+    """Tag a variant by a mapping path through a symlinked directory, as the parser resolves the path.
+
+    ``link`` is a symlink to ``defs``, so the mapping path ``./link/cat.json`` names ``defs/cat.json``, the schema the
+    union lists as ``./defs/cat.json``. Up to 0.88.0 the path was compared with the schema path of the variant as text,
+    so it named no variant and ``Cat`` was tagged by its file name, ``Literal['cat.json#']``, which no payload the
+    mapping selects it for carries (#6158).
+    """
+    schemas = tmp_path / "schemas"
+    shutil.copytree(JSON_SCHEMA_DATA_PATH / "discriminator_mapping_symlinked_directory", schemas)
+    (schemas / "link").symlink_to("defs", target_is_directory=True)
+    run_main_and_assert(
+        input_path=schemas / "main.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    module_name = f"discriminator_mapping_symlinked_directory_{'msgspec' if decodes_structs else 'pydantic'}"
+    with _generated_model(output_file, module_name, "Owner") as model:
+        decode = partial(msgspec.json.decode, type=model) if decodes_structs else _model_json_validator(model)
+        assert_output(
+            "".join(
+                f"{document}: model {_reentered_directory_verdict(decode, document)}\n"
+                for document in (
+                    '{"pet": {"pet_type": "c", "purrs": true}}',
+                    '{"pet": {"pet_type": "d", "fetches": true}}',
+                    '{"pet": {"pet_type": "cat.json#"}}',
+                )
+            )
+        )
+
+
 INHERITED_SCHEMA_TAG_DOCUMENTS: tuple[tuple[str, dict[str, Any]], ...] = (
     ("Call", {"type": "function", "name": "n"}),
     ("Call", {"type": "custom", "input": "x"}),
