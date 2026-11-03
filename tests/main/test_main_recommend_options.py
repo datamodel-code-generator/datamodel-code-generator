@@ -241,6 +241,11 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("api_operations.yaml", ["--openapi-scopes", "api"], id="api-scope-32-operations"),
         pytest.param("api_operations_31.yaml", ["--openapi-scopes", "api"], id="api-scope-31-operations"),
         pytest.param("api_operations.yaml", ["--openapi-scopes", "paths"], id="paths-scope-32-operations"),
+        pytest.param(
+            "api_excluded_path_invalid_operations.yaml",
+            ["--openapi-scopes", "api", "--openapi-include-paths", "/included"],
+            id="api-scope-excluded-path-operations",
+        ),
         pytest.param("integer_definition_keys.yaml", [], id="integer-definition-keys"),
         pytest.param(
             "paths_integer_schema_key.yaml",
@@ -267,7 +272,8 @@ def test_recommend_options_for_schemas(
     A constraint a const decides counts as redundant on the root schema as it does on any other. The api scope reads the
     operations of a path item as its walk does: the ``query`` operation and ``additionalOperations`` from OpenAPI 3.2,
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds
-    an object.
+    an object. The api scope counts only the operations of the paths ``--openapi-include-paths`` selects, so an excluded
+    path whose operations generation never reads is no error.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))

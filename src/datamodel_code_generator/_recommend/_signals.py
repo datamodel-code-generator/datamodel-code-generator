@@ -442,16 +442,23 @@ def _operation_message(channel: object, operation: str) -> object:
 
 
 def _count_operations(
-    document: Mapping[str, Any], kind: SchemaKind, scopes: AbstractSet[str], *, openapi_32: bool
+    document: Mapping[str, Any],
+    kind: SchemaKind,
+    scopes: AbstractSet[str],
+    include_paths: Sequence[str],
+    *,
+    openapi_32: bool,
 ) -> int:
     """Count OpenAPI path operations, or AsyncAPI channel and top-level operations.
 
-    The api scope counts the operations of its walk of ``paths``; the other scopes count the methods of every key of
-    ``paths``, a key that is no string included, for the size note.
+    The api scope counts the operations of its walk of the ``paths`` that ``--openapi-include-paths`` selects; the
+    other scopes count the methods of every key of ``paths``, a key that is no string included, for the size note.
     """
     if kind == "openapi":
         if "api" in scopes:
-            return sum(1 for _ in _path_operations(document, ("paths",), (), api=True, openapi_32=openapi_32))
+            return sum(
+                1 for _ in _path_operations(document, ("paths",), include_paths, api=True, openapi_32=openapi_32)
+            )
         return sum(
             method in OPERATION_METHODS
             for item in as_mapping(document.get("paths")).values()
@@ -836,7 +843,9 @@ def measure_signals(
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
         root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
-    counts["operations"] = _count_operations(document, kind, openapi_scopes, openapi_32=walker.dialect.openapi_32)
+    counts["operations"] = _count_operations(
+        document, kind, openapi_scopes, include_paths, openapi_32=walker.dialect.openapi_32
+    )
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth

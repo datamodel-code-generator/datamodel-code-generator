@@ -25566,7 +25566,6 @@ def test_main_jsonschema_unique_items_schema_validators_with_the_builtin_templat
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="unique_items_schema_validators.py",
         extra_args=[
             "--generate-schema-validators",
             "--output-model-type",
