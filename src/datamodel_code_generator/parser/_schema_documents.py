@@ -37,7 +37,7 @@ from datamodel_code_generator._document_reader import member_key
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
-from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._paths import file_uri_path, files_under
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -186,13 +186,6 @@ def _document_location(location: str, document: str) -> str:
     """Return a registry location as a reference from a document, local when it lies in the document."""
     target_document, _, pointer = location.partition("#")
     return f"#{pointer}" if target_document == document else location
-
-
-def _file_uri_path(uri: str) -> Path:
-    """Return the local path that a file URI names."""
-    from urllib.request import url2pathname  # noqa: PLC0415
-
-    return Path(url2pathname(uri[5:]))
 
 
 class SchemaDocumentsHost(Protocol):
@@ -559,7 +552,7 @@ def resolve_schema_resource_ref(
         msg = f"Embedded schema resource has no anchor {fragment!r}: {redact_url(reference)!r}"
         raise Error(msg)
     if nested_scope and resource.startswith("file://") and not reference.startswith("file://"):
-        absolute = _file_uri_path(resource).as_posix() + absolute[len(resource) :]
+        absolute = file_uri_path(resource).as_posix() + absolute[len(resource) :]
     return absolute if nested_scope else reference
 
 
@@ -606,7 +599,7 @@ def loads_document(parser: SchemaDocumentsHost, absolute: str) -> bool:
     """Return whether loading an absolute reference as a document would find one."""
     if not absolute.startswith("file://"):
         return is_url(absolute) and parser.allow_remote_refs is not False
-    return _file_uri_path(absolute.partition("#")[0]).is_file()
+    return file_uri_path(absolute.partition("#")[0]).is_file()
 
 
 def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917

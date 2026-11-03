@@ -146,6 +146,7 @@ from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
@@ -7098,15 +7099,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_ref_body_from_url(self, ref: str) -> dict[str, YamlValue]:
         """Get reference body from a URL (HTTP, HTTPS, or file scheme)."""
         if ref.startswith("file://"):
-            from urllib.request import url2pathname  # noqa: PLC0415
-
-            parsed = urlparse(ref)
-            # url2pathname handles percent-decoding and Windows drive letters
-            path = url2pathname(parsed.path)
-            # Handle UNC paths (file://server/share/path)
-            if parsed.netloc:
-                path = f"//{parsed.netloc}{path}"
-            return self._load_local_ref_document(self._resolve_local_ref_path(Path(path), ref), ref)
+            return self._load_local_ref_document(self._resolve_local_ref_path(file_uri_path(ref), ref), ref)
         if self.http_local_ref_path is not None and urlparse(ref).scheme in {"http", "https"}:
             return self._get_ref_body_from_local_http_path(ref)
         return self.remote_object_cache.get_or_put(

@@ -2167,6 +2167,17 @@ def test_main_remote_ref_allows_private_network_with_explicit_allow(
     assert_httpx_get_kwargs(httpx_get_mock, expected_url="http://127.0.0.1/schema.json")
 
 
+def test_main_jsonschema_nested_id_ref_with_query(output_file: Path) -> None:
+    """Read a relative $ref with a query inside a nested $id as the file its path names, on every Python version."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "nested_id_ref_query" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("as_uri", [pytest.param(False, id="path"), pytest.param(True, id="file-uri")])
 def test_main_missing_local_ref_error_message(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], *, as_uri: bool
