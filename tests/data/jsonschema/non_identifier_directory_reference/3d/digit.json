@@ -1,0 +1,1 @@
+{"title": "Digit", "type": "object", "properties": {"count": {"type": "integer"}}}

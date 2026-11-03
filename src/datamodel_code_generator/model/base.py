@@ -66,6 +66,7 @@ from datamodel_code_generator._requirements import backport_path, python_target_
 from datamodel_code_generator._target_unicode import (
     host_identifiers,  # noqa: F401  # Preserve the established model.base export.
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
+    is_identifier,
 )
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
@@ -1900,6 +1901,18 @@ def sanitize_module_name(name: str, *, treat_dot_as_module: bool | None) -> str:
     return sanitized
 
 
+def _directory_module_name(name: str, *, keep_dots: bool) -> str:
+    """Return the name of a directory in a module path: its own when Python imports it by that name, else a file's.
+
+    A directory whose every part is an identifier (``ユーザー``) keeps its name; any other (``my dir``, ``1.0``) is
+    sanitized as the name of a file is. Unless ``keep_dots``, the dots of the name are ``_``.
+    """
+    name = name if keep_dots else name.replace(".", "_")
+    if all(is_identifier(part, None) for part in name.split(".")):
+        return name
+    return sanitize_module_name(name, treat_dot_as_module=keep_dots)
+
+
 def get_module_path(name: str, file_path: Path | None, *, treat_dot_as_module: bool | None) -> list[str]:
     """Get the module path components from a name and file path.
 
@@ -1907,15 +1920,15 @@ def get_module_path(name: str, file_path: Path | None, *, treat_dot_as_module: b
     - None (default): Split names on dots (backward compat), but sanitize directory and file names (replace dots)
     - True: Split names on dots AND keep dots in directory and file names (for modular output)
     - False: Don't split names on dots AND sanitize directory and file names (new feature for flat output)
+    A directory that is not named as Python imports it is sanitized as a file is (``_directory_module_name``).
     """
     should_split_names = treat_dot_as_module is not False
     should_keep_dots = treat_dot_as_module is True
     if file_path:
         sanitized_stem = sanitize_module_name(file_path.stem, treat_dot_as_module=should_keep_dots)
-        directories = file_path.parts[:-1]
         module_parts = name.split(".")[:-1] if should_split_names else []
         return [
-            *(directories if should_keep_dots else (part.replace(".", "_") for part in directories)),
+            *(_directory_module_name(part, keep_dots=should_keep_dots) for part in file_path.parts[:-1]),
             sanitized_stem,
             *module_parts,
         ]
