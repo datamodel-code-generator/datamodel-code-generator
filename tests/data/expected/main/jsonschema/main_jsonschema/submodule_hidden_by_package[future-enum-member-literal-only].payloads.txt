@@ -1,0 +1,2 @@
+{"kind": "book"}: accepted Order(kind=<Kind.book: 'book'>)
+{"kind": "disc"}: rejected ValidationError

@@ -287,9 +287,10 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "DataType",
         "enum_member_literals",
         FactKind.FACT,
-        (Fact.FIELD_TYPES,),
-        Phase.CROSS_MODULE,
-        FreezePoint.B1,
+        (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+        store_ops=("name_enum_member_literal_class",),
         access=Access.CONTAINER,
     ),
     AttributeFact(

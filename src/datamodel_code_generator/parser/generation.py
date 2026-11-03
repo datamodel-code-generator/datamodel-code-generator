@@ -170,6 +170,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_target_null",
     "override_type_import",
     "name_enum_member",
+    "name_enum_member_literal_class",
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
@@ -1970,6 +1971,13 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().name_enum_member_literal_class() instead.", category=None)
+    def name_enum_member_literal_class(data_type: DataType, enum_class: str) -> None:
+        """Write the expression the members of an enum member literal name their enum by, which every holder sees."""
+        data_type.enum_member_literals = [(enum_class, member) for _, member in data_type.enum_member_literals]
+        bump_node(data_type)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().add_model_import() instead.", category=None)
     def add_model_import(model: DataModel, import_: Import) -> None:
         """Add an import to a model once."""
@@ -2529,6 +2537,10 @@ class GraphBuilder:
     def name_enum_member(self, field_: DataModelFieldBase, member: Member, alias: str | None) -> None:
         """Write the expression the enum member in a default names its enum by through ``name_enum_member``."""
         self._store.name_enum_member(field_, member, alias)  # ty: ignore[deprecated]
+
+    def name_enum_member_literal_class(self, data_type: DataType, enum_class: str) -> None:
+        """Write the expression an enum member literal names its enum by through ``name_enum_member_literal_class``."""
+        self._store.name_enum_member_literal_class(data_type, enum_class)  # ty: ignore[deprecated]
 
     def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""

@@ -7,9 +7,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from . import annotations
+from .annotations import Item, Kind
 
 
 class Order(BaseModel):
-    item: annotations.Item | None = None
-    kind: Literal[annotations.Kind.book] | None = None
+    item: Item | None = None
+    kind: Literal[Kind.book] | None = None
