@@ -710,8 +710,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         source_name: str,
         class_name: str,
         row: FieldAliasRow,
+        inherits: bool | None = None,
     ) -> None:
-        """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
+        """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``.
+
+        ``inherits`` tells whether its class has a generated base class (the model that holds the field says so when
+        it is not given).
+        """
         single_alias, validation_aliases, serialization_alias = self._field_aliases(
             alias, name=name, source_name=source_name, class_name=class_name
         )
@@ -733,7 +738,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and serialization_alias is not None
         ):
             identity["serialization_alias"] = serialization_alias
-        self._graph_builder.set_field_identity(field, identity)
+        self._graph_builder.set_field_identity(field, identity, inherits=inherits)
 
     @classmethod
     def _get_config_class(cls) -> type[ParserConfig]:
@@ -1251,7 +1256,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return first_present(self.serialization_aliases, field_keys(class_name, original_field_name, field_name))[0]
 
     def _apply_final_class_field_aliases(
-        self, fields: list[DataModelFieldBase], class_name: str, original_class_name: str
+        self,
+        fields: list[DataModelFieldBase],
+        class_name: str,
+        original_class_name: str,
+        base_classes: list[Reference],
     ) -> None:
         """Apply final class scopes after name allocation, retaining already resolved fallback aliases."""
         if class_name == original_class_name or not (aliases := self.config.aliases):
@@ -1286,6 +1295,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 source_name=original_name,
                 class_name=class_name,
                 row="final-class",
+                inherits=bool(base_classes),
             )
             field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_name
 

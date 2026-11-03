@@ -1157,17 +1157,45 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return True
 
     def copy_deep(self) -> Self:
-        """Create a deep copy of this field to avoid mutating the original."""
-        copied = self.model_copy()
-        copied.parent = None
-        copied.extras = deepcopy(self.extras)
-        copied.data_type = self.data_type.model_copy()
-        if self.data_type.data_types:
-            copied.data_type.data_types = [dt.model_copy() for dt in self.data_type.data_types]
-        if self.data_type.dict_key:
-            copied.data_type.dict_key = self.data_type.dict_key.model_copy()
+        """Create a copy that owns its type tree, extras, validation aliases and default (``copy_owning``)."""
+        copied = self.copy_owning()
         copied.invalidate_semantic_caches()
         return copied
+
+    def copy_owning(
+        self, *, data_type: DataType | None = None, register_references: bool = True, **values: Any
+    ) -> Self:
+        """Copy the field with its own type tree (``data_type`` when given), extras, validation aliases and default.
+
+        The copy shares the references its types name, registered with them unless ``register_references`` is false,
+        and takes every field value in ``values`` when it is made, so no caller finishes it by hand. A copy given
+        ``extras`` or ``default`` owns those instead of a copy of this field's.
+        """
+        from datamodel_code_generator.types import _copy_data_type  # noqa: PLC0415
+
+        copied_data_type = data_type or _copy_data_type(self.data_type, register_references=register_references)
+        update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
+        if "extras" not in values:
+            update["extras"] = deepcopy(self.extras)
+        if self.validation_aliases is not None:
+            update["validation_aliases"] = list(self.validation_aliases)
+        if "default" not in values:
+            match self.default:
+                case dict() | list() | set():
+                    update["default"] = deepcopy(self.default)
+        update.update(values)
+        copied = self.model_copy(update=update)
+        copied_data_type.parent = copied
+        return copied
+
+    def alias_form(self, *, inherits: bool = False) -> dict[str, Any]:  # noqa: PLR6301, ARG002
+        """Return the aliases this field class writes in place of the ones it holds; none when it writes them as held.
+
+        A field takes its aliases when it is built and when the names of a field built earlier change
+        (``GenerationStore.set_field_identity``, ``rename_field``): both write this form. ``inherits`` tells whether
+        the class that holds the field has a generated base class; a field built before its class is made has none.
+        """
+        return {}
 
     def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
         """Clear field caches derived from mutable type and parent semantics, and move the field's revision."""

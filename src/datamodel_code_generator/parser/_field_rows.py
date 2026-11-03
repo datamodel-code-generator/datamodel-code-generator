@@ -39,7 +39,6 @@ FieldRow: TypeAlias = Literal[
     "array-root",
     "root",
     "enum-member",
-    "graphql-enum-member",
     "bare",
 ]
 """The kind of a field, by the configured options it takes.
@@ -52,7 +51,7 @@ FieldRow: TypeAlias = Literal[
 * ``typename``: the ``__typename`` field of a GraphQL type.
 * ``array-root``: the root field of an array root model.
 * ``root``: the root field of any other root model.
-* ``enum-member``, ``graphql-enum-member``: a member of an enum class.
+* ``enum-member``: a member of an enum class.
 * ``bare``: the root field of a root model that only names another type, a GraphQL enum alias and a GraphQL union
   member.
 """
@@ -174,7 +173,6 @@ FIELD_OPTIONS_LEFT_OUT: Final[Mapping[FieldRow, frozenset[str]]] = {
     "array-root": _ROOT_LEAVES_OUT,
     "root": _ROOT_LEAVES_OUT | {"use_serialize_as_any"},
     "enum-member": _ROOT_LEAVES_OUT | {"use_serialize_as_any", "use_annotated"},
-    "graphql-enum-member": _ROOT_LEAVES_OUT | _DESCRIPTIONS | {"use_serialize_as_any", "use_annotated"},
     "bare": _ROOT_LEAVES_OUT
     | _DESCRIPTIONS
     | {"strip_default_none", "order_constructor_fields_by_written_defaults", "use_serialize_as_any", "use_annotated"},

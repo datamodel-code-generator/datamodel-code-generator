@@ -3432,6 +3432,30 @@ def test_copy_deep_with_dict_key() -> None:
     assert dict_value_type.type == "str"
 
 
+def test_copy_deep_owns_nested_types_aliases_and_default() -> None:
+    """Test that copy_deep gives the copy its own nested types, validation aliases and default."""
+    inner = DataType(type="str")
+    middle = DataType(data_types=[inner], is_list=True)
+    top = DataType(data_types=[middle], is_optional=True)
+    field = DataModelFieldBase(name="a", data_type=top, default=[1], validation_aliases=["x"], required=False)
+
+    copied = field.copy_deep()
+
+    assert copied.data_type.parent is copied
+    assert copied.data_type.data_types[0].parent is copied.data_type
+    assert copied.data_type.data_types[0].data_types[0] is not inner
+    assert copied.validation_aliases == ["x"]
+    assert copied.validation_aliases is not field.validation_aliases
+    assert copied.default == [1]
+    assert copied.default is not field.default
+    copied.data_type.data_types[0].data_types[0].type = "int"
+    copied.validation_aliases.append("y")
+    copied.default.append(2)
+    assert field.data_type.data_types[0].data_types[0].type == "str"
+    assert field.validation_aliases == ["x"]
+    assert field.default == [1]
+
+
 def test_copy_deep_with_extras() -> None:
     """Test that copy_deep properly deep copies extras."""
     field = DataModelFieldBase(

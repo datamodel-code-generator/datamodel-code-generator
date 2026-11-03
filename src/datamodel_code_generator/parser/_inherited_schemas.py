@@ -576,6 +576,7 @@ class InheritedSchemasHost(Protocol):
         source_name: str,
         class_name: str,
         row: FieldAliasRow,
+        inherits: bool | None = None,
     ) -> None:
         """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
 
@@ -1927,6 +1928,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
             source_name=required_field_name,
             class_name=class_name,
             row="required-copy",
+            inherits=bool(base_classes),
         )
         parser._prepare_required_inherited_field(copied_field, inherited_field)  # noqa: SLF001
         parser._apply_inherited_field_default(copied_field, inherited_field, class_name=class_name)  # noqa: SLF001
