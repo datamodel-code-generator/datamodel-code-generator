@@ -25,6 +25,7 @@ from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_output import write_streamed_json
 from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -57,7 +58,9 @@ def _sha256(value: bytes) -> str:
 
 def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult, int | None]:
     """Parse and validate the HTTP(S) origin fields used by a lock entry."""
-    message = "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {redact_url(url)!r}"
+    message = (
+        "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {stable_repr(redact_url(url))}"
+    )
     try:
         parsed = urlsplit(url)
         port = parsed.port

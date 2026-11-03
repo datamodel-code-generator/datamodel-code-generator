@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -67,10 +68,10 @@ class _Sockets(_Streams):
         at, name = helper.at, helper.name
         problems: list[Diagnostic] = []
         if spec.contract.method != "get":
-            message = f"The WebSocket helper {name!r} opens {_label(spec)}, which is not a GET operation"
+            message = f"The WebSocket helper {stable_repr(name)} opens {_label(spec)}, which is not a GET operation"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         elif spec.body is not None:
-            message = f"The WebSocket helper {name!r} opens {_label(spec)}, which takes a request body"
+            message = f"The WebSocket helper {stable_repr(name)} opens {_label(spec)}, which takes a request body"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         locations = self.locations(helper, spec, _references(helper), problems)
         if problems:

@@ -68,7 +68,7 @@ from datamodel_code_generator.parser._passes._keys import (
     raw_schema_default,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
-from datamodel_code_generator.python_literal import _text_constructor_expression
+from datamodel_code_generator.python_literal import _text_constructor_expression, stable_repr
 from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
@@ -1451,7 +1451,7 @@ def _keeps_instance_field(field: DataModelFieldBase, source_name: str) -> bool:
 
 def _format_tags(tags: list[DiscriminatorValue]) -> str:
     """Spell discriminator tags as the document writes them."""
-    return ", ".join(map(repr, tags))
+    return ", ".join(map(stable_repr, tags))
 
 
 def enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:

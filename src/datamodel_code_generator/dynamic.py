@@ -29,6 +29,7 @@ from datamodel_code_generator._module_paths import dotted_module, is_package_ini
 from datamodel_code_generator._process_state import ABSENT, restore_entry
 from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config
 from datamodel_code_generator.enums import DataModelType, InputFileType
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -289,7 +290,7 @@ def _normalize_target_model_names(target_model_names: Sequence[str] | None) -> t
 
     invalid_names = [name for name in target_names if not isinstance(name, str) or not name]
     if invalid_names:
-        invalid_values = ", ".join(repr(name) for name in invalid_names)
+        invalid_values = ", ".join(stable_repr(name) for name in invalid_names)
         msg = f"target_model_names contains invalid model names: {invalid_values}."
         raise Error(msg)
 
@@ -302,7 +303,7 @@ def _filter_target_models(models: dict[str, type], target_model_names: tuple[str
 
     missing_names = [name for name in target_model_names if name not in models]
     if missing_names:
-        requested_models = ", ".join(repr(name) for name in missing_names)
+        requested_models = ", ".join(stable_repr(name) for name in missing_names)
         available_models = ", ".join(sorted(models)) or "<none>"
         msg = (
             f"Generated dynamic models do not include requested target_model_names: {requested_models}. "

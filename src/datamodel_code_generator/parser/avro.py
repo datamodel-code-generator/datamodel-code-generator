@@ -105,10 +105,11 @@ def _logical_default_expression(kind: str, value: str) -> Any:
     from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
         PythonRuntimeExpression,
         _isoformat_expression,
+        stable_repr,
     )
 
     if kind == "decimal":
-        return PythonRuntimeExpression.from_import_call(Import(from_="decimal", import_="Decimal"), repr(value))
+        return PythonRuntimeExpression.from_import_call(Import(from_="decimal", import_="Decimal"), stable_repr(value))
     if kind == "timedelta":
         return PythonRuntimeExpression.from_import_call(
             Import(from_="datetime", import_="timedelta"), f"milliseconds={value}"
@@ -246,7 +247,9 @@ class _AvroSchemaConverter:
             case dict() as schema:
                 return self._convert_schema_dict(schema, namespace, root=root)
 
-        msg = f"Unsupported Avro schema value: {schema!r}"
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = f"Unsupported Avro schema value: {stable_repr(schema)}"
         raise Error(msg)
 
     def _convert_schema_dict(
@@ -268,7 +271,9 @@ class _AvroSchemaConverter:
             case str() as type_name:
                 return self._convert_schema_object(schema, type_name, namespace, root=root)
             case _:
-                msg = f"Avro schema object requires a string, object, or union type: {schema!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Avro schema object requires a string, object, or union type: {stable_repr(schema)}"
                 raise Error(msg)
 
     def _convert_schema_object(
@@ -330,7 +335,9 @@ class _AvroSchemaConverter:
                     raise Error(msg)
                 union_type = type_value if isinstance(type_value, str) and type_value not in NAMED_TYPES else None
             else:
-                msg = f"Unsupported Avro union value: {item!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Unsupported Avro union value: {stable_repr(item)}"
                 raise Error(msg)
 
             if union_type is None:
@@ -363,7 +370,9 @@ class _AvroSchemaConverter:
         elif type_value == "fixed":
             converted = self._convert_fixed(raw_schema, fullname)
         else:  # pragma: no cover
-            msg = f"Unsupported Avro named type: {type_value!r}"
+            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+            msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
             raise Error(msg)
         converted.setdefault("title", definition_key)
         self._building_definitions.remove(fullname)

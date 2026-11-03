@@ -28,6 +28,7 @@ from typing_extensions import Sentinel
 from datamodel_code_generator import _format_types
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
@@ -146,7 +147,10 @@ class _WatchSourceLoader(Loader):
         if callable(exec_module):
             exec_module(module)
             return
-        msg = f"cannot load module {module.__name__!r}: get_source() returned None and exec_module() is unavailable"
+        msg = (
+            f"cannot load module {stable_repr(module.__name__)}: get_source() returned None and exec_module() is "
+            "unavailable"
+        )
         raise ImportError(msg)
 
 
@@ -692,7 +696,7 @@ class CodeFormatter:
         except ImportError as e:
             from datamodel_code_generator import Error  # noqa: PLC0415
 
-            msg = f"Unable to import custom formatter {custom_formatter_import!r}: {e}"
+            msg = f"Unable to import custom formatter {stable_repr(custom_formatter_import)}: {e}"
             raise Error(msg) from e
 
         if not hasattr(import_, "CodeFormatter"):

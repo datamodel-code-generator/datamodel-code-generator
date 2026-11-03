@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -109,7 +110,7 @@ class TemplateOverlay:
         try:
             return self.environment.get_template(template).render(**values)
         except TemplateNotFound as error:
-            message = f"{PurePosixPath(self.SUBDIR, template)}: template {error.name!r} not found"
+            message = f"{PurePosixPath(self.SUBDIR, template)}: template {stable_repr(error.name)} not found"
             raise APIGenerationError((self.problem(message),)) from None
         except TemplateError as error:
             name = PurePosixPath(self.SUBDIR, getattr(error, "name", None) or template)

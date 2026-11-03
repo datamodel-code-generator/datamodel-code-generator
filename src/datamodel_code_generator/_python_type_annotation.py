@@ -10,6 +10,7 @@ from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
 from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_name
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -33,7 +34,7 @@ class PythonTypeName(PythonTypeExpr):
 
     def __post_init__(self) -> None:
         if self.value != "None" and not is_python_name(self.value, NEWEST_TARGET):
-            msg = f"Python type name must be one identifier: {self.value!r}"
+            msg = f"Python type name must be one identifier: {stable_repr(self.value)}"
             raise ValueError(msg)
 
 
@@ -45,7 +46,7 @@ class PythonTypeQualifiedName(PythonTypeExpr):
 
     def __post_init__(self) -> None:
         if not self.parts or not all(is_python_name(part, NEWEST_TARGET) for part in self.parts):
-            msg = f"Python qualified type name must contain identifiers: {self.parts!r}"
+            msg = f"Python qualified type name must contain identifiers: {stable_repr(self.parts)}"
             raise ValueError(msg)
 
 
@@ -63,7 +64,9 @@ class PythonTypeRuntimeSymbol(PythonTypeExpr):
             or not all(is_python_name(part, NEWEST_TARGET) for part in self.qualname_parts)
             or not all(is_python_name(part, NEWEST_TARGET) for part in module_parts)
         ):
-            msg = f"Invalid runtime Python type identity: {self.module!r}, {self.qualname_parts!r}"
+            msg = (
+                f"Invalid runtime Python type identity: {stable_repr(self.module)}, {stable_repr(self.qualname_parts)}"
+            )
             raise ValueError(msg)
 
 
@@ -76,7 +79,7 @@ class PythonTypeMember(PythonTypeExpr):
 
     def __post_init__(self) -> None:
         if not is_python_name(self.name, NEWEST_TARGET):
-            msg = f"Python type member must be one identifier: {self.name!r}"
+            msg = f"Python type member must be one identifier: {stable_repr(self.name)}"
             raise ValueError(msg)
 
 
@@ -90,7 +93,10 @@ class PythonTypeBoundName(PythonTypeExpr):
 
     def __post_init__(self) -> None:
         if not is_python_name(self.value, NEWEST_TARGET) or not self.import_name:
-            msg = f"Invalid bound Python type name: {self.value!r}, {self.import_from!r}, {self.import_name!r}"
+            msg = (
+                f"Invalid bound Python type name: {stable_repr(self.value)}, {stable_repr(self.import_from)}, "
+                f"{stable_repr(self.import_name)}"
+            )
             raise ValueError(msg)
 
 
@@ -167,7 +173,7 @@ class PythonTypeLiteralValue(PythonTypeExpr):
 
     def __post_init__(self) -> None:
         if self.value is not None and type(self.value) not in _LITERAL_VALUE_TYPES:
-            msg = f"Unsupported Python type literal value: {self.value!r}"
+            msg = f"Unsupported Python type literal value: {stable_repr(self.value)}"
             raise ValueError(msg)
         if isinstance(self.value, float) and math.isnan(self.value):
             msg = "NaN is not a supported Python type literal value"
@@ -299,7 +305,7 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
             return subscript_text(rendered_base, map(render_python_type_expr, expression.arguments))
         case PythonTypeModelField():
             member = "model_fields" if expression.pydantic else "__annotations__"
-            result = f"{render_python_type_expr(expression.model)}.{member}[{expression.field_name!r}]"
+            result = f"{render_python_type_expr(expression.model)}.{member}[{stable_repr(expression.field_name)}]"
             if expression.pydantic:
                 result += ".annotation"
             for index in expression.arguments:
@@ -317,7 +323,7 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
         case PythonTypeLiteralValue():
             if isinstance(expression.value, float) and math.isinf(expression.value):
                 return "1e309" if expression.value > 0 else "-1e309"
-            return repr(expression.value)
+            return stable_repr(expression.value)
         case PythonTypeEllipsis():
             return "..."
     msg = f"Unsupported Python type expression: {type(expression).__name__}"

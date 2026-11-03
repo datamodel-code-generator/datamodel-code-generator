@@ -41,6 +41,7 @@ from datamodel_code_generator.parser.jsonschema import (
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_asyncapi_version
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
 
@@ -229,10 +230,9 @@ def _parse_multi_format_schema_object(
 
 def _unsupported_schema_format_error(schema_format: str, path: list[str]) -> Error:
     msg = (
-        f"Unsupported AsyncAPI schemaFormat {schema_format!r} at {_path_to_string(path)}. "
-        "Supported embedded schema formats are AsyncAPI Schema Object, JSON Schema, "
-        "OpenAPI Schema Object, Avro, Protocol Buffers, and XML Schema. RAML and custom schema "
-        "formats are not supported inside AsyncAPI documents."
+        f"Unsupported AsyncAPI schemaFormat {stable_repr(schema_format)} at {_path_to_string(path)}. Supported "
+        "embedded schema formats are AsyncAPI Schema Object, JSON Schema, OpenAPI Schema Object, Avro, Protocol "
+        "Buffers, and XML Schema. RAML and custom schema formats are not supported inside AsyncAPI documents."
     )
     return Error(msg)
 
@@ -442,8 +442,8 @@ class AsyncAPIParser(OpenAPIParser):
             case "asyncapi" | "jsonschema" | "openapi":
                 if not isinstance(raw_schema, (dict, bool)):
                     msg = (
-                        f"AsyncAPI schemaFormat {schema_format or 'default AsyncAPI schema'!r} "
-                        f"requires a schema object at {_path_to_string(path)}"
+                        f"AsyncAPI schemaFormat {stable_repr(schema_format or 'default AsyncAPI schema')} requires a "
+                        f"schema object at {_path_to_string(path)}"
                     )
                     raise Error(msg)
                 return [self._schema(name, raw_schema, path, location=location)]

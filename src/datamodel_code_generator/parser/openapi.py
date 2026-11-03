@@ -68,6 +68,7 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
 )
 from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     FIELD_ORIGIN_KEY,
     SCHEMA_LOCATION_KEY,
@@ -618,7 +619,7 @@ class OpenAPIParser(JsonSchemaParser):
         ]
 
     def _insert_info_version_constant(self, body: str, info_version: str) -> str:  # noqa: PLR6301
-        constant = f"OPENAPI_INFO_VERSION = {info_version!r}"
+        constant = f"OPENAPI_INFO_VERSION = {stable_repr(info_version)}"
         if not body:
             return constant
 

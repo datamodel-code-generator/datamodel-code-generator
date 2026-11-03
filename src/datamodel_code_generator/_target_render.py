@@ -10,6 +10,7 @@ from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, tuple_display
 from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, TargetPydanticVersion, _pydantic_version_key
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -71,7 +72,7 @@ def member_plan(local: Callable[[str, str], str], plan: FieldPlan | PartPlan) ->
     through `local` from the module of the package's runtime copy that defines it.
     """
     repeated = (keyword_argument("repeated", "True"),) if plan.repeated else ()
-    return call_text(_record_class(local, plan), (repr(plan.name), repr(plan.kind), *repeated))
+    return call_text(_record_class(local, plan), (stable_repr(plan.name), stable_repr(plan.kind), *repeated))
 
 
 def runtime_record(
@@ -117,7 +118,7 @@ def _record_class(local: Callable[[str, str], str], record: object) -> str:
 def _record_value(local: Callable[[str, str], str], value: object) -> str:
     if type(value) is tuple:
         return tuple_display(_record_value(local, item) for item in value)
-    return runtime_record(local, value) if is_dataclass(value) and not isinstance(value, type) else repr(value)
+    return runtime_record(local, value) if is_dataclass(value) and not isinstance(value, type) else stable_repr(value)
 
 
 def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str:
@@ -129,7 +130,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str
                 return tuple_display(member_plan(local, item) for item in value)
             case "additional":
                 return member_plan(local, value)
-        return repr(value)
+        return stable_repr(value)
 
     return runtime_record(local, plan, spelled)
 
@@ -160,7 +161,7 @@ def pydantic_target_problem(
     ):
         return None
     if sentinel:
-        reason = f", which it sets for {backend!r} models," if implied else ","
+        reason = f", which it sets for {stable_repr(backend)} models," if implied else ","
         return (
             f"needs model_config.target_pydantic_version {REQUIREMENTS['pydantic.missing_sentinel'].minimum} for "
             f"--use-missing-sentinel{reason} "
@@ -168,7 +169,7 @@ def pydantic_target_problem(
         )
     allowed = english_list(
         (
-            repr(item.value)
+            stable_repr(item.value)
             for item in TargetPydanticVersion
             if pydantic_target_meets("pydantic.api_target_runtime", item)
         ),

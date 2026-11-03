@@ -65,6 +65,7 @@ from datamodel_code_generator.parser._schema_reading import (
 )
 from datamodel_code_generator.parser.base import title_to_class_name
 from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures, _detect_declared_jsonschema_version
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import SchemaLocation, is_url
 from datamodel_code_generator.util import get_yaml_parse_errors
 
@@ -549,7 +550,7 @@ def resolve_schema_resource_ref(
         and (root := parser._schema_resource_locations.get(resource)) is not None  # noqa: SLF001
         and root.split("#", 1)[1]
     ):
-        msg = f"Embedded schema resource has no anchor {fragment!r}: {redact_url(reference)!r}"
+        msg = f"Embedded schema resource has no anchor {stable_repr(fragment)}: {stable_repr(redact_url(reference))}"
         raise Error(msg)
     if nested_scope and resource.startswith("file://") and not reference.startswith("file://"):
         absolute = file_uri_path(resource).as_posix() + absolute[len(resource) :]
@@ -575,15 +576,16 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
         if not lenient_pointer_exists(parser, document, reference):
             return target if lenient_pointer_exists(parser, document, target) else reference
         message = (
-            f"$ref {redact_url(reference)!r} in {source} is resolved against the document for compatibility, "
-            f"but JSON Schema resolves it against the enclosing $id, to {redact_url(target)!r}."
+            f"$ref {stable_repr(redact_url(reference))} in {source} is resolved against the document for "
+            "compatibility, but JSON Schema resolves it against the enclosing $id, to "
+            f"{stable_repr(redact_url(target))}."
         )
     else:
         if not loads_document(parser, urljoin(parser._schema_resource_root_bases[document], reference)):  # noqa: SLF001
             return target
         message = (
-            f"$ref {redact_url(reference)!r} in {source} loads the referenced document for compatibility, "
-            f"but JSON Schema resolves it to the schema with that $id at {redact_url(target)!r}."
+            f"$ref {stable_repr(redact_url(reference))} in {source} loads the referenced document for compatibility, "
+            f"but JSON Schema resolves it to the schema with that $id at {stable_repr(redact_url(target))}."
         )
     parser._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")  # noqa: SLF001
     return reference

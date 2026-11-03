@@ -16,6 +16,7 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._requirements import backport_path
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, string_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -176,8 +177,8 @@ class Imports(defaultdict[str | None, set[str]]):
             source_name = self.alias.get(source_key[0], {}).get(source_key[1], source_key[1])
             if (target_name := effective_names.setdefault(target_key, source_name)) != source_name:
                 msg = (
-                    f"Import override for {target_key[1]!r} produces conflicting names: "
-                    f"{target_name!r} and {source_name!r}"
+                    f"Import override for {string_repr(target_key[1], NEWEST_TARGET)} produces conflicting names: "
+                    f"{string_repr(target_name, NEWEST_TARGET)} and {string_repr(source_name, NEWEST_TARGET)}"
                 )
                 raise ValueError(msg)
 

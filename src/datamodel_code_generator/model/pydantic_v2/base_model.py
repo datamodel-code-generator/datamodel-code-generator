@@ -371,9 +371,9 @@ class _LegacyPydanticExtraTemplate:
 
     def _warn_template_update(self, status: str) -> None:
         warn(
-            f"Legacy custom template {self._template.filename!r} {status} for Pydantic typed-extra compatibility. "
-            "Update the template to declare __pydantic_extra__ in the class body and remove the post-class "
-            "annotation assignment and model_rebuild(force=True).",
+            f"Legacy custom template {stable_repr(self._template.filename)} {status} for Pydantic typed-extra "
+            "compatibility. Update the template to declare __pydantic_extra__ in the class body and remove the "
+            "post-class annotation assignment and model_rebuild(force=True).",
             stacklevel=3,
         )
 
@@ -1018,7 +1018,7 @@ class DataModelField(_PydanticBaseDataModelField):
         args.pop("alias", "validation-aliases", _VALIDATION_ALIASES)
         args.put(
             "validation_alias",
-            _RawRepr(call_text("AliasChoices", map(repr, unique_validation_aliases))),
+            _RawRepr(call_text("AliasChoices", map(stable_repr, unique_validation_aliases))),
             _VALIDATION_ALIASES,
             ("validation_aliases",),
         )

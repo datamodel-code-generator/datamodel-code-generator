@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, g
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -791,12 +792,12 @@ def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ..
     None when the requirement lists them as anything but an array of strings.
     """
     if scopes is None:
-        return f"must list its scopes as an array of strings for scheme {name!r}"
+        return f"must list its scopes as an array of strings for scheme {stable_repr(name)}"
     tokens = fact(declaration, "type") in _SCOPE_SCHEMES
     if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
-        return f"requires valid scope tokens for scheme {name!r}"
+        return f"requires valid scope tokens for scheme {stable_repr(name)}"
     if scopes and not tokens and openapi_release(openapi, row="legacy-target-version-text") == (3, 0):
-        return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"
+        return f"lists scopes for scheme {stable_repr(name)}, whose type takes none in OpenAPI 3.0"
     return None
 
 

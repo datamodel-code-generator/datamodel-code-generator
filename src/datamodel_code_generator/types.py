@@ -96,7 +96,7 @@ from datamodel_code_generator.imports import (
     _import_key,
     _import_path,
 )
-from datamodel_code_generator.python_literal import represent_python_value
+from datamodel_code_generator.python_literal import represent_python_value, stable_repr
 from datamodel_code_generator.reference import Reference, _BaseModel
 from datamodel_code_generator.util import create_module_getattr
 
@@ -1021,7 +1021,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         Output-specific DataType subclasses should override this compatibility
         fallback so their generated syntax remains owned by the output backend.
         """
-        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
+        return subscript_text("Annotated", (type_, f"Field(discriminator={stable_repr(discriminator)})"))
 
     _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = WRITTEN_CONTAINERS
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
@@ -1418,7 +1418,7 @@ def _render_apply(expr: TypeApply) -> str:
         else:
             text = subscript_text(container, (text,)) if text else container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
-        text = repr(text) if '"' in text or "\\" in text else f'"{text}"'
+        text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
         return node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
@@ -1447,7 +1447,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
             parts = (
                 [f"{enum_class}.{member}" for enum_class, member in node.enum_member_literals]
                 if node.enum_member_literals
-                else [repr(literal) for literal in node.literals]
+                else [stable_repr(literal) for literal in node.literals]
             )
             text = subscript_text(node._literal_name, parts)  # noqa: SLF001
     return text, member_null

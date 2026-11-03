@@ -23,7 +23,7 @@ from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.python_literal import _converted_float
+from datamodel_code_generator.python_literal import _converted_float, stable_repr
 from datamodel_code_generator.util import (
     _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
     record_watch_dependency,
@@ -429,7 +429,7 @@ class _ProtoInputPreparer:
             for import_path in WEAK_IMPORT_PATTERN.findall(text):
                 stub = (weak_import_dir / import_path).resolve()
                 if not stub.is_relative_to(weak_import_dir):
-                    msg = f"Invalid Protocol Buffers weak import path: {import_path!r}"
+                    msg = f"Invalid Protocol Buffers weak import path: {stable_repr(import_path)}"
                     raise SchemaParseError(msg)
                 if any((include_path / import_path).exists() for include_path in include_paths):
                     continue
@@ -542,8 +542,8 @@ class _ProtobufDescriptorConverter:
             return declared
         if self.schema_version_mode == VersionMode.Strict and self.protobuf_version != declared:
             warn(
-                f"Protobuf file {file_descriptor.name!r} declares {declared.value}, "
-                f"but --schema-version {self.protobuf_version.value} was requested.",
+                f"Protobuf file {stable_repr(file_descriptor.name)} declares {declared.value}, but --schema-version "
+                f"{self.protobuf_version.value} was requested.",
                 stacklevel=3,
             )
         return self.protobuf_version
@@ -661,7 +661,7 @@ class _ProtobufDescriptorConverter:
             return None
         map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
         if map_key_python_type is None:  # pragma: no cover
-            msg = f"Protocol Buffers map field {field.name!r} uses unsupported key type"
+            msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
             raise SchemaParseError(msg)
         value_field = next((item for item in entry.field if item.name == "value"), None)
         if value_field is None:  # pragma: no cover

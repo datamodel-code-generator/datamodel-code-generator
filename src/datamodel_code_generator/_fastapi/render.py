@@ -75,6 +75,7 @@ from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none, container_slot
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -688,7 +689,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             app=f"{self.config.package}.main:app",
             services=self.services_package,
             implementations=sorted(owned, key=lambda item: casefold(item.module, target)),
-            table=[Keyword(repr(item.module), repr(item.name)) for item in owned],
+            table=[Keyword(stable_repr(item.module), stable_repr(item.name)) for item in owned],
             missing=missing,
             create_app=create_app,
             arguments=[Keyword(item.keyword, f"{item.alias}()" if item.base else item.alias) for item in owned],
@@ -804,11 +805,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
         options = subscript_text("dict", ("str", module.name("typing", "Any")))
-        info = dict_display((repr(key), repr(value)) for key, value in self.plan.info)
+        info = dict_display((stable_repr(key), stable_repr(value)) for key, value in self.plan.info)
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
         exports = sorted({
-            *(repr(module.local(*item)) for item in (*_EXPORTS, *(_SECURITY_EXPORTS if secured else ()))),
+            *(stable_repr(module.local(*item)) for item in (*_EXPORTS, *(_SECURITY_EXPORTS if secured else ()))),
             "'build_router'",
             "'create_app'",
         })
@@ -875,7 +876,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         )
         entries = {
             templated: [
-                RouteEntry(repr(spec.python_name), f"_add_{spec.python_name}")
+                RouteEntry(stable_repr(spec.python_name), f"_add_{spec.python_name}")
                 for spec in operations
                 if spec.route.templated is templated
             ]
@@ -913,8 +914,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         lookup = Lookup(
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
-            repr(label),
-            tuple_display(repr(argument.name) for argument in spec.arguments),
+            stable_repr(label),
+            tuple_display(stable_repr(argument.name) for argument in spec.arguments),
             asynchronous,
         )
         parameters = [
@@ -940,7 +941,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             wiring=names["wiring"],
             service=names["service"],
             protocol=subscript_text(service, ("object",)) if group.secured else service,
-            group=repr(group.stem),
+            group=stable_repr(group.stem),
             handler=handler,
             lookup=lookup,
             principal=None if not principal else self.principal(module, spec, names),
@@ -970,7 +971,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         parameters: list[Parameter] = []
         for scheme, needed in scopes.items():
             local = names[scheme] = scope.claim(self.scheme_names[scheme])
-            arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
+            arguments = f"{security}.{self.scheme_names[scheme]}" + (
+                f", scopes={stable_repr(list(needed))}" if needed else ""
+            )
             kind = _credential_type(module, schemes[scheme])
             parameters.append(Parameter(local, subscript_text(annotated, (kind, f"{depends}({arguments})"))))
         challenge = ", ".join(
@@ -982,8 +985,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authenticate=authenticate,
             parameters=tuple(parameters),
             requirements=tuple_display(_requirement(item) for item in requirements),
-            credentials=dict_display((repr(scheme), names[scheme]) for scheme in scopes),
-            challenge=repr(challenge),
+            credentials=dict_display((stable_repr(scheme), names[scheme]) for scheme in scopes),
+            challenge=stable_repr(challenge),
         )
 
     def security(self) -> Templated:
@@ -994,7 +997,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             "security.jinja2",
             security_template.render_with_scope,
             schemes=schemes,
-            exports=[repr(name) for name in sorted(self.scheme_names.values())],
+            exports=[stable_repr(name) for name in sorted(self.scheme_names.values())],
             imports=module.imports(),
         )
 
@@ -1016,7 +1019,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             media = body.media[0]
             api = module.name("fastapi", "Form" if body.form else "Body")
             annotation = subscript_text(
-                annotated, (_body(module, media, required=body.required), f"{api}(media_type={media.media_type!r})")
+                annotated,
+                (_body(module, media, required=body.required), f"{api}(media_type={stable_repr(media.media_type)})"),
             )
             return Parameter(argument.name, annotation, "" if body.required else "None")
         depends = module.name("fastapi", "Depends")
@@ -1152,7 +1156,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         module = Module(self.types, reserved, level=2)
         typed_dict = module.name("typing", "TypedDict")
         dependencies = [
-            Parameter(repr(spec.python_name), _dependency_sequence(module)) for spec in self.plan.operations
+            Parameter(stable_repr(spec.python_name), _dependency_sequence(module)) for spec in self.plan.operations
         ]
         plans = [self.operation_plan(module, spec, self.classes[spec.key]) for spec in self.plan.operations]
         adapters = any(plan.parameters for plan in plans)
@@ -1200,7 +1204,7 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
     """
     responses = [
         (
-            repr(response.status),
+            stable_repr(response.status),
             _declared(module, None if response.bodyless else default_media(response), null=response.null),
         )
         for response in spec.responses
@@ -1227,11 +1231,11 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
     """Return the Declared value of a response's media, its kind, charset, and model, or of a response without one."""
     entries: list[str] = []
     if media is not None:
-        entries.append(f"media_type={media.media_type!r}")
+        entries.append(f"media_type={stable_repr(media.media_type)}")
         if media.kind != "json":
-            entries.append(f"kind={media.kind!r}")
+            entries.append(f"kind={stable_repr(media.kind)}")
         if (encoding := charset(media.media_type, as_written=True)) != "utf-8":
-            entries.append(f"charset={encoding!r}")
+            entries.append(f"charset={stable_repr(encoding)}")
         if (value := _checked(media)) is not None:
             entries.append(f"model={module.annotation(value)}")
         if media.extras:
@@ -1253,10 +1257,10 @@ def _credential(scheme: SchemeSpec) -> str:
 
 
 def _native(module: Module, name: str, field: NativeField) -> Parameter:
-    keywords = [f"alias={field.alias!r}"]
+    keywords = [f"alias={stable_repr(field.alias)}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
-    keywords.extend(keyword_argument(key, repr(value)) for key, value in field.keywords)
+    keywords.extend(keyword_argument(key, stable_repr(value)) for key, value in field.keywords)
     if field.default is Default.ABSENT:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"
@@ -1344,7 +1348,7 @@ def _parameter_arguments(module: Module, adapters: list[Argument]) -> str:
         parameter = argument.parameter
         assert parameter is not None
         assert parameter.plan is not None
-        entries = [f"name={argument.name!r}", f"plan={parameter_plan(module.local, parameter.plan)}"]
+        entries = [f"name={stable_repr(argument.name)}", f"plan={parameter_plan(module.local, parameter.plan)}"]
         if parameter.type is not None:
             entries.append(f"adapter={_adapter(module, parameter.type)}")
         if (value := _default_value(module, parameter.default)) is not None:
@@ -1360,16 +1364,22 @@ def _json_part(module: Module, part: JsonPartSpec) -> str:
     adapter = (
         _adapter(module, part.type)
         if (field := part.field) is None
-        else f"{module.local('_runtime.server.requests', 'field_adapter')}({module.annotation(field[0])}, {field[1]!r})"
+        else (
+            f"{module.local('_runtime.server.requests', 'field_adapter')}({module.annotation(field[0])}, "
+            f"{stable_repr(field[1])})"
+        )
     )
-    return f"{module.local('_runtime.server.requests', 'JsonPart')}({part.name!r}, {adapter}{repeated}{untyped})"
+    return (
+        f"{module.local('_runtime.server.requests', 'JsonPart')}({stable_repr(part.name)}, "
+        f"{adapter}{repeated}{untyped})"
+    )
 
 
 def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
     for item in body.media:
-        entries = [f"media_type={item.media_type!r}", f"kind={item.kind!r}"]
+        entries = [f"media_type={stable_repr(item.media_type)}", f"kind={stable_repr(item.kind)}"]
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
@@ -1408,29 +1418,29 @@ def _registration(module: Module, spec: OperationSpec) -> Registration:
         response_class = module.name("fastapi.responses", "Response")
     keywords: list[Keyword] = []
     if contract.explicit_operation_id and isinstance(operation_id := fact(contract, "operationId"), str):
-        keywords.append(Keyword("operation_id", repr(operation_id)))
+        keywords.append(Keyword("operation_id", stable_repr(operation_id)))
     if found := tags(contract):
-        keywords.append(Keyword("tags", list_display(map(repr, found))))
+        keywords.append(Keyword("tags", list_display(map(stable_repr, found))))
     keywords.extend(
-        Keyword(name, repr(value))
+        Keyword(name, stable_repr(value))
         for name in ("summary", "description")
         if isinstance(value := fact(contract, name), str)
     )
     if fact(contract, "deprecated") is True:
         keywords.append(Keyword("deprecated", "True"))
     if isinstance(description := _response_description(spec), str):
-        keywords.append(Keyword("response_description", repr(description)))
+        keywords.append(Keyword("response_description", stable_repr(description)))
     if names := {
         argument.native.alias: argument.wire_name
         for argument in spec.arguments
         if argument.location == "path" and argument.native is not None and argument.native.alias != argument.wire_name
     }:
         wire_named = module.local("_runtime.server.application", "wire_named")
-        keywords.append(Keyword("route_class_override", f"{wire_named}({names!r})"))
+        keywords.append(Keyword("route_class_override", f"{wire_named}({stable_repr(names)})"))
     return Registration(
-        name=repr(spec.python_name),
-        path=repr(spec.route.route_path),
-        methods=f"[{contract.method.upper()!r}]",
+        name=stable_repr(spec.python_name),
+        path=stable_repr(spec.route.route_path),
+        methods=f"[{stable_repr(contract.method.upper())}]",
         status_code=str(spec.registration_status),
         response_model=model,
         response_class=response_class,
@@ -1459,8 +1469,10 @@ def _value(spec: OperationSpec, argument: Argument, record: str) -> str:
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> str:
     if not (wanted := {item.wire_name for item in adapters if item.location == "path" and item.wire_name is not None}):
         return ""
-    names = f"frozenset({set_display(map(repr, sorted(wanted)))})"
-    return f"{module.local('_runtime.server.requests', 'RawPath')}(template={spec.route.path!r}, names={names})"
+    names = f"frozenset({set_display(map(stable_repr, sorted(wanted)))})"
+    return (
+        f"{module.local('_runtime.server.requests', 'RawPath')}(template={stable_repr(spec.route.path)}, names={names})"
+    )
 
 
 def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
@@ -1469,7 +1481,7 @@ def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
 
 
 def _services(services: list[str]) -> str:
-    return dict_display((repr(service), service) for service in services)
+    return dict_display((stable_repr(service), service) for service in services)
 
 
 def _builder(  # ruff: ignore[too-many-arguments]
@@ -1535,19 +1547,19 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
     keywords: list[Keyword] = []
     runtime = _API_KEY_CLASSES.get(str(scheme.location)) if scheme.kind == "api_key" else _RUNTIME_CLASSES[scheme.kind]
     if scheme.kind == "api_key":
-        keywords.append(Keyword("name", repr(scheme.parameter)))
+        keywords.append(Keyword("name", stable_repr(scheme.parameter)))
     if runtime is None:
         cls = module.name("fastapi.security", "APIKeyQuery")
     else:
         cls = module.local("_runtime.server.security", runtime)
     keywords.extend(
-        Keyword(keyword, repr(value))
+        Keyword(keyword, stable_repr(value))
         for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
         if (fact_value := facts.get(keyword)) is not None and (value := json_value(fact_value)) is not None
     )
-    keywords.extend((Keyword("scheme_name", repr(scheme.name)), Keyword("auto_error", "False")))
+    keywords.extend((Keyword("scheme_name", stable_repr(scheme.name)), Keyword("auto_error", "False")))
     return Scheme(name, scheme.name, cls, tuple(keywords))
 
 
 def _requirement(requirement: Requirement) -> str:
-    return tuple_display(f"({name!r}, {scopes!r})" for name, scopes in requirement)
+    return tuple_display(f"({stable_repr(name)}, {stable_repr(scopes)})" for name, scopes in requirement)

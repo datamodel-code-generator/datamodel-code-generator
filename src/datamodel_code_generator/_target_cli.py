@@ -24,6 +24,7 @@ from datamodel_code_generator._paths import names_directory
 from datamodel_code_generator._project_config import names_profile
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator.enums import _ExitCode
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -412,7 +413,7 @@ def _compare_target(
                     ),
                 )
             except UnicodeError as error:
-                message = f"{_shown(actual)}: Output is not text in encoding {codec!r}: {error}"
+                message = f"{_shown(actual)}: Output is not text in encoding {stable_repr(codec)}: {error}"
                 raise Error(message) from error
             differences.extend(
                 difference._replace(path=shown(cwd / difference.path, base).as_posix())
@@ -565,7 +566,7 @@ def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
 
         message = _invalid_class_name_message(error, namespace, config.class_name)
     elif isinstance(error, UnicodeDecodeError):
-        message = f"Unable to decode input using encoding {config.encoding!r}: {error}"
+        message = f"Unable to decode input using encoding {stable_repr(config.encoding)}: {error}"
     elif not isinstance(error, (Error, OSError)):
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 

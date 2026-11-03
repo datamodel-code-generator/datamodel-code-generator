@@ -119,14 +119,18 @@ def _validate_http_key_value_options(
                 field_name, field_value = each_item.split(separator, maxsplit=1)
                 return field_name, field_value.lstrip()
             except ValueError as exc:
-                msg = f"Invalid {item_error_name}: {each_item!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Invalid {item_error_name}: {stable_repr(each_item)}"
                 raise Error(msg) from exc
         return each_item  # pragma: no cover
 
     if isinstance(value, list):
         return [validate_each_item(cast("_HttpKeyValueInput", each_item)) for each_item in value]
-    msg = f"Invalid {value_error_name} value: {value!r}"  # pragma: no cover
-    raise Error(msg)  # pragma: no cover
+    from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+    msg = f"Invalid {value_error_name} value: {stable_repr(value)}"
+    raise Error(msg)
 
 
 @lru_cache(maxsize=1)

@@ -62,6 +62,7 @@ from datamodel_code_generator._target_types import (
     untyped,
     unwrapped,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
@@ -243,7 +244,7 @@ def _carrier(use: TypeUseId, label: str) -> str:
     where = "request body" if use.role.startswith("request") else f"response {use.status}"
     match use.role:
         case "parameter":
-            return f"The {use.location} parameter {use.name!r} of {label}"
+            return f"The {use.location} parameter {stable_repr(use.name)} of {label}"
         case "request_body" | "response_body":
             return f"The {use.media} {where} of {label}"
         case "response_header":
@@ -396,8 +397,9 @@ def _distinct(
         or planner.kinds.configured(form)
     ):
         message = (
-            f"The exploded form member {absorbing[0]!r} allows other properties and takes every name no other member "
-            "writes, so the form cannot have another such member, a deepObject member, or other properties of its own"
+            f"The exploded form member {stable_repr(absorbing[0])} allows other properties and takes every name no "
+            "other member writes, so the form cannot have another such member, a deepObject member, or other "
+            "properties of its own"
         )
         raise _PlanError(location, message)
     plans = list(encoded)

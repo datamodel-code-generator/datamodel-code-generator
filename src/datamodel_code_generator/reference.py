@@ -61,6 +61,7 @@ from datamodel_code_generator._target_unicode import (
 from datamodel_code_generator._url_redaction import is_url, redact_path, redact_reference
 from datamodel_code_generator._user_keys import field_keys, first_given, first_present
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
@@ -562,7 +563,7 @@ class FieldNameResolver:
             ):
                 conflict = field if explicit else previous
                 alias, original_name = conflict.__dict__[_EXPLICIT_FIELD_ALIAS_KEY]
-                msg = f"Alias {alias!r} for field {original_name!r} conflicts with another field."
+                msg = f"Alias {stable_repr(alias)} for field {stable_repr(original_name)} conflicts with another field."
                 raise Error(msg)
             names[name] = field
             if not final:
@@ -581,7 +582,7 @@ class FieldNameResolver:
                 field_helper = field
             if invalid:
                 alias, original_name = field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY]
-                msg = f"Alias {alias!r} for field {original_name!r} is not a valid field name."
+                msg = f"Alias {stable_repr(alias)} for field {stable_repr(original_name)} is not a valid field name."
                 raise Error(msg)
 
     def _validate_field_name(self, field_name: str) -> bool:  # noqa: ARG002, PLR6301
@@ -1214,14 +1215,17 @@ class ModelResolver:  # noqa: PLR0904
         reserved_name: str | None,
     ) -> None:
         if not self.validate_name(mapped_name, self.target_python_version):
-            msg = f"--model-name-map maps {redact_reference(path)!r} to invalid class name {mapped_name!r}"
+            msg = (
+                f"--model-name-map maps {stable_repr(redact_reference(path))} to invalid class name "
+                f"{stable_repr(mapped_name)}"
+            )
             raise Error(msg)
 
         if conflict_reason := self._model_name_conflict(generated_name, mapped_name, reserved_name):
             msg = (
-                f"--model-name-map maps {redact_reference(path)!r} to {mapped_name!r}, "
-                f"but that model name is {conflict_reason}\n"
-                "Hint: --emit-model-metadata lists the generated class names and their schema locations."
+                f"--model-name-map maps {stable_repr(redact_reference(path))} to {stable_repr(mapped_name)}, but that "
+                f"model name is {conflict_reason}\nHint: --emit-model-metadata lists the generated class names and "
+                "their schema locations."
             )
             raise Error(msg)
 

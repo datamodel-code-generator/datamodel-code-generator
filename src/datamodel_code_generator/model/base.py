@@ -128,6 +128,7 @@ from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
     message_repr,
     represent_python_value,
+    stable_pformat,
     stable_repr,
 )
 from datamodel_code_generator.reference import Reference, _BaseModel
@@ -1644,6 +1645,7 @@ def _build_environment(loader: Any, *, auto_reload: bool = True) -> Environment:
     env.filters["escape_docstring"] = escape_docstring  # For old custom templates
     env.filters["format_docstring"] = format_docstring
     env.filters["repr"] = stable_repr
+    env.filters["pprint"] = stable_pformat
     return env
 
 

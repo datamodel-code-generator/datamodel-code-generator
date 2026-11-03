@@ -21,6 +21,7 @@ from datamodel_code_generator._client.pagination import (
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -95,7 +96,10 @@ class _Uploads:
             (f"{helper.at}.create.session_url", "session_url" in tree["create"], "a session URL"),
         ):
             if present:
-                message = f"The resumable_upload helper {helper.name!r} declares {what}, which is not supported yet"
+                message = (
+                    f"The resumable_upload helper {stable_repr(helper.name)} declares {what}, which is not supported "
+                    "yet"
+                )
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, create)
 
     def successes(self, spec: OperationSpec) -> list[_Source]:
@@ -105,7 +109,9 @@ class _Uploads:
     def created(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> list[_Source]:
         """Return the create operation's success responses, refusing an operation without one."""
         if not (sources := self.successes(create)):
-            message = f"{_label(create)} must declare a success response for the upload helper {helper.name!r}"
+            message = (
+                f"{_label(create)} must declare a success response for the upload helper {stable_repr(helper.name)}"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
         return sources
 
@@ -123,8 +129,8 @@ class _Uploads:
             yield problem
         elif target["in"] not in _PARAMETERS:
             message = (
-                f"The {what} of {helper.name!r} writes {target['in']!r}, where only a path, query, or header parameter "
-                "takes it"
+                f"The {what} of {stable_repr(helper.name)} writes {stable_repr(target['in'])}, where only a path, "
+                "query, or header parameter takes it"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         else:
@@ -146,7 +152,7 @@ class _Uploads:
             return
         spec = sources[0].spec
         if read["from"] == "status":
-            message = f"The {what} of {helper.name!r} reads the status, which gives no {what}"
+            message = f"The {what} of {stable_repr(helper.name)} reads the status, which gives no {what}"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
             return
         types = self.checks.read(helper, sources, read, at, what)
@@ -155,7 +161,10 @@ class _Uploads:
             return
         allowed = {wanted, *(("string",) if read["from"] == "header" else ())}
         if types is not None and (others := sorted(types - allowed)):
-            message = f"The {what} of {helper.name!r} reads {', '.join(others)} values, where only {wanted} values fit"
+            message = (
+                f"The {what} of {stable_repr(helper.name)} reads {', '.join(others)} values, where only {wanted} "
+                "values fit"
+            )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
@@ -177,13 +186,16 @@ class _Uploads:
             where = f"{at}[{index}]"
             if item["value"].get("source") == "previous":
                 message = (
-                    f"The {part} binding {index} of {helper.name!r} reads the previous response, which is not "
-                    "supported yet"
+                    f"The {part} binding {index} of {stable_repr(helper.name)} reads the previous response, which is "
+                    "not supported yet"
                 )
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
             if part == "append" and item["target"]["in"] == "body":
                 refused = True
-                message = f"The append binding {index} of {helper.name!r} writes the request body, which is the chunk"
+                message = (
+                    f"The append binding {index} of {stable_repr(helper.name)} writes the request body, which is the "
+                    "chunk"
+                )
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
         if not refused:
             yield from self.checks.bindings(helper, spec, bindings, at, sources, f"{part} binding", required=False)
@@ -201,7 +213,7 @@ class _Uploads:
         yield from self.bindings(helper, probe, "probe", sources)
         yield from self.required(helper, probe, "probe", self.keys(helper.tree["probe"]["bindings"]))
         if not (offered := self.successes(probe)):
-            message = f"{_label(probe)} must declare a success response for the probe of {helper.name!r}"
+            message = f"{_label(probe)} must declare a success response for the probe of {stable_repr(helper.name)}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, probe)
             return
         read = helper.tree["probe"]["remote_offset"]
@@ -219,10 +231,12 @@ class _Uploads:
         tree, at, name = helper.tree["append"], f"{helper.at}.append", helper.name
         body = append.body
         if body is None or len(body.media) != 1 or body.media[0].kind != "binary":
-            message = f"{_label(append)} must take exactly one binary request media for the chunks of {name!r}"
+            message = (
+                f"{_label(append)} must take exactly one binary request media for the chunks of {stable_repr(name)}"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         if not any(response.success for response in append.responses):
-            message = f"{_label(append)} must declare a success response for the appends of {name!r}"
+            message = f"{_label(append)} must declare a success response for the appends of {stable_repr(name)}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         written = self.keys(tree["bindings"])
         owners = [f"its append binding {index}" for index in range(len(written))]
@@ -238,7 +252,9 @@ class _Uploads:
             if (
                 clash := next((index for index, other in enumerate(written) if _overlaps(key, other)), None)
             ) is not None:
-                message = f"The chunk {what} of {name!r} writes {_relation(key, written[clash])} {owners[clash]}"
+                message = (
+                    f"The chunk {what} of {stable_repr(name)} writes {_relation(key, written[clash])} {owners[clash]}"
+                )
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, append)
                 continue
             written.append(key)
@@ -255,7 +271,9 @@ class _Uploads:
         if completion["kind"] != "operation":
             return None
         spec = pages.spec(completion["operation"])
-        if isinstance(single := pages.single(spec, f"{at}.operation", f"completion of {helper.name!r}"), Diagnostic):
+        if isinstance(
+            single := pages.single(spec, f"{at}.operation", f"completion of {stable_repr(helper.name)}"), Diagnostic
+        ):
             problems.append(single)
             return None
         use, reference, mismatch = single[1], completion["result_schema"], f"the schema of the {_label(spec)} response"

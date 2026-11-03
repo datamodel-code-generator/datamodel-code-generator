@@ -618,7 +618,9 @@ class InvalidClassNameError(Error):
     def __init__(self, class_name: str) -> None:
         """Initialize with class name."""
         self.class_name = class_name
-        message = f"title={class_name!r} is invalid class name."
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        message = f"title={stable_repr(class_name)} is invalid class name."
         super().__init__(message=message)
 
 
@@ -669,10 +671,11 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
             target_version_value = (
                 target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
             )
+            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
             msg = (
-                "`--use-missing-sentinel` requires "
-                f"`--target-pydantic-version {minimum.value}` or later; "
-                f"got {target_version_value!r}"
+                f"`--use-missing-sentinel` requires `--target-pydantic-version {minimum.value}` or later; got "
+                f"{stable_repr(target_version_value)}"
             )
             raise Error(msg)
     raise AssertionError  # pragma: no cover
@@ -1562,7 +1565,9 @@ def _ensure_output_text_encodable(text: str, encoding: str) -> None:
     try:
         text.encode(encoding)
     except (UnicodeError, LookupError) as exc:
-        msg = f"Unable to encode output using encoding {encoding!r}: {exc}"
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = f"Unable to encode output using encoding {stable_repr(encoding)}: {exc}"
         raise Error(msg) from exc
 
 

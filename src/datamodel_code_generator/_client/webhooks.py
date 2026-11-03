@@ -26,6 +26,7 @@ from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan
 from datamodel_code_generator._target_templates import templated
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -134,15 +135,17 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
     for helper in helpers:
         parts = helper.name.split(".")
         if fold_key(parts[0], target_python_version) == "keys":
-            message = f"The webhook helper name {helper.name!r} is taken by the module of the webhook key types"
+            message = (
+                f"The webhook helper name {stable_repr(helper.name)} is taken by the module of the webhook key types"
+            )
             yield helper, _problem("E_NAME_COLLISION", "target", helper.at, message)
             continue
         for index in range(1, len(parts)):
             package = ".".join(parts[:index])
             if (spelled := spellings.setdefault(fold_key(package, target_python_version), package)) != package:
                 message = (
-                    f"The webhook helper name {helper.name!r} gives the package {package!r}, which differs from "
-                    f"{spelled!r} only in case"
+                    f"The webhook helper name {stable_repr(helper.name)} gives the package {stable_repr(package)}, "
+                    f"which differs from {stable_repr(spelled)} only in case"
                 )
                 yield helper, _problem("E_NAME_COLLISION", "target", helper.at, message)
                 break
@@ -186,8 +189,8 @@ def webhook_uses(
             return None
         if expected is None or (use := next((item for item in candidates if item.type == expected), None)) is None:
             message = (
-                f"The event_schema {reference.pointer!r} of {helper.name!r} is not the schema of a JSON request body "
-                "of any webhook or callback operation"
+                f"The event_schema {stable_repr(reference.pointer)} of {stable_repr(helper.name)} is not the schema of "
+                "a JSON request body of any webhook or callback operation"
             )
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None
@@ -286,8 +289,10 @@ class _Webhooks:
         if (selector := discriminator(spec.helper)) is None:
             return module.union(*types), self.decoder(module, spec.events[0])
         pointer = selector["pointer"]
-        mapping = dict_display((repr(event.name), self.decoder(module, event)) for event in spec.events)
-        return module.union(*types), call_text(module.local(_EVENTS, "MappedEventDecoder"), (repr(pointer), mapping))
+        mapping = dict_display((stable_repr(event.name), self.decoder(module, event)) for event in spec.events)
+        return module.union(*types), call_text(
+            module.local(_EVENTS, "MappedEventDecoder"), (stable_repr(pointer), mapping)
+        )
 
     @staticmethod
     def plan(module: TargetModule, spec: WebhookSpec, event: str, decoder: str) -> tuple[str | None, Plan]:
@@ -301,8 +306,8 @@ class _Webhooks:
         elif kind == "adapter":
             plan = module.local("_runtime.protocols.adapters", "AdapterPlan")
             entries = [
-                Keyword("timestamp", repr(signature["timestamp"] == "required")),
-                Keyword("delivery_id", repr(signature["delivery_id"] == "required")),
+                Keyword("timestamp", stable_repr(signature["timestamp"] == "required")),
+                Keyword("delivery_id", stable_repr(signature["delivery_id"] == "required")),
             ]
         else:
             algorithm = _algorithm(signature)
@@ -311,14 +316,14 @@ class _Webhooks:
             arguments = (event, key)
             standard = kind == "standard_webhooks"
             entries = [
-                Keyword("kind", repr(kind)),
+                Keyword("kind", stable_repr(kind)),
                 Keyword("algorithm", module.local(algorithm.module, algorithm.name)),
-                Keyword("header", repr(signature.get("header", "webhook-signature").lower())),
-                Keyword("encoding", repr(signature.get("encoding", "base64" if standard else "hex"))),
-                Keyword("prefix", repr(signature.get("prefix", "v1," if standard else ""))),
+                Keyword("header", stable_repr(signature.get("header", "webhook-signature").lower())),
+                Keyword("encoding", stable_repr(signature.get("encoding", "base64" if standard else "hex"))),
+                Keyword("prefix", stable_repr(signature.get("prefix", "v1," if standard else ""))),
             ]
         annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, arguments),))
-        values = (Keyword("helper_id", repr(helper.name)), *entries, Keyword("event", decoder))
+        values = (Keyword("helper_id", stable_repr(helper.name)), *entries, Keyword("event", decoder))
         return key, Plan("_PLAN", annotation, plan, values)
 
     def module(self, spec: WebhookSpec) -> Templated:

@@ -28,6 +28,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator.imports import Import
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -291,9 +292,9 @@ class TargetModule:
         """Return the Python expression of a recorded literal or source expression."""
         match value:
             case LiteralScalar(kind="decimal"):
-                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
+                return f"{self.name('decimal', 'Decimal')}({stable_repr(str(value.value))})"
             case LiteralScalar():
-                return repr(value.value)
+                return stable_repr(value.value)
             case SourceExpression():
                 return value.text
             case _:

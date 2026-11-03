@@ -18,6 +18,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator.parser._convert_common import _unique_name
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import BaseModel
 
 JSONSchemaDraft: TypeAlias = Literal["https://json-schema.org/draft/2020-12/schema"]
@@ -62,12 +63,12 @@ def _tool_validation_error(value: JSONSchemaMapping, validation_error: Validatio
     if key == "name" or not isinstance(tool_name, str):
         return "MCP tool name must be a string"
     if key == "inputSchema" and first_error["type"] == "missing":
-        return f"MCP tool {tool_name!r} is missing inputSchema"
+        return f"MCP tool {stable_repr(tool_name)} is missing inputSchema"
     if key in OPTIONAL_MAPPING_TOOL_KEYS or key == "inputSchema":
-        return f"MCP tool {tool_name!r} {key} must be a JSON Schema object"
+        return f"MCP tool {stable_repr(tool_name)} {key} must be a JSON Schema object"
     if key in OPTIONAL_STRING_TOOL_KEYS:
-        return f"MCP tool {tool_name!r} {key} must be a string"
-    return f"Invalid MCP tool {tool_name!r}: {first_error['msg']}"  # pragma: no cover
+        return f"MCP tool {stable_repr(tool_name)} {key} must be a string"
+    return f"Invalid MCP tool {stable_repr(tool_name)}: {first_error['msg']}"  # pragma: no cover
 
 
 def _parse_tool(value: JSONSchemaMapping) -> MCPTool:

@@ -8849,6 +8849,8 @@ struct-option-3.11	main/jsonschema/template_data_names_follow_target.py
 struct-option-3.12	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[struct-option-3.12].py
 typed-dict-extra-items-3.11	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[typed-dict-extra-items-3.11].py
 typed-dict-extra-items-3.12	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[typed-dict-extra-items-3.12].py
+[test_main_text_holding_a_newer_letter_is_written_alike_whatever_python_runs]
+	main/jsonschema/text_holding_a_newer_letter_is_written_alike_whatever_python_runs.py
 [test_main_top_level_allof_oneof]
 	main/jsonschema/top_level_allof_oneof//*.py
 [test_main_type_alias_cycle_keep_model_order]

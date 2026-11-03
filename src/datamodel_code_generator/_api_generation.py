@@ -38,6 +38,7 @@ from datamodel_code_generator._target_config import (
 from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
 from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.base_config import implied_target_settings as implied_settings
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     import re
@@ -234,11 +235,13 @@ def prepare_target(
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
-        allowed = english_list((repr(item.value) for item in DataModelType if item in generator.backends), "or", "each")
+        allowed = english_list(
+            (stable_repr(item.value) for item in DataModelType if item in generator.backends), "or", "each"
+        )
         raise config_error(
             code=generator.unsupported_backend,
             option_path="model_config.output_model_type",
-            message=f"The {generator.kind} target does not support {backend.value!r}; use {allowed}",
+            message=f"The {generator.kind} target does not support {stable_repr(backend.value)}; use {allowed}",
         )
     if (problem := python_problem(effective, generator.kind)) is not None:
         raise config_error(code="E_CONFIG_VALUE", option_path="model_config.target_python_version", message=problem)
@@ -248,8 +251,8 @@ def prepare_target(
             option_path="model_config.use_missing_sentinel",
             message=(
                 f"The {generator.kind} target needs model_config.use_missing_sentinel with --target-pydantic-version "
-                f"{PYDANTIC_TARGET_MINIMUM} for {backend.value!r} models, whose fields cannot tell an unset member "
-                "from None"
+                f"{PYDANTIC_TARGET_MINIMUM} for {stable_repr(backend.value)} models, whose fields cannot tell an unset "
+                "member from None"
             ),
         )
     _check_pydantic_target(generator, backend.value, target, sentinel=False)
@@ -258,8 +261,8 @@ def prepare_target(
             _diagnostic(
                 "E_CONFIG_VALUE",
                 f"model_config.{name}",
-                f"The {generator.kind} target needs model_config.{name} for {backend.value!r} models, so that "
-                f"their {decoded} can be decoded",
+                f"The {generator.kind} target needs model_config.{name} for {stable_repr(backend.value)} models, so "
+                f"that their {decoded} can be decoded",
             )
             for enabled, name, decoded in (
                 (model_config.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),

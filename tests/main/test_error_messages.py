@@ -319,6 +319,29 @@ def test_invalid_pyproject_configuration_is_a_clean_cli_error(
 
 
 @pytest.mark.parametrize(
+    ("setting", "message"),
+    [
+        pytest.param(
+            'http-headers = "Authorization: x"', "Invalid http_headers value: 'Authorization: x'", id="http-headers"
+        ),
+        pytest.param("http-query-parameters = 5", "Invalid http_query_parameters value: 5", id="http-query-parameters"),
+    ],
+)
+def test_pyproject_http_pairs_that_are_no_list_are_a_clean_cli_error(
+    setting: str,
+    message: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An HTTP header or query parameter setting of pyproject.toml that is no list is refused, naming its value."""
+    (tmp_path / "pyproject.toml").write_text(f"[tool.datamodel-codegen]\n{setting}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    run_main_with_args([], expected_exit=Exit.ERROR, capsys=capsys, expected_stderr_contains=message)
+
+
+@pytest.mark.parametrize(
     ("suffix", "inside_output", "input_file_type", "header", "yaml_key"),
     [
         (".schema", False, "jsonschema", None, None),

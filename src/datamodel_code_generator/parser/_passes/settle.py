@@ -32,6 +32,7 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED, location_of
 
 if TYPE_CHECKING:
@@ -386,7 +387,7 @@ def warn_about_unmatched_model_name_keys(parser: SettleHost[Any]) -> None:
     if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get() and (
         unmatched_keys := sorted({redact_reference(key) for key in parser.model_resolver.unmatched_model_name_keys()})
     ):
-        listed = ", ".join(map(repr, unmatched_keys))
+        listed = ", ".join(map(stable_repr, unmatched_keys))
         warn_as_parser_base(
             f"--model-name-map: {counted(len(unmatched_keys), 'key')} matched no generated model: {listed}",
             UserWarning,

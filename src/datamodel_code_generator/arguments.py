@@ -128,7 +128,9 @@ def _json_value_or_file(value: str) -> dict[str, object]:
 def _recommend_mode(value: str) -> str:
     """Accept a recommendation mode, quick or full; the option is documented without a value, which picks by size."""
     if value not in {"quick", "full"}:
-        msg = f"unknown mode {value!r}; use --recommend-options without a value"
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = f"unknown mode {stable_repr(value)}; use --recommend-options without a value"
         raise ArgumentTypeError(msg)
     return value
 

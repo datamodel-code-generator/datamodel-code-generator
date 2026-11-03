@@ -24137,6 +24137,88 @@ def test_main_paths_the_target_python_binds_are_written_whatever_python_runs(tmp
     )
 
 
+_TEXT_TEMPLATE = """{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+@dataclass
+class {{ class_name }}:
+{%- for field in fields %}
+    {{ field.name }}: {{ field.type_hint }} = {{ field.default | pprint }}
+{%- endfor %}
+"""
+"""A dataclass template that writes each default with the ``pprint`` filter."""
+
+
+def test_main_text_holding_a_newer_letter_is_written_alike_whatever_python_runs(
+    tmp_path: Path, output_file: Path
+) -> None:
+    """Write text holding U+1E4D0 with the letter itself on every Python, as Python 3.12 and later print it.
+
+    ``repr()`` and the tokenizer of Python 3.10 and 3.11, whose Unicode tables lack the letter, escape it and stop at
+    it. The ``Literal`` of a const and of an enum, a default the ``pprint`` filter of a custom template writes (wrapped
+    where it is long) and the ``deprecated`` decorator a class decorator names, which the schema's ``deprecated`` does
+    not repeat, read the newest target's tables instead.
+    """
+    input_file = tmp_path / "text.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "const": {"const": f"a{_NEW_LETTER}"},
+                "enum": {"enum": [f"b{_NEW_LETTER}", "c"]},
+                "text": {"type": "string", "default": f"{_NEW_LETTER} long text " * 8},
+                "old": {"$ref": "#/$defs/Old"},
+            },
+            "$defs": {"Old": {"type": "object", "deprecated": True, "properties": {"a": {"type": "string"}}}},
+        }),
+        encoding="utf-8",
+    )
+    (templates := tmp_path / "templates").mkdir()
+    (templates / "dataclass.jinja2").write_text(_TEXT_TEMPLATE, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--enum-field-as-literal",
+            "all",
+            "--class-decorators",
+            f"@deprecated({_NEW_LETTER}x)",
+            "--additional-imports",
+            f"mypkg.{_NEW_LETTER}x",
+            "--custom-template-dir",
+            str(templates),
+            "--target-python-version",
+            "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+def test_main_message_quotes_a_newer_letter_alike_whatever_python_runs(
+    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Quote a value holding U+1E4D0 in a message with the letter itself, which Python 3.10 and 3.11 escaped."""
+    input_file = tmp_path / "names.json"
+    input_file.write_text(json.dumps(_NAMES_SCHEMA), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"to invalid class name '1{_NEW_LETTER}'",
+        extra_args=["--model-name-map", json.dumps({"Model": f"1{_NEW_LETTER}"})],
+    )
+
+
 def test_main_literal_member_of_a_schema_class_named_like_a_module(tmp_path: Path, output_file: Path) -> None:
     """Write a two-part ``Literal`` value as a member of the class the schema imports by its first name.
 

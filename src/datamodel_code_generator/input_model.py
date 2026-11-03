@@ -63,6 +63,7 @@ from datamodel_code_generator.enums import (
     _get_output_model_family,
     _OutputModelFamily,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Iterator, Sequence
@@ -197,7 +198,7 @@ def _load_module_from_path(file_path: Path, modname: str) -> tuple[types.ModuleT
     module_name = _get_path_module_name(file_path)
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
-        msg = f"Cannot load module from {modname!r}"
+        msg = f"Cannot load module from {stable_repr(modname)}"
         raise Error(msg)
 
     previous_module = sys.modules.get(module_name, ABSENT)
@@ -216,7 +217,10 @@ def _split_input_model(input_model: str) -> tuple[str, str]:
     if separator and modname:
         return modname, qualname
 
-    msg = f"Invalid --input-model format: {input_model!r}. Expected 'module:Object' or 'path/to/file.py:Object'."
+    msg = (
+        f"Invalid --input-model format: {stable_repr(input_model)}. Expected 'module:Object' or "
+        "'path/to/file.py:Object'."
+    )
     raise Error(msg)
 
 
@@ -228,17 +232,17 @@ def _load_input_model_module(modname: str) -> tuple[types.ModuleType, _ModuleRes
     if _is_path_input_model_module(modname):
         file_path = Path(modname).resolve()
         if not file_path.exists():
-            msg = f"File not found: {modname!r}"
+            msg = f"File not found: {stable_repr(modname)}"
             raise Error(msg)
         return _load_module_from_path(file_path, modname)
 
     try:
         if importlib.util.find_spec(modname) is None:
-            msg = f"Cannot find module {modname!r}"
+            msg = f"Cannot find module {stable_repr(modname)}"
             raise Error(msg)
         return importlib.import_module(modname), None
     except ImportError as e:
-        msg = f"Cannot import module {modname!r}: {e}"
+        msg = f"Cannot import module {stable_repr(modname)}: {e}"
         raise Error(msg) from e
 
 
@@ -257,7 +261,7 @@ def _load_input_model_object(
     try:
         return qualname, getattr(module, qualname)
     except AttributeError as e:
-        msg = f"Module {modname!r} has no attribute {qualname!r}"
+        msg = f"Module {stable_repr(modname)} has no attribute {stable_repr(qualname)}"
         raise Error(msg) from e
 
 
@@ -1096,7 +1100,8 @@ def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
             owner = _reused_python_type_expression(type(argument))
             if not isinstance(owner, PythonTypeRuntimeSymbol):
                 msg = (
-                    f"Cannot safely reuse enum member {argument!r}: no importable type expression. Use regenerate-all."
+                    f"Cannot safely reuse enum member {stable_repr(argument)}: no importable type expression. Use "
+                    "regenerate-all."
                 )
                 raise Error(msg)
             replacements[PythonTypeOpaqueText(str(argument))] = PythonTypeRuntimeSymbol(
@@ -1710,7 +1715,10 @@ def _load_single_model_schema(
             schema = _add_python_type_info(schema, model, expression_collector, definition_types, schema_types)
             _add_reused_definitions(nested_models, definition_types)
         else:
-            msg = f"{qualname!r} is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+            msg = (
+                f"{stable_repr(qualname)} is not a supported type. "
+                "Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+            )
             raise Error(msg)
 
         if ref_strategy and nested_models is not None:

@@ -86,6 +86,7 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
@@ -394,7 +395,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The tag {item.tag!r} is the first tag of no operation",
+                f"The tag {stable_repr(item.tag)} is the first tag of no operation",
                 option_path=f"resource_names[{index}]",
             )
             for index, item in enumerate(config.resource_names)
@@ -490,7 +491,8 @@ class Planner:
         if parameter_key("header", metadata.header_name) in owners:
             index = self.config.operations.index(setting)
             message = (
-                f"The idempotency header {metadata.header_name!r} of {label(operation)} already has a request owner"
+                f"The idempotency header {stable_repr(metadata.header_name)} of {label(operation)} already has a "
+                "request owner"
             )
             self.problems.append(
                 _problem(
@@ -536,7 +538,7 @@ class Planner:
         )
         for tag, namespace in zip(first, names, strict=True):
             if windows_device(namespace, self.names.python_version) and (operation := staying.get(tag)) is not None:
-                message = f"The tag {tag!r} of {label(operation)} needs an explicit resource name"
+                message = f"The tag {stable_repr(tag)} of {label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))
 
@@ -548,7 +550,7 @@ class Planner:
         if setting is None or (name := setting.name) is None:
             return derived_name(self.names, operation)
         if name in RESERVED_MEMBERS:
-            message = f"The method name {name!r} of {label(operation)} is reserved"
+            message = f"The method name {stable_repr(name)} of {label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return name
 
@@ -572,7 +574,7 @@ class Planner:
             explicit = {spec.index for spec in operations if self._explicit_method(spec.contract)}
             for spec in operations:
                 if spec.index in explicit and not scope.take(spec.name):
-                    message = f"The resource {namespace!r} takes the name {spec.name!r} twice"
+                    message = f"The resource {stable_repr(namespace)} takes the name {stable_repr(spec.name)} twice"
                     self.problems.append(_problem("E_NAME_COLLISION", message))
             for name in RESERVED_MEMBERS:
                 scope.take(name)
@@ -619,10 +621,13 @@ class Planner:
             if given is None:
                 continue
             if given in RESERVED_ARGUMENTS:
-                message = f"The {location} parameter {wire_name!r} of {label(operation)} cannot take the name {given!r}"
+                message = (
+                    f"The {location} parameter {stable_repr(wire_name)} of {label(operation)} cannot take the name "
+                    f"{stable_repr(given)}"
+                )
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
             elif not scope.take(given):
-                message = f"The arguments of {label(operation)} take {given!r} twice"
+                message = f"The arguments of {label(operation)} take {stable_repr(given)} twice"
                 self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
         for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
             scope.take(name)
@@ -658,7 +663,8 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The parameter name of the {location} parameter {name!r} of {label(operation)} names no parameter",
+                f"The parameter name of the {location} parameter {stable_repr(name)} of {label(operation)} names no "
+                "parameter",
                 option_path="operations",
             )
             for location, name in explicit
@@ -966,7 +972,10 @@ class Planner:
         if setting is not None and setting.request_media_type is not None:
             default = normalize_media_type(setting.request_media_type)
             if default not in declared or media_range(default):
-                message = f"The request media type {default!r} of {label(operation)} is not a declared concrete type"
+                message = (
+                    f"The request media type {stable_repr(default)} of {label(operation)} is not a declared concrete "
+                    "type"
+                )
                 self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
         return BodySpec(required=is_required(declaration), media=media, default=default)
 
@@ -978,7 +987,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"Several media types of {label(operation)} normalize to {media_type!r}",
+                f"Several media types of {label(operation)} normalize to {stable_repr(media_type)}",
                 declaration.use_site,
             )
             for media_type, count in Counter(item.media_type for item in media).items()
@@ -995,7 +1004,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"Several headers of the {status} response of {label(operation)} are named {name!r}",
+                f"Several headers of the {status} response of {label(operation)} are named {stable_repr(name)}",
                 declaration.use_site,
             )
             for name, count in Counter(header.name.lower() for header in headers).items()
@@ -1037,7 +1046,10 @@ class Planner:
             return None
         media_type = normalize_media_type(setting.response_media_type)
         if media_type not in success_media(responses):
-            message = f"The response media type {media_type!r} of {label(operation)} is not a declared success media"
+            message = (
+                f"The response media type {stable_repr(media_type)} of {label(operation)} is not a declared success "
+                "media"
+            )
             self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
         return media_type
 
@@ -1092,7 +1104,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"The resource namespaces {', '.join(map(repr, spellings))} differ only by case, which their "
+                f"The resource namespaces {', '.join(map(stable_repr, spellings))} differ only by case, which their "
                 "directories cannot; name them explicitly",
             )
             for spellings in folded.values()

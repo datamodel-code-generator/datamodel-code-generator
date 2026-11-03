@@ -12,7 +12,12 @@ from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, Validati
 
 from datamodel_code_generator._format_types import NEWEST_TARGET
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_python_name, message_repr
+from datamodel_code_generator.python_literal import (
+    _normalize_string,
+    _normalized_safe_python_name,
+    message_repr,
+    stable_repr,
+)
 
 if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
@@ -128,7 +133,7 @@ class ValidatorDefinition(BaseModel):
             normalized_value = _normalize_string(value)
             if normalized_value in _VALIDATOR_MODE_VALUES:
                 return normalized_value
-        allowed_values = ", ".join(repr(mode.value) for mode in ValidatorMode)
+        allowed_values = ", ".join(stable_repr(mode.value) for mode in ValidatorMode)
         msg = f"must be one of: {allowed_values}"
         raise ValueError(msg)
 

@@ -160,13 +160,20 @@ def configured_value(config: object, field: str) -> Any:
 def split_external_ref_mapping(item: object) -> tuple[str, str]:
     """Split a FILE_PATH=PYTHON_PACKAGE mapping, raising ValueError with the message --external-ref-mapping reports."""
     if not isinstance(item, str) or "=" not in item:
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
         msg = (
-            f"Invalid --external-ref-mapping format: {item!r}. "
-            "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
+            f"Invalid --external-ref-mapping format: {stable_repr(item)}. Expected FILE_PATH=PYTHON_PACKAGE (e.g., "
+            "'../common/schema.yaml=mypackage.models')"
         )
         raise ValueError(msg)
     file_path, python_package = (part.strip() for part in item.rsplit("=", maxsplit=1))
     if not file_path or not python_package:
-        msg = f"Invalid --external-ref-mapping format: {item!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = (
+            f"Invalid --external-ref-mapping format: {stable_repr(item)}. Both FILE_PATH and PYTHON_PACKAGE must be "
+            "non-empty."
+        )
         raise ValueError(msg)
     return file_path, python_package

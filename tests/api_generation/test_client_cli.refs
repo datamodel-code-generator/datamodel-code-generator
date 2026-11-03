@@ -137,6 +137,8 @@ target-2.14-missing-arguments0	main/generation_platform/client/cli/pydantic-depe
 [test_client_cli_pyproject_protocols_file]
 	main/generation_platform/client/cli/options/protocols/_helpers.py
 	main/generation_platform/client/cli/project-notice.txt
+[test_client_cli_quotes_text_alike_whatever_python_runs]
+	api_generation/client_cli/quotes_text_alike_whatever_python_runs.txt
 [test_client_cli_selector_replaces_pyproject]
 client-over-server	main/generation_platform/client/cli/selected-client.txt
 server-over-client	main/generation_platform/client/cli/selected-server.txt

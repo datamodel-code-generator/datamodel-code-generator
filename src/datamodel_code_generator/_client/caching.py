@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator._client.pagination import _Pages, _problem
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES, bodyless
 from datamodel_code_generator._target_contract import label as _label
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -46,18 +47,18 @@ class _Caches:
         problems: list[Diagnostic] = []
         method = spec.contract.method
         if method == "head":
-            message = f"The cache helper {name!r} fetches {label}, and HEAD is not supported yet"
+            message = f"The cache helper {stable_repr(name)} fetches {label}, and HEAD is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.operation", message, spec))
         elif method != "get":
-            message = f"The cache helper {name!r} fetches {label}, which changes state; only GET is cached"
+            message = f"The cache helper {stable_repr(name)} fetches {label}, which changes state; only GET is cached"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         if spec.body is not None:
-            message = f"The cache helper {name!r} fetches {label}, which takes a request body"
+            message = f"The cache helper {stable_repr(name)} fetches {label}, which takes a request body"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         response = self.responses(helper, spec, problems)
         security = spec.security
         if not tree["authenticated"] and security is not None and security.alternatives and all(security.alternatives):
-            message = f"The cache helper {name!r} is declared anonymous, but {label} requires credentials"
+            message = f"The cache helper {stable_repr(name)} is declared anonymous, but {label} requires credentials"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.authenticated", message, spec))
         if response is None or problems:
             return None, problems
@@ -76,13 +77,13 @@ class _Caches:
             response = success_response(spec, status)
             where = f"{at}[{index}]"
             if response is None or status not in SUCCESS_STATUSES:
-                message = f"The cacheable status {status} of {name!r} is no declared 2xx success of {label}"
+                message = f"The cacheable status {status} of {stable_repr(name)} is no declared 2xx success of {label}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
                 continue
             if (use := response.json_use) is None or bodyless(status) or use.id not in self.pages.codecs:
                 message = (
-                    f"The cacheable status {status} of {name!r} has a response other than one natively decoded JSON "
-                    "body, which is not supported yet"
+                    f"The cacheable status {status} of {stable_repr(name)} has a response other than one natively "
+                    "decoded JSON body, which is not supported yet"
                 )
                 problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
                 continue
