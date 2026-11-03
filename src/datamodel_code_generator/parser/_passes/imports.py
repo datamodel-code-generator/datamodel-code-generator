@@ -456,7 +456,6 @@ def _released_name_imports(  # noqa: PLR0914
                 init=ctx.is_init,
                 internal_modules=forwarder.released_internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
-                treat_dot_as_module=parser.treat_dot_as_module,
                 shared_imports=parser.imports,
             )
             target.reserve_name(resolver)
@@ -1734,7 +1733,6 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
                 init=ctx.is_init,
                 internal_modules=state.internal_modules,
                 producer=ImportProducer(_HIDDEN_SUBMODULES, model),
-                treat_dot_as_module=parser.treat_dot_as_module,
                 import_ledger=ledger,
                 shared_imports=parser.imports,
                 hidden_modules=modules,

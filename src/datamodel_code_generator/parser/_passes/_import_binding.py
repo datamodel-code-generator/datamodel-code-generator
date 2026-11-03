@@ -122,7 +122,6 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     init: bool,
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
-    treat_dot_as_module: bool | None,
     shared_imports: Imports | None,
     row: ImportPathRow = "reference",
     hidden_modules: Collection[tuple[str, ...]] = (),
@@ -151,13 +150,6 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
             from_, import_ = full_path = exact_import(from_, import_, name)
         import_ = written_name(import_)
-        current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
-        if (  # pragma: no cover
-            len(current_module_path) > 1 and current_module_path[-1].count(".") > 0 and not treat_dot_as_module
-        ):
-            rel_path_depth = current_module_path[-1].count(".")
-            from_ = from_[rel_path_depth:]
-
         ref_module = tuple(target_full_name.split(".")[:-1])
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
@@ -195,7 +187,6 @@ def register_reference_import(  # noqa: PLR0913
     internal_modules: set[tuple[str, ...]],
     base_class: bool = False,
     producer: ImportProducer,
-    treat_dot_as_module: bool | None,
     import_ledger: ModuleImportLedger,
     shared_imports: Imports,
     row: ImportPathRow = "reference",
@@ -215,7 +206,6 @@ def register_reference_import(  # noqa: PLR0913
         init=init,
         internal_modules=internal_modules,
         base_class=base_class,
-        treat_dot_as_module=treat_dot_as_module,
         shared_imports=shared_imports,
         row=row,
         hidden_modules=hidden_modules,
@@ -251,14 +241,13 @@ def generic_base_class_import(module: ModulePath, base_module: ModulePath, name:
         init=init,
         internal_modules=(),
         base_class=True,
-        treat_dot_as_module=None,
         shared_imports=None,
     )
     return Import(from_=target.written_from, import_=target.import_)
 
 
 class ReferenceExpressionHost(Protocol):
-    """The option, the import ledger and the builder that writing how a data type names its reference uses."""
+    """The import ledger and the builder that writing how a data type names its reference uses, and the option."""
 
     @property
     def _graph_builder(self) -> GraphBuilder:
@@ -309,7 +298,6 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             internal_modules=internal_modules,
             base_class=isinstance(data_type, BaseClassDataType),
             producer=producer,
-            treat_dot_as_module=host.treat_dot_as_module,
             import_ledger=host._import_ledger,  # noqa: SLF001
             shared_imports=host.imports,
             row=row,

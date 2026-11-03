@@ -50,7 +50,7 @@ from datamodel_code_generator._internal_utils import (
 )
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of, names_by_path
-from datamodel_code_generator._module_paths import written_name
+from datamodel_code_generator._module_paths import flat_name, written_name
 from datamodel_code_generator._parse_memo import (
     MemoTable,
     bump_deep,
@@ -1980,7 +1980,7 @@ def _directory_module_name(name: str, *, keep_dots: bool) -> str:
     ``café-models``) keeps its name; any other (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless
     ``keep_dots``, the dots of the name are ``_``.
     """
-    name = written_name(name if keep_dots else name.replace(".", "_"))
+    name = written_name(name if keep_dots else flat_name(name))
     if all(is_identifier(part, None) for part in name.split(".")):
         return name
     return sanitize_module_name(name, treat_dot_as_module=keep_dots)
