@@ -30,7 +30,6 @@ from datamodel_code_generator._module_paths import (
     written_path,
 )
 from datamodel_code_generator._python_target_names import is_builtin_type_name
-from datamodel_code_generator._python_type_annotation import iter_python_type_expr_names
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
@@ -1019,6 +1018,8 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
 
 def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
     """Return the names that the types of the models write as text: those of the types that name no model."""
+    from datamodel_code_generator._python_type_annotation import iter_python_type_expr_names  # noqa: PLC0415
+
     names: set[str] = set()
     for model in models:
         for data_type in _named_data_types(model):
