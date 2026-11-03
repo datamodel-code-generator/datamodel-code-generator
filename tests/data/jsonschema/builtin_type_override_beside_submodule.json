@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.A": {
+      "type": "object",
+      "properties": {
+        "items": {"type": "array", "items": {"type": "string"}},
+        "l": {"$ref": "#/$defs/pkg.list.L"}
+      }
+    },
+    "pkg.list.L": {"type": "object", "properties": {"a": {"type": "string"}}}
+  }
+}

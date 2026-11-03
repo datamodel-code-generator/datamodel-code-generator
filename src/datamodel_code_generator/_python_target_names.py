@@ -277,13 +277,12 @@ def target_builtin_type_attributes(target_version: tuple[int, int]) -> frozenset
     )
 
 
-BuiltinRow: TypeAlias = Literal["target", "any-target", "legacy-builtins-of-any-target"]
+BuiltinRow: TypeAlias = Literal["target", "any-target"]
 """Whose builtins `is_builtin_type_name` reads.
 
 `target` the target's: a name a later Python adds is free for a user's symbol there (a type override, a bare type
-name); `any-target` every supported target's, where a `builtins.X` path that some target has is told from an unknown
-one; `legacy-builtins-of-any-target` every supported target's where the target's are meant: the import passes that
-alias the builtins a module import or a package's submodule hides.
+name, the builtins that a module import, a package's submodule or a field hides); `any-target` every supported
+target's, where a `builtins.X` path that some target has is told from an unknown one.
 """
 
 

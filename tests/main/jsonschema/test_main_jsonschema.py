@@ -3908,6 +3908,94 @@ def test_main_jsonschema_module_import_named_like_builtin_package_keeps_local_na
     )
 
 
+def _decode_with_generated_model(output_model_type: str, model: Any, payload: str) -> str:
+    """Decode the payload with a generated Pydantic model, dataclass or Struct and describe the result."""
+    decode = (
+        partial(msgspec.json.decode, type=model)
+        if output_model_type == "msgspec.Struct"
+        else _model_json_validator(model)
+    )
+    try:
+        decoded = decode(payload)
+    except (msgspec.ValidationError, ValidationError) as error:
+        return f"{payload}: rejected {type(error).__name__}"
+    return f"{payload}: accepted {decoded!r}"
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize("target_python_version", ["3.10", "3.11"])
+def test_main_jsonschema_class_named_like_builtin_beside_submodule(
+    output_dir: Path, output_model_type: str, target_python_version: str
+) -> None:
+    """Name the class, not the builtin, where a package defines a builtin's name and has a submodule of that name.
+
+    ``pkg/__init__.py`` defines the classes ``Warning`` and ``ExceptionGroup`` and imports the submodules of the same
+    names; up to 0.88.0 the bare names that the fields write were taken for the builtins and imported from ``builtins``
+    under an alias, so the fields were typed by the builtin classes. ``ExceptionGroup`` is a builtin of Python 3.11 and
+    later only, which the target 3.10 has not (#5772).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "class_named_like_builtin_beside_submodule.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = [
+        '{"errors": {"count": 1}, "detail": {"message": "m"}, "group": {"size": 2}, "group_detail": {"reason": "r"}}',
+        '{"errors": {"count": "one"}}',
+    ]
+    with _generated_package_module(output_dir, "pkg") as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.Report, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "module_path"),
+    [
+        pytest.param("builtin_type_override_beside_module", "pkg.A", id="module"),
+        pytest.param("builtin_type_override_beside_submodule.json", "pkg", id="submodule"),
+    ],
+)
+def test_main_jsonschema_builtin_type_override_beside_module(
+    output_dir: Path, output_model_type: str, input_name: str, module_path: str
+) -> None:
+    """Keep the builtin ``list`` of a type override and alias the module ``list`` that the same module imports.
+
+    ``--type-overrides`` with ``builtins.list`` imports the builtin where ``from . import list`` imports the module that
+    ``list.L`` names; up to 0.88.0 the builtin's import was the one aliased and ``list.L`` followed it, so the field
+    ``l`` was written as the alias, which was no name of the module (#5986).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--type-overrides",
+            '{"A.items": "builtins.list"}',
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = ['{"items": ["a", 1], "l": {"a": "x"}}', '{"l": {"a": 1}}']
+    with _generated_package_module(output_dir, module_path) as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.A, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 

@@ -6079,6 +6079,32 @@ msgspec.Struct	main/jsonschema/main_jsonschema/builtin_named_fields[msgspec.Stru
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/main_jsonschema/builtin_named_fields[typing.TypedDict].py
+[test_main_jsonschema_builtin_type_override_beside_module]
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass]/
+module-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-msgspec.Struct]/
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-pydantic_v2.BaseModel]/
+submodule-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-dataclasses.dataclass]/
+submodule-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-msgspec.Struct]/
+submodule-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-pydantic_v2.BaseModel]/
+[test_main_jsonschema_class_named_like_builtin_beside_submodule]
+3.10-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass]/
+3.10-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct]/
+3.10-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel]/
+3.11-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-dataclasses.dataclass]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass]/
+3.11-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-msgspec.Struct]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct]/
+3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel]/
 [test_main_jsonschema_collapse_reuse_models_cross_module_users]
 module	main/jsonschema/collapse_reuse_models_cross_module_users//*.py
 tree	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py

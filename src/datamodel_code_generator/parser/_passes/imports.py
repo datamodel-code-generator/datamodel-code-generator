@@ -1160,12 +1160,12 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     ``from . import list``, which names the models of the module ``list`` (``list.Pop``), hides the builtin from the
     whole module. Such an import takes the name the module's resolver gives it once the builtin holds its own name
     (``list_1``), as module imports whose names clash with other names do, and every ``list.X`` the module writes
-    follows. A name is a builtin by the static table of every target (row ``legacy-builtins-of-any-target``), and the
-    module writes it bare when a rendered model names it other than as the module of an attribute, a store or a name a
-    function of a custom template binds included (row ``legacy-flat-bare-loads``). The class of an enum
-    member literal is written before (``import_enum_member_literal_classes``), so a binding it names keeps its name.
-    A package's own submodule keeps its name too: importing it binds the name in the package whatever the import
-    is named.
+    follows. A name is a builtin by the static table of the target, and the module writes it bare when a rendered model
+    names it other than as the module of an attribute, a store or a name a function of a custom template binds included
+    (row ``legacy-flat-bare-loads``). The class of an enum member literal is written before
+    (``import_enum_member_literal_classes``), so a binding it names keeps its name. A package's own submodule keeps its
+    name too: importing it binds the name in the package whatever the import is named. An import of the builtin itself
+    (``--type-overrides`` with ``builtins.list``) is the name's own binding, not the module import that hides it.
     """
     references = [
         data_type for model in ctx.models for data_type in _named_data_types(model) if data_type.reference is not None
@@ -1175,8 +1175,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         bindings := {
             binding
             for data_type in references
-            if (binding := _module_binding(data_type.alias)) is not None
-            and is_builtin_type_name(binding, target, rule="legacy-builtins-of-any-target")
+            if (binding := _module_binding(data_type.alias)) is not None and is_builtin_type_name(binding, target)
         }
     ):
         return
@@ -1186,7 +1185,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         for data_type in model.all_data_types
         for enum_class, _ in data_type.enum_member_literals
     )
-    imported = {binding: key for key, binding in _import_bindings(ctx.imports)}
+    imported = {binding: key for key, binding in _import_bindings(ctx.imports) if key[0] != "builtins"}
     resolver = ctx.scoped_model_resolver
     held = {reference.name: reference for reference in resolver.references.values()}
     if not (
@@ -1254,15 +1253,13 @@ def _alias_builtins_hidden_by_submodules(
     ``app/list.py`` binds ``list`` in ``app/__init__.py`` once anything imports it, whatever the import is named, so
     ``list[str]`` there would subscript the module. The package imports the builtin as ``list_aliased``, the alias
     form of field-name bindings, and every bare ``list`` its models and module code write follows; ``list.Pop``
-    names the submodule and keeps its name. A builtin is a name of the static table of every target (row
-    ``legacy-builtins-of-any-target``); the output writes a bare load of one for nothing but the builtin.
+    names the submodule and keeps its name. A builtin is a name of the static table of the target, and the output
+    writes a bare load of one for nothing but the builtin, unless the package defines a class of that name
+    (``Warning`` beside ``app/Warning.py``), which the load names.
     """
     target = parser.target_python_version.version_key
-    if not (
-        hidden := {
-            name for name in submodule_names if is_builtin_type_name(name, target, rule="legacy-builtins-of-any-target")
-        }
-    ):
+    class_names = {model.class_name for model in ctx.models}
+    if not (hidden := {name for name in submodule_names if is_builtin_type_name(name, target)}.difference(class_names)):
         return
     loads = {model: found for model in ctx.models if (found := _bare_loads_of(model.render(), hidden))}
     module_code = parser.data_model_type.render_module_code(ctx.models)
@@ -1270,7 +1267,7 @@ def _alias_builtins_hidden_by_submodules(
         return
     reserved = {
         *submodule_names,
-        *(model.class_name for model in ctx.models),
+        *class_names,
         *(field.name for model in ctx.models for field in model.fields if field.name is not None),
         *_iter_import_bindings(ctx.imports),
         *_iter_import_bindings(parser.imports),
