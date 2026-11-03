@@ -65,7 +65,7 @@ if TYPE_CHECKING:
         StructuredRun,
         _StructureState,
     )
-    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -122,6 +122,10 @@ class StructureHost(
     @property
     def custom_class_name_generator(self) -> Callable[[str], str] | None:
         """The function that generates class names, if configured."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of model and field names."""
 
     @property
     def custom_formatter(self) -> list[str] | None:
@@ -1023,7 +1027,12 @@ def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) 
 def snapshot_union_tags(parser: StructureHost, state: _StructureState) -> None:
     """Record the tags of each discriminated union before reuse merges any model."""
     parser._tag_plan.reuse_snapshot = (  # noqa: SLF001
-        {model: tags for _, models in state.module_models for model in models if (tags := declared_union_tags(model))}
+        {
+            model: tags
+            for _, models in state.module_models
+            for model in models
+            if (tags := declared_union_tags(model, parser.model_resolver))
+        }
         if parser.reuse_model
         else {}
     )

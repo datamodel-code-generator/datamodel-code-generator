@@ -165,7 +165,10 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
 
     layout_models = reach(joins, layout_targets, key=id)
     tag_names = possible_tag_names(
-        iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),  # noqa: SLF001
+        iter_union_sites(
+            chain(models, chain.from_iterable(parser._collapsed_reuse_models.values())),  # noqa: SLF001
+            parser.model_resolver,
+        ),
         layout_models,
         field_namer(parser.model_resolver, parser.field_name_model_type),
     )
