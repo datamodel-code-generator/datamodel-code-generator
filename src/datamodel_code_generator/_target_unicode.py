@@ -37,6 +37,7 @@ __all__ = (
     "host_parsable",
     "is_dotted_python_name",
     "is_identifier",
+    "is_importable_part",
     "is_nfkc",
     "is_numeric",
     "is_python_name",
@@ -383,6 +384,27 @@ def is_python_name(value: str, target: PythonVersion | None = None, *, rule: Nam
 def is_dotted_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
     """Return whether text is Python names joined by dots, each by `is_python_name` with the rule."""
     return all(is_python_name(part, target, rule=rule) for part in value.split("."))
+
+
+ModulePartRow: TypeAlias = Literal["target", "keyword", "legacy-keyword-directory-kept"]
+"""How `is_importable_part` reads a part of a module path.
+
+`target` reads a name by the target's rule (`is_python_name`), for the parts `--treat-dot-as-module` writes for the dots
+of a directory or file name. `keyword` refuses a keyword alone, for the parts written without it, whose dots are `_`.
+`legacy-keyword-directory-kept` reads an identifier and keeps a keyword, for a directory of the input that keeps its
+name; a module that imports a keyword one is refused.
+"""
+
+
+def is_importable_part(part: str, target: PythonVersion | None, *, row: ModulePartRow = "target") -> bool:
+    """Return whether Python imports a module by the part ``part`` of its path, as the row reads it."""
+    match row:
+        case "keyword":
+            return not keyword.iskeyword(part)
+        case "legacy-keyword-directory-kept":
+            return is_identifier(part, target)
+        case _:
+            return is_python_name(part, target)
 
 
 def replace_non_word(value: str, target: PythonVersion | None) -> str:

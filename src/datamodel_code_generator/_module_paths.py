@@ -2,8 +2,9 @@
 
 The output writes each module as a file: ``name.py``, or ``__init__.py`` for a package, below the directories of its
 packages. A ``-`` of a directory or file name is written as ``_`` (``written_name``). Without ``--treat-dot-as-module``
-so are the dots of a name but its last one (``normalized_path``, the keys of the parser's result); with it, each
-dotted name becomes packages (``package_path``), a file name keeping its extension (``expanded_path``).
+so are the dots of a name (``flat_name``), a file name keeping the one of its extension (``normalized_path``, the keys
+of the parser's result); with it, each dotted name becomes packages (``package_path``), a file name keeping its
+extension (``expanded_path``).
 ``written_path`` is the path of the written file.
 
 The dotted name of the module a file holds is that path without the file's ``.py`` and without a package's
@@ -43,6 +44,7 @@ __all__ = [
     "dotted_name",
     "exact_import",
     "expanded_path",
+    "flat_name",
     "is_ancestor_package_reference",
     "is_below",
     "is_below_name",
@@ -209,6 +211,11 @@ def written_name(name: str) -> str:
     return name.replace("-", "_")
 
 
+def flat_name(name: str) -> str:
+    """Return the name ``name`` with its dots written as ``_``, as the output writes it without packages for them."""
+    return name.replace(".", "_")
+
+
 def written_names(path: Sequence[str]) -> tuple[str, ...]:
     """Return each name of ``path`` as the output writes it (``written_name``), its dots as they are."""
     return tuple(map(written_name, path))
@@ -217,12 +224,12 @@ def written_names(path: Sequence[str]) -> tuple[str, ...]:
 def normalized_path(path: Sequence[str], *, treat_dot_as_module: bool | None) -> tuple[str, ...]:
     """Return the file path ``path`` as the parser's result keys it, before ``treat_dot_as_module`` expands it.
 
-    Without ``treat_dot_as_module``, the dots of each name but its last one are written as ``_``.
+    Without ``treat_dot_as_module``, the dots of each name but its last one are written as ``_`` (``flat_name``).
     """
     names = written_names(path)
     if treat_dot_as_module:
         return names
-    return tuple(name[: name.rfind(".")].replace(".", "_") + name[name.rfind(".") :] for name in names)
+    return tuple(flat_name(name[: name.rfind(".")]) + name[name.rfind(".") :] for name in names)
 
 
 def package_path(module: Sequence[str]) -> tuple[str, ...]:

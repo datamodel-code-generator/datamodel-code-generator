@@ -50,7 +50,7 @@ from datamodel_code_generator._internal_utils import (
 )
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of, names_by_path
-from datamodel_code_generator._module_paths import written_name
+from datamodel_code_generator._module_paths import flat_name, written_name
 from datamodel_code_generator._parse_memo import (
     MemoTable,
     bump_deep,
@@ -74,8 +74,9 @@ from datamodel_code_generator._requirements import backport_path, python_target_
 from datamodel_code_generator._target_unicode import (
     host_identifiers,  # noqa: F401  # Preserve the established model.base export.
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
-    is_identifier,
+    is_importable_part,
 )
+from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
@@ -1976,12 +1977,12 @@ def sanitize_module_name(name: str, *, treat_dot_as_module: bool | None) -> str:
 def _directory_module_name(name: str, *, keep_dots: bool) -> str:
     """Return the name of a directory in a module path: its own when Python imports it by that name, else a file's.
 
-    A directory whose every part is an identifier once its ``-`` is ``_`` as the output writes it (``ユーザー``,
-    ``café-models``) keeps its name; any other (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless
-    ``keep_dots``, the dots of the name are ``_``.
+    A directory whose every part is an identifier of the oldest target once its ``-`` is ``_`` as the output writes it
+    (``ユーザー``, ``café-models``) keeps its name, a keyword too (row ``legacy-keyword-directory-kept``); any other
+    (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless ``keep_dots``, the dots of the name are ``_``.
     """
-    name = written_name(name if keep_dots else name.replace(".", "_"))
-    if all(is_identifier(part, None) for part in name.split(".")):
+    name = written_name(name if keep_dots else flat_name(name))
+    if all(is_importable_part(part, None, row="legacy-keyword-directory-kept") for part in name.split(".")):
         return name
     return sanitize_module_name(name, treat_dot_as_module=keep_dots)
 
@@ -2627,13 +2628,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if extra_template_data is not None:
             # The supplied defaultdict will either create a new entry,
             # or already contain a predefined entry for this type
-            self.extra_template_data = extra_template_data[self.reference.path]
-
-            # We use the full object reference path as dictionary key, but
-            # we still support `name` as key because it was used for
-            # `--extra-template-data` input file and we don't want to break the
-            # existing behavior.
-            self.extra_template_data.update(extra_template_data[self.name])
+            path_key, name_key = template_data_keys(self.reference.path, self.name)
+            self.extra_template_data = extra_template_data[path_key]
+            self.extra_template_data.update(extra_template_data[name_key])
         else:
             self.extra_template_data = defaultdict(dict)
 
