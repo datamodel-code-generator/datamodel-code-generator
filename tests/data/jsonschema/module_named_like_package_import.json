@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {"type": "object", "properties": {"extra": {}, "thing": {"$ref": "#/$defs/pkg.Any.Thing"}}},
+    "pkg.Any.Thing": {"type": "object", "properties": {"n": {"type": "integer"}}},
+    "pkg.api.Order": {"type": "object", "properties": {"thing": {"$ref": "#/$defs/pkg.Any.Thing"}}}
+  }
+}
