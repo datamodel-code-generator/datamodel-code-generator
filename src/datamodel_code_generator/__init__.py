@@ -1853,9 +1853,9 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
-    from datamodel_code_generator._paths import concrete_parent, resolved  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
+        artifact_roots,
         publish_staged_files,
         release_all,
         stage_outputs,
@@ -1870,16 +1870,7 @@ def _generate_with_atomic_remote_update(
     try:
         output, metadata = config.output, config.emit_model_metadata
         staging = stage_outputs(
-            output,
-            metadata,
-            (
-                None if output is None else resolved(output),
-                None if output is None else concrete_parent(output),
-                None if metadata is None else concrete_parent(metadata),
-            ),
-            contexts,
-            anchors,
-            existing_directory="empty-directory",
+            output, metadata, artifact_roots(output, metadata), contexts, anchors, existing_directory="empty-directory"
         )
         lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
         staged_config = config.model_copy(update=staging.updates)

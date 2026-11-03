@@ -145,7 +145,7 @@ from datamodel_code_generator._option_names import (
     values_arguments,
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
-from datamodel_code_generator._paths import concrete_parent, files_under, names_directory, overlaps, resolved, same_file
+from datamodel_code_generator._paths import files_under, names_directory, overlaps, resolved, same_file
 from datamodel_code_generator._project_config import (
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
@@ -714,6 +714,8 @@ def _get_job_config(  # noqa: PLR0913
         msg = f"Job '{name}' cannot use {options}; jobs must generate code"
         raise Error(msg)
 
+    from datamodel_code_generator._publication import artifact_roots  # noqa: PLC0415
+
     context = {key: normalized_config[key] for key in BATCH_CONFIG_CONTEXT_FIELDS if key in normalized_config}
     return JobPlan(
         name,
@@ -722,14 +724,8 @@ def _get_job_config(  # noqa: PLR0913
         normalized_config,
         dict(cli_config_args),
         pyproject_path,
-        *_resolved_artifact_paths(config.output),
-        *_resolved_artifact_paths(config.emit_model_metadata),
+        *artifact_roots(config.output, config.emit_model_metadata),
     )
-
-
-def _resolved_artifact_paths(path: Path | None) -> tuple[Path | None, Path | None]:
-    """Resolve an artifact path and its parent, the root and anchor its staged publication binds to."""
-    return (None, None) if path is None else (resolved(path), concrete_parent(path))
 
 
 def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
@@ -1895,7 +1891,12 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
         staging = stage_outputs(
             plan.config.output,
             plan.config.emit_model_metadata,
-            (plan.resolved_output_root, plan.resolved_output_parent, plan.resolved_model_metadata_parent),
+            (
+                plan.resolved_output_root,
+                plan.resolved_output_parent,
+                plan.resolved_model_metadata_root,
+                plan.resolved_model_metadata_parent,
+            ),
             contexts,
             anchors,
             existing_directory="legacy-cli-staged-directory-uncreated",
@@ -2237,6 +2238,8 @@ def _run_jobs_json(
 
 def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
     """Adapt one command config to the existing staged-publication machinery."""
+    from datamodel_code_generator._publication import artifact_roots  # noqa: PLC0415
+
     return JobPlan(
         "command",
         config,
@@ -2244,8 +2247,7 @@ def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
         {},
         {},
         pyproject_path or Path.cwd() / "pyproject.toml",
-        *_resolved_artifact_paths(config.output),
-        *_resolved_artifact_paths(config.emit_model_metadata),
+        *artifact_roots(config.output, config.emit_model_metadata),
     )
 
 

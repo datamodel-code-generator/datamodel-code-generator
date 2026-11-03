@@ -18,7 +18,15 @@ from pathlib import Path
 from secrets import token_hex
 from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 
-from datamodel_code_generator._paths import concrete, existing_ancestor, files_under, lexical, resolved, same_file
+from datamodel_code_generator._paths import (
+    concrete,
+    concrete_parent,
+    existing_ancestor,
+    files_under,
+    lexical,
+    resolved,
+    same_file,
+)
 from datamodel_code_generator._shadowed_modules import warn_shadowed_modules
 
 if TYPE_CHECKING:
@@ -271,10 +279,26 @@ class StagedOutputs(NamedTuple):
             yield from metadata.files()
 
 
+def artifact_roots(
+    output: Path | None, metadata: Path | None
+) -> tuple[Path | None, Path | None, Path | None, Path | None]:
+    """Return the concrete roots that a staged run binds its output and model metadata to.
+
+    They are the output's resolved path and concrete parent, then the metadata's, None for an absent artifact. The
+    caller binds them when it plans the run: the command line when it plans a job, ``generate()`` when it stages.
+    """
+    return (
+        None if output is None else resolved(output),
+        None if output is None else concrete_parent(output),
+        None if metadata is None else resolved(metadata),
+        None if metadata is None else concrete_parent(metadata),
+    )
+
+
 def stage_outputs(  # noqa: PLR0913
     output: Path | None,
     metadata: Path | None,
-    roots: tuple[Path | None, Path | None, Path | None],
+    roots: tuple[Path | None, Path | None, Path | None, Path | None],
     contexts: list[tempfile.TemporaryDirectory[str]],
     anchors: list[PublicationAnchor],
     *,
@@ -282,14 +306,14 @@ def stage_outputs(  # noqa: PLR0913
 ) -> StagedOutputs:
     """Redirect a generation's output and model metadata to private staging, anchored where each is published.
 
-    ``roots`` are the concrete output root, output parent and metadata parent, resolved when the caller planned the
-    run. An output that is an existing directory is anchored at its root and staged by row: ``empty-directory``
-    (``generate()``) creates the staged output as an empty directory; ``legacy-cli-staged-directory-uncreated`` (the
-    command line, fix #5617) leaves the staged path to the generation, so a single module is staged as a file that
-    cannot replace the directory. Any other output and the metadata are anchored at their parent. Every staging
-    directory and anchor joins ``contexts`` and ``anchors`` as soon as it exists, for the caller to release.
+    ``roots`` are the concrete roots ``artifact_roots`` gave when the caller planned the run. An output that is an
+    existing directory is anchored at its root and staged by row: ``empty-directory`` (``generate()``) creates the
+    staged output as an empty directory; ``legacy-cli-staged-directory-uncreated`` (the command line, fix #5617) leaves
+    the staged path to the generation, so a single module is staged as a file that cannot replace the directory. Any
+    other output and the metadata are anchored at their parent. Every staging directory and anchor joins ``contexts``
+    and ``anchors`` as soon as it exists, for the caller to release.
     """
-    output_root, output_parent, metadata_parent = roots
+    output_root, output_parent, _, metadata_parent = roots
     staged_output = staged_metadata = None
     if output is not None:
         root, parent = cast("Path", output_root), cast("Path", output_parent)
