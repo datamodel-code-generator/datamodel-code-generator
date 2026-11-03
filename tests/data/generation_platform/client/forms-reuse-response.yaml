@@ -1,0 +1,36 @@
+openapi: 3.1.1
+info:
+  title: Reused form response
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: uploadFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                note: {type: string}
+                file: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+    get:
+      operationId: downloadFiles
+      responses:
+        '200':
+          description: The files.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [file]
+                properties:
+                  note: {type: string}
+                  file: {type: string, format: binary}

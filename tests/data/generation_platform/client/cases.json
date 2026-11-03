@@ -5519,6 +5519,26 @@
       ]
     ]
   },
+  "forms-reuse-response": {
+    "input": "forms-reuse-response.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "forms-allof-cycle": {
     "input": "forms-allof-cycle.yaml",
     "model": {
