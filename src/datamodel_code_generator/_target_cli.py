@@ -21,6 +21,7 @@ from datamodel_code_generator._option_names import (
     values_arguments,
 )
 from datamodel_code_generator._paths import names_directory
+from datamodel_code_generator._project_config import names_profile
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator.enums import _ExitCode
 
@@ -98,7 +99,7 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
-        named = ("jobs", job) if job else ("profiles", profile) if (profile := namespace.profile) else ()
+        named = ("jobs", job) if job else ("profiles", namespace.profile) if names_profile(namespace.profile) else ()
         table = toml_table(config_table(*named), "legacy-ascii-table-keys")
         lines = (f"  {key} = {toml_text(data)}" for key, data in hyphenated(values).items())
         where = os.path.relpath(pyproject, Path.cwd())

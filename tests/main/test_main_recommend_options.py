@@ -503,6 +503,7 @@ def test_recommend_options_requires_the_remote_lock(tmp_path: Path, capsys: pyte
             id="preset-argument",
         ),
         pytest.param("project_profile", ["--profile", "api"], id="profile"),
+        pytest.param("project_changes", ["--profile", ""], id="empty-profile"),
         pytest.param("project_profile_unicode", ["--profile", "ëu"], id="unicode-profile"),
         pytest.param("project_job", ["--job", "api"], id="job"),
         pytest.param(
@@ -515,7 +516,10 @@ def test_recommend_options_requires_the_remote_lock(tmp_path: Path, capsys: pyte
 def test_recommend_options_for_projects(
     project: str, args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Recommend changes to the pyproject.toml table the command reads, keeping what it already sets."""
+    """Recommend changes to the pyproject.toml table the command reads, keeping what it already sets.
+
+    An empty profile name selects no profile, so its command and table are those of a run without one.
+    """
     _recommend(
         tmp_path,
         capsys,

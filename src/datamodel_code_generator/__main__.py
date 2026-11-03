@@ -144,6 +144,7 @@ from datamodel_code_generator._project_config import (
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
     _resolve_relative_paths_from,
+    names_profile,
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import is_url, redact_url
@@ -672,7 +673,7 @@ def _get_job_config(  # noqa: PLR0913
         raise Error(msg)
 
     resolved_config = dict(base_config)
-    if profile_name is not None:
+    if names_profile(profile_name):
         resolved_profile = _resolve_profile_extends(
             profiles, profile_name, missing=f"Profile '{profile_name}' not found for job '{name}'"
         )
@@ -874,7 +875,7 @@ def _record_raw_profile_dependencies(
     seen_profiles: set[str],
 ) -> None:
     """Collect one raw profile chain without reproducing validation failures."""
-    if profile_name in seen_profiles:
+    if not names_profile(profile_name) or profile_name in seen_profiles:
         return
     seen_profiles.add(profile_name)
     profile = profiles.get(profile_name)
@@ -914,7 +915,7 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     if args.ignore_pyproject:
         msg = "--ignore-pyproject cannot be used with --job or --all-jobs"
         raise Error(msg)
-    if args.profile:
+    if names_profile(args.profile):
         msg = "--profile cannot be used with --job or --all-jobs; set profile in each job instead"
         raise Error(msg)
     if args.generate_cli_command:
@@ -2687,8 +2688,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             pyproject_config,
             cli_config_args,
             pyproject_path,
-            selector=() if namespace.profile is None else ("--profile", namespace.profile),
-            table=CONFIG_TABLE if namespace.profile is None else config_table("profiles", namespace.profile),
+            selector=("--profile", namespace.profile) if names_profile(namespace.profile) else (),
+            table=config_table("profiles", namespace.profile) if names_profile(namespace.profile) else CONFIG_TABLE,
         )
 
     _imply_remote_refs(config)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._config_fields import (
@@ -20,6 +20,15 @@ from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
+
+
+def names_profile(name: str | None) -> TypeGuard[str]:
+    """Return whether a profile selection names a profile: an empty name selects none, as no name does.
+
+    The selections are ``--profile``, the ``profile`` of ``load_pyproject_config()`` and of a job, and each parent of
+    an ``extends``.
+    """
+    return bool(name)
 
 
 def _resolve_profile_extends(
@@ -61,7 +70,7 @@ def _resolve_profile_extends(
     parents = [extends] if isinstance(extends, str) else extends
     result: dict[str, Any] = {}
 
-    for parent in parents:
+    for parent in filter(names_profile, parents):
         if parent == profile_name:
             msg = f"Profile '{profile_name}' cannot extend itself"
             raise Error(msg)
@@ -100,7 +109,7 @@ def _get_pyproject_toml_config_with_path(
             key: value for key, value in tool_config.items() if key not in {"jobs", "profiles"}
         }
 
-        if profile:
+        if names_profile(profile):
             profiles = tool_config.get("profiles", {})
             if not isinstance(profiles, Mapping):
                 msg = "[tool.datamodel-codegen.profiles] must be a table"
@@ -111,7 +120,7 @@ def _get_pyproject_toml_config_with_path(
 
         return _normalize_pyproject_config(base_config), pyproject_path
 
-    if profile:
+    if names_profile(profile):
         msg = f"Profile '{profile}' requested but no [tool.datamodel-codegen] section found in pyproject.toml"
         raise Error(msg)
 
