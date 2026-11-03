@@ -35,6 +35,7 @@ from datamodel_code_generator.python_literal import (
     _InternalTypeExpression,
     represent_untrusted_public_type_name,
     represent_untrusted_python_value,
+    stable_repr,
 )
 from datamodel_code_generator.types import NOT_REQUIRED, READ_ONLY, REQUIRED
 
@@ -208,7 +209,7 @@ class TypedDict(DataModel):
             return
         typed_dict_kwargs: dict[str, str] = self._internal_template_data["typed_dict_kwargs"]
         type_hint = source.type_hint
-        extra_items = repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
+        extra_items = stable_repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
         self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
 
     @override
@@ -225,8 +226,14 @@ class TypedDict(DataModel):
 
     @property
     def _use_typeddict_backport(self) -> bool:
-        """Check if this TypedDict needs typing_extensions.TypedDict for closed/extra_items."""
-        return bool(self.extra_template_data.get("use_typeddict_backport"))
+        """Check if this TypedDict needs typing_extensions.TypedDict for closed/extra_items.
+
+        Its target's ``typing.TypedDict`` takes neither before Python 3.15, whether the parser or template data such
+        as ``additionalPropertiesType`` gave them; the template flag still selects the backport for custom outputs.
+        """
+        return bool(self.extra_template_data.get("use_typeddict_backport")) or self.requires_extra_items_backport(
+            self.target_python_version
+        )
 
     @property
     def _requires_typeddict_backport(self) -> bool:

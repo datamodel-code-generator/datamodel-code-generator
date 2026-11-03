@@ -9,7 +9,7 @@ from functools import lru_cache
 from io import StringIO
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._target_unicode import is_python_name
+from datamodel_code_generator._target_unicode import host_identifiers, is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -189,15 +189,17 @@ def python_decorator_path(decorator: str) -> str:
     is kept as one space, so ``a.b if c else d`` names no path. A line break outside the parentheses ends the
     decorator's line; a decorator whose text the tokenizer cannot read before that bracket, or that goes on after that
     line, names itself as a whole, ``@`` included, so no path reads it. A character UTF-8 cannot encode is read as its
-    backslash escape, as every Python version reads it the same way.
+    backslash escape, as every Python version reads it the same way, and an identifier character of a target that the
+    running interpreter does not know is read as a letter it knows (``host_identifiers``) and given back in the path.
     """
-    source = decorator.removeprefix("@").lstrip(" \t\f")
+    source = decorator.removeprefix("@").lstrip(" \t\f").encode(errors="backslashreplace").decode()
+    lent = host_identifiers(source)
     path: list[str] = []
     previous: tokenize.TokenInfo | None = None
     depth = 0
     line_ended = False
     try:
-        for item in tokenize.generate_tokens(StringIO(source.encode(errors="backslashreplace").decode()).readline):
+        for item in tokenize.generate_tokens(StringIO(lent.source if lent else source).readline):
             if item.type in _LINE_BREAK_TOKEN_TYPES:
                 line_ended = line_ended or not depth
                 continue
@@ -216,7 +218,7 @@ def python_decorator_path(decorator: str) -> str:
             previous = item
     except (SyntaxError, tokenize.TokenError):
         return decorator
-    return "".join(path)
+    return lent.restore_text("".join(path)) if lent else "".join(path)
 
 
 @lru_cache(maxsize=128)

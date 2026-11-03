@@ -95,6 +95,7 @@ from datamodel_code_generator.python_literal import (
     _normalized_safe_python_name,
     represent_python_value,
     represent_untrusted_python_value,
+    stable_repr,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
@@ -603,8 +604,8 @@ class Struct(DataModel):
         """
         if struct_tag_refused(value):
             return False
-        self.add_base_class_kwarg("tag_field", repr(field_name))
-        self.add_base_class_kwarg("tag", repr(value))
+        self.add_base_class_kwarg("tag_field", stable_repr(field_name))
+        self.add_base_class_kwarg("tag", stable_repr(value))
         return True
 
     @override

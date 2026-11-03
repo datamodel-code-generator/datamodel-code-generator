@@ -43,6 +43,7 @@ PythonConstruct: TypeAlias = Literal[
     "python.typed_dict_not_required",
     "python.builtin_generic_strings",
     "python.strenum",
+    "python.subclass_any",
     "python.type_statement",
     "python.typed_dict_read_only",
     "python.deprecated_decorator",
@@ -161,6 +162,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     ),
     Requirement("python.builtin_generic_strings", "python", "3.11"),
     Requirement("python.strenum", "python", "3.11"),
+    Requirement("python.subclass_any", "python", "3.11"),
     Requirement("python.type_statement", "python", "3.12", backport="typing_extensions.TypeAliasType"),
     Requirement(
         "python.typed_dict_read_only", "python", "3.13", form="typing.ReadOnly", backport="typing_extensions.ReadOnly"

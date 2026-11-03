@@ -108,16 +108,20 @@ def _decorator_paths(decorators: Iterable[str]) -> list[str]:
 
 
 def _type_override_class_paths(type_overrides: Mapping[str, str]) -> Iterable[str]:
-    """Return the ``--type-overrides`` values that name a class to import: those without brackets no annotation spells.
+    """Return the ``--type-overrides`` values that name a class to import, which have no brackets.
 
-    A value with brackets is an annotation or the parser's error (``parser/_type_overrides.py:_override_expression``).
+    Such a value is names of a target joined by dots, or no annotation spells it; which values these are does not
+    depend on the Python that runs the generator, whose parser may not know a name of a newer target. A value with
+    brackets is an annotation or the parser's error (``parser/_type_overrides.py:_override_expression``).
     """
     from datamodel_code_generator._python_type_annotation_codec import parse_python_type_annotation  # noqa: PLC0415
+    from datamodel_code_generator._target_unicode import is_dotted_python_name  # noqa: PLC0415
 
     return [
         value
         for value in _given(type_overrides.values())
-        if "[" not in value and parse_python_type_annotation(value) is None
+        if "[" not in value
+        and (is_dotted_python_name(value, NEWEST_TARGET) or parse_python_type_annotation(value) is None)
     ]
 
 

@@ -7426,16 +7426,20 @@ def test_main_unique_items_as_set_other_containers(output_model: str, extra_args
     with _generated_model(output_file, name, "UniqueItemsAsSetOtherContainers") as model:
         verdicts = []
         for field_name, field in model.model_fields.items():
-            try:
-                TypeAdapter(field.annotation).validate_python(field.default)
-            except ValidationError:
-                verdict = "rejected"
-            else:
-                verdict = "accepted"
+            verdict = _validation_verdict(TypeAdapter(field.annotation).validate_python, field.default)
             verdicts.append(f"default of {field_name} {field.default!r}: {verdict}\n")
         instance = _model_json_validator(model)(json.dumps({"nested": [[1, 1]]}))
         verdicts.append(f"nested [[1, 1]]: {instance.nested!r}\n")
     assert_output("".join(verdicts), name="payloads")
+
+
+def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
+    """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
+    try:
+        validate(value)
+    except ValidationError:
+        return "rejected"
+    return "accepted"
 
 
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
@@ -7467,12 +7471,7 @@ def test_main_x_python_type_literal_two_part_members(output_model: str, output_f
             value = getattr(instance, field_name)
             verdicts.append(f"{field_name}: {type(value).__name__}.{getattr(value, 'name', value)}\n")
         for field_name, value in {"status": 204, "flag": 4, "year": 2}.items():
-            try:
-                validate(json.dumps(valid | {field_name: value}))
-            except ValidationError:
-                verdict = "rejected"
-            else:
-                verdict = "accepted"
+            verdict = _validation_verdict(validate, json.dumps(valid | {field_name: value}))
             verdicts.append(f"{field_name} {value}: {verdict}\n")
     assert_output("".join(verdicts), name="payloads")
 
@@ -23751,6 +23750,18 @@ _NAMES_SCHEMA = {"title": "Model", "type": "object", "properties": {"a": {"type"
         ),
         pytest.param(
             _NAMES_SCHEMA,
+            ["--type-overrides", json.dumps({"Model.a": f"mypkg.{_NEW_LETTER}T"})],
+            f"type_overrides must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}T'",
+            id="type-overrides",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--class-decorators", f"@mypkg.{_NEW_LETTER}deco"],
+            f"class_decorators must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}deco'",
+            id="class-decorators",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
             ["--validators", json.dumps({"Model": {"validators": [{"field": f"a{_NEW_LETTER}", "function": "m.f"}]}})],
             f"validators.0.field: must be a valid Python identifier: 'a{_NEW_LETTER}'",
             id="validator-field",
@@ -23806,6 +23817,45 @@ _NAMES_SCHEMA = {"title": "Model", "type": "object", "properties": {"a": {"type"
             [],
             f"x-python-import qualname must be a dotted Python identifier path: 'Outer.{_NEW_LETTER}T'",
             id="x-python-import-qualname",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {
+                    "T": {
+                        "type": "string",
+                        "x-python-import": {
+                            "module": "mypkg",
+                            "name": "T",
+                            "native-field": {"module": "mypkg", "qualname": f"Outer.{_NEW_LETTER}T", "fields": []},
+                        },
+                    }
+                },
+            },
+            [],
+            f"x-python-import native-field must be a dotted Python identifier path: 'mypkg.Outer.{_NEW_LETTER}T'",
+            id="x-python-import-native-field",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {
+                    "T": {
+                        "type": "string",
+                        "x-python-import": {
+                            "module": "typing",
+                            "name": "Literal",
+                            "x-python-type": "typing.Literal[mypkg.Kind.A]",
+                            "symbols": {"mypkg.Kind.A": {"module": "mypkg", "qualname": f"Kind.{_NEW_LETTER}A"}},
+                        },
+                    }
+                },
+            },
+            [],
+            f"x-python-import symbols must be a dotted Python identifier path: 'mypkg.Kind.{_NEW_LETTER}A'",
+            id="x-python-import-symbols",
         ),
     ],
 )
@@ -23883,6 +23933,69 @@ def test_main_names_the_target_python_binds_are_written(tmp_path: Path, output_f
             "builtin",
             "--disable-timestamp",
         ],
+        skip_code_validation=True,
+    )
+
+
+_PYTHON_314_LETTER = "\u1c89"
+"""U+1C89, a letter from Unicode 16 on: Python 3.14 parses a name holding it, Python 3.13 and older do not."""
+
+
+def test_main_paths_the_target_python_binds_are_written_whatever_python_runs(tmp_path: Path, output_file: Path) -> None:
+    """Write the class path of a type override and the path of a class decorator where the target Python binds them.
+
+    The parser and the tokenizer of a Python older than 3.14 do not read the names, which are read by the target's
+    identifier characters instead, so every Python that generates for 3.14 writes them.
+    """
+    input_file = tmp_path / "names.json"
+    input_file.write_text(json.dumps(_NAMES_SCHEMA), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--type-overrides",
+            json.dumps({"Model.a": f"mypkg.{_PYTHON_314_LETTER}T"}),
+            "--class-decorators",
+            f"@mypkg.{_PYTHON_314_LETTER}deco",
+            "--additional-imports",
+            "mypkg",
+            "--target-python-version",
+            "3.14",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+def test_main_literal_member_of_a_schema_class_named_like_a_module(tmp_path: Path, output_file: Path) -> None:
+    """Write a two-part ``Literal`` value as a member of the class the schema imports by its first name.
+
+    The first name ``calendar`` also names a standard-library module, which a ``Literal`` value names only where the
+    schema imports no class by that name: up to 0.88.0 the value imported ``MONDAY`` from the module ``calendar``.
+    """
+    input_file = tmp_path / "calendar.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "day": {"type": "integer", "x-python-type": "Literal[calendar.MONDAY]"},
+                "week": {"$ref": "#/$defs/calendar"},
+            },
+            "$defs": {"calendar": {"type": "integer", "x-python-import": {"module": "mypkg", "name": "calendar"}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
         skip_code_validation=True,
     )
 

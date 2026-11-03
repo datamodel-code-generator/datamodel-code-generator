@@ -82,7 +82,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.types import standard_primitive_type_map_factory
 from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
-from datamodel_code_generator.python_literal import PythonCode, represent_python_value
+from datamodel_code_generator.python_literal import PythonCode, represent_python_value, stable_repr
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -592,7 +592,7 @@ class PydanticV2DataType(DataType):
     @staticmethod
     @override
     def _wrap_discriminator_type_hint(type_: str, discriminator: str) -> str:
-        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
+        return subscript_text("Annotated", (type_, f"Field(discriminator={stable_repr(discriminator)})"))
 
     def _should_wrap_with_serialize_as_any(self) -> bool:
         if not self.use_serialize_as_any:

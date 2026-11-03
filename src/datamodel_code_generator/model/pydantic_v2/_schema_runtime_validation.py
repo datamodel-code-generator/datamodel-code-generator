@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeAlias, TypeVar
 
 from datamodel_code_generator._records import record
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -96,7 +97,7 @@ def render_property_count_rule(rule: PropertyCountRule) -> str:
     """Render a property-count class variable through ``class_body_lines``."""
     return (
         "__json_schema_property_count_rule__: ClassVar[tuple[Any, ...]] = "
-        f"({rule.min_properties!r}, {rule.max_properties!r})"
+        f"({stable_repr(rule.min_properties)}, {stable_repr(rule.max_properties)})"
     )
 
 
@@ -104,7 +105,7 @@ def render_unique_items_rules(rules: Iterable[UniqueItemsRule]) -> tuple[str, ..
     """Render raw uniqueItems paths through existing ``class_body_lines``."""
     return (
         "__json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (",
-        *(f"    {rule.path!r}," for rule in rules),
+        *(f"    {stable_repr(rule.path)}," for rule in rules),
         ")\n",
     )
 

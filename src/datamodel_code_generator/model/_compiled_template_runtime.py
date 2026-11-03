@@ -12,6 +12,8 @@ from typing import Any
 
 from typing_extensions import override
 
+from datamodel_code_generator.python_literal import stable_repr
+
 
 class _Missing:
     """The subset of Jinja's undefined value needed by built-in templates."""
@@ -196,7 +198,7 @@ def filter_replace(value: Any, old: str, new: str, count: int | None = None) -> 
 
 
 def filter_repr(value: Any) -> str:
-    return repr(value)
+    return stable_repr(value)
 
 
 def filter_selectattr(value: Any, attribute: str, test: str = "bool", expected: Any = MISSING) -> list[Any]:

@@ -18,7 +18,7 @@ import keyword
 import re
 import unicodedata
 from bisect import bisect_left, bisect_right
-from functools import cache, cached_property
+from functools import cache, cached_property, partial
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
@@ -45,6 +45,7 @@ __all__ = (
     "nfc",
     "nfkc",
     "replace_non_word",
+    "string_repr",
     "target_pattern",
     "title",
     "upper",
@@ -64,6 +65,8 @@ _TITLECASE: Final = 4
 _CASE_IGNORABLE: Final = 8
 _CASED: Final = _LOWERCASE | _UPPERCASE | _TITLECASE
 _ASCII_END: Final = 0x80
+_LATIN_1_END: Final = 0x100
+_BMP_END: Final = 0x10000
 _HANGUL_SYLLABLE: Final = 0xAC00
 _HANGUL_LEADING: Final = 0x1100
 _HANGUL_VOWEL: Final = 0x1161
@@ -193,6 +196,11 @@ class _TargetUnicode:
     def unassigned(self) -> re.Pattern[str]:
         """Match a character the target does not have."""
         return re.compile(f"[^{_class(self.assigned)}]")
+
+    @cached_property
+    def repr_special(self) -> re.Pattern[str]:
+        """Match a character `repr()` of text may write other than as itself: a backslash, a quote, or unprintable."""
+        return re.compile(f"[\\\\'\"{_class(self._set('UNPRINTABLE'))}]|[^{_class(self.assigned)}]")
 
     def _latest(
         self,
@@ -489,6 +497,35 @@ def nfc(value: str, target: PythonVersion | None) -> str:
 def nfkc(value: str, target: PythonVersion | None) -> str:
     """Return the NFKC form of text in the target, which Python gives an identifier when it parses it."""
     return _normalized(value, target, compatibility=True)
+
+
+_REPR_ESCAPES: Final = {"\\": "\\\\", "\t": "\\t", "\n": "\\n", "\r": "\\r"}
+
+
+def _repr_escape(quote: str, match: re.Match[str]) -> str:
+    """Return how `repr()` writes a character `repr_special` matches inside text quoted with `quote`."""
+    character = match.group()
+    if character in "'\"":
+        return f"\\{character}" if character == quote else character
+    if (escape := _REPR_ESCAPES.get(character)) is not None:
+        return escape
+    code_point = ord(character)
+    if code_point < _LATIN_1_END:
+        return f"\\x{code_point:02x}"
+    return f"\\u{code_point:04x}" if code_point < _BMP_END else f"\\U{code_point:08x}"
+
+
+def string_repr(value: str, target: PythonVersion | None) -> str:
+    """Return `repr()` of text as the target's interpreter writes it, whatever interpreter runs.
+
+    `repr()` writes a character as an escape unless the interpreter prints it, and which characters it prints follows
+    its Unicode version, so a message or a literal that quotes text the same way on every interpreter quotes it for a
+    fixed target.
+    """
+    if value.isascii():
+        return repr(value)
+    quote = '"' if "'" in value and '"' not in value else "'"
+    return f"{quote}{_unicode(target).repr_special.sub(partial(_repr_escape, quote), value)}{quote}"
 
 
 def is_nfkc(value: str, target: PythonVersion | None) -> bool:

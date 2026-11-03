@@ -19,6 +19,7 @@ __all__ = (
     "NUMERIC",
     "TARGETS",
     "UNICODE_VERSIONS",
+    "UNPRINTABLE",
     "WORD",
 )
 
@@ -355,6 +356,20 @@ NUMERIC: Final[tuple[str, ...]] = (
     "11de0-11de9 12038-12039 12079 12226 1222b 1230b 1230d 12399 16ff4-16ff6",
 )
 """Characters `str.isnumeric()` accepts."""
+
+UNPRINTABLE: Final[tuple[str, ...]] = (
+    (
+        "0000-001f 007f-00a0 00ad 0600-0605 061c 06dd 070f 08e2 1680 180e 2000-200f 2028-202f 205f-2064 2066-206f "
+        "3000 d800-f8ff feff fff9-fffb 110bd 110cd 13430-13438 1bca0-1bca3 1d173-1d17a e0001 e0020-e007f "
+        "f0000-ffffd 100000-10fffd"
+    ),
+    "0890-0891",
+    "13439-1343f",
+    "",
+    "",
+    "",
+)
+"""Characters whose general category is not Cn that `str.isprintable()` refuses: `repr()` escapes them."""
 
 WORD: Final[tuple[str, ...]] = (
     (

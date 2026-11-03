@@ -11,6 +11,7 @@ from typing_extensions import Sentinel
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import needs_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
@@ -222,10 +223,10 @@ class SchemaRuntimeValidation:
                 )
                 for rule in self.pattern_properties
             ),
-            repr(self.required_groups),
-            repr(self.conditional_required),
-            repr(self.property_count),
-            repr(self.unique_items),
+            stable_repr(self.required_groups),
+            stable_repr(self.conditional_required),
+            stable_repr(self.property_count),
+            stable_repr(self.unique_items),
             self.replace_unique_items,
         )
 
