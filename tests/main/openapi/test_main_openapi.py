@@ -15029,6 +15029,131 @@ def test_main_openapi_json_pointer_integer_keys(output_file: Path) -> None:
     )
 
 
+_HELD_AFTER_POINTER = OPEN_API_DATA_PATH / "anchor_object_documents" / "held_after_pointer"
+_HELD_AFTER_POINTER_ARGS = [
+    "--openapi-scopes",
+    "schemas",
+    "paths",
+    "parameters",
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--formatters",
+    "builtin",
+    "--disable-timestamp",
+]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "model_name", "valid_json", "invalid_json", "expected_error_type"),
+    [
+        pytest.param(
+            "api.yaml",
+            "NotesGetParametersQuery",
+            '{"page": {"size": 1, "limit": 2}}',
+            '{"page": {"limit": "two"}}',
+            "int_parsing",
+            id="parameter",
+        ),
+        pytest.param(
+            "request_body_api.yaml",
+            "NotesPostRequest",
+            '{"title": "a", "subtitle": "b"}',
+            json.dumps({"subtitle": "x" * 21}),
+            "string_too_long",
+            id="request-body",
+        ),
+    ],
+)
+def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer(
+    output_file: Path,
+    input_name: str,
+    model_name: str,
+    valid_json: str,
+    invalid_json: str,
+    expected_error_type: str,
+) -> None:
+    """Resolve a plain-name reference in an object document that a pointer into it loaded first.
+
+    A component schema takes a member of the document by a JSON pointer, which loads the document before the reference
+    that names its root as a Parameter or Request Body Object holds it, so the anchors of the schemas the object holds
+    were not indexed and generation failed with "Unresolved $id reference" (#6070). The run parses again with the
+    role known when the document loads, as where the reference loads the document.
+    """
+    run_main_and_assert(
+        input_path=_HELD_AFTER_POINTER / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=_HELD_AFTER_POINTER_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"openapi_anchor_refs_loaded_by_pointer_{input_name.removesuffix('.yaml')}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("two_documents_api.yaml", [], id="two-documents"),
+        pytest.param("id_api.yaml", [], id="dangling-fallback"),
+        pytest.param("id_api.yaml", ["--strict-refs"], id="strict-refs"),
+        pytest.param("collapse_cycle_api.yaml", ["--collapse-root-models"], id="collapse-cycle"),
+    ],
+)
+def test_main_openapi_object_documents_loaded_by_pointer_parse_again(
+    output_file: Path, monkeypatch: pytest.MonkeyPatch, input_name: str, extra_args: list[str]
+) -> None:
+    """Parse again until no reference holds a document loaded before as a new role, and report each warning once.
+
+    The parameter document stops the first parse, the request body document the second, which knows the parameter's
+    role, and the third knows both; the warning of the unknown format, which the first parse gives, and the warning of
+    the Decimal default, which only the last one reaches, are each reported once. A run that completes parses once, so
+    the pointer below the `$id` of a parameter document keeps its fallback model and its warning, and only the run that
+    --strict-refs stops parses again, where the pointer names the schema the `$id` holds. A parse again that stops
+    before a cycle of root models it would collapse parses once more with every circular root model kept named, with
+    the role known. One generation is recorded, so the second one of the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=_HELD_AFTER_POINTER / input_name,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[*_HELD_AFTER_POINTER_ARGS, *extra_args],
+        )
+    assert_output(
+        "".join(
+            f"{record.category.__name__}: {record.message}\n"
+            for record in recorded
+            if issubclass(record.category, UserWarning)
+        )
+    )
+
+
+def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer_unresolved(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Stop with the error of the parse again where a reference names an anchor no schema of the document declares.
+
+    The role the reference recorded indexes the anchors the parameter's schema declares, and the parse again records
+    no new role, so the run stops with the error that parse gives.
+    """
+    run_main_and_assert(
+        input_path=_HELD_AFTER_POINTER / "missing_anchor_api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        extra_args=_HELD_AFTER_POINTER_ARGS,
+        capsys=capsys,
+        expected_stderr_contains="Unresolved $id reference '#count' in scope 'missing_anchor_parameter.yaml'.",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

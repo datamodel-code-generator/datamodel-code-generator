@@ -246,6 +246,7 @@ class SchemaRefsHost(Protocol):
     _recursive_anchor_index: dict[tuple[str, ...], list[str]]
     _ref_data_type_facts: dict[str, tuple[Any, bool]]
     _ref_target_dumps: dict[tuple[_TargetNode, str], tuple[dict[str, Any], str]]
+    _roles_recorded_after_preparation: bool
     _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _schema_resource_locations: dict[str, str]
     _schema_resource_path_parts: dict[str, list[str]]
@@ -482,10 +483,15 @@ def hold_document_root(parser: SchemaRefsHost, file_part: str, role: str) -> Non
     The root holds the object the reference's position expects (OpenAPI: "a document containing a referenceable
     Object at its root based on the expected type of the reference"), so the schemas of that object are resources of
     the document (``_schema_documents.implicit_schema_resources``). The reference records it where it is followed,
-    before it loads the document; a document that a pointer into it loaded first keeps the resources it was prepared
-    with.
+    before it loads the document. A document that a pointer into it loaded first was prepared without the role, whose
+    resources a reference may then not find: the run notes it, and a run that fails parses again with every role known
+    from the start (``document_roles_to_seed``).
     """
-    parser._document_roles.setdefault(parser._schema_resource_document([file_part]), {})[role] = None  # noqa: SLF001
+    document = parser._schema_resource_document([file_part])  # noqa: SLF001
+    roles = parser._document_roles.setdefault(document, {})  # noqa: SLF001
+    if role not in roles and document in parser._schema_resource_cache:  # noqa: SLF001
+        parser._roles_recorded_after_preparation = True  # noqa: SLF001
+    roles[role] = None
 
 
 def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None = None) -> dict[str, YamlValue]:

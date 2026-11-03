@@ -431,6 +431,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.parser._rw_split import _Site
+    from datamodel_code_generator.parser.base import DocumentRoles
 
 JsonSchemaConstraintKey = Literal[
     "minimum",
@@ -7267,6 +7268,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
         self._document_roles: dict[str, dict[str, None]] = {}
+        self._roles_recorded_after_preparation = False
         self._rewritten_documents: set[str] = set()
         self._resource_ref_warnings: set[str] = set()
         self._schema_resources: dict[str, set[str]] = registry.resources
@@ -7284,6 +7286,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dynamic_anchor_usage: dict[_TargetNode, frozenset[str]] = {}
         self._dynamic_ref_graph: dict[_TargetNode, _DynamicEdges] = {}
         self._dynamic_ref_nodes: dict[str, _TargetNode] = {}
+
+    @property
+    @override
+    def document_roles_to_seed(self) -> DocumentRoles:
+        """Return every role references recorded for each document, once one was recorded after its preparation.
+
+        A run that fails then parses again with these roles from the start (``hold_document_root``); otherwise none.
+        """
+        if not self._roles_recorded_after_preparation:
+            return ()
+        return tuple((document, tuple(roles)) for document, roles in self._document_roles.items())
+
+    @override
+    def _seed_document_roles(self, document_roles: DocumentRoles) -> None:
+        """Start the roles of each document from those an earlier attempt of the run recorded."""
+        self._document_roles = {document: dict.fromkeys(roles) for document, roles in document_roles}
 
     def _schema_resource_document(self, path_parts: list[str]) -> str:
         """Identify one physical schema document without changing its public reference names."""
