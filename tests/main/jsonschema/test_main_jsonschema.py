@@ -16378,7 +16378,7 @@ def test_main_jsonschema_container_nullable_item_union(
         input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--output-model-type", output_model, *extra_args],
+        extra_args=["--output-model-type", output_model, *extra_args, "--formatters", "builtin"],
         force_exec_validation=True,
     )
     if output_model == "pydantic_v2.BaseModel" and name.startswith("prefix_items"):
