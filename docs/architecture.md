@@ -516,7 +516,9 @@ the names an import block binds (`_iter_import_bindings`), and the alias `<name>
 of its module hides it (`_aliased_name`, each caller numbering it by its released row, `legacy.alias-order`) with the
 import that binds the identity under it (`_aliased_as`). How a module imports a model of another module and writes
 the expression that names it is `parser/_passes/_import_binding.py`: the rule (`reference_import_target`, under an
-`ImportPathRow`), the import it adds (`register_reference_import`), the import of the generated base class, by the same
+`ImportPathRow`; a model is imported from its module, not through the module its package imports, where the module is
+named like an import every module shares, such as an `--additional-imports` name, since the package binds that name
+too), the import it adds (`register_reference_import`), the import of the generated base class, by the same
 rule (`generic_base_class_import`), and the writes through the generation store
 (`set_reference_expression`, `set_reference_expressions`, `import_references`), and the re-import of what a module
 imported under a stale import (`reimport_references`: drop it, release the names it leaves, write the expression again,

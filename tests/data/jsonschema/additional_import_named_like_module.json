@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "api.Order": {
+      "type": "object",
+      "properties": {
+        "total": {"type": "string", "x-python-type": "IPv4Address"},
+        "item": {"$ref": "#/$defs/IPv4Address.Item"}
+      }
+    },
+    "IPv4Address.Item": {
+      "type": "object",
+      "properties": {"sku": {"type": "string"}}
+    },
+    "deep.pkg.IPv4Address.Leaf": {
+      "type": "object",
+      "properties": {"weight": {"type": "string"}}
+    },
+    "deep.pkg.user.User": {
+      "type": "object",
+      "properties": {
+        "leaf": {"$ref": "#/$defs/deep.pkg.IPv4Address.Leaf"},
+        "price": {"type": "string", "x-python-type": "IPv4Address"}
+      }
+    }
+  }
+}

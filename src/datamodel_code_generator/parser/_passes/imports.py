@@ -149,10 +149,6 @@ class ImportsHost(
         """The model type that field names are validated for."""
 
     @property
-    def imports(self) -> Imports:
-        """The imports every module shares."""
-
-    @property
     def model_resolver(self) -> ModelResolver:
         """The resolver of model and field names."""
 
@@ -247,10 +243,6 @@ class RenderHost(
     @property
     def _result_modules_postprocessor(self) -> Callable[..., dict[tuple[str, ...], ResultT]]:
         """The function that lays out the results of the modules under ``--treat-dot-as-module``."""
-
-    @property
-    def imports(self) -> Imports:
-        """The imports every module shares."""
 
     def _build_model_metadata(
         self, contexts: list[ContextT], model_identities: Mapping[DataModel, str]
@@ -424,6 +416,7 @@ def _released_name_imports(  # noqa: PLR0914
                 internal_modules=forwarder.released_internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
                 treat_dot_as_module=parser.treat_dot_as_module,
+                shared_imports=parser.imports,
             )
             binding = resolver.add(target.full_path, target.import_).name
             if target.import_ == released_name:

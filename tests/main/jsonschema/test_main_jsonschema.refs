@@ -5958,6 +5958,8 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 	main/jsonschema/json_reuse_enum_default_member.py
 [test_main_jsonschema]
 	main/jsonschema/general.py	= main/jsonschema/autodetect.py
+[test_main_jsonschema_additional_import_named_like_module]
+	main/jsonschema/main_jsonschema/additional_import_named_like_module/
 [test_main_jsonschema_additional_items_false_empty_tuple]
 	main/jsonschema/additional_items_false_empty_tuple.py
 [test_main_jsonschema_additional_items_schema_tuple]
