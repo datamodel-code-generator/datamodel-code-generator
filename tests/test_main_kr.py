@@ -1672,6 +1672,30 @@ def test_pyproject_jobs_json_is_one_ordered_payload(tmp_path: Path, capsys: pyte
     assert_output(_batch_json_summary(output), EXPECTED_MAIN_KR_PATH / "jobs" / "json_generation.txt")
 
 
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"], ids=["u2028", "u2029", "u0085"])
+def test_pyproject_jobs_json_keeps_unicode_line_separators_inside_strings(
+    separator: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Indent the JSON of a job without breaking a string that holds U+2028, U+2029 or U+0085 of the generated file."""
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "properties": {"name": {"type": "string", "description": f"a{separator}b"}},
+    }
+    (tmp_path / "schema.json").write_text(json.dumps(schema, ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen.jobs.pets]\n"
+        'input = "schema.json"\ninput-file-type = "jsonschema"\noutput = "out/pets.py"\n'
+        'disable-timestamp = true\nuse-field-description = true\nformatters = ["builtin"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", "--output-format", "json"])
+
+    content = json.loads(capsys.readouterr().out)["jobs"][0]["result"]["files"][0]["content"]
+    assert_output(content.replace(separator, f"\\u{ord(separator):04x}"))
+
+
 def test_pyproject_jobs_json_reports_check_results(
     jobs_project: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -71,14 +71,16 @@ def write_streamed_json(
     """Write ``dump_json({**document, key: [*items]}, style)`` and a newline, dumping one item of the array at a time.
 
     For a document whose array is not held in memory: the jobs of a batch run, read back from their spool, and the
-    resources of the remote lock. ``key`` is a key of the document's top level, so each item is two levels deep.
+    resources of the remote lock. ``key`` is a key of the document's top level, so each item is two levels deep. The
+    lines of an item end at the line feed only, as ``json.dumps`` ends them: its strings may hold U+2028, U+2029 and
+    U+0085.
     """
     array = f"\n  {dump_json(key, style)}: ["
     head, _, tail = dump_json({**document, key: []}, style).partition(f"{array}]")
     write(f"{head}{array}")
     closing = "]"
     for index, item in enumerate(items):
-        write(f"{',' if index else ''}\n" + "\n".join(f"    {line}" for line in dump_json(item, style).splitlines()))
+        write(f"{',' if index else ''}\n" + "\n".join(f"    {line}" for line in dump_json(item, style).split("\n")))
         closing = "\n  ]"
     write(f"{closing}{tail}\n")
 
