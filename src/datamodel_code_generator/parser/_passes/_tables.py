@@ -149,6 +149,9 @@ class PipelineHost(
         module_to_import: dict[ModulePath, Imports],
         forwarder_modules: Collection[ModulePath],
         with_import: bool,  # noqa: FBT001
+        config: Any,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module."""
 
@@ -392,6 +395,11 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             ),
             PassSpec("bind_module_field_names", late(imports.bind_module_field_names)),
             PassSpec("change_imported_model_name", late(imports.change_imported_model_name)),
+            PassSpec(
+                "import_models_of_hidden_submodules",
+                late(imports.import_models_of_hidden_submodules),
+                when=lambda _, state: state.with_import,
+            ),
             PassSpec(
                 "name_final_classes_of_additional_properties",
                 lambda _, s: imports.name_final_classes_of_additional_properties(s),
@@ -643,6 +651,9 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     run.module_to_import,
                     run.forwarder_map,
                     bool(run.args.with_import),
+                    run.config,
+                    run.internal_modules,
+                    run.model_path_to_module_name,
                 ),
             ),
         ),

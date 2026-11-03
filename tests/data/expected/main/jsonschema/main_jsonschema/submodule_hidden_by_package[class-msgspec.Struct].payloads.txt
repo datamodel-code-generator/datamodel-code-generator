@@ -1,0 +1,3 @@
+{"detail": {"message": "m"}}: accepted Order(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"warn": {"detail": {"message": "m"}}}: accepted Report(warn=Warn(count=UNSET, detail=Detail(message='m')))

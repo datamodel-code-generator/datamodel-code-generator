@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.api.Order": {"type": "object", "properties": {"item": {"$ref": "#/$defs/pkg.annotations.Item"}}},
+    "pkg.annotations.Item": {"type": "object", "properties": {"sku": {"type": "string"}}}
+  }
+}

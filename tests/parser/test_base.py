@@ -52,6 +52,7 @@ from datamodel_code_generator.parser.base import (
     Child,
     HashableComparable,
     ModuleContext,
+    ParseConfig,
     Parser,
     T,
     _copy_data_model_field,
@@ -1847,6 +1848,9 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
         {("output.py",): imports},
         (),
         True,
+        ParseConfig(True, True, None, None, None, None),
+        set(),
+        {},
     )
 
     assert models == [surviving_model]

@@ -1249,6 +1249,39 @@ CHANGE_IMPORTED_MODEL_NAME = PassDecl(
         "names as text, the last class-name change."
     ),
 )
+IMPORT_MODELS_OF_HIDDEN_SUBMODULES = PassDecl(
+    "import_models_of_hidden_submodules",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_TYPES,
+        Fact.FIELD_NAMES,
+        Fact.MODELS_EXIST,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.MODEL_ORDER,
+        RenderFact.UNBOUND_FIELDS,
+        RenderFact.BACKEND_CONFIG,
+        RenderFact.CLASS_NAMES,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
+    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
+    after=(
+        After(
+            "change_imported_model_name",
+            "decides on the final class names; the new imports take names that no class holds",
+        ),
+        After(
+            "bind_module_field_names",
+            "imports the models anew once field names are bound; the new imports take names that no field holds",
+        ),
+    ),
+    summary=(
+        "Imports a model of a submodule from the submodule where its package's ``__init__`` binds the submodule's name "
+        "itself, by its ``__future__`` import or a class, e.g. ``from .annotations import Item``."
+    ),
+)
 NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     "name_final_classes_of_additional_properties",
     Phase.IMPORTS,
@@ -1256,6 +1289,13 @@ NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(RenderFact.CLASS_NAMES, RenderFact.IMPORT_ALIASES),
     writes=_facts(RenderFact.BACKEND_CONFIG),
+    after=(
+        After(
+            "import_models_of_hidden_submodules",
+            "names the classes of other modules through their final imports; backend config is written after the "
+            "hidden submodules are decided, as `decide_config_items` writes it later",
+        ),
+    ),
     condition="additional properties reference classes",
     summary="Renders backend settings that name the classes of additional properties (TypedDict extra_items) "
     "from their final names, a class of another module through its import (model hook).",
@@ -1273,6 +1313,11 @@ REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES = PassDecl(
             "name_final_classes_of_additional_properties",
             "both write backend config; the sequence interface is decided last",
         ),
+        After(
+            "import_models_of_hidden_submodules",
+            "backend config is written after the hidden submodules are decided, as `decide_config_items` writes it "
+            "later",
+        ),
     ),
     condition="use_root_model_sequence_interface and a model was renamed",
 )
@@ -1287,6 +1332,10 @@ REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES = PassDecl(
     after=(
         After("change_imported_model_name", "plans the validator helpers again for the renamed models"),
         After("bind_module_field_names", "binding reads the module imports before the helpers are planned again"),
+        After(
+            "import_models_of_hidden_submodules",
+            "adds the imports of the helpers once the models of hidden submodules are imported",
+        ),
     ),
     condition="generate_schema_validators and a model was renamed",
 )
@@ -1316,7 +1365,10 @@ REMAP_IMPORT_OVERRIDES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.MODULE_IMPORTS),
-    after=(After("replan_schema_validators_after_renames", "import overrides move the final imports"),),
+    after=(
+        After("replan_schema_validators_after_renames", "import overrides move the final imports"),
+        After("import_models_of_hidden_submodules", "import overrides move the final imports"),
+    ),
     condition="import_overrides",
 )
 REJECT_UNAVAILABLE_IMPORTS = PassDecl(
