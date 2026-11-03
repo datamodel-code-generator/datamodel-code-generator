@@ -419,6 +419,7 @@ def _generate_models(
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
+    from datamodel_code_generator._publication import staged_artifact_path  # noqa: PLC0415
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -430,12 +431,14 @@ def _generate_models(
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
-        staged_output = _staging(stack, output, cwd, target.output) / (output.name or "output")
-        if (cwd / output).is_dir():
-            staged_output.mkdir()
+        staged_output = staged_artifact_path(
+            _staging(stack, output, cwd, target.output), output, "output", make_directory=(cwd / output).is_dir()
+        )
         updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
-            updates["emit_model_metadata"] = _staging(stack, metadata, cwd) / (metadata.name or "model-metadata.json")
+            updates["emit_model_metadata"] = staged_artifact_path(
+                _staging(stack, metadata, cwd), metadata, "model-metadata.json", make_directory=False
+            )
         staged = prepared.model_copy(update=updates)
         staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
