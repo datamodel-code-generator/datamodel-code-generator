@@ -7783,6 +7783,8 @@ without_read-schema_with_applicator	main/jsonschema/main_jsonschema/unevaluated_
 [test_main_jsonschema_unique_items_schema_validators]
 	main/jsonschema/unique_items_python_values.snapshot
 	main/jsonschema/unique_items_schema_validators.py
+[test_main_jsonschema_unique_items_schema_validators_with_the_builtin_template_directory]
+	main/jsonschema/unique_items_schema_validators.py
 [test_main_jsonschema_use_missing_sentinel]
 	main/jsonschema/missing_sentinel.py
 [test_main_jsonschema_use_missing_sentinel_explicit_pydantic_v2_12]

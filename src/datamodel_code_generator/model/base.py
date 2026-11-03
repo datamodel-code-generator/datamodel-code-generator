@@ -159,6 +159,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
+
+
+def overrides_builtin_templates(directory: Path) -> bool:
+    """Return whether a custom template directory overrides the builtin templates: any directory but the builtin one."""
+    return directory.resolve() != TEMPLATE_DIR.resolve()
+
+
 _ADDITIONAL_PROPERTIES_REFERENCE_CLASSES_TEMPLATE_DATA_KEY = "additionalPropertiesReferenceClasses"
 _ADDITIONAL_PROPERTIES_TEMPLATE_DATA_KEY = "additionalProperties"
 _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
@@ -3143,7 +3150,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
                 or self.extra_template_data.get("class_body_lines")
             ),
             custom_template_dir=(directory := self._custom_template_dir) is not None
-            and directory.resolve() != TEMPLATE_DIR.resolve(),
+            and overrides_builtin_templates(directory),
         )
 
     @property

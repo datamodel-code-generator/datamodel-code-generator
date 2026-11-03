@@ -77,6 +77,7 @@ from datamodel_code_generator.model.base import (
     _model_key_of_model,
     _ModelKeys,
     _uses_original_template_loader,
+    overrides_builtin_templates,
 )
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
@@ -2148,21 +2149,19 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         ):
             return renderer(**context)
 
-        if (
-            (context["has_conditional_presence"] or context["has_not_required_groups"])
-            and custom_template_dir is not None
-            and custom_template_dir != TEMPLATE_DIR
-            and (custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH).is_file()
-        ):
-            msg = (
-                "Custom schema runtime validation helper overrides do not yet support generated presence-only "
-                "conditions or not-required groups. Remove the helper override or disable schema validators."
-            )
-            raise Error(msg)
-
-        if context["has_unique_items"] and custom_template_dir is not None:
-            custom_template_path = custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH
-            if custom_template_path.is_file():
+        custom_template_path = (
+            custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH
+            if custom_template_dir is not None and overrides_builtin_templates(custom_template_dir)
+            else None
+        )
+        if custom_template_path is not None and custom_template_path.is_file():
+            if context["has_conditional_presence"] or context["has_not_required_groups"]:
+                msg = (
+                    "Custom schema runtime validation helper overrides do not yet support generated presence-only "
+                    "conditions or not-required groups. Remove the helper override or disable schema validators."
+                )
+                raise Error(msg)
+            if context["has_unique_items"]:
                 msg = (
                     f"Custom schema runtime validation helper {custom_template_path} overrides do not yet support "
                     "generated uniqueItems validation. Remove the helper override or disable schema validators."
