@@ -1361,6 +1361,8 @@ paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	
 	main/openapi/item_schema_31.py
 [test_main_openapi_json_pointer]
 	main/openapi/json_pointer.py
+[test_main_openapi_json_pointer_integer_keys]
+	main/openapi/main_openapi/json_pointer_integer_keys.py
 [test_main_openapi_json_pointer_through_scalar]
 	main/openapi/openapi_json_pointer_through_scalar.py
 [test_main_openapi_keep_model_order_same_short_name_in_another_module]

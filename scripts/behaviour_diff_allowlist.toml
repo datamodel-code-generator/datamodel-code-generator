@@ -166,3 +166,11 @@ match = "^\\[import-path-removed\\] [\\w.]+:Warn: from [\\w.]+ import Warn$"
 reason = "pkg/api.py imported the submodule pkg.Warn through its package (from . import Warn), which gave the class Warn that pkg/__init__.py defines, so every model that names the submodule's models failed to import or decode (AttributeError: Detail); the models are imported from the submodule now, so pkg.api no longer binds the package's class under the submodule's name (crash fix)"
 decision = "#6009"
 release_note = "a model of a submodule named like a class of its package's __init__.py, which imports from that submodule itself, is imported from the submodule (from .Warn import Detail) instead of through the package, which gave the class"
+
+[[accepted]]
+input = "*json_pointer_integer_keys*"
+aspects = [ "type", "kind" ]
+match = "^\\[type\\] (?:[\\w.]+:)?(?:Field201|Ok|Created:code): .*\\bAny\\b.* -> .*$|^\\[kind\\] (?:[\\w.]+:)?Schema: \\S+ -> \\S+$"
+reason = "a JSON pointer through a map with an unquoted 200: key, which YAML loads as an integer, compared the token 200 with the key as text, named nothing and resolved to Any with an unresolved $ref warning, so the model accepted every value; the token names the integer key now, as the recorded locations already read it (schema-mismatch fix)"
+decision = "#6073"
+release_note = "a $ref whose JSON pointer goes through a YAML map with integer keys, such as #/x-shared/responses/200/content/application~1json/schema, resolves to the schema it names instead of Any"

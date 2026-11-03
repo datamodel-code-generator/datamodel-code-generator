@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
+from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
 from datamodel_code_generator._json_pointer import decode_token
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
@@ -268,10 +268,10 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
     while index < len(raw_parts):
         if isinstance(current, dict):
             direct_key = unescape_json_pointer_segment(raw_parts[index])
-            if direct_key in current:
+            if (held_key := member_key(current, direct_key)) in current:
                 parts.append(direct_key)
                 reference_parts.append(raw_parts[index])
-                current = current.get(direct_key, {})
+                current = current[held_key]
                 index += 1
                 continue
 
