@@ -325,6 +325,11 @@ templates-invalid	main/generation_platform/client/templates-invalid.txt
 templates-not-found	main/generation_platform/client/templates-not-found.txt
 templates-webhooks	main/generation_platform/client/packages/templates-webhooks/pydantic_v2_BaseModel//*.py
 templates-webhooks	main/generation_platform/client/templates-webhooks.txt
+text-bound-types	main/generation_platform/client/packages/text-bound-types/pydantic_v2_BaseModel//*.py
+text-bound-types	main/generation_platform/client/text-bound-types.txt
+text-bound-types-errors	main/generation_platform/client/text-bound-types-errors.txt
+text-bound-types-reuse	main/generation_platform/client/packages/text-bound-types-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/text-bound-types/pydantic_v2_BaseModel//*.py
+text-bound-types-reuse	main/generation_platform/client/text-bound-types-reuse.txt
 type-checking-imports	main/generation_platform/client/packages/type-checking-imports/msgspec_Struct//*.py
 type-checking-imports	main/generation_platform/client/type-checking-imports.txt
 type-checking-imports-off	main/generation_platform/client/type-checking-imports-off.txt

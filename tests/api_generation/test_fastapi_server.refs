@@ -166,6 +166,8 @@ variants-reuse	main/generation_platform/fastapi/servers/variants-reuse.txt
 	main/generation_platform/fastapi/servers/uploads.txt
 [test_generated_client]
 bodies	main/generation_platform/cross/bodies.txt
+bound_texts	main/generation_platform/cross/bound_texts.txt
+bound_texts_reuse	main/generation_platform/cross/bound_texts_reuse.txt
 extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt

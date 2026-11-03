@@ -76,6 +76,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "docstrings",
         "templates",
         "template-invalid",
+        "text-bound-types-errors",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:

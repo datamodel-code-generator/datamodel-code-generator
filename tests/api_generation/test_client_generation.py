@@ -169,6 +169,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "typeddict-target-keys",
         "ref-instance-data",
         "ref-name-positions",
+        "text-bound-types",
+        "text-bound-types-reuse",
+        "text-bound-types-errors",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

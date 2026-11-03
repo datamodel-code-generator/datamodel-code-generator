@@ -113,6 +113,8 @@ template-invalid	main/generation_platform/fastapi/packages/template-invalid/
 template-invalid	main/generation_platform/fastapi/template-invalid.txt
 templates	main/generation_platform/fastapi/packages/templates/
 templates	main/generation_platform/fastapi/templates.txt
+text-bound-types-errors	main/generation_platform/fastapi/packages/text-bound-types-errors/	= main/generation_platform/fastapi/packages/info/
+text-bound-types-errors	main/generation_platform/fastapi/text-bound-types-errors.txt	= main/generation_platform/client/text-bound-types-errors.txt
 types	main/generation_platform/fastapi/packages/types/
 types	main/generation_platform/fastapi/types.txt
 unbound	main/generation_platform/fastapi/packages/unbound/

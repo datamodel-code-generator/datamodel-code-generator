@@ -529,5 +529,8 @@
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "text-bound-types-errors": {
+    "input": "text-bound-types-errors.yaml"
   }
 }
