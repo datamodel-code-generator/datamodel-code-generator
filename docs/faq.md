@@ -84,6 +84,27 @@ This matches the expected behavior when `type: string` is specified in your sche
 
 📎 Related: [#1653](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1653), [#1766](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1766), [#2338](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2338)
 
+### 🔤 YAML read differently with the `ryaml` extra
+
+With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryaml (YAML 1.2) instead of PyYAML (YAML 1.1). Generation is the same for ordinary documents; the YAML below is read differently. If ryaml cannot read a document (for example an integer outside 64 bits), PyYAML reads it instead.
+
+| YAML text | PyYAML | ryaml | To get the same result |
+| --- | --- | --- | --- |
+| `<<: *base` (merge key) | keys of `base` are merged in | `<<` stays a key holding `base` | Avoid merge keys; write the keys out |
+| `017` | integer `15` (octal) | string `"017"` | Write `15`, or quote it as a string |
+| `1_000` | integer `1000` | string `"1_000"` | Write `1000` |
+| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it as a string |
+| `0o17` | string `"0o17"` | integer `15` | Quote it if it is a string |
+| `1.0e3` | string `"1.0e3"` | float `1000.0` | Quote it if it is a string, or write `1000.0` |
+| `12345678901234567890123456789012345678901` (41 digits) | integer | float `1.2345678901234568e+40` | Quote it, or keep integers within 64 bits |
+| `!!binary /w==` | bytes `b"\xff"` | string `"/w=="` | Write the value as a plain string |
+| `!!omap [a: 1]` | list of tuples | list of one-key mappings | Write a list of mappings |
+| `!foo bar` (unknown tag) | error | mapping `{"!foo": "bar"}` | Remove the tag |
+
+`!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
+
+📎 Related: [#4511](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4511), [#5546](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5546)
+
 ---
 
 ## 🔍 Type Checking
