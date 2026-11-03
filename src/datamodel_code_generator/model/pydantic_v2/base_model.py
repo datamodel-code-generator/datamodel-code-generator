@@ -304,6 +304,8 @@ _LEGACY_CONFIG_LITERAL_STRINGS: frozenset[str] = frozenset({"False", "None", "Tr
 _COMPILED_PATTERN = Why(RuleId("D2.pydantic.compiled-pattern"), keyword="pattern")
 _CONST = Why(RuleId("D5.const.literal"), keyword="const")
 _UNIQUE_ITEMS = Why(RuleId("D2.pydantic.unique-items"), keyword="uniqueItems")
+_UNIQUE_ITEMS_ARGUMENT = "unique_items"
+"""The constraint argument ``Field()`` of Pydantic v2 cannot express."""
 _FROZEN = Why(RuleId("D11.pydantic.frozen"), keyword="readOnly", option="--use-frozen-field")
 _UNION_MODE = Why(RuleId("D6.union-mode"), keyword="union_mode")
 _ALIAS_GENERATOR = Why(RuleId("D9.alias.generator"), keyword="alias")
@@ -707,6 +709,7 @@ class DataModelField(_PydanticBaseDataModelField):
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _constraint_arguments(Constraints)
+    _UNWRITTEN_CONSTRAINT_ARGUMENTS: ClassVar[frozenset[str]] = frozenset({_UNIQUE_ITEMS_ARGUMENT})
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
@@ -950,7 +953,7 @@ class DataModelField(_PydanticBaseDataModelField):
         if self.const:
             args.pop("const", "consumed-by-type", _CONST)
 
-        args.pop("unique_items", "backend-cannot-express", _UNIQUE_ITEMS)
+        args.pop(_UNIQUE_ITEMS_ARGUMENT, "backend-cannot-express", _UNIQUE_ITEMS)
 
         if self.use_frozen_field and self.read_only:
             args.put("frozen", True, _FROZEN, ("read_only",))  # noqa: FBT003

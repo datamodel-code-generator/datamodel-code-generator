@@ -150,3 +150,19 @@ match = "^\\[type\\] (?:[\\w.]+:)?N1:k: Literal\\['1'\\] -> Literal\\[1\\]$|^\\[
 reason = "the mapping key '1' was checked as the text while the tag written for P1 was the integer 1 that P2's const holds too, so Pydantic refused the model at its first use (\"Value 1 for discriminator 'k' mapped to multiple choices\") and the other outputs tagged two variants alike; the key is read as 1, both variants share it, and the union is a plain one (crash and schema-mismatch fix)"
 decision = "#5091"
 release_note = "a discriminated union whose mapping key names an integer that another variant's const holds too is written as a plain union instead of a model Pydantic refuses to build"
+
+[[accepted]]
+input = "*module_named_annotations*"
+aspects = [ "import-path-removed" ]
+match = "^\\[import-path-removed\\] [\\w.]+:annotations: from [\\w.]+ import annotations$"
+reason = "a module named annotations was imported through its package (from . import annotations), whose __init__.py writes from __future__ import annotations, so the name gave the __future__ feature and every model that names the module's models failed to import or decode (AttributeError: '_Feature' object has no attribute 'Item'); the models are imported from the module now, so the importing module no longer binds the feature under the module's name (crash fix)"
+decision = "#6009"
+release_note = "a model of a module named annotations is imported from that module (from .annotations import Item) where the package's __init__.py writes from __future__ import annotations, instead of through the package, which gave the __future__ feature"
+
+[[accepted]]
+input = "*module_named_like_package_class*"
+aspects = [ "import-path-removed" ]
+match = "^\\[import-path-removed\\] [\\w.]+:Warn: from [\\w.]+ import Warn$"
+reason = "pkg/api.py imported the submodule pkg.Warn through its package (from . import Warn), which gave the class Warn that pkg/__init__.py defines, so every model that names the submodule's models failed to import or decode (AttributeError: Detail); the models are imported from the submodule now, so pkg.api no longer binds the package's class under the submodule's name (crash fix)"
+decision = "#6009"
+release_note = "a model of a submodule named like a class of its package's __init__.py, which imports from that submodule itself, is imported from the submodule (from .Warn import Detail) instead of through the package, which gave the class"

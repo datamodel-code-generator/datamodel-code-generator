@@ -225,8 +225,21 @@ def _write_alias_form(field_: DataModelFieldBase, *, inherits: bool | None) -> N
     """
     if inherits is None:
         inherits = field_.parent is not None and any(base.reference for base in field_.parent.base_classes)
-    for attribute, value in field_.alias_form(inherits=inherits).items():
-        setattr(field_, attribute, value)
+    if form := field_.alias_form(inherits=inherits):
+        for attribute, value in form.items():
+            setattr(field_, attribute, value)
+        bump_field(field_)
+
+
+def _settle_alias_forms(model: DataModel) -> None:
+    """Write the alias form of the fields of a model that has lost every base class.
+
+    A field that took its alias below a generated base class keeps ``alias=`` (``alias_form``); a model left without a
+    base class, as a root model leaves the bases of the models that inherit it, takes the form of a class without one.
+    """
+    if not model.base_classes:
+        for field_ in model.fields:
+            _write_alias_form(field_, inherits=False)
 
 
 def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
@@ -2169,6 +2182,7 @@ class GenerationStore:  # noqa: PLR0904
         self._state_model_sites("set_base_classes", model)
         model.base_classes = list(base_classes)
         self._model_changed(model)
+        _settle_alias_forms(model)
 
     @deprecated("Use GenerationStore.builder().reset_base_classes() instead.", category=None)
     def reset_base_classes(self, model: DataModel) -> None:

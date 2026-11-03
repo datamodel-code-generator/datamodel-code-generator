@@ -155,6 +155,9 @@ class DataModelField(DataModelFieldBase):
     _INTEGER_CONSTRAINTS: ClassVar[set[str]] = set(_applicability.NUMBER_FIELD_KEYWORDS)
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _FIELD_CONSTRAINT_ARGUMENTS
     """The ``Field()`` argument that the constraints model of the field writes each schema keyword as."""
+    _UNWRITTEN_CONSTRAINT_ARGUMENTS: ClassVar[frozenset[str]] = frozenset()
+    """The constraint arguments ``Field()`` of the output model cannot express, which ``_process_field_arguments``
+    leaves out."""
     constraints: Optional[Constraints] = None  # noqa: UP045
 
     @property
@@ -392,10 +395,7 @@ class DataModelField(DataModelFieldBase):
         """
         omitted: list[Omitted] = []
         constraints = self.constraints
-        anyurl = (
-            constraints is not None
-            and self._constraints_blocked_by(anyurl_outside_container=self._has_anyurl_outside_container()) == "anyurl"
-        )
+        anyurl = self._drops_constraints_for_anyurl()
         if constraints is not None and anyurl:
             fields = type(constraints).model_fields
             omitted.extend(
@@ -426,6 +426,59 @@ class DataModelField(DataModelFieldBase):
                 Omitted("override", count, "override-type-does-not-take", _OVERRIDE, warns=True, detail=replaced)
             )
         return omitted, anyurl
+
+    def _drops_constraints_for_anyurl(self) -> bool:
+        """Return whether the field writes no constraint because its type holds ``AnyUrl`` outside a container."""
+        return (
+            self.constraints is not None
+            and self._constraints_blocked_by(anyurl_outside_container=self._has_anyurl_outside_container()) == "anyurl"
+        )
+
+    def _constraint_arguments(self, omitted: list[Omitted], *, anyurl: bool) -> dict[str, Kwarg]:
+        """Return the ``Field()`` arguments that write the field's constraints; those it cannot write go to ``omitted``.
+
+        A field whose type holds ``AnyUrl`` outside a container (``anyurl``, which ``_warned_omissions`` omits) writes
+        none, nor does a field whose call cannot write them (``_constraints_blocked_by``).
+        """
+        if (constraints := self.constraints) is None or anyurl:
+            return {}
+        if (blocked := self._constraints_blocked_by()) is not None:
+            omitted.extend(
+                Omitted(f"constraint:{key}", value, blocked, Why(_CONSTRAINT, key))
+                for key, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
+            )
+            return {}
+        return self._normalized_constraint_arguments(omitted)
+
+    @property
+    @override
+    def written_constraints(self) -> dict[str, Any]:
+        """The constraint values the field's ``Field()`` call writes, by schema keyword, as its render plan writes them.
+
+        They leave out what the call cannot write (``_constraint_arguments``) and what ``Field()`` of the output model
+        cannot express (``_UNWRITTEN_CONSTRAINT_ARGUMENTS``); a class variable writes none.
+        """
+        written = (
+            set()
+            if self.is_class_var
+            else {
+                item
+                for name, argument in self._constraint_arguments(
+                    [], anyurl=self._drops_constraints_for_anyurl()
+                ).items()
+                if name not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS and argument.value is not None
+                for item in argument.items
+            }
+        )
+        if not written:
+            return {}
+        constraints = cast("Constraints", self.constraints)
+        fields = type(constraints).model_fields
+        return {
+            fields[name].alias or name: value
+            for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
+            if f"constraint:{name}" in written
+        }
 
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
@@ -462,15 +515,8 @@ class DataModelField(DataModelFieldBase):
             args.put(key, value, Why(_EXTRA, key), (f"extra:{key}",))
         if self.alias is not None:
             args.put("alias", self.alias, EXPLICIT_ALIAS, ("alias",))
-        if self.constraints is not None and not anyurl:
-            if (blocked := self._constraints_blocked_by()) is not None:
-                args.omitted.extend(
-                    Omitted(f"constraint:{key}", value, blocked, Why(_CONSTRAINT, key))
-                    for key, value in self.constraints._exclude_unset_dump.items()  # noqa: SLF001
-                )
-            else:
-                for name, argument in self._normalized_constraint_arguments(args.omitted).items():
-                    args.put(name, argument.value, argument.why, argument.items)
+        for name, argument in self._constraint_arguments(args.omitted, anyurl=anyurl).items():
+            args.put(name, argument.value, argument.why, argument.items)
 
         if self.use_field_description:
             args.pop("description", "use-field-description", _USE_FIELD_DESCRIPTION)

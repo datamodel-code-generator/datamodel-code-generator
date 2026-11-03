@@ -446,6 +446,7 @@ VIEW_OWNERS: dict[type[Any], str] = {
 VIEW_ACCESSORS = {
     "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
     "FieldView.union_sibling_constraints": "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
+    "FieldView.written_constraints": "the CONSTRAINTS its call writes for its field type, final at B1",
     "ModelView.form": "the model kind, final at B1",
     "ModelView.holds_null": "the model kind, and the nullability of its root type or its enum members, final at B1",
     "ModelView.value_base": "the model kind and the base classes of an enum, final at B1",

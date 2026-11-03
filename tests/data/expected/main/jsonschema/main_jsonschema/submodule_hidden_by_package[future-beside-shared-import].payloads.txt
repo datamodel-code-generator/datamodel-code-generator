@@ -1,0 +1,3 @@
+{"counter": {"n": 1}, "tally": {"a": 2}}: accepted Order(counter=Counter(n=1), tally=Counter({'a': 2}))
+{"counter": {"n": "x"}}: rejected ValidationError
+{"tally": {"a": 1}}: accepted Catalog(tally=Counter({'a': 1}))

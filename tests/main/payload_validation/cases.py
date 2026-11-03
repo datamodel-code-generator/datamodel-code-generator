@@ -221,14 +221,23 @@ def _iter_case_candidates() -> Iterator[SchemaCase]:
 
 
 _CHUNKS_PER_WORKER = 4
-_CHUNK_TIMEOUT_SECONDS = 600.0
-"""How long a worker waits for the cases of a chunk that another worker claimed, for a worker that died reading it."""
+_CHUNK_WAIT_SECONDS = 30.0
+"""How long the workers wait for the chunks other workers claimed before reading the rest themselves.
+
+A claim that outlives this has lost its reader (a killed worker leaves its claim behind); reading a chunk takes
+seconds.
+"""
+
+
+def _read_chunk(files: list[CandidateFile]) -> list[list[SchemaCase]]:
+    return [list(read(path)) for path, read in files]
 
 
 def _claim(path: Path) -> bool:
+    """Create ``path`` unless it exists; a missing directory or any other failure claims nothing either."""
     try:
         os.close(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
-    except FileExistsError:
+    except OSError:
         return False
     return True
 
@@ -237,47 +246,57 @@ def _produce_chunk(result: Path, claim: Path, files: list[CandidateFile]) -> Non
     """Write the cases of a chunk's files to ``result`` unless another process has claimed the chunk.
 
     A claim stays once the cases are written; reading that fails releases it, so that a waiting process reads the
-    chunk itself and fails alike instead of waiting.
+    chunk itself and fails alike instead of waiting. The directory is made again when a worker that exited removed
+    it, for a worker that pytest-xdist starts in place of a crashed one; a failure of the shared files leaves the chunk
+    to be read where it is needed.
     """
+    with suppress(OSError):
+        result.parent.mkdir(exist_ok=True)
     if _claim(claim):
         with ExitStack() as release:
-            release.callback(claim.unlink)
-            partial = result.with_suffix(f".{os.getpid()}.partial")
-            partial.write_bytes(pickle.dumps([list(read(path)) for path, read in files], pickle.HIGHEST_PROTOCOL))
-            partial.replace(result)
-            release.pop_all()
+            release.callback(claim.unlink, missing_ok=True)
+            cases = pickle.dumps(_read_chunk(files), pickle.HIGHEST_PROTOCOL)
+            with suppress(OSError):
+                partial = result.with_suffix(f".{os.getpid()}.partial")
+                partial.write_bytes(cases)
+                partial.replace(result)
+                release.pop_all()
 
 
-def _chunk_cases(result: Path, claim: Path, files: list[CandidateFile]) -> list[list[SchemaCase]]:
-    deadline = time.monotonic() + _CHUNK_TIMEOUT_SECONDS
-    while not result.exists() and time.monotonic() < deadline:
+def _chunk_cases(result: Path, claim: Path, files: list[CandidateFile], deadline: float) -> list[list[SchemaCase]]:
+    """Return the cases another process wrote for the chunk, else read it here once ``deadline`` has passed."""
+    while True:
+        with suppress(OSError):
+            return pickle.loads(result.read_bytes())
+        if time.monotonic() >= deadline:
+            return _read_chunk(files)
         _produce_chunk(result, claim, files)
         time.sleep(0.005)
-    return pickle.loads(result.read_bytes())
 
 
 def _discover_cases() -> list[SchemaCase]:
     """Return the cases of every candidate file, reading each chunk of the files once among the workers of a run.
 
     The pytest-xdist workers of one run (one test run id, one parent process) read the chunks no worker has claimed,
-    their own first, and take the cases of the other chunks from the files their readers wrote. A process outside
-    such a run, or started by a test, reads every chunk itself. Either way each file's cases come from the same
-    readers, in the order of the files.
+    their own first, and take the cases of the other chunks from the files their readers wrote; a chunk whose claim
+    still has no cases after ``_CHUNK_WAIT_SECONDS``, or whose shared files are gone, is read where it is needed. A
+    process outside such a run, or started by a test, reads every chunk itself. Either way each file's cases come
+    from the same readers, in the order of the files.
     """
     worker = int(os.environ.get("PYTEST_XDIST_WORKER", "gw0").removeprefix("gw"))
     chunks = int(os.environ.get("PYTEST_XDIST_WORKER_COUNT", "1")) * _CHUNKS_PER_WORKER
     run = os.environ.get("PYTEST_XDIST_TESTRUNUID") or uuid.uuid4().hex
     directory = Path(tempfile.gettempdir()) / f"dcg-payload-cases-{run}-{os.getppid()}"
-    directory.mkdir(exist_ok=True)
     atexit.register(shutil.rmtree, directory, ignore_errors=True)
     files = _candidate_files()
     first = worker * _CHUNKS_PER_WORKER
     for chunk in (*range(first, chunks), *range(first)):
         _produce_chunk(directory / f"{chunk}.pickle", directory / f"{chunk}.claim", files[chunk::chunks])
     by_file: list[list[SchemaCase]] = [[] for _ in files]
+    deadline = time.monotonic() + _CHUNK_WAIT_SECONDS
     for chunk in range(chunks):
         by_file[chunk::chunks] = _chunk_cases(
-            directory / f"{chunk}.pickle", directory / f"{chunk}.claim", files[chunk::chunks]
+            directory / f"{chunk}.pickle", directory / f"{chunk}.claim", files[chunk::chunks], deadline
         )
     return [case for cases in by_file for case in cases if case.id not in EXCLUDED_CASES]
 

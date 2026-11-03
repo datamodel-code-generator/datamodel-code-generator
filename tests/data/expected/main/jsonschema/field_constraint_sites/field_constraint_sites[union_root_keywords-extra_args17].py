@@ -84,6 +84,9 @@ LevelOrText1 = TypeAliasType("LevelOrText1", Annotated[str, Field(..., min_lengt
 LevelOrText = TypeAliasType("LevelOrText", Level | LevelOrText1)
 
 
+PatternOfBounded = TypeAliasType("PatternOfBounded", BoundedNumber)
+
+
 class Model(BaseModel):
     length: LengthOrNumber | None = None
     pattern: PatternOrNumber | None = None
@@ -91,4 +94,5 @@ class Model(BaseModel):
     short: ShortOrNull | None = None
     item: ShortOrItem | None = None
     level: LevelOrText | None = None
+    held: PatternOfBounded | None = None
     items: list[Item] | None = None

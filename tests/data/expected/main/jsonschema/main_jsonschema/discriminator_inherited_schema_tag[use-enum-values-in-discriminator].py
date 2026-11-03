@@ -33,7 +33,7 @@ class CustomCall(CustomBase):
 
 class NamedCall(FunctionCall):
     label: str | None = None
-    type: Literal['function']
+    type: Literal[FunctionType.function]
 
 
 class Call(RootModel[FunctionCall | CustomCall]):

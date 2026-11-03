@@ -616,6 +616,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return f"{owner}.{self.name}" if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False) else owner
 
     @property
+    def written_constraints(self) -> Mapping[str, Any]:
+        """The constraint values the field writes as ``Field()`` arguments, by schema keyword: none here."""
+        return {}
+
+    @property
     def union_sibling_constraints(self) -> Mapping[str, Any] | None:
         """Return the constraints the field writes from the keywords a schema declares beside a union, by keyword."""
         return self.__dict__.get(UNION_SIBLING_CONSTRAINTS_KEY)

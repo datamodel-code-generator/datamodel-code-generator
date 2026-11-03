@@ -232,7 +232,9 @@ DELETE_DUPLICATE_MODELS = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP),
-    writes=_facts(Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES),
+    writes=_facts(
+        Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES
+    ),
     summary="Removes models of the module that render the same as another and redirects their users.",
 )
 REPLACE_DUPLICATE_NAME_IN_MODULE = PassDecl(
@@ -1565,7 +1567,7 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             "Drops the keywords beside a union that a member cannot take when every member keeps the check without"
             " them."
         ),
-        condition="--field-constraints, on an output that writes constraints as Field() arguments",
+        condition="--field-constraints",
     ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

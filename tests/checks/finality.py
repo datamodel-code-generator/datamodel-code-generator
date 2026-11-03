@@ -650,16 +650,14 @@ def _getter(
         case Access.DICT_KEY:
             key = dict_keys.get(row.attribute, row.attribute)
             return (lambda owner: owner.__dict__.get(key, _MISSING)), _Read.KEY, key
-        case _ if row.access is Access.CONTAINER and item_keys:
-            name = row.attribute
-            return (
-                (lambda owner: {key: item for key, item in getattr(owner, name, {}).items() if key not in item_keys}),
-                _Read.ITEMS,
-                name,
-            )
-        case _:
-            name = row.attribute
-            return (lambda owner: getattr(owner, name, _MISSING)), _Read.ATTRIBUTE, name
+    name = row.attribute
+    if row.access is Access.CONTAINER and item_keys:
+        return (
+            (lambda owner: {key: item for key, item in getattr(owner, name, {}).items() if key not in item_keys}),
+            _Read.ITEMS,
+            name,
+        )
+    return (lambda owner: getattr(owner, name, _MISSING)), _Read.ATTRIBUTE, name
 
 
 @final

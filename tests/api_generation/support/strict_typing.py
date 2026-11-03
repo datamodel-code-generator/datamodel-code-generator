@@ -5,11 +5,15 @@ The checkers resolve imports with the test interpreter, or with another interpre
 
 from __future__ import annotations
 
+import atexit
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from collections import Counter
+from functools import cache
 from pathlib import Path
 from typing import Final
 
@@ -43,21 +47,50 @@ def _diagnostics(completed: subprocess.CompletedProcess[str], found: Found) -> F
     return found
 
 
+@cache
+def _mypy_cache_dir() -> Path:
+    """Return the cache directory of this process's mypy runs, which never run at once; it is removed at exit."""
+    path = tempfile.mkdtemp(prefix="dcg-mypy-cache-")
+    atexit.register(shutil.rmtree, path, ignore_errors=True)
+    return Path(path)
+
+
+def _forget_checked_modules(cache_dir: Path, root: Path) -> None:
+    """Drop what mypy cached of the modules in ``root``, so that every run reads them as a run without a cache does.
+
+    Only the standard library and the installed packages stay cached; mypy reads them anew when their files change.
+    """
+    names = {path.stem if path.suffix in {".py", ".pyi"} else path.name for path in root.iterdir()}
+    for entry in (entry for version in cache_dir.iterdir() if version.is_dir() for entry in version.iterdir()):
+        if entry.name.partition(".")[0] not in names:
+            continue
+        if entry.is_dir():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+
+
 def _mypy(root: Path, targets: list[str], python: str | Path = sys.executable) -> Found:
-    completed = _run(
-        [
-            *MYPY,
-            "--strict",
-            "--follow-imports=silent",
-            "--no-incremental",
-            "--python-executable",
-            python,
-            "--python-version",
-            PYTHON_VERSION,
-            *targets,
-        ],
-        root,
-    )
+    cache_dir = _mypy_cache_dir()
+    try:
+        completed = _run(
+            [
+                *MYPY,
+                "--strict",
+                "--follow-imports=silent",
+                "--cache-dir",
+                cache_dir,
+                "--no-sqlite-cache",
+                "--python-executable",
+                python,
+                "--python-version",
+                PYTHON_VERSION,
+                *targets,
+            ],
+            root,
+        )
+    finally:
+        _forget_checked_modules(cache_dir, root)
     return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _MYPY.finditer(completed.stdout)])
 
 

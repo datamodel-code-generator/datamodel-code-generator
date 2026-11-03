@@ -1419,19 +1419,38 @@ def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> D
 def _get_enum_from_base(
     discriminator_model: DataModel, field_name: str, *, use_field_name: bool = False
 ) -> Enum | None:
-    for base_class in discriminator_model.base_classes:
-        if not base_class.reference or not base_class.reference.source:  # pragma: no cover
+    """Return the Enum typing the tag field a variant inherits, from the nearest ancestor whose field it types.
+
+    The direct bases come first, in their order, then the ancestors above them in method resolution order, so a
+    variant two levels below the schema whose Enum types the tag property takes that Enum, as a direct subclass does.
+    """
+    match_mode: TagFieldMatch = "python-name" if use_field_name else "python-or-original-name"
+    direct = [
+        base_class.reference.source
+        for base_class in discriminator_model.base_classes
+        if base_class.reference and base_class.reference.source
+    ]
+    return _declared_tag_enum(direct, field_name, match_mode) or _declared_tag_enum(
+        [
+            ancestor
+            for ancestor in linearize_data_models([discriminator_model])[1:]
+            if all(ancestor is not base for base in direct)
+        ],
+        field_name,
+        match_mode,
+    )
+
+
+def _declared_tag_enum(models: Iterable[object], field_name: str, match_mode: TagFieldMatch) -> Enum | None:
+    """Return the Enum typing the first field of ``models`` that holds the tag property, by models that inherit one."""
+    for model in models:
+        if not isinstance(model, DataModel) or not model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
             continue
-        base_model = base_class.reference.source
-        if not isinstance(base_model, DataModel) or not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
-            continue
-        for base_field in base_model.fields:  # pragma: no branch
-            if not _tag_field_matches(
-                base_field, "python-name" if use_field_name else "python-or-original-name", field_name
+        for field_ in model.fields:
+            if _tag_field_matches(field_, match_mode, field_name) and (
+                enum_source := field_.data_type.find_source(Enum)
             ):
-                continue
-            if enum_from_base := base_field.data_type.find_source(Enum):  # pragma: no branch
-                return enum_from_base
+                return enum_source
     return None
 
 

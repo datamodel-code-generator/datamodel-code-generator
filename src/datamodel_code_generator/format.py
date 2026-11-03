@@ -31,7 +31,7 @@ from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_d
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
@@ -903,7 +903,7 @@ def _read_by_ruff(raw: bytes, encoding: str) -> bool:
 
 
 @contextmanager
-def _held_as_utf8(files: Iterable[Path], encoding: str) -> Iterator[None]:
+def _held_as_utf8(files: Iterable[Path], encoding: str) -> Generator[None]:
     """Hold the files that Ruff would misread as UTF-8 while it runs, and write them back in `encoding`.
 
     Ruff reads and writes UTF-8 only. A file whose bytes it reads as the text they hold in `encoding` stays as it is.
