@@ -210,6 +210,7 @@ Formatting, custom templates, and generated file headers.
 - `--additional-imports`: Custom imports for output (delimited list input). For example "datetime.date,datetime.datetime"
 - `--class-decorators`: Custom decorators for generated model classes (delimited list input). For example "@dataclass_json(letter_case=LetterCase.CAMEL)". The "@" prefix is optional and will be added automatically if missing.
 - `--formatters`: Formatters (current default: black, isort; future default: builtin). For Ruff projects, use --formatters ruff-check ruff-format (install with pip install 'datamodel-code-generator[ruff]'). Use --formatters builtin when no external formatter is used or generation speed takes priority. Keep --formatters black isort to preserve existing formatting. Presets dated 20260909 or later include builtin; explicit formatters override presets. The future builtin default reduces installation dependencies and version constraints. Black/isort remain required today; declare [black,isort] extras for their later optional installation. Review custom-template output with builtin. Details: https://datamodel-code-generator.koxudaxi.dev/formatter-behavior/ Choices: `builtin`, `black`, `isort`, `ruff-check`, `ruff-format`.
+- `--no-formatters`: Select no formatter, not even the default or a preset's formatters; --custom-formatters still run.
 - `--custom-formatters`: List of modules with custom formatter (delimited list input).
 - `--custom-formatters-kwargs`: Custom formatter kwargs as inline JSON or a JSON file path.
 

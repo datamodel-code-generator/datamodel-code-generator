@@ -117,6 +117,8 @@ Options:
                         in the invocation working directory when no project is
                         found. Explicit relative paths resolve from the
                         invocation working directory.
+  --no-formatters       Select no formatter, not even the default or a
+                        preset's formatters; --custom-formatters still run.
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)

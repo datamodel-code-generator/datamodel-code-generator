@@ -473,7 +473,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--enable-version-header --enable-command-header --enable-generated-header-marker",
         group=_G.GENERATED_OUTPUT,
     ),
-    **_opts(_C.TEMPLATE, "--formatters --custom-formatters --custom-formatters-kwargs", group=_G.OUTPUT_FORMATTING),
+    **_opts(
+        _C.TEMPLATE,
+        "--formatters --no-formatters --custom-formatters --custom-formatters-kwargs",
+        group=_G.OUTPUT_FORMATTING,
+    ),
     **_opts(_C.OPENAPI, "--openapi-scopes", group=_G.OPENAPI_SCOPES),
     **_opts(_C.OPENAPI, "--use-operation-id-as-name --use-status-code-in-response-name", group=_G.OPENAPI_NAMING),
     **_opts(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import stat
 import sys
@@ -1161,6 +1162,35 @@ strict-types = []
 
     with chdir(tmp_path):
         run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
+
+
+def test_generate_cli_command_writes_an_empty_formatters_list_as_no_formatters(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Write ``formatters = []`` as --no-formatters, so that the command alone leaves the output unformatted too."""
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "pet_simple.json", tmp_path / "schema.json")
+    (pyproject_toml := tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "schema.json"
+input-file-type = "jsonschema"
+disable-timestamp = true
+formatters = []
+""",
+        encoding="utf-8",
+    )
+
+    with chdir(tmp_path):
+        run_main_with_args(["--generate-cli-command"])
+        assert_output(command := capsys.readouterr().out)
+        pyproject_toml.unlink()
+        run_main_with_args(shlex.split(command)[1:], capsys=capsys, derived_stdout=True)
+
+
+def test_generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Write --no-formatters as ``formatters = []``, which --generate-cli-command writes back as --no-formatters."""
+    run_main_with_args(["--generate-pyproject-config", "--no-formatters"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_multiple_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -4326,6 +4356,34 @@ def test_formatters_option(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file=EXPECTED_MAIN_KR_PATH / "formatters" / "output.py",
         extra_args=["--formatters", "isort"],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--no-formatters"],
+    option_description="""Select no formatter for the generated output.
+
+The `--no-formatters` flag selects none of the `--formatters` choices: neither the default formatters nor those a
+preset selects run, while `--custom-formatters` still do. It is the command-line form of `formatters = []` in
+pyproject.toml, and `--generate-cli-command` writes that setting as `--no-formatters`.""",
+    input_schema="jsonschema/pet_simple.json",
+    cli_args=["--no-formatters"],
+    golden_output="main_kr/no_formatters_option.py",
+    related_options=["--formatters"],
+)
+@freeze_time("2019-07-26")
+def test_no_formatters_option(output_file: Path) -> None:
+    """Select no formatter for the generated output.
+
+    The `--no-formatters` flag selects none of the `--formatters` choices: neither the default formatters nor those a
+    preset selects run, while `--custom-formatters` still do. It is the command-line form of `formatters = []` in
+    pyproject.toml, and `--generate-cli-command` writes that setting as `--no-formatters`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--no-formatters"],
     )
 
 
