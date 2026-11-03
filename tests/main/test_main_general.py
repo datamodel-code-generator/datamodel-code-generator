@@ -3757,14 +3757,20 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
         pytest.param(
             "--class-decorators",
             '@mypkg."""deco',
-            'class_decorators must be a Python import path composed of identifiers: \'mypkg."""deco\'',
+            'class_decorators must be a Python import path composed of identifiers: \'@mypkg."""deco\'',
             id="class-decorators-unterminated-string",
         ),
         pytest.param(
             "--class-decorators",
             "@mypkg.deco\n  (flag)",
-            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco\\n  (flag)'",
+            "class_decorators must be a Python import path composed of identifiers: '@mypkg.deco\\n  (flag)'",
             id="class-decorators-indented-line",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@\nmypkg.deco",
+            "class_decorators must be a Python import path composed of identifiers: '@\\nmypkg.deco'",
+            id="class-decorators-line-break-before-path",
         ),
     ],
 )
@@ -3774,8 +3780,8 @@ def test_main_refuses_named_path_with_non_identifier_part(
     """Refuse an option that names a Python object by a dotted path with a part that is not an identifier (#6109).
 
     ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its tokens
-    before the arguments of its call, without comments and the whitespace around a dot; a text that does not tokenize
-    there is a path as a whole.
+    before the arguments of its call, without comments and the whitespace around a dot; a decorator that does not
+    tokenize there, or that a line break outside its parentheses splits, is refused as a whole.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
