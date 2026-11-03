@@ -184,6 +184,10 @@ class FieldView(Protocol):
         """The field metadata: discriminator, default factory, init and class-variable markers among them."""
 
     @property
+    def written_constraints(self) -> Mapping[str, object]:
+        """The constraint values the field writes as ``Field()`` arguments when it is written, by schema keyword."""
+
+    @property
     def union_sibling_constraints(self) -> Mapping[str, object] | None:
         """The constraints the field writes from the keywords a schema declares beside a union, by keyword."""
 

@@ -1567,7 +1567,7 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             "Drops the keywords beside a union that a member cannot take when every member keeps the check without"
             " them."
         ),
-        condition="--field-constraints, on an output that writes constraints as Field() arguments",
+        condition="--field-constraints",
     ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

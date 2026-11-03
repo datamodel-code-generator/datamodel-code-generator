@@ -62,4 +62,5 @@ class Model(BaseModel):
     short: ShortOrNull1 | None = None
     item: ShortOrItem1 | Item3 | None = None
     level: Level | LevelOrText1 | None = None
+    held: BoundedNumber1 | BoundedNumber2 | None = None
     items: list[Item] | None = None

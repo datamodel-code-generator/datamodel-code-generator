@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Link": {"type": "string", "format": "uri", "minLength": 12},
+    "LinkOrNumber": {"anyOf": [{"$ref": "#/$defs/Link"}, {"type": "integer"}], "minLength": 12},
+    "InlineLinkOrNumber": {"anyOf": [{"type": "string", "format": "uri"}, {"type": "integer"}], "minLength": 12}
+  },
+  "properties": {
+    "link": {"$ref": "#/$defs/LinkOrNumber"},
+    "inline": {"$ref": "#/$defs/InlineLinkOrNumber"}
+  }
+}

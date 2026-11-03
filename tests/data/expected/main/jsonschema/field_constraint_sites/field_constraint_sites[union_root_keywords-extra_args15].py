@@ -94,6 +94,10 @@ class LevelOrText(RootModel[Level | LevelOrText1]):
     root: Level | LevelOrText1
 
 
+class PatternOfBounded(RootModel[BoundedNumber]):
+    root: BoundedNumber
+
+
 class Model(BaseModel):
     length: LengthOrNumber | None = None
     pattern: PatternOrNumber | None = None
@@ -101,4 +105,5 @@ class Model(BaseModel):
     short: ShortOrNull | None = None
     item: ShortOrItem | None = None
     level: LevelOrText | None = None
+    held: PatternOfBounded | None = None
     items: list[Item] | None = None

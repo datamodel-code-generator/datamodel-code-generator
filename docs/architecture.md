@@ -815,10 +815,11 @@ parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry
 (`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
 root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
 model; the None it writes itself stays. `omit_untaken_union_constraints` (`parser/_union_constraints.py`,
-`--field-constraints` on an output that writes constraints as `Field()` arguments, #6022): a keyword a schema declares
-beside a union leaves the field that holds the union when the value of a member cannot take it
-(`DataTypeManager.member_constraint_keywords`) and every member keeps the check without it (it holds the keyword
-itself, the keyword applies to none of its values, or it is None); otherwise the field keeps it. A decision is a
+`--field-constraints`, #6022): a keyword a schema declares beside a union, which the call of the field that holds the
+union writes as a `Field()` argument (`written_constraints`, what the renderer writes), leaves the field when the value
+of a member cannot take it (`DataTypeManager.member_constraint_keywords`) and every member keeps the check without it
+in the output (the call of its own field writes the keyword, the keyword applies to none of its values, or it is
+None); otherwise the field keeps it. A decision is a
 `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
 and the issue it fixes), the writer protocol of its
