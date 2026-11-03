@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
-from datamodel_code_generator._json_pointer import decode_token
+from datamodel_code_generator._json_pointer import decode_token, is_pointer_fragment
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
     SCHEMA_MAP_KEYS,
@@ -394,4 +394,4 @@ def _ref_edge_child_entries(
 
 def _is_plain_name_fragment(ref: str) -> bool:
     """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
-    return ref.startswith("#") and ref[1:2] not in {"", "/"}
+    return ref.startswith("#") and not is_pointer_fragment(ref[1:], row="legacy-slash-only-opening")

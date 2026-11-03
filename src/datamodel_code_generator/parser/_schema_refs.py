@@ -938,7 +938,7 @@ def analysis_ref_target(parser: SchemaRefsHost, document: str, file_part: str, r
     registry, so the result does not depend on which documents were parsed first, and references
     mapped to Python packages are not followed.
     """
-    if ref == "#" or ref.startswith("#/"):
+    if ref.startswith("#") and not _is_plain_name_fragment(ref):
         return f"{file_part}{ref}"
     if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
         return None

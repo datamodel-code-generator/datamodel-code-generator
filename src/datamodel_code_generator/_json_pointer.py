@@ -3,14 +3,16 @@
 A token is escaped ``~`` as ``~0``, then ``/`` as ``~1``, and unescaped in the reverse order. Percent-encoding is not
 part of a pointer but of the URI fragment that writes one, and ``reference_tokens`` reads the fragment of a ``$ref``
 the way the parser does: it splits at each ``/`` first, then decodes each token, strictly or leniently. A caller whose
-text is already decoded hands it to ``fragment_tokens``. The generated runtime (``_runtime/``) keeps its own copy, as
-it never imports the generator. This module imports only the standard library, so every layer may use it.
+text is already decoded hands it to ``fragment_tokens``. Whether a fragment opens a pointer or is a plain name, which
+names an anchor, is told here too (``is_pointer_fragment``, ``pointer_opening``). The generated runtime (``_runtime/``)
+keeps its own copy, as it never imports the generator. This module imports only the standard library, so every layer
+may use it.
 """
 
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import unquote
 
 if TYPE_CHECKING:
@@ -19,11 +21,14 @@ if TYPE_CHECKING:
 __all__ = [
     "NONCANONICAL_ESCAPE",
     "NONCANONICAL_PERCENT",
+    "OpeningRow",
     "decode_token",
     "escape_token",
     "fragment_tokens",
     "is_array_index",
+    "is_pointer_fragment",
     "join_pointer",
+    "pointer_opening",
     "pointer_tokens",
     "reference_tokens",
     "unescape_token",
@@ -36,6 +41,11 @@ NONCANONICAL_ESCAPE: Final = re.compile(r"~(?![01])")
 _ARRAY_INDEX: Final = re.compile(r"0|[1-9][0-9]*")
 _POINTER_OPENING: Final = re.compile(r"/|%2[fF]")
 """The start of a pointer in a URI fragment: a slash, or its percent-encoded octet."""
+
+OpeningRow: TypeAlias = Literal["uri-fragment", "decoded", "legacy-slash-only-opening"]
+"""What opens a pointer in a fragment (``pointer_opening``): ``/`` or its octet ``%2F`` in a URI fragment, ``/`` in a
+decoded one, and ``/`` alone in the URI fragment of a ``$ref`` as the parser resolves it, where ``#%2Fdefinitions/A``
+names an anchor."""
 
 
 def escape_token(token: str | int, /) -> str:
@@ -63,9 +73,21 @@ def pointer_tokens(pointer: str, /) -> tuple[str, ...]:
     return tuple(unescape_token(token) for token in pointer[1:].split("/")) if pointer else ()
 
 
+def pointer_opening(fragment: str, /, *, row: OpeningRow = "uri-fragment") -> int | None:
+    """Return the length of the opening of the pointer a fragment writes, or None when none opens it."""
+    if row == "uri-fragment":
+        return opening.end() if (opening := _POINTER_OPENING.match(fragment)) else None
+    return 1 if fragment.startswith("/") else None
+
+
+def is_pointer_fragment(fragment: str, /, *, row: OpeningRow = "uri-fragment") -> bool:
+    """Return whether a fragment locates by pointer, an empty one the whole document, instead of naming an anchor."""
+    return not fragment or pointer_opening(fragment, row=row) is not None
+
+
 def fragment_tokens(fragment: str, /) -> tuple[str, ...] | None:
     """Return the reference tokens of a decoded URI fragment: none when empty, None when it is a plain name."""
-    if fragment and not fragment.startswith("/"):
+    if not is_pointer_fragment(fragment, row="decoded"):
         return None
     return pointer_tokens(fragment)
 
@@ -83,9 +105,9 @@ def reference_tokens(fragment: str, /, *, strict: bool = False) -> tuple[str, ..
         unquote(fragment, errors="strict")
     if not fragment:
         return ()
-    if (opening := _POINTER_OPENING.match(fragment)) is None:
+    if (opening := pointer_opening(fragment)) is None:
         return None
-    tokens = tuple(unquote(token) for token in fragment[opening.end() :].split("/"))
+    tokens = tuple(unquote(token) for token in fragment[opening:].split("/"))
     if strict and any(NONCANONICAL_ESCAPE.search(token) for token in tokens):
         raise ValueError(fragment)
     return tuple(map(unescape_token, tokens))

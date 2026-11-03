@@ -45,7 +45,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
-from datamodel_code_generator._json_pointer import join_pointer
+from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
@@ -1564,12 +1564,15 @@ class ModelResolver:  # noqa: PLR0904
             file_part, fragment = joined_path.split("#", 1)
             if (
                 file_part
-                and fragment
-                and not fragment.startswith("/")
+                and not is_pointer_fragment(fragment, row="legacy-slash-only-opening")
                 and (anchor_ref := self.ids.get(file_part, {}).get(f"#{fragment}"))
             ):
                 return anchor_ref
-        if ID_PATTERN.match(joined_path) and not _is_special_path(joined_path):
+        if (
+            joined_path.startswith("#")
+            and not is_pointer_fragment(joined_path[1:], row="legacy-slash-only-opening")
+            and not _is_special_path(joined_path)
+        ):
             id_scope = self._current_root_id
             scoped_ids = self.ids[id_scope]
             ref: str | None = scoped_ids.get(joined_path)

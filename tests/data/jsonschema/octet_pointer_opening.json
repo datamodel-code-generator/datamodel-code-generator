@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "#%2Fdefinitions/Value"
+    }
+  },
+  "definitions": {
+    "Value": {
+      "type": "string"
+    }
+  }
+}
