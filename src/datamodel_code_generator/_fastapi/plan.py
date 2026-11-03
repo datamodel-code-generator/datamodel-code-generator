@@ -852,7 +852,8 @@ class Planner:  # noqa: PLR0904
             self.problems.append(unresolved)
         elif (scheme := _scheme(name, declaration)) is None:
             message = (
-                f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
+                f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie, and a "
+                "header or cookie name that is a token"
                 if fact(declaration, "type") == "apiKey"
                 else f"The security scheme {name!r} needs a type of apiKey, http with a scheme, mutualTLS, oauth2, "
                 "or openIdConnect"
