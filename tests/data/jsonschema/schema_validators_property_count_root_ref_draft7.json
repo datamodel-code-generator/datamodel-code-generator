@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "A": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "a": {"type": "string"}
+      }
+    }
+  },
+  "$ref": "#/definitions/A",
+  "allOf": [{"minProperties": 2}]
+}

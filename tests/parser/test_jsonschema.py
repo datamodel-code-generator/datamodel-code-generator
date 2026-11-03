@@ -73,7 +73,7 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
     split_json_pointer,
 )
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference, SchemaLocation
 from datamodel_code_generator.types import ANY, DataType
 from tests.conftest import assert_inputs_not_mutated, assert_output, create_assert_file_content, validate_generated_code
 from tests.main.conftest import assert_generated_model_json_validation, run_generate_file_and_assert
@@ -481,6 +481,110 @@ def test_schema_validator_property_count_helper_stops_at_visited_ref() -> None:
 
     assert [source.minProperties for source in sources] == [None, 2, None, None]
     assert [source.maxProperties for source in sources] == [None, None, None, 4]
+
+
+def test_schema_validator_property_count_draft7_ignores_ref_sibling_but_keeps_target() -> None:
+    """Draft 7 ignores count siblings but still reads counts on the referenced target."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {"A": {"type": "object", "minProperties": 3}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/definitions/A", "minProperties": 2}]})
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (3, None)
+
+
+def test_schema_validator_property_count_draft7_root_ref_ignores_sibling_allof_but_keeps_target() -> None:
+    """A Draft 7 root $ref keeps target counts and ignores direct and allOf siblings."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {"A": {"type": "object", "minProperties": 3}},
+    }
+    obj = JsonSchemaObject.model_validate({
+        "$ref": "#/definitions/A",
+        "minProperties": 2,
+        "allOf": [{"minProperties": 4}],
+    })
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (3, None)
+
+
+def test_schema_validator_property_count_location_uses_document_dialect() -> None:
+    """A located 2020-12 $ref keeps siblings even when parser.raw_obj is Draft 7."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {"$schema": "http://json-schema.org/draft-07/schema#"}
+    modern = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"A": {"type": "object"}},
+    }
+    document = parser._schema_resource_document(["modern.json"])
+    parser._schema_resource_cache[document] = modern, modern
+    obj = JsonSchemaObject.model_validate({"$ref": "#/$defs/A", "minProperties": 2})
+    obj = obj.with_schema_location(SchemaLocation("modern.json", ()))
+
+    assert parser._ref_siblings_are_parts_of(obj)
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
+
+
+def test_schema_validator_property_count_draft202012_keeps_ref_sibling() -> None:
+    """2020-12 reads count siblings beside an allOf member's $ref."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"A": {"type": "object"}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/$defs/A", "minProperties": 2}]})
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
+
+
+def test_schema_validator_property_count_draft202012_root_ref_keeps_sibling_allof() -> None:
+    """A 2020-12 root $ref keeps direct and sibling allOf counts and target counts."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"A": {"type": "object", "minProperties": 1}},
+    }
+    obj = JsonSchemaObject.model_validate({
+        "$ref": "#/$defs/A",
+        "minProperties": 2,
+        "allOf": [{"minProperties": 3}],
+    })
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (3, None)
+
+
+def test_schema_validator_property_count_draft7_preserves_inherited_override_sibling() -> None:
+    """An inherited override marker keeps its $ref sibling as an allOf constraint."""
+    parser = JsonSchemaParser("", generate_schema_validators=True)
+    parser.raw_obj = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$defs": {"A": {"type": "object"}},
+    }
+    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/$defs/A", "minProperties": 2}]})
+    obj.allOf[0].__dict__["_inherited_override"] = True
+
+    rule = parser._get_property_count_rule(obj)
+
+    assert rule is not None
+    assert (rule.min_properties, rule.max_properties) == (2, None)
 
 
 def test_clear_inherited_field_caches_releases_property_count_rules() -> None:
