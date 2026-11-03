@@ -752,6 +752,7 @@ jsonschema/rust_unsupported_pattern_bytes_nullable.json	payloads/native_numeric_
 jsonschema/rust_unsupported_pattern_bytes_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/rust_unsupported_reversed_repetition.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/rust_unsupported_typed_extra.json	payloads/native_numeric_empty_errors.txt	?	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/rust_unsupported_verbose_repetition.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/described.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/direction.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/later.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2578,6 +2579,7 @@ jsonschema/rust_unsupported_pattern_bytes_nullable.json	payloads/native_numeric_
 jsonschema/rust_unsupported_pattern_bytes_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/rust_unsupported_reversed_repetition.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/rust_unsupported_typed_extra.json	payloads/native_numeric_empty_errors.txt	?	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/rust_unsupported_verbose_repetition.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/described.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/direction.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/same_name_reference_fields/later.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

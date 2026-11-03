@@ -21,6 +21,7 @@ __all__ = [
     "EngineRow",
     "PatternConjunction",
     "conjoin_patterns",
+    "control_escapes_keep_meaning",
     "has_lookaround",
     "is_portable_pattern",
     "literal_pattern_value",
@@ -158,6 +159,23 @@ def needs_python_engine(pattern: str, *, row: EngineRow, compiled: bool = True) 
     return compiled and (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
 
 
+def control_escapes_keep_meaning(pattern: str) -> bool:
+    r"""Return whether a pattern means the same when each control character in it is written as its escape.
+
+    A regex reads ``\t``, ``\n``, ``\f`` and ``\r`` as the character each names, so a pattern may spell them that
+    way, but not where the escape would mean another pattern: after a backslash, where the character is what the
+    backslash escapes and its escape is a backslash and a letter, and in a verbose pattern, where the character is
+    ignored whitespace or ends a comment and its escape matches it. A backspace has no escape that a regex reads as
+    it: ``\b`` is a word boundary, and Rust rejects it in a class. The decision reads the text alone, so the engine
+    and the Python that read the pattern do not matter.
+    """
+    if "\x08" in pattern:
+        return False
+    if _WHITESPACE_CONTROLS.isdisjoint(pattern):
+        return True
+    return scan_regex_syntax(pattern) is not None and _compiled(_ESCAPED_WHITESPACE_CONTROL).search(pattern) is None
+
+
 def is_portable_pattern(pattern: str) -> bool:
     """Return whether a pattern runs on the default regex engine of every supported pydantic (row ``adapter``)."""
     return not needs_python_engine(pattern, row="adapter")
@@ -177,6 +195,8 @@ _BRACED_ESCAPE_LETTERS: Final = frozenset("pPxuUbB")
 _PYTHON_ESCAPE_DIFFERENCES: Final = frozenset("pP<>z")
 _CLASS_SET_OPERATIONS: Final = ("&&", "--", "~~")
 _PLAIN_ASCII_CONTROLS: Final = frozenset("\t\n\x0b\x0c\r")
+_WHITESPACE_CONTROLS: Final = frozenset("\t\n\x0c\r")
+_ESCAPED_WHITESPACE_CONTROL: Final = r"(?<!\\)(?:\\\\)*\\[\t\n\x0c\r]"
 
 
 def literal_pattern_value(pattern: str) -> str | None:
