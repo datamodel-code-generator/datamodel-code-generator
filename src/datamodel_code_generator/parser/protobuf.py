@@ -19,7 +19,7 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
 from datamodel_code_generator._json_schema import definition_ref
-from datamodel_code_generator._message_text import extra_requirement
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
@@ -161,7 +161,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
         import grpc_tools  # noqa: PLC0415
         from grpc_tools import protoc  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = f"protobuf input requires grpcio-tools. Install {extra_requirement('protobuf')}."
+        msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
@@ -170,7 +170,7 @@ def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = f"protobuf input requires google.protobuf. Install {extra_requirement('protobuf')}."
+        msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
 

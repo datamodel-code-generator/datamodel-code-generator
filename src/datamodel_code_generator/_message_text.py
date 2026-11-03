@@ -17,7 +17,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Conjunction",
-    "InstallPrompt",
     "InstallRow",
     "ListForm",
     "counted",
@@ -31,7 +30,6 @@ __all__ = [
 
 Conjunction: TypeAlias = Literal["and", "or"]
 ListForm: TypeAlias = Literal["final", "serial", "each"]
-InstallPrompt: TypeAlias = Literal["$", "$ ", ""]
 InstallRow: TypeAlias = Literal["code", "plain"]
 """How ``install_command`` writes the command: as a code span or as plain text."""
 
@@ -80,13 +78,13 @@ def extra_requirement(extra: str) -> str:
     return f"datamodel-code-generator[{extra}]"
 
 
-def install_command(extra: str, *, prompt: InstallPrompt = "$", row: InstallRow = "code") -> str:
-    """Return the pip command that installs the generator with ``extra``, written after ``prompt``.
+def install_command(extra: str, *, row: InstallRow = "code") -> str:
+    """Return the pip command that installs the generator with ``extra``, as a shell runs it: with no prompt.
 
-    Row ``code`` writes it as a code span (`` `$pip install 'datamodel-code-generator[x]'` ``), ``plain`` without the
+    Row ``code`` writes it as a code span (`` `pip install 'datamodel-code-generator[x]'` ``), ``plain`` without the
     backticks.
     """
-    command = f"{prompt}pip install '{extra_requirement(extra)}'"
+    command = f"pip install '{extra_requirement(extra)}'"
     return command if row == "plain" else f"`{command}`"
 
 

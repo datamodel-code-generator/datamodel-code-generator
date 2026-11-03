@@ -25,7 +25,7 @@ def _get_watchfiles() -> Any:
     try:
         import watchfiles  # noqa: PLC0415
     except ImportError as exc:
-        msg = f"Please run {install_command('watch', prompt='')} to use watch mode"
+        msg = f"Please run {install_command('watch')} to use watch mode"
         raise Exception(msg) from exc  # noqa: TRY002
     return watchfiles
 

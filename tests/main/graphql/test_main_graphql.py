@@ -1300,7 +1300,6 @@ def test_main_graphql_without_graphql_core_names_a_complete_install_command(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=(
-            "Please run `$pip install 'datamodel-code-generator[graphql]'` "
-            "to generate data-model from a GraphQL schema."
+            "Please run `pip install 'datamodel-code-generator[graphql]'` to generate data-model from a GraphQL schema."
         ),
     )
