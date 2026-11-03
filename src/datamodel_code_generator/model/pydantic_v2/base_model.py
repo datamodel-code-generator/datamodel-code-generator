@@ -20,6 +20,7 @@ from pydantic import Field, ValidationError, field_validator, model_validator
 from typing_extensions import override
 
 from datamodel_code_generator import Error
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._document_reader import as_mapping
@@ -1156,8 +1157,10 @@ class DataModelField(_PydanticBaseDataModelField):
         return base_imports
 
 
-_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
 _BYTES_PATTERN_TYPES: frozenset[str | None] = frozenset({"bytes", "StrictBytes"})
+_STRING_PATTERN_TYPES: frozenset[str | None] = (
+    _applicability.engine_pattern_types(_applicability.PYDANTIC_OUTPUT) - _BYTES_PATTERN_TYPES
+)
 
 
 def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
@@ -1176,8 +1179,9 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
 def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType | None:
     """Return the member a ``pattern`` constrains: a string type or the ``Literal`` of a const or an enum.
 
-    Pydantic compiles the pattern of a ``Literal`` as it does a string's. With ``includes_bytes`` a ``bytes`` type is
-    one too.
+    The string types are those the constraint table reads a pattern on (``_applicability.engine_pattern_types``, row
+    ``legacy-engine-string-types-only``) other than the ``bytes`` types. Pydantic compiles the pattern of a
+    ``Literal`` as it does a string's. With ``includes_bytes`` a ``bytes`` type is one too.
     """
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
