@@ -6,6 +6,7 @@ import json
 import os
 import socket
 import threading
+import warnings
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from operator import itemgetter
@@ -44,7 +45,13 @@ from datamodel_code_generator.http import (
     get_body,
 )
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from tests.conftest import assert_output, create_assert_file_content, stored_expected
+from tests.conftest import (
+    assert_output,
+    assert_warnings_contain,
+    assert_warnings_do_not_contain,
+    create_assert_file_content,
+    stored_expected,
+)
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -552,6 +559,56 @@ def test_cli_header_names_the_url_without_credentials_or_query(
         tmp_path / "output.py", f"url_header_redacted{'_equals' if joined else ''}.py", transform=normalize
     )
     assert_http_e2e_file(tmp_path / "metadata.json", "url_header_redacted_metadata.txt", transform=normalize)
+
+
+def test_cli_warning_names_a_remote_location_without_credentials_or_query(
+    mocker: MockerFixture,
+    local_http_server: str,
+    tmp_path: Path,
+) -> None:
+    """Name the location of a remote schema in a warning without the userinfo and query of its URL (#5577).
+
+    The ``$ref`` beside ``maximum`` leaves no value with ``--intersect-allof-keywords``, and the warning names it.
+    """
+    mocker.stopall()
+    _SchemaHandler.routes["/remote.json"] = (
+        200,
+        {"content-type": "application/json"},
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$defs": {"A": {"$ref": "#/$defs/B", "maximum": 1}, "B": {"type": "integer", "minimum": 5}},
+        }).encode(),
+    )
+    remote = f"http://user:secret@{local_http_server.removeprefix('http://')}/remote.json?token=abc#/$defs/A"
+    root = tmp_path / "root.json"
+    root.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Root",
+            "type": "object",
+            "properties": {"a": {"$ref": remote}},
+        }),
+        encoding="utf-8",
+    )
+    try:
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            run_main_with_args([
+                "--input",
+                str(root),
+                "--output",
+                str(tmp_path / "output.py"),
+                "--input-file-type",
+                "jsonschema",
+                "--allow-remote-refs",
+                "--allow-private-network",
+                "--intersect-allof-keywords",
+                "--disable-timestamp",
+            ])
+    finally:
+        del _SchemaHandler.routes["/remote.json"]
+    assert_warnings_contain(warning_records, f"{local_http_server}/remote.json#/$defs/A: no value satisfies")
+    assert_warnings_do_not_contain(warning_records, "secret", "token=abc")
 
 
 def test_cli_fetches_external_schema_with_selected_backend(

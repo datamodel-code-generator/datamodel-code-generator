@@ -828,7 +828,7 @@ def object_map_key_type(  # noqa: PLR0913
                 if schema.pattern is None
                 else parser._conjoined_pattern(  # noqa: SLF001
                     (schema.pattern, pattern),
-                    named_location(property_names.schema_location, "propertyNames", row="legacy-unredacted-locations"),
+                    named_location(property_names.schema_location, "propertyNames"),
                 )
             )
         if schema.ref:

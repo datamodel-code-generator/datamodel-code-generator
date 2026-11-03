@@ -1278,7 +1278,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if not any(met):
             self._warn_unsatisfiable(
-                named_location(obj.schema_location, "schema", row="legacy-unredacted-locations"),
+                named_location(obj.schema_location, "schema"),
                 keywords,
                 _LITERAL_PARTS,
             )
@@ -3604,7 +3604,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             literal_values = reduce(intersect_enum_values, literal_sets[1:], list(literal_sets[0]))
             if not literal_values:
                 self._warn_unsatisfiable(
-                    named_location(sources[-1].schema_location, "allOf", row="legacy-unredacted-locations"),
+                    named_location(sources[-1].schema_location, "allOf"),
                     tuple(
                         keyword
                         for keyword in ("enum", "const")
@@ -3688,7 +3688,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unsatisfiable = _intersect_dumps(dumps, row).unsatisfiable
         if "legacy-all-of-site-form" not in self._legacy_intersection:
             self._warn_unsatisfiable(
-                named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations"),
+                named_location(obj.schema_location, "allOf"),
                 unsatisfiable,
                 _ALL_OF_PARTS,
             )
@@ -5402,7 +5402,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if other_keys is None
                 else "gives the keys of its patterns and the other keys different value schemas"
             )
-        where = named_location(obj.schema_location, name, row="legacy-unredacted-locations")
+        where = named_location(obj.schema_location, name)
         if reasons and first_report(self._inexact_object_maps, where):
             warn(
                 f"{where}: one dict type cannot express this object, since it "
@@ -6341,7 +6341,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self,
                     parts,
                     _all_of_values.all_of_value_row(self, obj),
-                    named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations"),
+                    named_location(obj.schema_location, "allOf"),
                 )
                 if not (inline_value.enum or "const" in inline_value.extras):
                     constraint_obj = inline_value

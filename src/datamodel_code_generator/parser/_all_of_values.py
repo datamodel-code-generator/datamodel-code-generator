@@ -593,7 +593,7 @@ def collect_all_of_value_parts(
             return False
         member = (
             parser._merge_ref_with_schema(  # noqa: SLF001
-                item, named_location(schema.schema_location, "allOf", row="legacy-unredacted-locations")
+                item, named_location(schema.schema_location, "allOf")
             )
             if resolve_refs
             else item
@@ -769,9 +769,7 @@ def reference_site_value(
     written = parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0])) if layered else {}  # noqa: SLF001
     target = intersect_typed_value_parts(parser, target_parts, None)
     intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(
-            parser, parts, named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations")
-        ),
+        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
         parts,
         const_support=parser.schema_features.const_support,
     )
@@ -834,9 +832,7 @@ def all_of_reference_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject
     target = intersect_typed_value_parts(parser, target_parts, None)
     if layers_on_reference(parser, target, constraints):
         return None
-    intersection = intersect_typed_value_parts(
-        parser, parts, named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations")
-    )
+    intersection = intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf"))
     if len(refs) == 1 and parser._enforced_value_keywords(intersection) == parser._enforced_value_keywords(target):  # noqa: SLF001
         return parser._schema_object({"$ref": refs[0]})  # noqa: SLF001
     return intersection
@@ -1489,9 +1485,7 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
     if not parser.config.use_site_models_for_constrained_refs:
         return None
     intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(
-            parser, parts, named_location(obj.schema_location, "allOf", row="legacy-unredacted-locations")
-        ),
+        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
         parts,
         const_support=parser.schema_features.const_support,
     )
@@ -1673,7 +1667,7 @@ def ref_member_narrows_literals(
         return False
     merged = parser._schema_literal_values(  # noqa: SLF001
         parser._merge_ref_with_schema(  # noqa: SLF001
-            member, named_location(site.schema_location, "allOf", row="legacy-unredacted-locations")
+            member, named_location(site.schema_location, "allOf")
         )
     )
     return (
