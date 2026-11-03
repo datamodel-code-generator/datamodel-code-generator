@@ -72,6 +72,7 @@ unicode-profile	main/main_recommend_options/recommend_options_for_projects[unico
 [test_recommend_options_for_schemas]
 api-scope-31-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-31-operations].stdout.txt
 api-scope-32-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-32-operations].stdout.txt
+api-scope-excluded-path-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-excluded-path-operations].stdout.txt
 asyncapi	main/main_recommend_options/recommend_options_for_schemas[asyncapi].stdout.txt
 asyncapi-multi-format-extension	main/main_recommend_options/recommend_options_for_schemas[asyncapi-multi-format-extension].stdout.txt
 asyncapi-v3	main/main_recommend_options/recommend_options_for_schemas[asyncapi-v3].stdout.txt

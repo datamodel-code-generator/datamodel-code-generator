@@ -395,7 +395,7 @@ def _referenced_openapi_components(schema: dict[str, Any], components: dict[str,
             for ref in _find_openapi_component_refs(component)
             if ref.startswith("#/components/schemas/")
         )
-    return referenced
+    return {name: component for name, component in components.items() if name in referenced}
 
 
 def _openapi_component_mapping_tags(mapping: Any) -> dict[str, str]:

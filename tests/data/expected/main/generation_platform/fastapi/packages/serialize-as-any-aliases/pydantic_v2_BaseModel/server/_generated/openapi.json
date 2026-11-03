@@ -1,0 +1,46 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Serialized aliases",
+  "version": "1.0.0"
+ },
+ "paths": {
+  "/tags": {
+   "get": {
+    "operationId": "listTags",
+    "parameters": [
+     {
+      "name": "tags",
+      "in": "query",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tags"
+        }
+       }
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "The tags are valid."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Tag": {
+    "type": "string",
+    "maxLength": 5
+   },
+   "Tags": {
+    "type": "array",
+    "items": {
+     "$ref": "#/components/schemas/Tag"
+    }
+   }
+  }
+ }
+}

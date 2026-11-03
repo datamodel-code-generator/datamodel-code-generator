@@ -68,6 +68,15 @@ decision = "#5975, #5978"
 release_note = "the root model of an array item keeps the minItems of the item without --field-constraints, and the maxItems that items: false implies, as the property of the same array does"
 
 [[accepted]]
+input = "*prefix_items_unique_items_sequence*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:Pair|SequenceOfPair|PrefixItemsUniqueItemsSequence:pairs|PrefixItemsUniqueItemsSequence:sequence_of_pairs): .* -> .*(?:MinLen\\(min_length=2\\), ?MaxLen\\(max_length=2\\)|Meta\\(max_length=2,min_length=2\\))"
+reason = "the root models of a closed prefixItems pair (prefixItems of two, items: false) in an array and in a Sequence, a fixture added for #5820, dropped the minItems of the item unless --field-constraints was given and, as root models, the maxItems that items: false implies, so the models accepted the arrays of one or three items that the schema rejects; they write both as the property of the same array does (schema-mismatch fix)"
+decision = "#5975, #5978"
+release_note = "the root model of an array item keeps the minItems of the item without --field-constraints, and the maxItems that items: false implies, as the property of the same array does"
+
+[[accepted]]
 input = "*field_constraint_sites*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "default", "required", "probe" ]

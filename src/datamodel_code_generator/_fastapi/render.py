@@ -282,13 +282,16 @@ class Module(TargetModule):
         return self.hint(value, static=False)
 
     def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
-        """Return a union or container of spelled parts, as the model generator writes one."""
+        """Return a union or container of spelled parts, as the model generator writes one.
+
+        A generic of no container, such as the `SerializeAsAny` of a model type, is its class of the spelled parts.
+        """
         spell = self.static if static else self.validating
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
-        slot = container_slot(value)
-        assert slot is not None
+        if (slot := container_slot(value)) is None:
+            return subscript_text(self.hint(value.base), arguments)
         flag = CONTAINER_FLAGS[slot]
         if flag in MAPPINGS.flags:
             return self.container(flag, arguments[-1], key=arguments[0])

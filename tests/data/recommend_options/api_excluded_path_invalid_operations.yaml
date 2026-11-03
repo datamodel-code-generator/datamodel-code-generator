@@ -1,0 +1,23 @@
+openapi: 3.2.0
+info:
+  title: Excluded path
+  version: 1.0.0
+paths:
+  /included:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /excluded:
+    additionalOperations: []
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string

@@ -111,14 +111,14 @@ def same_file(first: Path, second: Path, *, missing: Missing = "none") -> bool:
 def file_uri_path(uri: str) -> Path:
     """Return the local path a ``file`` URI names (RFC 8089): its path percent-decoded, without the query or fragment.
 
-    A host other than ``localhost`` names a UNC share, ``//host/path``.
+    A host other than ``localhost``, in any letter case as RFC 3986 compares hosts, names a UNC share, ``//host/path``.
     """
     from urllib.parse import urlsplit  # noqa: PLC0415
     from urllib.request import url2pathname  # noqa: PLC0415
 
     parts = urlsplit(uri)
     path = url2pathname(parts.path)
-    return Path(path if parts.netloc in {"", "localhost"} else f"//{parts.netloc}{path}")
+    return Path(path if parts.netloc.lower() in {"", "localhost"} else f"//{parts.netloc}{path}")
 
 
 def names_directory(path: Path) -> bool:

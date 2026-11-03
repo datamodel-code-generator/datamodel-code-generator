@@ -1306,6 +1306,14 @@ base_options.add_argument(
     default=None,
 )
 base_options.add_argument(
+    "--no-formatters",
+    dest="formatters",
+    help="Select no formatter, not even the default or a preset's formatters; --custom-formatters still run.",
+    action="store_const",
+    const=(),
+    default=None,
+)
+base_options.add_argument(
     "--custom-formatters",
     help="List of modules with custom formatter (delimited list input).",
     type=str,

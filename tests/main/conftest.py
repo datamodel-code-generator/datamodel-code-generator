@@ -121,6 +121,7 @@ _CLI_FORMATTER_RELATED_OPTIONS = frozenset({
     "--custom-formatters",
     "--custom-formatters-kwargs",
     "--formatters",
+    "--no-formatters",
     "--profile",
     "--skip-string-normalization",
     "--use-double-quotes",

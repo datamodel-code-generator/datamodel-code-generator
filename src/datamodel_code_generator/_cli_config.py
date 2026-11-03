@@ -10,7 +10,12 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
-from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DEFAULT_WATCH_DELAY
+from datamodel_code_generator._config_fields import (
+    CLI_RESOLVED_PATH_FIELDS,
+    DEFAULT_WATCH_DELAY,
+    PATH_FIELD_NAMES,
+    option_path,
+)
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -178,13 +183,20 @@ def _get_config_class() -> type[Config]:
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 
-        @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
+        @field_validator(*PATH_FIELD_NAMES, mode="before")
         @classmethod
-        def validate_path(cls, value: Any) -> Path | None:
-            """Validate and resolve path; a path the parser already built only expands ``~``."""
+        def validate_path(cls, value: Any, info: ValidationInfo) -> Path | str | None:
+            """Validate a path, and resolve a spelled one when the command line reads it from the working directory.
+
+            A path the parser already built only expands ``~``.
+            """
             if value is None:
                 return value  # pragma: no cover
-            return value.expanduser() if isinstance(value, Path) else resolved(Path(value))
+            field = cast("str", info.field_name)
+            path = option_path(field, value)
+            if field not in CLI_RESOLVED_PATH_FIELDS:
+                return value
+            return resolved(path) if isinstance(value, str) else path
 
         @field_validator("url", mode="before")
         @classmethod

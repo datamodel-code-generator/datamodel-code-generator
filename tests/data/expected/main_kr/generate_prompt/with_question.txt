@@ -187,6 +187,7 @@ How do I convert enums to Literal types?
 - `--extra-template-data`: Pass custom template variables via inline JSON or a JSON file path.
 - `--formatters`: Specify code formatters to apply to generated output.
 - `--generate-schema-validators`: Generate experimental Pydantic v2 model validators for JSON Schema runtime rules.
+- `--no-formatters`: Select no formatter for the generated output.
 - `--no-strict-dotted-module-names`
 - `--no-treat-dot-as-module`: Keep dots in schema names as underscores for flat output.
 - `--no-use-type-checking-imports`: Keep generated model imports available at runtime when using Ruff fixes.
@@ -393,6 +394,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         in the invocation working directory when no project is
                         found. Explicit relative paths resolve from the
                         invocation working directory.
+  --no-formatters       Select no formatter, not even the default or a
+                        preset's formatters; --custom-formatters still run.
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
