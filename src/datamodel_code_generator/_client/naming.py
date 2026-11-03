@@ -154,10 +154,9 @@ def header_decoder(name: str) -> str:
 
 
 def header_constant(name: str) -> str:
-    """Return the name of the constant holding the header decoders of an operation, by its method name.
+    """Return the name the constant holding the header decoders of an operation is derived from, by its method name.
 
-    Row ``legacy-header-constant-by-upper``: the method name upper-cased, which the types module reserves but never
-    claims, so two method names that upper-case alike (``straße``, ``strasse``) name one constant twice.
+    Upper-casing is not injective (``straße`` and ``strasse`` give ``STRASSE``), so the types module claims it.
     """
     return f"_{name.upper()}_HEADERS"
 
