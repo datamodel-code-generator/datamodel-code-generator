@@ -551,6 +551,21 @@ class _AssembledConstraints:
 
 
 @record
+class _MapValue:
+    """How the value of a mapping is built (``JsonSchemaParser._additional_properties_value``).
+
+    ``parse_item`` builds ``schema`` with ``parent`` as its parent, unless it is ``constrained``: then the root model
+    that preserves its constraints is built from ``schema`` (a ``$ref`` merged with its siblings, or an allOf of
+    primitives, ``preserve_root_model``).
+    """
+
+    schema: JsonSchemaObject
+    parent: JsonSchemaObject | None = None
+    constrained: bool = False
+    preserve_root_model: bool = False
+
+
+@record
 class _VersionSource:
     """Where a parser reads the version of its documents: a config field unless it is ``auto``, else ``detect``.
 
@@ -1552,8 +1567,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         generates no model, so the site names the keys of the models it names (``_extra_items_type``, row
         ``legacy-rw-extra-items-as-written``: as written, its false allOf values not read). Each property, item, value
         and branch is a field site, typed as the row ``parse_item`` chooses for it declares (``typed_field_site``): a
-        property and a oneOf or anyOf member read a $ref beside sibling keywords merged with them before the table
-        chooses, the other sites after its python-type row.
+        property reads a $ref beside sibling keywords merged with them before the table chooses, the other sites
+        after its python-type row. A value is the site ``_parse_additional_properties_value`` builds
+        (``_typed_additional_properties_value``) and a oneOf or anyOf member the branch ``parse_combined_schema``
+        parses (``_typed_combined_members``).
         """
         schema, defining_ref, into = site.obj, site.path[0], site.parent
         if into is None:
@@ -1624,9 +1641,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
             for item in positions.values():
                 yield from _rw_split.typed_field_site(self, item, defining_ref, parent=schema)
-        yield from _rw_split.typed_field_site(self, extras, defining_ref)
-        for item in (*schema.oneOf, *schema.anyOf):
-            yield from _rw_split.typed_field_site(self, item, defining_ref, merges_ref_first=True, parent=schema)
+        yield from self._typed_additional_properties_value(extras, defining_ref, schema)
+        yield from self._typed_combined_members(schema, defining_ref)
         if site.root and schema.allOf and not (schema.is_array or schema.anyOf or schema.oneOf):
             with self._inherited_ref_context(defining_ref), quiet():
                 keys = _rw_split.lightweight_type_keys(self, self._build_lightweight_type(schema))
@@ -1637,6 +1653,40 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         if self.generate_schema_validators:
             yield from (TypedChild("model", item) for item in self._iter_conditional_branches(schema))
+
+    def _typed_combined_members(
+        self, schema: JsonSchemaObject, defining_ref: str
+    ) -> Iterator[TypedChild[JsonSchemaObject]]:
+        """Return what the oneOf and anyOf members of a schema type, as ``parse_combined_schema`` parses them.
+
+        The members are the branches it parses (``_combined_schema_members``), each mixed with the keywords of the
+        schema, which is their parent as it is at ``parse_item``.
+        """
+        for keyword in ("oneOf", "anyOf"):
+            if getattr(schema, keyword):
+                with self._inherited_ref_context(defining_ref):
+                    members, _ = self._combined_schema_members(schema, keyword)
+                for member in members:
+                    yield from _rw_split.typed_field_site(self, member, defining_ref, parent=schema)
+
+    def _typed_additional_properties_value(
+        self,
+        value: JsonSchemaObject | bool | None,  # noqa: FBT001
+        defining_ref: str,
+        parent: JsonSchemaObject,
+    ) -> Iterable[TypedChild[JsonSchemaObject]]:
+        """Return what the value of an additionalProperties types, as ``_parse_additional_properties_value`` builds it.
+
+        The decision is ``_additional_properties_value``: a value built as a constrained root model types that root
+        model, any other the field site ``parse_item`` gets with its parent.
+        """
+        if not isinstance(value, JsonSchemaObject):
+            return ()
+        with self._inherited_ref_context(defining_ref):
+            built = self._additional_properties_value("", value, parent)
+            if built.constrained and self._constrained_value_row(built.schema) == "root":
+                return (TypedChild("root", built.schema),)
+        return _rw_split.typed_field_site(self, built.schema, defining_ref, parent=built.parent)
 
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""
@@ -3664,17 +3714,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _all_of_values.site_schema(self, obj, merge_ref_siblings=merge_ref_siblings)
 
-    def parse_combined_schema(
-        self,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-        target_attribute_name: str,
-    ) -> list[DataType]:
-        """Parse combined schema (anyOf, oneOf, allOf) into a list of data types.
+    def _combined_schema_members(
+        self, obj: JsonSchemaObject, target_attribute_name: str
+    ) -> tuple[list[JsonSchemaObject], list[int]]:
+        """Return the branches ``parse_combined_schema`` parses for the members of a combined schema, and the refs.
 
-        Each member records the location of the branch it is parsed from as its origin (``reference.type_origin_of``),
-        also the member that stands for a referenced branch.
+        A member is mixed with the keywords of its parent (``all_of_member_row``), so it is read with them where it is
+        parsed (``parse_item`` gets the parent as its parent), and a member that is a ``$ref`` is merged with its
+        siblings first and stays as it is. A member that is false, a null the ``type`` beside it excludes or a local
+        ``$ref`` to false is no branch. The request/response walk reads the same branches
+        (``_typed_model_children``).
         """
         default_left_off = self.config.keep_field_defaults_off_branch_roots and obj.has_default
         base_object = obj.model_dump(
@@ -3749,7 +3798,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     default_left_off=default_left_off,
                 )
             )
+        return combined_schemas, refs
 
+    def parse_combined_schema(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        target_attribute_name: str,
+    ) -> list[DataType]:
+        """Parse combined schema (anyOf, oneOf, allOf) into a list of data types.
+
+        Each member records the location of the branch it is parsed from as its origin (``reference.type_origin_of``),
+        also the member that stands for a referenced branch.
+        """
+        combined_schemas, refs = self._combined_schema_members(obj, target_attribute_name)
         variant_keys: dict[int, str] = {}
         variant_names = (
             self._infer_union_variant_names(name, obj, combined_schemas, variant_keys)
@@ -4944,25 +5007,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Resolve the output-specific model for an inline constrained value."""
         return self._output_model_context.resolve_nested_constrained_model_type()
 
-    def _parse_additional_properties_value(
-        self,
-        name: str,
-        path: list[str],
-        parent: JsonSchemaObject,
-        *,
-        additional_properties: JsonSchemaObject,
-        constrained_name: str | None = None,
-    ) -> DataType:
-        """Parse a mapping value schema while preserving supported Annotated constraints."""
+    def _additional_properties_value(
+        self, name: str, additional_properties: JsonSchemaObject, parent: JsonSchemaObject
+    ) -> _MapValue:
+        """Return how a mapping value schema is built: by ``parse_item``, or as a constrained root model.
+
+        Without Annotated constraints ``parse_item`` gets the parent where the output writes field constraints, so the
+        field table (``_FIELD_TABLE``) chooses the root model of an item that holds constraints. With them, the schema
+        is built as a root model that preserves its constraints when its $ref merged with its siblings, or its allOf
+        of primitives, has effective constraints (``_parse_constrained_additional_properties_value_item``); a parser
+        that overrides a parse hook, a titled alias, an enum and a union keep ``parse_item``. The request/response
+        walk reads the same decision (``_typed_additional_properties_value``).
+        """
         additional_properties = self._site_schema(additional_properties)
         if not self._output_model_context.supports_annotated_constraints:
-            return self.parse_item(
-                name,
+            return _MapValue(
                 additional_properties,
-                path,
-                parent=parent
-                if self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
-                else None,
+                parent if self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS else None,
             )
         parser_type = type(self)
         parser_attributes = self.__dict__
@@ -4977,19 +5038,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or parser_type._register_root_model is not JsonSchemaParser._register_root_model  # noqa: SLF001
         )
         if has_instance_hooks or has_class_hooks:
-            return self.parse_item(name, additional_properties, path)
+            return _MapValue(additional_properties)
         if (
             self._should_create_type_alias_for_title(additional_properties, name)
             or additional_properties.enum
             or additional_properties.anyOf
             or additional_properties.oneOf
         ):
-            return self.parse_item(name, additional_properties, path)
+            return _MapValue(additional_properties)
 
         preserve_root_model = bool(additional_properties.allOf)
         if preserve_root_model:
             if (value_schema := _object_maps._merge_additional_properties_all_of(self, additional_properties)) is None:  # noqa: SLF001
-                return self.parse_item(name, additional_properties, path)
+                return _MapValue(additional_properties)
         else:
             value_schema = additional_properties
         if not preserve_root_model and _merges_ref_siblings(value_schema):
@@ -5005,15 +5066,29 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     }
                 )
         if not self._has_effective_constraints(value_schema):
-            return self.parse_item(name, additional_properties, path)
+            return _MapValue(additional_properties)
+        return _MapValue(value_schema, parent, constrained=True, preserve_root_model=preserve_root_model)
 
+    def _parse_additional_properties_value(
+        self,
+        name: str,
+        path: list[str],
+        parent: JsonSchemaObject,
+        *,
+        additional_properties: JsonSchemaObject,
+        constrained_name: str | None = None,
+    ) -> DataType:
+        """Parse a mapping value schema while preserving supported Annotated constraints."""
+        value = self._additional_properties_value(name, additional_properties, parent)
+        if not value.constrained:
+            return self.parse_item(name, value.schema, path, parent=value.parent)
         return JsonSchemaParser._parse_constrained_additional_properties_value_item(
             self,
-            constrained_name or (name if preserve_root_model else f"{name}AdditionalProperty"),
-            value_schema,
+            constrained_name or (name if value.preserve_root_model else f"{name}AdditionalProperty"),
+            value.schema,
             path,
             parent=parent,
-            data_model_root_type=(self._nested_constrained_model_type if not preserve_root_model else None),
+            data_model_root_type=(self._nested_constrained_model_type if not value.preserve_root_model else None),
         )
 
     @cached_property
@@ -5030,6 +5105,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the value schema of a nullable map when this run types its values (``parser/_object_maps.py``)."""
         return _object_maps.typed_nullable_map_value_schema(self, obj)
 
+    def _constrained_value_row(self, item: JsonSchemaObject) -> Literal["python-type", "enum", "root"]:
+        """Return how a constrained mapping value is built: by its x-python-type, as an enum, else as a root model."""
+        if self._overriding_python_type(item) is not None:
+            return "python-type"
+        return "enum" if item.enum else "root"
+
     def _parse_constrained_additional_properties_value_item(
         self,
         name: str,
@@ -5040,9 +5121,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_model_root_type: type[DataModel] | None,
     ) -> DataType:
         """Parse the constrained-value fast path without changing parser extension hooks."""
-        if python_type_override := self._get_python_type_override(item):
-            return python_type_override
-        if item.enum:
+        row = self._constrained_value_row(item)
+        if row == "python-type":
+            return cast("DataType", self._get_python_type_override(item))
+        if row == "enum":
             return self.parse_item(name, item, path, parent=parent)
         if self.use_title_as_name and item.title:
             name = sanitize_module_name(item.title, treat_dot_as_module=self.treat_dot_as_module)
