@@ -688,6 +688,8 @@ formatters-options2	api_generation/fastapi_cli/output_options[formatters-options
 formatters-options2	main/generation_platform/fastapi/cli/output-options/formatters.py
 header-quotes-options0	api_generation/fastapi_cli/output_options[header-quotes-options0].py
 header-quotes-options0	main/generation_platform/fastapi/cli/output-options/header-quotes.py
+ruff-latin-1-options3	api_generation/fastapi_cli/output_options[ruff-latin-1-options3].py
+ruff-latin-1-options3	main/generation_platform/fastapi/cli/output-options/ruff-latin-1.py
 [test_fastapi_cli_precedence]
 base-arguments0-dependencies.txt	main/generation_platform/fastapi/cli/dependencies.txt
 base-arguments0-dependencies.txt	main/generation_platform/fastapi/cli/precedence/base.txt

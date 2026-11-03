@@ -455,16 +455,34 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
             ("_operations.py",),
         ),
+        pytest.param(
+            "ruff-utf-16",
+            {"encoding": "utf-16", "formatters": ["ruff-check", "ruff-format"]},
+            ("resources", "pets", "__init__.py"),
+            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
+        ),
+        pytest.param(
+            "ruff-latin-1",
+            {
+                "encoding": "latin-1",
+                "formatters": ["ruff-check", "ruff-format"],
+                "custom_file_header": "# -*- coding: latin-1 -*-\n# Café",
+            },
+            ("resources", "pets", "__init__.py"),
+            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
+        ),
     ],
 )
 def test_client_output_options(case: str, options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
     """Head, format, and encode the client files with the model output options, exactly like the models.
 
-    The formatters and their settings lay out the plan values the templates leave on one line.
+    The formatters and their settings lay out the plan values the templates leave on one line. Ruff reads only UTF-8,
+    so the client files are formatted whatever encoding they are written in; the models file, which Ruff cannot read
+    in another encoding, is left unformatted with a warning.
     """
-    source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
-    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     encoding = str(options.get("encoding", "utf-8"))
+    (source := tmp_path / "pets.yaml").write_bytes((SOURCE / "pets.yaml").read_text(encoding="utf-8").encode(encoding))
+    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     text = (tmp_path / "client").joinpath(*module).read_bytes().decode(encoding)
     assert_output(
         text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
