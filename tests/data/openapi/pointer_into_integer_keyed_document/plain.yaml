@@ -1,0 +1,5 @@
+openapi: 3.0.3
+definitions:
+  Tag:
+    type: string
+    maxLength: 5

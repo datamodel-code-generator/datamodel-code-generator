@@ -6329,6 +6329,36 @@ def test_main_openapi_json_pointer_through_scalar(output_file: Path) -> None:
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j")
 
 
+@pytest.mark.parametrize("scopes", [[], ["--openapi-scopes", "schemas", "api"]], ids=["models", "api-scope"])
+def test_main_openapi_pointer_into_document_with_integer_top_level_key(output_file: Path, scopes: list[str]) -> None:
+    """Read the member a pointer names of a document whose top level has an integer key, `404:` (#6092).
+
+    The root of a document that a pointer enters is read by its string keys, so the integer key beside the member is
+    no schema error; up to 0.88.0 the root was validated as a schema and the generation stopped with a validation error.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "pointer_into_integer_keyed_document" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *scopes,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_pointer_into_integer_keyed_document",
+        model_name="Reply",
+        valid_json='{"code": "abc"}',
+        invalid_json='{"code": "abcd"}',
+        expected_error_type="string_too_long",
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

@@ -117,6 +117,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SEQUENCES
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    string_keyed,
 )
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
@@ -8177,7 +8178,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ).name
             with self.root_id_context(raw):
                 # parse $id before parsing $ref
-                root_obj = self._validate_schema_object(raw, path_parts or ["#"])
+                root_obj = self._validate_schema_object(string_keyed(raw) if object_paths else raw, path_parts or ["#"])
                 if (
                     self.config.generate_schema_validators
                     and raw is self.raw_obj

@@ -41,6 +41,7 @@ __all__ = [
     "member_key",
     "nesting_limit",
     "string_key",
+    "string_keyed",
     "string_keys",
 ]
 
@@ -163,6 +164,17 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
     """Require each of ``keys``, which name a ``kind``, to be a string (``string_key``), in order."""
     for key in keys:
         string_key(key, kind, error_path)
+
+
+def string_keyed(mapping: dict[Any, YamlValue]) -> dict[str, YamlValue]:
+    """Return a loaded mapping read as an object, without the members whose key is no string.
+
+    A key that is no string names no keyword of a schema, so the root of a document that a pointer enters, which is a
+    schema only by the keywords it spells, is read without it. A mapping with none is returned as it is.
+    """
+    if all(isinstance(key, str) for key in mapping):
+        return mapping
+    return {key: value for key, value in mapping.items() if isinstance(key, str)}
 
 
 def is_multi_format_schema_object(value: object) -> bool:
