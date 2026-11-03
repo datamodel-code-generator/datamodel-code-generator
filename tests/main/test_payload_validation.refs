@@ -3,6 +3,7 @@
 [test_allof_payload_strategy_classification]
 	main/allof_payload_strategy_classification.txt
 [test_generated_pydantic_v2_model_accepts_schema_derived_payloads]
+jsonschema/additional_import_named_like_unused_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_items_schema_tuple.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_properties_anyof_schema_with_required_property.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_properties_anyof_schema_without_nullable_property.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1840,6 +1841,7 @@ openapi/x_property_names.yaml::components.schemas.PatternKeys	payloads/native_nu
 openapi/x_property_names_false.yaml::components.schemas.NoKeys	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/x_property_names_non_dict.yaml::components.schemas.NonDictPropertyNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 [test_generated_pydantic_v2_model_dumps_schema_valid_payloads]
+jsonschema/additional_import_named_like_unused_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_items_schema_tuple.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_properties_anyof_schema_with_required_property.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_properties_anyof_schema_without_nullable_property.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
