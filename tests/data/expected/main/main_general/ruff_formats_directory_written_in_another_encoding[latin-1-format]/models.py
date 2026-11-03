@@ -1,0 +1,30 @@
+# Café
+
+from __future__ import annotations
+
+from enum import Enum
+from pydantic import BaseModel
+from typing import Any
+
+
+class Species(Enum):
+    dog = "dog"
+    cat = "cat"
+    snake = "snake"
+
+
+class Pet(BaseModel):
+    id: int
+    name: str
+    tag: str | None = None
+    species: Species | None = None
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    tag: str | None = None
+
+
+class Event(BaseModel):
+    name: str | float | int | bool | dict[str, Any] | list[str] | None = None

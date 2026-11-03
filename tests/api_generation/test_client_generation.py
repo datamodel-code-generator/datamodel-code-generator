@@ -465,13 +465,12 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
             ("_operations.py",),
         ),
-        pytest.param(
+        (
             "ruff-utf-16",
             {"encoding": "utf-16", "formatters": ["ruff-check", "ruff-format"]},
             ("resources", "pets", "__init__.py"),
-            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
         ),
-        pytest.param(
+        (
             "ruff-latin-1",
             {
                 "encoding": "latin-1",
@@ -479,7 +478,6 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
                 "custom_file_header": "# -*- coding: latin-1 -*-\n# Café",
             },
             ("resources", "pets", "__init__.py"),
-            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
         ),
     ],
 )
@@ -487,8 +485,7 @@ def test_client_output_options(case: str, options: dict[str, object], module: tu
     """Head, format, and encode the client files with the model output options, exactly like the models.
 
     The formatters and their settings lay out the plan values the templates leave on one line. Ruff reads only UTF-8,
-    so the client files are formatted whatever encoding they are written in; the models file, which Ruff cannot read
-    in another encoding, is left unformatted with a warning.
+    so the client files are formatted whatever encoding they are written in.
     """
     encoding = str(options.get("encoding", "utf-8"))
     (source := tmp_path / "pets.yaml").write_bytes((SOURCE / "pets.yaml").read_text(encoding="utf-8").encode(encoding))
