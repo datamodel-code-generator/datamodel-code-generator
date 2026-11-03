@@ -5,7 +5,9 @@ from __future__ import annotations
 import re
 import sys
 import warnings
+from copy import deepcopy
 from functools import lru_cache
+from io import BytesIO
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import Sentinel
@@ -31,11 +33,16 @@ def _get_toml_loader() -> Callable[[Any], dict[str, Any]]:
     return load_toml_data
 
 
+@lru_cache(maxsize=32)
+def _parse_toml(data: bytes) -> dict[str, Any]:
+    """Parse the bytes of a TOML document; the result depends on the bytes alone, so equal content is parsed once."""
+    return _get_toml_loader()(BytesIO(data))
+
+
 def load_toml(path: Path) -> dict[str, Any]:
-    """Load and parse a TOML file."""
+    """Load and parse a TOML file, returning a document the caller owns."""
     record_watch_dependency(path)
-    with path.open("rb") as f:
-        return _get_toml_loader()(f)
+    return deepcopy(_parse_toml(path.read_bytes()))
 
 
 def _find_pyproject_toml(settings_path: Path) -> Path | None:
