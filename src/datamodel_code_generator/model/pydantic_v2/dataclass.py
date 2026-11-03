@@ -254,8 +254,9 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     def _apply_lookaround_regex_engine(self) -> None:
         """Force the python-re regex engine when a lookaround pattern is reachable.
 
-        Runs lazily because referenced patterns are only linked after ``__init__``; the
-        result is memoized to keep ``imports`` cheap.
+        The patterns of every model the fields reach count (``has_lookaround_pattern``, row
+        ``legacy-dataclass-follows-every-reference``). Runs lazily because referenced patterns are only linked after
+        ``__init__``; the result is memoized to keep ``imports`` cheap.
         """
         if self._lookaround_regex_engine_checked:
             return

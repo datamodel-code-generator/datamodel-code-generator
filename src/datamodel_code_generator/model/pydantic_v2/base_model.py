@@ -25,7 +25,7 @@ from datamodel_code_generator._alias_generators import generate_alias as _genera
 from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
@@ -1328,27 +1328,25 @@ def _only_describes_own_named_type(field: DataModelFieldBase) -> bool:
 
 
 def has_lookaround_pattern(
-    fields: list[DataModelFieldBase],
-    *,
-    follow_references: bool = False,
-    include_compiled: bool = True,
-    _visited: set[int] | None = None,
+    fields: list[DataModelFieldBase], *, follow_references: bool = False, include_compiled: bool = True
 ) -> bool:
     """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
 
     This covers lookaround assertions and, for string and ``Literal`` patterns pydantic compiles, any other syntax
     pydantic-core's Rust engine rejects, such as backreferences.
 
-    When ``follow_references`` is True, also inspect patterns reachable through referenced
-    models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
-    alias patterns are compiled with the consuming dataclass's config rather than their own.
-    A site that earlier releases wrote as a model without fields (``FIELDLESS_SITE_KEY``) is not followed where the
-    target compiles the patterns of type aliases: its patterns then need no engine of the model that uses it, whose
-    other patterns keep the engine they had.
+    When ``follow_references`` is True, also inspect the patterns of the models the fields reach
+    (``_pattern_models_followed``) -- needed for Pydantic v2 dataclasses, where alias patterns are compiled with the
+    consuming dataclass's config rather than their own.
     When ``include_compiled`` is False, patterns the parser already wrapped in ``re.compile`` are skipped.
     """
-    if _visited is None:
-        _visited = set()
+    if follow_references:
+        return has_lookaround_pattern(fields, include_compiled=include_compiled) or any(
+            has_lookaround_pattern(model.fields, include_compiled=include_compiled)
+            for model in reach(
+                _pattern_models_followed(fields), lambda model: _pattern_models_followed(model.fields), key=id
+            )
+        )
     for field in fields:
         if (
             (pattern := isinstance(field.constraints, Constraints) and field.constraints.pattern)
@@ -1362,29 +1360,40 @@ def has_lookaround_pattern(
                 pattern = str(pattern) if include_compiled else None
             if pattern and _needs_python_regex_engine(pattern, data_type, field):
                 return True
-            if not follow_references or data_type.reference is None:
-                continue
-            source = data_type.reference.source
-            if data_type.reference.__dict__.get(FIELDLESS_SITE_KEY) and model_target_meets(
-                cast("DataModel", source), "pydantic.compiled_pattern"
-            ):
-                continue
-            source_fields = getattr(source, "fields", None)
-            if source_fields is not None and id(source) not in _visited:
-                _visited.add(id(source))
-                if has_lookaround_pattern(
-                    source_fields, follow_references=True, include_compiled=include_compiled, _visited=_visited
-                ):
-                    return True
     return False
+
+
+def _pattern_models_followed(fields: Iterable[DataModelFieldBase]) -> Iterator[DataModel]:
+    """Yield the models whose patterns a Pydantic dataclass reads through the references of ``fields``.
+
+    Row ``legacy-dataclass-follows-every-reference``: every model with fields that a field's type names
+    (``_field_references``), whatever config of its own the model has, where the models that use a type alias read
+    only the aliases keeping string patterns (``models_reaching_string_pattern_aliases``). A site that earlier
+    releases wrote as a model without fields (``FIELDLESS_SITE_KEY``) is not followed where the target compiles the
+    patterns of type aliases: its patterns then need no engine of the model that uses it, whose other patterns keep
+    the engine they had.
+    """
+    for reference in _field_references(fields):
+        source = reference.source
+        if reference.__dict__.get(FIELDLESS_SITE_KEY) and model_target_meets(
+            cast("DataModel", source), "pydantic.compiled_pattern"
+        ):
+            continue
+        if getattr(source, "fields", None) is not None:
+            yield cast("DataModel", source)
+
+
+def _field_references(fields: Iterable[DataModelFieldBase]) -> Iterator[Reference]:
+    """Yield the references that the types of ``fields`` name."""
+    for field in fields:
+        for data_type in field.data_type.all_data_types:
+            if (reference := data_type.reference) is not None:
+                yield reference
 
 
 def _model_references(model: DataModel, base_classes: Iterable[BaseClassDataType]) -> Iterator[Reference]:
     """Yield the references that the fields of ``model`` and the given base classes name."""
-    for field in model.fields:
-        for data_type in field.data_type.all_data_types:
-            if (reference := data_type.reference) is not None:
-                yield reference
+    yield from _field_references(model.fields)
     for base_class in base_classes:
         if (reference := base_class.reference) is not None:
             yield reference
