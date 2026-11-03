@@ -7389,6 +7389,45 @@ def test_main_x_python_type_literal_enum_members(output_file: Path, expected_fil
     )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+def test_main_x_python_type_literal_two_part_members(output_model: str, output_file: Path) -> None:
+    """Write a two-part ``Literal`` value whose first name binds a class as a member of that class.
+
+    ``HTTPStatus``, which the schema imports through ``x-python-import``, and ``RegexFlag``, which the type registry
+    knows, are classes, so their members are written as ``HTTPStatus.OK`` with the class imported; up to 0.88.0 each
+    value imported its last name from a module named after the first (``from HTTPStatus import OK``) and the module
+    failed to import. ``datetime`` names a standard-library module, so ``datetime.MINYEAR`` keeps importing ``MINYEAR``
+    from it, as any other two-part value does.
+    """
+    name = "x_python_type_literal_two_part_members"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    if output_model != "pydantic_v2.BaseModel":
+        return
+    valid = {"status": 201, "flag": 2, "year": 1}
+    with _generated_model(output_file, name, "XPythonTypeLiteralTwoPartMembers") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        verdicts = []
+        for field_name in valid:
+            value = getattr(instance, field_name)
+            verdicts.append(f"{field_name}: {type(value).__name__}.{getattr(value, 'name', value)}\n")
+        for field_name, value in {"status": 204, "flag": 4, "year": 2}.items():
+            try:
+                validate(json.dumps(valid | {field_name: value}))
+            except ValidationError:
+                verdict = "rejected"
+            else:
+                verdict = "accepted"
+            verdicts.append(f"{field_name} {value}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 _TYPE_OVERRIDES_LITERALS = {
     "TypeOverridesLiterals.integer_values": "typing.Literal[1, 2]",
     "TypeOverridesLiterals.string_values": "typing.Literal['x', 'y']",

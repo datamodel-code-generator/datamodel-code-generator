@@ -239,6 +239,7 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
     """
     # Binding is exclusive to x-python-type. Import it only after that
     # extension is present so ordinary schema generation keeps its fast path.
+    from datamodel_code_generator._python_target_names import target_stdlib_module_names  # noqa: PLC0415
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeExpr,
@@ -265,6 +266,28 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
         imports.setdefault(import_, None)
         return import_, name
 
+    def resolve_name(name: str) -> Import | PythonTypeExpr | None:
+        """Return what a bare name binds: nothing for a builtin, else the registry's import or the schema's."""
+        if name not in resolved_name_imports:
+            try:
+                is_builtin = parser._is_target_python_builtin_type(name)  # noqa: SLF001
+                import_ = None if is_builtin else parser._resolve_type_import(name)  # noqa: SLF001
+            except Error:
+                if not (import_ := parser._resolve_type_import_from_defs(name)):  # noqa: SLF001
+                    raise
+                resolved_name_imports[name] = import_
+            else:
+                resolved_name_imports[name] = (
+                    None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)  # noqa: SLF001
+                )
+        return resolved_name_imports[name]
+
+    def names_class(name: str) -> bool:
+        """Return whether a bare name binds a class that it imports, and names no standard-library module."""
+        return name not in target_stdlib_module_names(parser.target_python_version.version_key) and isinstance(
+            resolve_name(name), Import | PythonTypeRuntimeSymbol
+        )
+
     def bind_leaf(item: PythonTypeExpr) -> PythonTypeExpr:
         nonlocal resolving_names
         match item:
@@ -275,19 +298,7 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                 import_, _ = bind_import(Import(import_=module))
                 return PythonTypeRuntimeSymbol(import_.alias, item.qualname_parts) if import_.alias else item
             case PythonTypeName(value=name):
-                if name not in resolved_name_imports:
-                    try:
-                        is_builtin = parser._is_target_python_builtin_type(name)  # noqa: SLF001
-                        import_ = None if is_builtin else parser._resolve_type_import(name)  # noqa: SLF001
-                    except Error:
-                        if not (import_ := parser._resolve_type_import_from_defs(name)):  # noqa: SLF001
-                            raise
-                        resolved_name_imports[name] = import_
-                    else:
-                        resolved_name_imports[name] = (
-                            None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)  # noqa: SLF001
-                        )
-                if isinstance(resolved := resolved_name_imports[name], PythonTypeExpr):
+                if isinstance(resolved := resolve_name(name), PythonTypeExpr):
                     if resolving_names is None:
                         resolving_names = set()
                     if name in resolving_names:
@@ -295,7 +306,7 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                         raise Error(msg)
                     resolving_names.add(name)
                     try:
-                        return rewrite_python_type_expr(read_literal_enum_members(resolved), bind_leaf)
+                        return rewrite_python_type_expr(read_literal_enum_members(resolved, names_class), bind_leaf)
                     finally:
                         resolving_names.remove(name)
                 if resolved:
@@ -303,7 +314,9 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                     return PythonTypeBoundName(bound_name, import_.from_, import_.import_)
         return item
 
-    return BoundPythonType(rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports))
+    return BoundPythonType(
+        rewrite_python_type_expr(read_literal_enum_members(expression, names_class), bind_leaf), tuple(imports)
+    )
 
 
 def python_type_data_type(
