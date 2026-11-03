@@ -1,0 +1,536 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RefAliasChain",
+  "type": "object",
+  "properties": {
+    "chain": {
+      "$ref": "#/$defs/Chain0"
+    },
+    "side": {
+      "$ref": "#/$defs/Side"
+    },
+    "entry": {
+      "$ref": "#/$defs/Entry"
+    },
+    "open": {
+      "$ref": "#/$defs/Open0"
+    }
+  },
+  "$defs": {
+    "Chain0": {
+      "$ref": "#/$defs/Chain1",
+      "minLength": 1
+    },
+    "Chain1": {
+      "$ref": "#/$defs/Chain2",
+      "minLength": 2
+    },
+    "Chain2": {
+      "$ref": "#/$defs/Chain3",
+      "minLength": 3
+    },
+    "Chain3": {
+      "$ref": "#/$defs/Chain4",
+      "minLength": 4
+    },
+    "Chain4": {
+      "$ref": "#/$defs/Chain5",
+      "minLength": 5
+    },
+    "Chain5": {
+      "$ref": "#/$defs/Chain6",
+      "minLength": 6
+    },
+    "Chain6": {
+      "$ref": "#/$defs/Chain7",
+      "minLength": 7
+    },
+    "Chain7": {
+      "$ref": "#/$defs/Chain8",
+      "minLength": 8
+    },
+    "Chain8": {
+      "$ref": "#/$defs/Chain9",
+      "minLength": 9
+    },
+    "Chain9": {
+      "$ref": "#/$defs/Chain10",
+      "minLength": 10
+    },
+    "Chain10": {
+      "$ref": "#/$defs/Chain11",
+      "minLength": 11
+    },
+    "Chain11": {
+      "$ref": "#/$defs/Chain12",
+      "minLength": 12
+    },
+    "Chain12": {
+      "$ref": "#/$defs/Chain13",
+      "minLength": 13
+    },
+    "Chain13": {
+      "$ref": "#/$defs/Chain14",
+      "minLength": 14
+    },
+    "Chain14": {
+      "$ref": "#/$defs/Chain15",
+      "minLength": 15
+    },
+    "Chain15": {
+      "$ref": "#/$defs/Chain16",
+      "minLength": 16
+    },
+    "Chain16": {
+      "$ref": "#/$defs/Chain17",
+      "minLength": 17
+    },
+    "Chain17": {
+      "$ref": "#/$defs/Chain18",
+      "minLength": 18
+    },
+    "Chain18": {
+      "$ref": "#/$defs/Chain19",
+      "minLength": 19
+    },
+    "Chain19": {
+      "$ref": "#/$defs/Chain20",
+      "minLength": 20
+    },
+    "Chain20": {
+      "$ref": "#/$defs/Chain21",
+      "minLength": 21
+    },
+    "Chain21": {
+      "$ref": "#/$defs/Chain22",
+      "minLength": 22
+    },
+    "Chain22": {
+      "$ref": "#/$defs/Chain23",
+      "minLength": 23
+    },
+    "Chain23": {
+      "$ref": "#/$defs/Chain24",
+      "minLength": 24
+    },
+    "Chain24": {
+      "$ref": "#/$defs/Chain25",
+      "minLength": 25
+    },
+    "Chain25": {
+      "$ref": "#/$defs/Chain26",
+      "minLength": 26
+    },
+    "Chain26": {
+      "$ref": "#/$defs/Chain27",
+      "minLength": 27
+    },
+    "Chain27": {
+      "$ref": "#/$defs/Chain28",
+      "minLength": 28
+    },
+    "Chain28": {
+      "$ref": "#/$defs/Chain29",
+      "minLength": 29
+    },
+    "Chain29": {
+      "$ref": "#/$defs/Chain30",
+      "minLength": 30
+    },
+    "Chain30": {
+      "$ref": "#/$defs/Chain31",
+      "minLength": 31
+    },
+    "Chain31": {
+      "$ref": "#/$defs/Chain32",
+      "minLength": 32
+    },
+    "Chain32": {
+      "$ref": "#/$defs/Chain33",
+      "minLength": 33
+    },
+    "Chain33": {
+      "$ref": "#/$defs/Chain34",
+      "minLength": 34
+    },
+    "Chain34": {
+      "$ref": "#/$defs/Chain35",
+      "minLength": 35
+    },
+    "Chain35": {
+      "$ref": "#/$defs/Chain36",
+      "minLength": 36
+    },
+    "Chain36": {
+      "$ref": "#/$defs/Chain37",
+      "minLength": 37
+    },
+    "Chain37": {
+      "$ref": "#/$defs/Chain38",
+      "minLength": 38
+    },
+    "Chain38": {
+      "$ref": "#/$defs/Chain39",
+      "minLength": 39
+    },
+    "Chain39": {
+      "$ref": "#/$defs/Chain40",
+      "minLength": 40
+    },
+    "Chain40": {
+      "$ref": "#/$defs/Chain41",
+      "minLength": 41
+    },
+    "Chain41": {
+      "$ref": "#/$defs/Chain42",
+      "minLength": 42
+    },
+    "Chain42": {
+      "$ref": "#/$defs/Chain43",
+      "minLength": 43
+    },
+    "Chain43": {
+      "$ref": "#/$defs/Chain44",
+      "minLength": 44
+    },
+    "Chain44": {
+      "$ref": "#/$defs/Chain45",
+      "minLength": 45
+    },
+    "Chain45": {
+      "$ref": "#/$defs/Chain46",
+      "minLength": 46
+    },
+    "Chain46": {
+      "$ref": "#/$defs/Chain47",
+      "minLength": 47
+    },
+    "Chain47": {
+      "$ref": "#/$defs/Chain48",
+      "minLength": 48
+    },
+    "Chain48": {
+      "$ref": "#/$defs/Chain49",
+      "minLength": 49
+    },
+    "Chain49": {
+      "$ref": "#/$defs/Chain50",
+      "minLength": 50
+    },
+    "Chain50": {
+      "$ref": "#/$defs/Chain51",
+      "minLength": 51
+    },
+    "Chain51": {
+      "$ref": "#/$defs/Chain52",
+      "minLength": 52
+    },
+    "Chain52": {
+      "$ref": "#/$defs/Chain53",
+      "minLength": 53
+    },
+    "Chain53": {
+      "$ref": "#/$defs/Chain54",
+      "minLength": 54
+    },
+    "Chain54": {
+      "$ref": "#/$defs/Chain55",
+      "minLength": 55
+    },
+    "Chain55": {
+      "$ref": "#/$defs/Chain56",
+      "minLength": 56
+    },
+    "Chain56": {
+      "$ref": "#/$defs/Chain57",
+      "minLength": 57
+    },
+    "Chain57": {
+      "$ref": "#/$defs/Chain58",
+      "minLength": 58
+    },
+    "Chain58": {
+      "$ref": "#/$defs/Chain59",
+      "minLength": 59
+    },
+    "Chain59": {
+      "$ref": "#/$defs/Chain60",
+      "minLength": 60
+    },
+    "Chain60": {
+      "$ref": "#/$defs/Chain61",
+      "minLength": 61
+    },
+    "Chain61": {
+      "$ref": "#/$defs/Chain62",
+      "minLength": 62
+    },
+    "Chain62": {
+      "$ref": "#/$defs/Chain63",
+      "minLength": 63
+    },
+    "Chain63": {
+      "$ref": "#/$defs/Chain64",
+      "minLength": 64
+    },
+    "Chain64": {
+      "$ref": "#/$defs/Chain65",
+      "minLength": 65
+    },
+    "Chain65": {
+      "$ref": "#/$defs/Chain66",
+      "minLength": 66
+    },
+    "Chain66": {
+      "$ref": "#/$defs/Chain67",
+      "minLength": 67
+    },
+    "Chain67": {
+      "$ref": "#/$defs/Chain68",
+      "minLength": 68
+    },
+    "Chain68": {
+      "$ref": "#/$defs/Chain69",
+      "minLength": 69
+    },
+    "Chain69": {
+      "$ref": "#/$defs/Chain70",
+      "minLength": 70
+    },
+    "Chain70": {
+      "$ref": "#/$defs/Chain71",
+      "minLength": 71
+    },
+    "Chain71": {
+      "$ref": "#/$defs/Chain72",
+      "minLength": 72
+    },
+    "Chain72": {
+      "$ref": "#/$defs/Chain73",
+      "minLength": 73
+    },
+    "Chain73": {
+      "$ref": "#/$defs/Chain74",
+      "minLength": 74
+    },
+    "Chain74": {
+      "$ref": "#/$defs/Chain75",
+      "minLength": 75
+    },
+    "Chain75": {
+      "$ref": "#/$defs/Chain76",
+      "minLength": 76
+    },
+    "Chain76": {
+      "$ref": "#/$defs/Chain77",
+      "minLength": 77
+    },
+    "Chain77": {
+      "$ref": "#/$defs/Chain78",
+      "minLength": 78
+    },
+    "Chain78": {
+      "$ref": "#/$defs/Chain79",
+      "minLength": 79
+    },
+    "Chain79": {
+      "$ref": "#/$defs/Chain80",
+      "minLength": 80
+    },
+    "Chain80": {
+      "$ref": "#/$defs/Chain81",
+      "minLength": 81
+    },
+    "Chain81": {
+      "$ref": "#/$defs/Chain82",
+      "minLength": 82
+    },
+    "Chain82": {
+      "$ref": "#/$defs/Chain83",
+      "minLength": 83
+    },
+    "Chain83": {
+      "$ref": "#/$defs/Chain84",
+      "minLength": 84
+    },
+    "Chain84": {
+      "$ref": "#/$defs/Chain85",
+      "minLength": 85
+    },
+    "Chain85": {
+      "$ref": "#/$defs/Chain86",
+      "minLength": 86
+    },
+    "Chain86": {
+      "$ref": "#/$defs/Chain87",
+      "minLength": 87
+    },
+    "Chain87": {
+      "$ref": "#/$defs/Chain88",
+      "minLength": 88
+    },
+    "Chain88": {
+      "$ref": "#/$defs/Chain89",
+      "minLength": 89
+    },
+    "Chain89": {
+      "$ref": "#/$defs/Chain90",
+      "minLength": 90
+    },
+    "Chain90": {
+      "$ref": "#/$defs/Chain91",
+      "minLength": 91
+    },
+    "Chain91": {
+      "$ref": "#/$defs/Chain92",
+      "minLength": 92
+    },
+    "Chain92": {
+      "$ref": "#/$defs/Chain93",
+      "minLength": 93
+    },
+    "Chain93": {
+      "$ref": "#/$defs/Chain94",
+      "minLength": 94
+    },
+    "Chain94": {
+      "$ref": "#/$defs/Chain95",
+      "minLength": 95
+    },
+    "Chain95": {
+      "$ref": "#/$defs/Chain96",
+      "minLength": 96
+    },
+    "Chain96": {
+      "$ref": "#/$defs/Chain97",
+      "minLength": 97
+    },
+    "Chain97": {
+      "$ref": "#/$defs/Chain98",
+      "minLength": 98
+    },
+    "Chain98": {
+      "$ref": "#/$defs/Chain99",
+      "minLength": 99
+    },
+    "Chain99": {
+      "$ref": "#/$defs/Chain100",
+      "minLength": 100
+    },
+    "Chain100": {
+      "$ref": "#/$defs/Chain101",
+      "minLength": 101
+    },
+    "Chain101": {
+      "$ref": "#/$defs/Chain102",
+      "minLength": 102
+    },
+    "Chain102": {
+      "$ref": "#/$defs/Chain103",
+      "minLength": 103
+    },
+    "Chain103": {
+      "$ref": "#/$defs/Chain104",
+      "minLength": 104
+    },
+    "Chain104": {
+      "$ref": "#/$defs/Chain105",
+      "minLength": 105
+    },
+    "Chain105": {
+      "$ref": "#/$defs/Chain106",
+      "minLength": 106
+    },
+    "Chain106": {
+      "$ref": "#/$defs/Chain107",
+      "minLength": 107
+    },
+    "Chain107": {
+      "$ref": "#/$defs/Chain108",
+      "minLength": 108
+    },
+    "Chain108": {
+      "$ref": "#/$defs/Chain109",
+      "minLength": 109
+    },
+    "Chain109": {
+      "$ref": "#/$defs/Chain110",
+      "minLength": 110
+    },
+    "Chain110": {
+      "$ref": "#/$defs/Chain111",
+      "minLength": 111
+    },
+    "Chain111": {
+      "$ref": "#/$defs/Chain112",
+      "minLength": 112
+    },
+    "Chain112": {
+      "$ref": "#/$defs/Chain113",
+      "minLength": 113
+    },
+    "Chain113": {
+      "$ref": "#/$defs/Chain114",
+      "minLength": 114
+    },
+    "Chain114": {
+      "$ref": "#/$defs/Chain115",
+      "minLength": 115
+    },
+    "Chain115": {
+      "$ref": "#/$defs/Chain116",
+      "minLength": 116
+    },
+    "Chain116": {
+      "$ref": "#/$defs/Chain117",
+      "minLength": 117
+    },
+    "Chain117": {
+      "$ref": "#/$defs/Chain118",
+      "minLength": 118
+    },
+    "Chain118": {
+      "$ref": "#/$defs/Chain119",
+      "minLength": 119
+    },
+    "Chain119": {
+      "$ref": "#/$defs/Chain120",
+      "minLength": 120
+    },
+    "Chain120": {
+      "type": "string"
+    },
+    "Mid": {
+      "$ref": "#/$defs/Chain60"
+    },
+    "Side": {
+      "$ref": "#/$defs/Mid",
+      "maxLength": 200
+    },
+    "Entry": {
+      "$ref": "#/$defs/Loop1",
+      "maxLength": 5
+    },
+    "Loop1": {
+      "$ref": "#/$defs/Loop2",
+      "minLength": 1
+    },
+    "Loop2": {
+      "$ref": "#/$defs/Loop1",
+      "minLength": 2
+    },
+    "Open0": {
+      "$ref": "#/$defs/Open1",
+      "minLength": 1
+    },
+    "Open1": {
+      "$ref": "#/$defs/Open2",
+      "minLength": 2
+    },
+    "Open2": {
+      "$ref": "#/$defs/Open3",
+      "minLength": 3
+    },
+    "Open3": true
+  }
+}
