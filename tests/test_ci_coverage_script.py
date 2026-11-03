@@ -58,7 +58,9 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
     root.mkdir()
     report = case.startswith("report-")
     payload = _report_payload(case, tmp_path) if report else (DATA / "coverage.txt").read_bytes()
-    for name in sorted(ci_coverage.EXPECTED_NAMES):
+    event = ["--event", "pull_request"] if "pull-request" in case else []
+    pull_request_artifacts = case in {"pull-request-complete", "report-pull-request", "main-only-missing"}
+    for name in sorted(ci_coverage.PULL_REQUEST_NAMES if pull_request_artifacts else ci_coverage.EXPECTED_NAMES):
         directory = root / name
         directory.mkdir()
         path = directory / name
@@ -111,14 +113,14 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
                     target = directory / "unknown"
                     target.write_bytes(payload)
     if report:
-        ci_coverage.main(["prepare", str(root), "--run-id", "123", "--sha", "abc"])
+        ci_coverage.main(["prepare", str(root), "--run-id", "123", "--sha", "abc", *event])
         match case:
             case "report-no-source":
                 (tmp_path / "sign.py").unlink()
             case "report-missing-input":
                 (tmp_path / name).unlink()
-        return ["report", ".", "--compare-branch", "base"]
-    return [action, str(target), "--run-id", "123", "--sha", "abc"]
+        return ["report", ".", "--compare-branch", "base", *event]
+    return [action, str(target), "--run-id", "123", "--sha", "abc", *event]
 
 
 @pytest.mark.parametrize("case", CASES)
