@@ -917,6 +917,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_exact_imports: bool = config.use_exact_imports
         self.use_type_checking_imports: bool | None = config.use_type_checking_imports
         self._append_additional_imports(additional_imports=config.additional_imports)
+        from datamodel_code_generator.base_config import _check_config_named_paths  # noqa: PLC0415
+
+        _check_config_named_paths(config)
         self.class_decorators: list[str] = config.class_decorators or []
 
         self.base_class: str | None = config.base_class

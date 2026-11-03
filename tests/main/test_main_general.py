@@ -3654,6 +3654,85 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
     assert_output(capsys.readouterr().err, EXPECTED_MAIN_PATH / "additional_imports_invalid.txt")
 
 
+@pytest.mark.parametrize(
+    ("option", "value", "message"),
+    [
+        pytest.param(
+            "--base-class",
+            "mypkg.1x",
+            "base_class must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="base-class",
+        ),
+        pytest.param(
+            "--base-class-map",
+            '{"Person": ["mypkg.Base", "mypkg.class"]}',
+            "base_class_map must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="base-class-map",
+        ),
+        pytest.param(
+            "--type-overrides",
+            '{"Person.firstName": "mypkg.1x"}',
+            "type_overrides must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="type-overrides",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.1x(letter_case=LetterCase.CAMEL)",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="class-decorators",
+        ),
+    ],
+)
+def test_main_refuses_named_path_with_non_identifier_part(
+    output_file: Path, capsys: pytest.CaptureFixture[str], option: str, value: str, message: str
+) -> None:
+    """Refuse an option that names a Python object by a dotted path with a part that is not an identifier (#6109).
+
+    ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its text
+    before the arguments of its call.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[option, value],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+def test_generate_revalidates_mutated_named_paths() -> None:
+    """Refuse a base class path set on a public config after it was validated, as the parser reads it (#6109)."""
+    config = GenerateConfig(input_file_type=InputFileType.JsonSchema)
+    config.base_class = "mypkg.1x"
+    with pytest.raises(Error, match=r"base_class must be a Python import path composed of identifiers: 'mypkg\.1x'"):
+        generate(JSON_SCHEMA_DATA_PATH / "person.json", config=config)
+
+
+def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
+    """Keep the decorators and type overrides whose text after a path, or around it, is no path (#6109).
+
+    A decorator's path ends at its first bracket after its opening parentheses, so a call, a subscript and parentheses
+    are written as given; a type override that spells an annotation names no class to import, and an empty base class
+    names none.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--class-decorators",
+            "@(mypkg.deco),mypkg.deco(letter_case=LetterCase.CAMEL),@registry[0].register",
+            "--type-overrides",
+            '{"Person.firstName": "str | None"}',
+            "--base-class-map",
+            '{"Person": ""}',
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--type-overrides"],
     option_description="""Replace schema model types with custom Python types via JSON mapping.

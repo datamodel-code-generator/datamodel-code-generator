@@ -20,9 +20,11 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
 from datamodel_code_generator.base_config import (
+    _NAMED_PATHS,
     BaseGenerateConfig,
     _schema_validator_base_class_name_error,
     _validate_additional_import_paths,
+    validate_named_paths,
 )
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -341,6 +343,7 @@ class ParserConfig(BaseModel):
         """Require additional imports to be safe Python import paths."""
         return _validate_additional_import_paths(value)
 
+    _validate_named_paths = field_validator(*_NAMED_PATHS)(validate_named_paths)
     _validate_schema_validator_base_class_name = field_validator("schema_validator_base_class_name")(
         validate_schema_validator_base_class_name
     )

@@ -620,6 +620,8 @@ typed-dict-extra-items	main/template_data/builtin_typed_dict.py
 	main/custom_file_header_prepend.py
 [test_main_custom_template_data_remains_unrestricted]
 	main/template_data/custom_template.py
+[test_main_named_paths_keep_what_follows_a_path]
+	main/main_general/main_named_paths_keep_what_follows_a_path.py
 [test_main_rejects_additional_import_injection]
 	main/additional_imports_invalid.txt
 [test_main_rejects_additional_import_injection_in_extra_template_data]
