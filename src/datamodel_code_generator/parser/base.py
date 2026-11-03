@@ -1641,7 +1641,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         results = {expanded_path(k): v for k, v in results.items()}
 
-        init_result = Result(body="") if empty_init else next(v for k, v in results.items() if is_package_init(k[-1]))
+        init_result = Result(body="")
+        if not empty_init:
+            for k, v in results.items():
+                if is_package_init(k[-1]):
+                    init_result = v
+                    break
         folders = {t[:-1] if t[-1].endswith(".py") else t for t in results}
         for folder in folders:
             for i in range(len(folder)):
