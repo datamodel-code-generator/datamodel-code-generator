@@ -1179,9 +1179,10 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
 def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType | None:
     """Return the member a ``pattern`` constrains: a string type or the ``Literal`` of a const or an enum.
 
-    The string types are those the constraint table reads a pattern on (``_applicability.engine_pattern_types``, row
-    ``legacy-engine-string-types-only``) other than the ``bytes`` types. Pydantic compiles the pattern of a
-    ``Literal`` as it does a string's. With ``includes_bytes`` a ``bytes`` type is one too.
+    The string types are those the constraint table reads a pattern on (``_applicability.engine_pattern_types``)
+    other than the raw ``bytes`` types: ``EmailStr``, ``AnyStr`` and the types that decode base64 text are among
+    them, as Pydantic compiles their pattern on every version. Pydantic compiles the pattern of a ``Literal`` as it
+    does a string's. With ``includes_bytes`` a ``bytes`` type is one too.
     """
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
