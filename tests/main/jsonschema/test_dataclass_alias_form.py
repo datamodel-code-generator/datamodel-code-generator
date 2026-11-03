@@ -58,3 +58,28 @@ def test_main_jsonschema_dataclass_alias_copies(output_file: Path, target_pydant
         ],
         force_exec_validation=True,
     )
+
+
+def test_main_jsonschema_dataclass_alias_below_root_model(output_file: Path) -> None:
+    """Write a late alias in the split form once a root model leaves the bases of its class.
+
+    ``Merged`` inherits only a root model, which deduplication drops from the bases, so the class has no base left
+    to give it a signature and ``--target-pydantic-version 2`` writes the alias as the serialization and a validation
+    alias; ``Mixed`` keeps the generated base ``Parent`` and its ``alias=``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dataclass_alias_root_model_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--target-pydantic-version",
+            "2",
+            "--class-name-prefix",
+            "Api",
+            "--aliases",
+            json.dumps({"ApiMerged.x-y": "renamed", "ApiMixed.p-q": "renamed_pq"}),
+        ],
+        force_exec_validation=True,
+    )

@@ -232,7 +232,9 @@ DELETE_DUPLICATE_MODELS = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP),
-    writes=_facts(Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES),
+    writes=_facts(
+        Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES
+    ),
     summary="Removes models of the module that render the same as another and redirects their users.",
 )
 REPLACE_DUPLICATE_NAME_IN_MODULE = PassDecl(
