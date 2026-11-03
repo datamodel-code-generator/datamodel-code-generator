@@ -6,12 +6,16 @@ from __future__ import annotations
 
 from typing import Any
 
+import mypkg
+from mypkg import LetterCase, deprecated, registry
 from pydantic import BaseModel, Field, conint
 
 
 @(mypkg.deco)
 @mypkg.deco(letter_case=LetterCase.CAMEL)
 @registry[0].register
+@deprecated  # comment
+@mypkg.decorator
 class Person(BaseModel):
     firstName: str | None = Field(None, description="The person's first name.")
     lastName: str | None = Field(None, description="The person's last name.")
