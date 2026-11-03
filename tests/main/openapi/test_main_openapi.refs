@@ -1217,6 +1217,11 @@ extra_args1	main/openapi/main_openapi/discriminator_reuse_variant_module_base_fi
 	main/openapi/discriminator/short_mapping_names.py
 [test_main_openapi_discriminator_state_isolated_per_document]
 	main/openapi/discriminator_state_isolation//*.py
+[test_main_openapi_discriminator_typed_mapping_keys]
+	main/openapi/main_openapi/discriminator_typed_mapping_keys.py
+[test_main_openapi_discriminator_typed_mapping_keys_msgspec]
+	main/openapi/main_openapi/discriminator_typed_mapping_keys_msgspec.py
+	main/openapi/main_openapi/discriminator_typed_mapping_keys_msgspec.warnings.txt
 [test_main_openapi_discriminator_union_mode]
 left_to_right	main/openapi/discriminator/union_mode_left_to_right.py
 smart	main/openapi/discriminator/union_mode_smart.py

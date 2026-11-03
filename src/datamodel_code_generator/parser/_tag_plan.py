@@ -48,8 +48,10 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model._decisions.tag_value import (
+    SCALAR_TAG_TYPES,
     field_tag,
     is_tag_value,
+    mapping_key_tag,
     mapping_path_keys,
     redeclared_tag_field,
     same_tag,
@@ -367,12 +369,16 @@ def tags_of_variant(  # noqa: PLR0913
     mode: TagFieldMatch,
     property_name: str,
     union_written: UnionWrittenTags,
+    enum_member_tags: bool,
 ) -> list[DiscriminatorValue]:
     """Return the tags of a variant (``variant_tags``) from its tag fields, its bases, the mapping and its schema path.
 
-    ``union_written`` holds the variants whose tag fields for ``property_name`` a union wrote (``TagPlan``).
+    ``union_written`` holds the variants whose tag fields for ``property_name`` a union wrote (``TagPlan``), and
+    ``enum_member_tags`` tells that Enum members are written as tags (``--use-enum-values-in-discriminator``).
     """
-    facts = _VariantTagFacts(variant, field_name, mapping, mode, inline_variants, property_name, union_written)
+    facts = _VariantTagFacts(
+        variant, field_name, mapping, mode, inline_variants, property_name, union_written, enum_member_tags
+    )
     return [*variant_tags(source, facts).values]
 
 
@@ -388,6 +394,7 @@ class _VariantTagFacts:
     inline_models: InlineVariantTags
     property_name: str
     union_written: UnionWrittenTags
+    enum_member_tags: bool
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
@@ -412,14 +419,27 @@ class _VariantTagFacts:
         """
         if _is_special_path(self.path_segment()):
             return None
-        for ancestor in linearize_data_models([self.model])[1 if self.model.reused_reference is None else 2 :]:
-            if (id(ancestor), self.property_name) not in self.union_written and (
-                value := _find_discriminator_value(
-                    ancestor.fields, self.field_name, field_name_mode=self.field_name_mode
-                )
-            ) is not None:
-                return value
-        return None
+        return next(
+            (
+                value
+                for field_ in self._ancestor_tag_fields(start=1 if self.model.reused_reference is None else 2)
+                if (value := _get_discriminator_field_value(field_)) is not None
+            ),
+            None,
+        )
+
+    def _ancestor_tag_fields(self, *, start: int = 1) -> Iterator[DataModelFieldBase]:
+        """Yield the tag fields of the variant's ancestors from position ``start`` of its MRO, but those a union wrote.
+
+        The tag field of an ancestor in ``union_written`` holds a tag that union wrote, not what its schema declares.
+        """
+        for ancestor in linearize_data_models([self.model])[start:]:
+            if (id(ancestor), self.property_name) not in self.union_written:
+                yield from self._tag_fields(ancestor.fields)
+
+    def _tag_fields(self, fields: Iterable[DataModelFieldBase]) -> Iterator[DataModelFieldBase]:
+        """Yield the fields that hold the discriminator's property."""
+        return (field_ for field_ in fields if _tag_field_matches(field_, self.field_name_mode, self.field_name))
 
     def inline_tag(self) -> DiscriminatorValue | None:
         """Return the tag an inline variant inherits as ``TagPlan.inline_variant_tags`` read it, where it takes it."""
@@ -434,9 +454,34 @@ class _VariantTagFacts:
             None,
         )
 
-    def mapped_tags(self) -> list[str]:
-        """Return the mapping keys naming the variant or its bases."""
-        return _get_mapping_discriminator_values(self.model, self.mapping)
+    def mapped_tags(self) -> list[DiscriminatorValue]:
+        """Return the tags of the mapping keys naming the variant or its bases (``mapping_key_tag``).
+
+        Each key is read as a value of the type of the tag field the variant declares, else of the nearest one it
+        inherits from a schema. An Enum-typed field under ``--use-enum-values-in-discriminator`` is written with the
+        members the keys name, so its keys stay text, as does a key of a type that is no Enum, ``Literal`` or scalar
+        of one non-null kind. A tag field an earlier union wrote holds that union's ``Literal``, whose values its keys
+        name (row ``legacy-tag-from-earlier-union``).
+        """
+        if not (keys := _get_mapping_discriminator_values(self.model, self.mapping)):
+            return []
+        tag_field = next(chain(self._tag_fields(self.model.fields), self._ancestor_tag_fields()), None)
+        if tag_field is None:
+            return [*keys]
+        enum_source = tag_field.data_type.find_source(Enum)
+        if enum_source is not None and self.enum_member_tags:
+            return [*keys]
+        leaves = [leaf for leaf in tag_field.data_type.data_types or [tag_field.data_type] if leaf.type != NONE]
+        leaf = leaves[0] if len(leaves) == 1 else None
+        literals = leaf.literals if leaf is not None else []
+        scalar = SCALAR_TAG_TYPES.get(leaf.type) if leaf is not None and leaf.type else None
+        members = [None if enum_source is None else enum_source.find_member(key, coerce_strings=True) for key in keys]
+        return [
+            mapping_key_tag(
+                key, member_value=None if member is None else member.value, literals=literals, scalar=scalar
+            )
+            for key, member in zip(keys, members, strict=True)
+        ]
 
     def path_segment(self) -> str:
         """Return the last segment of the variant's schema path."""
@@ -454,6 +499,7 @@ class UnionView:
     """``python-name`` where the union writes ``discriminator=``, else ``python-or-original-name``."""
     inline_variants: InlineVariantTags
     union_written: UnionWrittenTags
+    enum_member_tags: bool
 
     def tags(
         self, source: VariantTagSource, variant: DataModel, mapping: dict[str, str] | None = None
@@ -468,6 +514,7 @@ class UnionView:
             mode=self.mode,
             property_name=self.names.property_name,
             union_written=self.union_written,
+            enum_member_tags=self.enum_member_tags,
         )
 
 
@@ -590,6 +637,7 @@ def site_validity(  # noqa: PLR0913
             mode=mode,
             property_name=names.property_name,
             union_written=union_written,
+            enum_member_tags=enum_member_tags,
         )
         if not values or not all(
             is_tag_value(value, bool_literals=capabilities.bool_tags)

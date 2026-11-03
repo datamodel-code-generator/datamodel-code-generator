@@ -335,10 +335,6 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/discriminator.yaml::components.schemas.Demo": (
         "discriminator branches overlap under JSON Schema validation; see payload_validation_future_work.md"
     ),
-    "openapi/discriminator_float_mapping.yaml::components.schemas.Base": (
-        "numeric discriminator mapping needs an explicit backend compatibility policy; "
-        "see payload_validation_future_work.md"
-    ),
     "openapi/discriminator_in_array_oneof.yaml::components.schemas.Demo": (
         "array item discriminator tags conflict with inherited JSON Schema constraints; "
         "see payload_validation_future_work.md"

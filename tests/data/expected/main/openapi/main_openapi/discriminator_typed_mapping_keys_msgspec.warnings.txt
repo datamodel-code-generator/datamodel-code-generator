@@ -1,0 +1,3 @@
+msgspec cannot decode the union ByBooleanAgain: its Struct types Yes, No are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union ByBoolean: its Struct types Yes, No are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union ByFraction: its Struct types Half, Quarter are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

@@ -259,6 +259,7 @@ openapi/discriminator_shared_variant_tags.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_short_mapping_names.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_state_isolation/a.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_state_isolation/b.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_typed_mapping_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_union_mode.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_with_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_without_mapping.yaml	yaml_fast_constructor/parity.txt

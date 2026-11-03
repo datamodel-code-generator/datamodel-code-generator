@@ -13,7 +13,9 @@ of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_fie
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
+import re
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
 from typing_extensions import assert_never
 
@@ -62,14 +64,15 @@ if TYPE_CHECKING:
         def inline_tag(self) -> Any:
             """Return the tag an inline variant inherits, or None where it is no inline variant or may not take it."""
 
-        def mapped_tags(self) -> Sequence[str]:
-            """Return the mapping keys naming the variant or its bases (``mapped_tags``)."""
+        def mapped_tags(self) -> Sequence[Any]:
+            """Return the tags of the mapping keys naming the variant or its bases (``mapping_key_tag``)."""
 
         def path_segment(self) -> str:
             """Return the last segment of the variant's schema path."""
 
 
 __all__ = [
+    "SCALAR_TAG_TYPES",
     "EnumTagMembers",
     "EnumTagRule",
     "FieldTag",
@@ -77,6 +80,7 @@ __all__ = [
     "FieldTagSite",
     "MappingPathKey",
     "MappingPathRule",
+    "ScalarTagKind",
     "StructTagClash",
     "TagFieldMatch",
     "TagIdentity",
@@ -92,6 +96,7 @@ __all__ = [
     "field_tag",
     "is_tag_value",
     "mapped_tags",
+    "mapping_key_tag",
     "mapping_path_keys",
     "redeclared_tag_field",
     "same_tag",
@@ -226,6 +231,35 @@ MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 
 MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
 """A key a mapping path and a schema path are matched by."""
+
+ScalarTagKind: TypeAlias = Literal["integer", "number", "boolean"]
+"""The JSON type of a tag property's scalar type, which a mapping key is read as (``mapping_key_tag``)."""
+
+SCALAR_TAG_TYPES: Final[Mapping[str, ScalarTagKind]] = MappingProxyType({
+    **dict.fromkeys(
+        ("int", "conint", "StrictInt", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt"), "integer"
+    ),
+    **dict.fromkeys(
+        (
+            "float",
+            "confloat",
+            "StrictFloat",
+            "PositiveFloat",
+            "NegativeFloat",
+            "NonNegativeFloat",
+            "NonPositiveFloat",
+            "Decimal",
+            "condecimal",
+        ),
+        "number",
+    ),
+    **dict.fromkeys(("bool", "StrictBool"), "boolean"),
+})
+"""The kind of each type the builtin type managers write for an integer, a number and a boolean schema."""
+
+_INTEGER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_NUMBER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
+_BOOLEAN_TEXT: Final[Mapping[str, bool]] = MappingProxyType({"true": True, "false": False})
 
 StructTagClash: TypeAlias = Literal["tag-fields", "tag-types", "shared-tags"]
 """How the tags of a union's tagged msgspec Structs clash (``struct_tag_clash``): by different tag fields, by tags
@@ -437,6 +471,37 @@ def mapped_tags(mapping: Mapping[str, str], /, *, schema_path: str, base_schema_
     return selected(schema_path) or [
         tag for base_schema_path in base_schema_paths for tag in selected(base_schema_path)
     ]
+
+
+def mapping_key_tag(
+    key: str, /, *, member_value: Any = None, literals: Sequence[TagValue] = (), scalar: ScalarTagKind | None = None
+) -> Any:
+    """Return the tag a discriminator mapping key names: the value of the tag property's type whose JSON text it is.
+
+    A mapping key is text, so it names the value of the Enum member it names (``member_value``, of any kind, None
+    where there is none), else the ``Literal`` value of the tag field's type whose JSON text it is, else the value of
+    its scalar kind: ``'1'`` of an integer is ``1``, ``'1.5'`` of a number ``1.5`` and ``'true'`` of a boolean
+    ``True``. A key that is no such value, and any key of another type, stays the text it is.
+    """
+    if member_value is not None:
+        return member_value
+    if literals:
+        return next((value for value in literals if _json_text(value) == key), key)
+    match scalar:
+        case "integer" | "number" if _INTEGER_TEXT.fullmatch(key):
+            return int(key)
+        case "number":
+            return float(key) if _NUMBER_TEXT.fullmatch(key) else key
+        case "boolean":
+            return _BOOLEAN_TEXT.get(key, key)
+    return key
+
+
+def _json_text(value: TagValue) -> str:
+    """Return the JSON text of a ``Literal`` value: a string itself, ``true`` or ``false``, or the digits of an int."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value if isinstance(value, str) else str(value)
 
 
 def is_tag_value(value: Any, /, *, bool_literals: bool) -> bool:

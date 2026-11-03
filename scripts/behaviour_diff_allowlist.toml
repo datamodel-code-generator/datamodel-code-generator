@@ -118,3 +118,35 @@ match = "^\\[type\\] (?:[\\w.]+:)?(?:FunctionCall|CustomCall|NamedCall):type: Li
 reason = "a variant that takes its tag property from an allOf parent, as a one-value enum or a const there, was tagged by its schema name (Literal['FunctionCall']), so the union rejected every payload the schema accepts; it is tagged with the value the parent fixes now (schema-mismatch fix)"
 decision = "#5338"
 release_note = "a discriminated union's variant whose tag property an allOf parent fixes to one value (a one-value enum or a const) is tagged with that value instead of its schema name, so the union accepts the payloads the schema accepts"
+
+[[accepted]]
+input = "*discriminator_typed_mapping_keys*"
+aspects = [ "type", "config", "constraints", "field-added", "constructor-order" ]
+match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: Literal\\['[^']*'\\] -> (?:Literal\\[(?:-?\\d+|True|False)\\]|float)$|^\\[type\\] (?:[\\w.]+:)?ByFraction: Annotated\\[Union\\[Half, Quarter\\], discriminator='share'\\] -> Union\\[Half, Quarter\\]$|^\\[config\\] (?:[\\w.]+:)?\\w+: \\{'tag': \"'[^']*'\", 'tag_field': \"'\\w+'\"\\} -> \\{(?:'tag': '-?\\d+', )?(?:'tag_field': \"'\\w+'\")?\\}$|^\\[constraints\\] (?:[\\w.]+:)?Holder:fraction: .*discriminator=.*share.* -> Union\\[Half, None, Quarter\\]$|^\\[field-added\\] (?:[\\w.]+:)?(?:Half|Quarter|Yes|No):(?:share|ok): required$|^\\[constructor-order\\] (?:[\\w.]+:)?(?:Half|Quarter|Yes|No): \\[.*\\] -> \\[.*\\]$"
+reason = "a discriminator mapping key, which is text, was written as a string tag whatever the type of the tag property, so an integer, number or boolean property was tagged Literal['1'] or tag='1', which rejected every payload the schema accepts; the key is read as the value of the property's type now, and a float, which no Literal holds, leaves the union undiscriminated as a float const does (schema-mismatch fix)"
+decision = "#5091"
+release_note = "a discriminator mapping key of an integer, number or boolean tag property tags its variant with that value (Literal[1], Literal[True], msgspec tag=1) instead of the text; a key that names a float leaves the union without discriminator=, as a float const tag does, and msgspec leaves a union of boolean or float keys untagged with its warning"
+
+[[accepted]]
+input = "*discriminator_float_mapping*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?(?:Foo:kind: Literal\\['1\\.5'\\] -> Kind|Bar:kind: Literal\\['3\\.5'\\] -> Kind1|Base: Annotated\\[Union\\[Bar, Foo\\], discriminator='kind'\\] -> Union\\[Bar, Foo\\])$"
+reason = "the mapping keys '1.5' and '3.5' name float Enum members but were written as Literal['1.5'], which rejected {\"kind\": 1.5} and accepted the string the schema rejects; no Literal holds a float, so the union is written without discriminator= and the tag fields keep their Enums, as for float const tags (schema-mismatch fix)"
+decision = "#5091"
+release_note = "a discriminator whose mapping keys name float values is written as a plain union whose variants keep the Enum of their tag property, instead of Literal['1.5'] tags that rejected every valid payload"
+
+[[accepted]]
+input = "*discriminator_integer_mapping*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?Bar:kind: Literal\\['2', '3'\\] -> Literal\\[2, 3\\]$"
+reason = "under --enum-field-as-literal all the integer tag property is a Literal of integers, but its mapping keys were written as the strings Literal['2', '3'], which rejected every payload the schema accepts; the keys name the integer values now (schema-mismatch fix)"
+decision = "#5091"
+release_note = "under --enum-field-as-literal all a discriminator mapping key of an integer enum tags its variant with the integer instead of the text"
+
+[[accepted]]
+input = "*discriminator_enum_unnamed_tags*"
+aspects = [ "type", "config", "constructor-order", "field-added" ]
+match = "^\\[type\\] (?:[\\w.]+:)?N1:k: Literal\\['1'\\] -> Literal\\[1\\]$|^\\[type\\] (?:[\\w.]+:)?P1:k: Literal\\['1'\\] -> Literal\\[1, 2\\]$|^\\[type\\] (?:[\\w.]+:)?P1:k: Literal\\[1\\] -> Plain$|^\\[config\\] (?:[\\w.]+:)?P2: \\{'tag': '1', 'tag_field': \"'k'\"\\} -> \\{\\}$|^\\[constructor-order\\] (?:[\\w.]+:)?P2: \\['q'\\] -> \\['k', 'q'\\]$|^\\[field-added\\] (?:[\\w.]+:)?P2:k: required$"
+reason = "the mapping key '1' was checked as the text while the tag written for P1 was the integer 1 that P2's const holds too, so Pydantic refused the model at its first use (\"Value 1 for discriminator 'k' mapped to multiple choices\") and the other outputs tagged two variants alike; the key is read as 1, both variants share it, and the union is a plain one (crash and schema-mismatch fix)"
+decision = "#5091"
+release_note = "a discriminated union whose mapping key names an integer that another variant's const holds too is written as a plain union instead of a model Pydantic refuses to build"

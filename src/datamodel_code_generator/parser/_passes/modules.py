@@ -1798,6 +1798,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
             "python-name" if writes_argument else "python-or-original-name",
             inline_models,
             plan.union_written,
+            parser.use_enum_values_in_discriminator,
         )
         field_name = names.field_name
 

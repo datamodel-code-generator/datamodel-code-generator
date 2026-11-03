@@ -249,7 +249,6 @@ The following cases expose a mismatch between OpenAPI discriminator semantics,
 JSON Schema validation semantics, and backend-specific runtime validators:
 
 - `openapi/discriminator.yaml::components.schemas.Demo`
-- `openapi/discriminator_float_mapping.yaml::components.schemas.Base`
 - `openapi/discriminator_in_array_oneof.yaml::components.schemas.Demo`
 - `openapi/discriminator_without_mapping.yaml::components.schemas.Demo`
 

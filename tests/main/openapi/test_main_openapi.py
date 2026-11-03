@@ -488,7 +488,12 @@ def test_main_openapi_discriminator_integer_mapping_use_enum(output_file: Path) 
     reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
-    """Unsupported discriminator enum values keep their mapping string values."""
+    """Write a union whose mapping keys name float values without ``discriminator=``, keeping the Enums of its tags.
+
+    The keys ``'1.5'`` and ``'3.5'`` name the members ``1.5`` and ``3.5``, which no ``Literal`` holds, so the union is a
+    plain one, as for float ``const`` tags. Up to 0.88.0 the variants were tagged ``Literal['1.5']``, which rejected
+    ``{"kind": 1.5}`` and accepted the string the schema rejects (#5091).
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "discriminator_float_mapping.yaml",
         output_path=output_file,
@@ -497,6 +502,19 @@ def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
         expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "float_mapping.py",
         extra_args=["--target-python-version", "3.10", "--output-model-type", "pydantic_v2.BaseModel"],
     )
+    for kind, expected_repr in (
+        (1.5, "Base(root=Foo(kind=<Kind.number_1_5: 1.5>))"),
+        (3.5, "Base(root=Bar(kind=<Kind1.number_3_5: 3.5>))"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="discriminator_float_mapping",
+            model_name="Base",
+            valid_json=json.dumps({"kind": kind}),
+            invalid_json=json.dumps({"kind": "1.5"}),
+            expected_error_type="enum",
+            expected_repr=expected_repr,
+        )
 
 
 @pytest.mark.skipif(
@@ -16164,4 +16182,74 @@ def test_main_openapi_generic_base_class_other_packages(output_dir: Path) -> Non
             "--formatters",
             "builtin",
         ],
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys(output_file: Path) -> None:
+    """Tag a variant with the value of its tag property's type that a mapping key names.
+
+    A mapping key is text, so ``'1'`` and ``'-2'`` of an integer property name ``1`` and ``-2``, ``'true'`` of a boolean
+    ``True``, and ``'0'`` and ``'10'`` of a number ``0`` and ``10``; up to 0.88.0 the variants were tagged
+    ``Literal['1']``, which rejected every payload the schema accepts (#5091). The keys ``'0.5'`` and ``'2.5e-1'`` name
+    floats, which no ``Literal`` holds, so that union is a plain one. ``ByIntegerAgain`` and ``ByBooleanAgain`` read
+    the keys as the ``Literal`` values the first unions wrote, so they agree with them on every tag.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_typed_mapping_keys",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "integer": {"code": -2, "extra": "x"},
+            "boolean": {"ok": False, "reason": "r"},
+            "whole": {"level": 10.0, "boost": 1},
+            "fraction": {"share": 0.25, "note": "n"},
+            "integerAgain": {"code": 1},
+            "booleanAgain": {"ok": True},
+        }),
+        invalid_json=json.dumps({"integer": {"code": "1"}}),
+        expected_error_type="union_tag_invalid",
+        expected_repr=(
+            "Holder(integer=ByInteger(root=Two(code=-2, extra='x')), "
+            "boolean=ByBoolean(root=No(ok=False, reason='r')), "
+            "whole=ByWholeNumber(root=High(level=10, boost=1)), "
+            "fraction=ByFraction(root=Quarter(share=0.25, note='n')), "
+            "integerAgain=ByIntegerAgain(root=One(code=1)), "
+            "booleanAgain=ByBooleanAgain(root=Yes(ok=True)))"
+        ),
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys_msgspec(output_file: Path) -> None:
+    """Tag msgspec Structs with the integers the mapping keys of an integer or a number property name (#5091).
+
+    msgspec takes no bool or float tag, so the unions whose keys name booleans or floats are left untagged, with the
+    warning that msgspec cannot decode them; up to 0.88.0 they were tagged ``tag='true'`` and ``tag='0.5'``, which
+    decode only the strings.
+    """
+    with pytest.warns(
+        UserWarning, match=r"msgspec cannot decode the union By(Boolean|BooleanAgain|Fraction):"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
     )
