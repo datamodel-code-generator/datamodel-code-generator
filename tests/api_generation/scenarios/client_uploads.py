@@ -247,7 +247,7 @@ class _Uploads(Harness):
 
 
 def _progress(value: object) -> str:
-    """Describe an upload step's outcome: progress, an upload error with its own fields, or anything else."""
+    """Describe an upload step's outcome: progress, an upload error with its fields and operation, or anything else."""
     if hasattr(value, "confirmed_bytes") and hasattr(value, "total_bytes"):
         progress: Any = value
         return f"progress {progress.confirmed_bytes}/{progress.total_bytes} complete={progress.complete}"
@@ -262,6 +262,7 @@ def _progress(value: object) -> str:
                 "size",
                 "expected_size",
                 "actual_size",
+                "operation",
             )
             if getattr(value, name, None) is not None
         )

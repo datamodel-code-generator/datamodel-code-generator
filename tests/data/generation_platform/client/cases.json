@@ -481,6 +481,12 @@
       "default_base_url": "https://default.example.com/base"
     }
   },
+  "default-server-template": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/{tenant}"
+    }
+  },
   "implicit-server": {
     "input": "default-server.yaml",
     "modules": [
@@ -5654,6 +5660,16 @@
         "models.py"
       ]
     ]
+  },
+  "call-layers": {
+    "input": "call-layers.yaml",
+    "references": [
+      "protocols/call-layers.json"
+    ],
+    "config": {
+      "protocols": "protocols/call-layers.json"
+    },
+    "modules": false
   },
   "response-keys": {
     "input": "response-keys.yaml",

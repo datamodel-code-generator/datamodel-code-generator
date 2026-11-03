@@ -8,17 +8,17 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, replace
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value
+from ..model_codecs.media import JSONValue, ascii_digits, json_integer, json_value, typed
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error, data_refusal
-from .options import HelperLimits, PaginationOptions, StepLock, layered, new_session
+from .options import AsyncStepHandle, HelperLimits, PaginationOptions, StepHandle, StepLock, layered, new_session
 from .records import (
     AsyncSteps,
     BodySelector,
@@ -38,7 +38,6 @@ from .values import MISSING, absence, accessed, read_selector, required, resolve
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping, Sequence
-    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
@@ -268,10 +267,9 @@ class PaginationPlan(Generic[T, P]):
     position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
     is written into the caller's encoded value. The values written skip their codecs, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
-    unless it repeats the request body with the operation's method. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is written
-    to, by each parameter's name, write, selector, and position, a caller's argument without a write; such a segment
-    must not encode to a dot segment. Generation refuses a helper writing a cookie or a credential position.
+    unless it repeats the request body with the operation's method. `dotted` names the path segments a read value is
+    written to, by each parameter's name, write, selector, and position, a caller's argument without a write; such a
+    segment must not encode to a dot segment. Generation refuses a helper writing a cookie or a credential position.
     """
 
     helper_id: str
@@ -284,8 +282,6 @@ class PaginationPlan(Generic[T, P]):
     bindings: tuple[PageBinding, ...] = ()
     follows: bool = field(init=False)
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
-    headers: frozenset[str] = field(init=False)
-    queries: frozenset[str] = field(init=False)
     dotted: ReadPaths = field(init=False)
     continued: OperationPlan[P] = field(init=False)
 
@@ -305,8 +301,6 @@ class PaginationPlan(Generic[T, P]):
         targeted = targeted_writes(self.call, sources)
         object.__setattr__(self, "follows", follows)
         object.__setattr__(self, "writes", targeted.writes)
-        object.__setattr__(self, "headers", targeted.headers)
-        object.__setattr__(self, "queries", targeted.queries)
         object.__setattr__(self, "dotted", targeted.dotted)
         object.__setattr__(self, "continued", _later(rule, targeted.call))
 
@@ -450,19 +444,21 @@ def _limits(
 
     A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is
     refused, since every page is a request of its own that needs its own key, and so are the headers or query names
-    of a parameter the helper writes that the call, the client, or a view sends, which would replace those values.
+    of a field the helper writes that the call, the client, or a view sends, which would replace those values.
     The client's and a view's default of a count's header or query position is the first request's position instead,
     so only the call's own one is refused.
     """
-    from .writes import written_names  # noqa: PLC0415 - A plan loaded the operation runtime.
+    from .writes import written_fields  # noqa: PLC0415 - A plan loaded the operation runtime.
 
     request, kinds = core.helper_layers(
         plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options
     )
-    rule = plan.continuation
-    header, query = written_names((rule.write,) if isinstance(rule, CountPlan) else ())
-    headers, queries = plan.headers - header, plan.queries - query
-    core.refuse_patched(plan.helper_id, request, (plan.call,), headers, queries.__contains__, (header, query))
+    call, writes = plan.call, plan.writes
+    counted = isinstance(plan.continuation, CountPlan)
+    shared, own = (writes[:-1], writes[-1:]) if counted else (writes, ())
+    core.refuse_patched(
+        plan.helper_id, request, (call,), written_fields(((call, shared),)), written_fields(((call, own),))
+    )
     return _Limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
         max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
@@ -565,22 +561,13 @@ def _integer(value: object) -> int | None:
     return int(value) if isinstance(value, float) and value.is_integer() else None
 
 
-def _numeral(text: str) -> int | str:
-    """Return the integer a header or query value spells as a decimal number, or else the text itself."""
-    try:
-        number = Decimal(text)
-    except InvalidOperation:
-        return text
-    return int(number) if number.is_finite() and number == number.to_integral_value() else text
-
-
 def _exact(plan: PaginationPlan[T, P], read: Selector, content: bytes, info: ResponseInfo) -> int | None:
     """Return the integer a page's JSON number spells, read again from the body's text, or None for a fraction.
 
     The parsed page holds the number as a float, which may have rounded it, so it is read once more as a Decimal.
     """
-    number = cast("Decimal", _selected(plan, read, json_value(content, floats="decimal"), info))
-    return int(number) if number == number.to_integral_value() else None
+    number = _selected(plan, read, json_value(content, floats="decimal"), info)
+    return int(number) if isinstance(number, Decimal) and number == number.to_integral_value() else None
 
 
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, content: bytes, info: ResponseInfo) -> int:
@@ -771,7 +758,8 @@ class _Walk(Generic[T, P]):
         """Read a first count request's default position after all query and header patches have been applied.
 
         An encoded typed start overrides client and view patches, and call patches of the target are refused, so it
-        already gives the sent position without reparsing the request.
+        already gives the sent position without reparsing the request. A position is read as a parameter reads an
+        integer, a canonical JSON integer, and any other text is refused.
         """
         if self.start is not None or self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
             return
@@ -793,7 +781,7 @@ class _Walk(Generic[T, P]):
         self.start = None
         if not values:
             return
-        self.started(_numeral(values[0]) if len(values) == 1 else list(values))
+        self.started(typed(values[0], "integer") if len(values) == 1 else list(values))
 
     def advance(
         self, rule: CountPlan, count: int, wire: JSONValue, content: bytes, info: ResponseInfo
@@ -973,7 +961,7 @@ def _first(plan: PaginationPlan[T, P], state: JSONValue) -> tuple[OperationPlan[
     targets = [binding.target for binding in literals]
     if isinstance(rule, (CursorPlan, CountPlan)):
         targets.append(rule.write)
-    continued, writes, _, _ = targeted(plan.call, targets)
+    continued, writes = targeted(plan.call, targets)
     return _later(rule, continued), writes, values
 
 
@@ -1090,7 +1078,7 @@ class _Traversal(StepLock, Generic[T, P]):
 
 
 @final
-class Pager(_Traversal[T, P]):
+class Pager(_Traversal[T, P], StepHandle):
     """Iterate over a helper's items, or over its pages with `iter_pages`, fetching each page only when it is needed.
 
     A pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration or
@@ -1149,19 +1137,9 @@ class Pager(_Traversal[T, P]):
         """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this pager, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the pager."""
-        self.close()
-
 
 @final
-class AsyncPager(_Traversal[T, P]):
+class AsyncPager(_Traversal[T, P], AsyncStepHandle):
     """Iterate over a helper's items with asyncio, or over its pages with `iter_pages`, fetching pages when needed.
 
     An asyncio pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration
@@ -1219,16 +1197,6 @@ class AsyncPager(_Traversal[T, P]):
     async def aclose(self) -> None:
         """Stop the pager; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
-
-    async def __aenter__(self) -> Self:
-        """Return this pager, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the pager."""
-        await self.aclose()
 
 
 def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:

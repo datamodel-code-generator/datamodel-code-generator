@@ -7,7 +7,8 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Generic, Literal, TypeAlias
+from functools import partial
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias
 
 from typing_extensions import TypeVar
 
@@ -15,10 +16,11 @@ from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_bytes as _json_bytes
+from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
-from .values import Patch, written
+from .values import Patch, pointer_tokens, written
 
 if TYPE_CHECKING:
     from abc import abstractmethod
@@ -27,6 +29,7 @@ if TYPE_CHECKING:
 
     from ..client.operations import OperationPlan
     from ..model_codecs.media import JSONValue
+    from ..model_codecs.parameters import ParameterPlan
     from .errors import Refuse
     from .records import RequestTarget, Selector
 
@@ -51,22 +54,25 @@ __all__ = (
     "ReadParameter",
     "ReadPaths",
     "Targeted",
+    "Writer",
     "Writes",
     "caller_texts",
     "dotted_path",
     "dotted_read",
     "dotted_write",
+    "header_written",
     "position",
     "query_written",
     "read_paths",
     "refuse_dotted",
     "targeted",
     "targeted_writes",
-    "written_names",
+    "written_fields",
 )
 
 T = TypeVar("T")
 Writes: TypeAlias = tuple[tuple[int | None, str | None], ...]
+Writer: TypeAlias = "tuple[OperationPlan[Any], Writes]"
 PathPart: TypeAlias = "tuple[str, int | None, Selector | None, int]"
 ReadPaths: TypeAlias = "tuple[tuple[str, tuple[PathPart, ...]], ...]"
 
@@ -135,19 +141,15 @@ def position(call: OperationPlan[T], location: str, name: str) -> int:
     )
 
 
-def targeted(
-    call: OperationPlan[T], targets: Iterable[RequestTarget]
-) -> tuple[OperationPlan[T], Writes, frozenset[str], frozenset[str]]:
+def targeted(call: OperationPlan[T], targets: Iterable[RequestTarget]) -> tuple[OperationPlan[T], Writes]:
     """Return an operation that takes the values written to the targets as wire values, and where each one goes.
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
-    value, or no position with a pointer into the JSON body, every media of which is JSON. The header and query names
-    written follow (`written_names`), which a call's options must not patch. The values written skip their codecs,
-    since the server chose them.
+    value, or no position with a pointer into the JSON body, every media of which is JSON. The values written skip their
+    codecs, since the server chose them.
     """
     parameters = list(call.parameters)
     writes: list[tuple[int | None, str | None]] = []
-    targets = tuple(targets)
     patched = False
     for target in targets:
         if isinstance(target, BodyTarget):
@@ -174,63 +176,70 @@ def targeted(
                 PatchedMedia(media_type=media.media_type, kind=media.kind, codec=media.codec) for media in body.media
             ),
         )
-    called = replace(call, parameters=tuple(parameters), body=body)
-    headers, queries = written_names(targets)
-    return called, tuple(writes), headers, queries
+    return replace(call, parameters=tuple(parameters), body=body), tuple(writes)
 
 
-def written_names(
-    targets: Iterable[RequestTarget] = (),
-    children: Iterable[Targeted[Any] | None] = (),
-    *,
-    row: Literal["named", "legacy-upload-size-query"] = "named",
-) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the header names, in lower case, and the query names a helper writes, which call options must not patch.
+def header_written(writers: Iterable[Writer], name: str) -> bool:
+    """Return whether a header patch replaces a header parameter one of the writers writes, its name in any case.
 
-    A header or query parameter target names its parameter; a path or cookie parameter, a querystring and the body name
-    none. Each child operation adds the names it writes, and None stands for one the helper does not declare. Row
-    `legacy-upload-size-query` names a parameter target in any location but a header as a query, as an upload helper
-    names the target its create call writes the content's size into.
+    A writer is an operation and its writes; a query, path or cookie parameter, a querystring and the body write no
+    header.
     """
-    headers: set[str] = set()
-    queries: set[str] = set()
-    for target in targets:
-        if not isinstance(target, ParameterTarget):
-            continue
-        location, key = parameter_key(target.location, target.name)
-        if location == "header":
-            headers.add(key)
-        elif location == "query" or row == "legacy-upload-size-query":
-            queries.add(key)
-    for child in children:
-        if child is not None:
-            headers.update(child.headers)
-            queries.update(child.queries)
-    return frozenset(headers), frozenset(queries)
+    key = parameter_key("header", name)
+    return any(
+        parameter_key((plan := call.parameters[position].plan).location, plan.name) == key
+        for call, writes in writers
+        for position, _ in writes
+        if position is not None
+    )
 
 
-def query_written(call: OperationPlan[T], writes: Writes, name: str) -> bool:
-    """Return whether a query patch can replace a field written by a helper, including object properties.
+def written_fields(writers: Sequence[Writer]) -> tuple[Callable[[str], bool], Callable[[str], bool]]:
+    """Return whether a header name, and whether a query name, names a field one of the writers writes.
 
-    Exploded form objects own their declared properties and any additional name their parameter accepts. Deep
-    objects own those properties within the parameter's brackets. Decoder reservations do not limit wire writes.
+    A helper's call options must not patch such a field, which `refuse_patched` of the protocol core refuses.
     """
-    for position, _ in writes:
-        if position is None or (plan := call.parameters[position].plan).location != "query":
-            continue
-        if plan.shape != "object" or not plan.explode or plan.style not in {"form", "deepObject"}:
-            if name == plan.name:
-                return True
-            continue
-        member = name
-        if plan.style == "deepObject":
+    return partial(header_written, writers), partial(query_written, writers)
+
+
+def query_written(writers: Iterable[Writer], name: str) -> bool:
+    """Return whether a query patch replaces a field one of the writers writes, including object properties.
+
+    A writer is an operation and its writes. A query parameter writes its name, but an exploded form object owns its
+    declared properties and any additional name its parameter accepts instead, and a deep object those properties
+    within the parameter's brackets. A form querystring writes the property a pointer names, or, written whole, those
+    it owns as an exploded form object does; a header, path or cookie parameter, another querystring and the body
+    write no query name. Decoder reservations do not limit wire writes.
+    """
+    return any(
+        _field_written(call.parameters[position].plan, pointer, name)
+        for call, writes in writers
+        for position, pointer in writes
+        if position is not None
+    )
+
+
+def _field_written(plan: ParameterPlan, pointer: str | None, name: str) -> bool:
+    """Return whether one write of a parameter sends a query field of the name."""
+    written = False
+    match plan.location:
+        case "query" if plan.shape == "object" and plan.explode and plan.style == "deepObject":
             prefix = f"{plan.name}["
-            if not name.startswith(prefix) or not name.endswith("]"):
-                continue
-            member = name[len(prefix) : -1]
-        if any(item.name == member for item in plan.fields) or plan.additional is not None:
-            return True
-    return False
+            written = name.startswith(prefix) and name.endswith("]") and _owned(plan, name[len(prefix) : -1])
+        case "query" if plan.shape == "object" and plan.explode and plan.style == "form":
+            written = _owned(plan, name)
+        case "query":
+            written = name == plan.name
+        case "querystring" if media_kind(plan.content_media_type or "") == "form":
+            written = pointer_tokens(pointer)[0] == name if pointer else _owned(plan, name)
+        case _:
+            pass
+    return written
+
+
+def _owned(plan: ParameterPlan, member: str) -> bool:
+    """Return whether a form object writes a property of the name: a declared one, or any while it takes others."""
+    return plan.additional is not None or any(item.name == member for item in plan.fields)
 
 
 def read_paths(call: OperationPlan[T], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:
@@ -314,16 +323,18 @@ class Targeted(Generic[T]):
     """An operation that sends only the values a helper writes into its targets, and where each value goes.
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
-    value, or no position with a pointer into the JSON body. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is
-    written to, which must not encode to a dot segment.
+    value, or no position with a pointer into the JSON body. `dotted` names the path segments a read value is written
+    to, which must not encode to a dot segment.
     """
 
     call: OperationPlan[T]
     writes: Writes
-    headers: frozenset[str]
-    queries: frozenset[str]
     dotted: ReadPaths
+
+    @property
+    def writer(self) -> Writer:
+        """Return the operation and its writes, whose header and query fields a call's options must not patch."""
+        return self.call, self.writes
 
     def request(self, values: tuple[JSONValue, ...]) -> tuple[tuple[object, ...], object]:
         """Return the arguments and body of a request writing each value in order, every other argument omitted.

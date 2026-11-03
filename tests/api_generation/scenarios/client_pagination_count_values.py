@@ -158,7 +158,7 @@ def _default_calls(harness: Harness, api: Any) -> Iterator[tuple[str, str, Any, 
             ("empty call options", helper, {"options": options.RequestOptions()}, True),
         ):
             yield f"{location} {label}", location, selected, arguments, sends
-        for text in ("forty", "40.5", "40.00000000000000000001", "NaN", "Infinity"):
+        for text in ("forty", "40.5", "40.00000000000000000001", "NaN", "Infinity", "4e1", "040", "1E+99999999"):
             invalid = api.with_options(**{default: {name: text}})
             yield f"{location} invalid {text}", location, getattr(invalid.protocols.users, helper_name), {}, False
 

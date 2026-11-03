@@ -66,6 +66,9 @@ def _acquisition(package: ModuleType, auth: ModuleType, exchange: Exchange, line
         ("scope string", lambda: _provider(auth, scopes="read")),
         ("empty audience", lambda: _provider(auth, audience="")),
         ("client secret of another type", lambda: _provider(auth, client_secret=7)),
+        ("client secret lone surrogate", lambda: _provider(auth, client_secret="s\udcff")),
+        ("client id lone surrogate", lambda: _provider(auth, client_id="pets\udcff")),
+        ("scope lone surrogate", lambda: _provider(auth, scopes=("read\ud800",))),
         ("token client of another type", lambda: _provider(auth, http_client=object())),
     ):
         _outcome(lines, label, lambda build=build: type(build()).__name__)
@@ -118,6 +121,10 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
             "boolean expiry",
             json_response(200, {"access_token": "access-x", "token_type": "bearer", "expires_in": True}),
         ),
+        (
+            "expiry past the largest float",
+            json_response(200, {"access_token": "access-x", "token_type": "Bearer", "expires_in": 10**400}),
+        ),
         ("connect failure", failing(httpx2.ConnectError)),
         ("read timeout", failing(httpx2.ReadTimeout)),
     ):
@@ -141,6 +148,7 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
         ("secret callable failure", secret),
         ("secret callable's own error", refused),
         ("secret callable of another type", lambda: 7),
+        ("secret callable lone surrogate", lambda: "s\udcff"),
     ):
         with (
             exchange.client() as http,

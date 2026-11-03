@@ -16,6 +16,7 @@ from datamodel_code_generator._client.pagination import (
     _overlaps,
     _Pages,
     _problem,
+    _relation,
     _target_key,
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
@@ -237,7 +238,7 @@ class _Uploads:
             if (
                 clash := next((index for index, other in enumerate(written) if _overlaps(key, other)), None)
             ) is not None:
-                message = f"The chunk {what} of {name!r} writes the same target as {owners[clash]}"
+                message = f"The chunk {what} of {name!r} writes {_relation(key, written[clash])} {owners[clash]}"
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, append)
                 continue
             written.append(key)

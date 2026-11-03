@@ -153,6 +153,11 @@ def _overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
     return one == other or other.startswith(f"{one}/") or one.startswith(f"{other}/")
 
 
+def _relation(first: tuple[str, ...], second: tuple[str, ...]) -> str:
+    """Return how a refusal says a target relates to another one it overlaps: the same target, or overlapping it."""
+    return "the same target as" if first == second else "a target overlapping that of"
+
+
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
     return _error(code, stage, at, message, OperationRef(pointer=spec.contract.id.use_site.pointer))
 
@@ -669,8 +674,7 @@ class _Pages(HelperPlanner):
             if (
                 clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
             ) is not None:
-                relation = "the same target as" if clash[0] == key else "a target overlapping that of"
-                message = f"The {owner} of {name!r} writes {relation} its {clash[1]}"
+                message = f"The {owner} of {name!r} writes {_relation(key, clash[0])} its {clash[1]}"
                 yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
                 continue
             writes.append((key, owner))

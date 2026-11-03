@@ -1,0 +1,132 @@
+openapi: 3.2.0
+info:
+  title: Call layers
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: filter, in: query, style: form, explode: true, schema: {$ref: '#/components/schemas/Filter'}}
+        - {name: cursor, in: query, schema: {type: string}}
+        - {name: Accept-Encoding, in: header, schema: {type: string}}
+      responses:
+        '200':
+          description: A page of items.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - {name: X-Cursor, in: header, schema: {type: string}}
+        - name: criteria
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema: {$ref: '#/components/schemas/Criteria'}
+      responses:
+        '200':
+          description: A page of matches.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+  /feed:
+    get:
+      operationId: feed
+      parameters:
+        - {name: Last-Event-ID, in: header, schema: {type: string}}
+        - {name: filter, in: query, style: form, explode: true, schema: {$ref: '#/components/schemas/Filter'}}
+      responses:
+        '200':
+          description: The events.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /jobs:
+    post:
+      operationId: createJob
+      responses:
+        '202':
+          description: The job was accepted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      parameters:
+        - {name: jobId, in: path, required: true, schema: {type: string}}
+        - {name: filter, in: query, style: form, explode: true, schema: {$ref: '#/components/schemas/Filter'}}
+      responses:
+        '200':
+          description: The job.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /files/{size}:
+    post:
+      operationId: createFile
+      parameters:
+        - {name: size, in: path, required: true, schema: {type: integer}}
+      responses:
+        '201':
+          description: The upload was created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /uploads/{fileId}:
+    head:
+      operationId: probeFile
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The offset the server holds.
+          headers:
+            Upload-Offset: {schema: {type: integer}}
+    patch:
+      operationId: appendFile
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+        - {name: Upload-Offset, in: header, required: true, schema: {type: integer}}
+        - {name: filter, in: query, style: form, explode: true, schema: {$ref: '#/components/schemas/Filter'}}
+      requestBody:
+        required: true
+        content:
+          application/offset+octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: The chunk was appended.
+components:
+  schemas:
+    Filter:
+      type: object
+      additionalProperties: false
+      properties:
+        status: {type: string}
+    Criteria:
+      type: object
+      additionalProperties: false
+      properties:
+        term: {type: string}
+        page: {type: string}
+    Item: {type: string}
+    Job:
+      type: object
+      required: [id, state]
+      properties:
+        id: {type: string}
+        state: {type: string}
+    Page:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Item'}
+        next: {type: [string, 'null']}

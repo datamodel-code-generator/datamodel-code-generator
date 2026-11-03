@@ -546,6 +546,34 @@
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
+  "checks.append_member": {
+    "kind": "resumable_upload",
+    "profile": "offset",
+    "create": {"operation": "/paths/~1files/post"},
+    "probe": {
+      "operation": "/paths/~1files~1{fileId}/head",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ],
+      "remote_offset": {"from": "header", "name": "Upload-Offset"}
+    },
+    "append": {
+      "operation": "/paths/~1files~1{fileId}~1chunks/patch",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        },
+        {"target": {"in": "querystring", "name": "chunk", "pointer": ""}, "value": {"literal": {"from": 0, "to": 1}}}
+      ],
+      "offset": {"in": "querystring", "name": "chunk", "pointer": "/from"}
+    },
+    "partial_commit": "allowed",
+    "completion": {"kind": "length"}
+  },
   "checks.append_length": {
     "kind": "resumable_upload",
     "profile": "offset",

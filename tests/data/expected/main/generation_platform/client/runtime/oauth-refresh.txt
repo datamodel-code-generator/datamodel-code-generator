@@ -82,6 +82,7 @@ callbacks
   secret without a method ! ConfigurationError reason=forbidden_value field_path=('client_secret',)
   method without a secret ! ConfigurationError reason=missing_value field_path=('client_secret',)
   empty client id ! ConfigurationError reason=invalid_value field_path=('client_id',)
+  refresh token lone surrogate ! ConfigurationError reason=invalid_value field_path=('refresh_token',)
   unknown method ! ConfigurationError reason=invalid_value field_path=('client_auth_method',)
   clock of another type ! ConfigurationError reason=invalid_type field_path=('clock',)
   token set repr TokenSet(expires_at=None)
