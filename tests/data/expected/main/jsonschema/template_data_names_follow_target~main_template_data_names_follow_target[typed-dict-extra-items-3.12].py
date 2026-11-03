@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from typing import NotRequired, TypedDict
+from typing import NotRequired
 
 import mypkg
+from typing_extensions import TypedDict
 
 
 class Model(TypedDict, extra_items=mypkg.𞓐T):

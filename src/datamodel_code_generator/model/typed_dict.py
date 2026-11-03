@@ -226,8 +226,14 @@ class TypedDict(DataModel):
 
     @property
     def _use_typeddict_backport(self) -> bool:
-        """Check if this TypedDict needs typing_extensions.TypedDict for closed/extra_items."""
-        return bool(self.extra_template_data.get("use_typeddict_backport"))
+        """Check if this TypedDict needs typing_extensions.TypedDict for closed/extra_items.
+
+        Its target's ``typing.TypedDict`` takes neither before Python 3.15, whether the parser or template data such
+        as ``additionalPropertiesType`` gave them; the template flag still selects the backport for custom outputs.
+        """
+        return bool(self.extra_template_data.get("use_typeddict_backport")) or self.requires_extra_items_backport(
+            self.target_python_version
+        )
 
     @property
     def _requires_typeddict_backport(self) -> bool:

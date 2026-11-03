@@ -23972,6 +23972,35 @@ def test_main_paths_the_target_python_binds_are_written_whatever_python_runs(tmp
     )
 
 
+def test_main_literal_member_of_a_schema_class_named_like_a_module(tmp_path: Path, output_file: Path) -> None:
+    """Write a two-part ``Literal`` value as a member of the class the schema imports by its first name.
+
+    The first name ``calendar`` also names a standard-library module, which a ``Literal`` value names only where the
+    schema imports no class by that name: up to 0.88.0 the value imported ``MONDAY`` from the module ``calendar``.
+    """
+    input_file = tmp_path / "calendar.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "day": {"type": "integer", "x-python-type": "Literal[calendar.MONDAY]"},
+                "week": {"$ref": "#/$defs/calendar"},
+            },
+            "$defs": {"calendar": {"type": "integer", "x-python-import": {"module": "mypkg", "name": "calendar"}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+        skip_code_validation=True,
+    )
+
+
 @pytest.mark.parametrize("target_python_version", ["3.11", "3.12"])
 @pytest.mark.parametrize(
     ("output_model_type", "schema", "template_data", "extra_args"),

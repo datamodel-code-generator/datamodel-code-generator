@@ -4080,6 +4080,35 @@ def test_type_overrides_model_level_base_class_takes_bare_class_name(output_file
     )
 
 
+@pytest.mark.parametrize("value", ["Any", "typing.Any"])
+def test_type_overrides_model_level_base_class_refuses_any_before_python_311(
+    output_file: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """Refuse ``typing.Any`` as a base class for a target before Python 3.11, which cannot subclass it.
+
+    Up to 0.88.0 ``class Child(Any):`` was written, and the module failed to import before Python 3.11.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=(
+            f"--type-overrides 'Base': {value!r} is no class before Python 3.11, so it cannot replace Base as a base"
+        ),
+        extra_args=[
+            "--type-overrides",
+            json.dumps({"Base": value}),
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @freeze_time(TIMESTAMP)
 def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
     """Test model-level --type-overrides replaces dict key references."""
