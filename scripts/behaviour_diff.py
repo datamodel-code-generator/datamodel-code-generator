@@ -605,7 +605,11 @@ def payloads_for(gate: Gate, cell: Cell) -> Path | None:
 
 
 def run_cell(gate: Gate, cell: Cell) -> Result:
-    """Generate one cell on both sides and classify it."""
+    """Generate one cell on both sides and classify it.
+
+    The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
+    import is told from one of an output that worked.
+    """
     if (project := project_of(gate, cell)) is not None:
         try:
             project.fetch()
@@ -624,8 +628,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         same = base.ok and candidate.ok and base.tree == candidate.tree
         sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
         valid: frozenset[str] = frozenset()
-        if base.ok and candidate.ok and not same:
-            payloads = payloads_for(gate, cell)
+        if base.ok and not same:
+            payloads = payloads_for(gate, cell) if candidate.ok else None
             if payloads is not None:
                 entries = json.loads(payloads.read_text(encoding="utf-8"))
                 valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
@@ -636,7 +640,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
                         gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
                     ),
                 )
-                for side, outcome in (("base", base), ("cand", candidate))
+                if outcome.ok
+                else failed
+                for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
             ]
     verdict = classify_cell(
         sides[0],
