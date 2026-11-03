@@ -14485,6 +14485,17 @@ def test_main_openapi_paths_parameters_by_local_reference(output_file: Path, sco
     )
 
 
+def test_main_openapi_paths_parameters_object_is_a_path_item(output_file: Path) -> None:
+    """Read an object under the ``parameters`` key of ``paths`` as a path item, which declares no parameter of /pets."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_path_item.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "parameters", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_include_paths_warning_without_paths_scope() -> None:
     """Warn when --openapi-include-paths used without paths scope."""
     import warnings

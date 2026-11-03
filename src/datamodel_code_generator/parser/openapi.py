@@ -81,7 +81,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterator
+    from collections.abc import Callable, Generator, Iterator, Sequence
     from contextlib import AbstractContextManager
     from urllib.parse import ParseResult
 
@@ -351,6 +351,25 @@ def _missing_operation_id(path_name: str) -> Error:
     )
 
 
+def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, Any]:
+    """Return an object of a specification that its walk reads, at its declaration boundary without copying it.
+
+    Any other value is a schema error at ``path``, the same in every scope.
+    """
+    if isinstance(value, dict):
+        return value
+    msg = "API_INVALID_OBJECT: expected an object"
+    raise SchemaParseError(msg, path=list(path))
+
+
+def _parameter_array(value: YamlValue, path: Sequence[str]) -> list[Any]:
+    """Return the ``parameters`` of a path item, of ``paths`` or of an operation; any other value is an error."""
+    if isinstance(value, list):
+        return value
+    msg = "API_INVALID_OBJECT: expected parameter array"
+    raise SchemaParseError(msg, path=list(path))
+
+
 _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V30, OpenAPIVersion.V31, OpenAPIVersion.V32})
 
 
@@ -504,7 +523,8 @@ class OpenAPIParser(JsonSchemaParser):
         if self.openapi_include_info_version:
             self._update_openapi_info_version(specification)
         self._collect_discriminator_schemas()
-        schemas: dict[str, Any] = specification.get("components", {}).get("schemas", {})
+        components = _mapping(specification.get("components", {}), [*path_parts, "#/components"])
+        schemas = _mapping(components.get("schemas", {}), [*path_parts, "#/components", "schemas"])
         paths: dict[str, Any] = specification.get("paths", {})
         security: list[dict[str, list[str]]] | None = specification.get("security")
         # Warn if schemas is empty but paths exist and only Schemas scope is used
@@ -518,16 +538,12 @@ class OpenAPIParser(JsonSchemaParser):
             for obj_name in self._named_components(schemas, [*path_parts, "#/components", "schemas"]):
                 self._parse_raw_member(obj_name, schemas, obj_name, [*path_parts, "#/components", "schemas", obj_name])
         if OpenAPIScope.Paths in self.open_api_scopes:
-            # Resolve $ref in global parameter list
-            global_parameters = [
-                self.get_ref_model(p["$ref"], "parameter") if isinstance(p, dict) and "$ref" in p else p
-                for p in paths.get(PATHS_PARAMETERS, [])
-                if isinstance(p, dict)
-            ]
+            paths = _mapping(paths, [*path_parts, "#/paths"])
+            global_parameters = self._paths_parameters(paths, [*path_parts, "#/paths", PATHS_PARAMETERS])
             self._process_path_items(paths, path_parts, "paths", global_parameters, security)
 
         if OpenAPIScope.Webhooks in self.open_api_scopes:
-            webhooks: dict[str, dict[str, Any]] = specification.get("webhooks", {})
+            webhooks = _mapping(specification.get("webhooks", {}), [*path_parts, "#/webhooks"])
             self._process_path_items(
                 webhooks,
                 path_parts,
@@ -539,8 +555,10 @@ class OpenAPIParser(JsonSchemaParser):
             )
 
         if OpenAPIScope.RequestBodies in self.open_api_scopes:
-            request_bodies: dict[str, Any] = specification.get("components", {}).get("requestBodies", {})
-            for body_name, raw_body in request_bodies.items():
+            bodies_path = [*path_parts, "#/components", "requestBodies"]
+            request_bodies = _mapping(components.get("requestBodies", {}), bodies_path)
+            for body_name, raw_body_ in request_bodies.items():
+                raw_body = _mapping(raw_body_, [*bodies_path, str(body_name)])
                 resolved_body = self.get_ref_model(raw_body["$ref"], "requestBody") if "$ref" in raw_body else raw_body
                 content = resolved_body.get("content", {})
                 for media_type, media_obj in content.items():
@@ -566,6 +584,21 @@ class OpenAPIParser(JsonSchemaParser):
                         self.parse_raw_obj(name, media_schema.schema, schema_path)
                     else:
                         self._parse_raw_member(name, media_obj, "schema", schema_path)
+
+    def _paths_parameters(self, paths: dict[str, Any], path: list[str]) -> list[dict[str, Any]]:
+        """Return the parameters of every path at ``path``, each reference resolved, the objects of the list only.
+
+        An object under the key is a path item, which the paths scope's walk reads (row
+        ``legacy-object-extension-paths``), so it declares no parameter.
+        """
+        declared = paths.get(PATHS_PARAMETERS, [])
+        if holds_path_item(PATHS_PARAMETERS, declared, "legacy-object-extension-paths"):
+            return []
+        return [
+            self.get_ref_model(p["$ref"], "parameter") if "$ref" in p else p
+            for p in _parameter_array(declared, path)
+            if isinstance(p, dict)
+        ]
 
     def _insert_info_version_constant(self, body: str, info_version: str) -> str:  # noqa: PLR6301
         constant = f"OPENAPI_INFO_VERSION = {info_version!r}"
@@ -888,7 +921,8 @@ class OpenAPIParser(JsonSchemaParser):
                 continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
-            item_ref = methods_.get("$ref")
+            item_path = [*scope_path, item_name]
+            item_ref = _mapping(methods_, item_path).get("$ref")
             if item_ref:
                 methods = self.get_ref_model(item_ref, "pathItem")
                 # Extract base path from reference for external file resolution
@@ -901,7 +935,7 @@ class OpenAPIParser(JsonSchemaParser):
 
             item_parameters = global_parameters.copy()
             if "parameters" in methods:
-                item_parameters.extend(methods["parameters"])
+                item_parameters.extend(_parameter_array(methods["parameters"], [*item_path, "parameters"]))
 
             relative_name = item_name[1:] if strip_leading_slash else item_name.removeprefix("/")
             path = [*scope_path, relative_name] if relative_name else get_special_path("root", scope_path)
@@ -910,9 +944,10 @@ class OpenAPIParser(JsonSchemaParser):
                 self.model_resolver.current_base_path_context(ref_base_path) if ref_base_path else nullcontext()
             )
             with base_path_context:
-                for operation_name, raw_operation in methods.items():
+                for operation_name, raw_operation_ in methods.items():
                     if operation_name not in OPERATION_NAMES:
                         continue
+                    raw_operation = _mapping(raw_operation_, [*item_path, operation_name])
                     parameters = None
                     if item_parameters:
                         parameters = (
@@ -1353,7 +1388,10 @@ class OpenAPIParser(JsonSchemaParser):
             return
         self._discriminator_documents.add(document)
         self._register_discriminator_schema("#", raw)
-        schemas: dict[str, Any] = raw.get("components", {}).get("schemas", {})
+        components = _mapping(raw.get("components", {}), [*self.model_resolver.current_root, "#/components"])
+        schemas = _mapping(
+            components.get("schemas", {}), [*self.model_resolver.current_root, "#/components", "schemas"]
+        )
         potential_subtypes: list[tuple[str, dict[str, Any], list[str]]] = []
 
         for schema_name, schema in schemas.items():
@@ -1371,8 +1409,7 @@ class OpenAPIParser(JsonSchemaParser):
                     continue  # pragma: no cover - validation always raises for non-schema values
             self._register_discriminator_schema(local_ref := f"#/components/schemas/{schema_name}", schema)
 
-            all_of = schema.get("allOf")
-            if all_of:
+            if isinstance(all_of := schema.get("allOf"), list):
                 refs = [ref for item in all_of if isinstance(item, dict) and (ref := item.get("$ref"))]
                 if refs:
                     potential_subtypes.append((local_ref, schema, refs))

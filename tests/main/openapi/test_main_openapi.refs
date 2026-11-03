@@ -1612,6 +1612,8 @@ paths-include-all	main/openapi/main_openapi/paths_keys_that_are_not_path_items[p
 [test_main_openapi_paths_parameters_by_local_reference]
 include	main/openapi/main_openapi/paths_parameters_by_local_reference[include].py
 paths	main/openapi/main_openapi/paths_parameters_by_local_reference[paths].py	= main/openapi/main_openapi/paths_parameters_by_local_reference[include].py
+[test_main_openapi_paths_parameters_object_is_a_path_item]
+	main/openapi/main_openapi/paths_parameters_object_is_a_path_item.py
 [test_main_openapi_pattern]
 msgspec.Struct-msgspec_pattern.py	main/openapi/pattern/msgspec_pattern.py
 pydantic_v2.BaseModel-pydantic_v2.py	main/openapi/pattern/pydantic_v2.py
