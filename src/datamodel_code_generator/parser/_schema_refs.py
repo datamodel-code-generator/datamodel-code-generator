@@ -35,7 +35,7 @@ from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import escape_token, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
 from datamodel_code_generator._records import record
-from datamodel_code_generator._scc import strongly_connected_components
+from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_graph import (
@@ -1269,10 +1269,7 @@ def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     """
     if resolved_ref in parser._circular_ref_cache:  # noqa: SLF001
         return parser._circular_ref_cache[resolved_ref]  # noqa: SLF001
-    try:
-        result = has_ref_cycle(parser, resolved_ref)
-    except (Error, NotImplementedError, OSError, ValueError):
-        result = True
+    result = has_ref_cycle(parser, resolved_ref)
     parser._circular_ref_cache[resolved_ref] = result  # noqa: SLF001
     return result
 
@@ -1289,55 +1286,90 @@ def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[o
         )
 
 
-def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:
-    """Check if the schema at target reaches a reference back to target.
+class _RefCycleFrame(NamedTuple):
+    """A reference the cycle walk follows: the resolution context of its document and the schemas left to walk there."""
 
-    References are followed depth first, each one once, on an explicit stack: a frame per followed reference
-    holds the resolution context of its document and the schemas left to walk there, so any chain length works.
-    Reaching a boolean, number or null schema counts as a cycle, since it has no keywords to merge.
+    ref: str
+    document: Generator[object, None, None]
+    nodes: list[dict[str, Any] | list[Any]]
+
+
+def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:
+    """Check if the schema at target reaches a reference back to target, and record what the walk learned.
+
+    Reaching a boolean, number or null schema counts as a cycle, since it has no keywords to merge, and so does
+    reaching a document or pointer that cannot be loaded. Every reference on the stack at that point reaches it, so
+    each is circular. A walk that ends without finding one followed a graph with no such schema: there a reference
+    is circular exactly when it lies on a cycle. Both are recorded in ``_circular_ref_cache``, so a chain of aliases
+    is walked once instead of once per alias, and a reference recorded as not circular is not walked again.
     """
-    visited: set[str] = set()
-    frames: list[tuple[Generator[object, None, None], list[dict[str, Any] | list[Any]]]] = []
+    edges: dict[str, set[str]] = {}
+    frames: list[_RefCycleFrame] = []
     try:
-        if push_ref_cycle_frame(parser, target, visited, frames):
-            return True
-        while frames:
-            if not (nodes := frames[-1][1]):
-                frames.pop()[0].close()
-                continue
-            if isinstance(node := nodes.pop(), list):
-                nodes.extend(item for item in reversed(node) if isinstance(item, (dict, list)))
-                continue
-            nodes.extend(reversed(list(_iter_ref_walk_children(node))))
-            if isinstance(ref_value := node.get("$ref"), str):
-                try:
-                    resolved = parser._ref_path(ref_value)  # noqa: SLF001
-                except (Error, ValueError):
-                    resolved = ref_value
-                if resolved == target:
-                    return True
-                if resolved not in visited and push_ref_cycle_frame(parser, resolved, visited, frames):
-                    return True
+        circular = walk_ref_cycle(parser, target, edges, frames)
+    except (Error, NotImplementedError, OSError, ValueError):
+        circular = True
     finally:
+        stack = [frame.ref for frame in frames]
         while frames:
-            frames.pop()[0].close()
+            frames.pop().document.close()
+    cache = parser._circular_ref_cache  # noqa: SLF001
+    if circular:
+        cache.update(dict.fromkeys(stack, True))
+    else:
+        cache.update(dict.fromkeys(edges, False))
+        cache.update(dict.fromkeys(chain.from_iterable(find_circular_sccs(edges)), True))
+    return circular
+
+
+def walk_ref_cycle(
+    parser: SchemaRefsHost, target: str, edges: dict[str, set[str]], frames: list[_RefCycleFrame]
+) -> bool:
+    """Follow the references from target depth first, each one once, and return whether the walk met a cycle.
+
+    A frame per followed reference sits on an explicit stack, so any chain length works. ``edges`` collects the
+    references each followed reference holds, except those recorded as not circular, which no cycle passes through.
+    """
+    cache = parser._circular_ref_cache  # noqa: SLF001
+    if push_ref_cycle_frame(parser, target, edges, frames):
+        return True
+    while frames:
+        if not (nodes := frames[-1].nodes):
+            frames.pop().document.close()
+            continue
+        if isinstance(node := nodes.pop(), list):
+            nodes.extend(item for item in reversed(node) if isinstance(item, (dict, list)))
+            continue
+        nodes.extend(reversed(list(_iter_ref_walk_children(node))))
+        if isinstance(ref_value := node.get("$ref"), str):
+            try:
+                resolved = parser._ref_path(ref_value)  # noqa: SLF001
+            except (Error, ValueError):
+                resolved = ref_value
+            if resolved == target:
+                return True
+            if cache.get(resolved) is False:
+                continue
+            edges[frames[-1].ref].add(resolved)
+            if resolved not in edges and push_ref_cycle_frame(parser, resolved, edges, frames):
+                return True
     return False
 
 
 def push_ref_cycle_frame(
     parser: SchemaRefsHost,
     ref_to_check: str,
-    visited: set[str],
-    frames: list[tuple[Generator[object, None, None], list[dict[str, Any] | list[Any]]]],
+    edges: dict[str, set[str]],
+    frames: list[_RefCycleFrame],
 ) -> bool:
     """Enter the resolution context of ref_to_check and push a frame with the schema it names.
 
     Returns whether that schema is a boolean, number or null, which has no keywords to walk.
     """
-    visited.add(ref_to_check)
+    edges[ref_to_check] = set()
     document = ref_cycle_document(parser, ref_to_check)
     raw_obj = next(document)
-    frames.append((document, [raw_obj] if isinstance(raw_obj, (dict, list)) else []))
+    frames.append(_RefCycleFrame(ref_to_check, document, [raw_obj] if isinstance(raw_obj, (dict, list)) else []))
     return not isinstance(raw_obj, (dict, list, str))
 
 
