@@ -1,0 +1,12 @@
+post:
+  operationId: noteCreated
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            at: {$anchor: at, type: string, format: date-time}
+            again: {$ref: "#at"}
+  responses:
+    "204": {description: Received.}

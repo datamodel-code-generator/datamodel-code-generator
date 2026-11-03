@@ -47,7 +47,7 @@ from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
-from datamodel_code_generator.parser._schema_refs import ref_file_document
+from datamodel_code_generator.parser._schema_refs import hold_document_root, ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -433,10 +433,13 @@ class OpenAPIParser(JsonSchemaParser):
         self._parameter_models: list[tuple[DataModel, tuple[str, ...]]] = []
         self._specification_documents: set[str] = set()
 
-    def get_ref_model(self, ref: str) -> dict[str, Any]:
-        """Resolve a reference to its model definition."""
+    def get_ref_model(self, ref: str, role: str | None = None) -> dict[str, Any]:
+        """Resolve a reference to its model definition.
+
+        ``role`` is the OpenAPI object the reference's position expects, which a document it names at its root holds.
+        """
         ref_file, ref_path = self._ref_path(ref).split("#", 1)
-        ref_body = ref_file_document(self, ref_file)
+        ref_body = ref_file_document(self, ref_file, None if ref_path else role)
         return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
@@ -501,7 +504,7 @@ class OpenAPIParser(JsonSchemaParser):
         if OpenAPIScope.Paths in self.open_api_scopes:
             # Resolve $ref in global parameter list
             global_parameters = [
-                self._get_ref_body(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
+                self._global_parameter(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
                 for p in paths.get(PATHS_PARAMETERS, [])
                 if isinstance(p, dict)
             ]
@@ -522,7 +525,7 @@ class OpenAPIParser(JsonSchemaParser):
         if OpenAPIScope.RequestBodies in self.open_api_scopes:
             request_bodies: dict[str, Any] = specification.get("components", {}).get("requestBodies", {})
             for body_name, raw_body in request_bodies.items():
-                resolved_body = self.get_ref_model(raw_body["$ref"]) if "$ref" in raw_body else raw_body
+                resolved_body = self.get_ref_model(raw_body["$ref"], "requestBody") if "$ref" in raw_body else raw_body
                 content = resolved_body.get("content", {})
                 for media_type, media_obj in content.items():
                     media_schema = self._get_raw_media_schema(media_obj)
@@ -729,10 +732,15 @@ class OpenAPIParser(JsonSchemaParser):
 
         return result_fields
 
-    def resolve_object(self, obj: ReferenceObject | BaseModelT, object_type: type[BaseModelT]) -> BaseModelT:
-        """Resolve a reference object to its actual type or return the object as-is."""
+    def resolve_object(
+        self, obj: ReferenceObject | BaseModelT, object_type: type[BaseModelT], role: str | None = None
+    ) -> BaseModelT:
+        """Resolve a reference object to its actual type or return the object as-is.
+
+        ``role`` is the OpenAPI object the reference's position expects (``get_ref_model``).
+        """
         if isinstance(obj, ReferenceObject):
-            return self._validated_target(self.get_ref_model(obj.ref), object_type)
+            return self._validated_target(self.get_ref_model(obj.ref, role), object_type)
         return obj
 
     def _validated_target(self, raw: object, object_type: type[BaseModelT]) -> BaseModelT:
@@ -866,7 +874,7 @@ class OpenAPIParser(JsonSchemaParser):
                 continue
             item_ref = methods_.get("$ref")
             if item_ref:
-                methods = self.get_ref_model(item_ref)
+                methods = self.get_ref_model(item_ref, "pathItem")
                 # Extract base path from reference for external file resolution
                 resolved_ref = self._ref_path(item_ref)
                 ref_file = resolved_ref.split("#")[0] if "#" in resolved_ref else resolved_ref
@@ -908,7 +916,7 @@ class OpenAPIParser(JsonSchemaParser):
         if not isinstance(parameter, dict):
             return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
         if isinstance(ref := parameter.get("$ref"), str):
-            parameter = self.get_ref_model(ref)
+            parameter = self.get_ref_model(ref, "parameter")
         if not isinstance(name := parameter.get("name"), str) or not isinstance(location := parameter.get("in"), str):
             return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
         return name, location
@@ -1018,7 +1026,7 @@ class OpenAPIParser(JsonSchemaParser):
             if isinstance(detail, ReferenceObject):
                 if not detail.ref:  # pragma: no cover
                     continue
-                ref_model = self.get_ref_model(detail.ref)
+                ref_model = self.get_ref_model(detail.ref, "response")
                 content = {k: self._validated_target(v, MediaObject) for k, v in ref_model.get("content", {}).items()}
             else:
                 content = detail.content
@@ -1068,7 +1076,7 @@ class OpenAPIParser(JsonSchemaParser):
         seen_parameter_names: set[str] = set()
         reference = self.model_resolver.add(path, name, class_name=True, unique=True)
         for parameter_ in parameters:
-            parameter = self.resolve_object(parameter_, ParameterObject)
+            parameter = self.resolve_object(parameter_, ParameterObject, "parameter")
             match parameter.in_:
                 case ParameterLocation.querystring if self.schema_features.querystring_parameter:
                     parameter_name = parameter.name or "querystring"
@@ -1193,7 +1201,7 @@ class OpenAPIParser(JsonSchemaParser):
         )
         if operation.requestBody:
             if isinstance(operation.requestBody, ReferenceObject):
-                ref_model = self.get_ref_model(operation.requestBody.ref)
+                ref_model = self.get_ref_model(operation.requestBody.ref, "requestBody")
                 request_body = self._validated_target(ref_model, RequestBodyObject)
             else:
                 request_body = operation.requestBody
@@ -1309,6 +1317,11 @@ class OpenAPIParser(JsonSchemaParser):
 
         reached = reach(used(*parameter_models), lambda path: used(models[path]) if path in models else ())
         return {path for path in reached if path not in models}
+
+    def _global_parameter(self, ref: str) -> dict[str, YamlValue]:
+        """Return the document a reference of the parameters of every path names, read as a Parameter Object."""
+        hold_document_root(self, ref, "parameter")
+        return self._get_ref_body(ref)
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Index discriminator metadata when the existing loader reads an external document."""

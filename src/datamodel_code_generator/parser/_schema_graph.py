@@ -6,7 +6,7 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the string as written that also carries
 its ``RefEdge`` (``SchemaGraphBuilder.with_ref_edges`` does it alone for a schema a reference names that the walk read
 as data). ``walk_schema_resources`` finds which absolute URI names which schema of the document (its root, every schema
-with an `$id` or draft-04 `id`, the implicit component resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
+with an `$id` or draft-04 `id`, the implicit resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
 ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge resolves to in its own document, and
 ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document validates to, which every reader of that
