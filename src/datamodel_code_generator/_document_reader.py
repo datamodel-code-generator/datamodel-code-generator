@@ -83,11 +83,11 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
 
     A list item is read by an RFC 6901 array index only (``0``, or ASCII digits without a leading zero: never ``-1``,
     ``01`` or the character of a string), and any other value has no member. ``canonical`` (the locations the parser
-    recorded and the target readers) reads a mapping member by its integer YAML key when the token is such an index and
-    the key exists, else by the token, and every token that names no member is a miss. ``refusing`` (the targets of the
-    parser's ``$ref``) reads a mapping member by the token only: a missing member is a ``KeyError``, a value that is no
-    container a ``NotImplementedError``, a list token that is no index or is too long an ``Error``, and an index past
-    the end an ``ArrayIndexOutOfRangeError``.
+    recorded and the target readers) reads a mapping member by the token, as the parser's ``$ref`` does, else by the
+    integer YAML key the token is the index of, and every token that names no member is a miss. ``refusing`` (the
+    targets of the parser's ``$ref``) reads a mapping member by the token only: a missing member is a ``KeyError``, a
+    value that is no container a ``NotImplementedError``, a list token that is no index or is too long an ``Error``, and
+    an index past the end an ``ArrayIndexOutOfRangeError``.
     """
     if row == "refusing":
         if isinstance(value, dict):
@@ -102,7 +102,7 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
         value[int(token)]
         if isinstance(value, list) and index
         else mapping[int(token)]
-        if index and int(token) in mapping
+        if index and token not in mapping and int(token) in mapping
         else mapping[token]
     )
 

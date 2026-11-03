@@ -235,10 +235,11 @@ pattern when the model class is created. Some syntax that Python's `re` accepts 
 pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
 OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
 the pattern. The decision depends only on the pattern text. It does not depend on the installed pydantic-core, on
-the Python running the generator or on `--target-python-version`, and it is the same for every
-`--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
-whatever the target, and the generation warns when the target is older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
-with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
+the Python running the generator or on `--target-python-version`, and for a string pattern it is the same for every
+`--target-pydantic-version` (a `bytes` pattern follows the target, see below). `regex_engine` needs Pydantic 2.5: on
+Pydantic 2.0 to 2.4 such a model fails at import whatever the target, and the generation warns when the target is
+older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or, with
+`--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
 | Pattern syntax | Example | Generated model |

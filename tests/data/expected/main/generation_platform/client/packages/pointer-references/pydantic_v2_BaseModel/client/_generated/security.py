@@ -24,9 +24,9 @@ _SCHEME_0: Final = SecurityScheme(
 
 _SCHEME_1: Final = SecurityScheme(
     name='keyed',
-    kind='basic',
-    location='header',
-    wire_name='Authorization',
+    kind='api_key',
+    location='query',
+    wire_name='X-Text',
 )
 
 

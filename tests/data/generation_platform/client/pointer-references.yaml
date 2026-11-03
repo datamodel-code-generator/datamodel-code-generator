@@ -47,4 +47,5 @@ x-schemes:
   - {type: http, scheme: bearer}
 x-keyed:
   1: {type: http, scheme: basic}
+  "1": {type: apiKey, name: X-Text, in: query}
   a/b: {type: apiKey, name: X-Key, in: header}
