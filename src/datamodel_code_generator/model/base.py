@@ -200,6 +200,7 @@ _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
 _EXTRA_TEMPLATE_DATA_KEY_ERROR = "extra template data keys must be strings"
 _DATACLASS_ARGUMENTS_MAPPING_ERROR = "dataclass_arguments must be a dictionary"
 _DATACLASS_ARGUMENTS_KEY_ERROR = "dataclass_arguments keys must be strings"
+_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY = "dataclass_arguments"
 _DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset(DataclassArguments.__annotations__)
 _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
     "class_body_lines",
@@ -2601,7 +2602,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             self.target_python_version = target_python_version
         self.keyword_only = keyword_only
         self.frozen = frozen
-        self.dataclass_arguments: DataclassArguments = dataclass_arguments if dataclass_arguments is not None else {}
         if not self.TEMPLATE_FILE_PATH:
             msg = "TEMPLATE_FILE_PATH is undefined"
             raise Exception(msg)  # noqa: TRY002
@@ -2646,6 +2646,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
             if all_model_extra_template_data:
                 _copy_all_model_data(all_model_extra_template_data, self.extra_template_data)
+        self.dataclass_arguments: DataclassArguments = self._with_template_dataclass_arguments(
+            dataclass_arguments if dataclass_arguments is not None else {}
+        )
 
         self.methods: list[str] = methods or []
 
@@ -2658,6 +2661,14 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.default: Any = default
         self._nullable: bool = nullable
         self._treat_dot_as_module: bool | None = treat_dot_as_module
+
+    def _with_template_dataclass_arguments(self, arguments: DataclassArguments) -> DataclassArguments:
+        """Return the options' decorator arguments with the ``dataclass_arguments`` of the template data over them."""
+        if (template_arguments := self.extra_template_data.get(_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY)) is None:
+            return arguments
+        if not isinstance(template_arguments, dict):
+            raise Error(_DATACLASS_ARGUMENTS_MAPPING_ERROR)
+        return {**arguments, **template_arguments}
 
     def _validate_fields(self, fields: list[DataModelFieldBase]) -> list[DataModelFieldBase]:
         names: set[str] = set()
@@ -3324,11 +3335,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             return self.extra_template_data
         return {**self.extra_template_data, **self._internal_template_data}
 
+    def _render_template_data(self, *, use_custom_template: bool) -> dict[str, Any]:
+        """Return the template data a render passes beside the model's ``dataclass_arguments``, which merge its own."""
+        template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
+        if _DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY not in template_data:
+            return template_data
+        return {key: value for key, value in template_data.items() if key != _DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY}
+
     @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the model to a string using the template."""
         use_custom_template = self._uses_custom_root_template
-        extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
+        extra_template_data = self._render_template_data(use_custom_template=use_custom_template)
         rendered_class_name = class_name or self.class_name
         rendered = self._render(
             class_name=rendered_class_name,

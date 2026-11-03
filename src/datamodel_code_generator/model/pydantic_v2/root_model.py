@@ -312,7 +312,7 @@ class RootModel(BaseModel):
             _ = fields[0].type_hint
         if RENDER_READY.get() is None:
             self._decide_config_items_outside_a_parse()
-        extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
+        extra_template_data = self._render_template_data(use_custom_template=use_custom_template)
         rendered = self._render(
             class_name=class_name or self.class_name,
             fields=fields,

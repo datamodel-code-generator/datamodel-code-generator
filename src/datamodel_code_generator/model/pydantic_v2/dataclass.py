@@ -177,11 +177,11 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             keyword_only=keyword_only,
             frozen=frozen,
             treat_dot_as_module=treat_dot_as_module,
+            dataclass_arguments=self.resolve_dataclass_arguments(
+                dataclass_arguments, frozen=frozen, keyword_only=keyword_only
+            ),
         )
 
-        self.dataclass_arguments = self.resolve_dataclass_arguments(
-            dataclass_arguments, frozen=frozen, keyword_only=keyword_only
-        )
         self._set_deprecated_decorator()
 
         config_parameters = build_base_config_parameters(
