@@ -24,6 +24,7 @@ from datamodel_code_generator._module_paths import (
     dotted_module,
     dotted_name,
     expanded_path,
+    is_package_init,
     module_parts,
     normalized_path,
     written_path,
@@ -281,6 +282,7 @@ _IMPORT_CONFLICTS: Final = ImportProducer("import-conflicts")
 _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
 _BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
 _BUILTIN_SUBMODULE_BINDINGS: Final = ImportProducer("builtin-submodule-bindings")
+_SUBMODULE_IMPORT_BINDINGS: Final = ImportProducer("submodule-import-bindings")
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
 _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
@@ -1143,6 +1145,15 @@ def resolve_module_import_conflicts(parser: ImportsHost[Any], state: _FinalizeSt
             parser.data_model_type.resolve_module_import_conflicts(ctx.models, state.model_imports, ctx.imports)
 
 
+def _is_init_file(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> bool:
+    """Return whether the module writes a package's ``__init__.py``, whatever the input that holds it was named.
+
+    ``ctx.is_init`` is the module's place in the import paths, which the root package and the models of an input
+    ``__init__.json`` do not take.
+    """
+    return is_package_init(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[-1])
+
+
 def _module_binding(expression: str | None) -> str | None:
     """Return the module binding of an expression ``<binding>.<Class>``, or None for another expression."""
     return expression.partition(".")[0] if expression and "." in expression else None
@@ -1186,7 +1197,9 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         shadowing := {
             binding
             for binding in bindings
-            if binding in imported and binding in held and not (ctx.is_init and imported[binding][0] == ".")
+            if binding in imported
+            and binding in held
+            and not (_is_init_file(ctx, treat_dot_as_module=parser.treat_dot_as_module) and imported[binding][0] == ".")
         }
     ):
         return
@@ -1239,6 +1252,46 @@ def _package_submodule_names(
     return names
 
 
+def _alias_imports_hidden_by_submodules(
+    parser: ImportsHost[Any], ctx: ModuleContextView, submodule_names: Collection[str]
+) -> None:
+    """Give the imports of models a new name where a package's submodules bind the name they import them by.
+
+    ``pkg/Warning.py`` binds ``Warning`` in ``pkg/__init__.py`` once anything imports it, whatever the import is named,
+    so a model the package imports by that name (``from ..other import Warning``) or a module it imports under it
+    would name the submodule. The submodule keeps the name, as the builtin does for a module import named like it
+    (``_alias_builtin_shadowing_module_imports``), and the import takes the name the module's resolver gives it next
+    (``Warning_1``), which every use of the model follows. An import of the submodule itself keeps its name, and so
+    does that of a model named like its submodule (``from .A import A``), which binds the name once the submodule is
+    loaded.
+    """
+    imports, resolver, ledger = ctx.imports, ctx.scoped_model_resolver, parser._import_ledger  # noqa: SLF001
+    held = {reference.name: reference for reference in resolver.references.values()}
+    users: dict[str, list[tuple[DataType, tuple[str | None, str]]]] = {}
+    for model in ctx.models:
+        for data_type in _named_data_types(model):
+            if (
+                (reference := data_type.reference) is None
+                or (import_ := imports.reference_paths.get(reference.path)) is None
+                or (binding := imports.get_effective_name(import_.from_, import_.import_)) not in submodule_names
+                or binding not in held
+                or _import_key(import_) in {(".", binding), (f".{binding}", binding)}
+            ):
+                continue
+            users.setdefault(binding, []).append((data_type, _import_key(import_)))
+    for binding, binding_users in sorted(users.items()):
+        reference = held[binding]
+        ledger.release_names(imports, resolver, {binding})
+        ledger.add_name(imports, resolver, get_special_path("submodule", [binding]), binding)
+        alias = ledger.add_name(imports, resolver, [reference.path], reference.original_name).name
+        from_, import_name = binding_users[0][1]
+        ledger.apply_alias(imports, Import(from_=from_, import_=import_name, alias=alias), _SUBMODULE_IMPORT_BINDINGS)
+        for data_type, _ in binding_users:
+            parser._graph_builder.name_reference(  # noqa: SLF001
+                data_type, alias + (data_type.alias or binding)[len(binding) :]
+            )
+
+
 def _alias_builtins_hidden_by_submodules(
     parser: ImportsHost[Any], ctx: ModuleContextView, submodule_names: Collection[str]
 ) -> None:
@@ -1282,9 +1335,10 @@ def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _Finali
         state.contexts, state.forwarder_modules, treat_dot_as_module=parser.treat_dot_as_module
     )
     for ctx in state.contexts:
-        if ctx.is_init and (
+        if _is_init_file(ctx, treat_dot_as_module=parser.treat_dot_as_module) and (
             names := submodule_names.get(written_path(ctx.module, treat_dot_as_module=parser.treat_dot_as_module)[:-1])
         ):
+            _alias_imports_hidden_by_submodules(parser, ctx, names)
             _alias_builtins_hidden_by_submodules(parser, ctx, names)
 
 

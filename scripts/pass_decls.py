@@ -1209,11 +1209,14 @@ ALIAS_BUILTINS_HIDDEN_BY_SUBMODULES = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
-    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
     after=(
         After("alias_builtin_shadowing_module_imports", "aliases the builtins once the module imports are aliased"),
     ),
-    summary="Imports a builtin that a package's own submodule hides, e.g. ``list``, under an alias for its bare uses.",
+    summary=(
+        "Renames the import of a model that a package's own submodule hides the name of, and imports a builtin that "
+        "it hides, e.g. ``list``, under an alias for its bare uses."
+    ),
 )
 BIND_MODULE_FIELD_NAMES = PassDecl(
     "bind_module_field_names",

@@ -1,0 +1,2 @@
+{"a": {"n": 1}, "b": {"s": "x"}}: accepted Report(a=Foo(n=1), b=Bar(s='x'))
+{"a": {"n": "one"}}: rejected ValidationError

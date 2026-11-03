@@ -1,0 +1,2 @@
+{"items": ["a"], "l": {"a": "x"}}: accepted Root(items=['a'], l=Foo(a='x'))
+{"items": [1]}: rejected ValidationError

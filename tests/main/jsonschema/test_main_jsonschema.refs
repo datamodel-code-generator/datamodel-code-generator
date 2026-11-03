@@ -6081,6 +6081,19 @@ msgspec.Struct	main/jsonschema/main_jsonschema/builtin_named_fields[msgspec.Stru
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/main_jsonschema/builtin_named_fields[typing.TypedDict].py
+[test_main_jsonschema_builtin_submodule_beside_package_init]
+init-input-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass].payloads.txt
+init-input-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass]/
+init-input-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass].payloads.txt
+init-input-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-msgspec.Struct]/
+init-input-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass].payloads.txt
+init-input-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-pydantic_v2.BaseModel]/
+root-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-dataclasses.dataclass].payloads.txt
+root-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-dataclasses.dataclass]/
+root-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-dataclasses.dataclass].payloads.txt
+root-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-msgspec.Struct]/
+root-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-dataclasses.dataclass].payloads.txt
+root-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[root-pydantic_v2.BaseModel]/
 [test_main_jsonschema_builtin_type_override_beside_module]
 module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
 module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass]/
@@ -6846,6 +6859,19 @@ default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 	main/jsonschema/id_stdin.py
 [test_main_jsonschema_ids]
 	main/jsonschema/ids//*.py
+[test_main_jsonschema_import_named_like_submodule]
+class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
+class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass]/
+class-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[class-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
+class-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[class-msgspec.Struct]/
+class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[class-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
+class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[class-pydantic_v2.BaseModel]/
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass].payloads.txt
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass]/
+module-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[module-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass].payloads.txt
+module-msgspec.Struct	main/jsonschema/main_jsonschema/import_named_like_submodule[module-msgspec.Struct]/
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[module-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/import_named_like_submodule[module-dataclasses.dataclass].payloads.txt
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_named_like_submodule[module-pydantic_v2.BaseModel]/
 [test_main_jsonschema_integer_fractional_constraints]
 constraint_args0-generated_integer_fractional_constraints-integer_fractional_constraints.py	main/jsonschema/integer_fractional_constraints.py
 constraint_args1-generated_integer_fractional_field_constraints-integer_fractional_constraints_field_constraints.py	main/jsonschema/integer_fractional_constraints_field_constraints.py
