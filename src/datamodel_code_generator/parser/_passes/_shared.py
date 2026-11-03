@@ -54,7 +54,7 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
-from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._intersection import inherits_keyword
@@ -751,6 +751,57 @@ def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel
     )
 
 
+DefinitionReadsRow: TypeAlias = Literal[
+    "definition",
+    "legacy-class-body-without-alias-values",
+    "legacy-keep-order-type-statement",
+    "legacy-evaluated-without-root-model",
+]
+"""Which fields of a model ``definition_reads`` reads, for each pass that orders or checks what a module evaluates.
+
+``definition`` reads those that the statement defining the model evaluates, for the forward references the module
+quotes (``render_prep.py:update_type_aliases``). The legacy rows keep what their passes read before:
+
+- ``legacy-class-body-without-alias-values``: only a root model's fields, for the order of the models whose class body
+  evaluates others (``_sort_models_by_class_body_references``, ``settle.py:sort_data_models``); a type alias's value,
+  the functional TypedDict and evaluated annotations are left out.
+- ``legacy-keep-order-type-statement``: ``--keep-model-order`` (``modules.py:_keep_model_order_deps``) also reads the
+  value of a ``type`` statement, and the functional TypedDict as a class.
+- ``legacy-evaluated-without-root-model``: the check of the root models that name themselves
+  (``imports.py:reject_alias_cycles_without_schema``) reads a root model as a class, and the own fields of the
+  functional TypedDict when the module evaluates annotations.
+"""
+
+
+def definition_reads(
+    model: DataModel,
+    *,
+    row: DefinitionReadsRow = "definition",
+    root_model_type: type[DataModel] | None = None,
+    evaluates_annotations: bool = False,
+) -> Sequence[DataModelFieldBase] | None:
+    """Return the fields whose types the statement that defines ``model`` evaluates as the module runs, or None.
+
+    A ``type`` statement defers its value. The functional TypedDict evaluates the fields of its dict literal, the
+    inherited ones included (``fields_evaluated_at_definition``); any other type alias evaluates its value, a root
+    model of ``root_model_type`` its root type (``_is_pydantic_v2_root_model``), and a class its annotations when
+    ``evaluates_annotations`` tells that the module does not defer them. A read of the model's own fields returns its
+    ``fields`` list itself. ``row`` keeps what a pass read before (``DefinitionReadsRow``).
+    """
+    if row == "legacy-class-body-without-alias-values":
+        return model.fields if _is_pydantic_v2_root_model(model, root_model_type) else None
+    reads_own_fields = evaluates_annotations or isinstance(model, TypeAliasBase)
+    if row == "legacy-keep-order-type-statement":
+        return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
+    if isinstance(model, TypeStatement):
+        return None
+    if row == "legacy-evaluated-without-root-model":
+        return model.fields if reads_own_fields else model.fields_evaluated_at_definition() or None
+    if evaluated := model.fields_evaluated_at_definition():
+        return evaluated
+    return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
+
+
 @record
 class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
@@ -803,6 +854,7 @@ def _sort_models_by_class_body_references(
 ) -> list[DataModel]:
     """Define first the models a class body evaluates: base classes, root types and runtime rule types.
 
+    The root types are those of a root model (``definition_reads``, row ``legacy-class-body-without-alias-values``).
     The rule types are by default those the rules name in any module (``_runtime_validation_reference_keys``).
     """
     if runtime_validation_references is None:
@@ -815,13 +867,15 @@ def _sort_models_by_class_body_references(
             keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
         }
         model_targets.update(runtime_validation_references.get(model_key, ()))
-        if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
-            model_targets.update(
-                keyed.key_of(data_type.reference)
-                for field in model.fields
-                for data_type in field.data_type.all_data_types
-                if data_type.reference
+        model_targets.update(
+            keyed.key_of(data_type.reference)
+            for field in definition_reads(
+                model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
             )
+            or ()
+            for data_type in field.data_type.all_data_types
+            if data_type.reference
+        )
         model_targets.discard(model_key)
     graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
     sorted_keys = graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__)

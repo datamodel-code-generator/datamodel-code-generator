@@ -69,7 +69,6 @@ from datamodel_code_generator.model.base import (
     get_inherited_fields,
 )
 from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class, get_raw_enum_member_value
-from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
@@ -114,7 +113,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _get_enum_from_base,
     _get_model_module_name,
     _is_discriminator_wrapper,
-    _is_pydantic_v2_root_model,
     _ModelPositions,
     _named_data_types,
     _restore_inherited_field_names_for_unique_aliases,
@@ -122,6 +120,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _runtime_validation_reference_keys,
     _unique_items_tuple,
     compared_models,
+    definition_reads,
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
@@ -629,8 +628,10 @@ def _keep_model_order_deps(
 ) -> tuple[ModelDeps, ModelDeps]:
     """Return the models each model depends on through its bases, and through its bases and fields, by class name.
 
-    Only models of the module that it does not import count. Deferred annotations leave the fields out, except of a
-    type alias and of a root model whose class body evaluates its root type; schema validator rules count as bases.
+    Only models of the module that it does not import count. The fields count where the definition of the model reads
+    them (``definition_reads``, row ``legacy-keep-order-type-statement``), the annotations of a class unless
+    ``use_deferred_annotations`` defers them, whatever the target defers natively; schema validator rules count as
+    bases.
     Row ``legacy-keep-order-short-name``: a reference names a model of the module by its short name, so it also adds a
     false dependency on a same-named model of another module imported as a module.
     """
@@ -652,13 +653,18 @@ def _keep_model_order_deps(
     for model in models:
         class_name = model.class_name
         base_class_references = [b.reference for b in model.base_classes if b.reference]
-        field_references = (
-            []
-            if use_deferred_annotations
-            and not isinstance(model, TypeAliasBase)
-            and not _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
-            else [t.reference for f in model.fields for t in f.data_type.all_data_types if t.reference]
-        )
+        field_references = [
+            t.reference
+            for f in definition_reads(
+                model,
+                row="legacy-keep-order-type-statement",
+                root_model_type=pydantic_v2_root_model_type,
+                evaluates_annotations=not use_deferred_annotations,
+            )
+            or ()
+            for t in f.data_type.all_data_types
+            if t.reference
+        ]
         strong = names_by_short_name(base_class_references, class_name)
         deps = names_by_short_name([*base_class_references, *field_references], class_name)
         if reference_keys := runtime_validation_references.get(model_key_of(model.reference)):

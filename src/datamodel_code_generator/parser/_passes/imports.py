@@ -53,7 +53,7 @@ from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
 from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
-from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
+from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
 from datamodel_code_generator.parser._passes._import_binding import (
@@ -87,6 +87,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _named_data_types,
     _string_or_identifier_pattern,
     _unique_items_tuple,
+    definition_reads,
     get_special_path,
     site_display_name,
     unused_model_lists,
@@ -915,15 +916,16 @@ def _loop_error(model: DataModel, cycle: Sequence[DataModel], failure: str) -> E
 def _evaluated_data_types(model: DataModel, *, evaluates_annotations: bool) -> Iterator[DataType]:
     """Yield the data types that the statements defining a model evaluate as the module runs.
 
-    A ``type`` statement defers its value. Any other type alias evaluates it, and so does the functional TypedDict
-    with its fields; every annotation of a class is evaluated unless the module defers annotations.
+    They are the types of the fields that ``definition_reads`` reads (row ``legacy-evaluated-without-root-model``), and
+    where it reads the model's own fields, every type of the model, its bases included.
     """
-    if isinstance(model, TypeStatement):
-        return
-    if evaluates_annotations or isinstance(model, TypeAliasBase):
+    fields = definition_reads(
+        model, row="legacy-evaluated-without-root-model", evaluates_annotations=evaluates_annotations
+    )
+    if fields is model.fields:
         yield from model.all_data_types
         return
-    for field in model.fields_evaluated_at_definition():
+    for field in fields or ():
         yield from field.data_type.all_data_types
 
 

@@ -52,10 +52,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _forward_enum_member_literals,
     _hidden_type_names,
-    _is_pydantic_v2_root_model,
     _ModelPositions,
     _unwrap_type_alias,
     constructor_base_models,
+    definition_reads,
     get_constructor_field_adjustment,
     get_constructor_ordering_conflicts,
     get_inherited_constructor_info,
@@ -963,17 +963,15 @@ def update_type_aliases(  # noqa: PLR0913
 
     for i, model in enumerate(models):
         quote_forward_rule_types(model, model_index, i)
-        is_type_alias_or_root = isinstance(model, TypeAliasBase) or _is_pydantic_v2_root_model(
-            model,
-            pydantic_v2_root_model_type,
-        )
         # When annotations are deferred (from __future__ or native PEP-649) only
         # TypeAliasBase / RootModel need quoting; regular DataModels are fine as-is.
         # Typed extra annotations are an exception: class-body __annotations__ dicts
         # are evaluated immediately, and Pydantic can force native deferred annotations
         # while constructing the class, so their forward references must stay quoted.
-        evaluated_fields = model.fields_evaluated_at_definition()
-        runs_at_definition = is_type_alias_or_root or bool(evaluated_fields)
+        evaluated_fields = definition_reads(
+            model, root_model_type=pydantic_v2_root_model_type, evaluates_annotations=evaluates_annotations
+        )
+        runs_at_definition = evaluated_fields is not None
         process_all_fields = runs_at_definition or not use_deferred_annotations
         quotes_type_statements = runs_at_definition or evaluates_annotations
         quotes_member_literals = process_all_fields or quotes_forward_enum_member_literals
@@ -988,7 +986,7 @@ def update_type_aliases(  # noqa: PLR0913
             continue
 
         has_aliased_forward_ref = False
-        for field in evaluated_fields or model.fields:
+        for field in model.fields if evaluated_fields is None else evaluated_fields:
             if quotes_member_literals and quote_forward_enum_member_literals(
                 field,
                 positions,
