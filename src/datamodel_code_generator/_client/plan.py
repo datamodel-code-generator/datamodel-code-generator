@@ -855,9 +855,9 @@ class Planner:
     ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
         """Return the member plans of a form-data response with file parts, or None when its object is read whole.
 
-        A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats.
-        Any other part is read by the type of the other properties' values, as a request writes it, and a part of an
-        untyped extra keeps its bytes, as a file part does.
+        A part holding no file is read by the type the response gives its member's values, or their items when it
+        repeats. Any other part is read by the type of the other properties' values, as a request writes it, and a part
+        of an untyped extra keeps its bytes, as a file part does.
         """
         parts = _parts(use)
         declared = dict(parts.members)
@@ -872,9 +872,14 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):
+            leaf = (
+                self.wire.kinds.member(declared_extra.value)[1]
+                if isinstance(declared_extra, PartSchema) and declared_extra.value is not None
+                else extras.leaf
+            )
             additional = PartSpec(
                 plan=PartPlan("", extras.kind or "json", repeated=extras.repeated),
-                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.leaf, None)),
+                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", leaf, None)),
             )
         elif isinstance(declared_extra, PartSchema):
             additional = self._read(use, "", site, declared_extra, None, required=False)
@@ -884,7 +889,7 @@ class Planner:
                 name,
                 member,
                 declared[name],
-                facts.type,
+                declared[name].value,
                 required=facts.required,
                 excluded=_rw_variant_flag("response", facts.read_only, facts.write_only),
             )

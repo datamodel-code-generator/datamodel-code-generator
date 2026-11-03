@@ -417,6 +417,13 @@
     },
     "config": {}
   },
+  "multipart-split-all": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "config": {}
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
     "config": {}

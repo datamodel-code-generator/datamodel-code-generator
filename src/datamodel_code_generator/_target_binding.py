@@ -2866,8 +2866,8 @@ class _UseFacts(_SchemaUses):
         facts = [
             (symbol, found)
             for symbol in self.object_symbols(value)
-            if (location := self.locations.get(symbol)) is not None
-            and (found := self.parser.object_facts.get(location)) is not None
+            if (schema := self.locations.get(symbol)) is not None
+            and (found := self.parser.object_facts.get(schema)) is not None
         ]
         patterns = any(found.patterns for _, found in facts)
         owner, said = next(
@@ -3064,9 +3064,12 @@ class _Octets(_UseFacts):
             return
         yield node, constrained
 
-    def view(self, leaf: Reference | DataType, direction: Direction) -> TypeView | None:
-        """Return the type the models give one node of a value, each alias and root model by the type it stands for."""
-        projector = self.binder.projector(direction, inline=True)
+    def view(self, leaf: Reference | DataType, direction: Direction, *, inline: bool = True) -> TypeView | None:
+        """Return the type the models give one node of a value, each alias and root model by the type it stands for.
+
+        Without `inline`, aliases and root models are the types they name.
+        """
+        projector = self.binder.projector(direction, inline=inline)
         return (projector.declaration(leaf) if isinstance(leaf, Reference) else projector.project(leaf)).value
 
     @cached_property
@@ -3111,17 +3114,14 @@ class _Octets(_UseFacts):
             file=bool(leaves) and all(isinstance(leaf, DataType) and binary_content_of(leaf) for leaf in leaves),
             repeated=item is not None,
             structured=found is not None and any(self.layout(member) != "scalar" for member in present(found)),
+            value=value,
         )
 
     def part(self, member: FieldUseBinding) -> PartSchema:
-        """Return how a member of a multipart body is sent as parts, by the field it binds (``part_of``)."""
+        """Return how a member of a multipart body is sent as parts, by the field it binds in the body's direction."""
         field = self.field_of(member)
-        value = (
-            facts.type
-            if (facts := member.model_facts) is not None
-            else self.binder.projector(member.direction).project(field.data_type).value
-        )
-        return self.part_of(field.data_type, value, member.direction)
+        direction = member.direction
+        return self.part_of(field.data_type, self.view(field.data_type, direction, inline=False), direction)
 
     def mapped(self, node: Reference | DataType, direction: Direction) -> DataType | None:
         """Return the values node of the mapping a value is (``alternatives``), None for any other value."""
@@ -3157,7 +3157,8 @@ class _Octets(_UseFacts):
         It is an object as its type is (``takes_object``), each property member's parts are its field's
         (``part``), and the other parts are none when the model allows no other properties, those of their typed
         values when it types them (``others``), and any value otherwise. Also return where the first raw binary
-        string sits in a part holding no files, which carries it as text (``first``).
+        string sits in a part holding no files, which carries it as text (``first``); a member the body's direction
+        leaves out is never sent.
         """
         direction = use.id.direction
         members = [
@@ -3170,6 +3171,7 @@ class _Octets(_UseFacts):
                 found
                 for _, member, part in members
                 if not part.file
+                and member.exclusion is None
                 and (
                     found := self.first(
                         (field := self.field_of(member)).data_type, direction, self.origin(field, schema)
@@ -3187,7 +3189,8 @@ class _Octets(_UseFacts):
                 extra = "closed"
             elif others.source is not None:
                 with self.values_node(others, node, direction) as values:
-                    extra = self.part_of(values, others.values, direction)
+                    typed = others.values if values is None else self.view(values, direction, inline=False)
+                    extra = self.part_of(values, typed, direction)
                     if refused is None and not extra.file and values is not None:
                         refused = self.first(values, direction, others.free or schema)
         named = tuple((name, part) for name, _, part in members)

@@ -411,12 +411,14 @@ class PartSchema:
 
     A member holds files when the models hold its values, or its items', as raw octets (BINARY_CONTENT); it repeats as
     an item container, one part for each item; and its values, or its items', are structured when one of their types
-    is a model, a mapping or an item container.
+    is a model, a mapping or an item container. `value` is the type the body's direction gives its values, which a
+    part read on its own is read by.
     """
 
     file: bool
     repeated: bool
     structured: bool
+    value: TypeView | None = None
 
 
 @dataclass(frozen=True, slots=True)
