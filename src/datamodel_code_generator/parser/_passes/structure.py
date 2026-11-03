@@ -26,6 +26,7 @@ from datamodel_code_generator.model.base import (
     remember_nested_factory_order_before_nullability,
 )
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._init_exports import exported_names, exports_reach
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -716,14 +717,14 @@ def _exported_imports(
 ) -> defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]]:
     """Return the exporters that the ``__init__`` module of each package imports to re-export their names.
 
-    A package re-exports the modules directly below it, or all modules below it with the recursive scope.
+    A package re-exports the modules below it that its scope reaches (``exports_reach``).
     """
     imported: defaultdict[tuple[str, ...], set[tuple[tuple[str, ...], int]]] = defaultdict(set)
     for node in exporters:
         path = node[0]
-        first = max(len(path) - 1, 0) if scope == AllExportsScope.Children else 0
-        for size in range(first, len(path)):
-            imported[path[:size]].add(node)
+        for size in range(len(path)):
+            if exports_reach(len(path) - size, scope):
+                imported[path[:size]].add(node)
     return imported
 
 
@@ -865,11 +866,7 @@ def _module_merges(
     graph = index.reference_graph(snapshot, keyed, edges={EdgeKind.RULE_TYPE: rule_references})
     module_graph = graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))
     merges = module_graph.circular_components()
-    exporting = {
-        module
-        for module, models in module_models_list
-        if any(model.reference and not model.reference.short_name.startswith("_") for model in models)
-    }
+    exporting = {module for module, models in module_models_list if next(exported_names(models), None) is not None}
     released = merges
     while merges and (
         failing := _failing_import_cycles(
