@@ -6211,7 +6211,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         constraints = _value_keywords.get_array_constraints(self, obj, array_data_type)
         if non_array_types:
-            constraints = {}
+            constraints = _value_keywords.type_list_keywords(obj)
         if suppress_item_constraints:
             _value_keywords.suppress_array_length_constraints(self, constraints, obj)
         return self._build_field(
@@ -6553,6 +6553,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not self.ignore_enum_constraints
             ):
                 constraints.pop("pattern", None)
+        elif kept := _value_keywords.type_list_keywords(obj):
+            constraints = kept
         if data_type in MAPPINGS and (
             property_counts := _value_keywords.get_property_count_constraints(type(self), obj)
         ):
