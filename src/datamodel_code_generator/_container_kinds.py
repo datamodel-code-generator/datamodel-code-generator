@@ -125,22 +125,18 @@ BUILTIN_CONTAINERS: Final[Mapping[str, ContainerSlot]] = MappingProxyType({
 
 LegacyKindRow: TypeAlias = Literal[
     "legacy-abstract-containers-as-unions",
-    "legacy-frozen-set-not-an-array",
     "legacy-collapse-beside-lists-and-dicts",
 ]
 """A decision that keeps the slots it read before its kind was named, which ``ContainerKind.without`` leaves out.
 
 - `legacy-abstract-containers-as-unions`: the keywords a field's type consumes or enforces itself read a ``Sequence``
   or ``Mapping`` through to its members, like a union.
-- `legacy-frozen-set-not-an-array`: the uniqueItems checks of ``--generate-schema-validators`` do not read a frozen
-  set as an array.
 - `legacy-collapse-beside-lists-and-dicts`: under ``--field-constraints``, collapse keeps a constrained root model
   beside a list, a dict or a union only.
 """
 
 _LEFT_OUT: Final[Mapping[LegacyKindRow, frozenset[ContainerSlot]]] = MappingProxyType({
     "legacy-abstract-containers-as-unions": frozenset(("sequence", "mapping")),
-    "legacy-frozen-set-not-an-array": frozenset(("frozen_set",)),
     "legacy-collapse-beside-lists-and-dicts": frozenset(("frozen_set", "set", "sequence", "mapping", "tuple")),
 })
 """The slots each legacy row leaves out of the kind its decision names."""

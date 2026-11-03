@@ -1053,7 +1053,7 @@ def data_type_may_accept_array(
     visited |= {data_type_id}
 
     match data_type:
-        case DataType() if data_type in ARRAYS.without("legacy-frozen-set-not-an-array"):
+        case DataType() if data_type in ARRAYS:
             return True
         case DataType(reference=reference) if reference is not None and isinstance(reference.source, DataModel):
             source = reference.source
@@ -1103,7 +1103,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
                 return {(*path, *rule.path) for rule in runtime_validation.unique_items}
 
         match data_type:
-            case DataType() if data_type in ITEM_CONTAINERS.without("legacy-frozen-set-not-an-array"):
+            case DataType() if data_type in ITEM_CONTAINERS:
                 return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
                     data_type.data_types,
                     (*path, None),
