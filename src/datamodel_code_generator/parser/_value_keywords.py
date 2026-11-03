@@ -1110,11 +1110,9 @@ def get_array_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject, data
 
 def get_first_false_schema_index(
     cls: type[ValueKeywordsHost],  # noqa: ARG001
-    items: Sequence[JsonSchemaObject | bool] | None,
+    items: Sequence[JsonSchemaObject | bool],
 ) -> int | None:
     """Return the first tuple/prefix item index that rejects every value."""
-    if items is None:
-        return None
     return next((index for index, item in enumerate(items) if item is False), None)
 
 
