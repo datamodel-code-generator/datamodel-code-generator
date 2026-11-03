@@ -1716,8 +1716,8 @@ def _load_single_model_schema(
             _add_reused_definitions(nested_models, definition_types)
         else:
             msg = (
-                f"{stable_repr(qualname)} is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, "
-                "TypedDict"
+                f"{stable_repr(qualname)} is not a supported type. "
+                "Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
             )
             raise Error(msg)
 
