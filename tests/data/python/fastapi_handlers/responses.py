@@ -86,6 +86,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append("get_tally()")
             return models.Tally(total=2, nested={"a": [1]})
 
+        def get_ratio(self, *, kind: str) -> object:
+            calls.append(f"get_ratio(kind={kind!r})")
+            return server.HTTPResult(200, {"ratio": float("nan")} if kind == "nan" else {"total": 10**5000})
+
     default = {"default": Default()}
     return {"standard": default, "plain": default, "included": default}
 

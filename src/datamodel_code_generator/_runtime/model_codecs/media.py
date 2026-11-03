@@ -133,19 +133,16 @@ def json_text(
     *,
     ascii_only: bool = False,
     sort_keys: bool = False,
-    errors: Literal["runtime", "legacy-python-json-errors"] = "runtime",
 ) -> str:
     """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
 
     The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
     reference, a non-finite number, an integer over the interpreter's decimal conversion limit, or a value nested
-    beyond the recursion limit, and TypeError for a value or key that is not JSON. `errors="legacy-python-json-errors"`
-    lets the standard library's errors through with its messages, as a server writes a body without a model.
+    beyond the recursion limit, and TypeError for a value or key that is not JSON.
     """
-    caught = _JSON_ERRORS if errors == "runtime" else ()
     try:
         return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
-    except caught as error:
+    except _JSON_ERRORS as error:
         if isinstance(error, TypeError):
             raise TypeError(_NOT_JSON) from None
         message = (
