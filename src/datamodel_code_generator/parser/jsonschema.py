@@ -2324,7 +2324,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     model_extras[k] = self._externalize_schema_extra(k, v)
                 elif self.model_extra_keys_without_x_prefix and k in self.model_extra_keys_without_x_prefix:
                     # Strip the x- prefix
-                    model_extras[k.lstrip("x-")] = self._externalize_schema_extra(k, v)
+                    model_extras[k.removeprefix("x-")] = self._externalize_schema_extra(k, v)
         if model_extras:
             self.extra_template_data[path]["model_extras"] = model_extras
 

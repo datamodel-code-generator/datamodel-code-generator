@@ -23601,6 +23601,30 @@ def test_main_jsonschema_model_extras_without_x_prefix(
     )
 
 
+def test_main_jsonschema_model_extras_without_x_prefix_strips_only_prefix(
+    output_file: Path,
+) -> None:
+    """Strip only the x- prefix from model-level extra keys, not every leading x or -.
+
+    Regression test for #5529: x-xenon must become xenon on the model, like on
+    fields, not enon as lstrip("x-") produced.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "model_extras_without_x_prefix_strip.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--model-extra-keys-without-x-prefix",
+            "x-xenon",
+            "--field-extra-keys-without-x-prefix",
+            "x-xenon",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model", "expected_output"),
     [

@@ -6885,6 +6885,8 @@ pydantic_v2.BaseModel-model_extras_v2.py	main/jsonschema/model_extras_v2.py
 pydantic_v2.BaseModel-model_extras_no_match_v2.py	main/jsonschema/model_extras_no_match_v2.py
 [test_main_jsonschema_model_extras_without_x_prefix]
 pydantic_v2.BaseModel-model_extras_without_x_prefix_v2.py	main/jsonschema/model_extras_without_x_prefix_v2.py
+[test_main_jsonschema_model_extras_without_x_prefix_strips_only_prefix]
+	main/jsonschema/jsonschema_model_extras_without_x_prefix_strips_only_prefix.py
 [test_main_jsonschema_model_name_map]
 	main/jsonschema/model_name_map.py
 [test_main_jsonschema_model_name_map_from_file]
