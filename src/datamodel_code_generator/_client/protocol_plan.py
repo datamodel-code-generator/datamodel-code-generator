@@ -14,6 +14,7 @@ from datamodel_code_generator._target_contract import SourceLocation, parameter_
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterator, Mapping
@@ -84,7 +85,7 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
         "E_CONFIG_VALUE",
         "config",
         f"{at}.document",
-        f"{at}.document {redact_url(str(document))!r} is not a document name",
+        f"{at}.document {stable_repr(redact_url(str(document)))} is not a document name",
     )
 
 
@@ -146,7 +147,7 @@ class _Resolver:
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
             named = named_document(reference.document, document)
-            message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
+            message = f"{link.at} {stable_repr(reference.pointer)}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
         self.operations[reference] = operation
@@ -229,7 +230,7 @@ class HelperPlanner:
 
 def missing_schema(helper: Helper, noun: str, reference: SchemaRef) -> str:
     """Return the refusal of a helper's schema setting, which `noun` names, whose document has no such pointer."""
-    return f"The {noun} {reference.pointer!r} of {helper.name!r} does not exist in its document"
+    return f"The {noun} {stable_repr(reference.pointer)} of {stable_repr(helper.name)} does not exist in its document"
 
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:
@@ -240,12 +241,12 @@ def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> 
     if location == "body":
         return None if operation.request_body is not None else f"{_label(operation)} has no request body"
     if location == "querystring":
-        return None if name in querystrings else f"{_label(operation)} has no querystring {name!r}"
+        return None if name in querystrings else f"{_label(operation)} has no querystring {stable_repr(name)}"
     if location == "query" and querystrings:
         return f"{_label(operation)} owns a querystring, which a querystring target writes"
     wanted = parameter_key(location, name)
     present = any(where == location and parameter_key(location, item) == wanted for where, item in declared)
-    return None if present else f"{_label(operation)} has no {location} parameter {name!r}"
+    return None if present else f"{_label(operation)} has no {location} parameter {stable_repr(name)}"
 
 
 def helper_operations(protocols: Protocols | None) -> frozenset[OperationId]:
@@ -276,10 +277,10 @@ def helper_problems(
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
             message = (
-                f"The {helper.kind} helper {helper.name!r} reserves the {for_count(len(taken), 'argument')} "
-                f"{', '.join(map(repr, taken))} of "
-                f"{_label(spec.contract)}; rename {for_count(len(taken), 'it', 'them')} with the operation's "
-                "parameter_names or body_field_names in --client-operations"
+                f"The {helper.kind} helper {stable_repr(helper.name)} reserves the {for_count(len(taken), 'argument')} "
+                f"{', '.join(map(stable_repr, taken))} of {_label(spec.contract)}; rename "
+                f"{for_count(len(taken), 'it', 'them')} with the operation's parameter_names or body_field_names in "
+                "--client-operations"
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
@@ -295,8 +296,8 @@ def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterat
         for parts, class_name in helper_classes(helper.name, helper.kind, protocols.python_version):
             if (owner := owners.setdefault(class_name, parts)) != parts:
                 message = (
-                    f"The helper name {helper.name!r} gives the class name {class_name!r}, which {'.'.join(owner)!r} "
-                    "already gives"
+                    f"The helper name {stable_repr(helper.name)} gives the class name {stable_repr(class_name)}, which "
+                    f"{stable_repr('.'.join(owner))} already gives"
                 )
                 entry = OperationRef(pointer=protocols.operations[helper.links[0].ref].id.use_site.pointer)
                 yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)

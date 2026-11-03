@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias
 from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._target_naming import explicit_name, windows_device
 from datamodel_code_generator._target_unicode import is_nfkc, is_python_name
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -92,7 +93,7 @@ def namespace_problem(value: object, target_python_version: PythonVersion) -> st
             reason = "which the `types` package exports"
         else:
             continue
-        return f"A resource namespace cannot use the reserved name {part!r}, {reason}"
+        return f"A resource namespace cannot use the reserved name {stable_repr(part)}, {reason}"
     return None
 
 
@@ -105,13 +106,15 @@ def helper_name_problem(value: str, target_python_version: PythonVersion) -> str
     """Return why a helper name is invalid, or None for dotted public identifiers of the target in NFKC form."""
     for part in value.split("."):
         if not is_python_name(part, target_python_version):
-            return f"The helper name {value!r} must be Python identifiers separated by dots, without keywords"
+            return (
+                f"The helper name {stable_repr(value)} must be Python identifiers separated by dots, without keywords"
+            )
         if (
             not is_nfkc(part, target_python_version)
             or part.startswith("_")
             or windows_device(part, target_python_version)
         ):
-            return f"The helper name {value!r} cannot use the part {part!r}"
+            return f"The helper name {stable_repr(value)} cannot use the part {stable_repr(part)}"
     return None
 
 

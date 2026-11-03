@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -58,9 +59,13 @@ def named_document(written: str | None, identity: str | None) -> str:
     if written is None:
         return ""
     if urlsplit(named := identity or written).scheme != "file":
-        return f" in {redact_url(written)!r}"
+        return f" in {stable_repr(redact_url(written))}"
     file = file_uri_path(named).as_posix()
-    return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
+    return (
+        f" in {stable_repr(file)}"
+        if written == identity or Path(written).as_posix() == file
+        else f" in {stable_repr(written)} ({file})"
+    )
 
 
 @dataclass(frozen=True, slots=True)

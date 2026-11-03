@@ -13,6 +13,7 @@ from datamodel_code_generator._json_pointer import escape_token, pointer_opening
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._schema_reading import split_json_pointer
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
@@ -26,7 +27,7 @@ def pointer_tokens(ref: str) -> tuple[str, ...] | None:
     try:
         return reference_tokens(ref.partition("#")[2], strict=True)
     except ValueError as exc:
-        msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(ref)!r}"
+        msg = f"API_REF_NONCANONICAL_POINTER: {stable_repr(redact_reference(ref))}"
         raise SchemaParseError(msg, path=[ref], original_error=exc) from exc
 
 
@@ -37,7 +38,7 @@ def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resol
     fragment = original.partition("#")[2]
     pointer = fragment if (opening := pointer_opening(fragment)) is None else "/" + fragment[opening:]
     if tuple(split_json_pointer(raw, pointer)) != tokens:
-        msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(original)!r}"
+        msg = f"API_REF_NONCANONICAL_POINTER: {stable_repr(redact_reference(original))}"
         raise SchemaParseError(msg, path=[resolved])
 
 

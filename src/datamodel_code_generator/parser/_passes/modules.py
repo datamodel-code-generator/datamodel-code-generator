@@ -170,7 +170,7 @@ from datamodel_code_generator.parser._tag_plan import (
     tag_msgspec_unions,
     union_site,
 )
-from datamodel_code_generator.python_literal import runtime_expression_imports
+from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
@@ -866,7 +866,7 @@ def _tag_discriminator_unions(
                 deferred.append(union)
             case _:
                 warn_as_parser_base(
-                    f"Discriminator {union.tag_field!r} of {union.decision.site.model.class_name} cannot be "
+                    f"Discriminator {stable_repr(union.tag_field)} of {union.decision.site.model.class_name} cannot be "
                     f"represented as msgspec tags: {reason}; its variants are left untagged.",
                     UserWarning,
                     stacklevel=2,

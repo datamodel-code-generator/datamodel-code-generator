@@ -236,6 +236,7 @@ from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, 
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     ModelResolver,
@@ -553,7 +554,7 @@ def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_cod
         return code_formatter._format_generated_code(body) if generated_code else code_formatter.format_code(body)  # noqa: SLF001
     except Exception as exc:  # noqa: BLE001
         warn(
-            f"Failed to format code: {exc!r}. Emitting unformatted output.",
+            f"Failed to format code: {stable_repr(exc)}. Emitting unformatted output.",
             stacklevel=1,
         )
         return body
@@ -1358,7 +1359,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         result: dict[tuple[str, str], str] = {}
         for mapping in type_mappings:
             if "=" not in mapping:
-                msg = f"Invalid type mapping format: {mapping!r}. Expected 'type+format=target' or 'format=target'."
+                msg = (
+                    f"Invalid type mapping format: {stable_repr(mapping)}. Expected 'type+format=target' or "
+                    "'format=target'."
+                )
                 raise ValueError(msg)
 
             source, target = mapping.split("=", 1)

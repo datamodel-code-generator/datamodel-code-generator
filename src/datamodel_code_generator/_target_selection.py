@@ -13,6 +13,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._target_documents import document_identity
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -141,13 +142,16 @@ def keyed(error: Exception, config: Any) -> Exception:
     def named(item: Diagnostic) -> Diagnostic:
         if (path := item.option_path) is None or (found := _INDEXED.match(path)) is None:
             return item
-        spelled = f"{found[1]}[{(key := keys[found[1]][int(found[2])])!r}]"
+        key = keys[found[1]][int(found[2])]
+        spelled = f"{found[1]}[{stable_repr(key)}]"
         if (member := found[3]) is not None:
             names = config.client_operations[key][member]
             members = (
-                [f"[{name!r}]" for name in names]
+                [f"[{stable_repr(name)}]" for name in names]
                 if member == "parameter_names"
-                else [f"[{media!r}][{name!r}]" for media, fields in names.items() for name in fields]
+                else [
+                    f"[{stable_repr(media)}][{stable_repr(name)}]" for media, fields in names.items() for name in fields
+                ]
             )
             spelled += f".{member}{members[int(found[4])]}"
         return replace(item, option_path=f"{spelled}{path[found.end() :]}")

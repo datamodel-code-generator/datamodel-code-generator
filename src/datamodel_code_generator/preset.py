@@ -43,6 +43,7 @@ from datamodel_code_generator.enums import (
     UnionMode,
     VersionMode,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -259,7 +260,7 @@ class PresetConfig(BaseGenerateConfig):
         """Build immutable preset updates from statically checked GenerateConfig fields."""
         for field_name in values:
             if field_name not in type(self).model_fields:  # pragma: no cover
-                msg = f"Preset field {field_name!r} is not a BaseGenerateConfig field"
+                msg = f"Preset field {stable_repr(field_name)} is not a BaseGenerateConfig field"
                 raise PresetError(msg)
 
         super().__init__(**values)
@@ -328,7 +329,10 @@ def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetC
                 items[item.field_name] = item
                 continue
             if existing.value != item.value:  # pragma: no cover
-                msg = f"Preset field {item.field_name!r} is configured with both {existing.value!r} and {item.value!r}"
+                msg = (
+                    f"Preset field {stable_repr(item.field_name)} is configured with both "
+                    f"{stable_repr(existing.value)} and {stable_repr(item.value)}"
+                )
                 raise PresetError(msg)
     return tuple(items.values())
 
@@ -347,7 +351,7 @@ def _normalize_preset_config_value(
             try:
                 return ExtraFields(value)
             except ValueError as exc:  # pragma: no cover
-                msg = f"Unsupported extra_fields preset value: {value!r}"
+                msg = f"Unsupported extra_fields preset value: {stable_repr(value)}"
                 raise PresetError(msg) from exc
     return _ensure_preset_config_value(field_name, validated_value)
 
@@ -368,7 +372,7 @@ def _ensure_preset_enum_config_value(
 ) -> PresetEnumConfigValue:
     if isinstance(value, PresetEnumConfigValue) and not isinstance(value, ExtraFields):
         return value
-    msg = f"Preset field {field_name!r} cannot be rendered as a preset CLI option"  # pragma: no cover
+    msg = f"Preset field {stable_repr(field_name)} cannot be rendered as a preset CLI option"  # pragma: no cover
     raise PresetError(msg)  # pragma: no cover
 
 
@@ -376,7 +380,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to its CLI option spelling."""
     option = option_flag(item.field_name)
     if option not in CLI_OPTION_META:  # pragma: no cover
-        msg = f"Preset field {item.field_name!r} does not map to a documented CLI option"
+        msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
     if item.value is True:
         return option
@@ -387,7 +391,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
 
     negative_option = option_flag(item.field_name, negative=True)
     if negative_option not in CLI_OPTION_META:  # pragma: no cover
-        msg = f"Preset field {item.field_name!r} does not map to a documented negative CLI option"
+        msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
     return negative_option
 
@@ -844,23 +848,23 @@ def _validate_preset_infos(infos: tuple[PresetInfo, ...]) -> None:
     preset_names: set[PresetName] = set()
     for info in infos:
         if info.name in preset_names:  # pragma: no cover
-            msg = f"Preset {info.name.value!r} is defined more than once"
+            msg = f"Preset {stable_repr(info.name.value)} is defined more than once"
             raise PresetError(msg)
         preset_names.add(info.name)
         if info.target_python_version.value.replace(".", "") not in info.name.value:  # pragma: no cover
-            msg = f"Preset {info.name.value!r} does not include its Python target in the name"
+            msg = f"Preset {stable_repr(info.name.value)} does not include its Python target in the name"
             raise PresetError(msg)
 
         output_model_groups: dict[DataModelType, str] = {}
         for group in info.option_groups:
             if not group.config:  # pragma: no cover
-                msg = f"Preset option group {group.title!r} does not define any config fields"
+                msg = f"Preset option group {stable_repr(group.title)} does not define any config fields"
                 raise PresetError(msg)
             for output_model_type in group.output_model_types:
                 if output_model_type in output_model_groups:  # pragma: no cover
                     msg = (
-                        f"Preset {info.name.value!r} maps {output_model_type.value!r} to both "
-                        f"{output_model_groups[output_model_type]!r} and {group.title!r}"
+                        f"Preset {stable_repr(info.name.value)} maps {stable_repr(output_model_type.value)} to both "
+                        f"{stable_repr(output_model_groups[output_model_type])} and {stable_repr(group.title)}"
                     )
                     raise PresetError(msg)
                 output_model_groups[output_model_type] = group.title
@@ -1222,7 +1226,7 @@ def render_presets(format_: PresetFormat) -> str:
         case "markdown":
             return render_presets_markdown().rstrip() + "\n"
         case _:  # pragma: no cover
-            msg = f"Unsupported preset docs format: {format_!r}"
+            msg = f"Unsupported preset docs format: {stable_repr(format_)}"
             raise PresetError(msg)
 
 
@@ -1304,7 +1308,7 @@ def _coerce_preset_name(preset: PresetName | str) -> PresetName:
         return PresetName(preset)
     except ValueError as exc:  # pragma: no cover
         names = ", ".join(get_preset_names())
-        msg = f"Unknown preset: {preset!r}. Available presets: {names}"
+        msg = f"Unknown preset: {stable_repr(preset)}. Available presets: {names}"
         raise PresetError(msg) from exc
 
 

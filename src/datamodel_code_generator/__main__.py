@@ -2207,10 +2207,12 @@ def _run_jobs_json(
                     except ValidationError:
                         output.seek(0)
                         raw_output = output.read().strip()
+                        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
                         context = (
-                            f"kind {payload['kind']!r}"
+                            f"kind {stable_repr(payload['kind'])}"
                             if isinstance(payload, Mapping) and "kind" in payload
-                            else f"raw JSON {raw_output!r}"
+                            else f"raw JSON {stable_repr(raw_output)}"
                         )
                         print(  # noqa: T201
                             f"Error: Job '{staged_plan.plan.name}' returned unsupported JSON batch output ({context}); "
@@ -2876,7 +2878,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
     except UnicodeDecodeError as e:
-        print(f"Unable to decode input using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        print(f"Unable to decode input using encoding {stable_repr(config.encoding)}: {e}", file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
     except Error as e:
         print(str(e), file=sys.stderr)  # noqa: T201
@@ -2954,8 +2958,10 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 OutputComparisonOptions(is_directory_output=is_directory_output),
             )
         except _OutputDecodeError as e:
+            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
             print(  # noqa: T201
-                f"Unable to decode output {e.path.as_posix()} using encoding {config.encoding!r}: {e}",
+                f"Unable to decode output {e.path.as_posix()} using encoding {stable_repr(config.encoding)}: {e}",
                 file=sys.stderr,
             )
             return cleanup_and_return(Exit.ERROR)

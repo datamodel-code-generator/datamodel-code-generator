@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from functools import partial
 from itertools import chain
 from math import isfinite, isnan
-from typing import TYPE_CHECKING, Any, Final, Protocol, cast
+from pprint import PrettyPrinter
+from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Protocol, cast
 
-from typing_extensions import Self, Sentinel
+from typing_extensions import Self, Sentinel, override
 
 from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._python_syntax import (
@@ -104,12 +107,12 @@ def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpre
 
 def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
     """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
-    return _datetime_expression(call_text(f".{kind}.fromisoformat", (repr(text),)))
+    return _datetime_expression(call_text(f".{kind}.fromisoformat", (stable_repr(text),)))
 
 
 def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:
     """Return the call of the constructor ``import_`` on the string literal of ``text``, whose value is ``text``."""
-    return PythonRuntimeExpression.from_import_call(import_, repr(text), value=text)
+    return PythonRuntimeExpression.from_import_call(import_, stable_repr(text), value=text)
 
 
 _RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
@@ -349,23 +352,96 @@ def stable_repr(value: object) -> str:
     """Return ``repr()`` of a value as the newest target writes it, whatever interpreter runs.
 
     ``repr()`` escapes the characters of a string that the running interpreter does not print, which follow its
-    Unicode version; here they follow the newest target's, in a string and in the tuples, lists, sets and dicts that
-    hold one, so a message or a literal reads the same on every interpreter. Any other value is its ``repr()``.
+    Unicode version; here they follow the newest target's, in a string, also of a class that keeps the ``repr()`` of
+    ``str``, and in the tuples, lists, sets and dicts that hold one, so a message or a literal reads the same on every
+    interpreter. A container that holds itself is written as ``repr()`` writes it again (``[...]``). Any other value
+    is its ``repr()``.
     """
-    if type(value) is str:
-        return string_repr(value, NEWEST_TARGET)
-    if (display := _CONTAINER_REPRS.get(type(value))) is not None:
-        return display(value)
-    return repr(value)
+    return _stable_repr(value, set())
 
 
-_CONTAINER_REPRS: Final[dict[type, Callable[[Any], str]]] = {
-    tuple: lambda value: tuple_display(map(stable_repr, value)),
-    list: lambda value: list_display(map(stable_repr, value)),
-    set: lambda value: set_display(map(stable_repr, value)),
-    dict: lambda value: dict_display((stable_repr(key), stable_repr(item)) for key, item in value.items()),
+def _stable_repr(value: object, active: set[int]) -> str:
+    """Return ``stable_repr`` of a value inside the containers whose ids ``active`` holds."""
+    if isinstance(value, str) and type(value).__repr__ is str.__repr__:
+        return string_repr(_normalize_string(value), NEWEST_TARGET)
+    if (display := _CONTAINER_REPRS.get(type(value))) is None:
+        return repr(value)
+    if (key := id(value)) in active:
+        return _RECURSIVE_REPRS[type(value)]
+    active.add(key)
+    try:
+        return display(value, partial(_stable_repr, active=active))
+    finally:
+        active.discard(key)
+
+
+_CONTAINER_REPRS: Final[dict[type, Callable[[Any, Callable[[object], str]], str]]] = {
+    tuple: lambda value, item: tuple_display(map(item, value)),
+    list: lambda value, item: list_display(map(item, value)),
+    set: lambda value, item: set_display(map(item, value)),
+    dict: lambda value, item: dict_display((item(key), item(entry)) for key, entry in value.items()),
 }
 """How ``stable_repr`` writes each container whose ``repr()`` holds the ``repr()`` of its items, as ``repr()`` does."""
+_RECURSIVE_REPRS: Final[dict[type, str]] = {tuple: "(...)", list: "[...]", set: "set(...)", dict: "{...}"}
+"""What ``repr()`` writes for a container inside itself."""
+
+
+class _StablePrettyPrinter(PrettyPrinter):
+    """A ``pprint.PrettyPrinter`` that writes strings as ``stable_repr`` writes them, wrapped where ``pprint`` wraps."""
+
+    @override
+    def format(self, object: object, context: dict[int, int], maxlevels: int, level: int) -> tuple[str, bool, bool]:
+        """Write a string as ``stable_repr`` does; any other value as ``pprint`` does, its strings so too."""
+        if isinstance(object, str) and type(object).__repr__ is str.__repr__:
+            return stable_repr(object), True, False
+        return super().format(object, context, maxlevels, level)
+
+    def _pprint_stable_str(
+        self,
+        text: str,
+        stream: IO[str],
+        indent: int,
+        allowance: int,
+        _context: object,
+        level: int,
+    ) -> None:
+        """Write a string too long for its line as the strings ``pprint`` splits it into, each by ``stable_repr``."""
+        width = self._width  # ty: ignore[unresolved-attribute]
+        if level == 1:
+            indent += 1
+            allowance += 1
+        chunks: list[str] = []
+        lines = text.splitlines(keepends=True) or [text]
+        for index, line in enumerate(lines):
+            last_line = index == len(lines) - 1
+            if len(rep := stable_repr(line)) <= width - indent - (allowance if last_line else 0):
+                chunks.append(rep)
+                continue
+            parts = re.findall(r"\S*\s*", line)[:-1]
+            current = ""
+            for part_index, part in enumerate(parts):
+                candidate = current + part
+                limit = width - indent - (allowance if last_line and part_index == len(parts) - 1 else 0)
+                if len(stable_repr(candidate)) > limit:
+                    if current:
+                        chunks.append(stable_repr(current))
+                    current = part
+                else:
+                    current = candidate
+            if current:
+                chunks.append(stable_repr(current))
+        if len(chunks) == 1:
+            stream.write(chunks[0])
+            return
+        body = f"\n{' ' * indent}".join(chunks)
+        stream.write(f"({body})" if level == 1 else body)
+
+    _dispatch: ClassVar = {**vars(PrettyPrinter)["_dispatch"], str.__repr__: _pprint_stable_str}
+
+
+def stable_pformat(value: object) -> str:
+    """Return ``pprint.pformat()`` of a value with its strings written as ``stable_repr`` writes them."""
+    return _StablePrettyPrinter().pformat(value)
 
 
 def message_repr(value: object) -> str:

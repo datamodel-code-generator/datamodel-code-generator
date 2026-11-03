@@ -562,8 +562,8 @@ class Struct(DataModel):
         if conflict := self._find_layout_conflict(self._generated_layout_bases()):
             other, base = conflict
             msg = (
-                f"msgspec.Struct model {self.class_name!r} has incompatible layouts from generated bases "
-                f"{other.class_name!r} and {base.class_name!r}."
+                f"msgspec.Struct model {stable_repr(self.class_name)} has incompatible layouts from generated bases "
+                f"{stable_repr(other.class_name)} and {stable_repr(base.class_name)}."
             )
             raise Error(msg)
 

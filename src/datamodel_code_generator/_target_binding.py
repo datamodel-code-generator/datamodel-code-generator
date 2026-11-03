@@ -142,7 +142,7 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi import HeaderObject, ParameterObject, RequestBodyObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
+from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, stable_repr
 from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
     Reference,
@@ -945,7 +945,7 @@ def _read_required(
     try:
         read = object_type.model_validate({"required": required}).required
     except ValidationError as error:
-        message = f"API_INVALID_OBJECT: required {required!r} is not a boolean"
+        message = f"API_INVALID_OBJECT: required {stable_repr(required)} is not a boolean"
         raise SchemaParseError(message, [str(declaration)]) from error
     return {**raw, "required": read}
 
@@ -1763,9 +1763,9 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
     try:
         value = _freeze_argument(field.default)
     except _UnsupportedError:
-        return "expression", SourceExpression(repr(field.default))
+        return "expression", SourceExpression(stable_repr(field.default))
     if isinstance(value, (SourceExpression, ImportedExpression)):
-        return "expression", SourceExpression(repr(field.default))
+        return "expression", SourceExpression(stable_repr(field.default))
     return "literal", value
 
 
@@ -1794,7 +1794,7 @@ def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tu
         try:
             frozen = _freeze_argument(value)
         except _UnsupportedError:
-            frozen = SourceExpression(repr(value))
+            frozen = SourceExpression(stable_repr(value))
         keywords.append((name, frozen))
     return tuple(keywords)
 

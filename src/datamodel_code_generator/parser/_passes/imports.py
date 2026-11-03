@@ -95,6 +95,7 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import union_members, written_union_members
 
@@ -1864,7 +1865,7 @@ def reject_unimportable_imports(
         unimportable = (part for part in parts if not is_importable_part(part, target_python_version, row=row))
         if (part := next(unimportable, None)) is not None:
             path = target if part in written else dotted_name(target, part)
-            where = f"module {importer!r}" if importer else "the root package"
+            where = f"module {stable_repr(importer)}" if importer else "the root package"
             reason, hint = (
                 ("a Python keyword", "Rename the input.")
                 if iskeyword(part)
@@ -1877,8 +1878,8 @@ def reject_unimportable_imports(
                 )
             )
             msg = (
-                f"Cannot import the module {path!r} from {where}: {part!r} is {reason}, so the import is a syntax "
-                f"error. {hint}"
+                f"Cannot import the module {stable_repr(path)} from {where}: {stable_repr(part)} is {reason}, so the "
+                f"import is a syntax error. {hint}"
             )
             raise Error(msg)
 

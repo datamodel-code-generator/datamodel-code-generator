@@ -25,6 +25,7 @@ from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -105,7 +106,9 @@ class _Polls:
         problems: list[Diagnostic] = []
         created = self.created(helper, create, problems)
         problems.extend(self.expiry(helper, created))
-        if isinstance(single := self.pages.single(poll, f"{at}.poll", f"polling helper {helper.name!r}"), Diagnostic):
+        if isinstance(
+            single := self.pages.single(poll, f"{at}.poll", f"polling helper {stable_repr(helper.name)}"), Diagnostic
+        ):
             problems.append(single)
             return None, problems
         response, page, body = single
@@ -142,9 +145,9 @@ class _Polls:
         elif not _fits("string", types):
             spec = created[0].spec
             message = (
-                f"The expiry of {helper.name!r} reads "
-                f"{english_list(sorted(cast('frozenset[str]', types)), 'or', 'serial')} values, where "
-                "only a string gives a date and time"
+                f"The expiry of {stable_repr(helper.name)} reads "
+                f"{english_list(sorted(cast('frozenset[str]', types)), 'or', 'serial')} values, where only a string "
+                "gives a date and time"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
@@ -156,7 +159,9 @@ class _Polls:
             return None
         at, spec = f"{helper.at}.remote_cancel", self.pages.spec(declared["operation"])
         if not any(response.success for response in spec.responses):
-            message = f"{_label(spec)} must declare a success response for the remote cancel of {helper.name!r}"
+            message = (
+                f"{_label(spec)} must declare a success response for the remote cancel of {stable_repr(helper.name)}"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
             return None
         found = list(self.bindings(helper, spec, declared["bindings"], f"{at}.bindings", sources, "cancel binding"))
@@ -169,7 +174,8 @@ class _Polls:
         for index, status in enumerate(helper.tree["accepted_statuses"]):
             if (response := success_response(create, status)) is None:
                 message = (
-                    f"The accepted status {status} of {helper.name!r} selects no success response of {_label(create)}"
+                    f"The accepted status {status} of {stable_repr(helper.name)} selects no success response of "
+                    f"{_label(create)}"
                 )
                 where = f"{helper.at}.accepted_statuses[{index}]"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, create))
@@ -189,7 +195,7 @@ class _Polls:
             spec, response = source.spec, source.response
             if selector["from"] == "body" and source.body is None:
                 message = (
-                    f"The {what} of {helper.name!r} reads the body of the {response.status} response of "
+                    f"The {what} of {stable_repr(helper.name)} reads the body of the {response.status} response of "
                     f"{_label(spec)}, which is no JSON model"
                 )
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
@@ -210,7 +216,10 @@ class _Polls:
         for name in STATES:
             for index, value in enumerate(tree[name]):
                 if not _fits(kind := _json_type(value), types):
-                    message = f"The state {value!r} of {helper.name!r} is {kind}, which its state never reads"
+                    message = (
+                        f"The state {stable_repr(value)} of {stable_repr(helper.name)} is {kind}, which its state "
+                        "never reads"
+                    )
                     yield _problem("E_CONFIG_VALUE", "config", f"{helper.at}.{name}[{index}]", message, polled.spec)
 
     def bindings(  # noqa: PLR0913, PLR0917
@@ -274,8 +283,8 @@ class _Polls:
             )
             if parameter.required and unwritten:
                 message = (
-                    f"{label} requires the {location} parameter {parameter.wire_name!r}, which no binding of "
-                    f"{helper.name!r} writes"
+                    f"{label} requires the {location} parameter {stable_repr(parameter.wire_name)}, which no binding "
+                    f"of {stable_repr(helper.name)} writes"
                 )
                 yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         if (request := spec.body) is None or not body:
@@ -283,18 +292,18 @@ class _Polls:
         kind = HELPER_KINDS[helper.kind].label
         if "body" in locations and any(media.kind != "json" for media in request.media):
             message = (
-                f"The {kind} helper {helper.name!r} writes a request body of {label} other than JSON, "
-                "which is not supported yet"
+                f"The {kind} helper {stable_repr(helper.name)} writes a request body of {label} other than JSON, which "
+                "is not supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
         elif "body" in locations and request.default is None:
             message = (
-                f"The {kind} helper {helper.name!r} writes a request body of {label}, which has no "
-                "default media type; set the operation's request_media_type"
+                f"The {kind} helper {stable_repr(helper.name)} writes a request body of {label}, which has no default "
+                "media type; set the operation's request_media_type"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         elif complete and request.required and "body" not in locations:
-            message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
+            message = f"{label} requires a request body, which no binding of {stable_repr(helper.name)} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def reached(  # noqa: PLR0913, PLR0917
@@ -303,13 +312,17 @@ class _Polls:
         """Return the type and accessor of the property a body pointer names, checked against the declared schema."""
         name, spec = helper.name, source.spec
         if selector["from"] != "body":
-            message = f"The {what} of {name!r} reads a {selector['from']}, where only a body pointer reads a result"
+            message = (
+                f"The {what} of {stable_repr(name)} reads a {selector['from']}, where only a body pointer reads a "
+                "result"
+            )
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
         assert source.body is not None
         pointer = selector["pointer"]
         if (reached := self.pages.walk(source.body, pointer)) == "unsupported":
             message = (
-                f"The {what} pointer {pointer!r} of {name!r} reads through a union or map, which is not supported yet"
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
+                "is not supported yet"
             )
             return _problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.selector", message, spec)
         if (
@@ -318,7 +331,10 @@ class _Polls:
             or member.schema is None
             or member.model_facts is None
         ):
-            message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {_label(spec)} response"
+            message = (
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
+                f"{_label(spec)} response"
+            )
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
         value, noun, mismatch = member.model_facts.type, f"{what} schema", "the schema its pointer reads"
         if found := self.pages.schema(helper, spec, reference, value, "response", f"{at}.schema", noun, mismatch):
@@ -336,7 +352,7 @@ class _Polls:
                 checked = self.reached(helper, polled, result["selector"], result["schema"], at, "result")
             case "operation":
                 fetch = self.pages.spec(result["operation"])
-                single = self.pages.single(fetch, f"{at}.operation", f"result of {helper.name!r}")
+                single = self.pages.single(fetch, f"{at}.operation", f"result of {stable_repr(helper.name)}")
                 if isinstance(single, Diagnostic):
                     checked = single
                 else:
@@ -362,12 +378,14 @@ class _Polls:
             return None
         at, name, label = f"{helper.at}.immediate_result", helper.name, _label(create)
         if helper.tree["result"]["kind"] == "none":
-            message = f"The immediate result of {name!r} gives a result, which a helper without a result never has"
+            message = (
+                f"The immediate result of {stable_repr(name)} gives a result, which a helper without a result never has"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", at, message, create))
             return None
         for index, status in enumerate(immediate["statuses"]):
             if success_response(create, status) is None:
-                message = f"The immediate status {status} of {name!r} selects no success response of {label}"
+                message = f"The immediate status {status} of {stable_repr(name)} selects no success response of {label}"
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.statuses[{index}]", message, create))
         successes = [response for response in create.responses if response.success]
         uses = [_page_use([response]) for response in successes]
@@ -375,8 +393,8 @@ class _Polls:
         model = self.model(successes[0]) if successes else None
         if model is None or None in uses or len(spelled) != 1:
             message = (
-                f"The immediate result of {name!r} reads {label}, whose success responses are not all one JSON model, "
-                "which is not supported yet"
+                f"The immediate result of {stable_repr(name)} reads {label}, whose success responses are not all one "
+                "JSON model, which is not supported yet"
             )
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, create))
             return None
@@ -389,7 +407,9 @@ class _Polls:
         assert expected is not None
         assert reached.value is not None
         if (given := self.spelling.hint(reached.value)) != (wanted := self.spelling.hint(expected)):
-            message = f"The immediate result of {name!r} reads {given}, which is not its result type {wanted}"
+            message = (
+                f"The immediate result of {stable_repr(name)} reads {given}, which is not its result type {wanted}"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, create))
             return None
         return reached.steps

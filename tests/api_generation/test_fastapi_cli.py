@@ -125,6 +125,41 @@ def _methods(services: Path) -> str:
     return f"# {services.parent.name}/services.py\n" + "".join(f"{method}\n" for method in methods)
 
 
+_NEW_LETTER_DOCUMENT = {
+    "openapi": "3.1.0",
+    "info": {"title": "Pets", "version": "1"},
+    "servers": [{"url": "https://example.com"}],
+    "paths": {
+        "/pets": {
+            "get": {
+                "operationId": "listPets",
+                "summary": "List \U0001e4d0 pets",
+                "tags": ["pets"],
+                "parameters": [{"name": "q\U0001e4d0", "in": "query", "schema": {"type": "string"}}],
+                "responses": {
+                    "200": {
+                        "description": "ok \U0001e4d0",
+                        "content": {"application/json": {"schema": {"type": "string"}}},
+                    }
+                },
+            }
+        }
+    },
+}
+"""An operation whose summary, query parameter and response hold U+1E4D0, a letter Python 3.11 does not print."""
+
+
+def test_fastapi_cli_quotes_text_alike_whatever_python_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the text of an operation in the router as the newest Python writes it, whatever Python generates it.
+
+    ``repr()`` of Python 3.11 escapes U+1E4D0, which later Pythons print as itself.
+    """
+    monkeypatch.chdir(tmp_path)
+    Path("api.json").write_text(json.dumps(_NEW_LETTER_DOCUMENT), encoding="utf-8")
+    run_main_with_args(["--input", "api.json", "--input-file-type", "openapi", "--output", "models.py", *_server()])
+    assert_output((tmp_path / "server" / "routers" / "pets.py").read_text(encoding="utf-8"))
+
+
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

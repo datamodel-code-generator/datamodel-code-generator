@@ -21,6 +21,7 @@ from typing_extensions import Sentinel
 
 from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._json_pointer import is_array_index
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Mapping
@@ -67,12 +68,12 @@ class ArrayIndexOutOfRangeError(Error):
 def _array_item(value: list[YamlValue], token: str) -> YamlValue:
     """Return a list's item by an RFC 6901 array index; any other token is an error (row ``refusing``)."""
     if not is_array_index(token):
-        msg = f"Invalid JSON pointer array index {token!r}: expected a non-negative integer."
+        msg = f"Invalid JSON pointer array index {stable_repr(token)}: expected a non-negative integer."
         raise Error(msg)
     try:
         index = int(token)
     except ValueError as exc:
-        msg = f"Invalid JSON pointer array index {token!r}: integer string is too long to parse."
+        msg = f"Invalid JSON pointer array index {stable_repr(token)}: integer string is too long to parse."
         raise Error(msg) from exc
     if index >= len(value):
         msg = f"JSON pointer array index {index} is out of range (array length {len(value)})."
@@ -156,7 +157,7 @@ def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]
     """Return ``key``, which names a ``kind``; a key that is no string is an error at ``error_path(key)``."""
     if isinstance(key, str):
         return key
-    msg = f"{kind} {key!r} is not a string"
+    msg = f"{kind} {stable_repr(key)} is not a string"
     raise SchemaParseError(msg, path=error_path(key))
 
 
@@ -218,7 +219,7 @@ def document_statuses(
         status = str(key)
         name = canonical(status) or status
         if name in keys:
-            msg = f"response status {name} is given by two keys, {keys[name]!r} and {key!r}"
+            msg = f"response status {name} is given by two keys, {stable_repr(keys[name])} and {stable_repr(key)}"
             raise SchemaParseError(msg, path=error_path(status))
         keys[name] = key
         statuses[status] = value

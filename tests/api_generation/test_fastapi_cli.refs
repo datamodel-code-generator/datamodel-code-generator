@@ -723,6 +723,8 @@ omitted	main/generation_platform/generate/nothing-written.txt
 	main/generation_platform/fastapi/cli/dependencies-project.txt
 	main/generation_platform/fastapi/cli/dependencies-service.txt
 	main/generation_platform/fastapi/cli/pyproject-paths.txt
+[test_fastapi_cli_quotes_text_alike_whatever_python_runs]
+	api_generation/fastapi_cli/quotes_text_alike_whatever_python_runs.txt
 [test_fastapi_cli_removed_options]
 dependency-format	main/generation_platform/fastapi/cli/removed-options/files.txt
 diagnostics-json	main/generation_platform/fastapi/cli/removed-options/files.txt

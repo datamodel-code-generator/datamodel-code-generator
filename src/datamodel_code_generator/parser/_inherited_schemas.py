@@ -66,6 +66,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _get_inherited_type_modifiers,
 )
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import Reference, _is_special_path, get_inferred_module_name
 from datamodel_code_generator.types import ANY, DataType
 
@@ -1494,7 +1495,7 @@ def merge_properties_with_parent_constraints(  # noqa: PLR0912
             parent_prop,
             effective_child,
             parent_ref,
-            named_location(child_prop.schema_location, f"property {prop_name!r}"),
+            named_location(child_prop.schema_location, f"property {stable_repr(prop_name)}"),
         )
         merged_properties[prop_name] = merged_property
         merged_changed = merged_changed or merged_property is not effective_child

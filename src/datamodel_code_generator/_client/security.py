@@ -29,6 +29,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import declared_in
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -210,7 +211,7 @@ class SecurityPlanner:
             owners: set[tuple[str, str]] = set()
             for name, scopes in alternative:
                 if not isinstance(name, str) or not isinstance(scheme := schemes.get(name), SecurityScheme):
-                    self.problem(operation, f"requires the unavailable scheme {name!r}")
+                    self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}")
                     continue
                 declaration = operation_schemes(self.declared, operation)[name]
                 if (invalid := scope_problem(name, declaration, scopes, self.openapi)) is not None:

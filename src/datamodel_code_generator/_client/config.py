@@ -20,6 +20,7 @@ from datamodel_code_generator._target_config import (
 )
 from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -175,7 +176,7 @@ def _text(value: object) -> TypeIs[str]:
 
 def _key_order(key: object) -> tuple[bool, str]:
     """Order the keys of an object by their text, then any key that is no text by its repr."""
-    return (False, key) if _text(key) else (True, repr(key))
+    return (False, key) if _text(key) else (True, stable_repr(key))
 
 
 def _one_of(value: object, choices: frozenset[str]) -> bool:
@@ -204,7 +205,7 @@ def _field_name_problems(
 ) -> Iterator[Diagnostic]:
     """Refuse an invalid body mode, and field names that are malformed, repeated, or for a body-only operation."""
     if item.body_arguments is not None and not _one_of(item.body_arguments, _BODY_ARGUMENTS):
-        allowed = english_list((*map(repr, get_args(BodyArguments)), "None"), "or", "serial")
+        allowed = english_list((*map(stable_repr, get_args(BodyArguments)), "None"), "or", "serial")
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", f"body_arguments must be {allowed}")
     names = item.body_field_names
     if names and (item.body_arguments or default) != "both":
@@ -225,7 +226,7 @@ def _field_name_problems(
             yield _diagnostic(
                 "E_CONFIG_VALUE",
                 f"{at}.body_field_names[{index}]",
-                f"The {name.media_type} body field {name.name!r} is named twice",
+                f"The {name.media_type} body field {stable_repr(name.name)} is named twice",
             )
         else:
             seen.add(key)
@@ -252,7 +253,7 @@ def _runtime_problems(runtime: RuntimeOperationMetadata, at: str) -> Iterator[Di
         if (value := getattr(runtime, name)) is not None and not token(value):
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.{name}", f"{name} must be a header name")
     if not _one_of(runtime.retry_safety, _RETRY_SAFETIES):
-        safeties = english_list(map(repr, get_args(RetrySafety)), "or", "serial")
+        safeties = english_list(map(stable_repr, get_args(RetrySafety)), "or", "serial")
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.retry_safety", f"retry_safety must be {safeties}")
     if runtime.idempotency is not None:
         yield from _idempotency_problems(runtime.idempotency, f"{at}.idempotency")
@@ -321,7 +322,7 @@ def _object(value: object, at: str) -> Mapping[str, Any]:
 def _members(value: object, at: str, keys: frozenset[str]) -> Mapping[str, Any]:
     """Return a JSON object whose members are all known, or refuse it."""
     if unknown := sorted(set(members := _object(value, at)) - keys, key=_key_order):
-        option_path, message = f"{at}.{unknown[0]}", f"{at} has no key {unknown[0]!r}"
+        option_path, message = f"{at}.{unknown[0]}", f"{at} has no key {stable_repr(unknown[0])}"
         raise _EntryError(option_path, message, code="E_CONFIG_UNKNOWN")
     return members
 
@@ -333,7 +334,7 @@ def operation_configs(
 
     Parameters are keyed by location and name, such as `query:limit`, and body fields by media type, then property.
     """
-    read = [_entry(selector(key), entry, f"operations[{key!r}]") for key, entry in entries.items()]
+    read = [_entry(selector(key), entry, f"operations[{stable_repr(key)}]") for key, entry in entries.items()]
     if problems := tuple(item for item in read if isinstance(item, Diagnostic)):
         raise APIGenerationError(problems, option_prefix=OPTION_PREFIX)
     return tuple(item for item in read if isinstance(item, ClientOperationConfig))
@@ -357,7 +358,7 @@ def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientO
         values["body_field_names"] = tuple(
             BodyFieldName(media_type=media_type, name=name, python_name=python_name)
             for media_type, names in _object(values["body_field_names"], f"{at}.body_field_names").items()
-            for name, python_name in _object(names, f"{at}.body_field_names[{media_type!r}]").items()
+            for name, python_name in _object(names, f"{at}.body_field_names[{stable_repr(media_type)}]").items()
         )
     if "runtime" in values:
         values["runtime"] = _runtime(values["runtime"], f"{at}.runtime")
@@ -366,7 +367,10 @@ def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientO
 
 def _parameter_name(key: object, python_name: object, at: str) -> ParameterName:
     if not _text(key) or (selected := parameter_name_key(key)) is None:
-        message = f"{at} key {key!r} must be a location (path, query, querystring, header, or cookie), ':', and a name"
+        message = (
+            f"{at} key {stable_repr(key)} must be a location (path, query, querystring, header, or cookie), ':', and a "
+            "name"
+        )
         raise _EntryError(at, message)
     location, name = selected
     return ParameterName(in_=location, name=name, python_name=cast("str", python_name))

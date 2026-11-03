@@ -88,6 +88,7 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_discriminator_members,
 )
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _is_special_path
 from datamodel_code_generator.types import ANY, NONE
 
@@ -361,8 +362,8 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
             variant_name, _ = namer(property_name, variant.class_name)
         if common_name is not None and common_name != variant_name:
             msg = (
-                f"Discriminator {property_name!r} resolves to different field names "
-                f"{common_name!r} and {variant_name!r}; use the same alias for all variants."
+                f"Discriminator {stable_repr(property_name)} resolves to different field names "
+                f"{stable_repr(common_name)} and {stable_repr(variant_name)}; use the same alias for all variants."
             )
             raise Error(msg)
         common_name = variant_name
@@ -963,7 +964,7 @@ def tag_msgspec_unions(
         elif defers_related and index in related:
             outcomes.append((union, "deferred", ""))
         elif names := related.get(index):
-            reason = f"a base or derived struct of {', '.join(names)} keeps {union.tag_field!r} as a field"
+            reason = f"a base or derived struct of {', '.join(names)} keeps {stable_repr(union.tag_field)} as a field"
             outcomes.append((union, "related", reason))
         else:
             outcomes.append((union, "applied", ""))
@@ -1073,8 +1074,9 @@ class VariantTags:
             name = self.variant.class_name
             unions = ", ".join(f"{union} ({_format_tags(tags)})" for union, tags in self.others.items())
             yield (
-                f"{name} is a variant of discriminated unions that map {self.property_name!r} to different tags: "
-                f"it keeps {_format_tags(self.kept)} from {self.owner}, so these unions cannot decode it: {unions}."
+                f"{name} is a variant of discriminated unions that map {stable_repr(self.property_name)} to different "
+                f"tags: it keeps {_format_tags(self.kept)} from {self.owner}, so these unions cannot decode it: "
+                f"{unions}."
             )
 
 

@@ -12,6 +12,7 @@ from datamodel_code_generator._runtime.model_codecs.media import normalize_media
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_naming import NameScope, explicit_name
 from datamodel_code_generator._target_operations import CLIENT, declared_by
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
@@ -89,8 +90,8 @@ class _Fields:
         self.problems.extend(
             CLIENT.problem(
                 "E_CONFIG_VALUE",
-                f"The body field name of the {media_type} property {name!r} of {_label(spec.contract)} names no "
-                "field argument",
+                f"The body field name of the {media_type} property {stable_repr(name)} of {_label(spec.contract)} "
+                "names no field argument",
                 spec.contract.id.use_site,
                 "operations",
             )
@@ -106,7 +107,7 @@ class _Fields:
                     CLIENT.problem(
                         "E_NAME_COLLISION",
                         f"The {media_type} body fields of {_label(spec.contract)} cannot take the argument names "
-                        f"{', '.join(map(repr, taken))}, which other arguments take",
+                        f"{', '.join(map(stable_repr, taken))}, which other arguments take",
                         spec.contract.id.use_site,
                     )
                 )

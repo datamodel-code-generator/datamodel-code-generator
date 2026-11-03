@@ -32,6 +32,7 @@ from datamodel_code_generator.enums import (
     ReuseScope,
     TargetPydanticVersion,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Action, ArgumentParser
@@ -593,10 +594,13 @@ def _validate_option_topic_groups() -> None:
             continue
         allowed_groups = OPTION_TOPIC_ALLOWED_GROUPS.get(meta.topic)
         if allowed_groups is None:  # pragma: no cover
-            msg = f"{option}: topic {meta.topic.value!r} has no allowed groups"
+            msg = f"{option}: topic {stable_repr(meta.topic.value)} has no allowed groups"
             raise AssertionError(msg)
         if meta.group not in allowed_groups:  # pragma: no cover
-            msg = f"{option}: group {meta.group.value!r} is not allowed for topic {meta.topic.value!r}"
+            msg = (
+                f"{option}: group {stable_repr(meta.group.value)} is not allowed for topic "
+                f"{stable_repr(meta.topic.value)}"
+            )
             raise AssertionError(msg)
 
 

@@ -363,21 +363,17 @@ def is_identifier(value: str, target: PythonVersion | None) -> bool:
     return value.isidentifier() if value.isascii() else _unicode(target).identifier.fullmatch(value) is not None
 
 
-NameRule: TypeAlias = Literal["target", "ascii", "host"]
+NameRule: TypeAlias = Literal["target", "ascii"]
 """Whose identifier characters `is_python_name` reads.
 
-`target` reads the target's (`is_identifier`), `ascii` only ASCII identifiers (Starlette's path placeholders, the
-field names the Pydantic resolver keeps as given), and `host` the running interpreter's, for text its tokenizer or
-parser gave.
+`target` reads the target's (`is_identifier`), and `ascii` only ASCII identifiers (Starlette's path placeholders, the
+field names the Pydantic resolver keeps as given).
 """
 
 
 def is_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
     """Return whether text is a name Python binds: an identifier by the rule's characters, and no keyword."""
-    if rule == "target":
-        identifier = is_identifier(value, target)
-    else:
-        identifier = (rule != "ascii" or value.isascii()) and value.isidentifier()
+    identifier = is_identifier(value, target) if rule == "target" else value.isascii() and value.isidentifier()
     return identifier and not keyword.iskeyword(value)
 
 

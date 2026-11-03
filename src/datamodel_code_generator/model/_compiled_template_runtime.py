@@ -7,12 +7,11 @@ project's built-in templates.  Custom templates continue to use Jinja itself.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from pprint import pformat
 from typing import Any
 
 from typing_extensions import override
 
-from datamodel_code_generator.python_literal import stable_repr
+from datamodel_code_generator.python_literal import stable_pformat, stable_repr
 
 
 class _Missing:
@@ -189,7 +188,7 @@ def filter_list(value: Any) -> list[Any]:
 
 
 def filter_pprint(value: Any) -> str:
-    return pformat(value)
+    return stable_pformat(value)
 
 
 def filter_replace(value: Any, old: str, new: str, count: int | None = None) -> str:

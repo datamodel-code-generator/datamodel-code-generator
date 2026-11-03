@@ -223,15 +223,25 @@ def python_decorator_path(decorator: str) -> str:
 
 @lru_cache(maxsize=128)
 def is_named_python_decorator(decorator: str, name: str) -> bool:
-    """Match an exact unqualified target without parsing target expressions."""
-    if decorator[:1] != "@" or not is_python_name(name, rule="host"):
+    """Match an exact unqualified target without parsing target expressions.
+
+    The names are read by the target's identifier characters, whatever interpreter runs: a character the running
+    interpreter does not know is read as a letter it knows (``host_identifiers``) and given back before it is matched.
+    """
+    if decorator[:1] != "@" or not is_python_name(name):
         return False
 
     body = decorator[1:].strip()
-    if body.isidentifier():
+    lent = host_identifiers(body)
+    source = lent.source if lent else body
+    if source.isidentifier():
         return body == name
     if _is_parenthesized_name(body, name):
         return True
-    if not body or (tokens := _significant_tokens(body)) is None:
+    if not body or (tokens := _significant_tokens(source)) is None:
         return False
-    return (parsed := _parse_direct_target(tokens, 0)) is not None and parsed[1] == len(tokens) and parsed[0] == name
+    return (
+        (parsed := _parse_direct_target(tokens, 0)) is not None
+        and parsed[1] == len(tokens)
+        and (lent.restore_text(parsed[0]) if lent else parsed[0]) == name
+    )

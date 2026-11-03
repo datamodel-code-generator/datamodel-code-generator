@@ -28,6 +28,7 @@ from datamodel_code_generator._python_syntax import (
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_templates import templated
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, Shape
@@ -109,15 +110,17 @@ class _Renderer:
         if isinstance(shape, Class):
             return self.module.hint(shape.type, static=False)
         if isinstance(shape, Items):
-            return self.call("Items", self.shape(shape.item), *((repr(shape.kind),) if shape.kind != "list" else ()))
+            return self.call(
+                "Items", self.shape(shape.item), *((stable_repr(shape.kind),) if shape.kind != "list" else ())
+            )
         if isinstance(shape, Fixed):
             return self.call("Fixed", tuple_display(self.shape(item) for item in shape.items))
         if isinstance(shape, Values):
             return self.call("Values", self.shape(shape.value))
         if isinstance(shape, Choice):
-            kinds = tuple_display(f"({kind!r}, {self.shape(item)})" for kind, item in shape.kinds)
-            tags = tuple_display(f"({tag!r}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
-            return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
+            kinds = tuple_display(f"({stable_repr(kind)}, {self.shape(item)})" for kind, item in shape.kinds)
+            tags = tuple_display(f"({stable_repr(tag)}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
+            return self.call("Choice", kinds, *((stable_repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
     def render(self) -> RenderedBindings:
@@ -129,8 +132,8 @@ class _Renderer:
                 fields = tuple_display(
                     self.call(
                         "Field",
-                        repr(field.wire),
-                        repr(field.name),
+                        stable_repr(field.wire),
+                        stable_repr(field.name),
                         *((self.shape(field.shape),) if field.shape is not None else ()),
                         **({"omit_none": "True"} if field.omit_none else {}),
                     )

@@ -43,6 +43,7 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.plans import FlattenHost, flatten_base_layouts
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, iter_struct_tag_decisions
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
@@ -205,8 +206,8 @@ def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:
     values = (narrowing for field, narrowing in parser._enum_admits_other_values if not field.is_class_var)  # noqa: SLF001
     for narrowing in {narrowing.location: narrowing for narrowing in values}.values():
         warn_as_parser_base(
-            f"The schema at {narrowing.location} admits only its const {narrowing.const!r} of its enum values, but "
-            "its values are typed as its enum class, which accepts the other values too.",
+            f"The schema at {narrowing.location} admits only its const {stable_repr(narrowing.const)} of its enum "
+            "values, but its values are typed as its enum class, which accepts the other values too.",
             UserWarning,
             stacklevel=2,
         )

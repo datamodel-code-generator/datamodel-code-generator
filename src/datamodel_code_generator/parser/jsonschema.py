@@ -395,6 +395,7 @@ from datamodel_code_generator.python_literal import (
     _make_referencing_type_expression,
     _safe_non_finite_value,
     _semantic_value_text,
+    stable_repr,
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
@@ -756,8 +757,8 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     return (
         f"{class_name} keeps the shifted member {english_list(lists.values(), 'and', 'each')} of 0.83.0: "
         f"{english_list(lists, 'and', 'each')} {for_count(len(lists), 'gives', 'give')} null an entry, but the entries "
-        "are matched to the values without "
-        f"null, so {value!r} is {kind} {taken!r} instead of {own!r}. Leave the entry of null out of the list."
+        f"are matched to the values without null, so {stable_repr(value)} is {kind} {stable_repr(taken)} instead of "
+        f"{stable_repr(own)}. Leave the entry of null out of the list."
     )
 
 
@@ -833,7 +834,7 @@ def _get_type(
     if (type_format := data_formats[type_].get("default" if format__ is None else format__)) is not None:
         return type_format
 
-    warn(f"format of {format__!r} not understood for {type_!r} - using default", stacklevel=2)
+    warn(f"format of {stable_repr(format__)} not understood for {stable_repr(type_)} - using default", stacklevel=2)
     return data_formats[type_]["default"]
 
 
@@ -4391,8 +4392,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     ref = self._add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
                         warn(
-                            f"allOf base class {redact_reference(all_of_item.ref)!r} cannot follow the $dynamicAnchor "
-                            "bindings of its dynamic scope; its $dynamicRef resolve within its own schema resources.",
+                            f"allOf base class {stable_repr(redact_reference(all_of_item.ref))} cannot follow the "
+                            "$dynamicAnchor bindings of its dynamic scope; its $dynamicRef resolve within its own "
+                            "schema resources.",
                             stacklevel=2,
                         )
                     if ref.path not in {b.path for b in base_classes}:
@@ -6746,8 +6748,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         location = named_location(obj.schema_location, "None")
         if first_report(self._unsatisfiable_const_locations, location):
             warn(
-                f"The schema at {location} admits no value: its const {const!r} is none of its enum values. It is "
-                "generated as written.",
+                f"The schema at {location} admits no value: its const {stable_repr(const)} is none of its enum values. "
+                "It is generated as written.",
                 stacklevel=2,
             )
         return set()
@@ -7824,9 +7826,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 continue
             owner = cast("DataModel", index.owner_model_for_data_type(facts[0].data_type))
             raise SchemaParseError(
-                message=f"$ref {redact_reference(path)!r} names no schema of the document that "
-                f"--external-ref-mapping maps to {python_package!r}; a mapped $ref needs a fragment that names a "
-                "schema of that document",
+                message=f"$ref {stable_repr(redact_reference(path))} names no schema of the document that "
+                f"--external-ref-mapping maps to {stable_repr(python_package)}; a mapped $ref needs a fragment that "
+                "names a schema of that document",
                 path=_named_path(location_of(owner.reference), [owner.reference.path]),
             )
 
@@ -8156,7 +8158,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         for source, ref in dangling_refs:
             warn(
-                f"Unresolved local $ref {ref!r} in {redact_url(source)}: JSON pointer was not found. "
+                f"Unresolved local $ref {stable_repr(ref)} in {redact_url(source)}: JSON pointer was not found. "
                 "Generated a fallback Any model; use --strict-refs to fail instead.",
                 DanglingRefWarning,
                 stacklevel=stacklevel_at_parse_caller(),

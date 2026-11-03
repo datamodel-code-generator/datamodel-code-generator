@@ -65,6 +65,7 @@ from datamodel_code_generator._target_render import (
     pydantic_dependency,
 )
 from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
@@ -360,7 +361,7 @@ class _HelperDigests:
             found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
             models[self.spelling.symbol(symbol)] = {
                 "kind": found.kind,
-                "values": [None if value is None else repr(value.value) for value in found.values],
+                "values": [None if value is None else stable_repr(value.value) for value in found.values],
                 "fields": [
                     [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
                     for member in members
@@ -383,7 +384,7 @@ class _HelperDigests:
                 facts.write_only,
                 self.spelled(facts.type),
                 facts.backend.emitted.emitted_default_kind,
-                repr(facts.backend.emitted.emitted_default_value),
+                stable_repr(facts.backend.emitted.emitted_default_value),
             )
         )
 
