@@ -1,0 +1,36 @@
+models shared True
+# bound_parts in-process sync, in-process async
+send_upload
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  send_upload(body=UploadsPostRequest(mapped=b'\x89PNG\xff\x00', stage=Stage.draft, doc=b'\x00\xff'))
+  < 204 -
+  = None
+send_merged
+  > POST /merged [multipart/form-data; boundary=<boundary>]
+  send_merged(body=MergedPostRequest(f=b'\x89PNG\xff\x00'))
+  < 204 -
+  = None
+send_merged_swapped
+  > POST /merged-swapped [multipart/form-data; boundary=<boundary>]
+  send_merged_swapped(body=MergedSwappedPostRequest(f=b'\x89PNG\xff\x00'))
+  < 204 -
+  = None
+send_closed
+  > POST /closed [multipart/form-data; boundary=<boundary>]
+  send_closed(body=ClosedPostRequest(name='n'))
+  < 204 -
+  = None
+send_closed raw
+  > POST /closed [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  = (422, [('extra_forbidden', ['body', 'extra'])])
+attach_files
+  > POST /files [multipart/form-data; boundary=<boundary>]
+  attach_files(body=FilesPostRequest(note='n', file=b'\x89PNG\xff\x00'))
+  < 204 -
+  = None
+send_copy
+  > POST /copies [multipart/form-data; boundary=<boundary>]
+  send_copy(body=Copy(f=b'\x89PNG\xff\x00'))
+  < 204 -
+  = None

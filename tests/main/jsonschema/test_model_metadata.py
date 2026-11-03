@@ -431,8 +431,8 @@ def test_fields_and_types_record_the_schema_they_are_built_from(
 
     A string node marked ``binary`` holds raw octets as the specification reads it: a format that maps to bytes
     (``binary``, a format ``--type-mappings`` maps to ``binary``), not bytes mapped from base64 text, and in OpenAPI
-    3.1 a content media type without a content encoding, which neither JSON Schema nor OpenAPI 3.0 reads so; an enum
-    or const of binary strings holds text.
+    3.0 and later a content media type without a content encoding, which JSON Schema does not read so; an enum or
+    const of binary strings holds text.
     """
     (input_path := tmp_path / "schema.json").write_text(json.dumps(document), encoding="utf-8")
     parser = parser_class(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN], type_mappings=type_mappings)

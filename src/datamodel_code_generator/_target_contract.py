@@ -406,36 +406,25 @@ class FieldUseBinding:
 
 
 @dataclass(frozen=True, slots=True)
-class SchemaSite:
-    """A schema's location, and the location its whole-schema references lead to."""
-
-    location: SourceLocation
-    target: SourceLocation
-
-
-@dataclass(frozen=True, slots=True)
 class PartSchema:
-    """How the schema of a multipart member encodes its parts, by the types and formats it declares.
+    """How the members of a multipart body are sent as parts, by the types the models give them.
 
-    A member holds files when it is a binary string, or an array of them; it repeats as an array, one part for each
-    item; and its values, or its items', are text when it declares only scalar types and structured when it declares
-    an object or an array. `own` is where the member's schema is, and `items` where its items' is when it repeats.
+    A member holds files when the models hold its values, or its items', as raw octets (BINARY_CONTENT); it repeats as
+    an item container, one part for each item; and its values, or its items', are structured when one of their types
+    is a model, a mapping or an item container.
     """
 
     file: bool
     repeated: bool
-    text: bool
     structured: bool
-    own: SchemaSite | None = None
-    items: SchemaSite | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class PartFacts:
-    """How the schema of a multipart body encodes its parts, which its model's types do not say.
+    """How a multipart body encodes its parts, by the type and members its use binds.
 
-    `object` says the schema declares an object, or no type; `members` gives each property's encoding by wire name,
-    and `extra` that of any other property: none when the schema allows no others, None when any value.
+    `object` says its type is one object or takes any value; `members` gives each property's encoding by wire name,
+    and `extra` that of any other property: none when its model allows no others, None when any value.
     """
 
     object: bool
@@ -511,12 +500,12 @@ class TypeUseBinding:
     schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
     text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
     `argument` spells the type a parameter's argument takes: its type with each alias and root model by the type it
-    stands for. `binary` is where the first string the models type as raw bytes sits that the use carries as text:
+    stands for. `binary` is where the first value the models hold as raw octets sits that the use carries as text:
     in a JSON, text or URL-encoded media, an item schema, a parameter or header, or a multipart part that holds no
-    files. `octets` says the models type the whole value of a text or binary media as such strings alone, none
-    written as base64, which the media carries as the raw body, and `checked` that the models constrain those bytes,
-    which the targets then validate by the model. `text` says a binary media's schema is written as one binary string
-    that its models type as text, such as an enum of strings, which the media carries as text read by the model.
+    files. `octets` says the models hold every alternative of the whole value of a text or binary media as raw octets,
+    which the media carries as the raw body, and `checked` that the models constrain those bytes, which the targets
+    then validate by the model. `text` says the models type a binary media's value as enums or literals of strings,
+    which the media carries as text read by the model.
     """
 
     id: TypeUseId

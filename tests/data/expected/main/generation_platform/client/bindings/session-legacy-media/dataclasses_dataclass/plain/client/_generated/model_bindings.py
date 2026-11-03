@@ -32,23 +32,29 @@ codec_3: Final[DataclassCodec[models.ObjectResponseItem]] = DataclassCodec(model
 codec_4: Final[DataclassCodec[models.EnumRequestItem]] = DataclassCodec(models.EnumRequestItem, MODELS)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[DataclassCodec[models.EnumResponseItem]] = DataclassCodec(models.EnumResponseItem, MODELS)
+codec_5: Final[DataclassCodec[models.EnumRequest1]] = DataclassCodec(models.EnumRequest1, MODELS)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[DataclassCodec[models.EnumResponseItem]] = DataclassCodec(models.EnumResponseItem, MODELS)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[DataclassCodec[models.UnionRequestItem]] = DataclassCodec(None, MODELS)
+codec_7: Final[DataclassCodec[models.EnumResponse1]] = DataclassCodec(models.EnumResponse1, MODELS)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[DataclassCodec[models.UnionRequestItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[DataclassCodec[models.UnionResponseItem]] = DataclassCodec(None, MODELS)
+codec_9: Final[DataclassCodec[models.UnionResponseItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[DataclassCodec[models.AnyRequestItem]] = DataclassCodec(None, MODELS)
+codec_10: Final[DataclassCodec[models.AnyRequestItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[DataclassCodec[models.AnyResponseItem]] = DataclassCodec(None, MODELS)
+codec_11: Final[DataclassCodec[models.AnyResponseItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[DataclassCodec[models.EmptyRequestItem]] = DataclassCodec(None, MODELS)
+codec_12: Final[DataclassCodec[models.EmptyRequestItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[DataclassCodec[models.EmptyResponseItem]] = DataclassCodec(None, MODELS)
+codec_13: Final[DataclassCodec[models.EmptyResponseItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

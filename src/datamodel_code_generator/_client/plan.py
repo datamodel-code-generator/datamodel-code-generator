@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, replace
-from functools import cached_property
 from itertools import starmap
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import urljoin, urlsplit
@@ -47,7 +46,6 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     PartFacts,
     PartSchema,
-    SchemaSite,
     SourceLocation,
     TypeUseBinding,
     children_of,
@@ -59,7 +57,6 @@ from datamodel_code_generator._target_contract import (
     operation_literal,
     parameter_place,
     request_media,
-    schema_uses,
     type_uses,
     uses_by_id,
 )
@@ -405,11 +402,6 @@ class Planner:
         )
         self.raise_problems()
         self.namespaces = self.tag_namespaces()
-
-    @cached_property
-    def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
-        """Return the value use of each schema occurrence by location and direction, which a body's part is bound as."""
-        return schema_uses(self.request.batch.type_uses)
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
@@ -885,7 +877,7 @@ class Planner:
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.leaf, None)),
             )
         elif isinstance(declared_extra, PartSchema):
-            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, None, required=False)
+            additional = self._read(use, "", site, declared_extra, None, required=False)
         return tuple(
             self._read(
                 use,
@@ -910,7 +902,7 @@ class Planner:
         required: bool,
         excluded: bool = False,
     ) -> PartSpec:
-        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use.
+        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' type.
 
         A member the response leaves out (``excluded``) is not required.
         """
@@ -920,12 +912,13 @@ class Planner:
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
             )
         plan = self._part_plan(name, value, part)
-        read = _site(part, location, items=plan.repeated)
-        bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
-            body.id, "not_generated", None, None
+        bound = (
+            TypeUseBinding(body.id, "not_generated", None, None)
+            if value is None
+            else TypeUseBinding(body.id, "bound", self.wire.kinds.member(value)[1], None)
         )
         return PartSpec(
-            plan=plan, use=_part_use(body, read.location, name or None, bound), required=required, excluded=excluded
+            plan=plan, use=_part_use(body, location, name or None, bound), required=required, excluded=excluded
         )
 
     def _part_plans(self, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
@@ -1227,12 +1220,6 @@ def schema_use(
         or (None if referenced is None else schemas.get((referenced.document, referenced.pointer, direction)))
         or schemas.get((*key, "neutral"))
     )
-
-
-def _site(part: PartSchema, location: SourceLocation, *, items: bool = False) -> SchemaSite:
-    """Return where a part's values are read: its schema's site, or its items' when it repeats, as recorded."""
-    found = part.items if items else part.own
-    return SchemaSite(location, location) if found is None else found
 
 
 def _part_use(

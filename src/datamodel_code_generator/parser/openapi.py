@@ -335,7 +335,7 @@ def _missing_operation_id(path_name: str) -> Error:
     )
 
 
-_CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32})
+_CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V30, OpenAPIVersion.V31, OpenAPIVersion.V32})
 
 
 @cache
@@ -370,8 +370,8 @@ class OpenAPIParser(JsonSchemaParser):
     def _content_media_type_is_octets(self) -> bool:
         """Whether the document's OpenAPI version reads a content media type without a content encoding as raw octets.
 
-        OpenAPI 3.1 and later write a binary string so ("Working with Binary Data") in place of 3.0's
-        ``format: binary``; an AsyncAPI document reads its strings as JSON Schema does.
+        OpenAPI 3.1 and later write a binary string so in place of 3.0's ``format: binary``, and 3.0 is read so too
+        (its multipart members stay files); an AsyncAPI document reads its strings as JSON Schema does.
         """
         return self._document_version(self.raw_obj, self._version_source) in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
 

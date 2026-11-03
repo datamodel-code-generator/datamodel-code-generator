@@ -67,6 +67,8 @@ parameter-errors	main/generation_platform/fastapi/packages/parameter-errors/
 parameter-errors	main/generation_platform/fastapi/parameter-errors.txt
 parameters	main/generation_platform/fastapi/packages/parameters/
 parameters	main/generation_platform/fastapi/parameters.txt
+parts-bound-types-errors	main/generation_platform/fastapi/packages/parts-bound-types-errors/	= main/generation_platform/fastapi/packages/info/
+parts-bound-types-errors	main/generation_platform/fastapi/parts-bound-types-errors.txt	= main/generation_platform/client/parts-bound-types-errors.txt
 pets	main/generation_platform/fastapi/packages/pets/	= main/generation_platform/fastapi/packages/pets~fastapi_render[pets]/
 pets	main/generation_platform/fastapi/pets.txt
 pointer-references	main/generation_platform/fastapi/packages/pointer-references/
