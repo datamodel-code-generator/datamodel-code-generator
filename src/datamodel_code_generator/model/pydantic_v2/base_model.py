@@ -142,7 +142,7 @@ from datamodel_code_generator.python_literal import (
     represent_python_value,
     represent_untrusted_python_value,
 )
-from datamodel_code_generator.reference import FieldNameResolver, ModelType
+from datamodel_code_generator.reference import FieldNameResolver, ModelType, keep_node_records
 from datamodel_code_generator.types import chain_as_tuple
 
 if TYPE_CHECKING:
@@ -633,6 +633,7 @@ def _copy_alias_data_type(
             "constrained_base": base,
         }
         copied = AnnotatedConstraintDataType.model_construct(**values)
+        keep_node_records(copied, data_type)
         field_keywords, multiple_of = annotated_constraint_metadata(base, cast("dict[str, Any]", kwargs))
         annotation_imports = (IMPORT_FIELD,) if field_keywords else ()
         if multiple_of is not None:

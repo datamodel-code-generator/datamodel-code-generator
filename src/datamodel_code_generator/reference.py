@@ -390,6 +390,14 @@ def binary_content_of(data_type: object) -> bool:
     return BINARY_CONTENT_KEY in data_type.__dict__
 
 
+_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY)
+
+
+def keep_node_records(copy: object, source: object) -> None:
+    """Give a copy of a type node the records the parser keeps on the node it copies (TYPE_ORIGIN, BINARY_CONTENT)."""
+    copy.__dict__.update((key, source.__dict__[key]) for key in _NODE_RECORDS if key in source.__dict__)
+
+
 def _special_path(keyword: str, path: list[str]) -> list[str]:
     """Return ``path`` followed by the token of the model that the generator makes there for ``keyword``."""
     return [*path, _SPECIAL_PATH_FORMAT.format(keyword)]
