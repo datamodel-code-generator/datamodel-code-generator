@@ -97,6 +97,7 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
+    openapi_release,
     response_key,
     wrapped_type,
 )
@@ -1981,7 +1982,7 @@ class _Reader:
     @property
     def legacy(self) -> bool:
         """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
-        return next(iter(self.versions), "").startswith("3.0")
+        return openapi_release(next(iter(self.versions), ""), row="legacy-target-version-text") == (3, 0)
 
     def chain(self, declaration: SchemaLocation) -> SiteFacts:
         """Follow a schema's reference chain to the schema it leads to, and return its site.

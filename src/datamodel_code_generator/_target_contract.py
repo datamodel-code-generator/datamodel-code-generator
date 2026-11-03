@@ -633,6 +633,25 @@ class GeneratedTypeContractBatch:
         return str(version.value) if isinstance(version, LiteralScalar) else ""
 
 
+ReleaseRow: TypeAlias = Literal["release", "legacy-target-version-text", "legacy-served-version-regex"]
+
+_RELEASES: Final[dict[ReleaseRow, re.Pattern[str]]] = {
+    "release": re.compile(r"(3)\.([0-2])(?:\.|\Z)"),
+    "legacy-target-version-text": re.compile(r"([0-9])\.([0-9])"),
+    "legacy-served-version-regex": re.compile(r"(\d+)\.(\d+)"),
+}
+
+
+def openapi_release(version: str, *, row: ReleaseRow = "release") -> tuple[int, int] | None:
+    """Return the (major, minor) release an OpenAPI version text names by the rule of `row`, or None when it names none.
+
+    `release` reads 3.0, 3.1 or 3.2 before the second dot, as the parser reads a version (3.0.4 is 3.0, 3.01 none).
+    `legacy-target-version-text` reads the first three characters (3.20 is 3.2, 3.01 is 3.0), and
+    `legacy-served-version-regex` the digits around the first dot (3.01 is 3.1, 3.20 is 3.20).
+    """
+    return (int(found[1]), int(found[2])) if (found := _RELEASES[row].match(version)) else None
+
+
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
@@ -776,7 +795,7 @@ def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ..
     tokens = fact(declaration, "type") in _SCOPE_SCHEMES
     if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
         return f"requires valid scope tokens for scheme {name!r}"
-    if scopes and not tokens and openapi.startswith("3.0"):
+    if scopes and not tokens and openapi_release(openapi, row="legacy-target-version-text") == (3, 0):
         return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"
     return None
 

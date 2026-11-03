@@ -70,6 +70,7 @@ from datamodel_code_generator._target_contract import (
     label,
     literal_text,
     members_by_consumer,
+    openapi_release,
     operation_schemes,
     parameter_place,
     range_start,
@@ -891,8 +892,9 @@ class Planner:  # noqa: PLR0904
             if argument.location == "path" and argument.name == argument.wire_name
         }
         taken = {*RESERVED, *(argument.name for argument in arguments if argument.name not in own)}
+        repeatable = openapi_release(self.wire.version, row="legacy-target-version-text") != (3, 2)
         try:
-            return route_path(operation.path, taken, repeatable=not self.wire.version.startswith("3.2"))
+            return route_path(operation.path, taken, repeatable=repeatable)
         except RouteError as error:
             self.problems.append(_problem("F_ROUTE_INVALID", str(error), operation.id.use_site))
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())

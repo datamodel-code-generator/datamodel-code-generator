@@ -44,6 +44,7 @@ from datamodel_code_generator._target_contract import (
     is_required,
     label,
     members_by_consumer,
+    openapi_release,
     operation_schemes,
     parameter_location,
     parameter_place,
@@ -465,7 +466,7 @@ def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> 
     whose member is then written as its contentType says; 3.1 and later apply them to both, and write the parts they
     give without percent-encoding.
     """
-    if multipart and (version == "3.0" or version.startswith("3.0.")):
+    if multipart and openapi_release(version) == (3, 0):
         return False
     return any(fact(encoding, key) is not None for key in STYLED)
 
@@ -473,7 +474,7 @@ def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> 
 def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
     return fact(declaration, "allowReserved") is True and not (
-        location == "path" and (version in ("3.0", "3.1") or version.startswith(("3.0.", "3.1.")))  # noqa: PLR6201
+        location == "path" and openapi_release(version) in {(3, 0), (3, 1)}
     )
 
 
@@ -603,7 +604,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(_encoded(_schema_use(planner, declaration.schemas, source)).value)
     style, explode = _style_of(declaration, location)
-    if style == "cookie" and not planner.version.startswith("3.2"):
+    if style == "cookie" and openapi_release(planner.version, row="legacy-target-version-text") != (3, 2):
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
     try:
         return ParameterPlan(
@@ -627,7 +628,7 @@ def _content_parameter(
     planner: _WirePlanner, declaration: WireDeclaration, location: ParameterLocation, name: str, *, required: bool
 ) -> ParameterPlan:
     source = declaration.use_site
-    if location == "querystring" and not planner.version.startswith("3.2"):
+    if location == "querystring" and openapi_release(planner.version, row="legacy-target-version-text") != (3, 2):
         raise _PlanError(source, "Querystring parameters require OpenAPI 3.2")
     media = normalize_media_type(declaration.children[0].name or "")
     if not builtin_content(location, media):
