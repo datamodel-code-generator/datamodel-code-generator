@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 import sys
 import warnings
@@ -102,14 +103,37 @@ def _is_yaml_deprecated_bool_warning_enabled() -> bool:
     return True
 
 
+def _plain_deprecated_bool_offsets(text: str) -> set[int]:
+    """Return the offsets of the unquoted scalars in ``text`` that spell a YAML 1.1 boolean."""
+    import yaml  # noqa: PLC0415
+
+    offsets: set[int] = set()
+    with contextlib.suppress(yaml.YAMLError):
+        offsets.update(
+            token.start_mark.index
+            for token in yaml.scan(text, Loader=yaml.SafeLoader)
+            if isinstance(token, yaml.ScalarToken) and token.plain and token.value in _YAML_DEPRECATED_BOOL_VALUES
+        )
+    return offsets
+
+
 def warn_yaml_deprecated_bool_values(text: str) -> None:
-    """Warn for YAML 1.1-style boolean scalars when ryaml is used."""
+    """Warn for YAML 1.1-style boolean scalars when ryaml is used.
+
+    Only unquoted scalars warn: a quoted string or a block scalar line such as ``enabled: True`` holds text.
+    """
     if not _is_yaml_deprecated_bool_warning_enabled() or not any(
         value in text for value in _YAML_DEPRECATED_BOOL_VALUES
     ):
         return
 
-    for match in _YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text):
+    matches = list(_YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text))
+    if not matches:
+        return
+    offsets = _plain_deprecated_bool_offsets(text)
+    for match in matches:
+        if match.start(1) not in offsets:
+            continue
         warnings.warn(
             f"YAML bool '{match.group(1)}' is deprecated. Use lowercase 'true' or 'false' instead. "
             f"In a future version, only lowercase booleans will be recognized.",
