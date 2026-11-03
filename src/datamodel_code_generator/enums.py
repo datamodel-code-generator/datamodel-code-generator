@@ -28,7 +28,7 @@ class DataclassArguments(TypedDict, total=False):
 
 
 MIN_VERSION: Final[int] = 10
-MAX_VERSION: Final[int] = 13
+MAX_VERSION: Final[int] = 15
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
 
 
