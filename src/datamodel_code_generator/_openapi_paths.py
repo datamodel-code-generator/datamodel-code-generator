@@ -14,7 +14,7 @@ library, so every layer may use it.
 
 from __future__ import annotations
 
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
@@ -100,10 +100,11 @@ def rooted_path(path: str) -> str:
 def path_selected(path: str, patterns: Sequence[str] | None, rooted: Callable[[str], str] = rooted_path) -> bool:
     """Return whether ``--openapi-include-paths`` keeps a path: every path without patterns, else one a pattern matches.
 
-    The path and each pattern are compared with a leading slash (``rooted``), by ``fnmatch.fnmatch``.
+    The path and each pattern are compared with a leading slash (``rooted``), by ``fnmatch.fnmatchcase``: letter case
+    and every character count on every OS, as in the path templates of OpenAPI.
     """
     path = rooted(path)
-    return not patterns or any(fnmatch(path, rooted(pattern)) for pattern in patterns)
+    return not patterns or any(fnmatchcase(path, rooted(pattern)) for pattern in patterns)
 
 
 def effective_parameters(own: Sequence[_T], inherited: Iterable[_T], key: Callable[[_T], Hashable | None]) -> list[_T]:

@@ -14429,6 +14429,17 @@ def test_main_openapi_include_paths_without_leading_slash(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize("pattern", [pytest.param("/PETS*", id="upper-case"), pytest.param("/pets\\*", id="backslash")])
+def test_main_openapi_include_paths_match_case_and_slash_on_every_os(output_file: Path, pattern: str) -> None:
+    """Match ``--openapi-include-paths`` with letter case and backslashes as written, so no OS selects ``/pets``."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "body_and_parameters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "schemas", "--openapi-include-paths", pattern, "--disable-timestamp"],
+    )
+
+
 @pytest.mark.parametrize(
     "scope_args",
     [
