@@ -74,7 +74,7 @@ from datamodel_code_generator._requirements import backport_path, python_target_
 from datamodel_code_generator._target_unicode import (
     host_identifiers,  # noqa: F401  # Preserve the established model.base export.
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
-    is_identifier,
+    is_importable_part,
 )
 from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
@@ -1976,12 +1976,12 @@ def sanitize_module_name(name: str, *, treat_dot_as_module: bool | None) -> str:
 def _directory_module_name(name: str, *, keep_dots: bool) -> str:
     """Return the name of a directory in a module path: its own when Python imports it by that name, else a file's.
 
-    A directory whose every part is an identifier once its ``-`` is ``_`` as the output writes it (``ユーザー``,
-    ``café-models``) keeps its name; any other (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless
-    ``keep_dots``, the dots of the name are ``_``.
+    A directory whose every part is an identifier of the oldest target once its ``-`` is ``_`` as the output writes it
+    (``ユーザー``, ``café-models``) keeps its name, a keyword too (row ``legacy-keyword-directory-kept``); any other
+    (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless ``keep_dots``, the dots of the name are ``_``.
     """
     name = written_name(name if keep_dots else flat_name(name))
-    if all(is_identifier(part, None) for part in name.split(".")):
+    if all(is_importable_part(part, None, row="legacy-keyword-directory-kept") for part in name.split(".")):
         return name
     return sanitize_module_name(name, treat_dot_as_module=keep_dots)
 

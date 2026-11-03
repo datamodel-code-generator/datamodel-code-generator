@@ -36,7 +36,7 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
-from datamodel_code_generator._target_unicode import is_python_name
+from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
@@ -100,6 +100,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator._target_unicode import ModulePartRow
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -1870,15 +1871,17 @@ def reject_unimportable_imports(
     module's own path are not written, and a relative import of them is valid. Renaming the module would move the file
     and every other import of it, so the run fails and names the module and the part. An import is judged where its
     block is written: a reference the parser planned and a later pass dropped (a collapsed root model) writes none.
-    Under ``--treat-dot-as-module`` a part is a name by the target's rules (``is_python_name``), as the name of a
-    module is written; without it the dots are ``_`` and a part is refused only for a keyword. ``is_init`` makes
+    Under ``--treat-dot-as-module`` a part is a name by the target's rules, as the name of a module is written; without
+    it the dots are ``_`` and a part is refused only for a keyword (``is_importable_part``). ``is_init`` makes
     ``module`` a package ``__init__``.
     """
-    unimportable = (lambda part: not is_python_name(part, target_python_version)) if treat_dot_as_module else iskeyword
+    row: ModulePartRow = "target" if treat_dot_as_module else "keyword"
     importer = dotted_module(module)
     for from_, target, names in relative_import_targets(importer, imports, is_init=is_init):
         written = from_.lstrip(".").split(".") if from_.strip(".") else []
-        if (part := next(filter(unimportable, (*written, *names)), None)) is not None:
+        parts = (*written, *names)
+        unimportable = (part for part in parts if not is_importable_part(part, target_python_version, row=row))
+        if (part := next(unimportable, None)) is not None:
             path = target if part in written else dotted_name(target, part)
             where = f"module {importer!r}" if importer else "the root package"
             reason, hint = (
