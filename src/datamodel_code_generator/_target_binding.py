@@ -1098,6 +1098,13 @@ class _Binder:
         original = None if origin is None else self.parser.model_resolver.references.get(origin)
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 
+    def kept(self, model: DataModel) -> DataModel:
+        """Return the model that reuse kept in place of ``model``: the one a model that reuse made inherits."""
+        if model.reused_reference is None:
+            return model
+        kept = self.final(cast("Reference", model.base_classes[0].reference))
+        return model if kept is None else _source(kept)
+
     def emitted(self, model: object) -> bool:
         return isinstance(model, DataModel) and id(model) in self.symbols
 
@@ -3102,10 +3109,13 @@ class _SchemaUses(_Models):
             self.relocate(declaration, value.symbol)
 
     def relocate(self, declaration: SchemaLocation, symbol: SymbolId) -> None:
-        """Collect a model's property types at an equal schema the parser read as its own, at the same places in it."""
-        if (location := self.locations.get(symbol)) is None or location == declaration:
+        """Collect a model's property types at an equal schema the parser read as its own, at the same places in it.
+
+        A model that reuse made holds no field of its own: the model reuse kept holds the properties.
+        """
+        model = self.binder.kept(self.binder.models[symbol])
+        if (location := self.locations.get(self.binder.symbols[id(model)])) is None or location == declaration:
             return
-        model = self.binder.models[symbol]
         for field in model.fields:
             kind, schema, _, _ = self.context(model, field)
             if kind == "property" and schema is not None and _below(schema, location):
