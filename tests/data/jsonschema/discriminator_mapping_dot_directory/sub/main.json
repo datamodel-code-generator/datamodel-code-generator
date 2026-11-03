@@ -1,0 +1,14 @@
+{
+  "title": "Keeper",
+  "type": "object",
+  "properties": {
+    "animal": {
+      "oneOf": [{"$ref": "../.defs/bird.json"}, {"$ref": "../.defs/fish.json"}],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {"b": "../.defs/bird.json", "f": "../.defs/fish.json"}
+      }
+    }
+  },
+  "required": ["animal"]
+}

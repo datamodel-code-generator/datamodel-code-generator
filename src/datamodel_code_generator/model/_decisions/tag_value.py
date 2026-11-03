@@ -13,7 +13,9 @@ of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_fie
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
+import re
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
 from typing_extensions import assert_never
 
@@ -56,17 +58,21 @@ if TYPE_CHECKING:
         def inherited_tag(self) -> Any:
             """Return the tag of a tag field the variant inherits, or None."""
 
+        def inherited_schema_tag(self) -> Any:
+            """Return the tag an ancestor's schema fixes for the tag property, or None (``inherited-schema-field``)."""
+
         def inline_tag(self) -> Any:
             """Return the tag an inline variant inherits, or None where it is no inline variant or may not take it."""
 
-        def mapped_tags(self) -> Sequence[str]:
-            """Return the mapping keys naming the variant or its bases (``mapped_tags``)."""
+        def mapped_tags(self) -> Sequence[Any]:
+            """Return the tags of the mapping keys naming the variant or its bases (``mapping_key_tag``)."""
 
         def path_segment(self) -> str:
             """Return the last segment of the variant's schema path."""
 
 
 __all__ = [
+    "SCALAR_TAG_TYPES",
     "EnumTagMembers",
     "EnumTagRule",
     "FieldTag",
@@ -74,6 +80,7 @@ __all__ = [
     "FieldTagSite",
     "MappingPathKey",
     "MappingPathRule",
+    "ScalarTagKind",
     "StructTagClash",
     "TagFieldMatch",
     "TagIdentity",
@@ -89,6 +96,7 @@ __all__ = [
     "field_tag",
     "is_tag_value",
     "mapped_tags",
+    "mapping_key_tag",
     "mapping_path_keys",
     "redeclared_tag_field",
     "same_tag",
@@ -166,14 +174,25 @@ VariantTagSource: TypeAlias = Literal["variant", "union", "nested"]
 """
 
 VariantTagRule: TypeAlias = Literal[
-    "own-field", "reused-schema-field", "inherited-field", "mapping", "inline-inherited-field", "path-segment", "none"
+    "own-field",
+    "reused-schema-field",
+    "inherited-field",
+    "inherited-schema-field",
+    "mapping",
+    "inline-inherited-field",
+    "path-segment",
+    "none",
 ]
 """The rows of ``variant_tags``.
 
 * ``own-field``: the variant's own tag field (``field_tag``).
 * ``reused-schema-field``: the tag field of the model that reuse replaced with the variant, an empty subclass whose
   base can carry the tag another union wrote.
-* ``inherited-field``: a tag field the variant inherits (``nested`` only).
+* ``inherited-field``: a tag field the variant inherits (``nested`` only), which may hold a tag an earlier union wrote
+  (row ``legacy-tag-from-earlier-union`` of ``parser/_tag_plan.py``).
+* ``inherited-schema-field``: the one value the schema of an ancestor fixes for the tag property (``field_tag``), the
+  nearest first, as an allOf parent fixes it for every payload of the variant; never a tag a union wrote into an
+  ancestor. Not for an inline variant, which takes ``inline-inherited-field`` with its clash rule (#4829).
 * ``mapping``: the mapping keys that name the variant or, failing that, its bases (``mapped_tags``).
 * ``inline-inherited-field``: the tag field an inline variant inherits, for a variant that has no name to be tagged by
   (#4829): the last segment of its schema path is an internal marker, and no union it belongs to lists another variant
@@ -203,13 +222,44 @@ MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 """Which keys a discriminator mapping path is matched by (``mapping_path_keys``).
 
 * ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
-  path starts with ``#/``, or by a path relative to the document.
-* ``legacy-any-key``: by all four, which can name more schemas; the layout prediction of msgspec base flattening
-  (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the prediction.
+  path starts with ``#/``, or by a path relative to the document, as written without its first segment and, unless
+  it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
+* ``legacy-any-key``: by all of them, the bare name included, which can name more schemas; the layout prediction of
+  msgspec base flattening (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the
+  prediction.
 """
 
 MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
 """A key a mapping path and a schema path are matched by."""
+
+ScalarTagKind: TypeAlias = Literal["integer", "number", "boolean"]
+"""The JSON type of a tag property's scalar type, which a mapping key is read as (``mapping_key_tag``)."""
+
+SCALAR_TAG_TYPES: Final[Mapping[str, ScalarTagKind]] = MappingProxyType({
+    **dict.fromkeys(
+        ("int", "conint", "StrictInt", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt"), "integer"
+    ),
+    **dict.fromkeys(
+        (
+            "float",
+            "confloat",
+            "StrictFloat",
+            "PositiveFloat",
+            "NegativeFloat",
+            "NonNegativeFloat",
+            "NonPositiveFloat",
+            "Decimal",
+            "condecimal",
+        ),
+        "number",
+    ),
+    **dict.fromkeys(("bool", "StrictBool"), "boolean"),
+})
+"""The kind of each type the builtin type managers write for an integer, a number and a boolean schema."""
+
+_INTEGER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_NUMBER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
+_BOOLEAN_TEXT: Final[Mapping[str, bool]] = MappingProxyType({"true": True, "false": False})
 
 StructTagClash: TypeAlias = Literal["tag-fields", "tag-types", "shared-tags"]
 """How the tags of a union's tagged msgspec Structs clash (``struct_tag_clash``): by different tag fields, by tags
@@ -334,8 +384,8 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
     """Return the tags of a variant (``VariantTagSource``, ``VariantTagRule``).
 
     A variant takes its own tag, else that of the model it replaces; a nested one then the tag it inherits, if any.
-    Otherwise, and for ``union``, the mapping keys decide, else the replaced model's tag, else the tag an inline
-    variant inherits, else the path segment.
+    Otherwise, and for ``union``, the tag the schema of an ancestor fixes decides, else the mapping keys, else the
+    replaced model's tag, else the tag an inline variant inherits, else the path segment.
     """
     if source != "union":
         if (own := facts.own_tag()) is not None:
@@ -345,6 +395,8 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
         if source == "nested":
             inherited = facts.inherited_tag()
             return VariantTags((), "none") if inherited is None else VariantTags((inherited,), "inherited-field")
+    if (inherited := facts.inherited_schema_tag()) is not None:
+        return VariantTags((inherited,), "inherited-schema-field")
     if mapped := facts.mapped_tags():
         return VariantTags(tuple(mapped), "mapping")
     if (reused := facts.reused_tag()) is not None:
@@ -365,13 +417,37 @@ def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tup
     schema: MappingPathKey = ("schema", path.rsplit("#/", maxsplit=1)[-1])
     file: MappingPathKey = ("file", path.rsplit("/", maxsplit=1)[-1])
     if rule == "legacy-any-key":
-        return ("name", path), schema, file, relative
-    return (schema, relative) if path.startswith("#/") else (schema, file, relative)
+        keys: tuple[MappingPathKey, ...] = (("name", path), schema, file, relative)
+    else:
+        keys = (schema, relative) if path.startswith("#/") else (schema, file, relative)
+    if path.startswith("#") or (resolved := ("relative", _without_dot_segments(path))) == relative:
+        return keys
+    return (*keys, resolved)
+
+
+def _without_dot_segments(path: str) -> str:
+    """Return a path with its dot segments removed (RFC 3986, section 5.2.4) and without a leading ``/``.
+
+    The path is read segment by segment: ``.`` goes, ``..`` takes the segment before it, or nothing at the start, so
+    ``../x``, ``./x`` and ``x`` read alike, while a name starting with a dot, ``.defs``, is a segment like any other.
+    """
+    segments: list[str] = []
+    for segment in path.split("/"):
+        if segment == "..":
+            if segments:
+                segments.pop()
+        elif segment != "." and (segment or segments):
+            segments.append(segment)
+    return "/".join(segments)
 
 
 def schema_path_keys(schema_path: str, /) -> tuple[MappingPathKey, ...]:
-    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``)."""
-    relative = schema_path[: schema_path.find("#")].lstrip("../")  # noqa: B005
+    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``).
+
+    Its path relative to the document is that of its file with the dot segments removed (``_without_dot_segments``),
+    also without its first segment.
+    """
+    relative = _without_dot_segments(schema_path[: schema_path.find("#")])
     return (
         ("name", schema_path.rsplit("/", 1)[-1]),
         ("schema", schema_path.rsplit("#/", maxsplit=1)[-1]),
@@ -395,6 +471,37 @@ def mapped_tags(mapping: Mapping[str, str], /, *, schema_path: str, base_schema_
     return selected(schema_path) or [
         tag for base_schema_path in base_schema_paths for tag in selected(base_schema_path)
     ]
+
+
+def mapping_key_tag(
+    key: str, /, *, member_value: Any = None, literals: Sequence[TagValue] = (), scalar: ScalarTagKind | None = None
+) -> Any:
+    """Return the tag a discriminator mapping key names: the value of the tag property's type whose JSON text it is.
+
+    A mapping key is text, so it names the value of the Enum member it names (``member_value``, of any kind, None
+    where there is none), else the ``Literal`` value of the tag field's type whose JSON text it is, else the value of
+    its scalar kind: ``'1'`` of an integer is ``1``, ``'1.5'`` of a number ``1.5`` and ``'true'`` of a boolean
+    ``True``. A key that is no such value, and any key of another type, stays the text it is.
+    """
+    if member_value is not None:
+        return member_value
+    if literals:
+        return next((value for value in literals if _json_text(value) == key), key)
+    match scalar:
+        case "integer" | "number" if _INTEGER_TEXT.fullmatch(key):
+            return int(key)
+        case "number":
+            return float(key) if _NUMBER_TEXT.fullmatch(key) else key
+        case "boolean":
+            return _BOOLEAN_TEXT.get(key, key)
+    return key
+
+
+def _json_text(value: TagValue) -> str:
+    """Return the JSON text of a ``Literal`` value: a string itself, ``true`` or ``false``, or the digits of an int."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value if isinstance(value, str) else str(value)
 
 
 def is_tag_value(value: Any, /, *, bool_literals: bool) -> bool:

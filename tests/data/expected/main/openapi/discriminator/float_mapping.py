@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, RootModel
 
 
 class Kind(Enum):
@@ -16,7 +15,7 @@ class Kind(Enum):
 
 
 class Foo(BaseModel):
-    kind: Literal['1.5']
+    kind: Kind
 
 
 class Kind1(Enum):
@@ -25,8 +24,8 @@ class Kind1(Enum):
 
 
 class Bar(BaseModel):
-    kind: Literal['3.5']
+    kind: Kind1
 
 
 class Base(RootModel[Foo | Bar]):
-    root: Foo | Bar = Field(..., discriminator='kind')
+    root: Foo | Bar
