@@ -1941,6 +1941,21 @@ def test_main_jsonschema_unresolved_local_id_ref_reports_known_ids(
     )
 
 
+def test_main_jsonschema_octet_pointer_opening_reads_as_a_plain_name(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test a $ref whose fragment opens with %2F is a plain name to the parser (row legacy-slash-only-opening)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "octet_pointer_opening.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="Unresolved $id reference '#%2Fdefinitions/Value'",
+    )
+
+
 def test_main_url_jsonschema_relative_ref_without_fragment(
     mock_httpx_get: HttpxGetMockFactory, output_file: Path
 ) -> None:

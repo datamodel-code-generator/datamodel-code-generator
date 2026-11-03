@@ -9,7 +9,7 @@ from urllib.parse import quote
 from typing_extensions import override
 
 from datamodel_code_generator import SchemaParseError
-from datamodel_code_generator._json_pointer import escape_token, reference_tokens
+from datamodel_code_generator._json_pointer import escape_token, pointer_opening, reference_tokens
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._schema_reading import split_json_pointer
@@ -35,9 +35,8 @@ def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resol
     if (tokens := pointer_tokens(original)) is None:
         return
     fragment = original.partition("#")[2]
-    if fragment[:3].lower() == "%2f":
-        fragment = "/" + fragment[3:]
-    if tuple(split_json_pointer(raw, fragment)) != tokens:
+    pointer = fragment if (opening := pointer_opening(fragment)) is None else "/" + fragment[opening:]
+    if tuple(split_json_pointer(raw, pointer)) != tokens:
         msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(original)!r}"
         raise SchemaParseError(msg, path=[resolved])
 

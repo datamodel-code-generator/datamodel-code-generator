@@ -29,7 +29,7 @@ from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
-from datamodel_code_generator._json_pointer import join_pointer
+from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer
 from datamodel_code_generator._records import record
 from datamodel_code_generator.reference import SchemaLocation
 
@@ -349,7 +349,7 @@ class ResourceRegistry:
         if (location := self.locations.get(absolute)) is not None:
             return location
         resource, _, fragment = absolute.partition("#")
-        if (not fragment or fragment.startswith("/")) and (root := self.locations.get(resource)):
+        if is_pointer_fragment(fragment, row="legacy-slash-only-opening") and (root := self.locations.get(resource)):
             return f"{root}{fragment}" if fragment else root
         return None
 

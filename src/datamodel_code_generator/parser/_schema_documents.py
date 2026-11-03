@@ -34,7 +34,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._document_reader import member_key
-from datamodel_code_generator._json_pointer import escape_token
+from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
 from datamodel_code_generator._paths import file_uri_path, files_under
@@ -544,8 +544,7 @@ def resolve_schema_resource_ref(
     if (location := parser._schema_resource_registry.location(absolute)) is not None:  # noqa: SLF001
         return _document_location(location, document)
     if (
-        fragment
-        and not fragment.startswith("/")
+        not is_pointer_fragment(fragment, row="legacy-slash-only-opening")
         and (root := parser._schema_resource_locations.get(resource)) is not None  # noqa: SLF001
         and root.split("#", 1)[1]
     ):
