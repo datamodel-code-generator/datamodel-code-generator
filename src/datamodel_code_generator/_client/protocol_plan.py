@@ -278,8 +278,8 @@ def helper_problems(
             message = (
                 f"The {helper.kind} helper {helper.name!r} reserves the {for_count(len(taken), 'argument')} "
                 f"{', '.join(map(repr, taken))} of "
-                f"{_label(spec.contract)}; rename them with the operation's parameter_names or body_field_names in "
-                "--client-operations"
+                f"{_label(spec.contract)}; rename {for_count(len(taken), 'it', 'them')} with the operation's "
+                "parameter_names or body_field_names in --client-operations"
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)

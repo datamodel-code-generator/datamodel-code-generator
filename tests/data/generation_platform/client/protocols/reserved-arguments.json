@@ -1,0 +1,28 @@
+{
+  "tags.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1tags/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Page/properties/data/items"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "null"}],
+      "empty_string": "end"
+    }
+  },
+  "labels.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1labels/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Page/properties/data/items"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "null"}],
+      "empty_string": "end"
+    }
+  }
+}

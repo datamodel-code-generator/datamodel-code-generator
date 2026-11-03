@@ -19058,7 +19058,7 @@ derived from one of these names, the argument takes the model's suffix, such as 
 <!-- fmt: off -->
 
 ```text
---client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations
+--client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename it with the operation's parameter_names or body_field_names in --client-operations
 ```
 
 <!-- fmt: on -->
