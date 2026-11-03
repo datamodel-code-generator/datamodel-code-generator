@@ -1190,11 +1190,7 @@ class ModelResolver:  # noqa: PLR0904
 
     def _model_name_conflict(self, generated_name: str, mapped_name: str, reserved_name: str | None) -> str | None:
         """Return why ``--model-name-map`` cannot give ``mapped_name`` to a model generated as ``generated_name``."""
-        if (
-            mapped_name != reserved_name
-            and mapped_name in self._reference_names_cache
-            and mapped_name not in self._yielding_names
-        ):
+        if mapped_name != reserved_name and self._name_taken(mapped_name, row="map-conflict"):
             return "already used"
         return "reserved" if mapped_name != generated_name and mapped_name in self.exclude_names else None
 
@@ -2083,7 +2079,7 @@ class ModelResolver:  # noqa: PLR0904
         numbering: Numbering = "joined" if camel else "underscore"
         if yields:
             return self._get_yielding_unique_name(name, suffix, numbering, prefix)
-        is_taken = self._is_taken_beside_yielding_names if self._yielding_names else self._is_taken
+        is_taken = partial(self._name_taken, row="beside-yielding" if self._yielding_names else "plain")
         hint_key = (name, suffix or "", "" if camel else "_")
         count = self._unique_name_start_hints.get(hint_key, 0)
         if count and not is_taken(candidate_at(name, numbering, count - 1, suffix)):
@@ -2093,16 +2089,32 @@ class ModelResolver:  # noqa: PLR0904
             self._unique_name_start_hints[hint_key] = count + 1
         return unique_name
 
-    def _is_taken(self, name: str) -> bool:
-        return name in self._reference_names_cache or name in self.exclude_names or name in self._released_model_names
+    def _name_taken(
+        self,
+        name: str,
+        *,
+        row: Literal["plain", "beside-yielding", "yielding-module", "map-conflict"],
+        prefix: str = "",
+    ) -> bool:
+        """Return whether the models' scope holds the class name ``name``, as the caller's row counts it.
 
-    def _is_taken_beside_yielding_names(self, name: str) -> bool:
-        """Names of yielding references stay free for references that do not yield."""
-        return (
-            self._reference_names_cache.get(name, 0) > (name in self._yielding_names)
-            or name in self.exclude_names
-            or name in self._released_model_names
-        )
+        A name is taken when a reference holds it, ``exclude_names`` has it or ``--model-name-map`` released it
+        (``_apply_model_name_map``). Row ``plain`` counts every reference; row ``beside-yielding`` leaves a name that
+        only a yielding reference holds free for a reference that does not yield; row ``yielding-module``, the name of
+        a yielding reference, counts the name in the module ``prefix`` names too and leaves a released name free; row
+        ``map-conflict``, a ``--model-name-map`` value (``_model_name_conflict``), counts a name that references hold
+        while no yielding reference does, and leaves excluded and released names to the caller.
+        """
+        names = self._reference_names_cache
+        held = name in names
+        match row:
+            case "map-conflict":
+                return held and name not in self._yielding_names
+            case "beside-yielding":
+                held = names.get(name, 0) > (name in self._yielding_names)
+            case "yielding-module":
+                held = held or f"{prefix}{name}" in names
+        return held or name in self.exclude_names or (row != "yielding-module" and name in self._released_model_names)
 
     def _get_yielding_unique_name(self, name: str, suffix: str | None, numbering: Numbering, prefix: str) -> str:
         """Return a duplicate candidate free also in the module of a yielding reference, after those given before.
@@ -2110,15 +2122,10 @@ class ModelResolver:  # noqa: PLR0904
         Candidates before the last one given stay skipped even when a name among them is released later, which only
         numbers a later model of a map value higher.
         """
-        reference_names = self._reference_names_cache
         hint_key = (name, suffix or "", numbering, prefix)
         unique_name, self._yielding_name_start_hints[hint_key] = first_free(
             name,
-            lambda unique_name: (
-                unique_name in reference_names
-                or f"{prefix}{unique_name}" in reference_names
-                or unique_name in self.exclude_names
-            ),
+            partial(self._name_taken, row="yielding-module", prefix=prefix),
             numbering,
             suffix=suffix,
             start=self._yielding_name_start_hints.get(hint_key, 0),
