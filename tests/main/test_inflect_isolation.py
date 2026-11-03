@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import DataModelType
-from tests.conftest import assert_output, create_assert_file_content
+from tests.conftest import CHILD_COVERAGE_ENV, assert_output, create_assert_file_content
 from tests.main.conftest import DATA_PATH, EXPECTED_MAIN_PATH, _generated_model
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ def test_inflect_independent_callers_preserve_checks_and_names(
         capture_output=True,
         text=True,
         cwd=root,
-        env={**os.environ, "PYTHONPATH": str(root / "src")},
+        env={**os.environ, **CHILD_COVERAGE_ENV, "PYTHONPATH": str(root / "src")},
         timeout=60,
     )
     expected_probe = (

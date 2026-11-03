@@ -22,7 +22,7 @@ import pytest
 
 import datamodel_code_generator
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import TARGET_PYTHON, assert_output
+from tests.conftest import CHILD_COVERAGE_ENV, TARGET_PYTHON, assert_output
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -181,6 +181,7 @@ def _start_watch_process(
 ) -> tuple[subprocess.Popen[str], list[str], list[str], threading.Thread, threading.Thread]:
     environment = {
         **os.environ,
+        **CHILD_COVERAGE_ENV,
         "PYTHONUNBUFFERED": "1",
         "WATCHFILES_FORCE_POLLING": os.environ.get("WATCHFILES_FORCE_POLLING", "true"),
     }

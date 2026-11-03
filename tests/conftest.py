@@ -21,6 +21,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import cache, cached_property
+from importlib.util import find_spec
 from itertools import islice, starmap
 from pathlib import Path, PurePosixPath
 from types import ModuleType
@@ -103,6 +104,14 @@ SWEEP_PYTHON = (3, 15)
 """The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""
 CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 """The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
+CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
+"""What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
+
+From Python 3.14 the default core, ``sysmon``, works out the branches of each code object the first time it runs, which
+costs a fresh process seconds before its first generation; ``ctrace`` measures the same lines and branches without that.
+A coverage without its C extension, such as the pure Python wheel a Python without a compiled one installs, keeps its
+default.
+"""
 BUILTIN_FORMATTER_VALUE = "builtin"
 TARGET_PYTHON = (3, 11)
 TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
