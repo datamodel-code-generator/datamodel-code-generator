@@ -3996,6 +3996,103 @@ def test_main_jsonschema_builtin_type_override_beside_module(
     assert_output("\n".join(verdicts) + "\n", name="payloads")
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "extra_args", "payloads"),
+    [
+        pytest.param(
+            "imported_class_named_like_submodule.json",
+            ["--use-exact-imports"],
+            ['{"errors": {"count": 1}, "detail": {"message": "m"}}', '{"errors": {"count": "one"}}'],
+            id="class",
+        ),
+        pytest.param(
+            "imported_module_named_like_submodule.json",
+            [],
+            ['{"a": {"n": 1}, "b": {"s": "x"}}', '{"a": {"n": "one"}}'],
+            id="module",
+        ),
+    ],
+)
+def test_main_jsonschema_import_named_like_submodule(
+    output_dir: Path, output_model_type: str, input_name: str, extra_args: list[str], payloads: list[str]
+) -> None:
+    """Give a new name to what a package imports by the name of one of its own submodules.
+
+    ``pkg/__init__.py`` imports the class ``Warning`` of ``other`` (``--use-exact-imports``) or the module ``x`` of
+    ``other``, and the submodules ``pkg.Warning`` and ``pkg.x`` bind the same names in ``pkg`` once anything imports
+    them, so the fields named the submodules, or the builtin ``Warning`` that the bare name was taken for (#6003).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "pkg") as module:
+        verdicts = [_decode_with_generated_model(output_model_type, module.Report, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+@pytest.mark.parametrize(
+    ("input_name", "module_path", "model_name", "payloads"),
+    [
+        pytest.param(
+            "package_init_input_builtin_submodule",
+            "pkg",
+            "Holder",
+            ['{"items": ["a"], "pop": {"name": "n"}}', '{"pop": {"name": 1}}'],
+            id="init-input",
+        ),
+        pytest.param(
+            "builtin_submodule_beside_root_model.json",
+            "",
+            "Root",
+            ['{"items": ["a"], "l": {"a": "x"}}', '{"items": [1]}'],
+            id="root",
+        ),
+    ],
+)
+def test_main_jsonschema_builtin_submodule_beside_package_init(
+    output_dir: Path, output_model_type: str, input_name: str, module_path: str, model_name: str, payloads: list[str]
+) -> None:
+    """Import the builtin ``list`` under an alias in a package whose ``__init__.py`` is no module of the import paths.
+
+    The input ``pkg/__init__.json`` and the root package write an ``__init__.py`` that the submodule ``list`` hides the
+    builtin in, as it does in a package that has no such input (#6004).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, module_path) as module:
+        verdicts = [
+            _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+            for payload in payloads
+        ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 

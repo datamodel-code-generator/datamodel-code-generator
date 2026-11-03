@@ -582,6 +582,7 @@ jsonschema/optional_nested_factory_requirements/reused.json	payloads/native_nume
 jsonschema/optional_nested_factory_requirements/union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/optional_nested_factory_requirements/untyped_null_default.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/optional_nested_factory_requirements/wrapped.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/package_init_input_builtin_submodule/pkg/list.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/path_absolute_root_id_refs/core/platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/path_absolute_root_id_refs_parent_traversal/outside-platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2411,6 +2412,7 @@ jsonschema/optional_nested_factory_requirements/reused.json	payloads/native_nume
 jsonschema/optional_nested_factory_requirements/union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/optional_nested_factory_requirements/untyped_null_default.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/optional_nested_factory_requirements/wrapped.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/package_init_input_builtin_submodule/pkg/list.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/path_absolute_root_id_refs/core/platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/path_absolute_root_id_refs_parent_traversal/outside-platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
