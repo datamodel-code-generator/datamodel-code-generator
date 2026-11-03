@@ -129,8 +129,8 @@ def _validate_http_key_value_options(
         return [validate_each_item(cast("_HttpKeyValueInput", each_item)) for each_item in value]
     from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
 
-    msg = f"Invalid {value_error_name} value: {stable_repr(value)}"  # pragma: no cover
-    raise Error(msg)  # pragma: no cover
+    msg = f"Invalid {value_error_name} value: {stable_repr(value)}"
+    raise Error(msg)
 
 
 @lru_cache(maxsize=1)
