@@ -294,11 +294,12 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
         Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
         The dataclass gets a config of its own: the one in the template data may be shared with every model of the
-        same name (``--extra-template-data``).
+        same name (``--extra-template-data``). It reads the items of that config as a model does, so a config that is
+        no mapping adds none.
         """
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
         self.extra_template_data["config"] = {
-            **self.extra_template_data.get("config", {}),
+            **dict(_config_dict_items(self.extra_template_data.get("config"))),
             "regex_engine": '"python-re"',
         }
         self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())

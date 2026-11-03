@@ -841,6 +841,11 @@ DEFAULT_MODEL_EXTRA_KEYS: set[str] = {
 }
 
 
+def _without_x_prefix(key: str) -> str:
+    """Return an extra key without its ``x-`` prefix: the prefix only, never the ``x`` or ``-`` after it."""
+    return key.removeprefix("x-")
+
+
 _DEFAULT_SCHEMA_PATHS = ("#/definitions", "#/$defs")
 
 
@@ -1048,7 +1053,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Extract extra field metadata from a JSON Schema object."""
         extras = {
             self.get_field_extra_key(
-                k.removeprefix("x-") if k in self.field_extra_keys_without_x_prefix else k
+                _without_x_prefix(k) if k in self.field_extra_keys_without_x_prefix else k
             ): self._externalize_schema_extra(k, v)
             for k, v in obj.extras.items()
             if self.field_include_all_keys or k in self.field_keys
@@ -2281,13 +2286,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         - additionalProperties: { type: X } -> extra_items=X
 
         This is controlled by use_closed_typed_dict option. When disabled,
-        the additionalProperties constraint is not converted to PEP 728 syntax.
+        the additionalProperties constraint is not converted to PEP 728 syntax; a boolean one is stored all the same,
+        for the outputs that read it as their closedness (the TypedDict reads the option).
         The additionalProperties are those of the model (``_model_additional_properties``).
         """
         additional_properties = self._model_additional_properties(obj)
         if isinstance(additional_properties, bool):
-            if not self.use_closed_typed_dict:
-                return
             self._output_model_context.store_additional_properties_value(
                 self.extra_template_data[path],
                 value=additional_properties,
@@ -2382,8 +2386,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if self.model_extra_keys and k in self.model_extra_keys:
                     model_extras[k] = self._externalize_schema_extra(k, v)
                 elif self.model_extra_keys_without_x_prefix and k in self.model_extra_keys_without_x_prefix:
-                    # Strip the x- prefix
-                    model_extras[k.lstrip("x-")] = self._externalize_schema_extra(k, v)
+                    model_extras[_without_x_prefix(k)] = self._externalize_schema_extra(k, v)
         if model_extras:
             self.extra_template_data[path]["model_extras"] = model_extras
 

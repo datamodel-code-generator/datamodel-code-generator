@@ -16,7 +16,11 @@ from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import Import, _holds, _remove_all
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._render_plan import FieldRenderPlan, RuleId, Why
-from datamodel_code_generator.model.base import UNDEFINED, _field_source_name
+from datamodel_code_generator.model.base import (
+    _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY,
+    UNDEFINED,
+    _field_source_name,
+)
 from datamodel_code_generator.model.imports import (
     IMPORT_NOT_REQUIRED,
     IMPORT_NOT_REQUIRED_BACKPORT,
@@ -153,7 +157,7 @@ class TypedDict(DataModel):
 
         Note: closed=True is not applied to TypedDicts used as base classes,
         as PEP 728 doesn't allow child TypedDicts to add new fields when
-        parent has closed=True.
+        parent has closed=True. ``--no-use-closed-typed-dict`` writes neither.
         """
         additional_props = self.extra_template_data.get("additionalProperties")
         additional_props_type = self.extra_template_data.get("additionalPropertiesType")
@@ -161,7 +165,11 @@ class TypedDict(DataModel):
 
         typed_dict_kwargs: dict[str, str] = {"total": "False"} if self.use_total_false_for_typed_dict else {}
 
-        if additional_props is False and not is_base_class:
+        if (
+            additional_props is False
+            and not is_base_class
+            and self.extra_template_data.get(_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY, True)
+        ):
             typed_dict_kwargs["closed"] = "True"
         elif additional_props_type and not is_base_class:
             if isinstance(additional_props_type, _InternalTypeExpression):
