@@ -1,0 +1,10 @@
+from __future__ import annotations
+from typing import NotRequired, TypedDict
+
+
+
+class Model(TypedDict, extra_items='𞓐T'):
+    """
+    Built by a custom model class.
+    """
+    a: NotRequired[str]

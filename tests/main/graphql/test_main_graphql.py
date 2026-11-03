@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import sys
 import warnings
 from typing import TYPE_CHECKING
@@ -737,6 +738,32 @@ def test_main_graphql_additional_imports(output_file: Path) -> None:
             "--additional-imports",
             "datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass",
         ],
+    )
+
+
+@pytest.mark.parametrize("target_python_version", ["3.11", "3.12"])
+def test_main_graphql_scalar_type_name_follows_target(output_file: Path, target_python_version: str) -> None:
+    """Write the template-data type of a scalar, a model without fields, as a name only where the target binds it.
+
+    U+1E4D0 is a letter from Unicode 15 on: Python 3.12 binds the name, and Python 3.11 gets it as a string.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "additional-imports.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--extra-template-data",
+            json.dumps({"MyCustomClass": {"py_type": "mypkg.\U0001e4d0T"}}),
+            "--additional-imports",
+            "mypkg",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
     )
 
 

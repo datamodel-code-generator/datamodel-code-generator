@@ -177,7 +177,9 @@ class TypedDict(DataModel):
             elif len(self.additional_properties_reference_classes):
                 typed_dict_kwargs["extra_items"] = represent_untrusted_python_value(additional_props_type)
             else:
-                typed_dict_kwargs["extra_items"] = represent_untrusted_public_type_name(additional_props_type)
+                typed_dict_kwargs["extra_items"] = represent_untrusted_public_type_name(
+                    additional_props_type, target=self.target_python_version
+                )
 
         if typed_dict_kwargs:
             self._set_typed_dict_kwargs(typed_dict_kwargs)

@@ -253,18 +253,21 @@ def test_builtin_pydantic_config_literals_are_safe() -> None:
         def __str__(self) -> str:
             return "config object"
 
-    config_items = _safe_config_dict_items({
-        "alias_generator": "to_camel",
-        "legacy": "True",
-        "quoted": "'quoted'",
-        "number": "'1'",
-        "broken": "'broken\\'",
-        "nested": [{"value": "safe"}, ("one",)],
-        "fallback": StringOnly(),
-        "regex_engine": '"python-re"',
-        "not-valid": True,
-        "class": True,
-    })
+    config_items = _safe_config_dict_items(
+        {
+            "alias_generator": "to_camel",
+            "legacy": "True",
+            "quoted": "'quoted'",
+            "number": "'1'",
+            "broken": "'broken\\'",
+            "nested": [{"value": "safe"}, ("one",)],
+            "fallback": StringOnly(),
+            "regex_engine": '"python-re"',
+            "not-valid": True,
+            "class": True,
+        },
+        PythonVersion.PY_314,
+    )
 
     assert config_items == [
         ("alias_generator", "to_camel"),

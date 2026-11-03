@@ -75,8 +75,9 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import DatetimeClassType, Formatter, apply_builtin_formatter, is_supported_in_black
 from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.model import get_data_model_types
-from datamodel_code_generator.model.base import TEMPLATE_DIR
+from datamodel_code_generator.model.base import TEMPLATE_DIR, UNDEFINED
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecDataModelField
+from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
@@ -136,7 +137,9 @@ from tests.main.conftest import (
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
+    from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.reference import Reference
 
 FixtureRequest = pytest.FixtureRequest
 
@@ -23618,6 +23621,341 @@ def test_main_identifier_unicode_follows_target(
             "--disable-timestamp",
         ],
     )
+
+
+_NEW_LETTER = "\U0001e4d0"
+"""U+1E4D0, a letter from Unicode 15 on: a name holding it is a name on Python 3.12, not on Python 3.11."""
+_NAMES_SCHEMA = {"title": "Model", "type": "object", "properties": {"a": {"type": "string"}}}
+
+
+@pytest.mark.parametrize(
+    ("schema", "extra_args", "message"),
+    [
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--generate-schema-validators", "--schema-validator-base-class-name", f"{_NEW_LETTER}Base"],
+            f"--schema-validator-base-class-name '{_NEW_LETTER}Base' is not a valid Python identifier",
+            id="schema-validator-base-class-name",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--additional-imports", f"mypkg.{_NEW_LETTER}X"],
+            f"additional_imports must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}X'",
+            id="additional-imports",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--extra-template-data", json.dumps({"Model": {"additional_imports": [f"mypkg.{_NEW_LETTER}X"]}})],
+            f"additional_imports must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}X'",
+            id="template-data-additional-imports",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--base-class", f"mypkg.{_NEW_LETTER}Base"],
+            f"base_class must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}Base'",
+            id="base-class",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--validators", json.dumps({"Model": {"validators": [{"field": f"a{_NEW_LETTER}", "function": "m.f"}]}})],
+            f"validators.0.field: must be a valid Python identifier: 'a{_NEW_LETTER}'",
+            id="validator-field",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            [
+                "--validators",
+                json.dumps({"Model": {"validators": [{"fields": ["a", f"{_NEW_LETTER}"], "function": "m.f"}]}}),
+            ],
+            f"validators.0.fields: must be a valid Python identifier: '{_NEW_LETTER}'",
+            id="validator-fields",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--validators", json.dumps({"Model": {"validators": [{"field": "a", "function": f"m.{_NEW_LETTER}f"}]}})],
+            f"validators.0.function: must be a dotted Python identifier path: 'm.{_NEW_LETTER}f'",
+            id="validator-function",
+        ),
+        pytest.param(
+            {**_NAMES_SCHEMA, "customBasePath": ["mypkg.Base", f"mypkg.{_NEW_LETTER}Base"]},
+            [],
+            f"customBasePath must be a dotted Python identifier path: 'mypkg.{_NEW_LETTER}Base'",
+            id="custom-base-path",
+        ),
+        pytest.param(
+            {**_NAMES_SCHEMA, "properties": {"a": {"type": "string", "customTypePath": f"mypkg.{_NEW_LETTER}T"}}},
+            [],
+            f"customTypePath must be a dotted Python identifier path: 'mypkg.{_NEW_LETTER}T'",
+            id="custom-type-path",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {"T": {"type": "string", "x-python-import": {"module": "mypkg", "name": f"{_NEW_LETTER}T"}}},
+            },
+            [],
+            f"x-python-import must be a dotted Python identifier path: 'mypkg.{_NEW_LETTER}T'",
+            id="x-python-import",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {
+                    "T": {
+                        "type": "string",
+                        "x-python-import": {"module": "mypkg", "name": "T", "qualname": f"Outer.{_NEW_LETTER}T"},
+                    }
+                },
+            },
+            [],
+            f"x-python-import qualname must be a dotted Python identifier path: 'Outer.{_NEW_LETTER}T'",
+            id="x-python-import-qualname",
+        ),
+    ],
+)
+def test_main_names_the_target_python_does_not_bind_are_refused(
+    tmp_path: Path,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+    schema: dict[str, Any],
+    extra_args: list[str],
+    message: str,
+) -> None:
+    """Refuse a name an option, template data or a schema extension gives that the target Python does not bind.
+
+    Python 3.11 does not bind the names: the run refuses them whatever Python generates them, as the configuration
+    refuses a name no target binds.
+    """
+    input_file = tmp_path / "names.json"
+    input_file.write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        extra_args=[*extra_args, "--target-python-version", "3.11"],
+    )
+
+
+def test_main_names_the_target_python_binds_are_written(tmp_path: Path, output_file: Path) -> None:
+    """Write the names options, template data and schema extensions give where the target Python binds them.
+
+    Python 3.12 binds the names, so every Python that generates for it writes them.
+    """
+    input_file = tmp_path / "names.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "customBasePath": f"mypkg.{_NEW_LETTER}Base",
+            "properties": {
+                f"a{_NEW_LETTER}": {"type": "string"},
+                "b": {"type": "string", "customTypePath": f"mypkg.{_NEW_LETTER}T"},
+                "c": {"$ref": "#/$defs/U"},
+                "d": {"$ref": "#/$defs/V"},
+                "e": {"$ref": "#/$defs/Counted"},
+            },
+            "$defs": {
+                "U": {"type": "string", "x-python-import": {"module": "mypkg", "name": f"{_NEW_LETTER}U"}},
+                "V": {
+                    "type": "string",
+                    "x-python-import": {"module": "mypkg", "name": "V", "qualname": f"Outer.{_NEW_LETTER}V"},
+                },
+                "Counted": {"type": "object", "minProperties": 1, "properties": {"x": {"type": "integer"}}},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--additional-imports",
+            f"mypkg.{_NEW_LETTER}X",
+            "--validators",
+            json.dumps({"Model": {"validators": [{"field": f"a{_NEW_LETTER}", "function": f"mypkg.{_NEW_LETTER}f"}]}}),
+            "--generate-schema-validators",
+            "--schema-validator-base-class-name",
+            f"{_NEW_LETTER}Validated",
+            "--target-python-version",
+            "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize("target_python_version", ["3.11", "3.12"])
+@pytest.mark.parametrize(
+    ("output_model_type", "schema", "template_data", "extra_args"),
+    [
+        pytest.param(
+            "msgspec.Struct",
+            {"title": "Model", "type": "object"},
+            {"Model": {"base_class_kwargs": {"frozen": True, f"{_NEW_LETTER}opt": True}}},
+            [],
+            id="struct-option",
+        ),
+        pytest.param(
+            "typing.TypedDict",
+            _NAMES_SCHEMA,
+            {"Model": {"additionalPropertiesType": f"mypkg.{_NEW_LETTER}T"}},
+            ["--additional-imports", "mypkg"],
+            id="typed-dict-extra-items",
+        ),
+    ],
+)
+def test_main_template_data_names_follow_target(
+    tmp_path: Path,
+    output_file: Path,
+    output_model_type: str,
+    schema: dict[str, Any],
+    template_data: dict[str, Any],
+    extra_args: list[str],
+    target_python_version: str,
+) -> None:
+    """Write a template-data name only where the target Python binds it, also on a model without fields.
+
+    Python 3.12 binds the names; for Python 3.11 an option key is left out and a type name is written as a string.
+    """
+    input_file = tmp_path / "names.json"
+    input_file.write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--extra-template-data",
+            json.dumps(template_data),
+            *extra_args,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+class _ExplicitInitTypedDict(TypedDictModel):
+    """A user's TypedDict model whose ``__init__`` names the arguments it takes, as released versions pass them."""
+
+    def __init__(
+        self,
+        *,
+        reference: Reference,
+        fields: list[DataModelFieldBase],
+        decorators: list[str] | None = None,
+        base_classes: list[Reference] | None = None,
+        custom_base_class: str | list[str] | None = None,
+        custom_template_dir: Path | None = None,
+        extra_template_data: defaultdict[str, Any] | None = None,
+        methods: list[str] | None = None,
+        path: Path | None = None,
+        description: str | None = None,
+        default: Any = UNDEFINED,
+        nullable: bool = False,
+        keyword_only: bool = False,
+        treat_dot_as_module: bool | None = None,
+    ) -> None:
+        super().__init__(
+            reference=reference,
+            fields=fields,
+            decorators=decorators,
+            base_classes=base_classes,
+            custom_base_class=custom_base_class,
+            custom_template_dir=custom_template_dir,
+            extra_template_data=extra_template_data,
+            methods=methods,
+            path=path,
+            description=description or "Built by a custom model class.",
+            default=default,
+            nullable=nullable,
+            keyword_only=keyword_only,
+            treat_dot_as_module=treat_dot_as_module,
+        )
+
+
+@pytest.mark.parametrize(
+    "target_python_version",
+    [pytest.param(PythonVersion.PY_311, id="3.11"), pytest.param(PythonVersion.PY_312, id="3.12")],
+)
+def test_custom_model_with_its_own_init_follows_target(target_python_version: PythonVersion) -> None:
+    """A model class whose ``__init__`` names its own arguments builds for the target Python of the run.
+
+    Its constructor writes the template-data type of ``extra_items`` as a name only where the target binds it.
+    """
+    model_types = get_data_model_types(DataModelType.TypingTypedDict, target_python_version)
+    parser = JsonSchemaParser(
+        json.dumps(_NAMES_SCHEMA),
+        data_model_type=_ExplicitInitTypedDict,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        target_python_version=target_python_version,
+        extra_template_data=defaultdict(dict, {"Model": {"additionalPropertiesType": f"{_NEW_LETTER}T"}}),
+    )
+    assert_output(parser.parse(format_=False))
+
+
+@pytest.mark.parametrize(
+    ("options", "error", "message"),
+    [
+        pytest.param(
+            {"generate_schema_validators": True, "schema_validator_base_class_name": "1Base"},
+            ValidationError,
+            "--schema-validator-base-class-name '1Base' is not a valid Python identifier",
+            id="base-class-name-no-target-binds",
+        ),
+        pytest.param(
+            {"generate_schema_validators": True, "schema_validator_base_class_name": f"{_NEW_LETTER}Base"},
+            Error,
+            f"--schema-validator-base-class-name '{_NEW_LETTER}Base' is not a valid Python identifier",
+            id="base-class-name-target-does-not-bind",
+        ),
+        pytest.param(
+            {"validators": {"Model": {"validators": [{"field": "1a", "function": "m.f"}]}}},
+            ValidationError,
+            "must be a valid Python identifier: '1a'",
+            id="validator-no-target-binds",
+        ),
+        pytest.param(
+            {"validators": {"Model": {"validators": [{"field": f"a{_NEW_LETTER}", "function": "m.f"}]}}},
+            Error,
+            "Invalid validators configuration: validators.0.field: "
+            f"must be a valid Python identifier: 'a{_NEW_LETTER}'",
+            id="validator-target-does-not-bind",
+        ),
+    ],
+)
+def test_generate_refuses_names_by_the_target_python(
+    output_file: Path, options: dict[str, Any], error: type[Exception], message: str
+) -> None:
+    """Refuse a name no target binds as the config is validated, and one the target does not bind as the run starts.
+
+    `generate()` raises a `ValidationError` for the first and an `Error` for the second.
+    """
+    with pytest.raises(error, match=re.escape(message)):
+        generate(
+            input_=_NAMES_SCHEMA,
+            input_file_type=InputFileType.JsonSchema,
+            output=output_file,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            target_python_version=PythonVersion.PY_311,
+            **options,
+        )
 
 
 @pytest.mark.parametrize(

@@ -577,7 +577,7 @@ class Struct(DataModel):
         template_data = super()._builtin_template_data()
         base_class_kwargs: dict[str, str] = {}
         for key, value in _user_struct_options(self).items():
-            if (normalized_key := _normalized_safe_python_name(key)) is not None:
+            if (normalized_key := _normalized_safe_python_name(key, self.target_python_version)) is not None:
                 base_class_kwargs[normalized_key] = represent_untrusted_python_value(value)
         base_class_kwargs.update(self._internal_template_data["base_class_kwargs"])
         return {**template_data, "base_class_kwargs": base_class_kwargs}

@@ -45,7 +45,7 @@ from datamodel_code_generator.parser._tag_plan import TagPlanHost, iter_struct_t
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Callable, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator.imports import Imports
@@ -101,6 +101,9 @@ class CrossModuleHost(ReimportHost, RenamedTypesHost, GraphBuilderHost, Protocol
 
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether a model uses the configured root model representation."""
+
+    def _new_model(self, factory: Callable[..., DataModel | None], /, **kwargs: Any) -> DataModel | None:
+        """Build a model with ``factory``, a model class or a model factory, for the run's target Python."""
 
 
 class TaggedBasesHost(CrossModuleHost, FlattenHost, TagPlanHost, Protocol):
@@ -356,7 +359,8 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
 
     base_class_ref = Reference(path=GENERIC_BASE_CLASS_PATH, name=GENERIC_BASE_CLASS_NAME)
 
-    base_class_model = parser.data_model_type.create_base_class_model(
+    base_class_model = parser._new_model(  # noqa: SLF001
+        parser.data_model_type.create_base_class_model,
         config=parser.generic_base_class_config,
         reference=base_class_ref,
         custom_template_dir=parser.custom_template_dir,

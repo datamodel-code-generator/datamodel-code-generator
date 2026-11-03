@@ -97,9 +97,10 @@ def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, 
     if not additional_imports:
         return additional_imports
 
+    from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
     from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
 
-    return _validate_additional_import_paths(additional_imports) or []
+    return _validate_additional_import_paths(additional_imports, NEWEST_TARGET) or []
 
 
 def _validate_http_key_value_options(
@@ -384,9 +385,10 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_schema_validator_base_class_name(cls, v: str | None) -> str | None:
             """Validate schema validator base class name."""
+            from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
             from datamodel_code_generator.base_config import _schema_validator_base_class_name_error  # noqa: PLC0415
 
-            if (msg := _schema_validator_base_class_name_error(v)) is not None:
+            if (msg := _schema_validator_base_class_name_error(v, NEWEST_TARGET)) is not None:
                 raise Error(msg)
             return v
 

@@ -129,6 +129,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _bind_builtin_names,
+    _build_for_target,
     _has_root_field_constraints,
     _model_package_class,
     _set_nested_model_default_factory_order,
@@ -287,6 +288,7 @@ PydanticFloors = _state.PydanticFloors
 pydantic_floors_recorded = _state.pydantic_floors_recorded
 
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
+_ModelT = TypeVar("_ModelT", bound="DataModel | None")
 
 
 _TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
@@ -806,7 +808,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             frozen=self.frozen_dataclasses,
             keyword_only=self.keyword_only,
         )
-        return data_model_class(**kwargs)
+        return self._new_model(data_model_class, **kwargs)
+
+    def _new_model(self, factory: Callable[..., _ModelT], /, **kwargs: Any) -> _ModelT:
+        """Build a model with ``factory``, a model class or a model factory, for the run's target Python.
+
+        Every model the parser builds is built here; a model built from another one takes over that model's target.
+        """
+        return _build_for_target(self.target_python_version, factory, **kwargs)
 
     def __init__(  # noqa: PLR0915
         self,
@@ -916,10 +925,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.imports: Imports = Imports(config.use_exact_imports)
         self.use_exact_imports: bool = config.use_exact_imports
         self.use_type_checking_imports: bool | None = config.use_type_checking_imports
-        self._append_additional_imports(additional_imports=config.additional_imports)
-        from datamodel_code_generator.base_config import _check_config_named_paths  # noqa: PLC0415
+        from datamodel_code_generator.base_config import (  # noqa: PLC0415
+            _check_config_named_paths,
+            _schema_validator_base_class_name_error,
+        )
 
-        _check_config_named_paths(config)
+        if (
+            message := _schema_validator_base_class_name_error(
+                config.schema_validator_base_class_name, config.target_python_version
+            )
+        ) is not None:
+            raise Error(message)
+        self._append_additional_imports(config.additional_imports, config.target_python_version)
+        _check_config_named_paths(config, config.target_python_version)
         self.class_decorators: list[str] = config.class_decorators or []
 
         self.base_class: str | None = config.base_class
@@ -1425,13 +1443,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return diagnostic_source_path.as_posix()
         return "<input>"
 
-    def _append_additional_imports(self, additional_imports: list[str] | None) -> None:
+    def _append_additional_imports(self, additional_imports: list[str] | None, target: PythonVersion) -> None:
         if not additional_imports:
             return
 
         from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
 
-        for additional_import_string in _validate_additional_import_paths(additional_imports) or []:
+        for additional_import_string in _validate_additional_import_paths(additional_imports, target) or []:
             new_import = Import.from_full_path(additional_import_string)
             self._import_ledger.append(self.imports, new_import, _ADDITIONAL_IMPORTS)
 
@@ -1454,6 +1472,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if found:
             return normalize(mapped)
         if custom_base_path:
+            from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
+
+            for path in custom_base_path if isinstance(custom_base_path, list) else (custom_base_path,):
+                _validate_schema_python_import_path(path, "customBasePath", self.target_python_version)
             return normalize(custom_base_path)
         return self.base_class or None
 

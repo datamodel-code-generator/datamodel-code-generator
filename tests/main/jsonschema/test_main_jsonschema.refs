@@ -2690,6 +2690,9 @@ zero-True-external-cli	main/jsonschema/conditional_json_equality/fields.txt
 zero-True-external-cli	main/jsonschema/conditional_json_equality/zero_True.py
 [test_custom_model_field_name_binding_policy]
 	main/jsonschema/field_name_bindings/custom_naming_policy.py
+[test_custom_model_with_its_own_init_follows_target]
+3.11	main/jsonschema/main_jsonschema/custom_model_with_its_own_init_follows_target[3.11].txt
+3.12	main/jsonschema/main_jsonschema/custom_model_with_its_own_init_follows_target[3.12].txt
 [test_custom_pattern_annotation_context]
 field	main/jsonschema/unknown_pattern_annotations/custom_field.py	= main/jsonschema/unknown_pattern_annotations/custom_model.py
 field	main/jsonschema/unknown_pattern_annotations/custom_field_runtime.txt	= main/jsonschema/unknown_pattern_annotations/custom_model_runtime.txt
@@ -8068,6 +8071,8 @@ msgspec	main/jsonschema/msgspec_union_member_constraints/msgspec_warnings.txt
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated.py
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated_decoded.txt
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_names_the_target_python_binds_are_written]
+	main/jsonschema/names_the_target_python_binds_are_written.py
 [test_main_naming_strategy_complex_duplicate_suffix]
 	main/jsonschema/naming_strategy/complex_duplicate_suffix/output.py
 [test_main_naming_strategy_complex_numbered]
@@ -8827,6 +8832,11 @@ annotated_assignment_at_line_length-extra_args0-formatters0	main/jsonschema/anno
 annotated_assignment_at_line_length-extra_args0-formatters1	main/jsonschema/annotated_assignment_at_line_length.py
 union_subscript_assignment_at_line_length-extra_args1-formatters0	main/jsonschema/union_subscript_assignment_at_line_length.py
 union_subscript_assignment_at_line_length-extra_args1-formatters1	main/jsonschema/union_subscript_assignment_at_line_length.py
+[test_main_template_data_names_follow_target]
+struct-option-3.11	main/jsonschema/template_data_names_follow_target.py
+struct-option-3.12	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[struct-option-3.12].py
+typed-dict-extra-items-3.11	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[typed-dict-extra-items-3.11].py
+typed-dict-extra-items-3.12	main/jsonschema/template_data_names_follow_target.py	= main/jsonschema/template_data_names_follow_target~main_template_data_names_follow_target[typed-dict-extra-items-3.12].py
 [test_main_top_level_allof_oneof]
 	main/jsonschema/top_level_allof_oneof//*.py
 [test_main_type_alias_cycle_keep_model_order]

@@ -78,6 +78,9 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/no_typename.py
 [test_main_graphql_root_type_references]
 	main/graphql/root_type_references.py
+[test_main_graphql_scalar_type_name_follows_target]
+3.11	main/graphql/graphql_scalar_type_name_follows_target.py
+3.12	main/graphql/graphql_scalar_type_name_follows_target.py	= main/graphql/graphql_scalar_type_name_follows_target~scalar_type_name_follows_target[3.12].py
 [test_main_graphql_serialization_aliases_pydantic_v2]
 	main/graphql/graphql_serialization_aliases_pydantic_v2.py
 [test_main_graphql_simple_star_wars]

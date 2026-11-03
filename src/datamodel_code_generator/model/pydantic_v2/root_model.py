@@ -219,7 +219,7 @@ class RootModel(BaseModel):
     def _rendered_config_items(self) -> list[tuple[str, str]]:
         """Return the root model's config items: its engine and freezing, literal values and a neutral ``extra``."""
         config = {**dict(_root_model_config_items(self.extra_template_data.get("config"))), **self._root_config()}
-        return _safe_config_dict_items(config) if config else []
+        return _safe_config_dict_items(config, self.target_python_version) if config else []
 
     def _root_config(self) -> dict[str, Any]:
         """Return the config a root model adds to its own: its literal values and the neutral ``extra``."""

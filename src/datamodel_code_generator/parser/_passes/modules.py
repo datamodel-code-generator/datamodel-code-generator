@@ -59,6 +59,7 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
+    _build_for_target,
     _find_base_classes,
     _has_root_field_constraints,
     _model_key_of_model,
@@ -990,7 +991,9 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
         if enums:
             value_type = "int" if isinstance(enums[0], IntEnum) else "str" if isinstance(enums[0], StrEnum) else None
             kind = decide_enum_kind("merged", first_specialized=value_type is not None)
-            merged_enum = _enum_class(kind, enums[0].__class__)(
+            merged_enum = _build_for_target(
+                model.target_python_version,
+                _enum_class(kind, enums[0].__class__),
                 fields=[
                     f
                     for e in enums

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, ClassVar
 import pytest
 from pydantic import TypeAdapter
 
+from datamodel_code_generator import PythonVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, IMPORT_TUPLE, Import
 from datamodel_code_generator.python_literal import (
     PythonCode,
@@ -404,6 +405,20 @@ def test_python_literal_helpers_render_code_and_tuple_values() -> None:
     assert represent_untrusted_python_value(EvilTuple((EvilInt(1),))) == "(1,)"
     assert represent_untrusted_python_value(EvilDict({"value": EvilInt(1)})) == "{'value': 1}"
     assert represent_untrusted_python_value(EvilSet({EvilInt(1)})) == "{1}"
+
+
+@pytest.mark.parametrize(
+    ("target", "is_name", "rendered"),
+    [
+        pytest.param(None, True, "mypkg.\U0001e4d0T", id="newest"),
+        pytest.param(PythonVersion.PY_312, True, "mypkg.\U0001e4d0T", id="python-3.12"),
+        pytest.param(PythonVersion.PY_311, False, "'mypkg.\U0001e4d0T'", id="python-3.11"),
+    ],
+)
+def test_public_type_names_are_names_of_the_target(target: PythonVersion | None, is_name: bool, rendered: str) -> None:
+    """A public type name is a name of the target Python, the newest by default; U+1E4D0 is a letter from 3.12 on."""
+    assert is_safe_public_type_name("mypkg.\U0001e4d0T", target=target) is is_name
+    assert represent_untrusted_public_type_name("mypkg.\U0001e4d0T", target=target) == rendered
 
 
 def test_decimal_detection_and_integer_constraint_edges() -> None:

@@ -354,12 +354,12 @@ def is_identifier(value: str, target: PythonVersion | None) -> bool:
     return value.isidentifier() if value.isascii() else _unicode(target).identifier.fullmatch(value) is not None
 
 
-NameRule: TypeAlias = Literal["target", "ascii", "host", "legacy-host-identifiers"]
+NameRule: TypeAlias = Literal["target", "ascii", "host"]
 """Whose identifier characters `is_python_name` reads.
 
 `target` reads the target's (`is_identifier`), `ascii` only ASCII identifiers (Starlette's path placeholders, the
-field names the Pydantic resolver keeps as given), `host` the running interpreter's, for text its tokenizer or parser
-gave, and `legacy-host-identifiers` the running interpreter's where the names are checked or written for the target.
+field names the Pydantic resolver keeps as given), and `host` the running interpreter's, for text its tokenizer or
+parser gave.
 """
 
 
