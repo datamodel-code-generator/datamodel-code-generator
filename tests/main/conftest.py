@@ -15,7 +15,7 @@ import time
 import warnings
 from argparse import Namespace
 from collections.abc import Callable, Collection, Generator, Mapping, Sequence
-from contextlib import contextmanager, nullcontext, redirect_stdout
+from contextlib import contextmanager, nullcontext, redirect_stdout, suppress
 from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from functools import cache
@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Literal, get_type_hints
 
 import black
+import hypothesis
 import pytest
 from packaging import version
 from pydantic import VERSION as PYDANTIC_VERSION
@@ -80,6 +81,37 @@ InputFileTypeLiteral = Literal[
     "graphql",
 ]
 CopyFilesMapping = Sequence[tuple[Path, Path]]
+
+
+def _pin_hypothesis_without_local_constants() -> None:
+    """Make the payload draws depend on the test alone (#6093).
+
+    Hypothesis draws a share of its integers, floats, strings and bytes from a pool of constants. Besides a fixed
+    pool, the pool holds the constants it scans from every loaded module outside the standard library, site-packages
+    and test files, so a test drew other payloads depending on which tests the worker had run before, although the
+    payload tests set ``derandomize=True`` and ``database=None``. Hypothesis has no setting or environment variable
+    for it, so the function that collects those constants returns an empty pool and the draws keep the fixed pool and
+    the seed of the test. The session fails when a Hypothesis release stops reading its pool through that function.
+    """
+    pinned = False
+    with suppress(AttributeError, ImportError, TypeError):
+        from hypothesis.internal.conjecture import providers
+        from hypothesis.internal.constants_ast import Constants
+
+        no_constants = Constants()
+        providers._get_local_constants = lambda: no_constants
+        pinned = providers.HypothesisProvider(None)._local_constants is no_constants
+    if not pinned:  # pragma: no cover
+        msg = (
+            f"Hypothesis {hypothesis.__version__} does not read its local constants through "
+            "hypothesis.internal.conjecture.providers._get_local_constants any more, or Constants() cannot be built, "
+            "so the payload tests would draw payloads that depend on the modules the worker has loaded (#6093). "
+            "Update _pin_hypothesis_without_local_constants in tests/main/conftest.py for this release."
+        )
+        raise RuntimeError(msg)
+
+
+_pin_hypothesis_without_local_constants()
 
 _TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 _BUILTIN_FORMATTER_VALUE = "builtin"
