@@ -1,0 +1,5 @@
+name: limit
+in: query
+schema:
+  type: integer
+  maximum: 100

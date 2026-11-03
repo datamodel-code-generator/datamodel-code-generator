@@ -1,0 +1,12 @@
+get:
+  parameters:
+    - $ref: parameter.yaml
+      schema:
+        type: string
+    - name: page
+      in: query
+      schema:
+        type: integer
+  responses:
+    "200":
+      description: The notes.

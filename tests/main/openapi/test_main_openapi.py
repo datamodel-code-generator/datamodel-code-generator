@@ -14915,6 +14915,46 @@ def test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself(output
     )
 
 
+def test_main_openapi_reference_object_siblings(output_file: Path) -> None:
+    """Read a parameter, request body or response with `$ref` and other members as the object it references (#6072).
+
+    OpenAPI ignores the other members of a Reference Object, also when they set a `schema`, a `name` or `content`;
+    up to 0.88.0 such a parameter was dropped or renamed and such a body or response was read from its own `content`.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "reference_object_siblings" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_reference_object_siblings",
+        model_name="NotesGetParametersQuery",
+        valid_json='{"limit": 100, "page": 1}',
+        invalid_json='{"limit": 101}',
+        expected_error_type="less_than_equal",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_reference_object_siblings_request",
+        model_name="TagsPostRequest",
+        valid_json='{"title": "a"}',
+        invalid_json=json.dumps({"title": "x" * 21}),
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_openapi_json_pointer_integer_keys(output_file: Path) -> None:
     """Resolve JSON pointers through maps whose unquoted YAML keys (`200:`) load as integers (#6073).
 
