@@ -370,6 +370,29 @@ def test_recommend_options_rejects_invalid_additional_operations(
         )
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param("schema_alias_cycle_property.yaml", id="property"),
+        pytest.param("schema_alias_cycle_items.yaml", id="items"),
+        pytest.param("schema_alias_cycle_all_of.yaml", id="all-of"),
+    ],
+)
+def test_recommend_options_rejects_schemas_that_hold_themselves(
+    source: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """End in the error generation gives for a schema that holds itself through a YAML alias, not in a traceback."""
+    shutil.copy(DATA_PATH / "malformed" / source, tmp_path / source)
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", source, "--recommend-options"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains="Schema nesting is too deep to generate",
+            use_builtin_default_formatter=False,
+        )
+
+
 def test_recommend_options_rejects_unknown_modes(capsys: pytest.CaptureFixture[str]) -> None:
     """Reject a mode other than quick and full; the option is meant to be used without a value."""
     run_main_with_system_exit(

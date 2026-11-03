@@ -1,0 +1,9 @@
+openapi: 3.0.0
+info:
+  title: Schema that holds itself through allOf
+  version: '1'
+components:
+  schemas:
+    A: &a
+      allOf:
+        - *a

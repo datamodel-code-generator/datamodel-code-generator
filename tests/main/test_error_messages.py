@@ -1197,6 +1197,13 @@ def test_malformed_input_error_messages(
             id="integer-asyncapi-channel-name-beside-invalid-schema-format",
         ),
         pytest.param(
+            "schema_alias_cycle_property.yaml",
+            "openapi",
+            [],
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit",
+            id="schema-alias-cycle",
+        ),
+        pytest.param(
             "ref_sibling_cycle.yaml",
             "openapi",
             [],
