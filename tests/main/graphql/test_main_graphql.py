@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import sys
 import warnings
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,7 @@ import black
 import msgspec
 import pytest
 
+from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -20,6 +22,7 @@ from tests.main.conftest import (
     _generated_model,
     assert_generated_model_json_validation,
     run_main_and_assert,
+    run_main_with_args,
     target_pydantic_args,
 )
 from tests.main.graphql.conftest import assert_file_content
@@ -1276,4 +1279,28 @@ def test_main_graphql_strip_default_none_constructor_order(output_model_type: st
             "builtin",
         ],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.abnormal_path(
+    "graphql-core is installed in every test environment and the parser module is already loaded"
+)
+def test_main_graphql_without_graphql_core_names_a_complete_install_command(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Close the quote and then the backtick of the pip command that installs the graphql extra.
+
+    The error up to 0.87.0 wrote the closing backtick before the closing quote, so the command copied from the code
+    span left its quote open.
+    """
+    monkeypatch.setitem(sys.modules, "graphql", None)
+    monkeypatch.delitem(sys.modules, "datamodel_code_generator.parser.graphql", raising=False)
+    run_main_with_args(
+        ["--input", str(GRAPHQL_DATA_PATH / "simple-star-wars.graphql"), "--input-file-type", "graphql"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Please run `$pip install 'datamodel-code-generator[graphql]'` "
+            "to generate data-model from a GraphQL schema."
+        ),
     )
