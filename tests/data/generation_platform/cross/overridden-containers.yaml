@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info: {title: Overridden containers, version: '1'}
+servers: [{url: 'https://containers.example.com'}]
+paths:
+  /pets:
+    post:
+      operationId: postPets
+      parameters:
+        - {name: tags, in: query, schema: {type: array, items: {type: string}}}
+        - {name: X-Ids, in: header, schema: {type: array, items: {type: integer}}}
+      requestBody:
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: {type: integer}}
+      responses:
+        '200':
+          description: The pet the arguments make.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        tags: {type: array, items: {type: string}}
+        counts: {type: object, additionalProperties: {type: integer}}

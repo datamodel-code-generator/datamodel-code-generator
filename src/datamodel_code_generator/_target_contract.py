@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -221,12 +222,17 @@ class BoundType:
 
 @dataclass(frozen=True, slots=True)
 class GenericType:
-    """Preserve ordered container arguments and fixed versus variadic tuple shape."""
+    """Preserve ordered container arguments and fixed versus variadic tuple shape.
+
+    `slot` is the container slot whose class `base` writes, decided from the container's kind before any import
+    override moves where `base` is imported from; None for a fixed tuple or any other generic type.
+    """
 
     base: TypeView
     arguments: tuple[TypeView, ...]
     tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
+    slot: ContainerSlot | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,7 @@
+models shared True
+# overridden_containers in-process sync, in-process async
+post_pets
+  > POST /pets?tags=x&tags=y [application/json]
+  post_pets(tags=['x', 'y'], X_Ids=[1, 2], body=PetsPostRequest(root={'a': 1, 'b': 2}))
+  < 200 application/json
+  = Pet(tags=['x', 'y'], counts={'a': 1, 'b': 2})

@@ -1655,7 +1655,7 @@ class _Projector:
         for modifier in WRITTEN_CONTAINERS:
             if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
-            written = SLOT_CLASSES[written_slot(modifier, generic=generic)]
+            written = SLOT_CLASSES[slot := written_slot(modifier, generic=generic)]
             base = (
                 ImportedType(Import(import_=written.name, from_=module))
                 if written.abstract
@@ -1665,9 +1665,9 @@ class _Projector:
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)
                 hint = self.hints.composed(data_type, base=value, key=key, container=flag)
-                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint)
+                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint, slot=slot)
             hint = self.hints.composed(data_type, base=value, container=flag)
-            return GenericType(base, (value,) if value is not None else (), hint=hint)
+            return GenericType(base, (value,) if value is not None else (), hint=hint, slot=slot)
         if value is None:
             raise _UnsupportedError
         return value

@@ -177,6 +177,7 @@ headers	main/generation_platform/cross/headers.txt
 merged_nullable	main/generation_platform/cross/merged_nullable.txt
 ndjson	main/generation_platform/cross/ndjson.txt
 nullable	main/generation_platform/cross/nullable.txt
+overridden_containers	main/generation_platform/cross/overridden_containers.txt
 pagination	main/generation_platform/cross/pagination.txt
 parameters	main/generation_platform/cross/parameters.txt
 pets	main/generation_platform/cross/pets.txt
