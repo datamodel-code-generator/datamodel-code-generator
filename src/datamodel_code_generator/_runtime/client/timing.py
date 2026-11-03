@@ -14,24 +14,21 @@ from ..model_codecs.media import json_number
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
-SecondsRow: TypeAlias = Literal["float", "legacy-compare-before-float", "legacy-overflow-error"]
+SecondsRow: TypeAlias = Literal["float", "legacy-compare-before-float"]
 
 
 def usable_seconds(value: object, *, allow_zero: bool = True, row: SecondsRow = "float") -> TypeGuard[int | float]:
     """Return whether a value is a number of seconds, no boolean, finite as a float, not negative, zero only if allowed.
 
-    `float` reads the float nearest the value, so an integer just past the largest float, which rounds to it, is one.
-    `legacy-compare-before-float` (an option limit, an OAuth token's expires_in) compares the value with the largest
-    float first and refuses that integer; `legacy-overflow-error` (a cache entry) raises OverflowError for an integer
-    that no float holds.
+    `float` reads the float nearest the value, so an integer just past the largest float, which rounds to it, is one,
+    and one that no float holds is not. `legacy-compare-before-float` (an option limit, an OAuth token's expires_in)
+    compares the value with the largest float first and refuses that integer.
     """
     if not json_number(value) or (row == "legacy-compare-before-float" and value > float_info.max):
         return False
     try:
         number = float(value)
     except OverflowError:
-        if row == "legacy-overflow-error":
-            raise
         return False
     return math.isfinite(number) and number >= 0 and (allow_zero or number > 0)
 
