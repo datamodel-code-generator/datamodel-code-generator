@@ -172,6 +172,12 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "text-bound-types",
         "text-bound-types-reuse",
         "text-bound-types-errors",
+        "parts-bound-types",
+        "parts-bound-types-reuse",
+        "parts-bound-types-collapse",
+        "parts-bound-types-errors",
+        "parts-bound-responses",
+        "parts-bound-responses-reuse",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

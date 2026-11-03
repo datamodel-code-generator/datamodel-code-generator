@@ -1563,7 +1563,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._read_false_all_of_values, _rw_split.merged_ref_model_schemas(self, schema, defining_ref)
             )
             into = model_schema
-            builds_map = _rw_split.schema_builds_map_model(self, model_schema, defining_ref)
+            builds_map = (
+                self._types_root_as_object_map(model_schema)
+                if site.root
+                else _rw_split.schema_builds_map_model(self, model_schema, defining_ref)
+            )
             types_map = not (model_schema.allOf or (model_schema.properties and not site.root))
             extras: JsonSchemaObject | bool | None = schema.additionalProperties
             with self._inherited_ref_context(defining_ref):
@@ -5196,6 +5200,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _object_maps.object_map_key_type(self, property_names, row, pattern=pattern, name=name, path=path)
 
+    def _is_object_map_schema(self, obj: JsonSchemaObject) -> bool:  # noqa: PLR6301
+        """Return whether the keywords of a schema make an object map.
+
+        These are patternProperties or propertyNames, or an object without properties whose additionalProperties is a
+        schema.
+        """
+        return bool(
+            obj.patternProperties
+            or obj.propertyNames is not None
+            or (obj.is_object and not obj.properties and isinstance(obj.additionalProperties, JsonSchemaObject))
+        )
+
+    def _types_root_as_object_map(self, obj: JsonSchemaObject) -> bool:
+        """Return whether ``_parse_root_type_with_context`` builds the root type of a schema as an object map.
+
+        The first row that takes the schema builds its root type, in the order of that method: a reference, a custom
+        type, a type list of constrained branches, an array, an anyOf or oneOf and an allOf take it before the map
+        keywords are read, then the map keywords (``_is_object_map_schema``), whatever properties the schema holds,
+        which a root model does not read; then an enum, and last a nullable map whose values are typed. A root that
+        builds an object map types its values by its additionalProperties (``_parse_object_map``).
+        """
+        takes_other_row = any((obj.ref, obj.custom_type_path, obj.is_array, obj.anyOf, obj.oneOf, obj.allOf))
+        takes_other_row = takes_other_row or self._localizes_constrained_type_union(obj)
+        types_values = self._typed_nullable_map_value_schema(obj) is not None and not (
+            obj.enum and not self.ignore_enum_constraints
+        )
+        return not takes_other_row and (self._is_object_map_schema(obj) or types_values)
+
     def _parse_object_map(
         self,
         name: str,
@@ -6237,11 +6269,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if data_type is None:  # pragma: no cover
                 data_type = self.data_type_manager.get_data_type(Types.any)
-        elif (
-            obj.patternProperties
-            or obj.propertyNames is not None
-            or (obj.is_object and not obj.properties and isinstance(obj.additionalProperties, JsonSchemaObject))
-        ):
+        elif self._is_object_map_schema(obj):
             data_type = self._parse_object_map(name, obj, path, path)
         elif obj.enum and not self.ignore_enum_constraints and self._reads_enum_as_const(obj):
             data_type = self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)

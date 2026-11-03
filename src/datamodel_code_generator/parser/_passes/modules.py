@@ -262,6 +262,7 @@ def renames_colliding_types(parser: CollisionRenameHost) -> bool:
 class ModulesHost(
     CollisionRenameHost,
     ConstructorInfoHost,
+    ReplacedRootsHost,
     RenamedTypesHost,
     TypeOverrideHost,
     GraphBuilderHost,
@@ -2170,9 +2171,14 @@ def _adopt_keyless_references(
     Row ``legacy-keyless-reference-by-path``: a reference built outside the resolver, such as by a parser extension,
     names the model at its path among the parsed models and ``all_models``. The types that name that model by such a
     reference use the model's own reference from now on, as a reference the resolver built does, so that the rename
-    of the model reaches them.
+    of the model reaches them. A root model that collapse replaced stays among the parsed models at the path of the
+    inner model that took its name, and is no candidate: the emitted model is.
     """
-    models = {id(model): model for model in chain(parser.results, all_models)}.values()
+    models = {
+        id(model): model
+        for model in chain(parser.results, all_models)
+        if id(model) not in parser._replaced_root_models  # noqa: SLF001
+    }.values()
     keyed = keyed_models(models, "renamed types")
     if (source := keyed.models.get(keyed.key_at(reference.path))) is None:
         return None

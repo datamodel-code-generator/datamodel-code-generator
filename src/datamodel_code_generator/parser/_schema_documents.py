@@ -33,6 +33,7 @@ from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
+from datamodel_code_generator._document_reader import member_key
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
@@ -636,14 +637,12 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
             result = dict(schema)
         parent: Any = result
         original: Any = schema
-        for part in path[:-1]:
+        for token in path[:-1]:
+            part = member_key(original, str(token))
             if parent[part] is original[part]:
                 parent[part] = copy(original[part])
             parent, original = parent[part], original[part]
-        if isinstance(parent, list):
-            parent[cast("int", path[-1])] = rewritten
-        else:
-            cast("dict[str, Any]", parent)[cast("str", path[-1])] = rewritten
+        parent[member_key(original, str(path[-1]))] = rewritten
     return result
 
 

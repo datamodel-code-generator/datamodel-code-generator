@@ -27,22 +27,28 @@ codec_4: Final[PydanticCodec[models.EnumRequestItem]] = PydanticCodec(models.Enu
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
 codec_5: Final[PydanticCodec[models.EnumRequestItem]] = PydanticCodec(models.EnumRequestItem)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[PydanticCodec[models.EnumRequestItem]] = PydanticCodec(models.EnumRequestItem)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticCodec[models.UnionRequestItem]] = PydanticCodec(models.UnionRequestItem)
+codec_7: Final[PydanticCodec[models.EnumRequestItem]] = PydanticCodec(models.EnumRequestItem)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[PydanticCodec[models.UnionRequestItem]] = PydanticCodec(models.UnionRequestItem)
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[PydanticCodec[models.UnionResponseItem]] = PydanticCodec(models.UnionResponseItem)
+codec_9: Final[PydanticCodec[models.UnionResponseItem]] = PydanticCodec(models.UnionResponseItem)
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[PydanticCodec[models.AnyRequestItem]] = PydanticCodec(models.AnyRequestItem)
+codec_10: Final[PydanticCodec[models.AnyRequestItem]] = PydanticCodec(models.AnyRequestItem)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[PydanticCodec[models.AnyResponseItem]] = PydanticCodec(models.AnyResponseItem)
+codec_11: Final[PydanticCodec[models.AnyResponseItem]] = PydanticCodec(models.AnyResponseItem)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[PydanticCodec[models.EmptyRequestItem]] = PydanticCodec(models.EmptyRequestItem)
+codec_12: Final[PydanticCodec[models.EmptyRequestItem]] = PydanticCodec(models.EmptyRequestItem)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[PydanticCodec[models.EmptyResponseItem]] = PydanticCodec(models.EmptyResponseItem)
+codec_13: Final[PydanticCodec[models.EmptyResponseItem]] = PydanticCodec(models.EmptyResponseItem)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

@@ -902,6 +902,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
+    "multipart-split-all": ("multipart-split-all", STRUCTURAL, split_parts),
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),

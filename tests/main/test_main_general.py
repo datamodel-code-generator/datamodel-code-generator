@@ -964,6 +964,46 @@ def test_reference_built_outside_the_resolver_renames_the_model_at_its_path(
     assert_output(cast("str", parser.parse()))
 
 
+def test_reference_built_outside_the_resolver_renames_the_model_that_replaced_a_root_model() -> None:
+    """A custom parser that types one field with a Reference it builds itself, under ``rename-type`` and collapse.
+
+    The ``parent`` strategy gives the inner model the path and the name of the root model it replaces, which stays
+    among the parsed models, after the inner model, at that path. The reference names the model that is emitted
+    there: it and the field that names the model by a reference of the resolver use one new name, and the class is
+    written, where the root model that collapse left is no class.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+
+    class KeylessParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if field.name != "bars":
+                        continue
+                    for data_type in field.data_type.all_data_types:
+                        if (reference := data_type.reference) is not None and reference.source is not None:
+                            keyless = Reference(path=reference.path, name=reference.name)
+                            self.generation_store.replace_data_type_ref(data_type, keyless)
+
+    model_types = get_data_model_types(DataModelType.PydanticV2BaseModel)
+    parser = KeylessParser(
+        JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "collapsed_root.json",
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        field_type_collision_strategy=FieldTypeCollisionStrategy("rename-type"),
+        collapse_root_models=True,
+        collapse_root_models_name_strategy=CollapseRootModelsNameStrategy.Parent,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(cast("str", parser.parse()))
+
+
 def test_reference_built_outside_the_resolver_names_no_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """A custom parser that types a field named like its type with a Reference to a path where no model is.
 

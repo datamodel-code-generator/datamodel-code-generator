@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info: {title: Raw octets the types the models bind carry as text, version: "1"}
+servers: [{url: "https://parts.example.com"}]
+paths:
+  /docs:
+    post:
+      operationId: createDoc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: {$ref: "#/components/schemas/Text", format: binary}
+      responses:
+        "204": {description: A JSON property the models type as bytes through a sibling format.}
+  /blobs:
+    put:
+      operationId: putBlob
+      parameters:
+        - {name: sized, in: query, schema: {type: string, format: binary, minLength: 1}}
+      responses:
+        "204": {description: A query parameter of constrained bytes.}
+components:
+  schemas:
+    Text: {type: string}

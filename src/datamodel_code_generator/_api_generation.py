@@ -811,8 +811,8 @@ class _Planner:
         Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
         package is a multi-module output of the model backend, so the backend decides the default. The implementations
         are formatted the same way, without the generated header, returned second, and put where a text file holds
-        their `implementation_text`. Every text is checked against the encoding of its file before any is staged, as
-        model files are before any is written.
+        their `implementation_text`. Every final text, Ruff's output included (it stages UTF-8 whatever the encoding),
+        is checked against the encoding of its file before any is encoded, as model files are before any is written.
         """
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
@@ -853,14 +853,14 @@ class _Planner:
                 else body
             )
         own = {file.path: formatter.format_code(file.text) for file in rendered.implementations}
-        for path, text in (*texts.items(), *own.items()):
-            _ensure_output_text_encodable(text, self.encoding(path))
         self.defer(formatter, texts, formatted, own)
         for key, value in list(texts.items()):
             if not _is_python(key):
                 for path, text in own.items():
                     value = value.replace(implementation_text(path), text.rstrip("\n"))  # noqa: PLW2901
                 texts[key] = value
+        for path, text in (*texts.items(), *own.items()):
+            _ensure_output_text_encodable(text, self.encoding(path))
         return self.encoded(texts), self.encoded(own)
 
     def encoding(self, path: PurePosixPath) -> str:

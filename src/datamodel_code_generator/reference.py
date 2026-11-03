@@ -383,7 +383,7 @@ def binary_content_of(data_type: object) -> bool:
     """Return whether the parser reads the string a type node is built for as raw octets (BINARY_CONTENT, L1).
 
     The type mapping records it when it builds the node, from the schema as the specification reads it, whatever
-    the model type: a format that maps to bytes other than bytes mapped from base64 text, or in OpenAPI 3.1 and later
+    the model type: a format that maps to bytes other than bytes mapped from base64 text, or in OpenAPI 3.0 and later
     a content media type without a content encoding. A copy of a node keeps it; an enum or const of such strings, and
     a node a later pass builds, has none.
     """

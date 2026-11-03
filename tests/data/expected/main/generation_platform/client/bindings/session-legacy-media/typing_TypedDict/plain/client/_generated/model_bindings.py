@@ -32,23 +32,29 @@ codec_3: Final[TypedDictCodec[models.ObjectResponseItem]] = TypedDictCodec(model
 codec_4: Final[TypedDictCodec[models.EnumRequestItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[TypedDictCodec[models.EnumResponseItem]] = TypedDictCodec(None, MODELS)
+codec_5: Final[TypedDictCodec[models.EnumRequest1]] = TypedDictCodec(None, MODELS)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[TypedDictCodec[models.EnumResponseItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[TypedDictCodec[models.UnionRequestItem]] = TypedDictCodec(None, MODELS)
+codec_7: Final[TypedDictCodec[models.EnumResponse1]] = TypedDictCodec(None, MODELS)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[TypedDictCodec[models.UnionRequestItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[TypedDictCodec[models.UnionResponseItem]] = TypedDictCodec(None, MODELS)
+codec_9: Final[TypedDictCodec[models.UnionResponseItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[TypedDictCodec[models.AnyRequestItem]] = TypedDictCodec(None, MODELS)
+codec_10: Final[TypedDictCodec[models.AnyRequestItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[TypedDictCodec[models.AnyResponseItem]] = TypedDictCodec(None, MODELS)
+codec_11: Final[TypedDictCodec[models.AnyResponseItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[TypedDictCodec[models.EmptyRequestItem]] = TypedDictCodec(None, MODELS)
+codec_12: Final[TypedDictCodec[models.EmptyRequestItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[TypedDictCodec[models.EmptyResponseItem]] = TypedDictCodec(None, MODELS)
+codec_13: Final[TypedDictCodec[models.EmptyResponseItem]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

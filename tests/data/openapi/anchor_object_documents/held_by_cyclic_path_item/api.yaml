@@ -1,0 +1,7 @@
+openapi: 3.1.0
+info:
+  title: A Path Item Object that a callback holds again
+  version: "1.0"
+paths:
+  /events:
+    $ref: path_item.yaml

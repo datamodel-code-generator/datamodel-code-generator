@@ -532,5 +532,8 @@
   },
   "text-bound-types-errors": {
     "input": "text-bound-types-errors.yaml"
+  },
+  "parts-bound-types-errors": {
+    "input": "parts-bound-types-errors.yaml"
   }
 }

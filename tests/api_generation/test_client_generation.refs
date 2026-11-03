@@ -263,6 +263,17 @@ parameter-content-defaults-30	main/generation_platform/client/packages/parameter
 parameter-content-defaults-30	main/generation_platform/client/parameter-content-defaults-30.txt
 parameter-content-defaults-31	main/generation_platform/client/packages/parameter-content-defaults-31/pydantic_v2_BaseModel//*.py
 parameter-content-defaults-31	main/generation_platform/client/parameter-content-defaults-31.txt
+parts-bound-responses	main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
+parts-bound-responses	main/generation_platform/client/parts-bound-responses.txt
+parts-bound-responses-reuse	main/generation_platform/client/packages/parts-bound-responses-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
+parts-bound-responses-reuse	main/generation_platform/client/parts-bound-responses-reuse.txt
+parts-bound-types	main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types	main/generation_platform/client/parts-bound-types.txt
+parts-bound-types-collapse	main/generation_platform/client/packages/parts-bound-types-collapse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types-collapse	main/generation_platform/client/parts-bound-types-collapse.txt
+parts-bound-types-errors	main/generation_platform/client/parts-bound-types-errors.txt
+parts-bound-types-reuse	main/generation_platform/client/packages/parts-bound-types-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-types/pydantic_v2_BaseModel//*.py
+parts-bound-types-reuse	main/generation_platform/client/parts-bound-types-reuse.txt
 pets	main/generation_platform/client/packages/pets/dataclasses_dataclass//*.py
 pets	main/generation_platform/client/packages/pets/msgspec_Struct//*.py
 pets	main/generation_platform/client/packages/pets/pydantic_v2_BaseModel//*.py

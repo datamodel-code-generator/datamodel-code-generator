@@ -671,6 +671,10 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 	main/openapi/allof_with_required_inherited_nested_object.py
 [test_main_openapi_anchor_refs]
 	main/openapi/anchor_refs.py
+[test_main_openapi_anchor_refs_in_path_item_document]
+	main/openapi/main_openapi/anchor_refs_in_path_item_document.py
+[test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself]
+	main/openapi/main_openapi/anchor_refs_in_path_item_document_that_holds_itself.py
 [test_main_openapi_anchor_refs_in_referenced_object_documents]
 	main/openapi/main_openapi/anchor_refs_in_referenced_object_documents.py
 [test_main_openapi_api_scope_external_boolean_schema]

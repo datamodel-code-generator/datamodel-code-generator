@@ -36,6 +36,7 @@ __all__ = [
     "document_statuses",
     "is_multi_format_schema_object",
     "member",
+    "member_key",
     "string_key",
     "string_keys",
 ]
@@ -80,16 +81,30 @@ def as_mapping(value: object) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
+def member_key(value: YamlValue, token: str) -> str | int:
+    """Return the key under which a list or a mapping holds the member a token names, as row ``canonical`` reads it.
+
+    A list holds it under the index the token spells. A mapping holds it under the token, else under the integer YAML
+    key the token is the index of. A token that names none gives itself.
+    """
+    if not is_array_index(token):
+        return token
+    if isinstance(value, list):
+        return int(token)
+    mapping = cast("dict[object, YamlValue]", value)
+    return int(token) if token not in mapping and int(token) in mapping else token
+
+
 def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
     """Return one token's member of a loaded value; raise one of the row's ``_ENDS_WALK`` errors when it has none.
 
     A list item is read by an RFC 6901 array index only (``0``, or ASCII digits without a leading zero: never ``-1``,
     ``01`` or the character of a string), and any other value has no member. ``canonical`` (the locations the parser
     recorded and the target readers) reads a mapping member by the token, as the parser's ``$ref`` does, else by the
-    integer YAML key the token is the index of, and every token that names no member is a miss. ``refusing`` (the
-    targets of the parser's ``$ref``) reads a mapping member by the token only: a missing member is a ``KeyError``, a
-    value that is no container a ``NotImplementedError``, a list token that is no index or is too long an ``Error``, and
-    an index past the end an ``ArrayIndexOutOfRangeError``.
+    integer YAML key the token is the index of (``member_key``), and every token that names no member is a miss.
+    ``refusing`` (the targets of the parser's ``$ref``) reads a mapping member by the token only: a missing member is a
+    ``KeyError``, a value that is no container a ``NotImplementedError``, a list token that is no index or is too long
+    an ``Error``, and an index past the end an ``ArrayIndexOutOfRangeError``.
     """
     if row == "refusing":
         if isinstance(value, dict):
@@ -98,15 +113,7 @@ def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
             return _array_item(value, token)
         msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
         raise NotImplementedError(msg)
-    index = is_array_index(token)
-    mapping = cast("dict[object, YamlValue]", value)
-    return (
-        value[int(token)]
-        if isinstance(value, list) and index
-        else mapping[int(token)]
-        if index and token not in mapping and int(token) in mapping
-        else mapping[token]
-    )
+    return cast("Any", value)[member_key(value, token)]
 
 
 def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: YamlValue = None) -> YamlValue:

@@ -198,17 +198,11 @@ In the legacy order it meets references in, which the names of the references it
 """
 
 
-def declared_types(value: object, *, items: Literal["strings", "text"] = "strings") -> tuple[str, ...]:
-    """Return the JSON types a ``type`` keyword lists, in order: the one a string names, or the string items of a list.
-
-    With ``items="text"`` every item of a list names a type by its text (``str``), as the site facts of the target
-    reader read it (``legacy-target-type-items-as-text``): an unquoted YAML ``null`` names ``None``.
-    """
+def declared_types(value: object) -> tuple[str, ...]:
+    """Return the JSON types a ``type`` keyword lists, in order: the one a string names, or a list's string items."""
     match value:
         case str():
             return (value,)
-        case list() if items == "text":
-            return tuple(map(str, value))
         case list():
             return tuple(item for item in value if isinstance(item, str))
     return ()

@@ -12,11 +12,11 @@ Upload
   mapped: property /components/schemas/Upload/properties/mapped {"format": "x-bin", "type": "string"}
     .: binary /components/schemas/Upload/properties/mapped {"format": "x-bin", "type": "string"}
   media: property /components/schemas/Upload/properties/media {"contentMediaType": "image/png", "type": "string"}
-    .: /components/schemas/Upload/properties/media {"contentMediaType": "image/png", "type": "string"}
+    .: binary /components/schemas/Upload/properties/media {"contentMediaType": "image/png", "type": "string"}
   medias: property /components/schemas/Upload/properties/medias {"items": {"contentMediaType": "image/png", "type": "string"}, "type": "array"}
     .: /components/schemas/Upload/properties/medias {"items": {"contentMediaType": "image/png", "type": "string"}, "type": "array"}
     /0: /components/schemas/Upload/properties/medias {"items": {"contentMediaType": "image/png", "type": "string"}, "type": "array"}
-    /0/0: /components/schemas/Upload/properties/medias/items {"contentMediaType": "image/png", "type": "string"}
+    /0/0: binary /components/schemas/Upload/properties/medias/items {"contentMediaType": "image/png", "type": "string"}
   encoded: property /components/schemas/Upload/properties/encoded {"contentEncoding": "base64", "contentMediaType": "image/png", "type": "string"}
     .: /components/schemas/Upload/properties/encoded {"contentEncoding": "base64", "contentMediaType": "image/png", "type": "string"}
   byte: property /components/schemas/Upload/properties/byte {"format": "byte", "type": "string"}

@@ -1,0 +1,7 @@
+models shared True
+# bound_parts_variants in-process sync, in-process async
+send_upload
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  send_upload(body=UploadsPostRequestRequest(photo=b'\x89PNG\xff\x00', note=NoteRequest(text='t', secret='s')))
+  < 204 -
+  = None

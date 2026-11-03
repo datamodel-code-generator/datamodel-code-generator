@@ -417,6 +417,13 @@
     },
     "config": {}
   },
+  "multipart-split-all": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "config": {}
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
     "config": {}
@@ -5757,5 +5764,74 @@
   },
   "text-bound-types-errors": {
     "input": "text-bound-types-errors.yaml"
+  },
+  "parts-bound-types": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-reuse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-collapse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-errors": {
+    "input": "parts-bound-types-errors.yaml"
+  },
+  "parts-bound-responses": {
+    "input": "parts-bound-responses.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-responses-reuse": {
+    "input": "parts-bound-responses.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
