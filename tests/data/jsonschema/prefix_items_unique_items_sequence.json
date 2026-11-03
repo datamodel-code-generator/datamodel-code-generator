@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrefixItemsUniqueItemsSequence",
+  "type": "object",
+  "properties": {
+    "pairs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{"type": "integer"}, {"type": "string"}],
+        "items": false,
+        "minItems": 2
+      },
+      "uniqueItems": true
+    },
+    "sequence_of_pairs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{"type": "integer"}, {"type": "string"}],
+        "items": false,
+        "minItems": 2
+      },
+      "uniqueItems": true,
+      "x-python-type": "Sequence[tuple[int, str]]"
+    },
+    "pair": {
+      "type": "array",
+      "prefixItems": [{"type": "integer"}, {"type": "string"}],
+      "items": false,
+      "minItems": 2,
+      "uniqueItems": true
+    }
+  }
+}

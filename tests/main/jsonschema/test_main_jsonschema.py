@@ -16356,6 +16356,46 @@ def test_main_jsonschema_prefix_items_unique_items(output_model: str, extra_args
 
 
 @pytest.mark.parametrize(
+    "output_model",
+    [
+        pytest.param("pydantic_v2.BaseModel", id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", id="msgspec.Struct"),
+    ],
+)
+def test_main_jsonschema_prefix_items_unique_items_sequence(output_model: str, output_file: Path) -> None:
+    """Warn about the tuple a uniqueItems field is, not about the tuples a Sequence holds.
+
+    With --use-unique-items-as-set and --use-tuple-for-closed-arrays, an array of tuples is a set of them and a tuple
+    keeps its positions with a warning that names it. A field typed ``Sequence[tuple[int, str]]`` is no tuple and no
+    set, so its tuples lose no position and no warning names them; up to 0.88.0 it said the positions of the tuple
+    would be lost.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_unique_items_sequence.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--use-unique-items-as-set",
+                "--use-tuple-for-closed-arrays",
+                "--collapse-root-models",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recorded_warnings)
+            if "is generated without" in message
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize(
     ("output_model", "extra_args"),
     [
         pytest.param("pydantic_v2.BaseModel", ["--use-tuple-for-closed-arrays"], id="pydantic_v2.BaseModel"),

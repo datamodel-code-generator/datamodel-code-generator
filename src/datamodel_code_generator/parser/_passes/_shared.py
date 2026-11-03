@@ -1121,10 +1121,14 @@ def _declares_unique_items(field: DataModelFieldBase) -> bool:
 
 
 def _unique_items_tuple(data_type: DataType) -> DataType | None:
-    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
+    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set.
+
+    The tuple is the type itself or a member of a union; the tuples an item container holds are its items, which a set
+    keeps whole.
+    """
     if data_type.is_tuple:
         return data_type
-    if data_type in ITEM_CONTAINERS.without("legacy-unique-tuple-inside-sequence"):
+    if data_type in ITEM_CONTAINERS:
         return None
     return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
 
