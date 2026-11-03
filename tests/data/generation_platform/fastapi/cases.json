@@ -371,6 +371,12 @@
   "security-errors": {
     "input": "security-errors.yaml"
   },
+  "security-roles": {
+    "input": "auth-roles.yaml"
+  },
+  "security-roles-30": {
+    "input": "auth-roles-30.yaml"
+  },
   "references": {
     "input": "references.yaml",
     "files": [

@@ -2365,6 +2365,19 @@
   "auth-errors": {
     "input": "auth-errors.yaml"
   },
+  "auth-roles": {
+    "input": "auth-roles.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
+  "auth-roles-30": {
+    "input": "auth-roles-30.yaml"
+  },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },
