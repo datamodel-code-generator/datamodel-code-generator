@@ -1198,13 +1198,14 @@ def resolve_module_import_conflicts(parser: ImportsHost[Any], state: _FinalizeSt
             parser.data_model_type.resolve_module_import_conflicts(ctx.models, state.model_imports, ctx.imports)
 
 
-def _is_init_file(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> bool:
-    """Return whether the module writes a package's ``__init__.py``, whatever the input that holds it was named.
+def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
+    """Return the package whose ``__init__.py`` the module writes, by its written path, or None for another module.
 
-    ``ctx.is_init`` is the module's place in the import paths, which the root package and the models of an input
-    ``__init__.json`` do not take.
+    The module writes it whatever the input that holds it was named: ``ctx.is_init`` is the module's place in the
+    import paths, which the root package and the models of an input ``__init__.json`` do not take.
     """
-    return is_package_init(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[-1])
+    path = written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
+    return path[:-1] if is_package_init(path[-1]) else None
 
 
 def _module_binding(expression: str | None) -> str | None:
@@ -1291,7 +1292,10 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
             for binding in bindings
             if binding in imported
             and binding in held
-            and not (_is_init_file(ctx, treat_dot_as_module=parser.treat_dot_as_module) and imported[binding][0] == ".")
+            and not (
+                _written_package(ctx, treat_dot_as_module=parser.treat_dot_as_module) is not None
+                and imported[binding][0] == "."
+            )
         }
     ):
         return
@@ -1436,8 +1440,8 @@ def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _Finali
         state.contexts, state.forwarder_modules, treat_dot_as_module=parser.treat_dot_as_module
     )
     for ctx in state.contexts:
-        if _is_init_file(ctx, treat_dot_as_module=parser.treat_dot_as_module) and (
-            names := submodule_names.get(written_path(ctx.module, treat_dot_as_module=parser.treat_dot_as_module)[:-1])
+        if (package := _written_package(ctx, treat_dot_as_module=parser.treat_dot_as_module)) is not None and (
+            names := submodule_names.get(package)
         ):
             _alias_imports_hidden_by_submodules(parser, ctx, names)
             _alias_builtins_hidden_by_submodules(parser, ctx, names)
@@ -1506,9 +1510,9 @@ def submodules_hidden_by_packages(
 
     shared_future = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ == "__future__"}
     inits = {
-        written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]: ctx
+        package: ctx
         for ctx in contexts
-        if ctx.models and _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+        if ctx.models and (package := _written_package(ctx, treat_dot_as_module=treat_dot_as_module)) is not None
     }
     hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
     for ctx in contexts:
@@ -1532,11 +1536,7 @@ def submodules_hidden_by_packages(
         return {}
     result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
     for ctx in contexts:
-        package = (
-            written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]
-            if _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
-            else None
-        )
+        package = _written_package(ctx, treat_dot_as_module=treat_dot_as_module)
         modules = {
             module
             for hidden_package, (from_init, from_others) in hidden.items()
@@ -1559,7 +1559,7 @@ def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set
         importer = dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
         if ctx.models and state.config.all_exports_scope is not None:
             loaded.add(importer)
-        is_init = _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+        is_init = _written_package(ctx, treat_dot_as_module=treat_dot_as_module) is not None
         for from_, names in ctx.imports.items():
             if from_ and from_.startswith("."):
                 target = absolute(importer, from_, current_is_init=is_init)
@@ -1588,12 +1588,8 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
     for ctx in state.contexts:
         if not (
             ctx.models
-            and _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
-            and (
-                names := submodule_names.get(
-                    package := written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]
-                )
-            )
+            and (package := _written_package(ctx, treat_dot_as_module=treat_dot_as_module)) is not None
+            and (names := submodule_names.get(package))
             and (
                 imported := {
                     binding: key
