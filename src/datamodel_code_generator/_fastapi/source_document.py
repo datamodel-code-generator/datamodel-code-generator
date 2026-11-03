@@ -14,12 +14,12 @@ import json
 import math
 import re
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, discriminator_mapping_ref
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
+from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._url_redaction import redact_reference
@@ -152,24 +152,20 @@ class SourceDocument:
         """
         for start in (base, self.uris[document]):
             resource, _, fragment = urljoin(start, ref).partition("#")
-            fragment = unquote(fragment)
             if (found := self.resources.get(resource)) is None:
                 continue
-            tokens = (*found[1], *pointer_tokens(fragment))
-            target = (
-                self.anchors.get((resource, fragment))
-                if fragment and not fragment.startswith("/")
-                else (found[0], tokens)
-                if self.exists(found[0], tokens)
-                else None
-            )
+            if (pointer := reference_tokens(fragment)) is None:
+                target = self.anchors.get((resource, unquote(fragment)))
+            else:
+                tokens = (*found[1], *pointer)
+                target = (found[0], tokens) if self.exists(found[0], tokens) else None
             if target is not None:
                 return target[0], target[1], resource
         return None
 
     def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
         """Return whether a pointer names a node of a loaded document."""
-        return descend(self.documents[document], tokens, "legacy-decimal-tokens", MISSING) is not MISSING
+        return descend(self.documents[document], tokens, "canonical", MISSING) is not MISSING
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
@@ -322,7 +318,7 @@ class SourceDocument:
         ref = as_mapping(link).get("operationRef")
         if not isinstance(ref, str) or not ref.startswith("#/paths/"):
             return True
-        if pointer_tokens(unquote(ref[1:]))[1] in self.selected:
+        if cast("tuple[str, ...]", reference_tokens(ref[1:]))[1] in self.selected:
             return True
         problem = f"{join_pointer(at)}: The served document leaves out the link, whose operation it leaves out"
         self.problems[problem] = None
@@ -415,7 +411,7 @@ class SourceDocument:
 
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
         """Return the node a pointer names in a loaded document, which ``exists`` or the index found there."""
-        return descend(self.documents[document], tokens, "legacy-decimal-tokens")
+        return descend(self.documents[document], tokens, "canonical")
 
 
 def _uri(location: str) -> str:

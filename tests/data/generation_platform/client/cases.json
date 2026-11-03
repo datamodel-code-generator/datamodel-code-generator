@@ -1099,6 +1099,26 @@
       ]
     ]
   },
+  "pointer-references": {
+    "input": "pointer-references.yaml",
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "pointer-errors": {
+    "input": "pointer-errors.yaml"
+  },
   "references": {
     "input": "references.yaml",
     "references": [

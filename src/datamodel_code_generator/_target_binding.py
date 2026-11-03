@@ -18,7 +18,7 @@ from functools import cached_property
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
-from urllib.parse import ParseResult, unquote
+from urllib.parse import ParseResult
 
 from typing_extensions import override
 
@@ -33,7 +33,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
+from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
@@ -853,9 +853,15 @@ _UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
 _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 
 
-def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
-    """Decode a reference's JSON pointer fragment, or return None for a named anchor."""
-    return fragment_tokens(unquote(ref.partition("#")[2]))
+def _pointer_tokens(ref: str, *, strict: bool = False) -> tuple[str, ...] | None:
+    """Read a reference's JSON pointer fragment (`reference_tokens`), or return None for a named anchor.
+
+    Under `strict`, a spelling that is no canonical pointer (a stray `%` or `~`, octets that are no UTF-8) is None too.
+    """
+    try:
+        return reference_tokens(ref.partition("#")[2], strict=strict)
+    except ValueError:
+        return None
 
 
 def _spelled(site: SiteFacts, formats: frozenset[str]) -> bool:
@@ -2397,7 +2403,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.documents.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, "canonical", missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -3200,9 +3206,7 @@ class _Contracts(_SchemaUses):
             if document is not None and not self.observed(document):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
                 break
-            fragment = ref.partition("#")[2]
-            noncanonical = NONCANONICAL_PERCENT.search(fragment) or NONCANONICAL_ESCAPE.search(unquote(fragment))
-            if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
+            if document is None or (tokens := _pointer_tokens(ref, strict=True)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break
             target = SchemaLocation(document, tokens)

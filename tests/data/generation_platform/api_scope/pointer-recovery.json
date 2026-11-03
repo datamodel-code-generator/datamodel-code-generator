@@ -1,0 +1,13 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "https://example.test/x": {
+        "type": "string"
+      },
+      "Use": {
+        "$ref": "#/components/schemas/https://example.test/x"
+      }
+    }
+  }
+}

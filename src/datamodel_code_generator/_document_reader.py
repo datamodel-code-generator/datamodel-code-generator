@@ -44,13 +44,11 @@ CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
 them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
 _T = TypeVar("_T")
 
-MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]
-"""How a reader reads one token's member of a loaded value (``member``)."""
+MemberRow: TypeAlias = Literal["canonical", "refusing"]
+"""How a reader treats a token that names no member of a loaded value (``member``)."""
 _ENDS_WALK: Final[MappingProxyType[MemberRow, tuple[type[Exception], ...]]] = MappingProxyType({
-    "canonical": (LookupError, TypeError),
+    "canonical": (LookupError, TypeError, ValueError),
     "refusing": (KeyError,),
-    "legacy-int-tokens": (LookupError, TypeError, ValueError),
-    "legacy-decimal-tokens": (LookupError,),
 })
 """The errors of each row that mean the value has no such member; any other error propagates."""
 
@@ -80,48 +78,33 @@ def as_mapping(value: object) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
-def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:  # noqa: PLR0911
+def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
     """Return one token's member of a loaded value; raise one of the row's ``_ENDS_WALK`` errors when it has none.
 
-    ``canonical``: a list item by an RFC 6901 array index; a mapping member by its integer YAML key when the token is
-    such an index and the key exists, else by the token. ``refusing`` (the parser's ``$ref`` targets) reads a mapping
-    member by the token and a list item by an RFC 6901 array index; a token that is no index, or that is too long,
-    is an ``Error``, an index past the end an ``ArrayIndexOutOfRangeError``, and any other value a
-    ``NotImplementedError``. The other rows keep the readers' earlier grammars:
-    ``legacy-int-tokens`` (target binding) reads an item of any non-mapping by whatever ``int()`` accepts (``-1``,
-    ``01``, ``1_0``, a character of a string), a mapping as ``canonical``; ``legacy-decimal-tokens`` (served document)
-    reads a list item by any decimal token below the length (``01``, non-ASCII digits), a mapping member by the token
-    first, then by a decimal integer key.
+    A list item is read by an RFC 6901 array index only (``0``, or ASCII digits without a leading zero: never ``-1``,
+    ``01`` or the character of a string), and any other value has no member. ``canonical`` (the locations the parser
+    recorded and the target readers) reads a mapping member by its integer YAML key when the token is such an index and
+    the key exists, else by the token, and every token that names no member is a miss. ``refusing`` (the targets of the
+    parser's ``$ref``) reads a mapping member by the token only: a missing member is a ``KeyError``, a value that is no
+    container a ``NotImplementedError``, a list token that is no index or is too long an ``Error``, and an index past
+    the end an ``ArrayIndexOutOfRangeError``.
     """
-    match row:
-        case "canonical":
-            index = is_array_index(token)
-            mapping = cast("dict[object, YamlValue]", value)
-            return (
-                value[int(token)]
-                if isinstance(value, list) and index
-                else mapping[int(token)]
-                if index and int(token) in mapping
-                else mapping[token]
-            )
-        case "refusing":
-            if isinstance(value, dict):
-                return value[token]
-            if isinstance(value, list):
-                return _array_item(value, token)
-            msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
-            raise NotImplementedError(msg)
-        case "legacy-int-tokens":
-            if not isinstance(value, dict):
-                return cast("list[YamlValue]", value)[int(token)]
-            numbered = cast("dict[object, YamlValue]", value)
-            return numbered[int(token)] if is_array_index(token) and int(token) in numbered else value[token]
-        case _:  # legacy-decimal-tokens
-            if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
-                return value[int(token)]
-            if isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
-                return value[token] if token in value else cast("dict[object, YamlValue]", value)[int(token)]
-    raise LookupError(token)
+    if row == "refusing":
+        if isinstance(value, dict):
+            return value[token]
+        if isinstance(value, list):
+            return _array_item(value, token)
+        msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
+        raise NotImplementedError(msg)
+    index = is_array_index(token)
+    mapping = cast("dict[object, YamlValue]", value)
+    return (
+        value[int(token)]
+        if isinstance(value, list) and index
+        else mapping[int(token)]
+        if index and int(token) in mapping
+        else mapping[token]
+    )
 
 
 def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: YamlValue = None) -> YamlValue:
