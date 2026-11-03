@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {"tally": {"type": "object", "x-python-type": "Counter[str]"}},
+  "$defs": {
+    "api.Order": {
+      "type": "object",
+      "properties": {"counter": {"$ref": "#/$defs/annotations.Counter"}, "tally": {"type": "object", "x-python-type": "Counter[str]"}}
+    },
+    "annotations.Counter": {"type": "object", "properties": {"n": {"type": "integer"}}}
+  }
+}

@@ -135,7 +135,8 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
     name twice and ``from package import module`` would give what the package binds, not the module. The import then
     binds the model's name, which another shared import may bind too (``beside_shared_import``). So is a model of one of
-    the ``hidden_modules``, whose package binds the module's name itself (``submodules_hidden_by_packages``).
+    the ``hidden_modules``, whose package binds the module's name itself (``submodules_hidden_by_packages``), and its
+    import keeps off the names of the shared imports in the same way.
     """
     beside_shared_import = False
     if base_class:
@@ -168,13 +169,16 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
             and _is_module_named_like_shared_import(shared_imports, import_, name)
         )
 
+        hidden_by_package = ref_module in hidden_modules
         if imports_module and (
-            is_internal_module or is_module_class_collision or named_like_shared_import or ref_module in hidden_modules
+            is_internal_module or is_module_class_collision or named_like_shared_import or hidden_by_package
         ):
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
-            beside_shared_import = named_like_shared_import and _is_bound_by_shared_import(shared_imports, name)
+            beside_shared_import = (named_like_shared_import or hidden_by_package) and _is_bound_by_shared_import(
+                shared_imports, name
+            )
     from_ = written_name(from_)
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
     return ReferenceImportTarget(full_path, from_, import_, written_from, beside_shared_import)

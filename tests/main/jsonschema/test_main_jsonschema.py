@@ -4195,6 +4195,54 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
         ),
         *(
             pytest.param(
+                "module_named_annotations_enum_defaults.json",
+                output_model_type,
+                "3.10",
+                ["--set-default-enum-member"],
+                [
+                    ("api", "Order", ["{}", '{"kind": "disc"}', '{"kinds": ["other"]}']),
+                    ("", "Catalog", ["{}"]),
+                ],
+                id=f"future-enum-defaults-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations_beside_shared_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--additional-imports", "collections.Counter"],
+            [
+                ("api", "Order", ['{"counter": {"n": 1}, "tally": {"a": 2}}', '{"counter": {"n": "x"}}']),
+                ("", "Catalog", ['{"tally": {"a": 1}}']),
+            ],
+            id="future-beside-shared-import",
+        ),
+        pytest.param(
+            "module_named_annotations_beside_shared_import.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [],
+            [
+                ("api", "Order", ['{"counter": {"n": 1}, "tally": {"a": 2}}', '{"counter": {"n": "x"}}']),
+                ("", "Catalog", ['{"tally": {"a": 1}}']),
+            ],
+            id="future-beside-module-import",
+        ),
+        pytest.param(
+            "module_named_like_package_class_literal.json",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ["--read-const-beside-enum"],
+            [
+                ("pkg.api", "Order", _DETAIL_PAYLOADS),
+                ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
+            ],
+            id="class-loaded-by-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        *(
+            pytest.param(
                 "module_named_like_package_class.json",
                 output_model_type,
                 "3.10",
@@ -4232,7 +4280,11 @@ def test_main_jsonschema_submodule_hidden_by_package(
     enum member literal (``Literal[annotations.Kind.book]``) keeps importing the module, which the ``__init__.py``
     loads first. Under ``--all-exports-scope`` the export imports of the ``__init__.py`` load the submodule: where they
     run before ``api`` the old import worked and only its form changes; where ``from . import api`` runs first it
-    failed. The models are decoded after the first module named is imported, in one import of the package.
+    failed. The enum members that ``--set-default-enum-member`` writes into defaults follow the new import
+    (``Kind.book``, not ``annotations.Kind.book``), a model named like an import of the module or a shared one takes
+    another name (``Counter_1`` beside ``collections.Counter``), and an ``__init__.py`` that loads ``pkg.Warn`` only for
+    the class of an enum member literal keeps its class bound too. The models are decoded after the first module named
+    is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,

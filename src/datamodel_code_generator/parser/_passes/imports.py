@@ -1452,10 +1452,11 @@ def submodules_hidden_by_packages(
     shared ones and on a target with native deferred annotations its own (``_writes_module_future_annotations``):
     those hide the submodule from every module. It defines its classes after its imports, so a class hides the
     submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
-    submodule: the submodule is then loaded before the class takes the name, and no later import of it replaces the
-    class. A module names the hidden modules by their module names, as ``reference_import_target`` reads them. The class
-    of an enum member literal is written before (``import_enum_member_literal_classes``), so a module that names a
-    model of the module by one keeps importing the module.
+    submodule, for a type or for the class of an enum member literal: the submodule is then loaded before the class
+    takes the name, and no later import of it replaces the class. A module names the hidden modules by their module
+    names, as ``reference_import_target`` reads them. The class of an enum member literal is written before
+    (``import_enum_member_literal_classes``), so a module that names a model of the module by one keeps importing the
+    module.
     """
     treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
 
@@ -1487,7 +1488,9 @@ def submodules_hidden_by_packages(
             for found in hidden.setdefault(package, (set(), set())):
                 found.update(modules)
         elif any(model.class_name == name for model in init.models) and any(
-            named[: len(module)] == module for named in named_modules(init.models, literals=False) for module in modules
+            named[: len(module)] == module
+            for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
+            for module in modules
         ):
             hidden.setdefault(package, (set(), set()))[1].update(modules)
     if not hidden:
@@ -1516,8 +1519,12 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     the ``__future__`` feature where the package's ``__init__.py`` writes ``from __future__ import annotations``, and a
     class where it defines one of that name (``submodules_hidden_by_packages``). Such a model is imported from its
     module (``from .annotations import Item``), as ``--use-exact-imports`` imports it, under the name the module's
-    resolver gives it once the module import released its name, and every use of the model follows. The use keeps an
-    expression, the class name where the import binds it, as the field render plans froze it written.
+    resolver gives it once the module import released its name, and every use of the model follows, the enum members
+    that ``set_default_enum_member`` wrote into defaults included (``_follow_renamed_enum_references``). The name keeps
+    off every name the module's imports bind already: the resolver holds those that no model import took through it,
+    such as ``collections.Counter`` beside a model ``Counter``, and the shared ones are kept off as for a module named
+    like a shared import (``ReferenceImportTarget.reserve_name``). The use keeps an expression, the class name where the
+    import binds it, as the field render plans froze it written.
     """
     if not (hidden := submodules_hidden_by_packages(parser, state.contexts, state, state.config)):
         return
@@ -1539,18 +1546,25 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
             continue
         for model, *_, stale in users:
             ledger.remove(imports, stale, ImportProducer(_HIDDEN_SUBMODULES, model))
+        resolver = ctx.scoped_model_resolver
         ledger.release_names(
-            imports,
-            ctx.scoped_model_resolver,
-            {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports)),
+            imports, resolver, {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports))
         )
+        for name in sorted(
+            {reference.short_name for _, _, reference, _ in users}
+            .intersection(_iter_import_bindings(imports))
+            .difference(held.name for held in resolver.references.values())
+            .difference(_iter_import_bindings(parser.imports))
+        ):
+            ledger.add_name(imports, resolver, get_special_path("import", [name]), name)
+        renamed: list[DataType] = []
         for model, data_type, reference, _ in users:
             expression = register_reference_import(
                 reference,
                 _get_model_module_name(model, module_names),
                 _get_data_type_target_full_name(data_type, reference, module_names),
                 imports,
-                ctx.scoped_model_resolver,
+                resolver,
                 init=ctx.is_init,
                 internal_modules=state.internal_modules,
                 producer=ImportProducer(_HIDDEN_SUBMODULES, model),
@@ -1560,6 +1574,8 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
                 hidden_modules=modules,
             )
             parser._graph_builder.name_reference(data_type, expression or reference.short_name)  # noqa: SLF001
+            renamed.append(data_type)
+        _follow_renamed_enum_references(parser, ctx.models, renamed)
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:
