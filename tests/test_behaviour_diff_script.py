@@ -743,6 +743,14 @@ SIGNATURE_CASES: dict[str, tuple[str, dict[str, str], list[dict[str, Any]] | Non
         },
         [{"id": "v0", "payload": {"count": 1, "items": ["a"]}}, {"id": "i0", "payload": {"count": "x"}}],
     ),
+    "stub_beside_module": (
+        "pydantic_v2.BaseModel",
+        {
+            "model.py": "from mcp_types._wire_base import WireModel\n\n\nclass Model(WireModel):\n    name: str\n",
+            "mcp_types/_wire_base.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n",
+        },
+        None,
+    ),
     "import_error": ("pydantic_v2.BaseModel", {"model.py": "from missing_module import Thing\n"}, None),
     "validation_time_constraint_errors": (
         "pydantic_v2.BaseModel",
