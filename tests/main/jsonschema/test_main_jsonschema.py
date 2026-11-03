@@ -21386,8 +21386,9 @@ def test_main_jsonschema_collapse_root_models_name_strategy_complex_parent(outpu
     )
 
 
-def test_main_jsonschema_file_url_ref(tmp_path: Path) -> None:
-    """Test that file:// URL $ref is resolved correctly."""
+@pytest.mark.parametrize("host", ["", "LOCALHOST"], ids=["no-host", "uppercase-localhost"])
+def test_main_jsonschema_file_url_ref(tmp_path: Path, host: str) -> None:
+    """Test that file:// URL $ref is resolved correctly, without a host or with localhost in any letter case."""
     pet_schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -21400,7 +21401,7 @@ def test_main_jsonschema_file_url_ref(tmp_path: Path) -> None:
     main_schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
-        "properties": {"pet": {"$ref": pet_file.as_uri()}},
+        "properties": {"pet": {"$ref": f"file://{host}{pet_file.as_uri().removeprefix('file://')}"}},
     }
     main_file = tmp_path / "main.json"
     main_file.write_text(json.dumps(main_schema))
@@ -25592,6 +25593,34 @@ def test_main_jsonschema_unique_items_schema_validators_with_the_builtin_templat
             '"jsonValues":[true,1],"nested":[["first","second"]]}'
         ),
         expected_error_type="value_error",
+    )
+
+
+def test_main_jsonschema_schema_validators_with_the_builtin_template_directory_by_another_path(
+    output_file: Path,
+) -> None:
+    """Import the Mapping the validator helpers read when the template directory names the builtin one another way.
+
+    A path that reaches the builtin directory but is written otherwise (`template/pydantic_v2/..`) left the import of
+    `_Mapping` out, so validating anything but an object raised `NameError`.
+    """
+    run_generate_and_assert(
+        input_=JSON_SCHEMA_DATA_PATH / "builtin_named_fields.json",
+        output=output_file,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        generate_schema_validators=True,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+        custom_template_dir=TEMPLATE_DIR / "pydantic_v2" / "..",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="schema_validators_builtin_template_directory_by_another_path",
+        model_name="Holder",
+        valid_json='{"tags":["first","second"]}',
+        invalid_json="[1]",
+        expected_error_type="model_type",
     )
 
 

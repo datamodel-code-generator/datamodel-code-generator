@@ -533,6 +533,13 @@
       "pydantic_v2.BaseModel"
     ]
   },
+  "serialize-as-any-aliases": {
+    "input": "serialize-as-any-aliases.yaml",
+    "model": {
+      "use_serialize_as_any": true,
+      "use_type_alias": true
+    }
+  },
   "text-bound-types-errors": {
     "input": "text-bound-types-errors.yaml"
   },

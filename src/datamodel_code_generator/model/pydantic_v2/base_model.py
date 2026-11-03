@@ -65,7 +65,6 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
-    TEMPLATE_DIR,
     UNDEFINED,
     BaseClassDataType,
     DataModel,
@@ -1928,7 +1927,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if (
             has_local_property_count_helper
             or not cls._has_custom_schema_runtime_validation_helper(model)
-            or model.custom_template_dir == TEMPLATE_DIR
+            or (model.custom_template_dir is not None and not overrides_builtin_templates(model.custom_template_dir))
         ):
             helper_imports += (
                 Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
