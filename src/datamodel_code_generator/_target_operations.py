@@ -13,6 +13,7 @@ from datamodel_code_generator._openapi_wire_plan import declared_media
 from datamodel_code_generator._runtime.model_codecs.media import bodyless
 from datamodel_code_generator._target_contract import (
     LiteralSequence,
+    exact_status,
     fact,
     label,
     literal_text,
@@ -57,16 +58,14 @@ class TargetPolicy:
     `stage` is the stage a planning diagnostic's code reports at; `duplicate_setting` the code and message, by the
     option and the operation key, of two settings of one option that select one operation; `path_code` the code of
     a path placeholder without a path parameter and of a path parameter without a placeholder, and
-    `placeholder_label` whether the first names its operation; `informational_bodyless` whether a declared 1XX status
-    carries no content (the client's row until #5603); `media_code` the code of a media key that no Content-Type
-    header carries.
+    `placeholder_label` whether the first names its operation; `media_code` the code of a media key that no
+    Content-Type header carries.
     """
 
     stage: Callable[[str], DiagnosticStage]
     duplicate_setting: tuple[str, str]
     path_code: str
     placeholder_label: bool
-    informational_bodyless: bool
     media_code: str
 
     def problem(
@@ -88,7 +87,6 @@ CLIENT: Final = TargetPolicy(
     duplicate_setting=("E_CONFIG_CONFLICT", "Two settings name {key!r}"),
     path_code="E_METADATA_REQUIRED",
     placeholder_label=True,
-    informational_bodyless=False,
     media_code="E_METADATA_REQUIRED",
 )
 SERVER: Final = TargetPolicy(
@@ -96,7 +94,6 @@ SERVER: Final = TargetPolicy(
     duplicate_setting=("E_CONFIG_VALUE", "The {option} setting names {key!r} twice"),
     path_code="F_ROUTE_INVALID",
     placeholder_label=False,
-    informational_bodyless=True,
     media_code="F_MEDIA_UNSUPPORTED",
 )
 
@@ -161,23 +158,16 @@ def described(operation: OperationContract) -> str:
     return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
 
 
-def exact_status(key: str) -> int | None:
-    """Return the status a declared response key names itself, or None for a range key, `default` or another key."""
-    return int(key) if key.isdigit() else None
+def response_bodyless(operation: OperationContract, key: str) -> bool:
+    """Return whether a response of an operation never carries content: by its method, then by its response key.
 
-
-def range_start(key: str) -> int:
-    """Return the first status of a declared range key such as 2XX, read from its first character."""
-    return int(key[0]) * 100
-
-
-def response_bodyless(policy: TargetPolicy, operation: OperationContract, status: int | None) -> bool:
-    """Return whether a response of an operation never carries content: by its method, then by its status.
-
-    `status` is the one status a response declares, or None for a range or `default`, which only HEAD leaves bodyless.
+    A response key (`response_key`) is bodyless when it names a 1XX, 204, 205 or 304 status or is the range 1XX. Any
+    other range, and `default`, hold statuses with content, which only HEAD leaves bodyless.
     """
     head = operation.method == "head"
-    return head if status is None else bodyless(status, head=head, informational=policy.informational_bodyless)
+    if (status := exact_status(key)) is not None:
+        return bodyless(status, head=head)
+    return head or key == "1XX"
 
 
 def first_use(uses: Mapping[TypeUseId, TypeUseBinding], ids: Iterable[TypeUseId]) -> TypeUseBinding | None:

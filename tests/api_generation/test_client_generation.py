@@ -76,6 +76,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "method-collisions-suffix",
         "child-collision",
         "media-errors",
+        "response-keys",
         "form-name-errors",
         "form-name-kept",
         "media-item-parts",
@@ -245,6 +246,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-unmodeled",
         "protocols-cache-errors",
         "protocols-cache-checks",
+        "protocols-cache-bodyless",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:

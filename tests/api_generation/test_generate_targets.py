@@ -494,6 +494,12 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
             "response status 200 is given by two keys, 200 and '200'",
             id="integer-and-string-status",
         ),
+        pytest.param(
+            "range_and_lowercase_range_status.yaml",
+            "Error at schema path 'range_and_lowercase_range_status.yaml#/paths/~1pets/get/responses/2xx': "
+            "response status 2XX is given by two keys, '2XX' and '2xx'",
+            id="range-and-lowercase-range-status",
+        ),
     ],
 )
 def test_generate_target_key_errors(fixture_name: str, message: str, target: dict[str, Any], tmp_path: Path) -> None:

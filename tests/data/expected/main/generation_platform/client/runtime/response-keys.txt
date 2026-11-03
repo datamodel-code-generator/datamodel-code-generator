@@ -1,0 +1,26 @@
+# response-keys pydantic_v2.BaseModel
+  > GET https://api.example.com/range
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  range fetch = "network 200 Item(name='range')"
+  range fetch again = "fresh_cache 200 Item(name='range')"
+  > GET https://api.example.com/fallback
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  fallback fetch = "network 200 Item(name='fallback')"
+  > GET https://api.example.com/media
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json; profile=v1, application/json] b''
+  media without parameters first = Plain(plain='x')
+  > GET https://api.example.com/lowercase
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  range written with a lower-case x ! NotFoundError: Error code: 404 - {"plain":"x"} [operation_id='getLowercase', status_code=404, body=Plain(plain='x'), body_bytes=b'{"plain":"x"}', truncated=False]
+  > GET https://api.example.com/invalid
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  status key = InvalidGetResponse(root=7)
+  > GET https://api.example.com/invalid
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  key naming no status 201 ! APIStatusError: Error code: 201 [operation_id='getInvalid', status_code=201, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  > GET https://api.example.com/invalid
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  key naming no status 204 ! APIStatusError: Error code: 204 [operation_id='getInvalid', status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  > GET https://api.example.com/informational
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  informational keys = Item(name='final')

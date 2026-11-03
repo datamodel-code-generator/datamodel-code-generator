@@ -498,5 +498,24 @@
         "date": ".local"
       }
     }
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "querystring-nameless": {
+    "input": "querystring-nameless.yaml",
+    "config": {
+      "server_parameter_names": {
+        "/paths/~1search/get": {
+          "querystring:": "q"
+        }
+      }
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

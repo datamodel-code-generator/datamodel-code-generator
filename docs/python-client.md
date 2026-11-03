@@ -747,7 +747,12 @@ or binary body has no `null`, so its `None` is left out.
 
 ### Responses
 
-A method returns the decoded body. Each resource also has three *response views*, the same methods returning more:
+A method returns the decoded body. A response is declared under a status from `100` to `599`, a range from `1XX` to
+`5XX`, or `default`; any other key of `responses`, such as an extension `x-note` or an empty key, declares no response.
+A `1XX` response carries no content, so no model reads it. When a response declares several media types with one
+essence, such as `application/json;profile=v1` and `application/json`, a received `Content-Type` selects its own
+declaration, else the one without parameters, as the generated server reads a request body. Each resource also has three
+*response views*, the same methods returning more:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.responses -->
 <!-- fmt: off -->

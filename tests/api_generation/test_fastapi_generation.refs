@@ -69,6 +69,8 @@ pets	main/generation_platform/fastapi/packages/pets/	= main/generation_platform/
 pets	main/generation_platform/fastapi/pets.txt
 primary-errors	main/generation_platform/fastapi/packages/primary-errors/
 primary-errors	main/generation_platform/fastapi/primary-errors.txt
+querystring-nameless	main/generation_platform/fastapi/packages/querystring-nameless/
+querystring-nameless	main/generation_platform/fastapi/querystring-nameless.txt
 reference-errors	main/generation_platform/fastapi/packages/reference-errors/
 reference-errors	main/generation_platform/fastapi/reference-errors.txt
 references	main/generation_platform/fastapi/packages/references/
@@ -81,6 +83,8 @@ request	main/generation_platform/fastapi/packages/request/
 request	main/generation_platform/fastapi/request.txt
 required-alias-order	main/generation_platform/fastapi/packages/required-alias-order/
 required-alias-order	main/generation_platform/fastapi/required-alias-order.txt
+response-keys	main/generation_platform/fastapi/packages/response-keys/
+response-keys	main/generation_platform/fastapi/response-keys.txt
 responses	main/generation_platform/fastapi/packages/responses/
 responses	main/generation_platform/fastapi/responses.txt
 route-errors	main/generation_platform/fastapi/packages/route-errors/

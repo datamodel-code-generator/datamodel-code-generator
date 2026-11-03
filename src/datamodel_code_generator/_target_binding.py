@@ -97,6 +97,7 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
+    response_key,
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
@@ -3500,11 +3501,13 @@ class _Contracts(_SchemaUses):
                 children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(
-            self.response(response, use_site.child("responses", status), identity, status)
+            self.response(response, use_site.child("responses", status), identity, key)
             for status, response in document_statuses(
                 {response.key: response for response in walked.below("response")},
+                response_key,
                 lambda status: [str(declaration.child("responses", status))],
             ).items()
+            if (key := response_key(status)) is not None
         )
         callbacks = tuple(
             self.metadata(

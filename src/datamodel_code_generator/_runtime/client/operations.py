@@ -22,6 +22,7 @@ from ..model_codecs.media import (
     form_pairs,
     json_value,
     media_range,
+    most_specific,
     normalized,
     status_key,
 )
@@ -29,7 +30,7 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
 from .errors import APIStatusError, ConfigurationError, DecodeError, request_failure, response_failure, status_error
-from .media import charset_text, encode_text, most_specific, with_charset
+from .media import charset_text, encode_text, with_charset
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence

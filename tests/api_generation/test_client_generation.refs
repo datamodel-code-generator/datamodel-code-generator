@@ -63,6 +63,7 @@ formatters-options2-module2	main/generation_platform/client/output-options/forma
 header-quotes-options0-module0	main/generation_platform/client/output-options/header-quotes.py
 ruff-line-length-options5-module5	main/generation_platform/client/output-options/ruff-line-length.py
 [test_client_protocols]
+protocols-cache-bodyless	main/generation_platform/client/protocols/protocols-cache-bodyless.txt
 protocols-cache-checks	main/generation_platform/client/protocols/protocols-cache-checks.txt
 protocols-cache-errors	main/generation_platform/client/protocols/protocols-cache-errors.txt
 protocols-deep-limit	main/generation_platform/client/protocols/protocols-empty.txt
@@ -278,6 +279,8 @@ ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt
+response-keys	main/generation_platform/client/packages/response-keys/pydantic_v2_BaseModel//*.py
+response-keys	main/generation_platform/client/response-keys.txt
 retries	main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 retries	main/generation_platform/client/retries.txt
 retry-header-conflicts	main/generation_platform/client/retry-header-conflicts.txt

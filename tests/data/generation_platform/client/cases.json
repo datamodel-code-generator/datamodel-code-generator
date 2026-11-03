@@ -4573,6 +4573,16 @@
     },
     "modules": false
   },
+  "protocols-cache-bodyless": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/cache-bodyless.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-bodyless.json"
+    },
+    "modules": false
+  },
   "caching-typing": {
     "input": "caching.yaml",
     "references": [
@@ -5622,6 +5632,26 @@
       ],
       [
         "models.py"
+      ]
+    ]
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/response-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/response-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
       ]
     ]
   }
