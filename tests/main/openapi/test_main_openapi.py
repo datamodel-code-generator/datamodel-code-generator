@@ -4494,12 +4494,26 @@ def test_main_openapi_date_class(date_class: str, expected_output: str, output_f
     )
 
 
-def test_main_models_not_found(capsys: pytest.CaptureFixture, output_file: Path) -> None:
-    """Test OpenAPI generation with models not found error."""
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("no_components.yaml", [], id="default"),
+        pytest.param("no_components.yaml", ["--treat-dot-as-module"], id="treat-dot-as-module"),
+        pytest.param("paths_external_ref", ["--treat-dot-as-module"], id="treat-dot-as-module-directory"),
+    ],
+)
+def test_main_models_not_found(
+    capsys: pytest.CaptureFixture, output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Test OpenAPI generation with models not found error.
+
+    ``--treat-dot-as-module`` has no package to write either, and fails the same way (#6087).
+    """
     run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "no_components.yaml",
+        input_path=OPEN_API_DATA_PATH / input_name,
         output_path=output_file,
         input_file_type="openapi",
+        extra_args=extra_args,
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains="Models not found in the input data",
