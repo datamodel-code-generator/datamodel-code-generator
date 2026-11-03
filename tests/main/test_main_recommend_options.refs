@@ -25,6 +25,36 @@ jobs	main/main_recommend_options/naming_hint_batch_jobs[jobs].txt	= main/jsonsch
 one-job	main/recommend_options/naming_hint.txt
 [test_naming_hint_not_shown_by_generate]
 	main/main_recommend_options/naming_hint_not_shown_by_generate.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_recommend_asyncapi_avro_format_override_and_headers]
+	main/main_recommend_options/recommend_asyncapi_avro_format_override_and_headers.stdout.txt
+[test_recommend_asyncapi_avro_media_types]
+ Application/Vnd.Apache.Avro+Json ;version=1.9.0	main/main_recommend_options/recommend_asyncapi_avro_media_types[ Application_Vnd.Apache.Avro+Json ;version=1.9.0].stdout.txt
+application/vnd.apache.avro	main/main_recommend_options/recommend_asyncapi_avro_media_types[application_vnd.apache.avro].stdout.txt	= main/main_recommend_options/recommend_asyncapi_avro_media_types[ Application_Vnd.Apache.Avro+Json ;version=1.9.0].stdout.txt
+application/vnd.apache.avro+yaml;version=1.9.0	main/main_recommend_options/recommend_asyncapi_avro_media_types[application_vnd.apache.avro+yaml;version=1.9.0].stdout.txt	= main/main_recommend_options/recommend_asyncapi_avro_media_types[ Application_Vnd.Apache.Avro+Json ;version=1.9.0].stdout.txt
+[test_recommend_asyncapi_avro_message_without_payload]
+full	main/main_recommend_options/recommend_asyncapi_avro_message_without_payload[full].py
+full	main/main_recommend_options/recommend_asyncapi_avro_message_without_payload[full].recommendation.txt
+quick	main/main_recommend_options/recommend_asyncapi_avro_message_without_payload[quick].py	= main/main_recommend_options/recommend_asyncapi_avro_message_without_payload[full].py
+quick	main/main_recommend_options/recommend_asyncapi_avro_message_without_payload[quick].recommendation.txt
+[test_recommend_asyncapi_avro_recursive_references]
+	main/main_recommend_options/recommend_asyncapi_avro_recursive_references.py
+	main/main_recommend_options/recommend_asyncapi_avro_recursive_references.recommendation.txt
+[test_recommend_asyncapi_avro_schema_contexts]
+asyncapi_avro_aliased.yaml-4-2-payloads4	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_aliased.yaml-4-2-payloads4].py
+asyncapi_avro_aliased.yaml-4-2-payloads4	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_aliased.yaml-4-2-payloads4].recommendation.txt
+asyncapi_avro_component.yaml-2-1-payloads0	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_component.yaml-2-1-payloads0].py
+asyncapi_avro_component.yaml-2-1-payloads0	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_component.yaml-2-1-payloads0].recommendation.txt
+asyncapi_avro_component_message.yaml-2-1-payloads1	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_component_message.yaml-2-1-payloads1].py
+asyncapi_avro_component_message.yaml-2-1-payloads1	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_component_message.yaml-2-1-payloads1].recommendation.txt
+asyncapi_avro_inherited.yaml-2-1-payloads2	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_inherited.yaml-2-1-payloads2].py
+asyncapi_avro_inherited.yaml-2-1-payloads2	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_inherited.yaml-2-1-payloads2].recommendation.txt
+asyncapi_avro_scoped.yaml-4-2-payloads3	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_scoped.yaml-4-2-payloads3].py
+asyncapi_avro_scoped.yaml-4-2-payloads3	main/main_recommend_options/recommend_asyncapi_avro_schema_contexts[asyncapi_avro_scoped.yaml-4-2-payloads3].recommendation.txt
+[test_recommend_asyncapi_avro_workflow]
+full	main/main_recommend_options/recommend_asyncapi_avro_workflow[full].py
+full	main/main_recommend_options/recommend_asyncapi_avro_workflow[full].recommendation.txt
+quick	main/main_recommend_options/recommend_asyncapi_avro_workflow[quick].py	= main/main_recommend_options/recommend_asyncapi_avro_workflow[full].py
+quick	main/main_recommend_options/recommend_asyncapi_avro_workflow[quick].recommendation.txt
 [test_recommend_options]
 	main/main_recommend_options/recommend_options.stdout.txt
 [test_recommend_options_compares_candidates]

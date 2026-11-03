@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "recommend-options",
+  "mode": "quick",
+  "rules_revision": "2026-10-19",
+  "calibrated_presets": "20261017",
+  "input": {
+    "source": "file",
+    "input_file_type": "asyncapi",
+    "document": "AsyncAPI 3.0.0",
+    "analysed": true
+  },
+  "context": {
+    "output_model_type": "pydantic_v2.BaseModel",
+    "target_python_version": "3.10"
+  },
+  "signals": {
+    "all_enums": 1,
+    "boolean_exclusive_bounds": 0,
+    "coercible_scalars": 0,
+    "component_enums": 1,
+    "component_title_duplicate_groups": 1,
+    "component_titles_equal_other_key": 0,
+    "component_titles_equal_own_key": 4,
+    "component_titles_in_duplicate_groups": 2,
+    "components": 4,
+    "decimal_formats": 0,
+    "discriminated_unions": 0,
+    "dotted_key_namespaces": 0,
+    "dotted_keys": 0,
+    "dotted_namespace_reference_cycles": 0,
+    "duplicate_inline_enum_shapes": 0,
+    "duplicate_inline_enums": 0,
+    "duplicate_inline_objects": 0,
+    "duplicate_inline_shapes": 0,
+    "enums_beside_const": 0,
+    "estimated_models": 4,
+    "formats": 0,
+    "inline_enums": 0,
+    "inline_names_equal_component": 0,
+    "inline_object_bodies": 0,
+    "inline_object_union_variants": 0,
+    "inline_objects": 0,
+    "inline_scalar_union_variants": 0,
+    "inline_tagged_union_branches": 0,
+    "inline_title_max_repeat": 0,
+    "inline_titled_objects": 0,
+    "inline_titled_union_variants": 0,
+    "inline_union_variants": 0,
+    "integer_range_formats": 0,
+    "max_inline_depth": 0,
+    "multiple_of": 0,
+    "nullable_keywords": 0,
+    "operations": 1,
+    "parent_copy_union_branches": 0,
+    "pattern_properties": 0,
+    "redundant_constraints": 0,
+    "root_is_object": 0,
+    "root_title_words": 0,
+    "shared_inline_enum_names": 0,
+    "shared_inline_names": 0,
+    "shared_inline_object_names": 0,
+    "single_key_required_open": 0,
+    "single_key_union_branches": 0,
+    "single_value_enum_union_branches": 0,
+    "single_value_enums": 0,
+    "tagged_behind_ref": 0,
+    "titled_components": 4,
+    "unions": 0,
+    "unique_items": 0,
+    "unmodeled_pattern_properties": 0
+  },
+  "facts": {
+    "schema": "AsyncAPI 3.0.0",
+    "scopes": "",
+    "shared_inline_name_examples": "",
+    "inline_title_examples": "",
+    "duplicate_title_examples": "Order x2",
+    "key_style": "PascalCase (4 of 4)",
+    "root_title": "",
+    "format_examples": ""
+  },
+  "baseline": {
+    "preset": "standard-py310-20261027",
+    "family": "standard",
+    "configured": false,
+    "covers": []
+  },
+  "recommendations": [],
+  "left_out": [],
+  "consider": [],
+  "validation": [],
+  "policy": [],
+  "not_recommended": [],
+  "disagreements": [],
+  "trial": null,
+  "notes": [
+    "Target Python is not set: the recommendation assumes 3.10, the default. Set --target-python-version to start from the preset of the Python version the project runs.",
+    "The rules were calibrated on the 20261017 presets."
+  ],
+  "arguments": [
+    "--input",
+    "schema.yaml",
+    "--input-file-type",
+    "asyncapi",
+    "--preset",
+    "standard-py310-20261027"
+  ],
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "input": "schema.yaml",
+        "input-file-type": "asyncapi",
+        "preset": "standard-py310-20261027"
+      }
+    }
+  },
+  "config_complete": true,
+  "content": "Option recommendations (experimental; quick mode; rules 2026-10-19)\n\nSchema  AsyncAPI 3.0.0\n  components                       4, 1 operations\n  inline objects / enums           0 / 0, nesting depth 0\n  shared property names            0 (none)\n  inline names = component names   0\n  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets\n  titled components                4: 1 shared titles (Order x2), 0 equal another key, 4 equal their own key\n  inline titles                    0 objects, most repeated 0 (none)\n  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants\n  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (4 of 4); 0 dotted in 0 namespaces\n  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0\n  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced\n  integer/number/boolean schemas   0\n\nStart from  --preset standard-py310-20261027\n\nAdd  nothing on top of the preset\n\nNotes\n  - Target Python is not set: the recommendation assumes 3.10, the default. Set\n    --target-python-version to start from the preset of the Python version the project runs.\n  - The rules were calibrated on the 20261017 presets.\n\nCommand\n  datamodel-codegen --input schema.yaml --input-file-type asyncapi --preset standard-py310-20261027\n\npyproject.toml\n  [tool.datamodel-codegen]\n  input = \"schema.yaml\"\n  input-file-type = \"asyncapi\"\n  preset = \"standard-py310-20261027\"\n"
+}

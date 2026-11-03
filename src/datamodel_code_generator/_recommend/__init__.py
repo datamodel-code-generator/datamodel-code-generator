@@ -645,7 +645,10 @@ def _runner(request: RecommendRequest, analysed: _Input) -> Callable[[Sequence[T
     return partial(
         run_trial,
         trial_input,
-        vocabulary=schema_vocabulary(_vocabulary_document(analysed, trial_input)),
+        vocabulary=schema_vocabulary(
+            _vocabulary_document(analysed, trial_input),
+            schema_names=analysed.signals.converted_names if analysed.signals else (),
+        ),
         previous_input=None if config.diff_against is None else Path(config.diff_against),
         remote_text_cache=remote_text_cache,
     )

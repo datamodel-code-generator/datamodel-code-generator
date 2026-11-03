@@ -16,6 +16,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator._avro_detection import AVRO_SCHEMA_FORMATS
 from datamodel_code_generator._document_reader import CHANNEL_OPERATIONS, as_mapping, string_keys
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import definition_ref
@@ -64,11 +65,6 @@ OPENAPI_SCHEMA_FORMATS: frozenset[str] = frozenset({
     "application/vnd.oai.openapi",
     "application/vnd.oai.openapi+json",
     "application/vnd.oai.openapi+yaml",
-})
-AVRO_SCHEMA_FORMATS: frozenset[str] = frozenset({
-    "application/vnd.apache.avro",
-    "application/vnd.apache.avro+json",
-    "application/vnd.apache.avro+yaml",
 })
 PROTOBUF_SCHEMA_FORMATS: frozenset[str] = frozenset({"application/vnd.google.protobuf"})
 XML_SCHEMA_FORMATS: frozenset[str] = frozenset({
@@ -212,10 +208,11 @@ def _is_multi_format_schema_object_candidate(raw_schema: YamlValue) -> bool:
     return fixed_keys == {"schema"}
 
 
-def _parse_multi_format_schema_object(
+def parse_multi_format_schema_object(
     raw_schema: YamlValue,
     path: list[str],
 ) -> MultiFormatSchemaObject | None:
+    """Read an AsyncAPI multi-format wrapper with the same validation for every schema consumer."""
     if not _is_multi_format_schema_object_candidate(raw_schema):
         return None
     try:
@@ -229,6 +226,9 @@ def _parse_multi_format_schema_object(
             raise Error(msg) from error
         msg = f"AsyncAPI schemaFormat must be a string at {_path_to_string(path)}"
         raise Error(msg) from error
+
+
+_parse_multi_format_schema_object = parse_multi_format_schema_object
 
 
 def _unsupported_schema_format_error(schema_format: str, path: list[str]) -> Error:

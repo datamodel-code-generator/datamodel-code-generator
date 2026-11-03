@@ -1,0 +1,27 @@
+asyncapi: 3.0.0
+info:
+  title: t
+  version: '1'
+channels:
+  ev:
+    address: ev
+    messages:
+      CreatedA:
+        payload: &id001
+          schemaFormat: application/vnd.apache.avro;version=1.9.0
+          schema:
+            type: record
+            name: Created
+            fields:
+            - name: kind
+              type:
+                type: enum
+                name: Kind
+                symbols:
+                - A
+                - B
+            - name: n
+              type: int
+      CreatedB:
+        payload: *id001
+operations: {}

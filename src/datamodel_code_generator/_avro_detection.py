@@ -11,9 +11,22 @@ JsonSchema = dict[str, Any]
 YamlValue: TypeAlias = "dict[str, YamlValue] | list[YamlValue] | str | int | float | bool | None"
 
 PRIMITIVE_TYPES = frozenset({"null", "boolean", "int", "long", "float", "double", "bytes", "string"})
+AVRO_SCHEMA_FORMATS: frozenset[str] = frozenset({
+    "application/vnd.apache.avro",
+    "application/vnd.apache.avro+json",
+    "application/vnd.apache.avro+yaml",
+})
 NAMED_TYPES = frozenset({"record", "enum", "fixed"})
 COMPLEX_TYPES = NAMED_TYPES | {"array", "map"}
 JSON_SCHEMA_MARKER_KEYS = frozenset({"$schema", "$defs", "definitions", "properties", "allOf", "anyOf", "oneOf"})
+
+
+def is_avro_schema_format(schema_format: object) -> bool:
+    """Return whether an AsyncAPI schema format names Avro, ignoring MIME parameters and case."""
+    return (
+        isinstance(schema_format, str)
+        and schema_format.split(";", maxsplit=1)[0].strip().lower() in AVRO_SCHEMA_FORMATS
+    )
 
 
 def _is_avro_union_item(item: object) -> bool:
@@ -83,9 +96,11 @@ def _is_avro_schema_object(schema: JsonSchema) -> bool:
 
 
 __all__ = [
+    "AVRO_SCHEMA_FORMATS",
     "COMPLEX_TYPES",
     "JSON_SCHEMA_MARKER_KEYS",
     "NAMED_TYPES",
     "PRIMITIVE_TYPES",
     "is_avro_schema_data",
+    "is_avro_schema_format",
 ]

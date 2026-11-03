@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 from urllib.parse import unquote
 
+from datamodel_code_generator._avro_detection import is_avro_schema_format
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
@@ -113,6 +114,46 @@ class Signals:
     counts: Mapping[str, int]
     facts: Mapping[str, str]
     component_names: frozenset[str] = frozenset()
+    converted_names: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class _ConvertedSchema:
+    """One holder of an owned converted document, whose references are local to that document."""
+
+    document: Mapping[str, Any]
+
+
+class _AvroSchemas:
+    """Normalize only Avro inputs, once per raw schema identity during one measurement."""
+
+    def __init__(self) -> None:
+        self.documents: dict[int, Mapping[str, Any]] = {}
+        self.names: set[str] = set()
+
+    def components(self, document: Mapping[str, Any], components: Mapping[str, Any]) -> dict[str, Any]:
+        """Normalize Avro component holders after the existing component-name validation."""
+        schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
+        return {key: self.schema(schemas[key], ["#/components/schemas", key]) for key in components}
+
+    def schema(self, raw: object, path: list[str], inherited_format: object = None) -> object:
+        """Read a wrapper or inherited payload format and preserve all other schema behavior."""
+        schema_format = as_mapping(raw).get("schemaFormat") or inherited_format
+        if not is_avro_schema_format(schema_format) and not is_avro_schema_format(inherited_format):
+            return _unwrap(raw)
+        from datamodel_code_generator.parser.asyncapi import parse_multi_format_schema_object  # noqa: PLC0415
+        from datamodel_code_generator.parser.avro import convert_avro_schema_data  # noqa: PLC0415
+
+        if wrapper := parse_multi_format_schema_object(cast("Any", raw), path):
+            raw = wrapper.schema_
+            if not is_avro_schema_format(wrapper.schema_format or inherited_format):
+                return raw
+        identity = id(raw)
+        if identity not in self.documents:
+            document = convert_avro_schema_data(cast("Any", raw))
+            self.documents[identity] = document
+            self.names.update(_components(document, "jsonschema"))
+        return _ConvertedSchema(self.documents[identity])
 
 
 def normalize_name(name: str) -> str:
@@ -385,25 +426,42 @@ def _operation_parts(document: Mapping[str, Any], key: str, operation: object) -
     yield f"{key} parameters", {"type": "object", "properties": fields} if fields else None
 
 
-def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]]:
+def _message_schemas(document: Mapping[str, Any], avro: _AvroSchemas) -> Iterator[tuple[str, object]]:
     """Yield the payload and header schemas of AsyncAPI messages in components and channels."""
     components = as_mapping(document.get("components"))
-    messages: list[tuple[str, object]] = list(as_mapping(components.get("messages")).items())
-    for name, channel in [
-        *as_mapping(document.get("channels")).items(),
-        *as_mapping(components.get("channels")).items(),
-    ]:
+    messages: list[tuple[str, object, list[str]]] = [
+        (str(name), message, ["#/components/messages", str(name)])
+        for name, message in as_mapping(components.get("messages")).items()
+    ]
+    channels = [
+        (name, channel, [root, str(name)])
+        for root, section in (("#/channels", document), ("#/components/channels", components))
+        for name, channel in as_mapping(section.get("channels")).items()
+    ]
+    for name, channel, path in channels:
         messages.extend(
-            (f"{name} {operation}", _operation_message(channel, operation)) for operation in CHANNEL_OPERATIONS
+            (f"{name} {operation}", _operation_message(channel, operation), [*path, operation, "message"])
+            for operation in CHANNEL_OPERATIONS
         )
         messages.extend(
-            (f"{name} {key}", message) for key, message in as_mapping(as_mapping(channel).get("messages")).items()
+            (f"{name} {key}", message, [*path, "messages", str(key)])
+            for key, message in as_mapping(as_mapping(channel).get("messages")).items()
         )
-    for name, message in messages:
+    for name, message, path in messages:
         variants = as_mapping(message).get("oneOf")
         for index, variant in enumerate(variants if isinstance(variants, list) else [message]):
+            variant_path = [*path, "oneOf", str(index)] if isinstance(variants, list) else path
             for part in ("payload", "headers"):
-                yield f"{name} {index} {part}", _unwrap(as_mapping(variant).get(part))
+                if part not in as_mapping(variant):
+                    continue
+                yield (
+                    f"{name} {index} {part}",
+                    avro.schema(
+                        as_mapping(variant).get(part),
+                        [*variant_path, part],
+                        as_mapping(variant).get("schemaFormat") if part == "payload" else None,
+                    ),
+                )
 
 
 def _operation_message(channel: object, operation: str) -> object:
@@ -489,6 +547,8 @@ class _Walker:
         self.enum_shapes: Counter[int] = Counter()
         self.references: defaultdict[str, set[str]] = defaultdict(set)
         self.max_depth = 0
+        self.converted_named: list[tuple[str, Mapping[str, Any]]] = []
+        self.avro = _AvroSchemas()
 
     def shape(self, node: object) -> int:
         """Return an interned id of a schema's structure, ignoring documentation keywords."""
@@ -554,10 +614,29 @@ class _Walker:
         Subschemas reached without a property (array items, union branches, allOf parts) are named after the
         schema itself, so they get an empty name and do not count as names shared with other parents.
         """
-        if isinstance(node, dict) and not self.count_reference(node, key):
+        if isinstance(node, _ConvertedSchema):
+            self.walk_converted(key, node.document)
+        elif isinstance(node, dict) and not self.count_reference(node, key):
             self.count_keywords(node)
             self.counts["redundant_constraints"] += _redundant_constraint(node, at_property=False)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
+
+    def walk_converted(self, key: str, document: Mapping[str, Any]) -> None:
+        """Walk a converted root and its reachable definitions once in their own reference context."""
+        previous = self.document, self.refs, self.dialect, self.references
+        self.document = document
+        definitions = _components(document, "jsonschema")
+        self.refs = _component_refs("jsonschema", definitions)
+        self.dialect = _dialect(document, "jsonschema")
+        self.references = defaultdict(set)
+        root_key = f"#{len(self.converted_named)}:{key}"  # Avro definition names cannot contain '#'.
+        try:
+            self.walk_named(root_key, document)
+            named = _walk_components(self, definitions, [root_key])
+            self.converted_named.extend(named.items())
+            self.counts["dotted_namespace_reference_cycles"] += _reference_cycles(self.references)
+        finally:
+            self.document, self.refs, self.dialect, self.references = previous
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
         """Record the parent of an inline model named after a property."""
@@ -704,23 +783,20 @@ def _reference_cycles(references: Mapping[str, set[str]]) -> int:
     return sum(len(group) > 1 for group in groups)
 
 
-def _count_titles(counts: Counter[str], titles: Mapping[str, str], keys: AbstractSet[str]) -> Counter[str]:
+def _count_titles(counts: Counter[str], titles: Sequence[tuple[str, str]], keys: AbstractSet[str]) -> Counter[str]:
     """Count component titles that collide or repeat the normalized component ``keys``; return the shared titles."""
-    groups = Counter(normalize_name(title) for title in titles.values())
+    groups = Counter(normalize_name(title) for _, title in titles)
     shared = {title: count for title, count in groups.items() if count > 1}
     counts["titled_components"] = len(titles)
     counts["component_title_duplicate_groups"] = len(shared)
     counts["component_titles_in_duplicate_groups"] = sum(shared.values())
     counts["component_titles_equal_own_key"] = sum(
-        normalize_name(title) == normalize_name(key) for key, title in titles.items()
+        normalize_name(title) == normalize_name(key) for key, title in titles
     )
     counts["component_titles_equal_other_key"] = sum(
-        (normalized := normalize_name(title)) != normalize_name(key) and normalized in keys
-        for key, title in titles.items()
+        (normalized := normalize_name(title)) != normalize_name(key) and normalized in keys for key, title in titles
     )
-    return Counter({
-        title: shared[normalize_name(title)] for title in titles.values() if normalize_name(title) in shared
-    })
+    return Counter({title: shared[normalize_name(title)] for _, title in titles if normalize_name(title) in shared})
 
 
 def _count_names(counts: Counter[str], walker: _Walker, keys: AbstractSet[str]) -> Counter[str]:
@@ -774,19 +850,25 @@ def measure_signals(
     whole = kind != "openapi" or bool({"schemas", "api"} & openapi_scopes)
     all_components = _components(document, kind, read=whole)
     walker = _Walker(document, _component_refs(kind, all_components), _dialect(document, kind))
+    if kind == "asyncapi":
+        all_components = walker.avro.components(document, all_components)
     counts = walker.counts
     extra: list[tuple[str, object]] = []
     if kind == "openapi":
         extra = list(_operation_schemas(document, openapi_scopes, include_paths))
         counts["inline_object_bodies"] = _inline_object_bodies(document, openapi_scopes, include_paths)
     elif kind == "asyncapi":
-        extra = list(_message_schemas(document))
+        extra = list(_message_schemas(document, walker.avro))
     for key, node in extra:
         walker.walk_named(key, node)
+        if isinstance(node, _ConvertedSchema):
+            walker.converted_named.append((_title(node.document) or key, node.document))
     components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
-    named = {key: node for key, node in components.items() if isinstance(node, dict)}
-    counts["component_enums"] = sum(_is_enum(node) for node in named.values())
-    titles = {key: title for key, node in named.items() if (title := _title(node))}
+    named = [
+        (key, node.document if isinstance(node, _ConvertedSchema) else node) for key, node in components.items()
+    ] + walker.converted_named
+    counts["component_enums"] = sum(_is_enum(node) for _, node in named if isinstance(node, dict))
+    titles = [(key, title) for key, node in named if isinstance(node, dict) and (title := _title(node))]
     root_title = ""
     if kind == "jsonschema":
         root = {key: value for key, value in document.items() if key not in DEFINITION_KEYS}
@@ -796,24 +878,24 @@ def measure_signals(
         root_title = _title(root)
         counts["root_title_words"] = len(root_title.split())
     counts["operations"] = _count_operations(document, kind)
-    counts["components"] = len(components)
+    counts["components"] = len(named)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
-    keys = {normalize_name(key) for key in components}
+    keys = {normalize_name(key) for key, _ in named}
     shared_names = _count_names(counts, walker, keys)
     shared_titles = _count_titles(counts, titles, keys)
     counts["inline_title_max_repeat"] = max(walker.inline_titles.values(), default=0)
-    dotted = [key for key in components if "." in key]
+    dotted = [key for key, _ in named if "." in key]
     counts["dotted_keys"] = len(dotted)
     counts["dotted_key_namespaces"] = len({_module(key) for key in dotted})
-    counts["dotted_namespace_reference_cycles"] = _reference_cycles(walker.references) if dotted else 0
+    counts["dotted_namespace_reference_cycles"] += _reference_cycles(walker.references) if dotted else 0
     counts["formats"] = walker.formats.total()
     counts["integer_range_formats"] = sum(walker.formats[name] for name in _INTEGER_RANGE_FORMATS)
     counts["decimal_formats"] = walker.formats["decimal"]
     counts["estimated_models"] = (
         counts["components"] + counts["inline_objects"] + counts["inline_enums"] + counts["inline_union_variants"]
     )
-    styles = Counter(_key_style(key) for key in components).most_common(1)
+    styles = Counter(_key_style(key) for key, _ in named).most_common(1)
     return Signals(
         counts={name: int(counts[name]) for name in sorted(SIGNAL_NAMES)},
         facts={
@@ -822,9 +904,10 @@ def measure_signals(
             "shared_inline_name_examples": _example_text(shared_names),
             "inline_title_examples": _example_text(walker.inline_titles),
             "duplicate_title_examples": _example_text(shared_titles),
-            "key_style": "".join(f"{style} ({count} of {len(components)})" for style, count in styles),
+            "key_style": "".join(f"{style} ({count} of {len(named)})" for style, count in styles),
             "root_title": root_title,
             "format_examples": _example_text(walker.formats),
         },
         component_names=frozenset(normalize_name(key) for key in all_components),
+        converted_names=frozenset(walker.avro.names),
     )

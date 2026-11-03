@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import difflib
+import importlib.util
 import io
 import json
 import re
 import shutil
+import sys
 import warnings
 from contextlib import redirect_stdout
 from importlib.resources import files
 from pathlib import Path
 from string import Formatter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args
 
 import jsonschema
 import pytest
@@ -34,6 +36,7 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
+    from types import ModuleType
 
     from tests.conftest import HttpxGetMockFactory
 
@@ -84,6 +87,290 @@ def _recommend(
             derived_stdout=True,
             use_builtin_default_formatter=False,
         )
+
+
+@pytest.mark.allow_direct_assert("requires an import spec for the generated Python module")
+def _run_recommended_models(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, report: Mapping[str, Any]) -> ModuleType:
+    """Execute the report's arguments, adding only a destination and a stable generated header."""
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER", raising=False)
+    arguments = list(report["arguments"])
+    input_index = arguments.index("--input")
+    input_path = Path(arguments.pop(input_index + 1))
+    arguments.pop(input_index)
+    output = tmp_path / "models.py"
+    run_main_and_assert(input_path=input_path, output_path=output, extra_args=[*arguments, "--disable-timestamp"])
+    spec = importlib.util.spec_from_file_location("recommended_avro", output)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("mode", [("quick",), ()], ids=["quick", "full"])
+@pytest.mark.allow_direct_assert("checks public recommendation counts and imported generated model semantics")
+def test_recommend_asyncapi_avro_workflow(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, mode: tuple[str, ...]
+) -> None:
+    """Analyze the original Avro input, then execute the reported command and import its models."""
+    shutil.copy(INPUT_PATH / "asyncapi_avro.yaml", tmp_path / "avro_payload.yaml")
+    with chdir(tmp_path):
+        run_main_with_args(
+            [
+                "--input",
+                "avro_payload.yaml",
+                "--input-file-type",
+                "asyncapi",
+                "--output-format",
+                "json",
+                "--recommend-options",
+                *mode,
+            ],
+            use_builtin_default_formatter=False,
+        )
+        captured = capsys.readouterr()
+        assert not captured.err
+        report = json.loads(captured.out)
+        assert tuple(
+            report["signals"][name] for name in ("components", "component_enums", "all_enums", "estimated_models")
+        ) == (2, 1, 1, 2)
+        assert report["signals"]["inline_objects"] == report["signals"]["inline_enums"] == 0
+        assert_output(captured.out, name="recommendation")
+        module = _run_recommended_models(tmp_path, monkeypatch, report)
+        fields = module.EvCreatedPayload.model_fields
+        assert set(fields) == {"kind", "n"}
+        assert fields["kind"].annotation is module.Kind
+        assert fields["n"].annotation is int
+        assert all(field.is_required() for field in fields.values())
+        assert [item.value for item in module.Kind] == ["A", "B"]
+        value = module.EvCreatedPayload.model_validate({"kind": "A", "n": 7})
+        assert value.kind is module.Kind("A")
+        assert value.n == 7
+
+
+@pytest.mark.parametrize(
+    ("source", "models", "enums", "payloads"),
+    [
+        ("asyncapi_avro_component.yaml", 2, 1, ("CreatedEvent",)),
+        ("asyncapi_avro_component_message.yaml", 2, 1, ("CreatedPayload",)),
+        ("asyncapi_avro_inherited.yaml", 2, 1, ("EvPublishPayload",)),
+        ("asyncapi_avro_scoped.yaml", 4, 2, ("EvCreatedAPayload", "EvCreatedBPayload")),
+        ("asyncapi_avro_aliased.yaml", 4, 2, ("EvCreatedAPayload", "EvCreatedBPayload")),
+    ],
+)
+@pytest.mark.allow_direct_assert("checks named schema counts and local enum reference identity across Avro documents")
+def test_recommend_asyncapi_avro_schema_contexts(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    source: str,
+    models: int,
+    enums: int,
+    payloads: tuple[str, ...],
+) -> None:
+    """Keep each converted document's references local, including repeated names and YAML aliases."""
+    shutil.copy(INPUT_PATH / source, tmp_path / "schema.yaml")
+    with chdir(tmp_path):
+        run_main_with_args(
+            [
+                "--input",
+                "schema.yaml",
+                "--input-file-type",
+                "asyncapi",
+                "--output-format",
+                "json",
+                "--recommend-options",
+                "quick",
+            ],
+            use_builtin_default_formatter=False,
+        )
+        captured = capsys.readouterr()
+        assert not captured.err
+        report = json.loads(captured.out)
+        assert tuple(
+            report["signals"][name] for name in ("components", "component_enums", "all_enums", "estimated_models")
+        ) == (models, enums, enums, models)
+        assert_output(captured.out, name="recommendation")
+        module = _run_recommended_models(tmp_path, monkeypatch, report)
+        kinds = []
+        for index, name in enumerate(payloads):
+            model = getattr(module, name)
+            fields = model.model_fields
+            kind = fields["kind"].annotation
+            values = ["X", "Y"] if source == "asyncapi_avro_scoped.yaml" and index else ["A", "B"]
+            assert [member.value for member in kind] == values
+            assert fields["n"].annotation is int
+            if "again" in fields:
+                assert fields["again"].annotation is kind
+            kinds.append(kind)
+        if len(kinds) == 2:
+            assert (kinds[0] is kinds[1]) == (source == "asyncapi_avro_aliased.yaml")
+
+
+@pytest.mark.allow_direct_assert("checks reachable named schema counts and recursive generated field references")
+def test_recommend_asyncapi_avro_recursive_references(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Count the referenced root definition, excluding only its unused copy in non-recursive inputs."""
+    shutil.copy(DATA_PATH / "asyncapi/avro-named-types.yaml", tmp_path / "schema.yaml")
+    with chdir(tmp_path):
+        run_main_with_args(
+            [
+                "--input",
+                "schema.yaml",
+                "--input-file-type",
+                "asyncapi",
+                "--output-format",
+                "json",
+                "--recommend-options",
+                "quick",
+            ],
+            use_builtin_default_formatter=False,
+        )
+        captured = capsys.readouterr()
+        assert not captured.err
+        report = json.loads(captured.out)
+        assert tuple(
+            report["signals"][name] for name in ("components", "component_enums", "all_enums", "estimated_models")
+        ) == (4, 1, 1, 4)
+        assert_output(captured.out, name="recommendation")
+        module = _run_recommended_models(tmp_path, monkeypatch, report)
+        for model in (module.Order, module.OrdersOrderPayload):
+            fields = model.model_fields
+            assert fields["address"].annotation is fields["billing"].annotation is module.Address
+            assert fields["color"].annotation is fields["favorite"].annotation is module.Color
+            assert module.Order in get_args(fields["next"].annotation)
+            assert type(None) in get_args(fields["next"].annotation)
+
+
+@pytest.mark.parametrize(
+    "schema_format",
+    [
+        "application/vnd.apache.avro",
+        " Application/Vnd.Apache.Avro+Json ;version=1.9.0",
+        "application/vnd.apache.avro+yaml;version=1.9.0",
+    ],
+)
+def test_recommend_asyncapi_avro_media_types(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    schema_format: str,
+) -> None:
+    """Accept the same Avro MIME spellings and parameters as generation."""
+    (tmp_path / "schema.yaml").write_text(
+        (INPUT_PATH / "asyncapi_avro.yaml")
+        .read_text()
+        .replace("application/vnd.apache.avro;version=1.9.0", json.dumps(schema_format))
+    )
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", "schema.yaml", "--input-file-type", "asyncapi", "--recommend-options", "quick"],
+            capsys=capsys,
+            derived_stdout=True,
+            assert_no_stderr=True,
+            use_builtin_default_formatter=False,
+        )
+
+
+@pytest.mark.parametrize("mode", [("quick",), ()], ids=["quick", "full"])
+def test_recommend_asyncapi_avro_unknown_reference(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], mode: tuple[str, ...]
+) -> None:
+    """Report the public converter's unknown named reference error before recommending a command."""
+    shutil.copy(INPUT_PATH / "asyncapi_avro_invalid_ref.yaml", tmp_path / "schema.yaml")
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", "schema.yaml", "--input-file-type", "asyncapi", "--recommend-options", *mode],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr="Unknown Avro named type reference: MissingType\n",
+        )
+
+
+def test_recommend_asyncapi_avro_missing_schema(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Keep the generation wrapper validator's error and source path."""
+    (tmp_path / "schema.yaml").write_text(
+        (INPUT_PATH / "asyncapi_avro.yaml").read_text().replace("schema:\n", "missing_schema:\n", 1)
+    )
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", "schema.yaml", "--input-file-type", "asyncapi", "--recommend-options", "quick"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains=(
+                "AsyncAPI Multi Format Schema Object requires a schema field at #/channels/ev/messages/Created/payload"
+            ),
+        )
+
+
+def test_recommend_asyncapi_avro_format_override_and_headers(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An explicit JSON Schema payload overrides message Avro; headers never inherit the message format."""
+    body = {"type": "object", "properties": {"kind": {"type": "string", "enum": ["A", "B"]}}}
+    message = {
+        "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+        "payload": {"schemaFormat": "application/schema+json", "schema": body},
+        "headers": body,
+    }
+    (tmp_path / "schema.json").write_text(
+        json.dumps({
+            "asyncapi": "2.6.0",
+            "info": {"title": "t", "version": "1"},
+            "channels": {"ev": {"publish": {"message": message}}},
+        })
+    )
+    _recommend(tmp_path, capsys, ["--input", "schema.json", "--input-file-type", "asyncapi"])
+
+
+@pytest.mark.parametrize("mode", [("quick",), ()], ids=["quick", "full"])
+@pytest.mark.allow_direct_assert("checks recommendations and imported JSON Schema headers when payload is absent")
+def test_recommend_asyncapi_avro_message_without_payload(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, mode: tuple[str, ...]
+) -> None:
+    """A message-level Avro format applies only to a payload that is present."""
+    message = {
+        "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+        "headers": {
+            "type": "object",
+            "properties": {"kind": {"type": "string", "enum": ["A", "B"]}},
+            "required": ["kind"],
+        },
+    }
+    (tmp_path / "schema.json").write_text(
+        json.dumps({
+            "asyncapi": "2.6.0",
+            "info": {"title": "t", "version": "1"},
+            "channels": {"ev": {"publish": {"message": message}}},
+        })
+    )
+    with chdir(tmp_path):
+        run_main_with_args(
+            [
+                "--input",
+                "schema.json",
+                "--input-file-type",
+                "asyncapi",
+                "--output-format",
+                "json",
+                "--recommend-options",
+                *mode,
+            ],
+            use_builtin_default_formatter=False,
+        )
+        captured = capsys.readouterr()
+        assert not captured.err
+        report = json.loads(captured.out)
+        assert report["signals"]["components"] == 0
+        assert report["signals"]["inline_enums"] == 1
+        assert_output(captured.out, name="recommendation")
+        module = _run_recommended_models(tmp_path, monkeypatch, report)
+        assert module.EvPublishHeaders.model_fields["kind"].annotation is module.Kind
+        assert module.EvPublishHeaders.model_validate({"kind": "A"}).kind is module.Kind("A")
 
 
 @pytest.mark.cli_doc(

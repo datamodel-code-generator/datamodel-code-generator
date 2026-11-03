@@ -132,7 +132,7 @@ def _component_names(document: Mapping[str, Any]) -> tuple[set[str], set[str]]:
     return components, set(map(_norm, as_mapping(sections.get("schemas"))))
 
 
-def schema_vocabulary(document: Mapping[str, Any] | None) -> SchemaVocabulary:
+def schema_vocabulary(document: Mapping[str, Any] | None, *, schema_names: Iterable[str] = ()) -> SchemaVocabulary:
     """Collect the vocabulary of the loaded input document; without one, class names are measured on their own."""
     words: set[str] = set()
     operation_ids: set[str] = set()
@@ -141,6 +141,10 @@ def schema_vocabulary(document: Mapping[str, Any] | None) -> SchemaVocabulary:
     if document is not None:
         _collect_words(document, words, operation_ids)
         components, top_level = _component_names(document)
+    converted_names = {_norm(name) for name in schema_names}
+    words.update(converted_names)
+    components.update(converted_names)
+    top_level.update(converted_names)
     return SchemaVocabulary(
         words=frozenset(words),
         operation_ids=frozenset(operation_ids),

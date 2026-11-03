@@ -1,0 +1,22 @@
+asyncapi: 2.6.0
+info:
+  title: t
+  version: '1'
+channels:
+  ev:
+    publish:
+      message:
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload:
+          type: record
+          name: Created
+          fields:
+          - name: kind
+            type:
+              type: enum
+              name: Kind
+              symbols:
+              - A
+              - B
+          - name: n
+            type: int
