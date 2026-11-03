@@ -3820,6 +3820,8 @@ def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
             '{"Person.firstName": "str | None"}',
             "--base-class-map",
             '{"Person": ""}',
+            "--formatters",
+            "builtin",
         ],
     )
 

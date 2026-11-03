@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, conint
 @mypkg.deco(letter_case=LetterCase.CAMEL)
 @registry[0].register
 @deprecated  # comment
-@mypkg.decorator
+@mypkg . decorator
 class Person(BaseModel):
     firstName: str | None = Field(None, description="The person's first name.")
     lastName: str | None = Field(None, description="The person's last name.")
