@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "spec": {
+      "anyOf": [
+        {"$ref": "#/$defs/PodSpec"},
+        {"type": "array", "items": {"type": "string"}}
+      ],
+      "default": ["x"]
+    }
+  },
+  "$defs": {"PodSpec": {"type": "object", "properties": {"a": {"type": "string"}}}}
+}
