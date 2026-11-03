@@ -136,6 +136,8 @@ binary-text	main/generation_platform/client/binary-text.txt
 caching	main/generation_platform/client/caching.txt
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.py
 child-collision	main/generation_platform/client/child-collision.txt
+codec-docstrings	main/generation_platform/client/codec-docstrings.txt
+codec-docstrings	main/generation_platform/client/packages/codec-docstrings/pydantic_v2_BaseModel//*.py
 codec-errors	main/generation_platform/client/codec-errors.txt
 compression	main/generation_platform/client/compression.txt
 compression	main/generation_platform/client/packages/compression/pydantic_v2_BaseModel//*.py

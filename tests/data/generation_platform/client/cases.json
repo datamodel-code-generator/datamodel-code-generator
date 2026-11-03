@@ -4965,6 +4965,16 @@
       ]
     }
   },
+  "codec-docstrings": {
+    "input": "codec-docstrings.json",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
   "docstrings": {
     "input": "docstrings.yaml",
     "modules": [

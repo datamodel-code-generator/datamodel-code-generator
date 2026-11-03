@@ -153,6 +153,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compression",
+        "codec-docstrings",
         "docstrings",
         "route-text",
         "templates",

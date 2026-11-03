@@ -1,0 +1,32 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Codec docstrings", "version": "1.0"},
+  "servers": [{"url": "https://api.example.com"}],
+  "paths": {
+    "/a\u0000b": {
+      "get": {
+        "operationId": "getNul",
+        "parameters": [
+          {"name": "q\"\"\"\\", "in": "query", "schema": {"type": "array", "items": {"type": "string", "format": "date-time"}}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Read.",
+            "content": {"application/json": {"schema": {"type": "object", "properties": {"x": {"type": "integer"}}}}}
+          }
+        }
+      }
+    },
+    "/c\"\"\"d\\e\"": {
+      "get": {
+        "operationId": "getQuotes",
+        "responses": {
+          "200": {
+            "description": "Read.",
+            "content": {"application/json": {"schema": {"type": "object", "properties": {"y": {"type": "string"}}}}}
+          }
+        }
+      }
+    }
+  }
+}
