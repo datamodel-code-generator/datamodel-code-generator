@@ -16,7 +16,7 @@ from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._module_paths import is_package_init, module_parts, written_names
+from datamodel_code_generator._module_paths import is_below, is_package_init, module_parts, written_names
 from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope
 from datamodel_code_generator.imports import Import, Imports
 
@@ -128,9 +128,7 @@ def collect_exports_for_init(
         if not proc_models or normalized_proc_module == normalized_module:
             continue
         prefix = module_parts(normalized_proc_module)
-        if prefix[:base_len] != base or (depth := len(prefix) - base_len) < 1:
-            continue
-        if scope == AllExportsScope.Children and depth != 1:
+        if not is_below(prefix, base) or (scope == AllExportsScope.Children and len(prefix) - base_len != 1):
             continue
         rel = prefix[base_len:]
         exports.extend((name, rel, ".".join(rel)) for name in exported_names(proc_models))

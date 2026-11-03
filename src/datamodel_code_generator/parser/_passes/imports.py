@@ -27,6 +27,7 @@ from datamodel_code_generator._module_paths import (
     dotted_name,
     expanded_path,
     is_package_init,
+    is_within,
     is_within_name,
     module_parts,
     normalized_path,
@@ -1534,7 +1535,7 @@ def submodules_hidden_by_packages(
             for found in hidden.setdefault(package, (set(), set())):
                 found.update(modules)
         elif any(model.class_name == name for model in init.models) and any(
-            named[: len(module)] == module
+            is_within(named, module)
             for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
             for module in modules
         ):
