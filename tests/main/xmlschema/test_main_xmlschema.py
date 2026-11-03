@@ -151,6 +151,21 @@ def test_main_xmlschema_purchase_order_from_normalized_external_path(tmp_path: P
     )
 
 
+def test_main_xmlschema_directory_input_ignores_its_own_output(tmp_path: Path) -> None:
+    """Generate twice from an XML Schema directory that holds the output, which the second run does not read."""
+    input_path = tmp_path / "schemas"
+    input_path.mkdir()
+    for name in ("purchase_order.xsd", "common.xsd"):
+        (input_path / name).write_bytes((XML_SCHEMA_DATA_PATH / name).read_bytes())
+    for _ in range(2):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=input_path / "generated",
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        )
+
+
 def test_main_xmlschema_infer_input_file_type(output_file: Path) -> None:
     """Infer XML Schema input and generate a model."""
     run_main_and_assert(
