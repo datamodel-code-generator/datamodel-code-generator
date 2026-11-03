@@ -10870,7 +10870,8 @@ A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mapping
 base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as
 `Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which checks the lengths on the base64
 text, as JSON Schema counts them, before decoding it. Pydantic checks them so from 2.10 on, and an explicit
-`--target-pydantic-version 2` warns about each such field.
+`--target-pydantic-version 2` warns about each such field. Pydantic cannot check a `pattern` on the text of such bytes,
+so `--field-constraints` and `--use-annotated` leave it out with a warning.
 
 ### Without `--strict-types`
 
@@ -12045,7 +12046,8 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
-| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `Base64Str` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`; Pydantic cannot check a `pattern` on its base64 text | none |
 | `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
 | the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
 | `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
