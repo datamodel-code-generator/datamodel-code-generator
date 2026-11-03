@@ -2,10 +2,10 @@
 
 A path field is listed once with the stages that read it: the pyproject.toml join (a relative path of a value read from
 pyproject.toml resolves against its directory), the command line (``Config`` expands ``~`` and resolves it),
-``generate()`` (a relative path resolves against the caller's working directory) and ``--watch`` (the file, directory
-or output it watches). A JSON field holds an inline JSON value or names a JSON file; a target's JSON fields are those
-with the prefix of the target's settings. The defaults that the help text and the config models state of the encoding
-and the watch delay are read from here.
+``generate()`` (``GenerateConfig`` expands ``~`` in the paths the run writes, and a relative path resolves against the
+caller's working directory) and ``--watch`` (the file, directory or output it watches). A JSON field holds an inline
+JSON value or names a JSON file; a target's JSON fields are those with the prefix of the target's settings. The
+defaults that the help text and the config models state of the encoding and the watch delay are read from here.
 """
 
 from __future__ import annotations
@@ -75,6 +75,8 @@ WATCHED_OUTPUT_FIELDS: Final = tuple(
     if field.watched_as in _OUTPUT_IS_DIRECTORY
 )
 """The output fields with whether each is a directory (None: judged by what the path names)."""
+OUTPUT_PATH_FIELDS: Final = tuple(name for name, _ in WATCHED_OUTPUT_FIELDS)
+"""The fields of the paths a run writes: the model output, the model metadata and the package of a target."""
 
 TARGET_SELECTORS: Final[tuple[tuple[str, str], ...]] = (("generate_server", "server_"), ("generate_client", "client_"))
 """The field that selects each target and the prefix of the fields that configure it."""
@@ -154,6 +156,7 @@ __all__ = [
     "DEFAULT_WATCH_DELAY",
     "JSON_FIELDS",
     "MODEL_JSON_FIELDS",
+    "OUTPUT_PATH_FIELDS",
     "PATH_FIELDS",
     "PATH_FIELD_NAMES",
     "PYPROJECT_API_PATH_FIELDS",
