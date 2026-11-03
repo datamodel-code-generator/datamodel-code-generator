@@ -7426,16 +7426,20 @@ def test_main_unique_items_as_set_other_containers(output_model: str, extra_args
     with _generated_model(output_file, name, "UniqueItemsAsSetOtherContainers") as model:
         verdicts = []
         for field_name, field in model.model_fields.items():
-            try:
-                TypeAdapter(field.annotation).validate_python(field.default)
-            except ValidationError:
-                verdict = "rejected"
-            else:
-                verdict = "accepted"
+            verdict = _validation_verdict(TypeAdapter(field.annotation).validate_python, field.default)
             verdicts.append(f"default of {field_name} {field.default!r}: {verdict}\n")
         instance = _model_json_validator(model)(json.dumps({"nested": [[1, 1]]}))
         verdicts.append(f"nested [[1, 1]]: {instance.nested!r}\n")
     assert_output("".join(verdicts), name="payloads")
+
+
+def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
+    """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
+    try:
+        validate(value)
+    except ValidationError:
+        return "rejected"
+    return "accepted"
 
 
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
@@ -7467,12 +7471,7 @@ def test_main_x_python_type_literal_two_part_members(output_model: str, output_f
             value = getattr(instance, field_name)
             verdicts.append(f"{field_name}: {type(value).__name__}.{getattr(value, 'name', value)}\n")
         for field_name, value in {"status": 204, "flag": 4, "year": 2}.items():
-            try:
-                validate(json.dumps(valid | {field_name: value}))
-            except ValidationError:
-                verdict = "rejected"
-            else:
-                verdict = "accepted"
+            verdict = _validation_verdict(validate, json.dumps(valid | {field_name: value}))
             verdicts.append(f"{field_name} {value}: {verdict}\n")
     assert_output("".join(verdicts), name="payloads")
 
