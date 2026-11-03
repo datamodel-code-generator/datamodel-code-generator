@@ -6,9 +6,11 @@ and against the names models have at that pass (keys most specific first):
 * ``--model-name-map``: schema path, ``#fragment``, generated class name, original name; at L1 ``ModelResolver.add``
   under the name a model is created under, and at L2 ``settle_yielding_names`` under the final name of a yielding
   model.
-* ``--base-class-map``: class name (``mapped_base_class``); at L1 model construction (``Parser._resolve_base_class``).
-* ``--extra-template-data``: schema path, then class name (``template_data_keys``); at L1 model construction
-  (``DataModel.__init__``).
+* ``--base-class-map``: class name (``mapped_base_class``); at L1 model construction (``Parser._resolve_base_class``),
+  under row ``predicted`` (the root models and the OpenAPI parameter and GraphQL models) or ``reference-name`` (the
+  nullable enum root, the root models of a union's variants and the read-only/write-only models).
+* ``--extra-template-data``: schema path, then class name (``template_data_keys``, row ``reference-name``); at L1
+  model construction (``DataModel.__init__``); a GraphQL scalar reads its ``py_type`` under row ``original-name``.
 * ``--validators``: class name, as the template data of that name; at L1 model construction
   (``model/output.py:prepare_output_model_config``).
 * ``--aliases``: ``Class.field``, then ``field`` (``field_keys``, ``first_given``); at L1 field naming, under the name
@@ -22,6 +24,14 @@ and against the names models have at that pass (keys most specific first):
 * ``--type-overrides``: class name (``model_level_type_override``) or ``Class.field`` (``class_field_key``); at L3
   reuse (``type_override_classes``), and at L5 ``remove_overridden_models``, ``apply_field_type_overrides`` and
   ``apply_base_class_type_overrides`` under the name a model has at L5.
+
+Which of a model's names the class part of a key is compared with is the row of ``class_key`` that the place looking
+the model up names. The field-keyed options read row ``predicted`` while allOf, the OpenAPI parameters, GraphQL and
+Avro name fields before the class name is allocated, ``reference-name`` once it is (``parse_object``, the parameter
+defaults and serialization aliases, the forward schemas of allOf, ``Parser._apply_final_class_field_aliases``),
+``original-name`` for the explicit aliases of a field that recorded no class (``prepare_explicit_field_aliases``) and
+``class-name`` after construction (the aliases of a reused tag field, whose serialization alias reads
+``reference-name``, the tag field names and the Avro default overrides).
 
 Rows that keep today's output where the options disagree (each one waits for the option that resolves every key once,
 after names are final):
@@ -38,16 +48,19 @@ after names are final):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from collections.abc import Set as AbstractSet
 
 __all__ = [
+    "ClassKeyRow",
     "ConstructionKeys",
+    "ModelNames",
     "ScopedKeyRow",
     "class_field_key",
+    "class_key",
     "field_keys",
     "first_given",
     "first_present",
@@ -62,6 +75,40 @@ _ValueT = TypeVar("_ValueT")
 
 _SCOPE_SEPARATOR: Final = "."
 ScopedKeyRow: TypeAlias = Literal["first-dot", "legacy-last-dot", "every-dot"]
+ClassKeyRow: TypeAlias = Literal["predicted", "reference-name", "original-name", "class-name"]
+
+
+class ModelNames(Protocol):
+    """The names of a model's reference (``reference.Reference``) that a class key reads."""
+
+    path: str
+    name: str
+    original_name: str
+
+    @property
+    def short_name(self) -> str:
+        """The class name: the last part of the dotted ``name``."""
+
+
+def class_key(row: ClassKeyRow, model: ModelNames | str) -> str:
+    """Return the name of a model that the class part of the keys of a class-keyed option is compared with, by row.
+
+    Row ``predicted`` is the name a parser has for a model before the resolver allocates its class name: the name it
+    adds the model under (the GraphQL type name, before its affixes), the allOf name before ``--use-title-as-name``,
+    or a class name ``ModelResolver.get_class_name`` gives without allocating it; it is passed as ``model`` itself.
+    The other rows read the reference ``model``: ``reference-name`` its name (the one it was created under while L1
+    builds it), ``original-name`` the name it was added under, and ``class-name`` its class name without the module
+    (``DataModel.class_name``). The rows differ where the resolver numbered, mapped or affixed a name, where a module
+    prefixes it, and after a model was renamed.
+    """
+    if isinstance(model, str):
+        return model
+    match row:
+        case "original-name":
+            return model.original_name
+        case "class-name":
+            return model.short_name
+    return model.name
 
 
 def class_field_key(class_name: str, field_name: str | None) -> str:
@@ -114,9 +161,12 @@ def mapped_base_class(base_class_map: Mapping[str, _ValueT] | None, class_name: 
     return first_present(base_class_map or {}, (class_name,))
 
 
-def template_data_keys(reference_path: str, class_name: str) -> tuple[str, str]:
-    """Return the keys of the ``--extra-template-data`` entries of a model: its schema path, then its class name."""
-    return reference_path, class_name
+def template_data_keys(reference: ModelNames) -> tuple[str, str]:
+    """Return the keys of the ``--extra-template-data`` entries of a model: its schema path, then its name.
+
+    The name is row ``reference-name`` of ``class_key``; ``--validators`` entries join the template data of their key.
+    """
+    return reference.path, class_key("reference-name", reference)
 
 
 def model_level_type_override(key: str) -> bool:

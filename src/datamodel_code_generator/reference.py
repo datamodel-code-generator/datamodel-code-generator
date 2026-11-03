@@ -59,7 +59,7 @@ from datamodel_code_generator._target_unicode import (
     upper,
 )
 from datamodel_code_generator._url_redaction import is_url, redact_path, redact_reference
-from datamodel_code_generator._user_keys import field_keys, first_given, first_present
+from datamodel_code_generator._user_keys import class_key, field_keys, first_given, first_present
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import camel_to_snake
@@ -526,7 +526,7 @@ class FieldNameResolver:
         for field in fields:
             if (original_name := _wire_name(field)) is None:
                 continue
-            class_name = field.__dict__.get(_ALIAS_RESOLUTION_CLASS_NAME_KEY, reference.original_name)
+            class_name = field.__dict__.get(_ALIAS_RESOLUTION_CLASS_NAME_KEY, class_key("original-name", reference))
             if isinstance(alias := first_given(aliases, field_keys(class_name, original_name)), str):
                 field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY] = (alias, original_name)
             else:
