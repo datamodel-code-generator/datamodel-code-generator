@@ -32,9 +32,8 @@ from datamodel_code_generator.parser._passes._import_binding import (
 )
 from datamodel_code_generator.parser._passes._import_edges import generic_base_class_module, inherits_one_of
 from datamodel_code_generator.parser._passes._shared import (
-    GraphBuilderHost,
+    GenerationStoreHost,
     ModuleScopeView,
-    RenamedTypesHost,
     _context_models,
     _get_model_module_name,
     _named_data_types,
@@ -47,12 +46,14 @@ from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from pathlib import Path
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, _ConstNarrowing, _RenamedType
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, _ConstNarrowing
+    from datamodel_code_generator.parser.generation import ModelRename
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -68,7 +69,7 @@ __all__ = [
 ]
 
 
-class CrossModuleHost(ReimportHost, RenamedTypesHost, GraphBuilderHost, Protocol):
+class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
     """The options, run state and hooks of the parser that the cross-module passes read and write."""
 
     _generic_base_model: DataModel | None
@@ -213,9 +214,7 @@ def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:
         )
 
 
-def _stale_renamed_import(
-    imports: Imports, data_type: DataType, renamed_types: Sequence[_RenamedType]
-) -> Import | None:
+def _stale_renamed_import(imports: Imports, data_type: DataType, renamed_types: Sequence[ModelRename]) -> Import | None:
     """Return the import of a module that still names a data type's type by one of the names it had before."""
     return next(
         (
@@ -263,9 +262,25 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
                 )
 
 
-def renamed_types_of(parser: CrossModuleHost, reference: Reference) -> list[_RenamedType] | None:
-    """Return the class names that the model ``reference`` names had before it was renamed, or None."""
-    return keyed_or_path(reference, parser._renamed_types, parser._renamed_type_paths)  # noqa: SLF001
+def _stale_import_renames(
+    renames: Iterable[ModelRename],
+) -> tuple[dict[ModelKey, list[ModelRename]], dict[str, list[ModelRename]]]:
+    """Return the renames that modules processed before them may still import the old name of, by key and by path.
+
+    These are every ``field-type`` rename and each ``collapsed-root`` rename that changed the class name, under the
+    keys the model had when it was renamed and under its path then: row ``legacy-keyless-reference-by-path`` reads
+    the path for a reference that no model was built with.
+    """
+    by_key: dict[ModelKey, list[ModelRename]] = {}
+    by_path: dict[str, list[ModelRename]] = {}
+    for rename in renames:
+        if rename.scheme == "field-type" or (
+            rename.scheme == "collapsed-root" and rename.new_class_name != rename.class_name
+        ):
+            for key in rename.keys:
+                by_key.setdefault(key, []).append(rename)
+            by_path.setdefault(rename.path, []).append(rename)
+    return by_key, by_path
 
 
 def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
@@ -278,7 +293,8 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     It releases the name it binds for the new one, found by name, as neither the import of a package ``__init__``
     nor a ``from .`` path leads back to the path it was added under.
     """
-    if not parser._renamed_types:  # noqa: SLF001
+    by_key, by_path = _stale_import_renames(parser.generation_store.renames)
+    if not by_key:
         return
     for ctx in run.contexts:
         members = module_members(parser, ctx.models)
@@ -288,7 +304,7 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
             for model in members
             for data_type in _named_data_types(model)
             if (reference := data_type.reference) is not None
-            and (renamed_types := renamed_types_of(parser, reference)) is not None
+            and (renamed_types := keyed_or_path(reference, by_key, by_path)) is not None
             and keyed_members.key_of(reference) not in keyed_members.models
             and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
         ]

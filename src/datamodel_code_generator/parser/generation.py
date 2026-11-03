@@ -120,6 +120,10 @@ DataTypeOccurrence: TypeAlias = tuple[DataType, int | None, DataTypeRole]
 Refresh: TypeAlias = Literal["now", "deferred"]
 """When a store operation marks the facts stale: ``now``, or ``deferred`` until another mutation marks them; the
 models it noted are recorded again at the next refresh either way."""
+RenameScheme: TypeAlias = Literal[
+    "module", "flattened-module", "field-type", "imported-name", "internal-module", "collapsed-root"
+]
+"""The scheme a rename after the L2 settle applies (``GenerationStore.rename_model``)."""
 _OrderedSetItem = TypeVar("_OrderedSetItem")
 _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
@@ -287,6 +291,25 @@ class ModelFact:
     def class_name(self) -> str:
         """The model's class name."""
         return self.model.class_name
+
+
+@final
+@record
+class ModelRename:
+    """A rename that ``GenerationStore.rename_model`` made: the names the model had before it and after it."""
+
+    keys: tuple[ModelKey, ...]
+    """The model key of the model, and that of the model sharing its path (row ``legacy-replaced-root-shares-path``)."""
+    path: str
+    """The path of the model after the rename."""
+    class_name: str
+    """The class name the model had before the rename."""
+    import_path: str
+    """The path the model had before the rename, which imports of ``class_name`` were added under."""
+    new_class_name: str
+    """The class name the model has after the rename."""
+    scheme: RenameScheme | None
+    """The scheme of the rename; None for a caller that names none."""
 
 
 @record
@@ -1161,6 +1184,7 @@ class GenerationStore:  # noqa: PLR0904
         self._appended_model_ids: set[int] = set()
         self._changed_model_ids: set[ModelId] = set()
         self._renamed_model_ids: set[ModelId] = set()
+        self._renames: list[ModelRename] = []
         self._defer_refresh_depth = 0
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
@@ -1206,6 +1230,7 @@ class GenerationStore:  # noqa: PLR0904
         self._clear_pending()
         self._built_models.clear()
         self._retired_models.clear()
+        self._renames.clear()
         self._site_effects.clear()
         self._carried_sites = ()
         self._inlined_owners.clear()
@@ -1366,8 +1391,18 @@ class GenerationStore:  # noqa: PLR0904
         return self._builder
 
     def enter_phase(self, phase: Phase) -> None:
-        """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
+        """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here.
+
+        Entering the parse starts a run, which forgets the renames of an earlier run (``renames``).
+        """
+        if phase is Phase.PARSE:
+            self._renames.clear()
         self.phase = phase
+
+    @property
+    def renames(self) -> Sequence[ModelRename]:
+        """The renames ``rename_model`` made in this run, in the order it made them."""
+        return self._renames
 
     def seal_facts(  # noqa: PLR6301
         self,
@@ -1723,21 +1758,36 @@ class GenerationStore:  # noqa: PLR0904
         clear_duplicate_name: bool = False,
         new_path: str | None = None,
         new_file_path: Path | None = None,
+        scheme: RenameScheme | None = None,
     ) -> None:
         """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
 
-        The callers apply six schemes: ``module`` (unique among the classes and imports of one module, ``Model``
-        for a taken name), ``flattened-module`` (unique among the live models, with the ``--duplicate-name-suffix``
-        map and ``Model``), ``field-type`` (a type hidden by a field of its user), ``imported-name`` (a local model
-        shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module cycle's ``_internal`` module) and
-        ``collapsed-root`` (the inner model takes the root model's name and path). A rename that also relocates the
-        model passes the new path and output file.
+        The callers name one of six schemes: ``module`` (unique among the classes and imports of one module,
+        ``Model`` for a taken name), ``flattened-module`` (unique among the live models, with the
+        ``--duplicate-name-suffix`` map and ``Model``), ``field-type`` (a type hidden by a field of its user),
+        ``imported-name`` (a local model shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module
+        cycle's ``_internal`` module) and ``collapsed-root`` (the inner model takes the root model's name and path).
+        A rename that also relocates the model passes the new path and output file. Every rename is recorded with
+        the names before and after it (``renames``), under the keys the model has then.
         """
+        from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
+
+        class_name_before, path_before = model.class_name, model.reference.path
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
         )
         if clear_duplicate_name:
             model.reference.duplicate_name = None
+        self._renames.append(
+            ModelRename(
+                _path_identity_keys(model),
+                model.reference.path,
+                class_name_before,
+                path_before,
+                model.class_name,
+                scheme,
+            )
+        )
 
     @deprecated("Use GenerationStore.builder().replace_field_type() instead.", category=None)
     def replace_field_type(
@@ -2582,8 +2632,12 @@ class GraphBuilder:
         clear_duplicate_name: bool = False,
         new_path: str | None = None,
         new_file_path: Path | None = None,
+        scheme: RenameScheme | None = None,
     ) -> None:
-        """Change a model's class or reference name after parsing, the writer of names after the L2 settle."""
+        """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
+
+        ``scheme`` names the scheme of the rename, which the store records with it (``GenerationStore.renames``).
+        """
         self._store.rename_model(  # ty: ignore[deprecated]
             model,
             class_name=class_name,
@@ -2591,6 +2645,7 @@ class GraphBuilder:
             clear_duplicate_name=clear_duplicate_name,
             new_path=new_path,
             new_file_path=new_file_path,
+            scheme=scheme,
         )
 
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:

@@ -99,7 +99,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ModuleScopeView,
     OutputOptionsHost,
     RecursionFactsHost,
-    RenamedTypesHost,
     ReplacedRootsHost,
     RootModelHost,
     RootModelTypeHost,
@@ -128,7 +127,6 @@ from datamodel_code_generator.parser._passes._shared import (
     merge_duplicate,
     merged_models,
     module_members,
-    record_renamed_type,
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
@@ -144,7 +142,6 @@ from datamodel_code_generator.parser._passes._state import (
     ResultT,
     _KeptHolder,
     _KeptParentRoot,
-    _RenamedType,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import (
@@ -267,7 +264,6 @@ class ModulesHost(
     CollisionRenameHost,
     ConstructorInfoHost,
     ReplacedRootsHost,
-    RenamedTypesHost,
     TypeOverrideHost,
     GraphBuilderHost,
     MergedDuplicatesHost,
@@ -411,7 +407,6 @@ class CollapseHost(
     InlineVariantHost,
     RecursionFactsHost,
     ReimportHost,
-    RenamedTypesHost,
     GenerationStoreHost,
     CollapseRootModelsHost,
     RootModelHost,
@@ -1595,20 +1590,18 @@ def name_inner_after_root(
     """Give the inner model the class name of the root model it replaces, in the module that emits it.
 
     The inner model also takes the root model's path, which tag values read. Modules processed earlier imported the
-    inner model by its old name under its old path.
+    inner model by its old name under its old path, which the rename records (``import_renamed_types``).
     """
-    old_class_name, old_path = inner_model.class_name, inner_model.path
     inner_module_name = emitting_module_name(parser, inner_model, model_path_to_module_name)
+    _share_path_identity(root_model, inner_model)
     parser._graph_builder.rename_model(  # noqa: SLF001
         inner_model,
         class_name=root_model.class_name,
         new_path=root_model.reference.path,
+        scheme="collapsed-root",
     )
-    _share_path_identity(root_model, inner_model)
     take_recursion_facts(parser, inner_model, root_model)
     _assign_module_name(model_path_to_module_name, inner_model, inner_module_name)
-    if inner_model.class_name != old_class_name:
-        record_renamed_type(parser, inner_model, _RenamedType(old_class_name, old_path))
 
 
 def retire_root(
@@ -2301,8 +2294,9 @@ def rename_named_type(  # noqa: PLR0913, PLR0917
         )
         for name in _family_field_names(_model_family(user, derived_models))
     )
-    record_renamed_type(parser, source, _RenamedType(source.class_name, reference.path))
-    parser._graph_builder.rename_model(source, class_name=resolver.add(["type"], source.class_name).name)  # noqa: SLF001
+    parser._graph_builder.rename_model(  # noqa: SLF001
+        source, class_name=resolver.add(["type"], source.class_name).name, scheme="field-type"
+    )
     class_names.add(source.class_name)
 
 

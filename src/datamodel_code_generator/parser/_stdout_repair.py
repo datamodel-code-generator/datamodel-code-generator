@@ -304,7 +304,9 @@ def flatten_invalid_modules(
         )
 
     for model, new_name in new_names.items():
-        parser._graph_builder.rename_model(model, reference_name=new_name, clear_duplicate_name=True)  # noqa: SLF001
+        parser._graph_builder.rename_model(  # noqa: SLF001
+            model, reference_name=new_name, clear_duplicate_name=True, scheme="flattened-module"
+        )
     resolver.refresh_reference_names()
     for model in models_to_clear:
         forget_model_memos(model, MemoTable.DEDUP_KEYS)

@@ -172,13 +172,6 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
 SortedDataModels = dict[ModelKey, DataModel]
 
 
-class _RenamedType(NamedTuple):
-    """A class name a type had before a rename, and the path imports of that name were added under."""
-
-    class_name: str
-    import_path: str
-
-
 @record
 class _KeptHolder:
     """A holder of a root model that the ``parent`` strategy kept, recorded where collapse left it naming the root."""
