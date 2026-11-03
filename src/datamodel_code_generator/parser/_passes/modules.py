@@ -1418,7 +1418,10 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                                     copied_data_type.data_types,
                                     names,
                                     located_mapping(
-                                        root_type_model, discriminator.get("mapping"), parser.model_resolver
+                                        root_type_model,
+                                        discriminator.get("mapping"),
+                                        copied_data_type.data_types,
+                                        parser.model_resolver,
                                     )
                                     if isinstance(discriminator, dict)
                                     else {},
@@ -2029,7 +2032,7 @@ def get_collapsed_unions(
         unions.append((
             site_display_name(parser, duplicate, duplicate_field),
             data_types,
-            located_mapping(duplicate, discriminator.get("mapping"), parser.model_resolver),
+            located_mapping(duplicate, discriminator.get("mapping"), data_types, parser.model_resolver),
         ))
     return unions
 

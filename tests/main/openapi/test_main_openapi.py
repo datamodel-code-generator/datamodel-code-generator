@@ -517,6 +517,33 @@ def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
         )
 
 
+def test_main_openapi_discriminator_mapping_declared_in_other_document(output_file: Path) -> None:
+    """Tag the variants by a mapping that another document declares, whose paths its own directory resolves.
+
+    ``a/openapi.yaml`` holds the union through a ``$ref`` to ``Pet`` of ``b/base.yaml``, whose mapping paths
+    ``./sub/../cat.yaml`` and ``./dog.yaml`` are relative to ``b``. Resolved against ``a``, where the union is held,
+    they name no variant, so they keep the keys they had and the variants are tagged ``c`` and ``d`` as before (#6068).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_other_document" / "a" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    for tag, extra in (("c", "x"), ("d", "y")):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="discriminator_mapping_other_document",
+            model_name="Owner",
+            valid_json=json.dumps({"pet": {"pet_type": tag, extra: "1"}}),
+            invalid_json=json.dumps({"pet": {"pet_type": f"{'cat' if tag == 'c' else 'dog'}.yaml#"}}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("pet", "pet_type"),
+            expected_attribute_value=tag,
+        )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

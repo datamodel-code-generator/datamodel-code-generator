@@ -6338,6 +6338,11 @@ pydantic_v2.dataclass-extra_args3	main/jsonschema/main_jsonschema/discriminator_
 [test_main_jsonschema_discriminator_mapping_dot_directory]
 msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_dot_directory[msgspec-tagged-unions]/
 pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_dot_directory[pydantic_v2]/
+[test_main_jsonschema_discriminator_mapping_reentered_ambiguous]
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions].txt
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions]/
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[pydantic_v2].txt	= main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions].txt
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[pydantic_v2]/
 [test_main_jsonschema_discriminator_mapping_reentered_directory]
 msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[msgspec-tagged-unions].txt
 msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[msgspec-tagged-unions]/

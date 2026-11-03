@@ -248,22 +248,42 @@ class UnionSite:
     """The mapping of the discriminator, empty where it declares none, its paths located (``located_mapping``)."""
 
 
-def located_mapping(model: DataModel, mapping: dict[str, str] | None, resolver: ModelResolver) -> dict[str, str]:
+def located_mapping(
+    model: DataModel, mapping: dict[str, str] | None, data_types: Iterable[DataType], resolver: ModelResolver
+) -> dict[str, str]:
     """Return a discriminator mapping with the location its paths name, as the document of the holder resolves them.
 
     A path is written in the document of the model that holds the union, so a path that leaves the directory of the
     document and comes back names the file whose schema path ``mapping_path_keys`` compares it with only when it is
-    resolved against that directory (``MappingPath``, ``locate_mapping_path``). A bare name, a fragment and a URL name
-    no location, nor do the paths of a document that is no local file.
+    resolved against that directory (``MappingPath``, ``locate_mapping_path``). A path has a location when that is the
+    schema path of a variant of ``data_types`` or of a base of one; the union may carry a discriminator that another
+    document wrote, whose paths this document does not resolve, and such a path, a bare name, a fragment and a URL
+    keep the keys they had, as do the paths of a document that is no local file.
     """
     if not mapping or resolver.base_url or is_url(document := model.reference.path.partition("#")[0]):
         return mapping or {}
     base = resolver.document_directory("").parts
+    variants = [
+        variant
+        for data_type, _, _ in _iter_discriminator_data_types(data_types)
+        if data_type.reference and isinstance(variant := data_type.reference.source, DataModel)
+    ]
+    schema_paths = {
+        path.removesuffix("#")
+        for variant in variants
+        for path in (
+            _get_schema_path(variant),
+            *(_get_schema_path(base_class.reference) for base_class in variant.base_classes if base_class.reference),
+        )
+    }
     return {
         tag: MappingPath(
             path,
-            locate_mapping_path(path, document=document, base=base)
-            if "/" in path and not path.startswith("#") and not is_url(path)
+            located
+            if "/" in path
+            and not path.startswith("#")
+            and not is_url(path)
+            and (located := locate_mapping_path(path, document=document, base=base)).removesuffix("#") in schema_paths
             else None,
         )
         for tag, path in mapping.items()
@@ -279,7 +299,7 @@ def union_site(model: DataModel, field: DataModelFieldBase, resolver: ModelResol
                 field,
                 property_name,
                 discriminator,
-                located_mapping(model, discriminator.get("mapping"), resolver),
+                located_mapping(model, discriminator.get("mapping"), field.data_type.data_types, resolver),
             )
     return None
 
@@ -1381,7 +1401,7 @@ def declared_union_tags(model: DataModel, resolver: ModelResolver) -> tuple[Hash
             ),
         )
         for index, discriminator, data_types in discriminators
-        for mapping in (located_mapping(model, discriminator.get("mapping"), resolver),)
+        for mapping in (located_mapping(model, discriminator.get("mapping"), data_types, resolver),)
     )
 
 

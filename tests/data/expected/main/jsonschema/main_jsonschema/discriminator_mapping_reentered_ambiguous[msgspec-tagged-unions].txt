@@ -1,0 +1,8 @@
+Keeper {"pet_type": "c"}: mapping selects, model accepts
+Keeper {"pet_type": "d"}: mapping selects, model accepts
+Keeper {"pet_type": "cat.json#"}: mapping selects none, model rejects
+Keeper {"pet_type": "other"}: mapping selects none, model rejects
+Pets {"pet_type": "h"}: mapping selects, model accepts
+Pets {"pet_type": "c"}: mapping selects, model accepts
+Pets {"pet_type": "cat.json#"}: mapping selects none, model rejects
+Pets {"pet_type": "other"}: mapping selects none, model rejects

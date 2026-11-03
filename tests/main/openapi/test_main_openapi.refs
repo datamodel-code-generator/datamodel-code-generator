@@ -1063,6 +1063,8 @@ pydantic_v2.BaseModel-extra_args4	main/openapi/main_openapi/discriminator_lone_v
 pydantic_v2.BaseModel-extra_args4	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args4].py
 pydantic_v2.dataclass-extra_args2	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.dataclass-extra_args2].payloads.txt	= main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
 pydantic_v2.dataclass-extra_args2	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.dataclass-extra_args2].py
+[test_main_openapi_discriminator_mapping_declared_in_other_document]
+	main/openapi/main_openapi/discriminator_mapping_declared_in_other_document.py
 [test_main_openapi_discriminator_mapping_msgspec_tags]
 	main/openapi/discriminator/mapping_msgspec_tags.py
 [test_main_openapi_discriminator_mapping_msgspec_untagged]

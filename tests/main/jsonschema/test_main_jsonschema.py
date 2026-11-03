@@ -36591,6 +36591,12 @@ REENTERED_DIRECTORY_UNIONS: tuple[tuple[str, str, str], ...] = (
 )
 """The module, the model and the schema of each union of ``discriminator_mapping_reentered_directory``."""
 
+REENTERED_AMBIGUOUS_UNIONS: tuple[tuple[str, str, str], ...] = (
+    ("sub.main", "Keeper", "sub/main.json"),
+    ("sub.pets", "Pets", "sub/pets.json"),
+)
+"""The module, the model and the schema of each union of ``discriminator_mapping_reentered_ambiguous``."""
+
 
 def _reentered_directory_verdict(decode: ABCCallable[[str], Any], document: str) -> str:
     """Return whether a generated union decodes a JSON document."""
@@ -36601,16 +36607,18 @@ def _reentered_directory_verdict(decode: ABCCallable[[str], Any], document: str)
     return "accepts"
 
 
-def _reentered_directory_verdicts(output_dir: Path, *, decodes_structs: bool) -> str:
+def _reentered_directory_verdicts(
+    output_dir: Path, fixture: str, unions: Sequence[tuple[str, str, str]], *, decodes_structs: bool
+) -> str:
     """Return whether the mapping selects each tag of each union and whether the generated union accepts it.
 
     The mapping of a union selects the variant of a tag it lists, and every variant accepts any other property, so a
     document is valid exactly when its tag is a key of the mapping. A tag that is the file name of a variant, the tag
     the variants took up to 0.88.0, is selected by no mapping.
     """
-    root = JSON_SCHEMA_DATA_PATH / "discriminator_mapping_reentered_directory" / "r"
+    root = JSON_SCHEMA_DATA_PATH / fixture / "r"
     lines: list[str] = []
-    for module_path, model_name, schema_file in REENTERED_DIRECTORY_UNIONS:
+    for module_path, model_name, schema_file in unions:
         mapping = json.loads((root / schema_file).read_text(encoding="utf-8"))["discriminator"]["mapping"]
         with _generated_package_module(output_dir, module_path) as module:
             model = getattr(module, model_name)
@@ -36652,7 +36660,52 @@ def test_main_jsonschema_discriminator_mapping_reentered_directory(
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
-    assert_output(_reentered_directory_verdicts(output_dir, decodes_structs=decodes_structs))
+    assert_output(
+        _reentered_directory_verdicts(
+            output_dir,
+            "discriminator_mapping_reentered_directory",
+            REENTERED_DIRECTORY_UNIONS,
+            decodes_structs=decodes_structs,
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "decodes_structs"),
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], False, id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], True, id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_reentered_ambiguous(
+    output_dir: Path, extra_args: list[str], decodes_structs: bool
+) -> None:
+    """Select a variant by the location a mapping path names alone, though its other keys match another variant.
+
+    The base ``r`` holds the schemas ``cat.json``, ``defs/cat.json`` and ``r/defs/cat.json``. Read from
+    ``sub/main.json``, ``../../r/defs/cat.json`` names the second and ``../r/defs/cat.json`` the third; the keys of
+    the path relative to the document, ``r/defs/cat.json`` once the dot segments are removed, also match the third, so
+    ``c`` selected both variants, and its file name ``cat.json`` is the file key of the first, so ``c`` selected that
+    one too from ``sub/pets.json``: the variants shared a tag, and the unions lost their ``discriminator=`` and took
+    any tag (#6068). A path that knows its location is matched by it alone.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_reentered_ambiguous" / "r",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_output(
+        _reentered_directory_verdicts(
+            output_dir,
+            "discriminator_mapping_reentered_ambiguous",
+            REENTERED_AMBIGUOUS_UNIONS,
+            decodes_structs=decodes_structs,
+        )
+    )
 
 
 def test_main_jsonschema_discriminator_mapping_reentered_directory_single_file(output_file: Path) -> None:

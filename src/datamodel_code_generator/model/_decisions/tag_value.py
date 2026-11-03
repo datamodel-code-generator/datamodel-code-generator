@@ -223,10 +223,10 @@ TagIdentity: TypeAlias = Literal["type-and-value", "legacy-python-equality"]
 MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 """Which keys a discriminator mapping path is matched by (``mapping_path_keys``).
 
-* ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
-  path starts with ``#/``, or by a path relative to the document, as written without its first segment and, unless
-  it starts with ``#``, with its dot segments removed (``_without_dot_segments``), or by the location the document
-  that writes it gives it (``MappingPath.located``).
+* ``selects``: a path that knows the location it names (``MappingPath.located``) only by that location, so an entry
+  names the file it resolves to and no other; a bare name only by the schema name; any other path by the part after
+  ``#/``, by a file name unless the path starts with ``#/``, or by a path relative to the document, as written without
+  its first segment and, unless it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
 * ``legacy-any-key``: by all of them, the bare name included, which can name more schemas; the layout prediction of
   msgspec base flattening (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the
   prediction.
@@ -412,9 +412,16 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
 def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tuple[MappingPathKey, ...]:
     """Return the keys a discriminator mapping path names a schema by (``MappingPathRule`` names the rules).
 
-    The keys are its name, the part after ``#/``, its file name, its path relative to the document and, where it
-    knows it, the location it names (``MappingPath``).
+    The keys are its name, the part after ``#/``, its file name and its path relative to the document, or, where it
+    knows the location it names (``MappingPath``), that location alone; ``legacy-any-key`` adds it to the others.
     """
+    location: tuple[MappingPathKey, ...] = (
+        (("located", path.located.removesuffix("#")),)
+        if isinstance(path, MappingPath) and path.located is not None
+        else ()
+    )
+    if rule == "selects" and location:
+        return location
     if rule == "selects" and "/" not in path and "#" not in path:
         return (("name", path),)
     relative: MappingPathKey = ("relative", path[path.find("/") + 1 :])
@@ -427,10 +434,7 @@ def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tup
     if path.startswith("#"):
         return keys
     resolved: MappingPathKey = ("relative", _without_dot_segments(path))
-    located: tuple[MappingPathKey, ...] = (
-        (("located", path.located.removesuffix("#")),) if isinstance(path, MappingPath) and path.located else ()
-    )
-    return (*keys, *(() if resolved == relative else (resolved,)), *located)
+    return (*keys, *(() if resolved == relative else (resolved,)), *location)
 
 
 @final
