@@ -112,6 +112,7 @@ class ParameterLocation(Enum):
 
 
 BaseModelT = TypeVar("BaseModelT", bound=BaseModel)
+_SchemaT = TypeVar("_SchemaT")
 
 
 class ReferenceObject(BaseModel):
@@ -781,42 +782,49 @@ class OpenAPIParser(JsonSchemaParser):
             raw_item_schema = cast("dict[str, YamlValue]", item_schema.model_dump(by_alias=True, exclude_none=True))
         return JsonSchemaObject.model_validate(_item_schema_array(raw_item_schema))
 
+    def _pick_media_schema(self, schema: _SchemaT | None, item_schema: _SchemaT | None) -> tuple[_SchemaT, bool] | None:
+        """Return the schema of a media type object, and whether it is its ``itemSchema``, from the two keys' values.
+
+        The schema is ``schema``, else the ``itemSchema`` of OpenAPI 3.2. A key set to null holds nothing, as the models
+        read it, so the ``itemSchema`` beside ``schema: null`` is read. A media type object with neither has none.
+        """
+        if schema is not None:
+            return schema, False
+        if item_schema is not None and self.schema_features.media_item_schema:
+            return item_schema, True
+        return None
+
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
         """Return the schema represented by an OpenAPI media type object.
 
         The array that represents an ``itemSchema`` stands for the media type object that holds it.
         """
-        location = media_obj.schema_location
-        if media_obj.schema_ is not None:
-            return MediaSchemaSource(media_obj.schema_, location=location and location.child("schema"))
-        if media_obj.itemSchema is None or not self.schema_features.media_item_schema:
+        if (picked := self._pick_media_schema(media_obj.schema_, media_obj.itemSchema)) is None:
             return None
-        return MediaSchemaSource(
-            _locate(self._array_schema_from_media_item_schema(media_obj.itemSchema), location), from_item_schema=True
-        )
+        schema, from_item_schema = picked
+        location = media_obj.schema_location
+        if from_item_schema:
+            return MediaSchemaSource(
+                _locate(self._array_schema_from_media_item_schema(schema), location), from_item_schema=True
+            )
+        return MediaSchemaSource(schema, location=location and location.child("schema"))
 
     def _get_raw_media_schema(self, media_obj: object) -> RawMediaSchemaSource | None:
         """Return raw schema data from an OpenAPI media type object."""
         try:
-            raw_media_obj = RawMediaObject.model_validate(media_obj)
+            RawMediaObject.model_validate(media_obj)
         except ValidationError:  # pragma: no cover
             return None
 
-        if "schema_" in raw_media_obj.model_fields_set:
-            if raw_media_obj.schema_ is None:
-                return None
-            return RawMediaSchemaSource(cast("dict[str, RawSchema]", media_obj)["schema"])
-        if "itemSchema" not in raw_media_obj.model_fields_set or not self.schema_features.media_item_schema:
+        raw_media_obj = cast("dict[str, RawSchema | None]", media_obj)
+        if (picked := self._pick_media_schema(raw_media_obj.get("schema"), raw_media_obj.get("itemSchema"))) is None:
             return None
-        if raw_media_obj.itemSchema is None:
-            return None
-        return RawMediaSchemaSource(
-            _located(
-                _item_schema_array(cast("dict[str, RawSchema]", media_obj)["itemSchema"]),
-                self._raw_location(media_obj),
-            ),
-            from_item_schema=True,
-        )
+        schema, from_item_schema = picked
+        if from_item_schema:
+            return RawMediaSchemaSource(
+                _located(_item_schema_array(schema), self._raw_location(media_obj)), from_item_schema=True
+            )
+        return RawMediaSchemaSource(schema)
 
     def _media_schema_path(self, path: list[str], *, from_item_schema: bool) -> list[str]:  # noqa: PLR6301
         """Return the resolver path for a media schema."""
