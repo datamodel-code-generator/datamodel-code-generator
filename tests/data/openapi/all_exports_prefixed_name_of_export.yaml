@@ -1,0 +1,25 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Prefixed Name Of Another Export Test
+paths: {}
+components:
+  schemas:
+    foo.Bar:
+      type: object
+      required: [a]
+      properties:
+        a:
+          type: string
+    baz.Bar:
+      type: object
+      required: [b]
+      properties:
+        b:
+          type: integer
+    x.FooBar:
+      type: object
+      required: [c]
+      properties:
+        c:
+          type: boolean

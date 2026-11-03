@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, TypeAlias
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._module_paths import is_package_init, module_parts, written_names
 from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope
 from datamodel_code_generator.imports import Import, Imports
@@ -143,7 +144,12 @@ def resolve_export_collisions(
     reserved: set[str] | None = None,
     target_python_version: PythonVersion | None = None,
 ) -> dict[str, list[tuple[str, tuple[str, ...], str]]]:
-    """Resolve name collisions in exports based on strategy, titling module names as the target does."""
+    """Resolve name collisions in exports based on strategy, titling module names as the target does.
+
+    A prefixed name is written over the export that holds the name, as before. The export it displaces takes the next
+    free name (``Name1``, ``Name2``) once every name is assigned, so that no export is left out and every name keeps the
+    export it refers to.
+    """
     reserved = reserved or set()
     by_name: dict[str, list[tuple[str, tuple[str, ...], str]]] = {}
     for item in exports:
@@ -156,6 +162,7 @@ def resolve_export_collisions(
 
     used: set[str] = {n for n in by_name if n not in colliding} | reserved
     result = {n: items for n, items in by_name.items() if n not in colliding}
+    displaced: list[tuple[str, tuple[str, tuple[str, ...], str]]] = []
 
     for name in sorted(colliding):
         for item in sorted(by_name[name], key=lambda x: len(x[1])):
@@ -172,8 +179,14 @@ def resolve_export_collisions(
                     "Please rename one of the models."
                 )
                 raise Error(msg)
+            if new_name in result:
+                displaced.append((new_name, result[new_name][0]))
             result[new_name] = [item]
             used.add(new_name)
+    for held, item in displaced:
+        free, _ = first_free(held, used.__contains__, "joined")
+        result[free] = [item]
+        used.add(free)
     return result
 
 
