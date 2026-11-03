@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info: {title: Required body errors, version: '1'}
+paths:
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: 2
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        '204': {description: Stored.}

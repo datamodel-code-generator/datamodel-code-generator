@@ -89,6 +89,8 @@ request	main/generation_platform/fastapi/packages/request/
 request	main/generation_platform/fastapi/request.txt
 required-alias-order	main/generation_platform/fastapi/packages/required-alias-order/
 required-alias-order	main/generation_platform/fastapi/required-alias-order.txt
+required-body-errors	main/generation_platform/fastapi/packages/required-body-errors/	= main/generation_platform/fastapi/packages/info/
+required-body-errors	main/generation_platform/fastapi/required-body-errors.txt
 response-keys	main/generation_platform/fastapi/packages/response-keys/
 response-keys	main/generation_platform/fastapi/response-keys.txt
 responses	main/generation_platform/fastapi/packages/responses/

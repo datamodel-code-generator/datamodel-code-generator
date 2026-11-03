@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult
 
+from pydantic import ValidationError
 from typing_extensions import override
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
@@ -139,6 +140,7 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
+from datamodel_code_generator.parser.openapi import HeaderObject, ParameterObject, RequestBodyObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import (
@@ -198,6 +200,8 @@ _PARAMETER_FACTS: Final = (
     "example",
     "examples",
 )
+_HEADER_FACTS: Final = tuple(name for name in _PARAMETER_FACTS if name not in {"name", "in"})
+"""The facts of a Header Object: a parameter's but its name and location, which its headers map implies."""
 _OPERATION_FACTS: Final = (
     "operationId",
     "tags",
@@ -924,6 +928,26 @@ def _facts(
     except _LiteralCycleError as error:
         raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
     return tuple(facts)
+
+
+def _read_required(
+    raw: dict[str, YamlValue],
+    declaration: SchemaLocation,
+    object_type: type[ParameterObject | HeaderObject | RequestBodyObject],
+) -> dict[str, YamlValue]:
+    """Return an object with its `required` read as the parser's ``object_type`` reads it, a boolean.
+
+    A value the parser reads as a boolean, such as `'yes'` or `1`, is that boolean; the parser refuses any other, and so
+    do the targets.
+    """
+    if isinstance(required := raw.get("required", False), bool):
+        return raw
+    try:
+        read = object_type.model_validate({"required": required}).required
+    except ValidationError as error:
+        message = f"API_INVALID_OBJECT: required {required!r} is not a boolean"
+        raise SchemaParseError(message, [str(declaration)]) from error
+    return {**raw, "required": read}
 
 
 def _backend_value(value: object) -> KnownBackendValue:
@@ -3562,7 +3586,8 @@ class _Contracts(_Octets):
     ) -> WireDeclaration:
         """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
         declared, value, wire_name = walked.declaration, walked.value, walked.key
-        location = str(value["in"]) if "in" in value else None
+        header = role != "parameter"
+        location = None if header or "in" not in value else str(value["in"])
         schemas: tuple[TypeUseId, ...] = ()
         if (schema := next(iter(walked.schemas), None)) is not None:
             use = self.use(
@@ -3582,7 +3607,7 @@ class _Contracts(_Octets):
                 binary = self.first(node, use.direction, schema)
             self.uses[use] = replace(
                 self.uses[use],
-                default=record.default if role == "parameter" else None,
+                default=None if header else record.default,
                 keywords=record.keywords,
                 binary=binary,
             )
@@ -3591,15 +3616,16 @@ class _Contracts(_Octets):
         children = self.media(
             walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )
+        read = _read_required(value, declared, HeaderObject if header else ParameterObject)
         locate = self.documents.location
         return WireDeclaration(
-            "parameter" if role == "parameter" else "header",
+            "header" if header else "parameter",
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
             _facts(
-                {**value, "required": True} if location == "path" and wire_name in placeholders else value,
-                _PARAMETER_FACTS,
+                {**read, "required": True} if location == "path" and wire_name in placeholders else read,
+                _HEADER_FACTS if header else _PARAMETER_FACTS,
                 declared,
             ),
             schemas,
@@ -3679,7 +3705,11 @@ class _Contracts(_Octets):
                 None,
                 DeclarationId(locate(requested.declaration, "declaration")),
                 locate(used, "use"),
-                _facts(requested.value, ("required", "description"), requested.declaration),
+                _facts(
+                    _read_required(requested.value, requested.declaration, RequestBodyObject),
+                    ("required", "description"),
+                    requested.declaration,
+                ),
                 children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(

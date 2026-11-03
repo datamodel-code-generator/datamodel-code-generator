@@ -897,6 +897,9 @@
   "header-names": {
     "input": "header-names.yaml"
   },
+  "required-errors": {
+    "input": "required-errors.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {

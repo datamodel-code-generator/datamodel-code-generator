@@ -1,0 +1,3 @@
+# required-errors
+render pydantic_v2.BaseModel
+  Error: Error at schema path 'required-errors.yaml#/paths/~1items/get/parameters/0': API_INVALID_OBJECT: required 'maybe' is not a boolean

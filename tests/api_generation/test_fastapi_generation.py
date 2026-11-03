@@ -57,6 +57,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "binary-mapped",
         "cookie-names",
         "header-names",
+        "required-body-errors",
         "unbound-body",
         "empty-body",
         "argument-errors",

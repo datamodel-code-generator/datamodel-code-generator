@@ -97,6 +97,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "binary-mapped",
         "cookie-names",
         "header-names",
+        "required-errors",
         "reference-errors",
         "pointer-errors",
         "setting-errors",
