@@ -431,6 +431,7 @@ openapi/oneof.yaml	yaml_fast_constructor/parity.txt
 openapi/override_required_all_of.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_content.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_field_policy.yaml	yaml_fast_constructor/parity.txt
+openapi/parameter_header_case.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt

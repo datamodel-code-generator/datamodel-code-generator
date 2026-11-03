@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Header names are case-insensitive
+  version: "1"
+paths:
+  /items:
+    parameters:
+      - {name: X-Request-Id, in: header, schema: {type: string}}
+      - {name: Trace, in: query, schema: {type: integer}}
+    get:
+      operationId: listItems
+      parameters:
+        - {name: x-request-id, in: header, required: true, schema: {type: string}}
+        - {name: trace, in: query, schema: {type: integer}}
+      responses:
+        "200": {description: ok}
+    delete:
+      operationId: deleteItems
+      responses:
+        "204": {description: deleted}

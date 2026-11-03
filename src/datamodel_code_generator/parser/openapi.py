@@ -40,6 +40,7 @@ from datamodel_code_generator._openapi_paths import (
     rooted_path,
 )
 from datamodel_code_generator._records import record
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
@@ -341,6 +342,15 @@ def is_object_map_body(obj: JsonSchemaObject) -> bool:
     other than one that ``_is_closed_pattern_map_body`` gives that model by default.
     """
     return obj.is_object and not obj.properties and _has_map_key_keywords(obj) and not _is_closed_pattern_map_body(obj)
+
+
+def _parameter_identity(name: str, location: str) -> tuple[str, str]:
+    """Return what identifies a parameter among those of an operation: its name and its location.
+
+    A header's name is read without regard to case (``parameter_key``), so an operation's header overrides the path
+    item's one that another case spells. Both walks of an operation's parameters identify a parameter by this pair.
+    """
+    return parameter_key(location, name)[1], location
 
 
 def _missing_operation_id(path_name: str) -> Error:
@@ -951,19 +961,19 @@ class OpenAPIParser(JsonSchemaParser):
                     parameters = None
                     if item_parameters:
                         parameters = (
-                            effective_parameters(raw_operation["parameters"], item_parameters, self._parameter_key)
+                            effective_parameters(raw_operation["parameters"], item_parameters, self._declared_identity)
                             if "parameters" in raw_operation
                             else item_parameters.copy()
                         )
                     operation = effective_operation(raw_operation, parameters, security)
                     self.parse_operation(operation, [*path, operation_name], location=self._raw_location(raw_operation))
 
-    def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
-        """Return the name and location a parameter declares, its reference resolved, or None without both.
+    def _declared_identity(self, parameter: Any) -> tuple[str, str] | None:
+        """Return what identifies a parameter among its operation's (`_parameter_identity`), or None without it."""
+        return None if (declared := self._parameter_key(parameter)) is None else _parameter_identity(*declared)
 
-        The paths scope's walk overrides a path item's parameter by this pair as written, a header's name too (row
-        ``legacy-case-sensitive-parameter-override``); the API walk identifies a parameter by its ``parameter_key``.
-        """
+    def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
+        """Return the name and location a parameter declares, its reference resolved, or None without both."""
         if not isinstance(parameter, dict):
             return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
         if isinstance(ref := parameter.get("$ref"), str):

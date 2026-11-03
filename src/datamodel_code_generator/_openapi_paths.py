@@ -111,9 +111,8 @@ def effective_parameters(own: Sequence[_T], inherited: Iterable[_T], key: Callab
     """Return the parameters in effect for an operation: its own in order, then each inherited one it does not override.
 
     ``inherited`` are the parameters of its path item (after those of ``paths``). An own parameter overrides each
-    inherited one with the same ``key``, the identity its walk gives a parameter: the API walk's ``parameter_key``
-    (location and name, a header's name without regard to case), the paths scope's walk the name as written (row
-    ``legacy-case-sensitive-parameter-override``). A parameter whose key is None overrides none.
+    inherited one with the same ``key``, the identity the caller's walk gives a parameter: its location and name, a
+    header's name without regard to case. A parameter whose key is None overrides none.
     """
     overridden = {found for parameter in own if (found := key(parameter)) is not None}
     return [*own, *(parameter for parameter in inherited if key(parameter) not in overridden)]

@@ -23,7 +23,6 @@ from datamodel_code_generator._openapi_paths import (
     path_item_operations,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
@@ -49,6 +48,7 @@ from datamodel_code_generator.parser.openapi import (
     _mapping,
     _missing_operation_id,
     _parameter_array,
+    _parameter_identity,
 )
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
@@ -768,7 +768,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: parameter name/in required"
                 raise SchemaParseError(msg, path=parameter.path)
             name, location = key
-            key = parameter_key(location, name)[1], location
+            key = _parameter_identity(name, location)
             if key in seen:
                 msg = "API_INVALID_OBJECT: duplicate parameter identity"
                 raise SchemaParseError(msg, path=parameter_path)
