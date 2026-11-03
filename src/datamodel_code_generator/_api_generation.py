@@ -884,23 +884,23 @@ class _Planner:
         """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory.
 
         The staged package keeps the target directory's name, which Ruff reads as the package name, and the user
-        modules, `own`, are staged beside it as they lie beside the package.
+        modules, `own`, are staged beside it as they lie beside the package. Ruff reads and writes UTF-8 only, so the
+        staged files are UTF-8 whatever encoding the files are written in.
         """
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
 
         if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
             return
-        encoding = self.effective.encoding
         with ExitStack() as stack:
             staged = _staging(stack, self.config.output, self.cwd) / self.root.name
             files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
             for base, path, held in files:
                 (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
-                location.write_text(held[path], encoding=encoding)
+                location.write_text(held[path], encoding="utf-8")
             for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
                 formatter.format_directory(directory)
             for base, path, held in files:
-                held[path] = base.joinpath(*path.parts).read_text(encoding=encoding)
+                held[path] = base.joinpath(*path.parts).read_text(encoding="utf-8")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

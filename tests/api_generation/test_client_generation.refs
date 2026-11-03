@@ -61,7 +61,9 @@ custom-formatter-options6-module6	main/generation_platform/client/output-options
 encoding-options1-module1	main/generation_platform/client/output-options/encoding.py
 formatters-options2-module2	main/generation_platform/client/output-options/formatters.py
 header-quotes-options0-module0	main/generation_platform/client/output-options/header-quotes.py
+ruff-latin-1-options8-module8	main/generation_platform/client/output-options/ruff-latin-1.py
 ruff-line-length-options5-module5	main/generation_platform/client/output-options/ruff-line-length.py
+ruff-utf-16-options7-module7	main/generation_platform/client/output-options/ruff-utf-16.py	= main/generation_platform/client/output-options/formatters.py
 [test_client_protocols]
 protocols-cache-bodyless	main/generation_platform/client/protocols/protocols-cache-bodyless.txt
 protocols-cache-checks	main/generation_platform/client/protocols/protocols-cache-checks.txt
