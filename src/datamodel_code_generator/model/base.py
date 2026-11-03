@@ -171,6 +171,7 @@ _ADDITIONAL_PROPERTIES_TEMPLATE_DATA_KEY = "additionalProperties"
 _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
 # This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
+_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
 _MODULE_NAME_INVALID_CHAR_PATTERN = re.compile(r"[^0-9a-zA-Z_]")
 _MODULE_NAME_INVALID_CHAR_WITH_DOTS_PATTERN = re.compile(r"[^0-9a-zA-Z_.]")
 _MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS = 128
@@ -2365,6 +2366,21 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             data["use_total_false_for_typed_dict"] = True
             if not python_target_meets("python.typed_dict_required", target_python_version.version_key):
                 data["use_total_false_typeddict_backport"] = True
+
+    @classmethod
+    def configure_closed_typed_dict(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        use_closed_typed_dict: bool,
+    ) -> None:
+        """Record ``--no-use-closed-typed-dict``, which only a TypedDict reads: no PEP 728 ``closed``.
+
+        The ``additionalProperties`` a schema states stays in the template data of every output, which reads it as
+        its own closedness (``extra='forbid'`` of a Pydantic model).
+        """
+        if not use_closed_typed_dict:
+            extra_template_data[ALL_MODEL][_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY] = False
 
     @staticmethod
     def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:

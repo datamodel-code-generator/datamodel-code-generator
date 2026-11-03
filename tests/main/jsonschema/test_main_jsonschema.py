@@ -15981,6 +15981,52 @@ def test_main_typed_dict_no_closed(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "closed_args",
+    [pytest.param([], id="closed"), pytest.param(["--no-use-closed-typed-dict"], id="no-closed")],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_error_type"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "extra_forbidden", id="pydantic_v2"),
+        pytest.param("pydantic_v2.dataclass", "unexpected_keyword_argument", id="pydantic_v2_dataclass"),
+        pytest.param("typing.TypedDict", None, id="typed_dict"),
+    ],
+)
+def test_main_no_use_closed_typed_dict_keeps_other_outputs_closed(
+    output_file: Path, output_model_type: str, extra_error_type: str | None, closed_args: list[str]
+) -> None:
+    """Keep the closedness of `additionalProperties: false` in the outputs that are no TypedDict (#5861).
+
+    ``--no-use-closed-typed-dict`` is the option of the PEP 728 syntax (`closed=True`), but it also left
+    `extra='forbid'` out of a Pydantic model, which then accepted the extra keys that the schema rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "typed_dict_closed.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.14",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *closed_args,
+        ],
+    )
+    if extra_error_type is not None:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="no_use_closed_typed_dict_keeps_other_outputs_closed",
+            model_name="ClosedModel",
+            valid_json='{"name": "a", "age": 1}',
+            invalid_json='{"name": "a", "extra": 1}',
+            expected_error_type=extra_error_type,
+        )
+
+
 @pytest.mark.cli_doc(
     options=["--enum-field-as-literal-map"],
     option_description="""Override enum/literal generation per-field via JSON mapping.
