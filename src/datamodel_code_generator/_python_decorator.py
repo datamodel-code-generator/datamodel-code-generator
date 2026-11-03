@@ -27,6 +27,8 @@ _COMPONENT_EMPTY = 0
 _COMPONENT_HAS_CONTENT = 1
 _COMPONENT_AFTER_COMMA = 2
 _COMPONENT_AFTER_EQUALS = 3
+_PATH_SKIPPED_TOKEN_TYPES = frozenset({token.COMMENT, token.NEWLINE, tokenize.NL, token.ENDMARKER})
+_PATH_END_BRACKETS = frozenset("()[]")
 
 
 def _is_parenthesized_name(body: str, name: str) -> bool:
@@ -176,6 +178,34 @@ def _parse_direct_target(
         else:
             break
     return None if wrapper_depth else (name, index, has_call)
+
+
+def python_decorator_path(decorator: str) -> str:
+    """Return the path a decorator names: its tokens after ``@`` and opening parentheses, up to its next bracket.
+
+    The tokens after the bracket, such as the arguments of a call, are not read. Comments, line breaks and the
+    whitespace around a dot are no part of the path; other whitespace between two tokens is kept as one space, so
+    ``a.b if c else d`` names no path. A text the tokenizer cannot read before that bracket is the path as a whole;
+    a character UTF-8 cannot encode is read as its backslash escape, as every Python version reads it the same way.
+    """
+    source = decorator.removeprefix("@").lstrip()
+    path: list[str] = []
+    previous: tokenize.TokenInfo | None = None
+    try:
+        for item in tokenize.generate_tokens(StringIO(source.encode(errors="backslashreplace").decode()).readline):
+            if item.type in _INVALID_TOKEN_TYPES:
+                return source
+            if item.type in _PATH_SKIPPED_TOKEN_TYPES or (previous is None and item.string == "("):
+                continue
+            if item.type == token.OP and item.string in _PATH_END_BRACKETS:
+                break
+            if previous is not None and previous.end != item.start and "." not in {previous.string, item.string}:
+                path.append(" ")
+            path.append(item.string)
+            previous = item
+    except (SyntaxError, tokenize.TokenError):
+        return source
+    return "".join(path)
 
 
 @lru_cache(maxsize=128)
