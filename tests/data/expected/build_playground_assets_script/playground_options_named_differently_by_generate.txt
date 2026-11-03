@@ -1,0 +1,14 @@
+{
+  "default_values": {
+    "browser_supported": true,
+    "config_dest": "default_value_overrides"
+  },
+  "force_optional": {
+    "browser_supported": true,
+    "config_dest": "force_optional_for_required_fields"
+  },
+  "use_default": {
+    "browser_supported": true,
+    "config_dest": "apply_default_values_for_required_fields"
+  }
+}
