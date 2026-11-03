@@ -412,16 +412,11 @@ class _StagedJobPlan(NamedTuple):
         return None if self.staging is None or self.staging.output is None else self.staging.output.target
 
 
-def _lock_parent(pyproject_path: Path | None) -> Path:
-    """Return the directory of the default lock file: the pyproject.toml directory, or the working directory."""
-    return pyproject_path.parent if pyproject_path is not None else Path.cwd()
-
-
 def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLockPlan:
     """Resolve the project-relative default lock path without importing lock machinery."""
-    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-    return remote_lock_plan(config, _lock_parent(pyproject_path), "lexical")
+    return remote_lock_plan(config, default_lock_parent(pyproject_path), "lexical")
 
 
 def _watch_remote_lock_setup(
@@ -1738,9 +1733,9 @@ def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None
     The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
     while a policy uses it: an update, a locked run, or an existing file to verify.
     """
-    from datamodel_code_generator._lock_plan import models_lockfile  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import default_lock_parent, models_lockfile  # noqa: PLC0415
 
-    return models_lockfile(config, _lock_parent(pyproject_path))
+    return models_lockfile(config, default_lock_parent(pyproject_path))
 
 
 def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None) -> GenerateConfig:
