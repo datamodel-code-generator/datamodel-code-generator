@@ -21,6 +21,7 @@ from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, i
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
+    absolute,
     dotted_module,
     dotted_name,
     expanded_path,
@@ -32,6 +33,7 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
+from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
@@ -42,6 +44,7 @@ from datamodel_code_generator.imports import (
     _import_bindings,
     _import_key,
     _iter_import_bindings,
+    _stored_import,
 )
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
@@ -91,6 +94,7 @@ from datamodel_code_generator.types import union_members, written_union_members
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
@@ -130,6 +134,7 @@ __all__ = [
     "record_model_placement",
     "record_pydantic_floor",
     "refresh_sequence_interface_after_renames",
+    "reject_unimportable_imports",
     "remap_import_overrides",
     "remove_unused_imports",
     "remove_unused_models",
@@ -1677,6 +1682,36 @@ def record_model_placement(
             )
         )
     )
+
+
+def reject_unimportable_imports(
+    module: ModulePath, imports: Imports, *, is_init: bool, target_python_version: PythonVersion
+) -> None:
+    """Refuse a relative import of ``module``'s block that is written with a part that is not an identifier.
+
+    ``--treat-dot-as-module`` writes each dot of a directory or file name as a package, so ``1.0`` is the packages
+    ``_1`` and ``0``, and ``from ._1.0 import version`` is a syntax error. The parts of the importing module's own path
+    are not written, and a relative import of them is valid. Renaming the module would move the file and every other
+    import of it, so the run fails and names the module and the part. An import is judged where its block is written: a
+    reference the parser planned and a later pass dropped (a collapsed root model) writes none. A part is an
+    identifier by the target's rules (``is_identifier``), as the name of a module is written. ``is_init`` makes
+    ``module`` a package ``__init__``.
+    """
+    importer = dotted_module(module)
+    for from_ in sorted(name for name in imports if name and name.startswith(".")):
+        written = from_.lstrip(".").split(".") if from_.strip(".") else []
+        names = sorted(_stored_import(name)[0] for name in imports[from_])
+        parts = (*written, *names)
+        if (part := next((p for p in parts if not is_identifier(p, target_python_version)), None)) is not None:
+            target = absolute(importer, from_, current_is_init=is_init)
+            path = target if part in written else dotted_name(target, part)
+            where = f"module {importer!r}" if importer else "the root package"
+            msg = (
+                f"Cannot import the module {path!r} from {where}: {part!r} is not a Python identifier, so the "
+                "import is a syntax error. --treat-dot-as-module writes each dot of a directory or file name as a "
+                "package. Use --no-treat-dot-as-module, or rename the input."
+            )
+            raise Error(msg)
 
 
 def render_modules(  # noqa: PLR0913

@@ -1,0 +1,1 @@
+{"title": "DottedFileRoot", "type": "object", "properties": {"release": {"$ref": "v2.1.json"}}}

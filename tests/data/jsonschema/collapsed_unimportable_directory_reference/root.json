@@ -1,0 +1,1 @@
+{"title": "CollapsedBuildRoot", "type": "object", "properties": {"code": {"$ref": "1.0/code.json"}}}

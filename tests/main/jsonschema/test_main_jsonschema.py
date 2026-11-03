@@ -36303,6 +36303,78 @@ def test_main_jsonschema_non_identifier_directory_reference(output_dir: Path, ex
 
 
 @pytest.mark.parametrize(
+    ("input_name", "extra_args", "message"),
+    [
+        pytest.param(
+            "non_identifier_directory_reference",
+            [],
+            "Cannot import the module '_1.0' from module 'a_b.symbol': '0' is not a Python identifier",
+            id="directory",
+        ),
+        pytest.param(
+            "dotted_file_name_reference",
+            [],
+            "Cannot import the module 'v2.1' from module 'root': '1' is not a Python identifier",
+            id="file-name",
+        ),
+        pytest.param(
+            "no_treat_dot_single",
+            ["--all-exports-scope", "recursive"],
+            "Cannot import the module 'v0.0.39.job' from the root package: '0' is not a Python identifier",
+            id="all-exports",
+        ),
+    ],
+)
+def test_main_jsonschema_treat_dot_as_module_refuses_unimportable_module(
+    output_dir: Path, capsys: pytest.CaptureFixture[str], input_name: str, extra_args: list[str], message: str
+) -> None:
+    """Refuse a generated module that imports a module whose path has a part that is not an identifier.
+
+    ``--treat-dot-as-module`` writes each dot of a directory or file name as a package, so ``1.0/version.json`` is
+    ``_1/0/`` and ``v2.1.json`` is ``v2/1.py``, and the imports ``from ._1.0 import version`` and ``from .v2 import 1``
+    are syntax errors. The layout is the released one, so the run fails and names the module and the part (#6050).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--treat-dot-as-module", *extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("dotted_file_name_reference", ["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(
+            "collapsed_unimportable_directory_reference",
+            ["--treat-dot-as-module", "--collapse-root-models"],
+            id="dropped-import",
+        ),
+    ],
+)
+def test_main_jsonschema_treat_dot_as_module_writes_importable_modules(
+    output_dir: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Write the modules whose imports Python can read.
+
+    Without ``--treat-dot-as-module`` the dots are ``_``. A root model that ``--collapse-root-models`` inlines writes no
+    import of ``1.0/code.json``, so the run is not refused though the planned import named ``_1.0`` (#6050).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param([], id="default"),

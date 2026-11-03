@@ -25,7 +25,8 @@ A module imports a name of another module by a relative import (``relative``): o
 more for each package up to the packages both modules share, then the other module's path below them, split into the
 module the import is from and its last name. A name in the ``__init__`` of a package the module lies below
 (``is_ancestor_package_reference``) is imported from the dots alone. ``join_module`` appends a name to such a relative
-module, and ``exact_import`` imports the name itself from the module ``relative`` imports. This module imports only
+module, ``exact_import`` imports the name itself from the module ``relative`` imports, and ``absolute`` names the module
+a relative import reaches. This module imports only
 the standard library, so every layer may use it.
 """
 
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 __all__ = [
+    "absolute",
     "dotted_module",
     "dotted_name",
     "exact_import",
@@ -147,6 +149,20 @@ def relative(
         left += extra
 
     return left, right
+
+
+def absolute(current_module: str, from_: str, *, current_is_init: bool = False) -> str:
+    """Return the dotted name of the module that the relative import ``from_`` of ``current_module`` names.
+
+    The module path of ``from_`` below the package it starts at: ``current_module``'s own package for one dot, and one
+    package up for each dot more. ``current_is_init`` makes ``current_module`` a package ``__init__``, which is that
+    package itself. It reads the module part of an import as ``relative`` writes it.
+    """
+    path = from_.lstrip(".")
+    parts = current_module.split(".") if current_module else []
+    package = parts if current_is_init else parts[:-1]
+    kept = package[: max(len(package) - (len(from_) - len(path) - 1), 0)]
+    return ".".join([*kept, *([path] if path else [])])
 
 
 def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
