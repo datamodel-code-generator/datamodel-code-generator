@@ -8563,6 +8563,33 @@ def test_main_jsonschema_allof_enum_ref(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_allof_array_enum_items_in_sets(output_file: Path) -> None:
+    """Type the enum items of an allOf array in a frozen set as in a set."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "all_of_array_enum_items_sets.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="all_of_array_enum_items_sets",
+        model_name="Model",
+        valid_json='{"frozen": ["a", "b"], "tags": ["b"]}',
+        invalid_json='{"frozen": ["a", "c"]}',
+        expected_error_type="value_error",
+    )
+
+
 def test_main_jsonschema_allof_enum_no_external_ref(output_file: Path) -> None:
     """Test allOf referencing enum without external $ref.
 

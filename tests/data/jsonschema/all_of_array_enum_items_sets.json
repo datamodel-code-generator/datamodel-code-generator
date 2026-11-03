@@ -1,0 +1,29 @@
+{
+  "$defs": {
+    "FrozenTags": {
+      "allOf": [
+        {
+          "type": "array",
+          "items": {"enum": ["a", "b"]},
+          "uniqueItems": true,
+          "x-python-type": "frozenset[str]"
+        }
+      ]
+    },
+    "Tags": {
+      "allOf": [
+        {
+          "type": "array",
+          "items": {"enum": ["a", "b"]},
+          "uniqueItems": true,
+          "x-python-type": "set[str]"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "frozen": {"$ref": "#/$defs/FrozenTags"},
+    "tags": {"$ref": "#/$defs/Tags"}
+  }
+}

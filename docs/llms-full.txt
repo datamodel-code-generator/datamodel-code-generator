@@ -69298,7 +69298,6 @@ is a new named row, never an anonymous `if`.
 | `legacy-flat-bare-loads` | the check of module imports named like a builtin counts every name node of a rendered model as a bare load of it: stores, and names that a function, lambda or comprehension of a custom template binds itself | keep |
 | `legacy-abstract-containers-as-unions` | the keywords a field's type consumes or enforces itself read a `Sequence` or `Mapping` through to its members, like a union, where every other container is its own leaf | #5821 |
 | `legacy-frozen-set-not-an-array` | the uniqueItems checks of `--generate-schema-validators` read a frozen set as a type that takes no array and is no item container | #5818 |
-| `legacy-all-of-items-not-in-frozen-sets` | an allOf root types the enum items of the array it holds in any array but a frozen set | #5817 |
 | `legacy-unique-tuple-inside-sequence` | the tuple of a uniqueItems array is looked up inside the items of a `Sequence` too, as in a union | #5820 |
 | `legacy-collapse-beside-lists-and-dicts` | under `--field-constraints`, collapse keeps a constrained root model beside a list, a dict or a union only, and inlines it into a `Sequence`, `Mapping`, set or tuple | #5819 |
 | `legacy-unredacted-locations` | the warnings about schemas whose parts no value satisfies, patterns no regular expression joins and object maps one dict cannot express name the schema's location with the document URL as written (userinfo and query included) | #5577 |
