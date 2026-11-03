@@ -121,7 +121,6 @@ from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import (
-    _REUSE_PATH_SUFFIX,
     UNDEFINED,
     DataModel,
     DataModelFieldBase,
@@ -1079,25 +1078,22 @@ class _Binder:
             self.anchors.append(node)
         return identity
 
-    def reuse_origin(self, reference: Reference) -> str | None:
-        """Return the path of the reference reuse replaced with this one, or None if reuse did not make it.
+    @staticmethod
+    def reuse_origin(reference: Reference) -> Reference | None:
+        """Return the reference of the model reuse replaced with this one's model, or None if reuse did not make it.
 
-        A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
+        It is the model's `reused_reference`, wherever a later step moved either model.
         """
-        path = reference.path
-        if id(reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX):
-            return None
-        return path.removesuffix(_REUSE_PATH_SUFFIX)
+        return model.reused_reference if isinstance(model := reference.source, DataModel) else None
 
     def source(self, reference: Reference) -> str:
         """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-        origin = self.reuse_origin(reference)
-        return _source_path(reference.path if origin is None else origin)
+        return _source_path((self.reuse_origin(reference) or reference).path)
 
-    def reused(self, model: DataModel) -> DataModel | None:
+    @staticmethod
+    def reused(model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
-        origin = self.reuse_origin(model.reference)
-        original = None if origin is None else self.parser.model_resolver.references.get(origin)
+        original = model.reused_reference
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 
     def kept(self, model: DataModel) -> DataModel:
