@@ -7623,12 +7623,18 @@ def test_main_type_overrides_literal_models(
     [
         ("Level", "typing.Literal[1, 2"),
         ("TypeOverridesLiteralModels.level", "foo[bar"),
+        ("TypeOverridesLiteralModels.level", ""),
+        ("Level", " "),
     ],
 )
-def test_main_type_overrides_rejects_bracketed_non_annotation(
+def test_main_type_overrides_rejects_non_annotation(
     key: str, value: str, output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Reject a model-level or field override with brackets that is no annotation, which no import can name."""
+    """Reject a model-level or field override that is no annotation, which no import can name.
+
+    A value with brackets that is no annotation is refused, and so is a value without them that names no type, such as
+    an empty one: up to 0.88.0 an empty value typed the field as ``None``, which rejects every value the schema admits.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
         output_path=output_file,

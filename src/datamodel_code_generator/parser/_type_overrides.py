@@ -325,9 +325,10 @@ def python_type_data_type(
 def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr | None:
     """Return the annotation a ``--type-overrides`` value spells, or None when it names a class to import.
 
-    A value with brackets is an annotation or an error, as it has no import to write either. A value without them
-    names a class to import when it is a dotted path, or a bare name that no builtin and no standard-library type
-    of the registry has; a bare name that one has, or a union of names such as ``str | None``, is an annotation.
+    A value that names no type, such as an empty one, is an error, and so is a value with brackets that is no
+    annotation, as neither has an import to write. A value without brackets names a class to import when it is a
+    dotted path, or a bare name that no builtin and no standard-library type of the registry has; a bare name that one
+    has, or a union of names such as ``str | None``, is an annotation.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeName,
@@ -335,10 +336,10 @@ def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr
     )
 
     expression = _parse_override_annotation(path)
+    if expression is None and ("[" in path or _parse_override_annotation(path.strip()) is None):
+        msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
+        raise Error(msg)
     if "[" in path:
-        if expression is None:
-            msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
-            raise Error(msg)
         return expression
     if expression is None or isinstance(expression, PythonTypeQualifiedName):
         return None
