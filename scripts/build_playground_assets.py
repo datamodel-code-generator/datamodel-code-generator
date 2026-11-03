@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import argparse
-import ast
 import importlib.util
-import inspect
 import json
 import os
 import shutil
 import sys
-import textwrap
 from pathlib import Path
 from typing import Any, cast
 
+from datamodel_code_generator._option_names import GENERATE_FIELD_NAMES  # ruff: ignore[import-private-name] - the one field-name table
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.cli_options import (
     CLI_OPTION_META,
@@ -179,7 +177,7 @@ def _option_target_index(actions: list[argparse.Action]) -> dict[str, dict[str, 
             continue
         target = {
             "dest": action.dest,
-            "config_dest": ARG_FIELD_RENAMES.get(action.dest, action.dest),
+            "config_dest": GENERATE_FIELD_NAMES.get(action.dest, action.dest),
         }
         targets[name] = target
         if negative_name := _negative_name(action):
@@ -206,33 +204,6 @@ def _relations_metadata(
     return [_relation_metadata(relation, option_targets) for relation in relations]
 
 
-def _arg_field_renames() -> dict[str, str]:
-    """Argparse dests that the CLI passes to generate() under a different name.
-
-    The CLI's run_generate_from_config() renames a few arguments (for example
-    ``use_default`` -> ``apply_default_values_for_required_fields``). Parsing that bridge keeps
-    the playground in sync automatically instead of hard-coding the renames here.
-    """
-    from datamodel_code_generator import __main__ as cli_main  # noqa: PLC0415
-
-    try:
-        tree = ast.parse(textwrap.dedent(inspect.getsource(cli_main.run_generate_from_config)))
-    except (OSError, TypeError, SyntaxError):
-        return {}
-    renames: dict[str, str] = {}
-    for node in ast.walk(tree):
-        match node:
-            case ast.Call(func=ast.Name(id="generate"), keywords=keywords):
-                for keyword in keywords:
-                    match keyword:
-                        case ast.keyword(
-                            arg=str() as field, value=ast.Attribute(value=ast.Name(id="config"), attr=source)
-                        ):
-                            renames[source] = field
-    return renames
-
-
-ARG_FIELD_RENAMES = _arg_field_renames()
 # dcg can introspect its own config model: load_model_schema() is the engine behind
 # `datamodel-codegen --input-model config.py:GenerateConfig`. We classify each option from the
 # JSON Schema it produces, so the playground tracks GenerateConfig without hand-rolled type checks.
@@ -297,7 +268,7 @@ def _option_metadata(action: argparse.Action, option_targets: dict[str, dict[str
 
     meta = CLI_OPTION_META.get(name) or get_option_meta(name)
     control = _control(action)
-    config_dest = ARG_FIELD_RENAMES.get(action.dest, action.dest)
+    config_dest = GENERATE_FIELD_NAMES.get(action.dest, action.dest)
     unsupported_reason, value_kind = _option_support(action.dest, config_dest, control)
     browser_supported = not unsupported_reason
     option_metadata = {

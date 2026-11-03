@@ -169,11 +169,7 @@ def _content(declared: Declared, body: object) -> str | bytes:
     """
     json_media = declared.kind == "json"
     if (adapter := declared.adapter()) is None:
-        payload = (
-            json_text(jsonable_encoder(body, by_alias=True, exclude_unset=True), errors="legacy-python-json-errors")
-            if json_media
-            else body
-        )
+        payload = json_text(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
     else:
         try:
             value = adapter.validate_python(body)

@@ -922,13 +922,44 @@ class _Resolution:
             if old_files.get(relative) != new_files.get(relative)
         }
 
+    def text_at(self, storage: str, value: object, path: Path) -> str | None:
+        """Return the text a unit with a value stores at a path it compares, or None when it stores none there."""
+        name, pattern = split_label(storage)
+        if pattern is None:
+            return encode_value(PurePosixPath(name).suffix, value)
+        return _files(value).get(path.relative_to(self.path(storage)).as_posix())
+
+    def rewritten(self, storage: str) -> object | None:
+        """Return the one content this run gives a stored unit, or None when it gives none, several or keeps a user."""
+        if storage in self.claimed:
+            return self.value(storage)
+        contents = {item.digest: item.value for item in self.pending if item.old == storage}
+        kept = any(line.stored == storage for lines in self.kept.values() for line in lines)
+        return next(iter(contents.values())) if len(contents) == 1 and not kept else None
+
+    def unlike(self, storage: str, path: Path, text: str | None) -> bool:
+        """Return whether a unit that compares a path is not rewritten, in this run, to the text given for it."""
+        content = self.rewritten(storage)
+        return content is None or self.text_at(storage, content, path) != text
+
     def exclusive(self, storage: str, new: object) -> bool:
-        """Return whether writing a unit in place leaves every other unit's compared files unchanged."""
+        """Return whether writing a unit in place leaves every other unit's compared files unchanged.
+
+        A unit that compares a file this one writes leaves it unchanged when the same run rewrites that unit to the
+        text this one writes, so that units which overlap and change alike stay shared.
+        """
         pattern = split_label(storage)[1]
         if pattern is not None and not all(_matches(Path(relative), pattern) for relative in _files(new)):
             return False
-        others = _Coverage(self.expected_root, self.storages(exclude=storage))
-        return not any(others.covers_file(path) for path in self.touched(storage, new))
+        others = self.storages(exclude=storage)
+        covered = _Coverage(self.expected_root, others)
+        return not any(
+            self.unlike(other, path, self.text_at(storage, new, path))
+            for path in self.touched(storage, new)
+            if covered.covers_file(path)
+            for other in others
+            if _Coverage(self.expected_root, [other]).covers_file(path)
+        )
 
     def case_taken(self, path: Path) -> bool:
         """Return whether another name differing only by case already holds, or will hold, files next to a path."""

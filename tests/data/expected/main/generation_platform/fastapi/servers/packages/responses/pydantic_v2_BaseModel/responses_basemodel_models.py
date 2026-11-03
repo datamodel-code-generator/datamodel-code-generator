@@ -68,3 +68,6 @@ class NotesGetResponse(RootModel[str | None]):
 
 class ChosenGetResponse(RootModel[str]):
     root: str
+
+
+RatiosGetQueryKindParameter = TypeAliasType("RatiosGetQueryKindParameter", str)

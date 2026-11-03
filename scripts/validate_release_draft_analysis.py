@@ -21,16 +21,18 @@ ALLOWED_BREAKING_CHANGE_HEADINGS = frozenset({
 })
 MAX_BREAKING_CHANGES_CONTENT_LENGTH = 20_000
 MAX_REASONING_LENGTH = 4_000
+SAME_CLAUSE = r"(?:(?!`|;|:|\s-\s|\.(?:\s|$)|\b(?:when|if|while|unless|with|under|using)\b).){0,80}"
+"""Text between a removal wording and the token it removes: no sentence or clause end, no condition."""
 REMOVAL_PATTERNS = [
-    re.compile(r"\b(?:removed|deleted|dropped)\b(?:(?!`).){0,80}`(?P<token>[^`\n]+)`", re.IGNORECASE),
-    re.compile(r"`(?P<token>[^`\n]+)`(?:(?!`).){0,80}\b(?:removed|deleted|dropped)\b", re.IGNORECASE),
+    re.compile(rf"\b(?:removed|deleted|dropped)\b{SAME_CLAUSE}`(?P<token>[^`\n]+)`", re.IGNORECASE),
+    re.compile(rf"`(?P<token>[^`\n]+)`{SAME_CLAUSE}\b(?:removed|deleted|dropped)\b", re.IGNORECASE),
     re.compile(
         r"\bno longer\s+(?:supports?|accepts?|recognizes?|exports?|provides?|includes?|allows?|has)\b"
-        r"(?:(?!`).){0,80}`(?P<token>[^`\n]+)`",
+        rf"{SAME_CLAUSE}`(?P<token>[^`\n]+)`",
         re.IGNORECASE,
     ),
     re.compile(
-        r"`(?P<token>[^`\n]+)`(?:(?!`).){0,80}\bno longer\s+"
+        rf"`(?P<token>[^`\n]+)`{SAME_CLAUSE}\bno longer\s+"
         r"(?:available|exists|supported|accepted|recognized|exported|provided|included|allowed)\b",
         re.IGNORECASE,
     ),
