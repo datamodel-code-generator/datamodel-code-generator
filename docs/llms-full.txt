@@ -69399,6 +69399,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
 | `legacy-last-dot` | `ConstructionKeys` reads the class part of an `--aliases`, `--serialization-aliases` or `--default-value-overrides` key before its last dot, so a key whose field name holds a dot (`Tags1.a.b`) names the class `Tags1.a`, and the model `Tags1` is not built again under its final name | #5438 |
 | `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map | keep |
+| `legacy-both-prefixes` | under `--parent-scoped-naming` with `--naming-strategy full-path` an inline model takes the parent's name twice, the `full-path` prefix before the `parent-prefixed` one (`ModelResolver._parent_prefixed`) | #5666 |
 | `legacy-predicted-rename` | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |
 | `legacy-decide-in-union-module` | a discriminated union is tagged when its module is processed, not after the module loop | G05 |
 | `legacy-tag-from-earlier-union` | a variant keeps the tags of the first union that tags it | G05 |
