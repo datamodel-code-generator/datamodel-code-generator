@@ -30,6 +30,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
     reimport_references,
     set_reference_expressions,
 )
+from datamodel_code_generator.parser._passes._import_edges import generic_base_class_module, inherits_one_of
 from datamodel_code_generator.parser._passes._shared import (
     GraphBuilderHost,
     ModuleScopeView,
@@ -331,7 +332,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                 parser._graph_builder.name_enum_member_literal_class(data_type, enum_class)  # noqa: SLF001
 
 
-def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:  # noqa: PLR0912
+def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Add the configured generic base class to the first root module and make top-level target models inherit it."""
     if not parser.use_generic_base_class or not parser.generic_base_class_config:
         return
@@ -346,14 +347,9 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     if not modules_with_targets:
         return
 
-    def has_target_model_parent(model: DataModel) -> bool:
-        return any(ref.source in all_target_models for bc in model.base_classes if (ref := bc.reference))
-
-    root_modules = [entry for entry in modules_with_targets if not all(map(has_target_model_parent, entry[2]))]
-    if not root_modules:  # pragma: no cover
-        root_modules = [modules_with_targets[0]]
-
-    first_root_module, first_root_models, first_root_target_models, _, _ = root_modules[0]
+    first_root_module, first_root_models, first_root_target_models, _, _ = modules_with_targets[
+        generic_base_class_module([entry[2] for entry in modules_with_targets])
+    ]
     first_root_file_path = first_root_target_models[0].file_path
 
     base_class_ref = Reference(path=GENERIC_BASE_CLASS_PATH, name=GENERIC_BASE_CLASS_NAME)
@@ -384,7 +380,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
             if original_import:  # pragma: no branch
                 additional_imports = model._additional_imports  # noqa: SLF001
                 model._additional_imports = [i for i in additional_imports if i != original_import]  # noqa: SLF001
-            if has_target_model_parent(model):
+            if inherits_one_of(model, all_target_models):
                 continue
             if any(bc.reference for bc in model.base_classes):  # pragma: no cover
                 parser._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])  # noqa: SLF001

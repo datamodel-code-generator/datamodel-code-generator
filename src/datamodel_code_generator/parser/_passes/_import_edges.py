@@ -11,6 +11,9 @@ an ``_internal`` module. An import cycle through an ``_internal`` module that fa
 (``_failing_import_cycles``) joins its merge: ``_failing_cycles`` finds the cycles that fail when one of their modules
 is imported first, and under ``--all-exports-scope`` the ``__init__`` module of a package imports the modules below it
 that it re-exports (``_exported_imports``).
+
+The modules whose models take the generic base class import it from the module that holds it
+(``generic_base_class_module``).
 """
 
 from __future__ import annotations
@@ -35,7 +38,7 @@ from datamodel_code_generator.parser._init_exports import exports_reach
 from datamodel_code_generator.parser._passes._shared import _parsed_rule_data_types
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Collection, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import AllExportsScope
@@ -44,7 +47,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GenerationIndex
 
-__all__ = ["module_dependency_graph", "module_import_edges", "relative_import_targets"]
+__all__ = [
+    "generic_base_class_module",
+    "inherits_one_of",
+    "module_dependency_graph",
+    "module_import_edges",
+    "relative_import_targets",
+]
 
 
 def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
@@ -111,6 +120,28 @@ def module_dependency_graph(
     }
     graph = index.reference_graph(snapshot, keyed, edges={EdgeKind.RULE_TYPE: rule_references})
     return graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))
+
+
+def inherits_one_of(model: DataModel, models: Collection[DataModel]) -> bool:
+    """Return whether one of ``models`` is a base class of ``model``."""
+    return any(reference.source in models for base in model.base_classes if (reference := base.reference))
+
+
+def generic_base_class_module(targets: Sequence[Sequence[DataModel]]) -> int:
+    """Return the position of the module that holds the generic base class, among the modules of ``targets``.
+
+    ``targets`` holds the models of each module that take the class. It goes to the first module with a model that
+    inherits none of them, or to the first module when every one inherits another.
+    """
+    every_target = {model for models in targets for model in models}
+    return next(
+        (
+            position
+            for position, models in enumerate(targets)
+            if not all(inherits_one_of(model, every_target) for model in models)
+        ),
+        0,
+    )
 
 
 def _failing_cycles(
