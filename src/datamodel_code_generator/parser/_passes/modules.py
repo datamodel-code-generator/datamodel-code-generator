@@ -954,27 +954,31 @@ def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> 
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
+    """Write each uniqueItems array that is a list as a set, and its list default as a set, where a list became one.
+
+    A field typed as another container, such as a ``Sequence``, keeps its type and its default.
+    """
     if not parser.use_unique_items_as_set:
         return
     for model in models:
         for model_field in model.fields:
-            if not _declares_unique_items(model_field) or (
-                parser.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None
+            if (
+                not _declares_unique_items(model_field)
+                or (parser.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None)
+                or (set_data_type := parser._create_set_from_list(model_field.data_type)) is None  # noqa: SLF001
             ):
                 continue
-            set_data_type = parser._create_set_from_list(model_field.data_type)  # noqa: SLF001
-            if set_data_type:  # pragma: no cover
-                # Check if default list elements are hashable before converting type
-                if isinstance(model_field.default, list):
-                    try:
-                        converted_default = set(model_field.default)
-                    except TypeError:
-                        # Keep the unhashable default unchanged. Nested list types may
-                        # already have been converted in place, so invalidate their imports.
-                        parser._graph_builder.note_changed_models(model)  # noqa: SLF001
-                        continue
-                    parser._graph_builder.set_field_default(model_field, converted_default)  # noqa: SLF001
-                parser._graph_builder.replace_field_type(model_field, set_data_type)  # noqa: SLF001
+            # Check if default list elements are hashable before converting type
+            if isinstance(model_field.default, list):
+                try:
+                    converted_default = set(model_field.default)
+                except TypeError:
+                    # Keep the unhashable default unchanged. Nested list types may
+                    # already have been converted in place, so invalidate their imports.
+                    parser._graph_builder.note_changed_models(model)  # noqa: SLF001
+                    continue
+                parser._graph_builder.set_field_default(model_field, converted_default)  # noqa: SLF001
+            parser._graph_builder.replace_field_type(model_field, set_data_type)  # noqa: SLF001
 
 
 def extract_inherited_enum(models: list[DataModel]) -> None:

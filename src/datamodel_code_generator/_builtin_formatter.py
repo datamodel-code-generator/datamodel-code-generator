@@ -8,7 +8,7 @@ import sys
 import tokenize
 from collections import defaultdict
 from enum import IntEnum
-from functools import cache, partial
+from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard, cast
 
@@ -30,6 +30,7 @@ from datamodel_code_generator._python_syntax import (
     module_import,
     normalize_newlines,
 )
+from datamodel_code_generator._python_target_names import target_stdlib_module_names
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
@@ -256,15 +257,6 @@ def _format_from_import(module: str, aliases: list[str], line_length: int) -> st
     return f"from {module} import (\n{imports}\n)"
 
 
-@cache
-def _stdlib_module_names(python_version: PythonVersion | None) -> frozenset[str]:
-    """Return the top-level standard library module names of the target Python version."""
-    from datamodel_code_generator import _target_stdlib_data as data  # noqa: PLC0415
-
-    index = data.TARGETS.index((python_version or PythonVersionMin).value)
-    return frozenset(name for name, (since, until) in data.STDLIB_MODULE_NAMES.items() if since <= index < until)
-
-
 def _import_category(
     module: str, level: int, known_first_party: frozenset[str], python_version: PythonVersion | None = None
 ) -> _ImportCategory:
@@ -273,7 +265,7 @@ def _import_category(
     if level:
         return _ImportCategory.LOCAL
     top_level_module = module.split(".", 1)[0]
-    if top_level_module in _stdlib_module_names(python_version):
+    if top_level_module in target_stdlib_module_names((python_version or PythonVersionMin).version_key):
         return _ImportCategory.STANDARD_LIBRARY
     if top_level_module in known_first_party:
         return _ImportCategory.FIRST_PARTY

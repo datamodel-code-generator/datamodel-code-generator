@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Opt
 from warnings import warn
 
 from pydantic import ConfigDict, Field
-from typing_extensions import Self, deprecated, final, override
+from typing_extensions import Self, Sentinel, deprecated, final, override
 
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._caches import BoundedLru
@@ -2050,7 +2050,8 @@ class BaseClassDataType(DataType):
         return False
 
 
-UNDEFINED: Any = object()
+UNDEFINED: Any = Sentinel("UNDEFINED")
+"""The default of a field that declares none; a copy, a deep copy and a pickle of it are itself."""
 
 
 def _default_state(default: object) -> DefaultState:

@@ -754,26 +754,35 @@ def test_model_graph_check_reports_a_copied_reference(
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options"),
+    ("input_path", "options"),
     [
-        pytest.param("ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"),
-        pytest.param("numeric_constraint_precision/non_finite_multiple_of.json", {}, id="dropped-multiple-of"),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision/non_finite_multiple_of.json",
+            {},
+            id="dropped-multiple-of",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "redundant_reference_null.yaml", {}, id="no-default"),
     ],
 )
 def test_a_deep_copied_type_keeps_what_its_site_recorded(
-    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_name: str, options: dict[str, bool]
+    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_path: Path, options: dict[str, bool]
 ) -> None:
     """A custom parser that types a field with a deep copy of its type keeps what the site recorded on the type.
 
     ``--omit-redundant-reference-null`` marks the None of ``nullOnlyRef`` as the one the schema it references admits,
     and a ``multipleOf`` of 1e400 that Pydantic refuses is recorded on its type for the warning of the field; the copy
-    carries those records, so the output and the warnings are the ones without the copy.
+    carries those records, so the output and the warnings are the ones without the copy. A copied root model that
+    declares no default keeps declaring none: up to 0.88.0 the copy of its default marker was written as the default of
+    ``Use.name_d`` (``Field(<object object at 0x...>)``).
     """
     from copy import deepcopy
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
-    class CopyingParser(JsonSchemaParser):
+    class CopyingParser(OpenAPIParser if input_path.is_relative_to(OPEN_API_DATA_PATH) else JsonSchemaParser):
         def parse_raw(self) -> None:
             super().parse_raw()
             for model in self.results:
@@ -781,7 +790,7 @@ def test_a_deep_copied_type_keeps_what_its_site_recorded(
                     self.generation_store.replace_field_type(field, deepcopy(field.data_type))
 
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
-    parser = CopyingParser(JSON_SCHEMA_DATA_PATH / input_name, formatters=[Formatter.BUILTIN], **options)
+    parser = CopyingParser(input_path, formatters=[Formatter.BUILTIN], **options)
     assert_output(cast("str", parser.parse()))
     assert_output(
         "".join(
@@ -4029,6 +4038,46 @@ def test_type_overrides_model_level_base_class(
     finally:
         for module_name in module_names:
             sys.modules.pop(module_name, None)
+
+
+@pytest.mark.parametrize("value", ["typing.Literal[1.5]", "str | None", "list[int]", "None"])
+def test_type_overrides_model_level_base_class_refuses_annotation(
+    output_file: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """Refuse a model-level override that replaces a base class with an annotation that is no class.
+
+    Up to 0.88.0 the annotation was written as the base, such as ``class Child(Literal[1.5]):``, and the module failed
+    to import.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=f"--type-overrides 'Base': {value!r} is no class, so it cannot replace Base as a base",
+        extra_args=["--type-overrides", json.dumps({"Base": value}), "--formatters", "builtin"],
+    )
+
+
+def test_type_overrides_model_level_base_class_takes_bare_class_name(output_file: Path) -> None:
+    """Replace a base class with a bare class name, such as ``Decimal``, as with its class path ``decimal.Decimal``."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"Base": "Decimal"}),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
 
 
 @freeze_time(TIMESTAMP)

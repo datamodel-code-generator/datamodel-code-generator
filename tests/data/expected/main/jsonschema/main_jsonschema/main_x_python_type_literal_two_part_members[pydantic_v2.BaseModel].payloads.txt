@@ -1,0 +1,6 @@
+status: HTTPStatus.CREATED
+flag: RegexFlag.IGNORECASE
+year: int.1
+status 204: rejected
+flag 4: rejected
+year 2: rejected

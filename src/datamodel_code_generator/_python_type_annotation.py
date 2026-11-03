@@ -434,13 +434,22 @@ def rewrite_python_type_expr(
     )
 
 
-def read_literal_enum_members(expression: PythonTypeExpr) -> PythonTypeExpr:
+def _literal_member(name: PythonTypeQualifiedName, names_class: Callable[[str], bool]) -> PythonTypeMember | None:
+    """Return the member a dotted ``Literal`` value names, or None when it names an imported symbol."""
+    if len(name.parts) >= _MODULE_MEMBER_PARTS:
+        return PythonTypeMember(PythonTypeQualifiedName(name.parts[:-1]), name.parts[-1])
+    head, member = name.parts
+    return PythonTypeMember(python_type_name(head), member) if names_class(head) else None
+
+
+def read_literal_enum_members(expression: PythonTypeExpr, names_class: Callable[[str], bool]) -> PythonTypeExpr:
     """Read a dotted ``package.module.MEMBER`` value of a ``Literal`` as the member ``MEMBER`` of ``package.module``.
 
     A ``Literal`` holds values, so the last name is a member, such as an enum member, of what the names before it
     import: ``http.HTTPStatus.OK`` imports ``HTTPStatus`` from ``http`` and ``http.client.OK`` imports the module
-    ``client`` from ``http``, as a from-import takes a class or a submodule alike. A dotted name of two parts keeps
-    naming an imported symbol.
+    ``client`` from ``http``, as a from-import takes a class or a submodule alike. A dotted name of two parts is a
+    member of its first name where ``names_class`` tells that the name binds a class, such as ``Color.RED``, and keeps
+    naming an imported symbol, such as ``datetime.MINYEAR``, otherwise.
     """
     if (children := _children(expression, "values")) is None:
         return expression
@@ -450,9 +459,11 @@ def read_literal_enum_members(expression: PythonTypeExpr) -> PythonTypeExpr:
         "values",
         children,
         tuple(
-            PythonTypeMember(PythonTypeQualifiedName(child.parts[:-1]), child.parts[-1])
-            if literal and isinstance(child, PythonTypeQualifiedName) and len(child.parts) >= _MODULE_MEMBER_PARTS
-            else read_literal_enum_members(child)
+            member
+            if literal
+            and isinstance(child, PythonTypeQualifiedName)
+            and (member := _literal_member(child, names_class)) is not None
+            else read_literal_enum_members(child, names_class)
             for child in children
         ),
     )

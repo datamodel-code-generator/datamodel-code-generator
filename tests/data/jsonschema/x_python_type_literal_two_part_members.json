@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "XPythonTypeLiteralTwoPartMembers",
+  "type": "object",
+  "required": [
+    "status",
+    "flag",
+    "year"
+  ],
+  "properties": {
+    "status": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[HTTPStatus.OK, HTTPStatus.CREATED]"
+    },
+    "flag": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[RegexFlag.IGNORECASE]"
+    },
+    "year": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[datetime.MINYEAR]"
+    }
+  },
+  "$defs": {
+    "HTTPStatus": {
+      "x-python-import": {
+        "module": "http",
+        "name": "HTTPStatus"
+      }
+    }
+  }
+}

@@ -7389,6 +7389,94 @@ def test_main_x_python_type_literal_enum_members(output_file: Path, expected_fil
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--use-tuple-for-fixed-length-arrays"]),
+        ("dataclasses.dataclass", []),
+    ],
+)
+def test_main_unique_items_as_set_other_containers(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write as a set only a uniqueItems array that is a list, and its list default only where the list became a set.
+
+    A ``Sequence`` from ``x-python-type`` and a fixed-length tuple keep their types, their items and their list
+    defaults. Up to 0.88.0 the default became a set for every such field, so ``sequence: Sequence[int] = {1, 2}`` held a
+    default that its type rejects, and the lists that a ``Sequence`` or a tuple holds became sets, which lose the
+    duplicates their schema admits.
+    """
+    name = "unique_items_as_set_other_containers"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            "--use-unique-items-as-set",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model != "pydantic_v2.BaseModel":
+        return
+    with _generated_model(output_file, name, "UniqueItemsAsSetOtherContainers") as model:
+        verdicts = []
+        for field_name, field in model.model_fields.items():
+            try:
+                TypeAdapter(field.annotation).validate_python(field.default)
+            except ValidationError:
+                verdict = "rejected"
+            else:
+                verdict = "accepted"
+            verdicts.append(f"default of {field_name} {field.default!r}: {verdict}\n")
+        instance = _model_json_validator(model)(json.dumps({"nested": [[1, 1]]}))
+        verdicts.append(f"nested [[1, 1]]: {instance.nested!r}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+def test_main_x_python_type_literal_two_part_members(output_model: str, output_file: Path) -> None:
+    """Write a two-part ``Literal`` value whose first name binds a class as a member of that class.
+
+    ``HTTPStatus``, which the schema imports through ``x-python-import``, and ``RegexFlag``, which the type registry
+    knows, are classes, so their members are written as ``HTTPStatus.OK`` with the class imported; up to 0.88.0 each
+    value imported its last name from a module named after the first (``from HTTPStatus import OK``) and the module
+    failed to import. ``datetime`` names a standard-library module, so ``datetime.MINYEAR`` keeps importing ``MINYEAR``
+    from it, as any other two-part value does.
+    """
+    name = "x_python_type_literal_two_part_members"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    if output_model != "pydantic_v2.BaseModel":
+        return
+    valid = {"status": 201, "flag": 2, "year": 1}
+    with _generated_model(output_file, name, "XPythonTypeLiteralTwoPartMembers") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        verdicts = []
+        for field_name in valid:
+            value = getattr(instance, field_name)
+            verdicts.append(f"{field_name}: {type(value).__name__}.{getattr(value, 'name', value)}\n")
+        for field_name, value in {"status": 204, "flag": 4, "year": 2}.items():
+            try:
+                validate(json.dumps(valid | {field_name: value}))
+            except ValidationError:
+                verdict = "rejected"
+            else:
+                verdict = "accepted"
+            verdicts.append(f"{field_name} {value}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 _TYPE_OVERRIDES_LITERALS = {
     "TypeOverridesLiterals.integer_values": "typing.Literal[1, 2]",
     "TypeOverridesLiterals.string_values": "typing.Literal['x', 'y']",
@@ -7623,12 +7711,18 @@ def test_main_type_overrides_literal_models(
     [
         ("Level", "typing.Literal[1, 2"),
         ("TypeOverridesLiteralModels.level", "foo[bar"),
+        ("TypeOverridesLiteralModels.level", ""),
+        ("Level", " "),
     ],
 )
-def test_main_type_overrides_rejects_bracketed_non_annotation(
+def test_main_type_overrides_rejects_non_annotation(
     key: str, value: str, output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Reject a model-level or field override with brackets that is no annotation, which no import can name."""
+    """Reject a model-level or field override that is no annotation, which no import can name.
+
+    A value with brackets that is no annotation is refused, and so is a value without them that names no type, such as
+    an empty one: up to 0.88.0 an empty value typed the field as ``None``, which rejects every value the schema admits.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
         output_path=output_file,
