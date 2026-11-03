@@ -31,7 +31,7 @@ __all__ = ["ChildPosition", "Choice", "Default", "DispatchTable", "Row", "Schema
 ParserT_contra = TypeVar("ParserT_contra", contravariant=True)
 SchemaT = TypeVar("SchemaT")
 ResultT_co = TypeVar("ResultT_co", covariant=True)
-ChildPosition: TypeAlias = Literal["model", "member", "fields", "ref", "key"]
+ChildPosition: TypeAlias = Literal["model", "root", "member", "fields", "ref", "key"]
 """How a site types a child: see ``TypedChild``."""
 
 
@@ -47,6 +47,8 @@ class SchemaSite(Generic[SchemaT]):
     parent: SchemaT | None = None
     scope: AbstractContextManager[None] | None = None
     """The dynamic scope of a merged ``$ref`` that stands for another schema resource."""
+    root: bool = False
+    """Whether the schema is parsed as a root model, which holds one type and no fields (``TypedChild`` ``root``)."""
 
 
 @final
@@ -54,9 +56,10 @@ class SchemaSite(Generic[SchemaT]):
 class TypedChild(Generic[SchemaT]):
     """A child a site types, or a model its type names.
 
-    ``model``: a ``schema`` typed as a model of its own (a property, item, map value or branch). ``member``: an allOf
-    member ``schema`` merged into the model built from ``into``. ``fields``: the ``schema`` whose properties are the
-    fields of the site's model. ``ref``: a ``$ref`` (``reference``) the type names. ``key``: the resolved key
+    ``model``: a ``schema`` typed as a model of its own (a property, item, map value or branch). ``root``: a ``schema``
+    typed as the root model of its own, whatever its shape (an item that writes its constraints on one). ``member``: an
+    allOf member ``schema`` merged into the model built from ``into``. ``fields``: the ``schema`` whose properties are
+    the fields of the site's model. ``ref``: a ``$ref`` (``reference``) the type names. ``key``: the resolved key
     (``reference``) of a model the type names without typing it here.
     """
 

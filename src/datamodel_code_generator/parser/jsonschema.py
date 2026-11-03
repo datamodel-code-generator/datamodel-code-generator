@@ -1564,14 +1564,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             into = model_schema
             builds_map = _rw_split.schema_builds_map_model(self, model_schema, defining_ref)
-            types_map = not (model_schema.properties or model_schema.allOf)
+            types_map = not (model_schema.allOf or (model_schema.properties and not site.root))
             extras: JsonSchemaObject | bool | None = schema.additionalProperties
             with self._inherited_ref_context(defining_ref):
                 if self._has_pattern_properties_validator(model_schema):
                     rule = self._pattern_rule_additional_properties(model_schema)
                     extras = None if rule is None else extras if rule[1] is model_schema else rule[2]
                 elif (
-                    self._typed_extra_field_schema(model_schema) is None
+                    (site.root or self._typed_extra_field_schema(model_schema) is None)
                     if not builds_map
                     else model_schema.patternProperties and self._other_keys_schema(model_schema) is None
                 ):
@@ -1582,20 +1582,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and isinstance(extra_items := self._model_additional_properties(model_schema), JsonSchemaObject)
             ):
                 with self._inherited_ref_context(defining_ref), quiet():
-                    data_type = self._extra_items_type(extra_items, reads_false_all_of=False)
-                    keys = (
-                        ()
-                        if data_type is None
-                        else tuple(item.reference.path for item in data_type.all_data_types if item.reference)
+                    keys = _rw_split.lightweight_type_keys(
+                        self, self._extra_items_type(extra_items, reads_false_all_of=False)
                     )
-                    _rw_split.unregister_temporary_type(self, data_type)
                 yield from (TypedChild("key", reference=key) for key in keys)
         else:
             model_schema = schema
             builds_map = _rw_split.schema_builds_map_model(self, into, defining_ref)
             types_map = False
             extras = schema.additionalProperties if builds_map else None
-        yield TypedChild("fields", schema)
+        if not site.root:
+            yield TypedChild("fields", schema)
         yield from (
             TypedChild("ref", reference=ref) for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef) if ref
         )
@@ -1623,13 +1620,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with self._inherited_ref_context(defining_ref):
                 positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
             for item in positions.values():
-                yield from _rw_split.typed_field_site(self, item, defining_ref)
+                yield from _rw_split.typed_field_site(self, item, defining_ref, parent=schema)
         yield from _rw_split.typed_field_site(self, extras, defining_ref)
         for item in (*schema.oneOf, *schema.anyOf):
-            yield from _rw_split.typed_field_site(self, item, defining_ref, merges_ref_first=True)
-        yield from (
-            TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
-        )
+            yield from _rw_split.typed_field_site(self, item, defining_ref, merges_ref_first=True, parent=schema)
+        if site.root and schema.allOf and not (schema.is_array or schema.anyOf or schema.oneOf):
+            with self._inherited_ref_context(defining_ref), quiet():
+                keys = _rw_split.lightweight_type_keys(self, self._build_lightweight_type(schema))
+            yield from (TypedChild("key", reference=key) for key in keys)
+        else:
+            yield from (
+                TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
+            )
         if self.generate_schema_validators:
             yield from (TypedChild("model", item) for item in self._iter_conditional_branches(schema))
 
@@ -5666,13 +5668,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Type no child and name no model: the site is typed by its customTypePath."""
         yield from ()
 
+    def _types_constrained_item(self, site: _Site) -> tuple[TypedChild[JsonSchemaObject]]:
+        """Type the root model that holds the constraints of an item, built from its schema merged with its $ref."""
+        return (TypedChild("root", self._merge_field_ref(site).obj),)
+
     _FIELD_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
             Row("python-type", _field_python_type_applies, _build_field_python_type, typed=_types_nothing),
             Step("title-name", _field_title_name_applies, _rewrite_field_title_name),
             Row("title-alias", _field_title_alias_applies, _parse_root_type_site),
             Step("ref-siblings", _field_ref_siblings_applies, _merge_field_ref),
-            Row("constrained-item", _types_item_by_root_model, _parse_constrained_item),
+            Row(
+                "constrained-item",
+                _types_item_by_root_model,
+                _parse_constrained_item,
+                typed=_types_constrained_item,
+            ),
             Row("dynamic-ref", _field_dynamic_ref_applies, _build_field_dynamic_ref),
             Row("ref-nullable-only", _field_ref_nullable_only_applies, _parse_ref_nullable_only_item),
             Row("ref", _ref_applies, _get_ref_data_type_site),
