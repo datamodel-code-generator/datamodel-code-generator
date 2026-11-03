@@ -102,3 +102,11 @@ match = "^\\[constraints\\] (?:array_counts_beside_other_types:)?Model:tag: (?:A
 reason = "a property beside contains and minContains, which JSON Schema ignores on a string and on an object, carried the minItems that they imply as min_length, so the model rejected the strings and the maps with fewer entries that the schema accepts (a string of one character beside minContains 2, a map of one key), and raised for a string that x-python-type typed as a date; a field whose type holds no array, or whose schema declares none, takes no item counts (schema-mismatch fix)"
 decision = "#6032"
 release_note = "a property that holds no array (a string, a mapping) no longer gets the minItems or maxItems that contains, minContains or items: false imply as its length, so it no longer rejects the values the schema accepts"
+
+[[accepted]]
+input = "*discriminator_mapping_dot_directory*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?(?:Cat|Dog|Bird|Fish):(?:pet_type|kind): Literal\\['[a-z]+\\.json#'\\] -> Literal\\['[a-z]'\\]$"
+reason = "a discriminator mapping path through a directory whose name starts with a dot (./.defs/cat.json) was compared with the schema path after its leading dots were stripped as characters, so it matched no variant and each variant was tagged by its file name, Literal['cat.json#'], which rejected every payload the mapping selects it for; the paths are compared by segments now (schema-mismatch fix)"
+decision = "#5530"
+release_note = "a discriminator mapping value that goes through a directory named with a leading dot, such as ./.defs/cat.json or ../.defs/cat.json, now tags its variant with the mapping key instead of the file name"

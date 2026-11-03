@@ -36351,3 +36351,29 @@ def test_main_jsonschema_builtin_named_fields(output_file: Path, output_model_ty
         output_file, f"builtin_named_fields_{output_model_type.replace('.', '_')}", "Holder"
     ) as model:
         get_type_hints(model)
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_dot_directory(output_dir: Path, extra_args: list[str]) -> None:
+    """Tag the variants a discriminator mapping names through a directory whose name starts with a dot.
+
+    The mapping paths ``./.defs/cat.json``, ``./sub/../.defs/dog.json`` and, from ``sub/main.json``,
+    ``../.defs/bird.json`` are compared with the schema paths segment by segment; up to 0.88.0 the leading dots and
+    slashes were stripped as characters, so ``.defs`` read as ``defs``, no path matched and each variant was tagged by
+    its file name, ``Literal['cat.json#']``, which no payload the mapping selects it for carries (#5530).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_dot_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )

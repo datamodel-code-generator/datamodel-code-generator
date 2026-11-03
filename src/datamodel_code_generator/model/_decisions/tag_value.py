@@ -203,9 +203,11 @@ MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 """Which keys a discriminator mapping path is matched by (``mapping_path_keys``).
 
 * ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
-  path starts with ``#/``, or by a path relative to the document.
-* ``legacy-any-key``: by all four, which can name more schemas; the layout prediction of msgspec base flattening
-  (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the prediction.
+  path starts with ``#/``, or by a path relative to the document, as written without its first segment and, unless
+  it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
+* ``legacy-any-key``: by all of them, the bare name included, which can name more schemas; the layout prediction of
+  msgspec base flattening (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the
+  prediction.
 """
 
 MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
@@ -365,13 +367,37 @@ def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tup
     schema: MappingPathKey = ("schema", path.rsplit("#/", maxsplit=1)[-1])
     file: MappingPathKey = ("file", path.rsplit("/", maxsplit=1)[-1])
     if rule == "legacy-any-key":
-        return ("name", path), schema, file, relative
-    return (schema, relative) if path.startswith("#/") else (schema, file, relative)
+        keys: tuple[MappingPathKey, ...] = (("name", path), schema, file, relative)
+    else:
+        keys = (schema, relative) if path.startswith("#/") else (schema, file, relative)
+    if path.startswith("#") or (resolved := ("relative", _without_dot_segments(path))) == relative:
+        return keys
+    return (*keys, resolved)
+
+
+def _without_dot_segments(path: str) -> str:
+    """Return a path with its dot segments removed (RFC 3986, section 5.2.4) and without a leading ``/``.
+
+    The path is read segment by segment: ``.`` goes, ``..`` takes the segment before it, or nothing at the start, so
+    ``../x``, ``./x`` and ``x`` read alike, while a name starting with a dot, ``.defs``, is a segment like any other.
+    """
+    segments: list[str] = []
+    for segment in path.split("/"):
+        if segment == "..":
+            if segments:
+                segments.pop()
+        elif segment != "." and (segment or segments):
+            segments.append(segment)
+    return "/".join(segments)
 
 
 def schema_path_keys(schema_path: str, /) -> tuple[MappingPathKey, ...]:
-    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``)."""
-    relative = schema_path[: schema_path.find("#")].lstrip("../")  # noqa: B005
+    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``).
+
+    Its path relative to the document is that of its file with the dot segments removed (``_without_dot_segments``),
+    also without its first segment.
+    """
+    relative = _without_dot_segments(schema_path[: schema_path.find("#")])
     return (
         ("name", schema_path.rsplit("/", 1)[-1]),
         ("schema", schema_path.rsplit("#/", maxsplit=1)[-1]),
