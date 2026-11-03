@@ -92,6 +92,7 @@ paths-scope	main/main_recommend_options/recommend_options_for_schemas[paths-scop
 paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt
 pattern-properties	main/main_recommend_options/recommend_options_for_schemas[pattern-properties].stdout.txt
 preset-value	main/main_recommend_options/recommend_options_for_schemas[preset-value].stdout.txt
+redundant-constraint-on-root	main/main_recommend_options/recommend_options_for_schemas[redundant-constraint-on-root].stdout.txt
 redundant-constraints	main/main_recommend_options/recommend_options_for_schemas[redundant-constraints].stdout.txt
 referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt
 referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt

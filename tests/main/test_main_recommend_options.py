@@ -199,6 +199,11 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="redundant-constraints",
         ),
         pytest.param(
+            "redundant_root_constraint.json",
+            ["--preset", "standard-py314-20261017"],
+            id="redundant-constraint-on-root",
+        ),
+        pytest.param(
             "paths_bodies.yaml",
             ["--openapi-scopes", "paths", "webhooks", "--preset", "standard-py314-20261017"],
             id="paths-bodies-as-definitions",
@@ -256,6 +261,7 @@ def test_recommend_options_for_schemas(
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
     an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
     schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
+    A constraint a const decides counts as redundant on the root schema as it does on any other.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))

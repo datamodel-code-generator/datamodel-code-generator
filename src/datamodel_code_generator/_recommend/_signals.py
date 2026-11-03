@@ -515,12 +515,14 @@ class _Walker:
         counts["unmodeled_pattern_properties"] += _unmodeled_pattern_properties(node)
         counts["multiple_of"] += json_number(node.get("multipleOf"))
 
-    def count_keywords(self, node: Mapping[str, Any]) -> None:
-        """Count a one-value enum, an enum beside a const, the validation keywords and a format generation maps.
+    def count_keywords(self, node: Mapping[str, Any], *, at_property: bool = False) -> None:
+        """Count a one-value enum, an enum beside a const, the validation keywords, a redundant constraint and a format.
 
-        A format counts when generation maps it to a type for one of the types the schema declares.
+        A format counts when generation maps it to a type for one of the types the schema declares. Every schema is
+        counted here: a named one, an inline one, and the root of a JSON Schema document.
         """
         counts = self.counts
+        counts["redundant_constraints"] += _redundant_constraint(node, at_property=at_property)
         values = node.get("enum")
         counts["single_value_enums"] += isinstance(values, list) and len(values) == 1 and "const" not in node
         counts["enums_beside_const"] += isinstance(values, list) and "const" in node
@@ -560,7 +562,6 @@ class _Walker:
         """
         if isinstance(node, dict) and not self.count_reference(node, key):
             self.count_keywords(node)
-            self.counts["redundant_constraints"] += _redundant_constraint(node, at_property=False)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
@@ -575,8 +576,7 @@ class _Walker:
         """Walk one inline schema reached under a parent model through a property (``at_property``) or keyword."""
         if not isinstance(node, dict) or _is_null(node) or self.count_reference(node, component):
             return
-        self.count_keywords(node)
-        self.counts["redundant_constraints"] += _redundant_constraint(node, at_property=at_property)
+        self.count_keywords(node, at_property=at_property)
         if _is_enum(node):
             self.counts["inline_enums"] += 1
             self.record_name(name, parent, self.enum_name_parents)
