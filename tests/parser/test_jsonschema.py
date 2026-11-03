@@ -1695,7 +1695,7 @@ def test_parse_deferred_json_pointer_rejects_overlong_array_index() -> None:
 def test_validate_schema_python_import_path_rejects_non_string() -> None:
     """Test schema import path validation rejects non-string values."""
     with pytest.raises(Error, match="customTypePath must be a dotted Python identifier path: 1"):
-        _validate_schema_python_import_path(1, "customTypePath")
+        _validate_schema_python_import_path(1, "customTypePath", PythonVersion.PY_314)
 
 
 @pytest.mark.parametrize(

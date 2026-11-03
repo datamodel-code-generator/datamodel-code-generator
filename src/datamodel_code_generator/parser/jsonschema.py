@@ -335,7 +335,6 @@ from datamodel_code_generator.parser._schema_object import (
     _read_type,
     _source_location,
     _type_null_sources,
-    _validate_schema_python_import_path,
     get_ref_type,
 )
 from datamodel_code_generator.parser._schema_reading import (
@@ -421,6 +420,7 @@ from datamodel_code_generator.types import (
     build_union,
 )
 from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.validators import _validate_schema_python_import_path
 
 if TYPE_CHECKING:
     import enum as _enum
@@ -2062,7 +2062,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             msg = "x-python-import requires both module and name"
             raise Error(msg)
         return self._get_emitted_python_type_path(
-            _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import")
+            _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import", self.target_python_version)
         )
 
     def _get_target_runtime_symbol(self, module: str, qualname: str) -> PythonTypeRuntimeSymbol:
@@ -2083,7 +2083,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (qualname := x_python_import.get("qualname")) is None:
             return None
         return self._get_target_runtime_symbol(
-            x_python_import["module"], _validate_schema_python_import_path(qualname, "x-python-import qualname")
+            x_python_import["module"],
+            _validate_schema_python_import_path(qualname, "x-python-import qualname", self.target_python_version),
         )
 
     def _get_x_python_import_expression(
@@ -4476,7 +4477,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 constrained_root_type := fallback(fields)
             ) is not None:
                 data_model_root_type = constrained_root_type
-        data_model_root = data_model_root_type(
+        data_model_root = self._new_model(
+            data_model_root_type,
             reference=reference,
             fields=fields,
             custom_base_class=self._resolve_base_class(custom_base_class_name, obj.custom_base_path),
@@ -5624,7 +5626,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _parse_custom_type_item(self, site: _Site) -> DataType:
         return self.data_type_manager.get_data_type_from_full_path(
             self._get_emitted_python_type_path(
-                _validate_schema_python_import_path(cast("str", site.obj.custom_type_path), "customTypePath")
+                _validate_schema_python_import_path(
+                    cast("str", site.obj.custom_type_path), "customTypePath", self.target_python_version
+                )
             ),
             is_custom_type=True,
         )
@@ -6298,7 +6302,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif obj.custom_type_path:
             data_type = self.data_type_manager.get_data_type_from_full_path(
                 self._get_emitted_python_type_path(
-                    _validate_schema_python_import_path(obj.custom_type_path, "customTypePath")
+                    _validate_schema_python_import_path(
+                        obj.custom_type_path, "customTypePath", self.target_python_version
+                    )
                 ),
                 is_custom_type=True,
             )  # pragma: no cover
@@ -6945,7 +6951,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
             self._record_schema_object(reference_, obj)
 
-            enum = enum_cls(
+            enum = self._new_model(
+                enum_cls,
                 reference=reference_,
                 fields=enum_fields,
                 path=self.current_source_path,

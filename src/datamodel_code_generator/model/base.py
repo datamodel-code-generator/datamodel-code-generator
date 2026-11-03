@@ -39,7 +39,10 @@ from datamodel_code_generator._constraint_applicability import (
     render_drop,
 )
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
+from datamodel_code_generator._format_types import (
+    NEWEST_TARGET,
+    PythonVersion,
+)
 from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
 from datamodel_code_generator._internal_utils import (
     get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
@@ -209,6 +212,7 @@ _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
 })
 _RESOLVE_REFERENCE_ACTION_CAPABILITIES_MARKER = "__datamodel_code_generator_resolve_reference_action_capabilities__"
 MroT = TypeVar("MroT")
+_BuiltT = TypeVar("_BuiltT")
 _CustomTemplateSignature = bytes
 
 
@@ -1422,6 +1426,20 @@ def _nested_factory_decision(model: DataModel) -> tuple[tuple[int, int] | None, 
     )
 
 
+_MODEL_TARGET: Final[ContextVar[PythonVersion | None]] = ContextVar("model_target", default=None)
+"""The target Python of the models ``_build_for_target`` builds, which ``DataModel.__init__`` gives each of them."""
+
+
+def _build_for_target(target: PythonVersion, factory: Callable[..., _BuiltT], /, **kwargs: Any) -> _BuiltT:
+    """Build with ``factory``, a model class or a model factory, every model it builds taking ``target``.
+
+    The target is set while the models are constructed, so the decisions their constructors make read it and a model
+    class whose ``__init__`` names its own arguments needs no argument for it.
+    """
+    with context_values({_MODEL_TARGET: target}):
+        return factory(**kwargs)
+
+
 _ORDERS_BEFORE_NULLABILITY: Final[ContextVar[bool]] = ContextVar("orders_before_nullability", default=False)
 """Whether the nested factories read row ``legacy-nested-factory-order-before-nullability``: in constructor ordering,
 and in the row's own required check."""
@@ -2136,6 +2154,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     _field_name_bindings: Mapping[str, str] | None = None
     _builtin_name_bindings: Mapping[str, str] | None = None
+    target_python_version: PythonVersion = NEWEST_TARGET
+    """The target Python whose names the model writes from template data: the newest unless it was built for one."""
     reused_reference: Reference | None = None
     """The reference of the model that reuse replaced with this empty subclass of an equal model."""
 
@@ -2567,7 +2587,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         treat_dot_as_module: bool | None = None,
         dataclass_arguments: DataclassArguments | None = None,
     ) -> None:
-        """Initialize a data model with fields, base classes, and configuration."""
+        """Initialize a data model with fields, base classes, and configuration.
+
+        A model built inside ``_build_for_target`` takes its target Python.
+        """
+        if (target_python_version := _MODEL_TARGET.get()) is not None:
+            self.target_python_version = target_python_version
         self.keyword_only = keyword_only
         self.frozen = frozen
         self.dataclass_arguments: DataclassArguments = dataclass_arguments if dataclass_arguments is not None else {}
@@ -2769,9 +2794,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> Self:
         """Build a model of this class from ``reference``, ``fields`` and the rest, carrying over this model's options.
 
-        The options are those ``_derived_options`` returns; a model built from another one goes through here.
+        The options are those ``_derived_options`` returns, and the model takes this model's target Python; a model
+        built from another one goes through here.
         """
-        return self.__class__(
+        return _build_for_target(
+            self.target_python_version,
+            self.__class__,
             reference=reference,
             fields=fields,
             base_classes=base_classes,

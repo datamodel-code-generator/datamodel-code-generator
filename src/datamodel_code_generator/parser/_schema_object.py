@@ -23,7 +23,6 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, keep_resolved_ref
@@ -607,15 +606,21 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     @field_validator("custom_base_path", mode="before")
     @classmethod
     def validate_custom_base_path(cls, value: Any) -> Any:
-        """Validate schema-controlled custom base class import paths."""
+        """Validate schema-controlled custom base class import paths as paths of the newest target Python.
+
+        The parser checks a path again for the run's target where a model takes it as its base class.
+        """
+        from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
+        from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
+
         match value:
             case None:
                 return None
             case list():
                 for item in value:
-                    _validate_schema_python_import_path(item, "customBasePath")
+                    _validate_schema_python_import_path(item, "customBasePath", NEWEST_TARGET)
             case _:
-                _validate_schema_python_import_path(value, "customBasePath")
+                _validate_schema_python_import_path(value, "customBasePath", NEWEST_TARGET)
         return value
 
     @cached_property
@@ -706,19 +711,6 @@ DEFAULT_FIELD_KEYS: set[str] = {
     "externalDocs",
     "xml",
 }
-
-
-def _validate_schema_python_import_path(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a dotted Python identifier path: {value!r}"
-        raise Error(msg)
-    from datamodel_code_generator.validators import _validate_dotted_python_identifier_path  # noqa: PLC0415
-
-    try:
-        return _validate_dotted_python_identifier_path(value)
-    except ValueError as exc:
-        msg = f"{field_name} {exc}"
-        raise Error(msg) from None
 
 
 EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA: set[str] = {

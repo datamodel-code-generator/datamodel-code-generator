@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationInfo, 
 
 from datamodel_code_generator._config_fields import DEFAULT_ENCODING, OUTPUT_PATH_FIELDS, option_path
 from datamodel_code_generator._format_types import (
+    NEWEST_TARGET,
     DateClassType,
     DatetimeClassType,
     Formatter,
@@ -77,7 +78,7 @@ else:
 
 def validate_schema_validator_base_class_name(value: str | None) -> str | None:
     """Validate the generated shared schema validator base class name."""
-    if (msg := _schema_validator_base_class_name_error(value)) is not None:
+    if (msg := _schema_validator_base_class_name_error(value, NEWEST_TARGET)) is not None:
         raise ValueError(msg)
     return value
 
@@ -352,7 +353,7 @@ class ParserConfig(BaseModel):
     @classmethod
     def validate_additional_imports(cls, value: list[str] | None) -> list[str] | None:
         """Require additional imports to be safe Python import paths."""
-        return _validate_additional_import_paths(value)
+        return _validate_additional_import_paths(value, NEWEST_TARGET)
 
     _validate_named_paths = field_validator(*_NAMED_PATHS)(validate_named_paths)
     _validate_schema_validator_base_class_name = field_validator("schema_validator_base_class_name")(

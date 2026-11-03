@@ -101,7 +101,9 @@ class _DataTypeScalarBase(TypeAliasBase):
         template_data = super()._builtin_template_data()
         return {
             **template_data,
-            "py_type": represent_untrusted_public_type_name(template_data.get("py_type", DEFAULT_GRAPHQL_SCALAR_TYPE)),
+            "py_type": represent_untrusted_public_type_name(
+                template_data.get("py_type", DEFAULT_GRAPHQL_SCALAR_TYPE), target=self.target_python_version
+            ),
         }
 
 

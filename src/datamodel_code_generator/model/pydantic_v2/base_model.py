@@ -460,11 +460,11 @@ def _decode_legacy_quoted_config_string(value: str) -> str:
     return value
 
 
-def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
-    """Return Python-source-safe ConfigDict arguments for built-in templates."""
+def _safe_config_dict_items(config: Any, target: PythonVersion) -> list[tuple[str, str]]:
+    """Return Python-source-safe ConfigDict arguments for built-in templates, each key a name of the target Python."""
     safe_items: list[tuple[str, str]] = []
     for field_name, value in _config_dict_items(config):
-        if (normalized_field_name := _normalized_safe_python_name(field_name)) is None:
+        if (normalized_field_name := _normalized_safe_python_name(field_name, target)) is None:
             continue
         normalized_value = _normalize_string(value) if isinstance(value, str) else value
         if normalized_field_name == _ALIAS_GENERATOR_TEMPLATE_DATA_KEY and (
@@ -486,9 +486,9 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
     return safe_items
 
 
-def _template_config_items(extra_template_data: Mapping[str, Any]) -> list[tuple[str, str]]:
-    """Return the safe items of the ``config`` template data, which the built-in templates write."""
-    return _safe_config_dict_items(config) if (config := extra_template_data.get("config")) else []
+def _template_config_items(extra_template_data: Mapping[str, Any], target: PythonVersion) -> list[tuple[str, str]]:
+    """Return the safe items of the ``config`` template data, which the built-in templates write for the target."""
+    return _safe_config_dict_items(config, target) if (config := extra_template_data.get("config")) else []
 
 
 def _config_constructs(config_items: Iterable[tuple[str, str]]) -> Iterator[tuple[PydanticConstruct, str | None]]:
@@ -1577,7 +1577,7 @@ class _PydanticV2Model(DataModel):
 
     def _rendered_config_items(self) -> list[tuple[str, str]]:
         """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too."""
-        return _template_config_items(self.extra_template_data)
+        return _template_config_items(self.extra_template_data, self.target_python_version)
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
@@ -1735,8 +1735,12 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if not runtime_models:
             return None
 
+        first_model = runtime_models[0]
         base_class_name = (
-            _normalized_safe_python_name(runtime_models[0].extra_template_data.get("schema_validator_base_class_name"))
+            _normalized_safe_python_name(
+                first_model.extra_template_data.get("schema_validator_base_class_name"),
+                first_model.target_python_version,
+            )
             or cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
         )
         runtime_validation_by_model = {
@@ -2356,7 +2360,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         )
 
         try:
-            validators = normalize_validators(validators)
+            validators = normalize_validators(validators, target=self.target_python_version)
         except ValidationError as e:
             msg = f"Invalid validators configuration: {format_validation_error(e)}"
             raise Error(msg) from e

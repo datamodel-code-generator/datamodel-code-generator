@@ -943,6 +943,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataModel", "_nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_custom_template_dir", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModel", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
         "DataModel",
         "_field_name_bindings",

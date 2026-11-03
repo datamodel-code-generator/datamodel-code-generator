@@ -208,7 +208,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
     def parse_scalar(self, scalar_graphql_object: graphql.GraphQLScalarType) -> None:
         """Parse a GraphQL scalar type and add it to results."""
         self._graph_builder.register_model(
-            self.data_model_scalar_type(
+            self._new_model(
+                self.data_model_scalar_type,
                 reference=self.references[scalar_graphql_object.name],
                 fields=[],
                 custom_template_dir=self.custom_template_dir,
@@ -303,7 +304,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
             keep_member_values=self.config.keep_enum_member_values,
         )
-        enum = _enum_class(kind)(
+        enum = self._new_model(
+            _enum_class(kind),
             reference=self.references[enum_object.name],
             fields=enum_fields,
             path=self.current_source_path,
@@ -464,7 +466,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             self._build_field("bare", DataType(), name=self.references[types[index].name].name)
             for index in plan.members
         ]
-        data_model_type = self.data_model_union_type(
+        data_model_type = self._new_model(
+            self.data_model_union_type,
             reference=self.references[union_object.name],
             fields=fields,
             custom_base_class=self._resolve_base_class(union_object.name),
