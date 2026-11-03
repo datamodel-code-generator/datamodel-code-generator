@@ -70,6 +70,8 @@ preset-argument-json	main/main_recommend_options/recommend_options_for_projects[
 profile	main/main_recommend_options/recommend_options_for_projects[profile].stdout.txt
 unicode-profile	main/main_recommend_options/recommend_options_for_projects[unicode-profile].stdout.txt
 [test_recommend_options_for_schemas]
+api-scope-31-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-31-operations].stdout.txt
+api-scope-32-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-32-operations].stdout.txt
 asyncapi	main/main_recommend_options/recommend_options_for_schemas[asyncapi].stdout.txt
 asyncapi-multi-format-extension	main/main_recommend_options/recommend_options_for_schemas[asyncapi-multi-format-extension].stdout.txt
 asyncapi-v3	main/main_recommend_options/recommend_options_for_schemas[asyncapi-v3].stdout.txt
@@ -90,6 +92,7 @@ paths-bodies-included-paths	main/main_recommend_options/recommend_options_for_sc
 paths-bodies-object-map	main/main_recommend_options/recommend_options_for_schemas[paths-bodies-object-map].stdout.txt
 paths-bodies-referenced-path-item	main/main_recommend_options/recommend_options_for_schemas[paths-bodies-referenced-path-item].stdout.txt
 paths-scope	main/main_recommend_options/recommend_options_for_schemas[paths-scope].stdout.txt
+paths-scope-32-operations	main/main_recommend_options/recommend_options_for_schemas[paths-scope-32-operations].stdout.txt
 paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt
 pattern-properties	main/main_recommend_options/recommend_options_for_schemas[pattern-properties].stdout.txt
 preset-value	main/main_recommend_options/recommend_options_for_schemas[preset-value].stdout.txt

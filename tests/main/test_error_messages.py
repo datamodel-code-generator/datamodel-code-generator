@@ -1116,6 +1116,14 @@ def test_malformed_input_error_messages(
             id="integer-additional-operation-referenced-api",
         ),
         pytest.param(
+            "additional_operations_list.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'additional_operations_list.yaml/#/paths//pets/additionalOperations': "
+            "API_INVALID_OBJECT: expected an object",
+            id="additional-operations-list-api",
+        ),
+        pytest.param(
             "integer_header_name.yaml",
             "openapi",
             ["--openapi-scopes", "api"],

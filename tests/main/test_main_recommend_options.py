@@ -238,6 +238,9 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             ["--openapi-scopes", "api"],
             id="referenced-holders-api-scope",
         ),
+        pytest.param("api_operations.yaml", ["--openapi-scopes", "api"], id="api-scope-32-operations"),
+        pytest.param("api_operations_31.yaml", ["--openapi-scopes", "api"], id="api-scope-31-operations"),
+        pytest.param("api_operations.yaml", ["--openapi-scopes", "paths"], id="paths-scope-32-operations"),
         pytest.param("integer_definition_keys.yaml", [], id="integer-definition-keys"),
         pytest.param(
             "paths_integer_schema_key.yaml",
@@ -261,7 +264,10 @@ def test_recommend_options_for_schemas(
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
     an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
     schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
-    A constraint a const decides counts as redundant on the root schema as it does on any other.
+    A constraint a const decides counts as redundant on the root schema as it does on any other. The api scope reads the
+    operations of a path item as its walk does: the ``query`` operation and ``additionalOperations`` from OpenAPI 3.2,
+    and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds
+    an object.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))
@@ -326,6 +332,37 @@ def test_recommend_options_rejects_keys_that_are_no_strings(
     with chdir(tmp_path):
         run_main_with_args(
             ["--input", source, *args, "--recommend-options"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr=expected_stderr,
+            use_builtin_default_formatter=False,
+        )
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_stderr"),
+    [
+        pytest.param(
+            DATA_PATH / "malformed" / "additional_operations_list.yaml",
+            "Error at schema path '#/paths/~1pets/additionalOperations': API_INVALID_OBJECT: expected an object\n",
+            id="not-a-mapping",
+        ),
+        pytest.param(
+            DATA_PATH / "generation_platform" / "api_scope" / "reserved-additional-method.json",
+            "Error at schema path '#/paths/~1/additionalOperations/POST': "
+            "API_INVALID_OBJECT: fixed methods cannot appear in additionalOperations\n",
+            id="fixed-method",
+        ),
+    ],
+)
+def test_recommend_options_rejects_invalid_additional_operations(
+    source: Path, expected_stderr: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """End in the error generation gives for additionalOperations that are no mapping or name a fixed method."""
+    shutil.copy(source, tmp_path / source.name)
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--input", source.name, "--openapi-scopes", "api", "--recommend-options"],
             expected_exit=Exit.ERROR,
             capsys=capsys,
             expected_stderr=expected_stderr,

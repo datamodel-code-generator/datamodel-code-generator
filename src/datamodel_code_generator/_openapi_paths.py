@@ -3,12 +3,13 @@
 ``PATH_ITEM_METHODS`` is the one table of the fields of a path item that each hold the operation of one HTTP method.
 A reader that takes another set keeps it as a named view here: ``OPERATION_METHODS``, the fields before OpenAPI 3.2
 added ``QUERY_METHOD``, which the paths scope, the API walk of an earlier document and the recommender read (the public
-``parser.openapi.OPERATION_NAMES`` lists them in this order). ``holds_path_item`` tells which key of ``paths`` holds a
-path item; ``path_selected`` is the test of ``--openapi-include-paths`` that generation and the recommender apply to
-such a key. ``effective_parameters``, ``inherited_security`` and ``effective_operation`` give an operation as the paths
-scope's walk and the API walk hand it on: with the parameters of its path item it does not override and the document's
-security requirement unless it declares its own. This module imports only the standard library, so every layer may use
-it.
+``parser.openapi.OPERATION_NAMES`` lists them in this order). ``path_item_operations`` reads the operations of a path
+item as the API walk does, ``additionalOperations`` of OpenAPI 3.2 included. ``holds_path_item`` tells which key of
+``paths`` holds a path item; ``path_selected`` is the test of ``--openapi-include-paths`` that generation and the
+recommender apply to such a key. ``effective_parameters``, ``inherited_security`` and ``effective_operation`` give an
+operation as the paths scope's walk and the API walk hand it on: with the parameters of its path item it does not
+override and the document's security requirement unless it declares its own. This module imports only the standard
+library, so every layer may use it.
 """
 
 from __future__ import annotations
@@ -17,9 +18,11 @@ from fnmatch import fnmatch
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
+    "ADDITIONAL_OPERATIONS",
+    "FIXED_HTTP_METHODS",
     "OPERATION_METHODS",
     "PATHS_PARAMETERS",
     "PATH_ITEM_METHODS",
@@ -29,6 +32,7 @@ __all__ = [
     "effective_parameters",
     "holds_path_item",
     "inherited_security",
+    "path_item_operations",
     "path_selected",
     "rooted_path",
 ]
@@ -41,6 +45,10 @@ QUERY_METHOD: Final = "query"
 """The field of a path item that holds the operation of the QUERY method, added by OpenAPI 3.2."""
 PATH_ITEM_METHODS: Final = (*OPERATION_METHODS, QUERY_METHOD)
 """Every field of a path item that holds the operation of one HTTP method."""
+ADDITIONAL_OPERATIONS: Final = "additionalOperations"
+"""The field of a path item that maps the name of a method OpenAPI 3.2 does not fix to its operation."""
+FIXED_HTTP_METHODS: Final = frozenset(method.upper() for method in PATH_ITEM_METHODS)
+"""The names ``ADDITIONAL_OPERATIONS`` may not use: the fixed methods, upper-cased."""
 PATHS_PARAMETERS: Final = "parameters"
 """The key of ``paths`` that holds the parameters of every path; it is not a path item."""
 _EXTENSION_PREFIX: Final = "x-"
@@ -58,6 +66,30 @@ def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> boo
     return not (key == PATHS_PARAMETERS or key.startswith(_EXTENSION_PREFIX)) or (
         row == "legacy-object-extension-paths" and isinstance(value, dict)
     )
+
+
+def path_item_operations(
+    item: Mapping[str, Any], *, openapi_32: bool, invalid: Callable[[str, tuple[str, ...]], Exception]
+) -> Iterator[tuple[tuple[str, ...], Any]]:
+    """Yield the tokens and the operation of each field of a path item that the API walk reads, in source order.
+
+    The fields are the methods of ``OPERATION_METHODS``; from OpenAPI 3.2 (``openapi_32``) also ``QUERY_METHOD`` and
+    each entry of ``ADDITIONAL_OPERATIONS``, whose tokens are the field and the name of the entry. An
+    ``ADDITIONAL_OPERATIONS`` that is no mapping, or an entry named like a fixed method, is refused: the exception to
+    raise is ``invalid(message, tokens)``, with the tokens of the refused field or entry.
+    """
+    for field, value in item.items():
+        if field in OPERATION_METHODS or (field == QUERY_METHOD and openapi_32):
+            yield (field,), value
+        elif field == ADDITIONAL_OPERATIONS and openapi_32:
+            if not isinstance(value, dict):
+                msg = "API_INVALID_OBJECT: expected an object"
+                raise invalid(msg, (field,))
+            for name, operation in value.items():
+                if name in FIXED_HTTP_METHODS:
+                    msg = "API_INVALID_OBJECT: fixed methods cannot appear in additionalOperations"
+                    raise invalid(msg, (field, name))
+                yield (field, name), operation
 
 
 def rooted_path(path: str) -> str:
