@@ -481,7 +481,6 @@ def _module_import_plan(
                     init=ctx.is_init,
                     internal_modules=internal_modules,
                     base_class=base_class,
-                    treat_dot_as_module=parser.treat_dot_as_module,
                     shared_imports=parser.imports,
                     hidden_modules=hidden_modules,
                 )
