@@ -2408,11 +2408,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
     def _reject_unimportable_imports(self, module: ModulePath, imports: Imports, *, is_init: bool) -> None:
-        """Refuse the import block of ``module`` where ``--treat-dot-as-module`` names a module Python cannot import."""
-        if self.treat_dot_as_module is True:
-            reject_unimportable_imports(
-                module, imports, is_init=is_init, target_python_version=self.target_python_version
-            )
+        """Refuse the import block of ``module`` where it names a module Python cannot import by that name."""
+        reject_unimportable_imports(
+            module,
+            imports,
+            is_init=is_init,
+            target_python_version=self.target_python_version,
+            treat_dot_as_module=self.treat_dot_as_module is True,
+        )
 
     def _generate_empty_init_exports(
         self,

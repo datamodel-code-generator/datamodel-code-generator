@@ -36375,6 +36375,46 @@ def test_main_jsonschema_treat_dot_as_module_writes_importable_modules(
 
 
 @pytest.mark.parametrize(
+    ("input_name", "message"),
+    [
+        pytest.param(
+            "keyword_directory_reference",
+            "Cannot import the module 'class' from module 'main': 'class' is a Python keyword",
+            id="directory",
+        ),
+        pytest.param(
+            "keyword_file_name_reference",
+            "Cannot import the module 'class' from module 'main': 'class' is a Python keyword",
+            id="file-name",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--treat-dot-as-module"], id="treat-dot-as-module")],
+)
+def test_main_jsonschema_refuses_keyword_module(
+    output_dir: Path, capsys: pytest.CaptureFixture[str], input_name: str, message: str, extra_args: list[str]
+) -> None:
+    """Refuse a generated module that imports a directory or file of the input named like a keyword.
+
+    ``class/k.json`` and ``class.json`` are written as ``class/k.py`` and ``class.py``, and the imports
+    ``from .class import k`` and ``from . import class`` are syntax errors. The layout is the released one, so the run
+    fails and names the module and the part (#6054).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"{message}, so the import is a syntax error. Rename the input.",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param([], id="default"),
