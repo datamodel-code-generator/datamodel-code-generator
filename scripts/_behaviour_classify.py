@@ -7,9 +7,10 @@
 - `no-behaviour`: the output differs, the signatures and payload verdicts do not
 - `crash-fix`: the release failed to generate or import, or every change is on a name the release could not use
   (no validator, a validator that raised on its own schema's example value where the candidate's does not, failed
-  introspection, dcg's internal placeholder as a value) or on a payload it crashed on
+  introspection, dcg's internal placeholder as a value) or on a payload it crashed on; a candidate that refuses to
+  generate an output the release wrote but could not import (a syntax error) fixes it too
 - `accepted`: every behaviour change matches an owner-approved allowlist entry
-- `violation`: any other behaviour change, or the candidate fails where the release worked
+- `violation`: any other behaviour change, or the candidate fails where the release's output imported
 - `both-fail`: both sides fail
 
 Pure functions only: no file system access apart from `Allowlist.load`.
@@ -364,6 +365,11 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
     if not base.generated:
         return Verdict("crash-fix", (f"generation fixed: {base.message[:120]}",))
     if not candidate.generated:
+        if broken := import_errors(base.signature or {}):
+            return Verdict(
+                "crash-fix",
+                (f"generation refused an output that failed to import: {broken[min(broken)][:120]}",),
+            )
         return Verdict("violation", (f"generation now fails: {candidate.message[:160]}",))
     if same_bytes:
         return Verdict("same")
