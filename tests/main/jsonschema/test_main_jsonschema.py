@@ -28717,6 +28717,73 @@ def test_main_read_only_write_only_custom_type_ref_siblings(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("typing.TypedDict", ["--field-constraints"], id="typing.TypedDict"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_item(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose items are a $ref with a constraint beside it, built as root models.
+
+    An item, tuple item, additionalItems, anyOf and oneOf member of ``Holder`` that is a $ref with a constraint sibling
+    is a root model of its own, which holds one type and no fields, so the readOnly property of ``Item`` is no field of
+    it and ``Holder`` keeps one class. The items of ``Wrapping`` are root models of an array of ``Item`` or of an allOf
+    that names it, which name ``Item``, so ``Wrapping`` splits with it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_item.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "list": [{"name": "a"}],
+            "alias": [{"name": "b"}],
+            "inline": [{"name": "c"}],
+            "pair": [{"name": "d"}, "s", {"name": "e"}],
+            "union": {"name": "f"},
+            "choice": {"name": "g"},
+            "count": 1,
+        },
+        "wrapping": {"rows": [[{"name": "h"}]], "listed": [[{"name": "i"}]]},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_constrained_item", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
 @pytest.mark.parametrize(
     "dedupe_args",

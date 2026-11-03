@@ -90,6 +90,7 @@ __all__ = [
     "inherited_default_source",
     "join_rw_model_property_flags",
     "legacy_rw_variants",
+    "lightweight_type_keys",
     "merge_inherited_field_overrides",
     "merged_ref_model_schemas",
     "merged_ref_sibling_schemas",
@@ -1192,29 +1193,54 @@ def get_ref_schema_rw_model_reference_facts(
                     references.setdefault(cast("str", child.reference), None)
                 case _:
                     stack.append(
-                        SchemaSite("", cast("JsonSchemaObject", child.schema), [resolved_ref], parent=child.into)
+                        SchemaSite(
+                            "",
+                            cast("JsonSchemaObject", child.schema),
+                            [resolved_ref],
+                            parent=child.into,
+                            root=child.position == "root",
+                        )
                     )
     parser._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))  # noqa: SLF001
     return result
 
 
+def lightweight_type_keys(parser: RwSplitHost, data_type: DataType | None) -> tuple[str, ...]:
+    """Return the keys of the models a lightweight type names, and drop the type, which is built only to read them."""
+    keys = (
+        () if data_type is None else tuple(item.reference.path for item in data_type.all_data_types if item.reference)
+    )
+    unregister_temporary_type(parser, data_type)
+    return keys
+
+
 def typed_field_site(
-    parser: RwSplitHost, item: object, defining_ref: str, *, merges_ref_first: bool = False
+    parser: RwSplitHost,
+    item: object,
+    defining_ref: str,
+    *,
+    merges_ref_first: bool = False,
+    parent: JsonSchemaObject | None = None,
 ) -> Iterable[TypedChild[JsonSchemaObject]]:
     """Return what a field site of a schema types, as the row ``parse_item`` chooses for it declares.
 
     A $ref beside sibling keywords is read merged with them, relative to the schema that defines the site: by the steps
     of the field table, and before the table chooses at the positions that ``merges_ref_first`` names (a property,
     ``parse_object_fields``, and a oneOf or anyOf member, ``parse_combined_schema``), where the python-type row reads
-    the schema the $ref names.
+    the schema the $ref names. ``parent`` is the schema the item is an item or a member of, as ``parse_item`` gets it
+    there, which the rows that write the constraints of an item on a root model read.
     """
     if not isinstance(item, JsonSchemaObject):
         return ()
-    site = SchemaSite("", item, [defining_ref])
+    site = SchemaSite("", item, [defining_ref], parent=parent)
     if not _merges_ref_siblings(item):
         return parser._FIELD_TABLE.typed_children(parser, site)  # noqa: SLF001
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-        as_parsed = SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref]) if merges_ref_first else None  # noqa: SLF001
+        as_parsed = (
+            SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref], parent=parent)  # noqa: SLF001
+            if merges_ref_first
+            else None
+        )
         return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
 
 
