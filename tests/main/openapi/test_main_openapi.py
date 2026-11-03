@@ -14467,6 +14467,24 @@ def test_main_openapi_paths_keys_that_are_not_path_items(output_file: Path, scop
     )
 
 
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        pytest.param(["--openapi-scopes", "paths", "parameters"], id="paths"),
+        pytest.param(["--openapi-scopes", "paths", "parameters", "--openapi-include-paths", "/pets"], id="include"),
+    ],
+)
+def test_main_openapi_paths_parameters_by_local_reference(output_file: Path, scope_args: list[str]) -> None:
+    """Resolve a ``$ref`` in the ``parameters`` of every path inside the document, as the API scope does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_local_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_include_paths_warning_without_paths_scope() -> None:
     """Warn when --openapi-include-paths used without paths scope."""
     import warnings

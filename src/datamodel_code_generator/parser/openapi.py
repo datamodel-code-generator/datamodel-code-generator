@@ -47,7 +47,7 @@ from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
-from datamodel_code_generator.parser._schema_refs import hold_document_root, ref_file_document
+from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -520,7 +520,7 @@ class OpenAPIParser(JsonSchemaParser):
         if OpenAPIScope.Paths in self.open_api_scopes:
             # Resolve $ref in global parameter list
             global_parameters = [
-                self._global_parameter(p["$ref"]) if isinstance(p, dict) and "$ref" in p else p
+                self.get_ref_model(p["$ref"], "parameter") if isinstance(p, dict) and "$ref" in p else p
                 for p in paths.get(PATHS_PARAMETERS, [])
                 if isinstance(p, dict)
             ]
@@ -1333,11 +1333,6 @@ class OpenAPIParser(JsonSchemaParser):
 
         reached = reach(used(*parameter_models), lambda path: used(models[path]) if path in models else ())
         return {path for path in reached if path not in models}
-
-    def _global_parameter(self, ref: str) -> dict[str, YamlValue]:
-        """Return the document a reference of the parameters of every path names, read as a Parameter Object."""
-        hold_document_root(self, ref, "parameter")
-        return self._get_ref_body(ref)
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Index discriminator metadata when the existing loader reads an external document."""
