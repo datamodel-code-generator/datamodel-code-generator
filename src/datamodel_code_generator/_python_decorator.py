@@ -27,7 +27,8 @@ _COMPONENT_EMPTY = 0
 _COMPONENT_HAS_CONTENT = 1
 _COMPONENT_AFTER_COMMA = 2
 _COMPONENT_AFTER_EQUALS = 3
-_PATH_SKIPPED_TOKEN_TYPES = frozenset({token.COMMENT, token.NEWLINE, tokenize.NL, token.ENDMARKER})
+_PATH_SKIPPED_TOKEN_TYPES = frozenset({token.COMMENT, token.ENDMARKER})
+_LINE_BREAK_TOKEN_TYPES = frozenset({token.NEWLINE, tokenize.NL})
 _PATH_END_BRACKETS = frozenset("()[]")
 
 
@@ -183,19 +184,29 @@ def _parse_direct_target(
 def python_decorator_path(decorator: str) -> str:
     """Return the path a decorator names: its tokens after ``@`` and opening parentheses, up to its next bracket.
 
-    The tokens after the bracket, such as the arguments of a call, are not read. Comments, line breaks and the
-    whitespace around a dot are no part of the path; other whitespace between two tokens is kept as one space, so
-    ``a.b if c else d`` names no path. A text the tokenizer cannot read before that bracket is the path as a whole;
-    a character UTF-8 cannot encode is read as its backslash escape, as every Python version reads it the same way.
+    The tokens after the bracket, such as the arguments of a call, are not read. Comments, line breaks inside the
+    opening parentheses and the whitespace around a dot are no part of the path; other whitespace between two tokens
+    is kept as one space, so ``a.b if c else d`` names no path. A line break outside the parentheses ends the
+    decorator's line; a decorator whose text the tokenizer cannot read before that bracket, or that goes on after that
+    line, names itself as a whole, ``@`` included, so no path reads it. A character UTF-8 cannot encode is read as its
+    backslash escape, as every Python version reads it the same way.
     """
-    source = decorator.removeprefix("@").lstrip()
+    source = decorator.removeprefix("@").lstrip(" \t\f")
     path: list[str] = []
     previous: tokenize.TokenInfo | None = None
+    depth = 0
+    line_ended = False
     try:
         for item in tokenize.generate_tokens(StringIO(source.encode(errors="backslashreplace").decode()).readline):
-            if item.type in _INVALID_TOKEN_TYPES:
-                return source
-            if item.type in _PATH_SKIPPED_TOKEN_TYPES or (previous is None and item.string == "("):
+            if item.type in _LINE_BREAK_TOKEN_TYPES:
+                line_ended = line_ended or not depth
+                continue
+            if item.type in _PATH_SKIPPED_TOKEN_TYPES:
+                continue
+            if line_ended or item.type in _INVALID_TOKEN_TYPES:
+                return decorator
+            if previous is None and item.string == "(":
+                depth += 1
                 continue
             if item.type == token.OP and item.string in _PATH_END_BRACKETS:
                 break
@@ -204,7 +215,7 @@ def python_decorator_path(decorator: str) -> str:
             path.append(item.string)
             previous = item
     except (SyntaxError, tokenize.TokenError):
-        return source
+        return decorator
     return "".join(path)
 
 

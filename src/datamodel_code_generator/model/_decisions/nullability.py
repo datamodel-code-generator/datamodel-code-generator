@@ -104,9 +104,12 @@ def rendered_nullability(*, own: bool, reference: bool, member_nulls: Iterable[b
     return None
 
 
-def takes_member_null(*, is_tuple: bool, keeps_member_order: bool, member_count: int) -> bool:
-    """Return whether a type takes over the None of its members: a union that is no tuple and keeps no member order."""
-    return member_count > 1 and not is_tuple and not keeps_member_order
+def takes_member_null(*, is_container: bool, keeps_member_order: bool, member_count: int) -> bool:
+    """Return whether a type takes over the None of its members: a union that keeps no member order.
+
+    A container is no union: the None of an item stays with its items, inside the container.
+    """
+    return member_count > 1 and not is_container and not keeps_member_order
 
 
 def member_null(*, is_none: bool, is_any: bool) -> bool | None:

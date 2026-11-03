@@ -66,7 +66,9 @@ class PrefixItemsClosedLength(BaseModel):
     kept_variable_length: list[str | int] | None = Field(
         None, max_length=2, min_length=1
     )
-    closed_by_type_list: list[str] | None = Field(None, max_length=2, min_length=2)
+    closed_by_type_list: list[str | None] | None = Field(
+        None, max_length=2, min_length=2
+    )
     kept_apart_from_extension_keys: list[str] | None = Field(
         None, max_length=2, min_length=2
     )

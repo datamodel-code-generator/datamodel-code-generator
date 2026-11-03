@@ -1155,7 +1155,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _takes_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a union, takes over the None of its members."""
         return core.takes_member_null(
-            is_tuple=self.is_tuple,
+            is_container=self._is_container,
             keeps_member_order=self.preserve_union_member_order,
             member_count=len(self.data_types),
         )
@@ -1410,6 +1410,8 @@ def _render_apply(expr: TypeApply) -> str:
     elif not text:
         text, member_null = _render_form(expr)
     if (container := expr.container) is not None:
+        if member_null:
+            text, member_null = node._optional_hint(text, node.use_union_operator), False  # noqa: SLF001
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
             text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container

@@ -16355,6 +16355,78 @@ def test_main_jsonschema_prefix_items_closed_length(
     )
 
 
+@pytest.mark.parametrize("name", ["prefix_items_closed_nullable_positions", "pattern_properties_nullable_value_union"])
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", ["--no-use-union-operator"], id="no-use-union-operator"),
+    ],
+)
+def test_main_jsonschema_container_nullable_item_union(
+    output_model: str, extra_args: list[str], name: str, output_file: Path
+) -> None:
+    """Keep the None of an item inside a container whose items are the union of several schemas.
+
+    A closed array written as one list holds the union of its positions, and msgspec's one dict for an object map
+    the union of its pattern values: the None that a position or a value allows stays in that union
+    (``list[str | None]``), as for a single item schema. Up to 0.88.0 it went to the container (``list[str] | None``),
+    which rejected ``[null, "x"]`` and accepted a null the schema rejects (#5327).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args, "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel" and name.startswith("prefix_items"):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=name,
+            model_name="NullablePositions",
+            valid_json='{"nullable_first": [null, "x"], "null_first": [null, 1]}',
+            invalid_json='{"nullable_first": null, "null_first": [null, 1]}',
+            expected_error_type="list_type",
+        )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", ["--use-tuple-for-closed-arrays"], id="use-tuple-for-closed-arrays"),
+    ],
+)
+def test_main_jsonschema_prefix_items_closed_tail_unevaluated(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Leave the unevaluatedItems schema out of the item type of an array that its items keyword types to the end.
+
+    ``items`` after ``prefixItems`` evaluates every later position, so ``unevaluatedItems`` applies to none: an
+    ``items: false`` array holds only its prefix (``list[int]``, not ``list[int | str]``, which accepted ``["x"]``,
+    #5933), and an ``items`` schema types the tail.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_closed_tail_unevaluated.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="prefix_items_closed_tail_unevaluated",
+            model_name="ClosedTail",
+            valid_json='{"closed": [1], "typed": [1, true]}',
+            invalid_json='{"closed": ["x"]}',
+            expected_error_type="int_parsing",
+        )
+
+
 @pytest.mark.parametrize(
     ("output_model", "extra_args"),
     [

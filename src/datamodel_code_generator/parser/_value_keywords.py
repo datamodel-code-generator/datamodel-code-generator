@@ -41,7 +41,11 @@ from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
-from datamodel_code_generator.parser._intersection import declared_types, inherited_positional_tail
+from datamodel_code_generator.parser._intersection import (
+    declared_positional_tail,
+    declared_types,
+    inherited_positional_tail,
+)
 from datamodel_code_generator.parser._null_facts import NullSources, dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
 from datamodel_code_generator.parser._schema_reading import (
@@ -859,22 +863,24 @@ def get_fixed_length_homogeneous_tuple_length(parser: ValueKeywordsHost, obj: Js
 
 def positions_with_tail(
     cls: type[ValueKeywordsHost],
-    positions: Sequence[JsonSchemaObject | bool],
-    *tail_candidates: JsonSchemaObject | bool | list[JsonSchemaObject | bool] | None,
+    obj: JsonSchemaObject,
+    key: str,
+    *,
     include_true_schema: bool,
 ) -> list[JsonSchemaObject | bool]:
-    """Return the positions before the first false one, or all of them and the first schema of the candidates.
+    """Return the positions of ``key`` before the first false one, or all of them and the schema of later positions.
 
-    ``true`` is a candidate only under ``include_true_schema``.
+    The later positions take the tail ``obj`` declares (``declared_positional_tail``); ``true`` only under
+    ``include_true_schema``.
     """
+    positions = cast("list[JsonSchemaObject | bool]", getattr(obj, key))
     if (false_index := get_first_false_schema_index(cls, positions)) is not None:
         return [*positions[:false_index]]
-    for tail_candidate in tail_candidates:
-        match tail_candidate:
-            case JsonSchemaObject():
-                return [*positions, tail_candidate]
-            case True if include_true_schema:
-                return [*positions, True]
+    match tail := declared_positional_tail(partial(getattr, obj), key):
+        case JsonSchemaObject():
+            return [*positions, tail]
+        case True if include_true_schema:
+            return [*positions, True]
     return [*positions]
 
 
@@ -915,17 +921,13 @@ def get_list_item_schemas(
 ) -> list[JsonSchemaObject | bool]:
     """Return the item schemas whose union the list form of an array holds; none means any item."""
     if obj.prefixItems is not None and (force_prefix_items or has_prefix_items_tail_schema_or_boolean(parser, obj)):
-        return positions_with_tail(
-            type(parser), obj.prefixItems, obj.items, obj.unevaluatedItems, include_true_schema=include_true_tail_schema
-        )
+        return positions_with_tail(type(parser), obj, "prefixItems", include_true_schema=include_true_tail_schema)
 
     match obj.items:
         case JsonSchemaObject() as item_schema:
             return [item_schema]
-        case list() as item_schemas:
-            return positions_with_tail(
-                type(parser), item_schemas, obj.additionalItems, include_true_schema=include_true_tail_schema
-            )
+        case list():
+            return positions_with_tail(type(parser), obj, "items", include_true_schema=include_true_tail_schema)
 
     match obj.unevaluatedItems:
         case JsonSchemaObject() as item_schema:
@@ -977,19 +979,20 @@ def should_parse_empty_object_as_dict(parser: ValueKeywordsHost, obj: JsonSchema
 
 
 def get_array_max_items_constraints(cls: type[ValueKeywordsHost], obj: JsonSchemaObject) -> list[int]:
-    max_items = [
-        index
-        for positions in (obj.prefixItems, obj.items if isinstance(obj.items, list) else None)
-        if (index := get_first_false_schema_index(cls, positions)) is not None
-    ]
-    if obj.items is False and obj.prefixItems is None:
+    """Return the upper length bounds of an array: its first false position and each tuple its false tail closes."""
+    max_items: list[int] = []
+    for key, positions in (
+        ("prefixItems", obj.prefixItems),
+        ("items", obj.items if isinstance(obj.items, list) else None),
+    ):
+        if positions is None:
+            continue
+        if (index := get_first_false_schema_index(cls, positions)) is not None:
+            max_items.append(index)
+        if declared_positional_tail(partial(getattr, obj), key) is False:
+            max_items.append(len(positions))
+    if obj.prefixItems is None and (obj.items is False or (obj.items is None and obj.unevaluatedItems is False)):
         max_items.append(0)
-    if obj.items is False and obj.prefixItems is not None:
-        max_items.append(len(obj.prefixItems))
-    if obj.additionalItems is False and isinstance(obj.items, list):
-        max_items.append(len(obj.items))
-    if obj.unevaluatedItems is False and obj.items is None:
-        max_items.append(len(obj.prefixItems or []))
     return max_items
 
 
@@ -1107,11 +1110,9 @@ def get_array_constraints(parser: ValueKeywordsHost, obj: JsonSchemaObject, data
 
 def get_first_false_schema_index(
     cls: type[ValueKeywordsHost],  # noqa: ARG001
-    items: Sequence[JsonSchemaObject | bool] | None,
+    items: Sequence[JsonSchemaObject | bool],
 ) -> int | None:
     """Return the first tuple/prefix item index that rejects every value."""
-    if items is None:
-        return None
     return next((index for index, item in enumerate(items) if item is False), None)
 
 

@@ -199,3 +199,27 @@ match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['cat\\.yaml#'\\] -> Li
 reason = "a discriminator whose mapping is declared in another document (./cat.yaml written in b/base.yaml, referenced from a/openapi.yaml) was compared with the variant's schema path without the directory of the declaring document, so the mapping matched no variant and the variant was tagged by its file name, Literal['cat.yaml#'], which rejected every payload the mapping selects it for; the path is resolved against the document that declares the mapping now (schema-mismatch fix)"
 decision = "#6068"
 release_note = "a discriminator mapping declared in another document than the union, such as ./cat.yaml in b/base.yaml used from a/openapi.yaml, now tags its variant with the mapping key instead of the file name"
+
+[[accepted]]
+input = "*prefix_items_closed_tail_unevaluated*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?ClosedTail:closed: Union\\[(?:None, )?list\\[Union\\[int, str\\]\\](?:, msgspec\\.UnsetType)?\\] -> Union\\[(?:None, )?list\\[int\\](?:, msgspec\\.UnsetType)?\\]$"
+reason = "an array with prefixItems, items: false and an unevaluatedItems schema took the unevaluatedItems type into its item union (list[int | str]), so it accepted [\"x\"], which the schema rejects: items evaluates every position after the prefix, so unevaluatedItems applies to none; the item union holds the prefix only now (schema-mismatch fix)"
+decision = "#5933"
+release_note = "an array whose prefixItems are closed by items: false no longer adds the type of a sibling unevaluatedItems schema to its item type (list[int] instead of list[int | str]), so it rejects the items the schema rejects"
+
+[[accepted]]
+input = "*prefix_items_closed_*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: .* -> (?:Union\\[None, )?(?:list|dict)\\[(?:str, )?Union\\[None, .*$"
+reason = "a container whose items are the union of several schemas (a closed array written as one list, msgspec's one dict of an object map) wrote the None that one position or value allows on the container (list[str] | None), so it rejected [null, \"x\"], which the schema accepts, and a required field accepted null; the None stays inside the container now (list[str | None]) (schema-mismatch fix)"
+decision = "#5327"
+release_note = "a closed array written as a list, and msgspec's dict of an object map, keep the null that one position or value allows inside the container (list[str | None]) instead of on the field (list[str] | None), so they accept null items and reject a null array as the schema does"
+
+[[accepted]]
+input = "*pattern_properties_nullable_value_union*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: .* -> (?:Union\\[None, )?(?:list|dict)\\[(?:str, )?Union\\[None, .*$"
+reason = "a container whose items are the union of several schemas (a closed array written as one list, msgspec's one dict of an object map) wrote the None that one position or value allows on the container (list[str] | None), so it rejected [null, \"x\"], which the schema accepts, and a required field accepted null; the None stays inside the container now (list[str | None]) (schema-mismatch fix)"
+decision = "#5327"
+release_note = "a closed array written as a list, and msgspec's dict of an object map, keep the null that one position or value allows inside the container (list[str | None]) instead of on the field (list[str] | None), so they accept null items and reject a null array as the schema does"

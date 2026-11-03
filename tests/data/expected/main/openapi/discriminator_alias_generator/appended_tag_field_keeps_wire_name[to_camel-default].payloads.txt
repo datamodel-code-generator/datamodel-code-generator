@@ -1,0 +1,3 @@
+{"petType": "cat", "firstName": "Tom"}: {"firstName":"Tom","petType":"cat"}
+{"petType": "dog", "firstName": "Rex"}: {"petType":"dog","firstName":"Rex"}
+{"petType": "bird"}: rejects (ValidationError)
