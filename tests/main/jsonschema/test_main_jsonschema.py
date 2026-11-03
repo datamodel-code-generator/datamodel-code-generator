@@ -36431,6 +36431,47 @@ def test_main_jsonschema_discriminator_mapping_dot_directory(output_dir: Path, e
     )
 
 
+INHERITED_SCHEMA_TAG_DOCUMENTS: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("Call", {"type": "function", "name": "n"}),
+    ("Call", {"type": "custom", "input": "x"}),
+    ("Call", {"type": "FunctionCall"}),
+    ("NamedOrCustom", {"type": "function", "label": "l"}),
+    ("NamedOrCustom", {"type": "NamedCall"}),
+)
+"""Documents per union of ``discriminator_inherited_schema_tag.json``, some valid against the schema and some not."""
+
+
+def _inherited_schema_tag_verdict(validate: ABCCallable[[Any], Any], document: Any) -> str:
+    """Return whether a generated union decodes a document."""
+    try:
+        validate(document)
+    except ValidationError:
+        return "rejects"
+    return "accepts"
+
+
+def _inherited_schema_tag_verdicts(output_file: Path, module_name: str) -> str:
+    """Return whether the schema and each generated union accept each document, one line per document.
+
+    The tag ``FunctionType.function`` is also given as the Enum member itself, from Python, which no JSON document
+    carries.
+    """
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json").read_text(encoding="utf-8"))
+    lines: list[str] = []
+    with _generated_model(output_file, module_name, "Session") as session:
+        namespace = vars(sys.modules[session.__module__])
+        for name, document in INHERITED_SCHEMA_TAG_DOCUMENTS:
+            validator = Draft202012Validator({"$ref": f"#/$defs/{name}", "$defs": schema["$defs"]})
+            schema_verdict = "accepts" if validator.is_valid(document) else "rejects"
+            model_verdict = _inherited_schema_tag_verdict(_model_json_validator(namespace[name]), json.dumps(document))
+            lines.append(f"{name} {json.dumps(document)}: schema {schema_verdict}, model {model_verdict}\n")
+        member = {"type": namespace["FunctionType"].function}
+        for name in ("Call", "NamedOrCustom"):
+            model_verdict = _inherited_schema_tag_verdict(TypeAdapter(namespace[name]).validate_python, member)
+            lines.append(f"{name} {{'type': FunctionType.function}} from Python: model {model_verdict}\n")
+    return "".join(lines)
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -36449,7 +36490,11 @@ def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, e
     ``const``, and ``NamedCall`` from ``FunctionCall`` two levels down; up to 0.88.0 each was tagged by its schema
     name, ``Literal['FunctionCall']``, so the union rejected every payload the schema accepts (#5338). ``Dog`` and
     ``Cat`` keep their names: the ``Literal['Pet']`` of their base is a tag the union ``Pets`` wrote, which ``Pet``'s
-    schema does not fix.
+    schema does not fix. Under ``--use-enum-values-in-discriminator`` both ``FunctionCall`` and ``NamedCall`` spell the
+    tag ``Literal[FunctionType.function]``, as the option spells the tag of a variant whose own field the Enum types:
+    the Enum that types the tag field a variant inherits is read from the nearest ancestor that declares it, where
+    ``NamedCall`` read only its direct base and wrote ``Literal['function']``. A plain Enum member is no JSON string,
+    so these unions take the member from Python, not ``"function"`` from JSON, as they do for an own Enum field.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
@@ -36458,17 +36503,12 @@ def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, e
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
-    assert_generated_model_json_validation(
-        output_file,
-        module_name=f"discriminator_inherited_schema_tag_{'_'.join(extra_args).replace('.', '_')}",
-        model_name="Session",
-        valid_json=json.dumps({
-            "call": {"type": "custom", "input": "x"},
-            "named": {"type": "function", "label": "l"},
-            "animals": {"type": "Dog", "barks": True},
-        }),
-        invalid_json=json.dumps({"named": {"type": "NamedCall"}}),
-        expected_error_type="union_tag_invalid",
+    assert_output(
+        _inherited_schema_tag_verdicts(
+            output_file,
+            f"discriminator_inherited_schema_tag_{'_'.join(extra_args).replace('.', '_').replace('-', '_')}",
+        ),
+        name="payloads",
     )
 
 
