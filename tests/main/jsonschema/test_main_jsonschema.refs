@@ -8478,6 +8478,9 @@ strict_option	main/jsonschema/main_jsonschema/main_redundant_constraints[strict_
 strict_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[strict_option].py
 [test_main_ref_cycle_unwalkable_targets]
 	main/jsonschema/ref_cycle_unwalkable_targets.py
+[test_main_ref_fragment_opened_by_an_encoded_slash]
+jsonschema	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py
+openapi	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py	= main/jsonschema/ref_fragment_opened_by_an_encoded_slash~main_ref_fragment_opened_by_an_encoded_slash[openapi].py
 [test_main_ref_nullable_import_fast_path]
 	main/jsonschema/ref_nullable_import_fast_path.py
 [test_main_refreshes_modified_custom_template_between_calls]

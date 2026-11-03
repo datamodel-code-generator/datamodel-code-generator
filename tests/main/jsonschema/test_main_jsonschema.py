@@ -140,6 +140,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.reference import Reference
+    from tests.main.conftest import InputFileTypeLiteral
 
 FixtureRequest = pytest.FixtureRequest
 
@@ -1938,21 +1939,6 @@ def test_main_jsonschema_unresolved_local_id_ref_reports_known_ids(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains="Unresolved $id reference '#MissingId'",
-    )
-
-
-def test_main_jsonschema_octet_pointer_opening_reads_as_a_plain_name(
-    output_file: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Test a $ref whose fragment opens with %2F is a plain name to the parser (row legacy-slash-only-opening)."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "octet_pointer_opening.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr_contains="Unresolved $id reference '#%2Fdefinitions/Value'",
     )
 
 
@@ -17750,6 +17736,85 @@ def test_main_json_pointer_percent_encoded_segments(tmp_path: Path) -> None:
         expected_output=expected,
         input_file_type="jsonschema",
         ignore_whitespace=True,
+    )
+
+
+_FOO_SCHEMA = {"type": "object", "properties": {"a": {"type": "integer"}}}
+
+
+@pytest.mark.parametrize(
+    ("input_file_type", "schema"),
+    [
+        pytest.param(
+            "jsonschema",
+            {
+                "title": "Model",
+                "type": "object",
+                "properties": {
+                    "local": {"$ref": "#%2Fdefinitions/Foo"},
+                    "lower": {"$ref": "#%2fdefinitions/Foo"},
+                    "other": {"$ref": "other.json#%2Fdefinitions/Bar"},
+                    "resource": {"$ref": "#/definitions/Res"},
+                },
+                "definitions": {
+                    "Foo": _FOO_SCHEMA,
+                    "Res": {
+                        "$id": "https://example.com/res.json",
+                        "type": "object",
+                        "properties": {"inner": {"$ref": "#%2F$defs/Inner"}},
+                        "$defs": {"Inner": {"type": "string"}},
+                    },
+                },
+            },
+            id="jsonschema",
+        ),
+        pytest.param(
+            "openapi",
+            {
+                "openapi": "3.0.3",
+                "info": {"title": "t", "version": "1"},
+                "paths": {},
+                "components": {
+                    "schemas": {
+                        "Model": {"type": "object", "properties": {"local": {"$ref": "#%2Fcomponents/schemas/Foo"}}},
+                        "Foo": _FOO_SCHEMA,
+                    }
+                },
+            },
+            id="openapi",
+        ),
+    ],
+)
+def test_main_ref_fragment_opened_by_an_encoded_slash(
+    input_file_type: InputFileTypeLiteral, schema: dict[str, Any], tmp_path: Path, output_file: Path
+) -> None:
+    """Read a ``$ref`` fragment that ``%2F`` opens as the JSON pointer it encodes, not as the name of an anchor.
+
+    RFC 6901 reads a fragment after percent-decoding it, so ``#%2Fdefinitions/Foo`` names the schema that
+    ``#/definitions/Foo`` names: in the document, in another one and in an embedded schema resource. Up to 0.88.0 the
+    run stopped with ``Unresolved $id reference`` or ``Embedded schema resource has no anchor``, and a reference into
+    another document was a model of ``Any``.
+    """
+    input_file = tmp_path / "schema.json"
+    input_file.write_text(json.dumps(schema), encoding="utf-8")
+    (tmp_path / "other.json").write_text(json.dumps({"definitions": {"Bar": {"type": "boolean"}}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        assert_func=assert_file_content,
+        extra_args=["--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"encoded_slash_{input_file_type}",
+        model_name="Model",
+        valid_json='{"local": {"a": 1}}',
+        invalid_json='{"local": {"a": "x"}}',
+        expected_error_type="int_parsing",
+        expected_attribute_path=("local", "a"),
+        expected_attribute_value=1,
     )
 
 

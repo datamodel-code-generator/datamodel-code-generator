@@ -1564,13 +1564,13 @@ class ModelResolver:  # noqa: PLR0904
             file_part, fragment = joined_path.split("#", 1)
             if (
                 file_part
-                and not is_pointer_fragment(fragment, row="legacy-slash-only-opening")
+                and not is_pointer_fragment(fragment)
                 and (anchor_ref := self.ids.get(file_part, {}).get(f"#{fragment}"))
             ):
                 return anchor_ref
         if (
             joined_path.startswith("#")
-            and not is_pointer_fragment(joined_path[1:], row="legacy-slash-only-opening")
+            and not is_pointer_fragment(joined_path[1:])
             and not _is_special_path(joined_path)
         ):
             id_scope = self._current_root_id

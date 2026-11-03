@@ -47,6 +47,7 @@ from datamodel_code_generator.parser._schema_graph import (
     ReservedTarget,
     ResolvedRef,
     keep_resolved_ref,
+    pointer_ref_spelling,
     walk_schema_resources,
 )
 from datamodel_code_generator.parser._schema_object import (
@@ -544,7 +545,7 @@ def resolve_schema_resource_ref(
     if (location := parser._schema_resource_registry.location(absolute)) is not None:  # noqa: SLF001
         return _document_location(location, document)
     if (
-        not is_pointer_fragment(fragment, row="legacy-slash-only-opening")
+        not is_pointer_fragment(fragment)
         and (root := parser._schema_resource_locations.get(resource)) is not None  # noqa: SLF001
         and root.split("#", 1)[1]
     ):
@@ -611,12 +612,17 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
     *,
     is_root: bool = False,
 ) -> dict[str, Any]:
-    """Copy only schema containers whose resource-relative references change."""
+    """Copy only schema containers whose resource-relative references change.
+
+    A reference is resolved with its pointer opened by ``/`` (``pointer_ref_spelling``), which the walk of the
+    schema graph writes in place of an opening ``%2F`` either way.
+    """
     id_field, identifier = parser._schema_resource_identifier(schema, id_field, is_root=is_root)  # noqa: SLF001
     if isinstance(identifier, str):
         base = urljoin(base, identifier).split("#", 1)[0]
     result = schema
     if isinstance(reference := schema.get("$ref"), str):
+        reference = pointer_ref_spelling(reference)
         resolved = parser._resolve_schema_resource_ref(reference, base, document, nested_scope=base != root_base)  # noqa: SLF001
         if resolved != reference:
             result = {**schema, "$ref": resolved}
