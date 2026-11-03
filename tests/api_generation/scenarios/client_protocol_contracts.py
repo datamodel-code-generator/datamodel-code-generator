@@ -109,6 +109,7 @@ _DURATIONS: Final = (
     ("nan", float("nan")),
     ("inf", float("inf")),
     ("10**1000", 10**1000),
+    ("largest float + 1", int(sys.float_info.max) + 1),
     ("'1'", "1"),
 )
 _OPTION_FIELDS: Final = (

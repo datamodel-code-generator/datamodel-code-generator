@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import sys
 import threading
 from typing import TYPE_CHECKING, Any, Final
 
@@ -124,6 +125,12 @@ def _faults(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
         (
             "expiry past the largest float",
             json_response(200, {"access_token": "access-x", "token_type": "Bearer", "expires_in": 10**400}),
+        ),
+        (
+            "expiry rounding to the largest float",
+            json_response(
+                200, {"access_token": "access-x", "token_type": "Bearer", "expires_in": int(sys.float_info.max) + 1}
+            ),
         ),
         ("connect failure", failing(httpx2.ConnectError)),
         ("read timeout", failing(httpx2.ReadTimeout)),

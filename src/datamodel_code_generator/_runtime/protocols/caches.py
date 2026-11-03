@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from math import isfinite
 from typing import Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
-from ..client.timing import is_aware
+from ..client.timing import is_aware, usable_seconds
 from ..model_codecs.media import OK, STATUSES, json_integer, json_number
 
 __all__ = (
@@ -92,7 +91,7 @@ class CacheEntry:
             _range(is_aware(instant), f"{name} must be timezone-aware")
         for name in ("freshness_seconds", "initial_age_seconds"):
             _kind(json_number(seconds := getattr(self, name)), name)
-            _range(isfinite(seconds) and seconds >= 0, f"{name} must be finite and not negative")
+            _range(usable_seconds(seconds, row="legacy-overflow-error"), f"{name} must be finite and not negative")
             object.__setattr__(self, name, float(seconds))
 
 
