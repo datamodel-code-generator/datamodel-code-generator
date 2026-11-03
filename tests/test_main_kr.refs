@@ -57,6 +57,8 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 	main_kr/generate_cli_command/with_profile.txt
 [test_generate_cli_command_with_spaces_in_values]
 	main_kr/generate_cli_command/spaces_in_values.txt
+[test_generate_cli_command_writes_an_empty_list_as_the_option_off]
+	main_kr/generate_cli_command_writes_an_empty_list_as_the_option_off.stdout.txt
 [test_generate_prompt_basic]
 	main_kr/generate_prompt/basic.txt
 [test_generate_prompt_json]

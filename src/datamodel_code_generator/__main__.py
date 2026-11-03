@@ -1293,7 +1293,7 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
                 parts.extend((option_flag(key), argument))
             continue
         match option_arguments(key, value, negative=_negative_option):
-            case [option, *items] if isinstance(value, list | tuple):
+            case [option, *items] if items and isinstance(value, list | tuple):
                 parts.extend((option, _format_cli_value(items)))
             case [option, *items]:
                 parts.extend((option, *(_format_cli_value(str(item)) for item in items)))

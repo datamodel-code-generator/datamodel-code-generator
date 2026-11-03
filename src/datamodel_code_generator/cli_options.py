@@ -661,9 +661,14 @@ def _no_option(action: Action) -> str | None:
 
 
 def _negative_option(dest: str) -> str | None:
-    """Return the --no- flag the parser defines for a boolean destination, or None."""
-    action = _argparse_index().actions.get(dest)
-    return _no_option(action) if isinstance(action, BooleanOptionalAction) else None
+    """Return the --no- flag the parser defines for a destination, or None.
+
+    A boolean's is the --no- string of its action; a list option's is the flag that turns it off with an empty list.
+    """
+    index = _argparse_index()
+    if isinstance(action := index.actions.get(dest), BooleanOptionalAction):
+        return _no_option(action)
+    return flag if (flag := option_flag(dest, negative=True)) in index.canonical else None
 
 
 @lru_cache(maxsize=1)

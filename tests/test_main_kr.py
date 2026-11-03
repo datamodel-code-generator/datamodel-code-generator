@@ -1127,6 +1127,22 @@ strict-types = ["str", "int"]
         )
 
 
+def test_generate_cli_command_writes_an_empty_list_as_the_option_off(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Write an empty list as the --no- option of the parser, and leave out one that has no --no- option."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+deserialize-default-values = []
+strict-types = []
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml)
+
+    with chdir(tmp_path):
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
+
+
 def test_generate_cli_command_with_multiple_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-cli-command with various option types."""
     pyproject_toml = """
