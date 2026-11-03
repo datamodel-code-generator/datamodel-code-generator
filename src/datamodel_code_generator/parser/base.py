@@ -220,7 +220,6 @@ from datamodel_code_generator.parser._passes._state import (
     _ParseArgs,
     _PipelineRun,
     _PreparedModule,
-    _RenamedType,
     _StructureState,
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
@@ -862,11 +861,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._generic_base_model: DataModel | None = None
         """The empty base model ``--use-generic-base-class`` generated, which constructor ordering reads as no base."""
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
-        self._renamed_types: dict[ModelKey, list[_RenamedType]] = {}
-        """The class names each renamed model had before, by model key."""
-        self._renamed_type_paths: dict[str, list[_RenamedType]] = {}
-        """The class names each renamed model had before, by its path when it was renamed: row
-        ``legacy-keyless-reference-by-path`` reads it for a reference that no model was built with."""
         self._replaced_root_models: dict[int, tuple[DataModel, DataModel]] = {}
         """Each root model that collapse replaced by its inner model, by id: the root model and its inner model."""
         self._kept_parent_roots: dict[int, _KeptParentRoot] = {}

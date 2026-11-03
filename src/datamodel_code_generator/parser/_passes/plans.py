@@ -101,14 +101,6 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The data types whose duplicate reuse removed, with the paths they named."""
 
     @property
-    def _renamed_type_paths(self) -> _Clearable:
-        """The class names renamed types had, by the path imports of them were added under."""
-
-    @property
-    def _renamed_types(self) -> _Clearable:
-        """The class names renamed types had, by model key."""
-
-    @property
     def _replaced_root_models(self) -> _Clearable:
         """The roots that collapse replaced by their inner models."""
 
@@ -134,8 +126,6 @@ def reset_per_run_state(parser: PlansHost, _run: StructuredRun[Any]) -> None:
     parser._base_stand_ins.clear()  # noqa: SLF001
     parser._generic_base_model = None  # noqa: SLF001
     parser._removed_reuse_users.clear()  # noqa: SLF001
-    parser._renamed_types.clear()  # noqa: SLF001
-    parser._renamed_type_paths.clear()  # noqa: SLF001
     parser._replaced_root_models.clear()  # noqa: SLF001
     parser._kept_parent_roots.clear()  # noqa: SLF001
 

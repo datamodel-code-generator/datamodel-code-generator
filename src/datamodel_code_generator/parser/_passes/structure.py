@@ -424,7 +424,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             preserve_class_name=parser._should_preserve_explicit_root_class_name(class_name),  # noqa: SLF001
         ).name
         if class_name != generated_name:
-            parser._graph_builder.rename_model(model, class_name=generated_name)  # noqa: SLF001
+            parser._graph_builder.rename_model(model, class_name=generated_name, scheme="module")  # noqa: SLF001
             renamed = True
         model_names[model.class_name] = model
 
@@ -433,7 +433,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
         # check only first desired name
         if duplicate_name and duplicate_name not in model_names:
             del model_names[model.class_name]
-            parser._graph_builder.rename_model(model, class_name=duplicate_name)  # noqa: SLF001
+            parser._graph_builder.rename_model(model, class_name=duplicate_name, scheme="module")  # noqa: SLF001
             model_names[duplicate_name] = model
             renamed = True
 
@@ -676,6 +676,7 @@ def rename_and_relocate_scc_models(
                 reference_name=new_class_name,
                 new_path=f"{internal_module_str}.{new_class_name}",
                 new_file_path=internal_path,
+                scheme="internal-module",
             )
             if id(model) in new_class_names:
                 module_class_mappings[model_to_original_module[id(model)]].append((original_class_name, new_class_name))

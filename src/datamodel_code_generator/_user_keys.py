@@ -40,6 +40,9 @@ after names are final):
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
   name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
+* ``legacy-reparse-yielding-only`` (``parser/_passes/settle.py:settle_yielding_names``): the renames that decide that
+  parse are those of the yielding names at L2; the renames after L2, which ``GenerationStore.rename_model`` records,
+  decide nothing, so a key that names a name one of them gave matches no model.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
   (``type_override_classes``), while the class part of the other ``Class.field`` keys is what precedes their last dot
   (``ConstructionKeys``); ``scoped_key`` splits every key, by these rows and at every dot.
