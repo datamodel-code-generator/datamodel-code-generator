@@ -512,6 +512,8 @@ openapi/request_bodies_scope_with_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/required_null.yaml	yaml_fast_constructor/parity.txt
 openapi/resolved_models.yaml	yaml_fast_constructor/parity.txt
 openapi/response_header_ref.yaml	yaml_fast_constructor/parity.txt
+openapi/responses_extensions.yaml	yaml_fast_constructor/parity.txt
+openapi/responses_object_extension.yaml	yaml_fast_constructor/parity.txt
 openapi/reuse_model_cross_module_users.yaml	yaml_fast_constructor/parity.txt
 openapi/root_model.yaml	yaml_fast_constructor/parity.txt
 openapi/root_model_default_primitive.yaml	yaml_fast_constructor/parity.txt

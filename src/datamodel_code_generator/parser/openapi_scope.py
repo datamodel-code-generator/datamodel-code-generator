@@ -20,6 +20,7 @@ from datamodel_code_generator._openapi_paths import (
     effective_operation,
     effective_parameters,
     holds_path_item,
+    operation_responses,
     path_item_operations,
 )
 from datamodel_code_generator._records import record
@@ -948,7 +949,8 @@ class ApiOpenAPIParser(OpenAPIParser):
                 body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"], "requestBody")
                 with self._visiting("request_body", "requestBody", body):
                     self._walk_content(name + "Request", body, owner="request_body")
-            for status, value in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
+            responses = operation_responses(_mapping(operation.get("responses", {}), [*path, "responses"]))
+            for status, value in responses.items():
                 response_path = [*path, "responses", str(status)]
                 suffix = str(status).capitalize() if self.use_status_code_in_response_name else ""
                 response = self._resolve_api_object(value, response_path, "response")

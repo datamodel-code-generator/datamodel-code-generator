@@ -36,6 +36,7 @@ from datamodel_code_generator._openapi_paths import (
     effective_operation,
     effective_parameters,
     holds_path_item,
+    operation_responses,
     path_selected,
     rooted_path,
 )
@@ -262,6 +263,12 @@ class Operation(BaseModel):
     requestBody: Optional[OrReference[RequestBodyObject]] = None  # noqa: N815, UP045
     responses: dict[Union[str, int], OrReference[ResponseObject]] = Field(default_factory=dict)  # noqa: UP007
     deprecated: bool = False
+
+    @field_validator("responses", mode="before")
+    @classmethod
+    def _without_extensions(cls, value: Any) -> Any:
+        """Leave the extensions that hold no response out of the Responses Object (`operation_responses`)."""
+        return operation_responses(value) if isinstance(value, dict) else value
 
 
 class ComponentsObject(BaseModel):

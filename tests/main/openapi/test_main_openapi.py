@@ -11982,6 +11982,36 @@ def test_main_openapi_one_of_body_without_member_types_beside_properties() -> No
     assert_output(str(parser.parse()))
 
 
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extensions_are_no_responses(scope: str, output_file: Path) -> None:
+    """Leave the `x-` extensions of a Responses Object out of the responses, in the paths scope and the api scope.
+
+    OpenAPI lets a Responses Object be extended with specification extensions. Up to 0.88.0 both walks read
+    `x-note: internal` as a response and refused the document.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_extensions.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extension_holding_an_object_is_a_response(scope: str, output_file: Path) -> None:
+    """Keep reading an `x-` extension of a Responses Object that holds an object as a response (legacy row).
+
+    The paths scope and the api scope have generated the models of its content since their releases, so they still do,
+    while `x-note: internal` beside it is skipped.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_object_extension.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
 def test_main_openapi_paths_header_override_is_case_insensitive() -> None:
     """An operation's header overrides the path item's one that another case spells, as in the `api` scope.
 
