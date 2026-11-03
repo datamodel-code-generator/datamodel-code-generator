@@ -35616,6 +35616,31 @@ def test_main_jsonschema_hyphenated_directory_reference(output_dir: Path, extra_
     [
         pytest.param([], id="default"),
         pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_main_jsonschema_non_identifier_directory_reference(output_dir: Path, extra_args: list[str]) -> None:
+    """Import a model of a directory that is not named as Python imports it from the package the output writes.
+
+    A directory with a space, a symbol, a leading digit or a dot and a leading digit (``my dir``, ``a+b``, ``3d``,
+    ``1.0``) is written as the name of a file is (``my_dir``, ``a_b``, ``_3d``, ``_1_0``); up to 0.88.0 it kept its
+    name and ``from .my dir import b`` was a syntax error (#5999). A directory named with Unicode letters keeps its
+    name.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "non_identifier_directory_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--no-treat-dot-as-module"], id="no-treat-dot-as-module"),
         pytest.param(["--treat-dot-as-module"], id="treat-dot-as-module"),
         pytest.param(["--collapse-root-models"], id="collapse-root-models"),
     ],
