@@ -19,6 +19,7 @@ datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.schema <- tests
 datamodel_code_generator.parser.openapi_scope:ApiOpenAPIParser._site_facts <- tests.checks.schema_graph.site_facts
 datamodel_code_generator._site_facts:site_facts_of <- tests.checks.schema_graph.site_facts_of
 datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
+datamodel_code_generator.parser._phases:_DecisionWriter.drop_field_constraints <- tests.checks.parse.drop_field_constraints
 datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
 datamodel_code_generator.parser.base:Parser._get_module_future_imports <- tests.checks.module_imports.get_module_future_imports
 datamodel_code_generator.parser._imports_plan:ModuleImportLedger.add_name <- tests.checks.module_imports.add_name

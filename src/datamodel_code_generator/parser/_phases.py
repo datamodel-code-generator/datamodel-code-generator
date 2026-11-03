@@ -22,7 +22,7 @@ from datamodel_code_generator._records import record
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
+    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModel
 
 __all__ = [
@@ -58,6 +58,9 @@ class DecisionStore(Protocol):
     def replace_field_type(self, field_: Any, new_data_type: Any) -> None:
         """Replace a field's data type."""
 
+    def set_field_constraints(self, field_: Any, constraints: Any) -> None:
+        """Write a field's constraints."""
+
 
 @final
 @record
@@ -74,11 +77,14 @@ class FinalFacts:
     """The facts final at B1, built once per parse by ``GenerationStore.seal_facts``: what decisions read.
 
     ``live_models`` are the models of every module that render, in module order; unused models, which leave their
-    modules later, are not among them.
+    modules later, are not among them. ``member_keywords`` gives the type-dependent keywords the value of a union
+    member takes in the output model, with the models a reference names (``DataTypeManager.member_constraint_keywords``
+    at the target Python version).
     """
 
     modules: tuple[ModuleFacts, ...]
     live_models: tuple[ModelView, ...]
+    member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
 
 
 @final
@@ -128,6 +134,17 @@ class _DecisionWriter:
             if id(source) in dropped:
                 self._store.drop_held_null(target)
         self._store.replace_field_type(field, copied)
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def drop_field_constraints(self, model: ModelView, field: FieldView, keywords: frozenset[str]) -> None:
+        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``)."""
+        constraints: Any = field.constraints
+        values = {
+            key: value
+            for key, value in constraints.model_dump(by_alias=True).items()
+            if value is not None and key not in keywords
+        }
+        self._store.set_field_constraints(field, type(constraints).model_validate(values))
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:

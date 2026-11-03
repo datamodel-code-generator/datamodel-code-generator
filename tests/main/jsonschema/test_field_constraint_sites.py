@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -44,6 +45,24 @@ LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
         ("literal_patterns", [*LITERAL_ENUMS, "--output-model-type", "pydantic_v2.dataclass"]),
         ("literal_patterns", [*LITERAL_ENUMS, "--collapse-root-models"]),
         ("literal_patterns", [*LITERAL_ENUMS, "--use-type-alias"]),
+        ("union_root_keywords", ["--field-constraints"]),
+        ("union_root_keywords", ["--field-constraints", "--collapse-root-models"]),
+        ("union_root_keywords", ["--field-constraints", "--use-type-alias"]),
+        ("union_root_keywords", ["--use-annotated", "--collapse-root-models"]),
+        ("union_root_keywords", ["--field-constraints", "--output-model-type", "pydantic_v2.dataclass"]),
+        ("union_root_kept_keywords", ["--field-constraints", "--use-subclass-enum", "--collapse-root-models"]),
+        ("union_root_kept_keywords", ["--field-constraints", "--use-subclass-enum", "--use-type-alias"]),
+        pytest.param(
+            "union_root_kept_keywords",
+            [
+                "--field-constraints",
+                "--use-specialized-enum",
+                "--target-python-version",
+                "3.11",
+                "--collapse-root-models",
+            ],
+            marks=pytest.mark.skipif(sys.version_info < (3, 11), reason="StrEnum needs Python 3.11"),
+        ),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -56,7 +75,11 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     of ``contains`` belong to a field typed as an array, so a string or a model that carries them accepts what the
     schema accepts, and so does a field whose schema declares no array, as a string typed ``datetime.date`` or an
     object with array values; the pattern of a ``Literal`` that a root model or a const writes selects the
-    ``python-re`` regex engine when Rust refuses it, as the pattern of a string does.
+    ``python-re`` regex engine when Rust refuses it, as the pattern of a string does. A keyword beside a union leaves
+    the field that holds the union when a member cannot take it and every member keeps the check without it (the class
+    or type alias of a branch that holds it, a value it does not apply to, None), so a valid value raises no
+    ``TypeError`` (#6022); it stays where a member would lose the check: a string or a ``str`` enum that holds no copy
+    of it.
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(

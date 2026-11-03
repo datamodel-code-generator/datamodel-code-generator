@@ -6445,9 +6445,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _mark_assembled_constraints(
         self, field: DataModelFieldBase, assembled: _AssembledConstraints, obj: JsonSchemaObject, data_type: DataType
     ) -> None:
-        """Record on ``field`` the keywords its type decides and the declared constraints it leaves out."""
+        """Record on ``field`` the keywords its type decides, those beside a union and the constraints it leaves out."""
         if assembled.records:
             _value_keywords.mark_type_dependent_constraints(self, field, obj)
+            if (siblings := _value_keywords.union_sibling_constraints(obj, field.constraints)) is not None:
+                self._graph_builder.set_field_constraints(field, field.constraints, union_siblings=siblings)
         dropped_counts = assembled.dropped_counts
         self._mark_untaken_constraints(
             field,

@@ -200,6 +200,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -1937,6 +1938,51 @@ class DataTypeManager(ABC):
             target_version,
             number_values=number_values,
             target_model_version=target_model_version,
+        )
+
+    @classmethod
+    def member_constraint_keywords(
+        cls,
+        data_type: DataTypeView,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None],
+        seen: frozenset[int] = frozenset(),
+    ) -> frozenset[str] | None:
+        """Return the type-dependent keywords the value a union member validates to takes, or None for None.
+
+        A union takes what every member other than None takes, and an alias of None counts as None. A type alias
+        (``ModelView.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
+        ``StrEnum``, an ``IntEnum``) takes what that type takes; any other model, a root model, an object model, a
+        dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A type that names no
+        model takes what ``constraint_keywords`` answers, and so do a model ``model_of`` does not hold, an alias
+        without a field and an alias the type names again inside itself, which take them all.
+        """
+        node = cast("DataType", data_type)
+        if (reference := data_type.reference) is None:
+            if _is_plain_none(node):
+                return None
+            if not data_type.data_types or cls._shape_constraint_keywords(node) is not None:
+                return cls.constraint_keywords(node, target_version)
+            members = [
+                keywords
+                for member in data_type.data_types
+                if (keywords := cls.member_constraint_keywords(member, target_version, model_of, seen)) is not None
+            ]
+            return _applicability.member_keywords(members, number_values=False) if members else None
+        if (model := None if id(reference) in seen else model_of(reference)) is None:
+            return cls.constraint_keywords(node, target_version)
+        if model.form == "alias":
+            fields = model.fields
+            return (
+                cls.member_constraint_keywords(fields[0].data_type, target_version, model_of, seen | {id(reference)})
+                if fields
+                else cls.constraint_keywords(node, target_version)
+            )
+        value_base = model.value_base
+        return (
+            _applicability.NO_KEYWORDS
+            if value_base is None
+            else cls.type_constraint_keywords(value_base, target_version)
         )
 
     @classmethod
