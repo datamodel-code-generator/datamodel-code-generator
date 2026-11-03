@@ -4093,6 +4093,53 @@ def test_main_jsonschema_builtin_submodule_beside_package_init(
     assert_output("\n".join(verdicts) + "\n", name="payloads")
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+@pytest.mark.parametrize(
+    ("input_name", "model_name", "payloads"),
+    [
+        pytest.param(
+            "additional_import_named_like_model.json",
+            "IPv4Address1",
+            ['{"host": "10.0.0.1", "tags": ["a"], "owner": {"name": "n"}}', '{"host": "not an address"}'],
+            id="written",
+        ),
+        pytest.param(
+            "additional_import_named_like_unused_model.json",
+            "IPv4Address",
+            ['{"tags": ["a"], "owner": {"name": "n"}}'],
+            id="unused",
+        ),
+    ],
+)
+def test_main_jsonschema_additional_import_named_like_model(
+    output_file: Path, output_model_type: str, input_name: str, model_name: str, payloads: list[str]
+) -> None:
+    """Rename the model that takes the name of an additional import that a type of its module writes (#6010).
+
+    ``--additional-imports ipaddress.IPv4Address`` is written by every module, and ``x-python-type: IPv4Address``
+    names it, so ``host`` named the model ``IPv4Address`` itself; the model takes another name. A model whose module
+    writes no such name keeps its own.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "additional_import_named_like_model", model_name) as model:
+        verdicts = [_decode_with_generated_model(output_model_type, model, payload) for payload in payloads]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 

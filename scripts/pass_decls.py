@@ -1237,9 +1237,12 @@ CHANGE_IMPORTED_MODEL_NAME = PassDecl(
     Phase.IMPORTS,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(RenderFact.MODULE_IMPORTS, RenderFact.CLASS_NAMES),
+    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.CLASS_NAMES),
     writes=_facts(RenderFact.CLASS_NAMES),
-    summary="Renames models that collide with imports, the last class-name change.",
+    summary=(
+        "Renames models that collide with imports, or with an import every module writes that a type of the module "
+        "names as text, the last class-name change."
+    ),
 )
 NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     "name_final_classes_of_additional_properties",

@@ -30,6 +30,7 @@ from datamodel_code_generator._module_paths import (
     written_path,
 )
 from datamodel_code_generator._python_target_names import is_builtin_type_name
+from datamodel_code_generator._python_type_annotation import iter_python_type_expr_names
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
@@ -1016,8 +1017,27 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 )
 
 
+def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
+    """Return the names that the types of the models write as text: those of the types that name no model."""
+    names: set[str] = set()
+    for model in models:
+        for data_type in _named_data_types(model):
+            if data_type.reference is not None:
+                continue
+            if data_type.python_type:
+                names.update(iter_python_type_expr_names(data_type.python_type.expression))
+            elif data_type.type:
+                names.add(data_type.type.partition(".")[0])
+    return names
+
+
 def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
-    """Rename the local models that an import of their module shadows; remember whether any was renamed."""
+    """Rename the local models that an import of their module shadows; remember whether any was renamed.
+
+    The imports every module writes (``--additional-imports``) shadow a model that a type of the module writes by
+    their name as text (``x-python-type``); one that no type of the module writes keeps the model's name.
+    """
+    shared_names = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ != "__future__"}
     for ctx in state.contexts:
         models, imports = ctx.models, ctx.imports
         imported_names = {
@@ -1025,13 +1045,15 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
             for from_, import_ in imports.items()
             for i in import_
         }
+        if shared_names and (shadowed := shared_names.intersection(model.class_name for model in models)):
+            imported_names.update(shadowed.intersection(_names_written_as_text(models)))
         for model in models:
             if model.class_name not in imported_names:  # pragma: no cover
                 continue
             if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
                 continue
 
-            parser._graph_builder.rename_model(  # pragma: no cover  # noqa: SLF001
+            parser._graph_builder.rename_model(  # noqa: SLF001
                 model,
                 reference_name=parser._import_ledger.add_name(  # noqa: SLF001
                     imports,

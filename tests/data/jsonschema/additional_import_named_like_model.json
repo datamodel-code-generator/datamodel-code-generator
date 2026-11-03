@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IPv4Address",
+  "type": "object",
+  "properties": {
+    "host": {"type": "string", "x-python-type": "IPv4Address"},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "owner": {"$ref": "#/$defs/Owner"}
+  },
+  "$defs": {
+    "Owner": {"type": "object", "properties": {"name": {"type": "string"}}}
+  }
+}
