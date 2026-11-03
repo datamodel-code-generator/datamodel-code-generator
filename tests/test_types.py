@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
+from functools import reduce
 from pathlib import Path
+from pprint import pformat
 from typing import TYPE_CHECKING, ClassVar
 
 import pytest
@@ -19,6 +21,8 @@ from datamodel_code_generator.python_literal import (
     represent_python_value,
     represent_untrusted_public_type_name,
     represent_untrusted_python_value,
+    stable_pformat,
+    stable_repr,
 )
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import (
@@ -419,6 +423,29 @@ def test_public_type_names_are_names_of_the_target(target: PythonVersion | None,
     """A public type name is a name of the target Python, the newest by default; U+1E4D0 is a letter from 3.12 on."""
     assert is_safe_public_type_name("mypkg.\U0001e4d0T", target=target) is is_name
     assert represent_untrusted_public_type_name("mypkg.\U0001e4d0T", target=target) == rendered
+
+
+_LIST_INSIDE_ITSELF: list[object] = [1]
+_LIST_INSIDE_ITSELF.append(_LIST_INSIDE_ITSELF)
+_DICT_INSIDE_ITSELF: dict[str, object] = {}
+_DICT_INSIDE_ITSELF["self"] = _DICT_INSIDE_ITSELF
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(_LIST_INSIDE_ITSELF, id="list-inside-itself"),
+        pytest.param(_DICT_INSIDE_ITSELF, id="dict-inside-itself"),
+        pytest.param({"key": "word " * 30}, id="long-string-in-a-dict"),
+        pytest.param("short line\n" + "word " * 30, id="long-string-with-a-short-line"),
+        pytest.param("x" * 100, id="word-longer-than-a-line"),
+        pytest.param(["y" * 100], id="word-longer-than-a-line-in-a-list"),
+        pytest.param(reduce(lambda inner, _: [inner], range(45), [""]), id="empty-string-deeper-than-a-line"),
+    ],
+)
+def test_stable_repr_and_pformat_write_ascii_text_as_repr_and_pprint(value: object) -> None:
+    """``stable_repr`` and ``stable_pformat`` write a value whose text is ASCII as ``repr()`` and ``pprint`` do."""
+    assert (stable_repr(value), stable_pformat(value)) == (repr(value), pformat(value))
 
 
 def test_decimal_detection_and_integer_constraint_edges() -> None:

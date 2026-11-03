@@ -405,13 +405,19 @@ class _StablePrettyPrinter(PrettyPrinter):
         _context: object,
         level: int,
     ) -> None:
-        """Write a string too long for its line as the strings ``pprint`` splits it into, each by ``stable_repr``."""
+        """Write a string too long for its line as the strings ``pprint`` splits it into, each by ``stable_repr``.
+
+        An empty string is written whole, as ``pprint`` writes it, however narrow its line.
+        """
+        if not text:
+            stream.write(stable_repr(text))
+            return
         width = self._width  # ty: ignore[unresolved-attribute]
         if level == 1:
             indent += 1
             allowance += 1
         chunks: list[str] = []
-        lines = text.splitlines(keepends=True) or [text]
+        lines = text.splitlines(keepends=True)
         for index, line in enumerate(lines):
             last_line = index == len(lines) - 1
             if len(rep := stable_repr(line)) <= width - indent - (allowance if last_line else 0):
@@ -428,8 +434,7 @@ class _StablePrettyPrinter(PrettyPrinter):
                     current = part
                 else:
                     current = candidate
-            if current:
-                chunks.append(stable_repr(current))
+            chunks.append(stable_repr(current))
         if len(chunks) == 1:
             stream.write(chunks[0])
             return
