@@ -87,10 +87,13 @@ def _pyright(root: Path, targets: list[str], python: str | Path = sys.executable
 
 
 def _ty(root: Path, targets: list[str], python: str | Path = sys.executable) -> Found:
+    """Report ty's errors; an ignore that the installed ty no longer needs is not one, as the lanes run different ty."""
     completed = _run(
         [
             BIN / "ty",
             "check",
+            "--ignore",
+            "unused-ignore-comment",
             "--python",
             python,
             "--python-version",
