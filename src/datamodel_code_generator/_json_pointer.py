@@ -42,10 +42,9 @@ _ARRAY_INDEX: Final = re.compile(r"0|[1-9][0-9]*")
 _POINTER_OPENING: Final = re.compile(r"/|%2[fF]")
 """The start of a pointer in a URI fragment: a slash, or its percent-encoded octet."""
 
-OpeningRow: TypeAlias = Literal["uri-fragment", "decoded", "legacy-slash-only-opening"]
-"""What opens a pointer in a fragment (``pointer_opening``): ``/`` or its octet ``%2F`` in a URI fragment, ``/`` in a
-decoded one, and ``/`` alone in the URI fragment of a ``$ref`` as the parser resolves it, where ``#%2Fdefinitions/A``
-names an anchor."""
+OpeningRow: TypeAlias = Literal["uri-fragment", "decoded"]
+"""What opens a pointer in a fragment (``pointer_opening``): ``/`` or its octet ``%2F`` in a URI fragment, and ``/`` in
+a decoded one."""
 
 
 def escape_token(token: str | int, /) -> str:

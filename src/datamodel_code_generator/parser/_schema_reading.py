@@ -394,4 +394,4 @@ def _ref_edge_child_entries(
 
 def _is_plain_name_fragment(ref: str) -> bool:
     """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
-    return ref.startswith("#") and not is_pointer_fragment(ref[1:], row="legacy-slash-only-opening")
+    return ref.startswith("#") and not is_pointer_fragment(ref[1:])
