@@ -500,9 +500,8 @@ class _ConstraintSite:
     consumed_at_property: bool
     """The keywords a zero-bound class enforces are left out (row ``legacy-consumed-at-object-property``)."""
     patterns_beside_literal: bool
-    """The pattern of an enum written as a ``Literal`` stays on the field: an object property writes none, as the
-    regex engine of its model is chosen for the patterns of string types, so a pattern the default engine rejects
-    would not import (row ``legacy-property-literal-pattern``)."""
+    """The pattern of an enum written as a ``Literal`` stays on the field: an object property writes none, which keeps
+    today's accepted payloads (row ``legacy-property-literal-pattern``)."""
     keeps_tuple_lengths: bool
     """Under ``--field-constraints`` (or as a preserved root) the lengths its schema declares for a fixed tuple stay on
     the field, with no item counts added to it, where an object property and the array builder leave them out (the

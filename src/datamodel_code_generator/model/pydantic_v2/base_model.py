@@ -143,7 +143,7 @@ from datamodel_code_generator.python_literal import (
     represent_untrusted_python_value,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, keep_node_records
-from datamodel_code_generator.types import chain_as_tuple
+from datamodel_code_generator.types import _is_value_literal, chain_as_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -1157,7 +1157,7 @@ _BYTES_PATTERN_TYPES: frozenset[str | None] = frozenset({"bytes", "StrictBytes"}
 
 
 def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
-    """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``.
+    """Return the string type or ``Literal`` a pattern constrains, looking through unions such as ``str | None``.
 
     Pydantic compiles the patterns of plain and optional ``bytes`` fields from 2.14 on, ignores them from 2.11
     to 2.13 and rejects them at import before, so ``bytes`` counts only for an explicit target of ``model`` that
@@ -1170,10 +1170,15 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
 
 
 def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType | None:
-    """Return the member a ``pattern`` constrains: a string type, else, with ``includes_bytes``, a ``bytes`` type."""
+    """Return the member a ``pattern`` constrains: a string type or the ``Literal`` of a const or an enum.
+
+    Pydantic compiles the pattern of a ``Literal`` as it does a string's. With ``includes_bytes`` a ``bytes`` type is
+    one too.
+    """
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
         or getattr(data_type, "annotated_string", False)
+        or _is_value_literal(data_type)
         or (type_name in _BYTES_PATTERN_TYPES and includes_bytes)
     ):
         return data_type
@@ -1193,9 +1198,9 @@ def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType
 def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataModelFieldBase) -> bool:
     """Return whether a pattern emitted for ``field`` needs Python's ``re``: row ``model`` of ``needs_python_engine``.
 
-    Lookaround keeps its long-standing textual check. Other syntax counts for string patterns Pydantic compiles,
-    keyed on the target Pydantic version, so the output never depends on the installed pydantic-core or on the Python
-    running the generator.
+    Lookaround keeps its long-standing textual check. Other syntax counts for the patterns of a string or a
+    ``Literal``, which Pydantic compiles, keyed on the target Pydantic version, so the output never depends on the
+    installed pydantic-core or on the Python running the generator.
     """
     string_type = _string_pattern_data_type(data_type, field.parent)
     return needs_python_engine(pattern, row="model", compiled=string_type is not None)
@@ -1323,7 +1328,7 @@ def has_lookaround_pattern(
 ) -> bool:
     """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
 
-    This covers lookaround assertions and, for string patterns pydantic compiles, any other syntax
+    This covers lookaround assertions and, for string and ``Literal`` patterns pydantic compiles, any other syntax
     pydantic-core's Rust engine rejects, such as backreferences.
 
     When ``follow_references`` is True, also inspect patterns reachable through referenced
