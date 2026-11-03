@@ -1758,11 +1758,12 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
     return "literal", value
 
 
-def _constructor_keywords(
-    field: DataModelFieldBase, backend: BackendName
-) -> tuple[tuple[str, FrozenLiteral | SourceExpression], ...]:
-    """Return the keyword arguments of the builtin field call, read from the field's structured render data."""
-    keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
+def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tuple[tuple[str, TypeArgument], ...]:
+    """Return the keyword arguments of the builtin field call, read from the field's structured render data.
+
+    A runtime expression, such as the ``compile(...)`` of a pattern that needs Python's regex engine, keeps its import.
+    """
+    keywords: list[tuple[str, TypeArgument]] = []
     match field:
         case PydanticField() if backend in {"pydantic", "pydantic_dataclass"}:
             data, factory = field._get_field_data_and_default_factory()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
@@ -1783,7 +1784,7 @@ def _constructor_keywords(
             frozen = _freeze_argument(value)
         except _UnsupportedError:
             frozen = SourceExpression(repr(value))
-        keywords.append((name, frozen if not isinstance(frozen, ImportedExpression) else SourceExpression(str(value))))
+        keywords.append((name, frozen))
     return tuple(keywords)
 
 
@@ -1798,13 +1799,13 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
     return tuple(qualifiers)
 
 
-def _setting(
-    name: str, keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...], *, fallback: bool | None
-) -> BackendValue:
+def _setting(name: str, keywords: tuple[tuple[str, TypeArgument], ...], *, fallback: bool | None) -> BackendValue:
     for key, value in reversed(keywords):
         if key == name:
             return (
-                RuntimeBackendValue("expression") if isinstance(value, SourceExpression) else KnownBackendValue(value)
+                RuntimeBackendValue("expression")
+                if isinstance(value, SourceExpression | ImportedExpression)
+                else KnownBackendValue(value)
             )
     return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
 

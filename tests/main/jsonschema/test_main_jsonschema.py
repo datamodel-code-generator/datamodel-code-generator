@@ -22364,35 +22364,50 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture", "target_python_version", "expected_file", "switched"),
+    ("fixture", "target_python_version", "expected_file", "parses_from"),
     [
-        ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
-        ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
+        pytest.param(
+            "rust_unsupported_atomic_group",
+            "3.10",
+            "rust_unsupported_atomic_group_py310.py",
+            (3, 11),
+            id="atomic-group-3.10",
+        ),
+        pytest.param(
+            "rust_unsupported_atomic_group",
+            "3.11",
+            "rust_unsupported_atomic_group_py311.py",
+            (3, 11),
+            id="atomic-group-3.11",
+        ),
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.13",
             "rust_unsupported_end_of_string_py313.py",
-            False,
+            (3, 14),
             marks=BLACK_PY313_SKIP,
+            id="end-of-string-3.13",
         ),
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.14",
             "rust_unsupported_end_of_string_py314.py",
-            True,
+            (3, 14),
             marks=BLACK_PY314_SKIP,
+            id="end-of-string-3.14",
         ),
     ],
 )
 def test_main_rust_unsupported_target_python(
-    fixture: str, target_python_version: str, expected_file: str, switched: bool, output_file: Path
+    fixture: str, target_python_version: str, expected_file: str, parses_from: tuple[int, int], output_file: Path
 ) -> None:
-    r"""Python-only regex syntax selects Python's regex engine only when the target Python's ``re`` parses it.
+    r"""Select Python's regex engine for Python-only regex syntax whichever Python the module targets.
 
-    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The decision
-    depends on ``--target-python-version``, never on the Python running the generator. Switched models are
-    imported when the running Python is at least the target.
+    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The Rust engine rejects
+    the pattern on every Python, so the decision depends on neither ``--target-python-version`` nor the Python running
+    the generator. The module is imported when the running Python parses the syntax.
     """
+    runs = sys.version_info >= parses_from
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
         output_path=output_file,
@@ -22405,32 +22420,33 @@ def test_main_rust_unsupported_target_python(
             "--target-python-version",
             target_python_version,
         ],
-        skip_code_validation=not switched,
-        force_exec_validation=switched,
+        skip_code_validation=not runs,
+        force_exec_validation=runs,
     )
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "collapse_args", "expected_file", "switched"),
+    ("target_python_version", "collapse_args", "expected_file"),
     [
-        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", False, id="python-3.10"),
-        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", True, id="python-3.11"),
+        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", id="python-3.10"),
+        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", id="python-3.11"),
         pytest.param(
             "3.11",
             ["--collapse-root-models"],
             "rust_unsupported_typed_extra_py311.py",
-            True,
             id="python-3.11-collapse-root-models",
         ),
     ],
 )
 def test_main_rust_unsupported_typed_extra_target_python(
-    target_python_version: str, collapse_args: list[str], expected_file: str, switched: bool, output_file: Path
+    target_python_version: str, collapse_args: list[str], expected_file: str, output_file: Path
 ) -> None:
-    """Select Python's regex engine for a pattern of typed extra values by the target Python, as for declared fields.
+    """Select Python's regex engine for a pattern of typed extra values whichever Python is targeted, as for fields.
 
-    Switched models are imported, so a pattern pydantic-core rejects fails the test when the engine is not switched.
+    The module is imported where the running Python parses the atomic group, so a pattern pydantic-core rejects fails
+    the test when the engine is not switched.
     """
+    runs = sys.version_info >= (3, 11)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
         output_path=output_file,
@@ -22447,8 +22463,8 @@ def test_main_rust_unsupported_typed_extra_target_python(
             "--disable-timestamp",
             *collapse_args,
         ],
-        skip_code_validation=not switched,
-        force_exec_validation=switched,
+        skip_code_validation=not runs,
+        force_exec_validation=runs,
     )
 
 
@@ -22457,8 +22473,8 @@ def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
 
     Such a model fails at import with either engine, and the decision never depends on the Python running the
     generator: unknown character names, global flags after the start, non-ASCII conditional references,
-    overflowing repetitions, and deeply nested groups are switched without compiling the pattern. Verbose
-    patterns keep the default engine because the scan does not model their whitespace and comments.
+    overflowing repetitions, and deeply nested groups are switched without compiling the pattern, and so is a verbose
+    pattern that starts with ``(?x)``, whose whitespace and comments the scan reads.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",

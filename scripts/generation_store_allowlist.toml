@@ -152,7 +152,7 @@ _lookaround_regex_engine_checked = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._select_python_regex_engine"]
 '_additional_imports.append()' = 1
-'extra_template_data.setdefault("config")' = 1
+'extra_template_data["config"]' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
 '_additional_imports.append()' = 1

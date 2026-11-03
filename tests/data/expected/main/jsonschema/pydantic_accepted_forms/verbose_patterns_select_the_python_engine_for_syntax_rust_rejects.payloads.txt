@@ -1,0 +1,16 @@
+Backreference 'aa': valid
+Backreference 'ab': string_pattern_mismatch
+ClassComment 'a#a': valid
+ClassComment 'b': string_pattern_mismatch
+CommentedSyntax 'abc': valid
+CommentedSyntax 'ABC': string_pattern_mismatch
+EscapedHash 'a#b': valid
+EscapedHash 'ab': string_pattern_mismatch
+ClassEscapedHash 'a#b': valid
+ClassEscapedHash 'c': string_pattern_mismatch
+AcceptedVerbose 'abc': valid
+AcceptedVerbose 'ABC': string_pattern_mismatch
+MidPatternFlag 'ab': valid
+MidPatternFlag 'ac': string_pattern_mismatch
+ScopedVerbose 'abc': valid
+ScopedVerbose 'ABC': string_pattern_mismatch
