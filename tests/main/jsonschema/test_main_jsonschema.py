@@ -4226,14 +4226,17 @@ def test_main_jsonschema_additional_import_named_like_model_beside_import(output
     ],
 )
 def test_main_jsonschema_renamed_import_beside_shared_import(
-    output_dir: Path, input_name: str, extra_args: list[str]
+    output_dir: Path, input_name: str, extra_args: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Give the import that a package names anew a name that no import every module writes binds.
 
     The import ``Status`` of a package with a submodule ``Status``, and the module import ``list`` of a module that
     writes the builtin, take the next name their module's resolver gives (``Status_1``, ``list_1``), which an
-    additional import binds, so they take the one after it.
+    additional import binds, so they take the one after it. The additional imports name a module the test provides,
+    so the output is imported on the target Python.
     """
+    (tmp_path / "mymod.py").write_text("Status_1 = object()\nlist_1 = object()\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
         output_path=output_dir,
