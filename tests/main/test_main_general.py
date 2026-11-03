@@ -3742,6 +3742,30 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
             "class_decorators must be a Python import path composed of identifiers: 'mypkg.1x'",
             id="class-decorators",
         ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg . class  # comment",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="class-decorators-spaced-dot-comment",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco if flag else other",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco if flag else other'",
+            id="class-decorators-expression",
+        ),
+        pytest.param(
+            "--class-decorators",
+            '@mypkg."""deco',
+            'class_decorators must be a Python import path composed of identifiers: \'mypkg."""deco\'',
+            id="class-decorators-unterminated-string",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco\n  (flag)",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco\\n  (flag)'",
+            id="class-decorators-indented-line",
+        ),
     ],
 )
 def test_main_refuses_named_path_with_non_identifier_part(
@@ -3749,8 +3773,9 @@ def test_main_refuses_named_path_with_non_identifier_part(
 ) -> None:
     """Refuse an option that names a Python object by a dotted path with a part that is not an identifier (#6109).
 
-    ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its text
-    before the arguments of its call.
+    ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its tokens
+    before the arguments of its call, without comments and the whitespace around a dot; a text that does not tokenize
+    there is a path as a whole.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
@@ -3776,8 +3801,8 @@ def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
     """Keep the decorators and type overrides whose text after a path, or around it, is no path (#6109).
 
     A decorator's path ends at its first bracket after its opening parentheses, so a call, a subscript and parentheses
-    are written as given; a type override that spells an annotation names no class to import, and an empty base class
-    names none.
+    are written as given, and a comment or whitespace around a dot is no part of it; a type override that spells an
+    annotation names no class to import, and an empty base class names none.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
@@ -3785,7 +3810,12 @@ def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=[
             "--class-decorators",
-            "@(mypkg.deco),mypkg.deco(letter_case=LetterCase.CAMEL),@registry[0].register",
+            (
+                "@(mypkg.deco),mypkg.deco(letter_case=LetterCase.CAMEL),@registry[0].register,"
+                "@deprecated  # comment,@mypkg . decorator"
+            ),
+            "--additional-imports",
+            "mypkg,mypkg.LetterCase,mypkg.deprecated,mypkg.registry",
             "--type-overrides",
             '{"Person.firstName": "str | None"}',
             "--base-class-map",
