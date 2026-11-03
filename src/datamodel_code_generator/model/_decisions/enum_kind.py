@@ -300,16 +300,13 @@ _JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
 }
 
 
-def json_type(value: object, other: str | None = None) -> str:
+def json_type(value: object) -> str:
     """Return the JSON type of an enum or const value by its literal kind.
 
-    Any other value is ``other``, or by default a number when it is a Decimal, an object when it is a dict, and an
-    array otherwise.
+    Any other value is a number when it is a Decimal, an object when it is a dict, and an array otherwise.
     """
     if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
         return found
-    if other is not None:
-        return other
     return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
 
 
