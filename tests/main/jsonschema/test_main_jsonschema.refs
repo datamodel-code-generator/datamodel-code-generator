@@ -7186,6 +7186,10 @@ msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_closed_length[msgspe
 msgspec.Struct-default	main/jsonschema/main_jsonschema/prefix_items_closed_length[msgspec.Struct-default].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel-default].py
+[test_main_jsonschema_prefix_items_closed_tail_unevaluated]
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[pydantic_v2.BaseModel].py
+use-tuple-for-closed-arrays	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[use-tuple-for-closed-arrays].py	= main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[pydantic_v2.BaseModel].py
 [test_main_jsonschema_prefix_items_fixed_any_tail_schema]
 	main/jsonschema/prefix_items_fixed_any_tail_schema.py
 [test_main_jsonschema_prefix_items_fixed_tail_schema]

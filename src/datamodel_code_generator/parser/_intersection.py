@@ -85,6 +85,7 @@ __all__ = [
     "bounds_admit_no_value",
     "common_types",
     "concatenating_row",
+    "declared_positional_tail",
     "declared_types",
     "enum_metadata",
     "inherited_override_row",
@@ -603,16 +604,26 @@ def inherits_keyword(merge_mode: str, keyword: str) -> bool:
     return merge_mode != "none" and keyword not in _NOT_INHERITED.get(merge_mode, ())
 
 
+def declared_positional_tail(read: Callable[[str], object], key: str) -> object:
+    """Return the schema a schema declares for the positions beyond the tuple of ``key``, or None when it declares none.
+
+    ``key`` is ``items`` (its tail is ``additionalItems``) or ``prefixItems``, whose tail is ``items``, else
+    ``unevaluatedItems``: a declared ``items`` types every later position, so ``unevaluatedItems`` never applies.
+    ``read`` reads a keyword of the schema: a dump's ``get`` or a schema object's attribute.
+    """
+    if key == "items":
+        return read("additionalItems")
+    if (items := read("items")) is not None and not isinstance(items, list):
+        return items
+    return read("unevaluatedItems")
+
+
 def inherited_positional_tail(read: Callable[[str], object], key: str) -> object:
     """Return the schema of the positions beyond the tuple that ``key`` (``items`` or ``prefixItems``) declares.
 
     ``read`` reads a keyword of the inherited schema: a dump's ``get`` or a schema object's attribute.
     """
-    if key == "items":
-        return True if (additional_items := read("additionalItems")) is None else additional_items
-    if (items := read("items")) is not None and not isinstance(items, list):
-        return items
-    return True if (unevaluated_items := read("unevaluatedItems")) is None else unevaluated_items
+    return True if (tail := declared_positional_tail(read, key)) is None else tail
 
 
 def merge_inherited_value(

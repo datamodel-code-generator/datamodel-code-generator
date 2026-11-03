@@ -16358,6 +16358,41 @@ def test_main_jsonschema_prefix_items_closed_length(
 @pytest.mark.parametrize(
     ("output_model", "extra_args"),
     [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", ["--use-tuple-for-closed-arrays"], id="use-tuple-for-closed-arrays"),
+    ],
+)
+def test_main_jsonschema_prefix_items_closed_tail_unevaluated(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Leave the unevaluatedItems schema out of the item type of an array that its items keyword types to the end.
+
+    ``items`` after ``prefixItems`` evaluates every later position, so ``unevaluatedItems`` applies to none: an
+    ``items: false`` array holds only its prefix (``list[int]``, not ``list[int | str]``, which accepted ``["x"]``,
+    #5933), and an ``items`` schema types the tail.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_closed_tail_unevaluated.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="prefix_items_closed_tail_unevaluated",
+            model_name="ClosedTail",
+            valid_json='{"closed": [1], "typed": [1, true]}',
+            invalid_json='{"closed": ["x"]}',
+            expected_error_type="int_parsing",
+        )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
         pytest.param("pydantic_v2.BaseModel", ["--use-tuple-for-closed-arrays"], id="pydantic_v2.BaseModel"),
         pytest.param("msgspec.Struct", ["--use-tuple-for-closed-arrays"], id="msgspec.Struct"),
         pytest.param(

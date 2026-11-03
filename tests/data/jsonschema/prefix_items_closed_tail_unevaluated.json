@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClosedTail",
+  "type": "object",
+  "properties": {
+    "closed": {
+      "type": "array",
+      "prefixItems": [{"type": "integer"}],
+      "items": false,
+      "unevaluatedItems": {"type": "string"}
+    },
+    "typed": {
+      "type": "array",
+      "prefixItems": [{"type": "integer"}],
+      "items": {"type": "boolean"},
+      "unevaluatedItems": {"type": "string"}
+    }
+  }
+}
