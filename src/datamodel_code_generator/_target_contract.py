@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
     from datamodel_code_generator._site_facts import Projection, TypeUseRole
     from datamodel_code_generator._target_naming import TargetNames
     from datamodel_code_generator.imports import Import
@@ -446,39 +447,39 @@ LeafStep: TypeAlias = Literal["items", "values"]
 
 
 @dataclass(frozen=True, slots=True)
-class KindSite:
-    """Where the lexical kind of a text leaf is read: the places a type may be bound for it, and where none is reported.
+class KindAt:
+    """The lexical kind of a text leaf by the type bound for it, and where the schema of its values is.
 
-    A place is a schema's location and the steps from the type bound there to the leaf.
+    A leaf whose type has no one kind (``_target_types.lexical_kind``) has None, which is refused at `source`.
     """
 
     source: SourceLocation
-    leaves: tuple[tuple[SourceLocation, tuple[LeafStep, ...]], ...]
+    kind: LexicalKind | None
 
 
 @dataclass(frozen=True, slots=True)
 class MemberShape:
-    """One member of an object written as text: its name, where its kind is read, and whether it repeats.
+    """One member of an object written as text: its name, its kind, and whether it repeats.
 
-    A member without a kind site is any string.
+    A member without a kind is any string.
     """
 
     name: str
-    kind: KindSite | None = None
+    kind: KindAt | None = None
     repeated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class TextShape:
-    """How a schema's values are written as parameter text or as URL-encoded members, by the JSON types it declares.
+    """How a use's values are written as parameter text or as URL-encoded members, by the type its use binds.
 
-    A scalar or an array has the kind of its value or items; an object has its properties' members, then any other
-    property's, none when it allows no others. `problem` is the location and message of why no builtin encoding
-    writes the values.
+    A scalar or an array has the kind of its value or items; an object has the members of the model it holds, then
+    any other property's, none when the model allows no others. `problem` is the location and message of why no
+    builtin encoding writes the values.
     """
 
     shape: Literal["scalar", "array", "object"]
-    kind: KindSite | None = None
+    kind: KindAt | None = None
     members: tuple[MemberShape, ...] = ()
     additional: MemberShape | None = None
     problem: tuple[SourceLocation, str] | None = None
@@ -486,20 +487,19 @@ class TextShape:
 
 @dataclass(frozen=True, slots=True)
 class EncodingFacts:
-    """How the schema of a parameter, a header or a form is written as text, as the parser recorded on acquiring it.
+    """How the value of a parameter, a header or a form is written as text, by the type and members its use binds.
 
-    `types` are the JSON types it declares, None when it declares none; `value` is its shape as one parameter value,
-    `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the location of the
-    property's schema. `extras` is where a form's object schema types the values of its other properties: in a schema
-    of its own, or in one of a schema it references or combines with allOf. `declared` says that schema allows them
-    as `true` or a schema, where one that leaves them unsaid allows them by default.
+    `value` is its shape as one parameter value, `form` as URL-encoded members, and `members` each property's shape
+    as one parameter value, by the property's wire name. `extras` is where the schema of a form's other properties
+    is, and the type of their values, when the model it holds, or a base of it, types them, or its mapping does.
+    `declared` says that model allows them as `true` or a schema, where one that leaves them unsaid allows them by
+    default.
     """
 
-    types: frozenset[str] | None
     value: TextShape
     form: TextShape
-    members: tuple[tuple[SourceLocation, TextShape], ...] = ()
-    extras: KindSite | None = None
+    members: tuple[tuple[str, TextShape], ...] = ()
+    extras: tuple[SourceLocation, TypeView] | None = None
     declared: bool = False
 
 

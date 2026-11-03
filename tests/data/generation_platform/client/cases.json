@@ -5733,5 +5733,29 @@
         "_operations.py"
       ]
     ]
+  },
+  "text-bound-types": {
+    "input": "text-bound-types.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-reuse": {
+    "input": "text-bound-types.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-errors": {
+    "input": "text-bound-types-errors.yaml"
   }
 }
