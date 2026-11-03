@@ -322,6 +322,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         producer=ImportProducer("import-enum-member-literal-classes", model),
                         treat_dot_as_module=parser.treat_dot_as_module,
                         import_ledger=parser._import_ledger,  # noqa: SLF001
+                        shared_imports=parser.imports,
                     )
                     or reference.short_name
                 )

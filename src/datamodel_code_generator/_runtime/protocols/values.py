@@ -33,6 +33,7 @@ __all__ = (
     "RepeatedValueError",
     "absence",
     "accessed",
+    "pointer_tokens",
     "read_expiry",
     "read_selector",
     "required",
@@ -56,7 +57,8 @@ MISSING = Sentinel("MISSING")
 """The absence of the member a selector names, which is neither JSON null nor an empty string."""
 
 
-def _tokens(pointer: str) -> list[str]:
+def pointer_tokens(pointer: str) -> list[str]:
+    """Return the reference tokens of an RFC 6901 pointer, each unescaped."""
     return [token.replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:]]
 
 
@@ -66,7 +68,7 @@ def resolve(value: JSONValue, pointer: str) -> JSONValue | MISSING:
     Generated helpers point only through object members, so an absent member and a step into anything but an object,
     null included, both name nothing.
     """
-    for key in _tokens(pointer):
+    for key in pointer_tokens(pointer):
         if not isinstance(value, Mapping) or key not in value:
             return MISSING
         value = value[key]
@@ -154,7 +156,7 @@ class Patch:
         """Return the encoded value, an empty object when omitted, with every write applied."""
         wire: JSONValue = {} if self.value is UNSET else encode(self.value)
         for pointer, new in self.writes:
-            wire = _patched(wire, _tokens(pointer), new)
+            wire = _patched(wire, pointer_tokens(pointer), new)
         return wire
 
 

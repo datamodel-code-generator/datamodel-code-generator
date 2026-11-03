@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info: {title: Pointer references, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - {name: a, in: query, schema: {type: string}}
+        - name: b
+          in: query
+          schema: {type: string}
+          examples:
+            one: {value: x}
+        - name: c
+          in: query
+          schema: {type: string}
+          examples:
+            viaIndex: {$ref: "#/paths/~1pets/get/parameters/1/examples/one"}
+            viaLeadingZero: {$ref: "#/paths/~1pets/get/parameters/01/examples/one"}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/a%2Fb"}
+          links:
+            listed: {$ref: "#/x-listed/0"}
+            numbered: {$ref: "#/x-keyed/1"}
+            slashed: {$ref: "#/x-keyed/a%2Fb"}
+    post:
+      operationId: addPet
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/a%2Fb"}
+      responses:
+        "204": {description: Added.}
+components:
+  schemas:
+    a/b:
+      type: object
+      properties: {name: {type: string}}
+    a:
+      type: object
+      properties: {b: {type: integer}}
+x-listed:
+  - {operationId: addPet}
+x-keyed:
+  1: {operationId: addPet}
+  a/b: {operationId: listPets}

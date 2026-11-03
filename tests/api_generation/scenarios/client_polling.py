@@ -79,7 +79,7 @@ def _outcome(value: object) -> str:
             facts = f"required>limit={error.required_wait > error.limit} limit={error.limit}"
         else:
             facts = f"required>=limit={error.required_wait >= error.limit}"
-        return f"SessionLimitError reason={error.reason!r} {facts}"
+        return f"SessionLimitError reason={error.reason!r} {facts} operation={error.operation.pointer}"
     if getattr(value, "reason", None) in {"operation_failed", "operation_cancelled"}:
         failure: Any = value
         data = failure.data

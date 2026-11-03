@@ -2,10 +2,11 @@
 
 A YAML key such as ``1`` or ``200`` loads as a number. A key that names a component, path, webhook, callback, method,
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
-must give each status once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
+must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-the fields of an AsyncAPI channel that each hold an operation and the reference a discriminator mapping value names
+the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
+(``is_multi_format_schema_object``) and the reference a discriminator mapping value names
 (``discriminator_mapping_ref``).
 """
 
@@ -33,6 +34,7 @@ __all__ = [
     "descend",
     "discriminator_mapping_ref",
     "document_statuses",
+    "is_multi_format_schema_object",
     "member",
     "string_key",
     "string_keys",
@@ -44,13 +46,11 @@ CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
 them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
 _T = TypeVar("_T")
 
-MemberRow: TypeAlias = Literal["canonical", "refusing", "legacy-int-tokens", "legacy-decimal-tokens"]
-"""How a reader reads one token's member of a loaded value (``member``)."""
+MemberRow: TypeAlias = Literal["canonical", "refusing"]
+"""How a reader treats a token that names no member of a loaded value (``member``)."""
 _ENDS_WALK: Final[MappingProxyType[MemberRow, tuple[type[Exception], ...]]] = MappingProxyType({
-    "canonical": (LookupError, TypeError),
+    "canonical": (LookupError, TypeError, ValueError),
     "refusing": (KeyError,),
-    "legacy-int-tokens": (LookupError, TypeError, ValueError),
-    "legacy-decimal-tokens": (LookupError,),
 })
 """The errors of each row that mean the value has no such member; any other error propagates."""
 
@@ -80,48 +80,33 @@ def as_mapping(value: object) -> dict[str, YamlValue]:
     return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
 
 
-def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:  # noqa: PLR0911
+def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:
     """Return one token's member of a loaded value; raise one of the row's ``_ENDS_WALK`` errors when it has none.
 
-    ``canonical``: a list item by an RFC 6901 array index; a mapping member by its integer YAML key when the token is
-    such an index and the key exists, else by the token. ``refusing`` (the parser's ``$ref`` targets) reads a mapping
-    member by the token and a list item by an RFC 6901 array index; a token that is no index, or that is too long,
-    is an ``Error``, an index past the end an ``ArrayIndexOutOfRangeError``, and any other value a
-    ``NotImplementedError``. The other rows keep the readers' earlier grammars:
-    ``legacy-int-tokens`` (target binding) reads an item of any non-mapping by whatever ``int()`` accepts (``-1``,
-    ``01``, ``1_0``, a character of a string), a mapping as ``canonical``; ``legacy-decimal-tokens`` (served document)
-    reads a list item by any decimal token below the length (``01``, non-ASCII digits), a mapping member by the token
-    first, then by a decimal integer key.
+    A list item is read by an RFC 6901 array index only (``0``, or ASCII digits without a leading zero: never ``-1``,
+    ``01`` or the character of a string), and any other value has no member. ``canonical`` (the locations the parser
+    recorded and the target readers) reads a mapping member by the token, as the parser's ``$ref`` does, else by the
+    integer YAML key the token is the index of, and every token that names no member is a miss. ``refusing`` (the
+    targets of the parser's ``$ref``) reads a mapping member by the token only: a missing member is a ``KeyError``, a
+    value that is no container a ``NotImplementedError``, a list token that is no index or is too long an ``Error``, and
+    an index past the end an ``ArrayIndexOutOfRangeError``.
     """
-    match row:
-        case "canonical":
-            index = is_array_index(token)
-            mapping = cast("dict[object, YamlValue]", value)
-            return (
-                value[int(token)]
-                if isinstance(value, list) and index
-                else mapping[int(token)]
-                if index and int(token) in mapping
-                else mapping[token]
-            )
-        case "refusing":
-            if isinstance(value, dict):
-                return value[token]
-            if isinstance(value, list):
-                return _array_item(value, token)
-            msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
-            raise NotImplementedError(msg)
-        case "legacy-int-tokens":
-            if not isinstance(value, dict):
-                return cast("list[YamlValue]", value)[int(token)]
-            numbered = cast("dict[object, YamlValue]", value)
-            return numbered[int(token)] if is_array_index(token) and int(token) in numbered else value[token]
-        case _:  # legacy-decimal-tokens
-            if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
-                return value[int(token)]
-            if isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
-                return value[token] if token in value else cast("dict[object, YamlValue]", value)[int(token)]
-    raise LookupError(token)
+    if row == "refusing":
+        if isinstance(value, dict):
+            return value[token]
+        if isinstance(value, list):
+            return _array_item(value, token)
+        msg = f"Cannot traverse non-container schema. schema={value}, key={token}"
+        raise NotImplementedError(msg)
+    index = is_array_index(token)
+    mapping = cast("dict[object, YamlValue]", value)
+    return (
+        value[int(token)]
+        if isinstance(value, list) and index
+        else mapping[int(token)]
+        if index and token not in mapping and int(token) in mapping
+        else mapping[token]
+    )
 
 
 def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: YamlValue = None) -> YamlValue:
@@ -151,6 +136,19 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
         string_key(key, kind, error_path)
 
 
+def is_multi_format_schema_object(value: object) -> bool:
+    """Return whether an AsyncAPI value is a Multi Format Schema Object, a wrapper of the schema in its ``schema``.
+
+    A mapping with a ``schemaFormat`` is one, and so is a mapping whose keys, but the ``x-`` extensions and the keys
+    that are no string, are ``schema`` alone. An OpenAPI or JSON Schema document has no such wrapper.
+    """
+    if not isinstance(value, dict):
+        return False
+    return "schemaFormat" in value or {key for key in value if isinstance(key, str) and not key.startswith("x-")} == {
+        "schema"
+    }
+
+
 def discriminator_mapping_ref(value: str) -> str:
     """Return the reference a discriminator mapping value names.
 
@@ -164,17 +162,23 @@ def discriminator_mapping_ref(value: str) -> str:
     return f"#/components/schemas/{value}"
 
 
-def document_statuses(responses: Mapping[Any, _T], error_path: Callable[[str], list[str]]) -> dict[str, _T]:
+def document_statuses(
+    responses: Mapping[Any, _T], canonical: Callable[[str], str | None], error_path: Callable[[str], list[str]]
+) -> dict[str, _T]:
     """Return ``responses`` by their status, the text of their key.
 
-    Two keys such as ``200`` and ``'200'`` give one status twice: it is an error at ``error_path(status)``.
+    Two keys that give one response twice are an error at ``error_path(status)`` of the second: ``200`` and ``'200'``,
+    or keys that ``canonical`` maps to one response key, such as ``2XX`` and ``2xx``. A key it maps to none stands for
+    itself.
     """
     keys: dict[str, object] = {}
     statuses: dict[str, _T] = {}
     for key, value in responses.items():
-        if (status := str(key)) in keys:
-            msg = f"response status {status} is given by two keys, {keys[status]!r} and {key!r}"
+        status = str(key)
+        name = canonical(status) or status
+        if name in keys:
+            msg = f"response status {name} is given by two keys, {keys[name]!r} and {key!r}"
             raise SchemaParseError(msg, path=error_path(status))
-        keys[status] = key
+        keys[name] = key
         statuses[status] = value
     return statuses

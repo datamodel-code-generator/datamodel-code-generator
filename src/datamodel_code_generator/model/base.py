@@ -508,11 +508,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     NEEDS_MODEL_REGEX_ENGINE: ClassVar[Callable[[list[DataModelFieldBase]], bool] | None] = None
     """Return whether a pattern of the fields selects a regex engine in the config of the model that holds them."""
     PATTERN_NEEDS_HOLDER_ENGINE: ClassVar[
-        Callable[[type[DataModel], str, PythonVersion, TargetPydanticVersion | None], bool] | None
+        Callable[[type[DataModel], str, TargetPydanticVersion | None], bool] | None
     ] = None
     """Return whether a pattern in a model of the given root type needs a regex engine of the models that use it.
 
-    It takes the root type, the pattern and the target Python and Pydantic versions.
+    It takes the root type, the pattern and the target Pydantic version.
     """
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False

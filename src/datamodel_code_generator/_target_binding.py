@@ -18,7 +18,7 @@ from functools import cached_property
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
-from urllib.parse import ParseResult, unquote
+from urllib.parse import ParseResult
 
 from typing_extensions import override
 
@@ -33,7 +33,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
+from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._json_schema import COMBINATOR_POSITIONS
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import linearize, resolve_members
@@ -97,6 +97,7 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
+    response_key,
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
@@ -133,7 +134,6 @@ from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
-    SPECIAL_PATH_MARKER,
     SchemaLocation,
     _is_special_path,
     _rw_direction,
@@ -852,9 +852,15 @@ _UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
 _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 
 
-def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
-    """Decode a reference's JSON pointer fragment, or return None for a named anchor."""
-    return fragment_tokens(unquote(ref.partition("#")[2]))
+def _pointer_tokens(ref: str, *, strict: bool = False) -> tuple[str, ...] | None:
+    """Read a reference's JSON pointer fragment (`reference_tokens`), or return None for a named anchor.
+
+    Under `strict`, a spelling that is no canonical pointer (a stray `%` or `~`, octets that are no UTF-8) is None too.
+    """
+    try:
+        return reference_tokens(ref.partition("#")[2], strict=strict)
+    except ValueError:
+        return None
 
 
 def _spelled(site: SiteFacts, formats: frozenset[str]) -> bool:
@@ -1757,11 +1763,12 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
     return "literal", value
 
 
-def _constructor_keywords(
-    field: DataModelFieldBase, backend: BackendName
-) -> tuple[tuple[str, FrozenLiteral | SourceExpression], ...]:
-    """Return the keyword arguments of the builtin field call, read from the field's structured render data."""
-    keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
+def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tuple[tuple[str, TypeArgument], ...]:
+    """Return the keyword arguments of the builtin field call, read from the field's structured render data.
+
+    A runtime expression, such as the ``compile(...)`` of a pattern that needs Python's regex engine, keeps its import.
+    """
+    keywords: list[tuple[str, TypeArgument]] = []
     match field:
         case PydanticField() if backend in {"pydantic", "pydantic_dataclass"}:
             data, factory = field._get_field_data_and_default_factory()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
@@ -1782,7 +1789,7 @@ def _constructor_keywords(
             frozen = _freeze_argument(value)
         except _UnsupportedError:
             frozen = SourceExpression(repr(value))
-        keywords.append((name, frozen if not isinstance(frozen, ImportedExpression) else SourceExpression(str(value))))
+        keywords.append((name, frozen))
     return tuple(keywords)
 
 
@@ -1797,13 +1804,13 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
     return tuple(qualifiers)
 
 
-def _setting(
-    name: str, keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...], *, fallback: bool | None
-) -> BackendValue:
+def _setting(name: str, keywords: tuple[tuple[str, TypeArgument], ...], *, fallback: bool | None) -> BackendValue:
     for key, value in reversed(keywords):
         if key == name:
             return (
-                RuntimeBackendValue("expression") if isinstance(value, SourceExpression) else KnownBackendValue(value)
+                RuntimeBackendValue("expression")
+                if isinstance(value, SourceExpression | ImportedExpression)
+                else KnownBackendValue(value)
             )
     return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
 
@@ -2285,8 +2292,7 @@ class _Reader(_SchemaLocations):
         """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
 
         A branch that leads back to a schema being read says nothing of its values. No other keyword says them, so a
-        schema with properties and no type has none, and a const of no literal kind is an object
-        (`legacy-target-written-kinds`), where the parser types its values.
+        schema with properties and no type has none (`legacy-target-written-kinds`), where the parser types its values.
         """
         declaration, site = self.chain(declaration, siblings=True)
         if declaration in active:
@@ -2395,7 +2401,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.documents.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, "canonical", missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
@@ -2485,8 +2491,7 @@ class _Models:
 
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
-        special = key.rpartition(SPECIAL_PATH_MARKER)[2]
-        return next((found for found in _RW_DIRECTIONS if special.startswith(f"read-write-{found}")), "neutral")
+        return variant[1] if (variant := _rw_variant_of(key)) else "neutral"
 
     def symbols(self) -> tuple[tuple[FinalModelSymbol, ...], tuple[ModelArtifactAddress, ...]]:
         binder = self.binder
@@ -3198,9 +3203,7 @@ class _Contracts(_SchemaUses):
             if document is not None and not self.observed(document):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
                 break
-            fragment = ref.partition("#")[2]
-            noncanonical = NONCANONICAL_PERCENT.search(fragment) or NONCANONICAL_ESCAPE.search(unquote(fragment))
-            if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
+            if document is None or (tokens := _pointer_tokens(ref, strict=True)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break
             target = SchemaLocation(document, tokens)
@@ -3500,11 +3503,13 @@ class _Contracts(_SchemaUses):
                 children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(
-            self.response(response, use_site.child("responses", status), identity, status)
+            self.response(response, use_site.child("responses", status), identity, key)
             for status, response in document_statuses(
                 {response.key: response for response in walked.below("response")},
+                response_key,
                 lambda status: [str(declaration.child("responses", status))],
             ).items()
+            if (key := response_key(status)) is not None
         )
         callbacks = tuple(
             self.metadata(

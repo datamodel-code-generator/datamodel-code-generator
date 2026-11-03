@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {
+      "type": "object",
+      "properties": {
+        "errors": {"$ref": "#/$defs/pkg.Warning"},
+        "detail": {"$ref": "#/$defs/pkg.Warning.Detail"},
+        "group": {"$ref": "#/$defs/pkg.ExceptionGroup"},
+        "group_detail": {"$ref": "#/$defs/pkg.ExceptionGroup.Detail"}
+      }
+    },
+    "pkg.Warning": {"type": "object", "properties": {"count": {"type": "integer"}}},
+    "pkg.Warning.Detail": {"type": "object", "properties": {"message": {"type": "string"}}},
+    "pkg.ExceptionGroup": {"type": "object", "properties": {"size": {"type": "integer"}}},
+    "pkg.ExceptionGroup.Detail": {"type": "object", "properties": {"reason": {"type": "string"}}}
+  }
+}

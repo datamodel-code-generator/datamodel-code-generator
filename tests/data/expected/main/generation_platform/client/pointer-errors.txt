@@ -1,0 +1,3 @@
+# pointer-errors
+render pydantic_v2.BaseModel
+  Error: /paths/~1negative/get: The security of GET /negative requires the unavailable scheme 'negative'; /paths/~1leading/get: The security of GET /leading requires the unavailable scheme 'leading'

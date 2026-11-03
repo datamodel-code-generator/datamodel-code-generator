@@ -1,0 +1,4 @@
+{
+  "range": {"kind": "cache", "operation": "/paths/~1range/get", "validator": "etag", "authenticated": false},
+  "fallback": {"kind": "cache", "operation": "/paths/~1fallback/get", "validator": "etag", "authenticated": false}
+}

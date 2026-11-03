@@ -31,9 +31,7 @@ put_work value
   < 204 -
   = None
 put_work None
-  > PUT /work?case=none [application/json]
-  < 422 application/json
-  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]} [operation_id='putWork', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', truncated=False]
+  ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
 put_person home None
   > PUT /person?case=main [application/json]
   put_person(case='main', body=Person(work=Home(street='main'), home=None))
@@ -71,9 +69,7 @@ put_work value
   < 204 -
   = None
 put_work None
-  > PUT /work?case=none [application/json]
-  < 422 application/json
-  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]} [operation_id='putWork', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', truncated=False]
+  ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
 put_person home None
   > PUT /person?case=main [application/json]
   put_person(case='main', body=Person(work=Home(street='main'), home=None))

@@ -24,6 +24,7 @@ from tests.api_generation.scenarios.client_bodies import bodies
 from tests.api_generation.scenarios.client_body_replay import body_replay, multipart_replay
 from tests.api_generation.scenarios.client_body_replay_faults import body_replay_faults
 from tests.api_generation.scenarios.client_caching import cache_backends, cache_stores, caching
+from tests.api_generation.scenarios.client_call_layers import call_layers
 from tests.api_generation.scenarios.client_compression import compression
 from tests.api_generation.scenarios.client_deadline_cleanup import deadline_cleanup
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
@@ -77,6 +78,7 @@ from tests.api_generation.scenarios.client_regressions import (
     no_success,
     route_text,
 )
+from tests.api_generation.scenarios.client_response_keys import response_keys
 from tests.api_generation.scenarios.client_retry_boundaries import retry_boundaries
 from tests.api_generation.scenarios.client_retry_calls import retry_calls
 from tests.api_generation.scenarios.client_retry_errors import retry_errors
@@ -862,6 +864,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
+    "response-keys": ("response-keys", ("pydantic_v2.BaseModel",), response_keys),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
@@ -902,6 +905,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),
     "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
     "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),

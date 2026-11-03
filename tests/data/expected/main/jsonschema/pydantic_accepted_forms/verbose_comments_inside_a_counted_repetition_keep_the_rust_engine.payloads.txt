@@ -1,0 +1,6 @@
+CommentAfterComma 'aaa': valid
+CommentAfterComma 'aaaa': string_pattern_mismatch
+CommentsAroundNumbers 'aa': valid
+CommentsAroundNumbers 'a': string_pattern_mismatch
+CommentBeforeUpperBound 'a{,3}': valid
+CommentBeforeUpperBound 'aaa': string_pattern_mismatch

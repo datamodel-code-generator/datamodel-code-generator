@@ -234,11 +234,12 @@ Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by defaul
 pattern when the model class is created. Some syntax that Python's `re` accepts is rejected by every
 pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
 OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
-the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
-the installed pydantic-core or on the Python running the generator, and it is the same for every
-`--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
-whatever the target, and the generation warns when the target is older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
-with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
+the pattern. The decision depends only on the pattern text. It does not depend on the installed pydantic-core, on
+the Python running the generator or on `--target-python-version`, and for a string pattern it is the same for every
+`--target-pydantic-version` (a `bytes` pattern follows the target, see below). `regex_engine` needs Pydantic 2.5: on
+Pydantic 2.0 to 2.4 such a model fails at import whatever the target, and the generation warns when the target is
+older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or, with
+`--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
 | Pattern syntax | Example | Generated model |
@@ -253,19 +254,21 @@ with `--target-pydantic-version 2`, every generated model that reaches the alias
 | Backspace in a character class | `[\b]` | `python-re` |
 | ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
 | Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
-| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
+| Atomic groups | `(?>a+)` | `python-re`; Python's `re` parses them from 3.11 on |
 | Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
 | Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
 | Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
 | Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
 | Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
 | Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
-| Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
+| Verbose patterns that start with `(?x)` | `(?x) ([a-z])\1`, `(?x) a b # note \1` | `python-re` for the first; the Rust engine for the second, whose comment runs to the end of the line |
+| Other verbose patterns | `a(?x) b`, `(?x:a) b`, `(?x) a (?-x) b` | Rust engine; the scan reads no other flag group that mentions `x` |
 
 Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
-so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
-Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
-Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax Python's `re`
+does not parse before a later release (atomic groups and possessive quantifiers need Python 3.11, `\z` needs
+Python 3.14) imports on the Pythons that parse it and fails on the older ones with Python's error, as it fails on
+every Python with the Rust engine. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
 for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
 as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted. A `pattern` on `bytes`
 (`format: binary`) is written only with `--field-constraints` or `--use-annotated`. On plain and optional `bytes`

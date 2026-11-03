@@ -1,9 +1,12 @@
 """Every Pydantic ``ConfigDict`` key that the generator can write has a row in ``_requirements.py``.
 
-It depends only on the installed Pydantic, so each test environment checks it once.
+It depends only on the installed Pydantic, so each test environment checks it once. The type of the constructs and the
+table of their rows list the same constructs.
 """
 
 from __future__ import annotations
+
+from typing import get_args
 
 
 def config_keys_without_requirement() -> tuple[str, ...]:
@@ -19,3 +22,11 @@ def config_keys_without_requirement() -> tuple[str, ...]:
             if key not in CONFIG_KEY_REQUIREMENTS
         )
     )
+
+
+def constructs_out_of_step() -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return the rows that the construct types do not list, and the constructs they list that have no row."""
+    from datamodel_code_generator._requirements import REQUIREMENTS, PydanticConstruct, PythonConstruct
+
+    listed = {*get_args(PythonConstruct), *get_args(PydanticConstruct)}
+    return tuple(sorted(REQUIREMENTS.keys() - listed)), tuple(sorted(listed - REQUIREMENTS.keys()))

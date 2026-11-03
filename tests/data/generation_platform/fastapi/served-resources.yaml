@@ -34,6 +34,15 @@ paths:
             pet:
               operationRef: "#/paths/~1pets~1{id}/get"
               parameters: {id: $response.body#/pet}
+  /notes:
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: The note.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Note"}
 components:
   schemas:
     Pet:
@@ -56,3 +65,21 @@ components:
       type: object
       properties:
         children: {type: array, items: {$ref: "#node"}}
+    Label: {$anchor: label, type: string}
+    Note:
+      type: object
+      properties:
+        examples: {$anchor: listed, type: string}
+        label: {$ref: "#label"}
+        listed: {$ref: "#listed"}
+      examples:
+        - {$anchor: label, kind: example-only}
+        - {$id: https://example.com/owner.json, kind: example-only}
+      default: {$anchor: node}
+  parameters:
+    Kept:
+      name: kept
+      in: query
+      schema: {type: string}
+      examples:
+        kept: {value: {$anchor: label}}

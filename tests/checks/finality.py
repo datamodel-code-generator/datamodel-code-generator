@@ -461,41 +461,99 @@ _SEQUENCE: Final = Sentinel("_SEQUENCE")
 _MAPPING: Final = Sentinel("_MAPPING")
 _SET: Final = Sentinel("_SET")
 _PLAIN_TYPES: Final = frozenset({str, int, bool, type(None), bytes})
+_KEPT_TYPES: Final = _PLAIN_TYPES | {type(_MISSING)}
+"""The types whose values ``_freeze`` returns as they are: the plain types and the sentinel of a missing value."""
 _BUILTIN_VALUE_TYPES: Final = (bool, int, float, complex, Decimal, str, bytes)
 _DESCENDED: Final = (DataType, DataModelFieldBase)
 _GRAPH_CLASSES: Final = (DataType, DataModelFieldBase, Reference, DataModel)
+_BRANCHES: Final[dict[type | tuple[type], tuple[_Branch, Any]]] = {}
+"""The branch of ``_freeze`` of each type met, and of each class met as a value (by a tuple of the class), with the
+built-in base or the dataclass field names it reads."""
 _ORDERING_READS: Final = decls.FIX_CONSTRUCTOR_FIELD_ORDERING.reads
 _FIELDS_ROW: Final = next(row for row in ATTRIBUTE_FACTS if (row.owner, row.attribute) == ("DataModel", "fields"))
+
+
+@unique
+class _Branch(Enum):
+    """The way ``_freeze`` copies the values of one type."""
+
+    GRAPH = 1
+    SEQUENCE = 2
+    MAPPING = 3
+    SET = 4
+    ENUM = 5
+    BUILTIN = 6
+    MODEL = 7
+    DATACLASS = 8
+    KEPT = 9
 
 
 def _freeze(value: Any, nested: list[Any]) -> Any:  # ruff: ignore[too-many-return-statements]
     """Return a comparable copy of ``value``; graph objects become their identity and are appended to ``nested``.
 
     Numbers, strings and bytes compare by their built-in text, so that NaN equals itself and subclasses never run their
-    own hash or equality; any other object is kept as it is and compares by its own equality.
+    own hash or equality; any other object is kept as it is and compares by its own equality. Which of these a value
+    takes depends on its type alone, and a class's on the class itself, so ``_BRANCHES`` keeps it for each of them.
     """
     kind = type(value)
     if kind in _PLAIN_TYPES:
         return value
-    if isinstance(value, _GRAPH_CLASSES):
-        nested.append(value)
-        return _IDENTITY, id(value)
-    if isinstance(value, (list, tuple)):
-        return _SEQUENCE, kind is tuple, tuple(_freeze(item, nested) for item in value)
-    if isinstance(value, dict):
-        return _MAPPING, tuple((_freeze(key, nested), _freeze(item, nested)) for key, item in value.items())
-    if isinstance(value, (set, frozenset)):
-        return _SET, frozenset(_freeze(item, nested) for item in value)
-    if isinstance(value, Enum):
-        return kind, value.name
-    if isinstance(value, _BUILTIN_VALUE_TYPES):
-        return kind, repr(next(base for base in _BUILTIN_VALUE_TYPES if isinstance(value, base))(value))
-    if isinstance(value, BaseModel):
-        state = value.__dict__
-        return kind, tuple(_freeze(state.get(name), nested) for name in kind.model_fields)
-    if is_dataclass(value):
-        return kind, tuple(_freeze(getattr(value, item.name), nested) for item in fields(value))
+    if (branch := _BRANCHES.get(held := (value,) if isinstance(value, type) else kind)) is None:
+        branch = _BRANCHES[held] = _branch(value)
+    match branch[0]:
+        case _Branch.GRAPH:
+            nested.append(value)
+            return _IDENTITY, id(value)
+        case _Branch.SEQUENCE:
+            return (
+                _SEQUENCE,
+                kind is tuple,
+                tuple([item if type(item) in _KEPT_TYPES else _freeze(item, nested) for item in value]),
+            )
+        case _Branch.MAPPING:
+            return _MAPPING, tuple([
+                (
+                    key if type(key) in _KEPT_TYPES else _freeze(key, nested),
+                    item if type(item) in _KEPT_TYPES else _freeze(item, nested),
+                )
+                for key, item in value.items()
+            ])
+        case _Branch.SET:
+            return _SET, frozenset([item if type(item) in _KEPT_TYPES else _freeze(item, nested) for item in value])
+        case _Branch.ENUM:
+            return kind, value.name
+        case _Branch.BUILTIN:
+            return kind, repr(branch[1](value))
+        case _Branch.MODEL:
+            state = value.__dict__
+            return kind, tuple([
+                item if type(item := state.get(name)) in _KEPT_TYPES else _freeze(item, nested)
+                for name in kind.model_fields
+            ])
+        case _Branch.DATACLASS:
+            return kind, tuple([_freeze(getattr(value, name), nested) for name in branch[1]])
     return value
+
+
+def _branch(value: Any) -> tuple[_Branch, Any]:  # ruff: ignore[too-many-return-statements]
+    """Return the branch of ``_freeze`` for the type of ``value``, tested in the order its cases had."""
+    if isinstance(value, _GRAPH_CLASSES):
+        return _Branch.GRAPH, None
+    if isinstance(value, (list, tuple)):
+        return _Branch.SEQUENCE, None
+    if isinstance(value, dict):
+        return _Branch.MAPPING, None
+    if isinstance(value, (set, frozenset)):
+        return _Branch.SET, None
+    if isinstance(value, Enum):
+        return _Branch.ENUM, None
+    if isinstance(value, _BUILTIN_VALUE_TYPES):
+        return _Branch.BUILTIN, next(base for base in _BUILTIN_VALUE_TYPES if isinstance(value, base))
+    if isinstance(value, BaseModel):
+        return _Branch.MODEL, None
+    if is_dataclass(value):
+        return _Branch.DATACLASS, tuple(item.name for item in fields(value))
+    return _Branch.KEPT, None
 
 
 def _dict_keys() -> dict[str, str]:
@@ -714,10 +772,10 @@ class _Finality:
                 continue
             rows = self._rows(type(item))
             nested: list[Any] = []
-            values = tuple(
-                value if type(value := getter(item)) in _PLAIN_TYPES else _freeze(value, nested)
+            values = tuple([
+                value if type(value := getter(item)) in _KEPT_TYPES else _freeze(value, nested)
                 for getter in rows.getters
-            )
+            ])
             entries[id(item)] = _Entry(item, rows.rows, values, base, alias and not base)
             base_ids = {id(base_class) for base_class in getattr(item, "base_classes", ())}
             for child in nested:

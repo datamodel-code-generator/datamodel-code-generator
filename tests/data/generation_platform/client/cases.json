@@ -481,6 +481,12 @@
       "default_base_url": "https://default.example.com/base"
     }
   },
+  "default-server-template": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/{tenant}"
+    }
+  },
   "implicit-server": {
     "input": "default-server.yaml",
     "modules": [
@@ -1098,6 +1104,26 @@
         "models.py"
       ]
     ]
+  },
+  "pointer-references": {
+    "input": "pointer-references.yaml",
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "pointer-errors": {
+    "input": "pointer-errors.yaml"
   },
   "references": {
     "input": "references.yaml",
@@ -2338,6 +2364,19 @@
   },
   "auth-errors": {
     "input": "auth-errors.yaml"
+  },
+  "auth-roles": {
+    "input": "auth-roles.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
+  "auth-roles-30": {
+    "input": "auth-roles-30.yaml"
   },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
@@ -4573,6 +4612,16 @@
     },
     "modules": false
   },
+  "protocols-cache-bodyless": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/cache-bodyless.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-bodyless.json"
+    },
+    "modules": false
+  },
   "caching-typing": {
     "input": "caching.yaml",
     "references": [
@@ -4915,6 +4964,16 @@
         "bool"
       ]
     }
+  },
+  "codec-docstrings": {
+    "input": "codec-docstrings.json",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
   },
   "docstrings": {
     "input": "docstrings.yaml",
@@ -5622,6 +5681,36 @@
       ],
       [
         "models.py"
+      ]
+    ]
+  },
+  "call-layers": {
+    "input": "call-layers.yaml",
+    "references": [
+      "protocols/call-layers.json"
+    ],
+    "config": {
+      "protocols": "protocols/call-layers.json"
+    },
+    "modules": false
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/response-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/response-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
       ]
     ]
   }

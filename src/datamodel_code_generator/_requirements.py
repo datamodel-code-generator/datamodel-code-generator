@@ -85,6 +85,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.config_ser_json_inf_nan",
     "pydantic.config_validation_error_cause",
     "pydantic.config_cache_strings",
+    "pydantic.config_experimental_defer_build_mode",
     "pydantic.config_field_title_generator",
     "pydantic.config_model_title_generator",
     "pydantic.config_val_json_bytes",

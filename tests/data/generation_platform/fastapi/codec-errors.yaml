@@ -8,3 +8,10 @@ paths:
         - {name: choice, in: query, schema: {anyOf: [{type: string}, {type: object}]}}
       responses:
         "204": {description: Done.}
+  /enum-arrays:
+    get:
+      operationId: getEnumArrays
+      parameters:
+        - {name: q, in: query, required: true, schema: {enum: [[1, 2], [3]]}}
+      responses:
+        "204": {description: Done.}

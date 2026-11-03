@@ -2128,7 +2128,7 @@ class _Registry(_Typing):
         if spec.parameters:
             entries.append(("parameters", tuple_display(self.parameter(module, item) for item in spec.parameters)))
         if (body := spec.body) is not None:
-            media = tuple_display(self.media(module, item, null=item.null and not body.required) for item in body.media)
+            media = tuple_display(self.media(module, item) for item in body.media)
             fields: list[tuple[str, str]] = [("media", media)]
             if body.default is not None:
                 fields.append(("default", repr(body.default)))
@@ -2196,14 +2196,14 @@ class _Registry(_Typing):
                 entries.append(("converts", "True"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
-    def media(self, module: TargetModule, media: MediaSpec, *, null: bool) -> str:
+    def media(self, module: TargetModule, media: MediaSpec) -> str:
         """Return the BodyMedia constructor of one request media type, a form-data one with its form encoder.
 
-        `null` marks the media of an optional body that sends None as JSON null; any other leaves None out.
+        `null` marks the JSON media whose body type takes null, which sends None as JSON null.
         """
         kind = media.kind
         entries: list[tuple[str, str]] = [("media_type", repr(media.media_type)), ("kind", repr(kind))]
-        if null:
+        if media.null:
             entries.append(("null", "True"))
         form: list[tuple[str, str]] = []
         if media.members is not None:

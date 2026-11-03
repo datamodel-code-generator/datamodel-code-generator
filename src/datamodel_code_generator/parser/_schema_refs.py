@@ -1260,7 +1260,11 @@ def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[o
     file_part, _, fragment = ref_to_check.partition("#")
     with parser._ref_file_context(file_part):  # noqa: SLF001
         raw_doc = ref_file_document(parser, file_part)
-        yield get_model_by_path(raw_doc, [p for p in fragment.split("/") if p]) if fragment else raw_doc
+        yield (
+            get_model_by_path(raw_doc, [p for p in fragment.split("/") if p], refuse_scalar=True)
+            if fragment
+            else raw_doc
+        )
 
 
 def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:

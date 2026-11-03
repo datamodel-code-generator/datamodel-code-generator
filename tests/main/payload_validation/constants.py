@@ -95,6 +95,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "option-only e2e fixture; payload validation intentionally uses default generation, which tags the variants "
         "by schema name; test_use_enum_values_in_discriminator_without_member validates its payloads"
     ),
+    "jsonschema/field_constraint_sites/mixed_type_map_property.json": (
+        "an object map beside an array in its type list drops the array branch by default "
+        "(--use-single-dict-for-object-maps writes it); test_field_constraint_sites validates its map payloads"
+    ),
     "jsonschema/msgspec_number_limits/float_range_bounds.json": (
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
         "test_msgspec_number_limits validates its msgspec payloads"
@@ -140,6 +144,10 @@ EXCLUDED_FILES: dict[str, str] = {
     ),
     "jsonschema/rust_unsupported_python_rejected.json": (
         "patterns both regex engines reject fail to import under either engine"
+    ),
+    "jsonschema/rust_unsupported_verbose_repetition.json": (
+        "a newline of a verbose pattern ends its comments, and only --field-constraints writes it as one; "
+        "test_verbose_comments_inside_a_counted_repetition_keep_the_rust_engine validates the generated models"
     ),
     "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,

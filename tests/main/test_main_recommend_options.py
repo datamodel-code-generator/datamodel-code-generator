@@ -12,11 +12,13 @@ import sys
 import warnings
 from contextlib import redirect_stdout
 from importlib.resources import files
+from operator import attrgetter
 from pathlib import Path
 from string import Formatter
 from typing import TYPE_CHECKING, Any, get_args
 
 import jsonschema
+import pydantic
 import pytest
 from packaging.version import Version
 
@@ -46,6 +48,7 @@ CHANGELOG = Path(__file__).parents[2] / "CHANGELOG.md"
 RECOMMEND_DOCS = Path(__file__).parents[2] / "docs" / "recommend-options.md"
 GRAPHQL_INPUT = DATA_PATH / "graphql" / "simple-star-wars.graphql"
 RULES_FILE = "src/datamodel_code_generator/resources/recommender_rules.json"
+RECOMMENDER = "datamodel_code_generator._recommend"
 REGISTRY_GUIDE = (
     f'Every option needs an entry in "options" of {RULES_FILE}: {{"rules": ["<rule id>"]}} when a rule sets it, '
     'or {"not_recommended": "<category>", "reason": "<why the schema does not decide it>"} with category io, '
@@ -523,6 +526,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="paths-scope-integer-schema-key",
         ),
         pytest.param("blank_union_titles.json", [], id="blank-union-titles"),
+        pytest.param("multi_format_extension.yaml", [], id="asyncapi-multi-format-extension"),
+        pytest.param("schema_key_component.yaml", [], id="openapi-schema-key-component"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -535,7 +540,8 @@ def test_recommend_options_for_schemas(
     patternProperties map with one pattern and no other keys needs no validators. A path item, a request body and a
     response that a local ``$ref`` names, and a component that one names percent-encoded, count as the object they name,
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
-    an error, and a blank title is no title of a union variant.
+    an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
+    schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))
@@ -987,6 +993,36 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
             REGISTRY_GUIDE,
             "",
         ]),
+    )
+
+
+def _missing_attribute(name: str) -> object:
+    raise AttributeError(name)
+
+
+@pytest.mark.abnormal_path("Pydantic 2.0 cannot be installed beside the Pydantic of the test environment")
+def test_recommend_options_runs_on_pydantic_2_0(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run the recommender where ``pydantic.StringConstraints`` does not exist, as in Pydantic 2.0.
+
+    The name first appeared in Pydantic 2.1, and importing the rule models used to fail with an ImportError.
+    """
+    load = pydantic.__getattr__
+    monkeypatch.delattr(pydantic, "StringConstraints", raising=False)
+    monkeypatch.setattr(
+        pydantic, "__getattr__", lambda name: {"StringConstraints": _missing_attribute}.get(name, load)(name)
+    )
+    with pytest.raises(AttributeError):
+        attrgetter("StringConstraints")(pydantic)
+    for name in [name for name in sys.modules if name == RECOMMENDER or name.startswith(f"{RECOMMENDER}.")]:
+        monkeypatch.delitem(sys.modules, name)
+    _recommend(
+        tmp_path,
+        capsys,
+        ["--input", "titled_variants.yaml", "--target-python-version", "3.14"],
+        inputs=_inputs(INPUT_PATH / "titled_variants.yaml"),
+        mode=(),
     )
 
 

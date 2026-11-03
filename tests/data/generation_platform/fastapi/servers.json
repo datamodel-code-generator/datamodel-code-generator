@@ -922,6 +922,64 @@
       "use_annotated": true
     }
   },
+  "patterns": {
+    "input": "server-patterns.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?label=abc&codes=ab,cd&plain=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/values?label=xyz"
+      },
+      {
+        "method": "GET",
+        "url": "/values?label=ABC"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=ab,xb"
+      },
+      {
+        "method": "GET",
+        "url": "/values?plain=AB"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "patterns-annotated": {
+    "input": "server-patterns.yaml",
+    "services": "kinds",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values?label=abc&codes=ab,cd&plain=ab"
+      },
+      {
+        "method": "GET",
+        "url": "/values?label=xyz"
+      },
+      {
+        "method": "GET",
+        "url": "/values?label=ABC"
+      },
+      {
+        "method": "GET",
+        "url": "/values?codes=ab,xb"
+      },
+      {
+        "method": "GET",
+        "url": "/values?plain=AB"
+      }
+    ],
+    "package_snapshots": [],
+    "model": {
+      "field_constraints": true,
+      "use_annotated": true
+    }
+  },
   "kinds-decimal": {
     "input": "server-kinds.yaml",
     "services": "kinds",

@@ -59,7 +59,7 @@ OPERATION_2: Final[OperationPlan[CreateNoteResponse]] = OperationPlan(
     path='/notes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_4),), default='application/json', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True, codec=model_bindings.codec_4),), default='application/json', required=True),
 )
 
 OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(

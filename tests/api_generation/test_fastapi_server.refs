@@ -115,6 +115,10 @@ nullable-results-alias	main/generation_platform/fastapi/servers/nullable-results
 nullable-results-alias	main/generation_platform/fastapi/servers/packages/nullable-results-alias/
 parameters	main/generation_platform/fastapi/servers/packages/parameters/
 parameters	main/generation_platform/fastapi/servers/parameters.txt
+patterns	main/generation_platform/fastapi/servers/packages/patterns/
+patterns	main/generation_platform/fastapi/servers/patterns.txt
+patterns-annotated	main/generation_platform/fastapi/servers/packages/patterns-annotated/
+patterns-annotated	main/generation_platform/fastapi/servers/patterns-annotated.txt
 pets	main/generation_platform/fastapi/servers/packages/pets/
 pets	main/generation_platform/fastapi/servers/pets.txt
 pets-type-checking	main/generation_platform/fastapi/servers/packages/pets-type-checking/

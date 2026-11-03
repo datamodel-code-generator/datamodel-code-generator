@@ -24,7 +24,6 @@ from datamodel_code_generator._openapi_wire_plan import (
     parameter_plans,
     property_members,
 )
-from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
 from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -34,6 +33,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     essence,
     media_kind,
     media_range,
+    most_specific,
     normalize_media_type,
     normalized,
     range_key,
@@ -52,6 +52,7 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     children_of,
     encoding_headers,
+    exact_status,
     fact,
     is_required,
     label,
@@ -77,7 +78,6 @@ from datamodel_code_generator._target_operations import (
     declared_by,
     declared_media_type,
     derived_name,
-    exact_status,
     first_use,
     group_tag,
     json_null,
@@ -992,7 +992,7 @@ class Planner:
         self, operation: OperationContract, declaration: WireDeclaration, success_statuses: tuple[int, ...]
     ) -> ResponseSpec:
         """Plan one declared response and classify it as a possible success or error."""
-        status = (declaration.name or "default").upper() if declaration.name != "default" else "default"
+        status = declaration.name or ""
         headers = self._headers(declaration)
         self.problems.extend(
             _problem(
@@ -1003,14 +1003,13 @@ class Planner:
             for name, count in Counter(header.name.lower() for header in headers).items()
             if count > 1
         )
-        exact = exact_status(status)
         return ResponseSpec(
             status=status,
             media=self.media_list(operation, declaration, request=False),
             headers=headers,
             success=_success(status, success_statuses),
             error=_error(status),
-            bodyless=response_bodyless(CLIENT, operation, exact),
+            bodyless=response_bodyless(operation, status),
         )
 
     def check_statuses(
@@ -1045,16 +1044,17 @@ class Planner:
         return media_type
 
     def servers(self, operation: OperationContract) -> tuple[ServerSpec, ...]:
-        """Resolve the operation's effective servers to absolute URL templates."""
+        """Resolve the operation's effective servers to absolute URL templates.
+
+        An operation without servers has the default base URL, or else `/`, as its one server without variables.
+        """
         entries = _servers(operation_literal(operation, "servers"))
         if entries is None:
             message = f"The servers of {label(operation)} are not server objects"
             self.problems.append(_problem("E_BASE_URL", message, operation.id.use_site))
             return ()
         if not entries:
-            if (default := self.config.default_base_url) is not None:
-                return (ServerSpec(url=default),)
-            entries = (("/", ()),)
+            entries = ((self.config.default_base_url or "/", ()),)
         document = (
             operation.declaration.location.document
             if operation.servers_declared

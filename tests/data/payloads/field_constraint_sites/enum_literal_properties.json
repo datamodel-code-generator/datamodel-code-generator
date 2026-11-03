@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"short": "a", "small": 1, "nullable": "a"},
+    {"nullable": null},
+    {}
+  ],
+  "invalid": [
+    {"short": "bb"},
+    {"small": 5},
+    {"nullable": "bb"}
+  ]
+}

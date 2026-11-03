@@ -26,7 +26,9 @@ class Model(BaseModel):
     rStringOrPatterns: StringOrPatterns
     pStringOrNames: dict[constr(pattern=r'^a'), int] | None
     rStringOrNames: StringOrNames | None
-    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None
+    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None = Field(
+        ..., min_length=1
+    )
     rArrayOrNamesCount: ArrayOrNamesCount | None
     iStringOrPatterns: list[dict[constr(pattern=r'^x'), int]] | None = None
     mStringOrPatterns: dict[str, dict[constr(pattern=r'^x'), int]] | None = None

@@ -100,7 +100,7 @@ def _names(value: object, target_python_version: PythonVersion, valid_key: Calla
 
 
 def _parameter_key(key: str) -> bool:
-    return parameter_name_key(key, "legacy-server-named-parameter-keys") is not None
+    return parameter_name_key(key) is not None
 
 
 def _response_choice(value: object) -> bool:

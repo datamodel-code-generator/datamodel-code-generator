@@ -1,0 +1,2 @@
+{"items": ["a", 1], "l": {"a": "x"}}: accepted A(items=['a', 1], l=L(a='x'))
+{"l": {"a": 1}}: rejected ValidationError

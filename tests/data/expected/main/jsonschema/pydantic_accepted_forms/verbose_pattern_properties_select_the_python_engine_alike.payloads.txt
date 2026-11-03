@@ -1,0 +1,3 @@
+declared and pattern property: valid
+declared property: string_pattern_mismatch
+pattern property: string_pattern_mismatch

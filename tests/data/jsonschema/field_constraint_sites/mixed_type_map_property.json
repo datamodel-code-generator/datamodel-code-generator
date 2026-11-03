@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "named": {
+      "type": ["object", "array", "null"],
+      "propertyNames": {"pattern": "^a"},
+      "minProperties": 1,
+      "maxProperties": 2
+    }
+  }
+}

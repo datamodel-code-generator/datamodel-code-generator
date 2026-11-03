@@ -1,0 +1,15 @@
+# patterns-annotated
+serve pydantic_v2.BaseModel
+service DefaultService: get_values
+service DefaultService without its methods: TypeError
+> GET /values?label=abc&codes=ab,cd&plain=ab
+  get_values(label='abc', codes=['ab', 'cd'], plain='ab')
+< 204 - b''
+> GET /values?label=xyz
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "label"]}]
+> GET /values?label=ABC
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "label"]}]
+> GET /values?codes=ab,xb
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "codes", 1]}]
+> GET /values?plain=AB
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "plain"]}]

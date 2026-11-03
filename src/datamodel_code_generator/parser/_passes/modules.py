@@ -299,6 +299,10 @@ class ModulesHost(
         """The ledger of the imports each module adds."""
 
     @property
+    def imports(self) -> Imports:
+        """The imports every module shares."""
+
+    @property
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the types that override models and fields, by model name or scoped field name."""
 

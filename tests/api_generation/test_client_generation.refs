@@ -63,6 +63,7 @@ formatters-options2-module2	main/generation_platform/client/output-options/forma
 header-quotes-options0-module0	main/generation_platform/client/output-options/header-quotes.py
 ruff-line-length-options5-module5	main/generation_platform/client/output-options/ruff-line-length.py
 [test_client_protocols]
+protocols-cache-bodyless	main/generation_platform/client/protocols/protocols-cache-bodyless.txt
 protocols-cache-checks	main/generation_platform/client/protocols/protocols-cache-checks.txt
 protocols-cache-errors	main/generation_platform/client/protocols/protocols-cache-errors.txt
 protocols-deep-limit	main/generation_platform/client/protocols/protocols-empty.txt
@@ -120,6 +121,9 @@ auth-context	main/generation_platform/client/packages/auth-context/pydantic_v2_B
 auth-errors	main/generation_platform/client/auth-errors.txt
 auth-no-root	main/generation_platform/client/auth-no-root.txt
 auth-no-root	main/generation_platform/client/packages/auth-no-root/pydantic_v2_BaseModel//*.py
+auth-roles	main/generation_platform/client/auth-roles.txt
+auth-roles	main/generation_platform/client/packages/auth-roles/pydantic_v2_BaseModel//*.py
+auth-roles-30	main/generation_platform/client/auth-roles-30.txt
 auth-wire-conflicts	main/generation_platform/client/auth-wire-conflicts.txt
 binary-allowed	main/generation_platform/client/binary-allowed.txt
 binary-allowed	main/generation_platform/client/packages/binary-allowed/dataclasses_dataclass//*.py
@@ -132,6 +136,8 @@ binary-text	main/generation_platform/client/binary-text.txt
 caching	main/generation_platform/client/caching.txt
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.py
 child-collision	main/generation_platform/client/child-collision.txt
+codec-docstrings	main/generation_platform/client/codec-docstrings.txt
+codec-docstrings	main/generation_platform/client/packages/codec-docstrings/pydantic_v2_BaseModel//*.py
 codec-errors	main/generation_platform/client/codec-errors.txt
 compression	main/generation_platform/client/compression.txt
 compression	main/generation_platform/client/packages/compression/pydantic_v2_BaseModel//*.py
@@ -140,6 +146,7 @@ credential-name-errors	main/generation_platform/client/credential-name-errors.tx
 credential-name-errors	main/generation_platform/client/packages/credential-name-errors/pydantic_v2_BaseModel//*.py
 default-server	main/generation_platform/client/default-server.txt
 default-server	main/generation_platform/client/packages/default-server/pydantic_v2_BaseModel//*.py
+default-server-template	main/generation_platform/client/default-server-template.txt
 discriminator-copies	main/generation_platform/client/discriminator-copies.txt
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/dataclasses_dataclass//*.py	= main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-copies	main/generation_platform/client/packages/discriminator-copies/typing_TypedDict//*.py	= main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
@@ -260,6 +267,9 @@ pets	main/generation_platform/client/packages/pets/typing_TypedDict//*.py
 pets	main/generation_platform/client/pets.txt
 pets-unpack	main/generation_platform/client/packages/pets-unpack/pydantic_v2_BaseModel//*.py
 pets-unpack	main/generation_platform/client/pets-unpack.txt
+pointer-errors	main/generation_platform/client/pointer-errors.txt
+pointer-references	main/generation_platform/client/packages/pointer-references/pydantic_v2_BaseModel//*.py
+pointer-references	main/generation_platform/client/pointer-references.txt
 polling	main/generation_platform/client/packages/polling/pydantic_v2_BaseModel//*.py
 polling	main/generation_platform/client/polling.txt
 polling-plans	main/generation_platform/client/packages/polling-plans/dataclasses_dataclass//*.py
@@ -278,6 +288,8 @@ ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt
+response-keys	main/generation_platform/client/packages/response-keys/pydantic_v2_BaseModel//*.py
+response-keys	main/generation_platform/client/response-keys.txt
 retries	main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 retries	main/generation_platform/client/retries.txt
 retry-header-conflicts	main/generation_platform/client/retry-header-conflicts.txt

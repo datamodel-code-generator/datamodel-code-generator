@@ -6256,6 +6256,20 @@ def test_main_openapi_json_pointer(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_json_pointer_through_scalar(output_file: Path) -> None:
+    """A pointer through a scalar names nothing, as a missing member does."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "json_pointer_through_scalar.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j")
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -11721,6 +11735,24 @@ def test_main_openapi_item_schema(output_file: Path) -> None:
             "parameters",
             "requestbodies",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    "scopes",
+    [
+        pytest.param(["schemas", "paths", "requestbodies"], id="paths-and-request-bodies"),
+        pytest.param(["api"], id="api"),
+    ],
+)
+def test_main_openapi_item_schema_beside_null_schema(scopes: list[str], output_file: Path) -> None:
+    """Read the itemSchema of a media type object whose schema is null, as one with no schema."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_null_schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=["--disable-timestamp", "--openapi-scopes", *scopes],
     )
 
 

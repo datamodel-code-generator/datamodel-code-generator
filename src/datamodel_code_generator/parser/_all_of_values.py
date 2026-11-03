@@ -1429,12 +1429,7 @@ def patterns_need_holder_engine(parser: AllOfValuesHost, schema: JsonSchemaObjec
                 if isinstance(pattern := value.get("pattern"), str):
                     patterns.append(pattern)
                 if any(
-                    needs_engine(
-                        parser.data_model_root_type,
-                        pattern,
-                        parser.target_python_version,
-                        parser.target_pydantic_version,
-                    )
+                    needs_engine(parser.data_model_root_type, pattern, parser.target_pydantic_version)
                     for pattern in patterns
                 ):
                     return True

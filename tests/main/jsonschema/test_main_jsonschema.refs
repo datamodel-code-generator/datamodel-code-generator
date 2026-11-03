@@ -5948,12 +5948,18 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 	main/jsonschema/autodetect.py
 [test_main_json_pointer]
 	main/jsonschema/json_pointer.py
+[test_main_json_pointer_empty_token]
+	main/jsonschema/json_pointer_empty_token.py
+[test_main_json_pointer_through_scalar]
+	main/jsonschema/json_pointer_through_scalar.py
 [test_main_json_reuse_enum]
 	main/jsonschema/json_reuse_enum.py
 [test_main_json_reuse_enum_default_member]
 	main/jsonschema/json_reuse_enum_default_member.py
 [test_main_jsonschema]
 	main/jsonschema/general.py	= main/jsonschema/autodetect.py
+[test_main_jsonschema_additional_import_named_like_module]
+	main/jsonschema/main_jsonschema/additional_import_named_like_module/
 [test_main_jsonschema_additional_items_false_empty_tuple]
 	main/jsonschema/additional_items_false_empty_tuple.py
 [test_main_jsonschema_additional_items_schema_tuple]
@@ -6075,6 +6081,32 @@ msgspec.Struct	main/jsonschema/main_jsonschema/builtin_named_fields[msgspec.Stru
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/main_jsonschema/builtin_named_fields[typing.TypedDict].py
+[test_main_jsonschema_builtin_type_override_beside_module]
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass]/
+module-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-msgspec.Struct]/
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+module-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-pydantic_v2.BaseModel]/
+submodule-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-dataclasses.dataclass]/
+submodule-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-msgspec.Struct	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-msgspec.Struct]/
+submodule-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/builtin_type_override_beside_module[module-dataclasses.dataclass].payloads.txt
+submodule-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_override_beside_module[submodule-pydantic_v2.BaseModel]/
+[test_main_jsonschema_class_named_like_builtin_beside_submodule]
+3.10-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass]/
+3.10-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct]/
+3.10-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.10-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel]/
+3.11-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-dataclasses.dataclass	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-dataclasses.dataclass]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass]/
+3.11-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-msgspec.Struct	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-msgspec.Struct]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-msgspec.Struct]/
+3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
+3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel]/
 [test_main_jsonschema_collapse_reuse_models_cross_module_users]
 module	main/jsonschema/collapse_reuse_models_cross_module_users//*.py
 tree	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
@@ -8476,12 +8508,12 @@ args1-rust_unsupported_pattern_non_string_pydantic_v2_annotated.py	main/jsonsche
 2.12	main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 2.12	main/jsonschema/rust_unsupported_syntax_pydantic_v2.py
 [test_main_rust_unsupported_target_python]
-rust_unsupported_atomic_group-3.10-rust_unsupported_atomic_group_py310.py-False	main/jsonschema/rust_unsupported_atomic_group_py310.py
-rust_unsupported_atomic_group-3.11-rust_unsupported_atomic_group_py311.py-True	main/jsonschema/rust_unsupported_atomic_group_py311.py
-rust_unsupported_end_of_string-3.13-rust_unsupported_end_of_string_py313.py-False	main/jsonschema/rust_unsupported_end_of_string_py313.py
-rust_unsupported_end_of_string-3.14-rust_unsupported_end_of_string_py314.py-True	main/jsonschema/rust_unsupported_end_of_string_py314.py
+atomic-group-3.10	main/jsonschema/rust_unsupported_atomic_group_py310.py
+atomic-group-3.11	main/jsonschema/rust_unsupported_atomic_group_py311.py	= main/jsonschema/rust_unsupported_atomic_group_py310.py
+end-of-string-3.13	main/jsonschema/rust_unsupported_end_of_string_py313.py
+end-of-string-3.14	main/jsonschema/rust_unsupported_end_of_string_py314.py
 [test_main_rust_unsupported_typed_extra_target_python]
-python-3.10	main/jsonschema/rust_unsupported_typed_extra_py310.py
+python-3.10	main/jsonschema/rust_unsupported_typed_extra_py310.py	= main/jsonschema/rust_unsupported_typed_extra_py311.py
 python-3.11	main/jsonschema/rust_unsupported_typed_extra_py311.py
 python-3.11-collapse-root-models	main/jsonschema/rust_unsupported_typed_extra_py311.py
 [test_main_selective_constraint_kwargs_pydantic_v2]

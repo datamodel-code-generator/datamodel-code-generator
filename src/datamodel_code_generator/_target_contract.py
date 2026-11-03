@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
@@ -637,7 +638,11 @@ class GeneratedTypeContractBatch:
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
-ParameterKeyRow: TypeAlias = Literal["nameless-querystring", "legacy-server-named-parameter-keys"]
+
+_STATUS_KEY: Final = re.compile(r"[1-5][0-9]{2}")
+_SCOPE_TOKEN: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
+_SCOPE_SCHEMES: Final = frozenset({"oauth2", "openIdConnect"})
+_RANGE_KEY: Final = re.compile(r"([1-5])[xX]{2}")
 
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 API_KEY_LOCATIONS: Final[dict[object, ApiKeyLocation]] = {location: location for location in get_args(ApiKeyLocation)}
@@ -662,16 +667,37 @@ def parameter_place(declaration: WireDeclaration) -> tuple[ParameterLocation, st
     return parameter_location(declaration), declaration.name or ""
 
 
-def parameter_name_key(key: str, row: ParameterKeyRow = "nameless-querystring") -> tuple[ParameterLocation, str] | None:
+def parameter_name_key(key: str) -> tuple[ParameterLocation, str] | None:
     """Return the location and wire name that a `location:name` key of a parameter-name setting selects, or None.
 
-    The key is one of the five locations, a colon, and the wire name, empty for a querystring that has no name. Row
-    ``legacy-server-named-parameter-keys`` (the server's `parameter_names`) refuses an empty name.
+    The key is one of the five locations, a colon, and the wire name, empty for a querystring that has no name.
     """
     location, separator, name = key.partition(":")
     if not separator or (known := LOCATIONS.get(location)) is None:
         return None
-    return None if row == "legacy-server-named-parameter-keys" and not name else (known, name)
+    return known, name
+
+
+def response_key(name: str) -> str | None:
+    """Return the key of the response that a key of an operation's `responses` declares, or None when it declares none.
+
+    The key is `default`, a status of three ASCII digits from 100 to 599, or a range `1XX` to `5XX` with either case of
+    X, which the key spells in upper case. Any other key, an extension such as `x-note`, an empty key, a status with
+    another digit (`0204`, `²00`) or a range of other letters, declares no response.
+    """
+    if name == "default" or _STATUS_KEY.fullmatch(name):
+        return name
+    return name.upper() if _RANGE_KEY.fullmatch(name) else None
+
+
+def exact_status(key: str) -> int | None:
+    """Return the status a response key (`response_key`) names itself, or None for a range key or `default`."""
+    return int(key) if _STATUS_KEY.fullmatch(key) else None
+
+
+def range_start(key: str) -> int | None:
+    """Return the first status of a range key (`response_key`) such as 2XX, or None for a status or `default`."""
+    return int(found[1]) * 100 if (found := _RANGE_KEY.fullmatch(key)) else None
 
 
 def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | None:
@@ -737,6 +763,21 @@ def security_requirements(operation: OperationContract) -> tuple[Requirement, ..
 def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None:
     name, scopes = entry
     return (name, scopes) if isinstance(name, str) and scopes is not None else None
+
+
+def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: str) -> str | None:
+    """Return what a requirement gets wrong in the scopes it lists for a scheme, or None when they are valid.
+
+    An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
+    which OpenAPI 3.1 leaves to the API (any text) and OpenAPI 3.0 does not allow (its array must be empty). `scopes` is
+    None when the requirement lists no strings.
+    """
+    tokens = fact(declaration, "type") in _SCOPE_SCHEMES
+    if scopes is None or (tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes))):
+        return f"requires valid scope tokens for scheme {name!r}"
+    if scopes and not tokens and openapi.startswith("3.0"):
+        return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"
+    return None
 
 
 def scheme_catalogues(batch: GeneratedTypeContractBatch) -> dict[SourceDocumentId, dict[str, WireDeclaration]]:
@@ -849,7 +890,7 @@ class EmittedFieldFacts:
     emitted_default_kind: DefaultKind
     emitted_default_value: FrozenLiteral | SourceExpression | None
     qualifiers: tuple[str, ...]
-    constructor_keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
+    constructor_keywords: tuple[tuple[str, TypeArgument], ...]
 
 
 @dataclass(frozen=True, slots=True)

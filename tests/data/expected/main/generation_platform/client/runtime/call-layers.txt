@@ -1,0 +1,36 @@
+# call-layers pydantic_v2.BaseModel
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: br, accept: application/json] b''
+  header parameter without default headers = Page(data=[Item(root='a')], next=None)
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: br, accept: application/json, x-client: c] b''
+  header parameter beside a default header = Page(data=[Item(root='a')], next=None)
+  pager extra query status ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.status') [field_path=('options', 'extra_query', 'status')] invalid_value
+  > GET https://api.example.com/items?filter=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pager extra query filter = [Item(root='a')]
+  querystring member pager extra query page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.page') [field_path=('options', 'extra_query', 'page')] invalid_value
+  > GET https://api.example.com/search?term=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  querystring member pager extra query term = [Item(root='a')]
+  whole querystring pager extra query term ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.term') [field_path=('options', 'extra_query', 'term')] invalid_value
+  > GET https://api.example.com/search?other=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  whole querystring pager extra query other = [Item(root='a')]
+  poller extra query status ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.status') [field_path=('options', 'extra_query', 'status')] invalid_value
+  > POST https://api.example.com/jobs?jobId=x
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/jobs/j1?status=open&jobId=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  poller extra query jobId = 'done'
+  upload extra query status ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.status') [field_path=('options', 'extra_query', 'status')] invalid_value
+  > POST https://api.example.com/files/3?size=x
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
+  > PATCH https://api.example.com/uploads/j1?status=open&size=x
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, content-type: application/offset+octet-stream, content-length: 3] b'abc'
+  upload extra query size = None
+  stream extra query status ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.status') [field_path=('options', 'extra_query', 'status')] invalid_value
+  > GET https://api.example.com/feed?filter=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  stream extra query filter = [StreamEvent(event_type='message', retry_ms=None, sequence=1)]
+  pager default query status ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_query.status') [field_path=('default_query', 'status')] invalid_value

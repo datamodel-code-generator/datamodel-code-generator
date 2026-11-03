@@ -63,6 +63,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
     api_key_place,
     children_of,
+    exact_status,
     fact,
     http_scheme,
     is_required,
@@ -71,7 +72,9 @@ from datamodel_code_generator._target_contract import (
     members_by_consumer,
     operation_schemes,
     parameter_place,
+    range_start,
     scheme_catalogues,
+    scope_problem,
     security_requirements,
     symbols_by_id,
     type_uses,
@@ -91,14 +94,12 @@ from datamodel_code_generator._target_operations import (
     declared_in,
     declared_media_type,
     derived_name,
-    exact_status,
     first_use,
     json_null,
     local,
     native_type,
     placeholder_problems,
     raise_planned,
-    range_start,
     resolve_settings,
     response_bodyless,
     type_names,
@@ -328,6 +329,7 @@ class ResponseSpec:
     status: str
     declaration: WireDeclaration
     media: tuple[MediaSpec, ...]
+    bodyless: bool
     null: bool = False
 
 
@@ -342,6 +344,7 @@ class PrimarySpec:
     response: ResponseSpec
     media: MediaSpec | None
     decision: Decision
+    bodyless: bool
     null: bool = False
 
 
@@ -827,6 +830,15 @@ class Planner:  # noqa: PLR0904
             return None
         for name in dict.fromkeys(name for requirement in requirements for name, _ in requirement):
             self.scheme(operation, name)
+        declared = operation_schemes(self.scheme_catalogues, operation)
+        for name, scopes in dict.fromkeys(entry for requirement in requirements for entry in requirement):
+            if (
+                name in self.schemes
+                and (declaration := declared.get(name)) is not None
+                and (problem := scope_problem(name, declaration, scopes, self.request.batch.openapi)) is not None
+            ):
+                message = f"The security of {label(operation)} {problem}"
+                self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
         return SecuritySpec(requirements=requirements)
 
     def scheme(self, operation: OperationContract, name: str) -> None:
@@ -1352,9 +1364,9 @@ class Planner:  # noqa: PLR0904
             for item in media
             if item.kind in {"form", "multipart"}
         )
-        status = declaration.name or "default"
+        status = declaration.name or ""
         spec = ResponseSpec(
-            status=status if status == "default" else status.upper(), declaration=declaration, media=media
+            status=status, declaration=declaration, media=media, bodyless=response_bodyless(operation, status)
         )
         return replace(spec, null=True) if self.json_null(default_media(spec)) else spec
 
@@ -1378,9 +1390,7 @@ class Planner:  # noqa: PLR0904
             response = exact[status]
         if response is None:
             return None
-        media = default_media(response)
-        decision = _primary_decision(operation, status, media)
-        return PrimarySpec(status=status, response=response, media=media, decision=decision, null=response.null)
+        return _primary(operation, status, response, default_media(response), null=response.null)
 
     def chosen(
         self, operation: OperationContract, responses: tuple[ResponseSpec, ...], choice: ResponseChoice
@@ -1404,10 +1414,7 @@ class Planner:  # noqa: PLR0904
                 )
             )
             return None
-        decision = _primary_decision(operation, choice.status_code, media)
-        return PrimarySpec(
-            status=choice.status_code, response=response, media=media, decision=decision, null=self.json_null(media)
-        )
+        return _primary(operation, choice.status_code, response, media, null=self.json_null(media))
 
     def arguments(  # noqa: PLR0913
         self,
@@ -1546,9 +1553,11 @@ def _member(source: object, key: str) -> JSONValue | None:
     return as_mapping(source).get(key)
 
 
-def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
-    """Decide whether a bare primary value goes to FastAPI's response_model or through the response codecs."""
-    bodyless = response_bodyless(SERVER, operation, status)
+def _primary(
+    operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None, *, null: bool
+) -> PrimarySpec:
+    """Return the primary response, deciding whether a bare value goes to FastAPI's response_model or the codecs."""
+    bodyless = response_bodyless(operation, str(status))
     native = (
         not bodyless
         and media is not None
@@ -1556,7 +1565,8 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
         and (use := media.use) is not None
         and use.type is not None
     )
-    return Decision(transport="fastapi_native" if native else "adapter")
+    decision = Decision(transport="fastapi_native" if native else "adapter")
+    return PrimarySpec(status=status, response=response, media=media, decision=decision, bodyless=bodyless, null=null)
 
 
 def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool) -> bool:
@@ -1653,7 +1663,7 @@ def _declaring(responses: tuple[ResponseSpec, ...], status: int) -> ResponseSpec
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:
     if primary is not None:
         return primary.status
-    ranges = (range_start(response.status) for response in responses if response.status.endswith("XX"))
+    ranges = (start for response in responses if (start := range_start(response.status)) is not None)
     return min(ranges, default=_DEFAULT_STATUS)
 
 

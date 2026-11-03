@@ -19,6 +19,7 @@ from datamodel_code_generator._client.naming import numbered
 from datamodel_code_generator._openapi_codec_plan import EXTRAS, codec_module
 from datamodel_code_generator._python_syntax import (
     call_text,
+    escape_docstring,
     from_import,
     keyword_argument,
     subscript_text,
@@ -89,7 +90,7 @@ class Codec:
 def _description(use: TypeUseId) -> str:
     owner = use.owner.use_site.pointer if isinstance(use.owner, OperationId) else use.owner.pointer
     selectors = "".join(f" {part}" for part in (use.location, use.name, use.status, use.media) if part)
-    return f"Codec of {owner} {use.role} ({use.direction}{selectors}).".replace("\\", "\\\\").replace('"', '\\"')
+    return escape_docstring(f"Codec of {owner} {use.role} ({use.direction}{selectors}).") or ""
 
 
 class _Renderer:

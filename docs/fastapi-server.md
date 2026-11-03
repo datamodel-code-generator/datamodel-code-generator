@@ -1370,6 +1370,10 @@ an empty body with an undeclared Content-Type, while an empty body without a Con
 one, answers `422` with a `missing` record at `["body"]`. The JSON is read as UTF-8 without a byte order mark: a body
 that starts with one, or is UTF-16, answers `422` with `json_invalid`, where FastAPI's own reading accepts both.
 
+A request body that declares no media type (`content: {}`) is typed `None` in the method, as the generated client takes
+no body for it. No request carries one: an optional body is received only when the request has none, and a required one
+answers `422` without a body and `415` with one, so its method is never called.
+
 A multipart part is text when the type of its member, or of the member's items when that type is an array, has one
 scalar kind, with one part for each item of an array. A part of any other member is JSON, as the generated client sends
 it: an object, a mapping, each item of an array of objects, a union of a string and an object, an enum of mixed kinds,
@@ -1514,7 +1518,9 @@ stops generation with an error, on the server and the client alike, since no HTT
 
 ### Responses
 
-A service method returns the value of its primary response, which FastAPI validates and serializes with the route's
+A response is declared under a status from `100` to `599`, a range from `1XX` to `5XX`, or `default`; any other key of
+`responses`, such as an extension `x-note` or an empty key, declares no response. A service method returns the value
+of its primary response, which FastAPI validates and serializes with the route's
 `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`). Without a
 [`--server-primary-responses`](cli-reference/target-generation-options.md#server-primary-responses) entry, the
 primary response is `200` when the operation declares it, or else its lowest success status, or else its `2XX` or

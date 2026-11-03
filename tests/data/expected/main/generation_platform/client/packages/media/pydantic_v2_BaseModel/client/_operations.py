@@ -249,7 +249,7 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse]] = OperationPlan(
     path='/documents',
     servers=_SERVERS_0,
     responses=ResponseDecoder((wire_branch('200', 'application/json'), text_branch('200', 'text/plain'), empty_branch('202'), model_branch('3XX', 'application/json', 'json', model_bindings.codec_14)), (text_branch('5XX', 'text/plain'),), success_statuses=frozenset({302})),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json'), BodyMedia(media_type='text/plain; charset=utf-16', kind='text'), BodyMedia(media_type='application/vnd.api+json', kind='json', codec=model_bindings.codec_13)), default='application/json', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True), BodyMedia(media_type='text/plain; charset=utf-16', kind='text'), BodyMedia(media_type='application/vnd.api+json', kind='json', codec=model_bindings.codec_13)), default='application/json', required=True),
 )
 
 OPERATION_21: Final[OperationPlan[ReadDocumentResponse]] = OperationPlan(
@@ -267,7 +267,7 @@ OPERATION_22: Final[OperationPlan[StoreNoteResponse]] = OperationPlan(
     path='/notes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json'), BodyMedia(media_type='application/vnd.note+json', kind='json')), required=True),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True), BodyMedia(media_type='application/vnd.note+json', kind='json', null=True)), required=True),
 )
 
 OPERATION_23: Final[OperationPlan[ReplaceNoteResponse]] = OperationPlan(

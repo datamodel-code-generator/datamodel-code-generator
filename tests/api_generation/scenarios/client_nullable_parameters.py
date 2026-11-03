@@ -3,8 +3,8 @@
 An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
 and decodes None as its body and its result, its properties declared directly or through allOf, and still checks an
 object against its schema. A form or multipart body has no null to send, so such a schema's declared properties still
-travel as its fields and parts. None for an optional body whose schema rejects null is left out, as UNSET is, on
-every backend.
+travel as its fields and parts. None for an optional body whose schema rejects null is left out, as UNSET is, and for
+a required one refused, on every backend.
 """
 
 from __future__ import annotations
@@ -90,6 +90,7 @@ def nullable_bodies(package: ModuleType, lines: list[str]) -> None:
         )
         _forms(package, api, exchange, lines)
         _optional(api, exchange, lines)
+        record(lines, "refuse a null required body whose schema rejects null", lambda: api.default.put_work(body=None))
     run(lambda: _async_nullable_bodies(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
 
@@ -136,4 +137,9 @@ async def _async_nullable_bodies(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(200, None), raw_response(204))
         await arecord(lines, "async send and decode null", lambda: api.default.post_note(body=None))
         await arecord(lines, "async omit a null optional body", lambda: api.default.post_draft(body=None))
+        await arecord(
+            lines,
+            "async refuse a null required body whose schema rejects null",
+            lambda: api.default.put_work(body=None),
+        )
     await http.aclose()

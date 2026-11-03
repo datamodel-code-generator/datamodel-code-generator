@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Component with a schema key
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Event:
+      schema:
+        type: object
+        properties:
+          kind:
+            type: string
+            enum: [a, b]
+          when:
+            type: string
+            format: date-time
+          count:
+            type: integer
+            minimum: 0
+            maximum: 5

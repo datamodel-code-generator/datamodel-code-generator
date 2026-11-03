@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"pairs": [["a", "b"]], "closed": [["a"]]},
+    {"pairs": [["a", "b", "c"], ["d", "e"]]}
+  ],
+  "invalid": [
+    {"pairs": [["a"]]},
+    {"pairs": [["a", "b"], ["c"]]},
+    {"closed": [["a", "b"]]},
+    {"closed": [[]]}
+  ]
+}
