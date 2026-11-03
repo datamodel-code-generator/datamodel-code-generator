@@ -7060,6 +7060,8 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 	main/jsonschema/nested_deep/nested/deep.py
 [test_main_jsonschema_nested_defs_namespace_ref]
 	main/jsonschema/nested_defs_namespace_ref.py
+[test_main_jsonschema_nested_id_ref_with_query]
+	main/jsonschema/main_jsonschema/nested_id_ref_with_query.py
 [test_main_jsonschema_nested_skip]
 	main/jsonschema/nested_skip//*.py
 [test_main_jsonschema_no_empty_collapsed_external_model]

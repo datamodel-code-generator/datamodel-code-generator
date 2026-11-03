@@ -1355,6 +1355,9 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/modular_info_version/__init__.py
 [test_main_openapi_include_paths]
 	main/openapi/openapi_include_paths/pets_only.py
+[test_main_openapi_include_paths_match_case_and_slash_on_every_os]
+backslash	main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[backslash].py
+upper-case	main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[upper-case].py	= main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[backslash].py
 [test_main_openapi_include_paths_without_leading_slash]
 	main/openapi/openapi_include_paths/pets_only.py
 [test_main_openapi_item_schema]
@@ -1606,6 +1609,11 @@ typed-dict	main/openapi/parameter_field_policy/typing_TypedDict.py
 api	main/openapi/main_openapi/paths_keys_that_are_not_path_items[api].py
 paths	main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths].py
 paths-include-all	main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths-include-all].py	= main/openapi/main_openapi/paths_keys_that_are_not_path_items[paths].py
+[test_main_openapi_paths_parameters_by_local_reference]
+include	main/openapi/main_openapi/paths_parameters_by_local_reference[include].py
+paths	main/openapi/main_openapi/paths_parameters_by_local_reference[paths].py	= main/openapi/main_openapi/paths_parameters_by_local_reference[include].py
+[test_main_openapi_paths_parameters_object_is_a_path_item]
+	main/openapi/main_openapi/paths_parameters_object_is_a_path_item.py
 [test_main_openapi_pattern]
 msgspec.Struct-msgspec_pattern.py	main/openapi/pattern/msgspec_pattern.py
 pydantic_v2.BaseModel-pydantic_v2.py	main/openapi/pattern/pydantic_v2.py

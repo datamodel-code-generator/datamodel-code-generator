@@ -239,6 +239,22 @@ def test_main_asyncapi_non_object_components(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "components", [pytest.param("components:\n", id="null"), pytest.param("components: []\n", id="list")]
+)
+def test_main_asyncapi_components_that_are_not_an_object(tmp_path: Path, output_file: Path, components: str) -> None:
+    """Read a ``components`` that is no object as holding no schema, as a ``schemas`` that is no object."""
+    document = (ASYNC_API_DATA_PATH / "non-object-components.yaml").read_text(encoding="utf-8")
+    input_path = tmp_path / "non-object-components.yaml"
+    input_path.write_text(document[: document.index("components:")] + components, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
     """Resolve external message refs using the referenced document context."""
     run_main_and_assert(

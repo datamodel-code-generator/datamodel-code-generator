@@ -625,6 +625,104 @@ def test_cli_input_errors_are_clean(
     )
 
 
+_OPENAPI_HEAD = 'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\n'
+_PETS = "  /pets:\n    get:\n      responses: {'200': {description: ok}}\n"
+
+
+@pytest.mark.parametrize(
+    ("document", "scopes", "expected_stderr_contains"),
+    [
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents: []\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml/#/components': API_INVALID_OBJECT: expected an object\n",
+            id="components-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml/#/components': API_INVALID_OBJECT: expected an object\n",
+            id="components-null",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  schemas: []\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml/#/components/schemas': API_INVALID_OBJECT: expected an object\n",
+            id="schemas-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  schemas:\n    Pet:\n      allOf: 5\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml#/components/schemas/Pet': ValidationError: 1 validation error for "
+            "JsonSchemaObject\nallOf\n  Input should be a valid list",
+            id="all-of-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: []\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths': API_INVALID_OBJECT: expected an object\n",
+            id="paths-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  parameters: 5\n{_PETS}",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths/parameters': API_INVALID_OBJECT: expected parameter array\n",
+            id="paths-parameters-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  /pets: 5\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets': API_INVALID_OBJECT: expected an object\n",
+            id="path-item-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n{_PETS}    parameters:\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets/parameters': API_INVALID_OBJECT: expected parameter array\n",
+            id="path-item-parameters-null",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  /pets:\n    get: 5\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets/get': API_INVALID_OBJECT: expected an object\n",
+            id="operation-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\nwebhooks: []\n",
+            ("webhooks",),
+            "Error at schema path 'api.yaml/#/webhooks': API_INVALID_OBJECT: expected an object\n",
+            id="webhooks-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  requestBodies:\n    Pet: 5\n",
+            ("requestbodies",),
+            "Error at schema path 'api.yaml/#/components/requestBodies/Pet': API_INVALID_OBJECT: expected an object\n",
+            id="request-body-number",
+        ),
+    ],
+)
+def test_openapi_section_of_the_wrong_type_names_its_location(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    document: str,
+    scopes: tuple[str, ...],
+    expected_stderr_contains: str,
+) -> None:
+    """A section that the schemas or paths walk reads, of the wrong type, is the API scope's located error."""
+    input_path = tmp_path / "api.yaml"
+    input_path.write_text(document, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=tmp_path / "model.py",
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", *scopes],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize("directory_input", [False, True])
 def test_missing_custom_file_header_is_a_clean_cli_error(
     output_file: Path,

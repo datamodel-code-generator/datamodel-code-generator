@@ -1372,13 +1372,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 yield Source.from_dict(self.source)
             case Path() as path:
                 if path.is_dir():
-                    files = files_under(path, order="name")
-                    if (input_filter := self._source_context.directory_input_filter) is not None:
-                        for source_path, data in input_filter.iter_files(files, self.encoding):
-                            yield self._source_from_path(source_path, data=data)
-                        return
-                    for p in files:
-                        yield self._source_from_path(p)
+                    for source_path, data in self._directory_input_files(path):
+                        yield self._source_from_path(source_path, data=data)
                 else:
                     yield self._source_from_path(path)
             case list() as paths:  # pragma: no cover
@@ -1391,6 +1386,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.source.geturl(), default_factory=self._get_text_from_url
                     ),
                 )
+
+    def _directory_input_files(self, directory: Path) -> Iterable[tuple[Path, bytes | None]]:
+        """Return each input file of a directory input in file-name order, with the bytes read to recognize it, if any.
+
+        The generator's own output and model metadata inside the directory are not inputs (``DirectoryInputFilter``).
+        """
+        files = files_under(directory, order="name")
+        if (input_filter := self._source_context.directory_input_filter) is None:
+            return ((path, None) for path in files)
+        return input_filter.iter_files(files, self.encoding)
 
     def _source_from_path(self, path: Path, *, data: bytes | None = None) -> Source:
         try:

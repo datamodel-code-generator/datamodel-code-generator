@@ -9,14 +9,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
-from urllib.request import url2pathname
 
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
+from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
-    from urllib.parse import SplitResult
-
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -40,17 +38,12 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _file_path(parts: SplitResult) -> Path:
-    """Return the path a file URI names: the path of the URI, its host, query and fragment left out."""
-    return Path(url2pathname(parts.path))
-
-
 def document_identity(document: str, base: Path) -> str:
     """Canonicalize a document name: URLs and URNs as written, paths as resolved file URIs."""
     parts = urlsplit(document)
     match parts.scheme:
         case "file":
-            return _file_path(parts).resolve().as_uri()
+            return file_uri_path(document).resolve().as_uri()
         case scheme if len(scheme) > 1:
             return document
     return (base / document).resolve().as_uri()
@@ -64,10 +57,9 @@ def named_document(written: str | None, identity: str | None) -> str:
     """
     if written is None:
         return ""
-    parts = urlsplit(identity or written)
-    if parts.scheme != "file":
+    if urlsplit(named := identity or written).scheme != "file":
         return f" in {redact_url(written)!r}"
-    file = _file_path(parts).as_posix()
+    file = file_uri_path(named).as_posix()
     return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
 
 

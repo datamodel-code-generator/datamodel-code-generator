@@ -25,7 +25,6 @@ from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._json_schema import definition_ref, json_nodes
 from datamodel_code_generator._name_words import first_upper
-from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
@@ -1426,8 +1425,8 @@ class XMLSchemaParser(JsonSchemaParser):
         """Iterate over XML Schema sources with XML encoding detection for local files."""
         match self.source:
             case Path() as path:
-                if path.is_dir():  # pragma: no cover
-                    for file_path in files_under(path, order="name"):
+                if path.is_dir():
+                    for file_path, _ in self._directory_input_files(path):
                         yield self._source_from_xml_path(file_path)
                 else:
                     yield self._source_from_xml_path(path)

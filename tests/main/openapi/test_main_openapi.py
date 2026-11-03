@@ -14429,6 +14429,17 @@ def test_main_openapi_include_paths_without_leading_slash(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize("pattern", [pytest.param("/PETS*", id="upper-case"), pytest.param("/pets\\*", id="backslash")])
+def test_main_openapi_include_paths_match_case_and_slash_on_every_os(output_file: Path, pattern: str) -> None:
+    """Match ``--openapi-include-paths`` with letter case and backslashes as written, so no OS selects ``/pets``."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "body_and_parameters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "schemas", "--openapi-include-paths", pattern, "--disable-timestamp"],
+    )
+
+
 @pytest.mark.parametrize(
     "scope_args",
     [
@@ -14452,6 +14463,35 @@ def test_main_openapi_paths_keys_that_are_not_path_items(output_file: Path, scop
         output_path=output_file,
         input_file_type="openapi",
         extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        pytest.param(["--openapi-scopes", "paths", "parameters"], id="paths"),
+        pytest.param(["--openapi-scopes", "paths", "parameters", "--openapi-include-paths", "/pets"], id="include"),
+    ],
+)
+def test_main_openapi_paths_parameters_by_local_reference(output_file: Path, scope_args: list[str]) -> None:
+    """Resolve a ``$ref`` in the ``parameters`` of every path inside the document, as the API scope does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_local_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_paths_parameters_object_is_a_path_item(output_file: Path) -> None:
+    """Read an object under the ``parameters`` key of ``paths`` as a path item, which declares no parameter of /pets."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_path_item.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "parameters", "--disable-timestamp"],
         force_exec_validation=True,
     )
 

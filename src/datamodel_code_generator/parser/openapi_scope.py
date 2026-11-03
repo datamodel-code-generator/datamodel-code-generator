@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Generator  # noqa: TC003 - Public annotations support get_type_hints().
 from contextlib import contextmanager, nullcontext
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
@@ -46,7 +46,9 @@ from datamodel_code_generator.parser.openapi import (
     OpenAPIParser,
     ParameterLocation,
     ReferenceObject,
+    _mapping,
     _missing_operation_id,
+    _parameter_array,
 )
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
@@ -63,14 +65,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModel
 
 _PARAMETER_LOCATIONS = frozenset(location.value for location in ParameterLocation)
-
-
-def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
-    """Validate a raw object at its declaration boundary without copying it."""
-    if isinstance(value, dict):
-        return value
-    msg = "API_INVALID_OBJECT: expected an object"
-    raise SchemaParseError(msg, path=list(path))
 
 
 SchemaRole: TypeAlias = TypeUseRole
@@ -762,12 +756,9 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _parameter_declarations(self, raw: YamlValue, path: list[str]) -> list[ApiParameterDeclaration]:
         """Resolve each parameter once and retain its original array occurrence."""
-        if not isinstance(raw, list):
-            msg = "API_INVALID_OBJECT: expected parameter array"
-            raise SchemaParseError(msg, path=path)
         declarations: list[ApiParameterDeclaration] = []
         seen: set[tuple[str, str]] = set()
-        for index, value in enumerate(raw):
+        for index, value in enumerate(_parameter_array(raw, path)):
             parameter_path = [*path, str(index)]
             declared = _mapping(value, parameter_path)
             parameter = self._resolve_api_object(declared, parameter_path, "parameter")

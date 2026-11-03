@@ -146,6 +146,7 @@ from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
@@ -7098,25 +7099,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_ref_body_from_url(self, ref: str) -> dict[str, YamlValue]:
         """Get reference body from a URL (HTTP, HTTPS, or file scheme)."""
         if ref.startswith("file://"):
-            from urllib.request import url2pathname  # noqa: PLC0415
-
-            parsed = urlparse(ref)
-            # url2pathname handles percent-decoding and Windows drive letters
-            path = url2pathname(parsed.path)
-            # Handle UNC paths (file://server/share/path)
-            if parsed.netloc:
-                path = f"//{parsed.netloc}{path}"
-            file_path = self._resolve_local_ref_path(Path(path), ref)
-            try:
-                return self.remote_object_cache.get_or_put(
-                    str(file_path),
-                    default_factory=lambda _: self._load_ref_data_from_path(file_path),
-                )
-            except (IsADirectoryError, PermissionError) as exc:
-                if not _is_directory_read_error(exc, file_path):
-                    raise
-                msg = f"$ref path is a directory: {ref}"
-                raise Error(msg) from None
+            return self._load_local_ref_document(self._resolve_local_ref_path(file_uri_path(ref), ref), ref)
         if self.http_local_ref_path is not None and urlparse(ref).scheme in {"http", "https"}:
             return self._get_ref_body_from_local_http_path(ref)
         return self.remote_object_cache.get_or_put(
@@ -7129,19 +7112,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_ref_body_from_remote(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Get reference body from a remote file path."""
         full_path = self._resolve_local_ref_path(self.base_path / resolved_ref, resolved_ref)
+        return self._load_local_ref_document(full_path, resolved_ref)
 
+    def _load_local_ref_document(self, path: Path, ref: str) -> dict[str, YamlValue]:
+        """Return the document at the local path a reference ``ref`` names, a file URI or a path alike.
+
+        A missing file and a directory are errors that name the path and the reference.
+        """
         try:
             return self.remote_object_cache.get_or_put(
-                str(full_path),
-                default_factory=lambda _: self._load_ref_data_from_path(full_path),
+                str(path), default_factory=lambda _: self._load_ref_data_from_path(path)
             )
         except FileNotFoundError:
-            msg = f"$ref file not found: {full_path}"
+            msg = f"$ref file not found: {path}"
             raise Error(msg) from None
         except (IsADirectoryError, PermissionError) as exc:
-            if not _is_directory_read_error(exc, full_path):
+            if not _is_directory_read_error(exc, path):
                 raise
-            msg = f"$ref path is a directory: {resolved_ref}"
+            msg = f"$ref path is a directory: {ref}"
             raise Error(msg) from None
 
     def resolve_ref(self, object_ref: str) -> Reference:
