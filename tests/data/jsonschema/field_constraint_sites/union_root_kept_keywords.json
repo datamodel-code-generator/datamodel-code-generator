@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Item": {"type": "object", "properties": {"id": {"type": "integer"}}},
+    "Text": {"type": "string"},
+    "Count": {"type": "integer"},
+    "Code": {"type": "string", "enum": ["aa", "bbbbbb"]},
+    "TextOrItem": {"anyOf": [{"$ref": "#/$defs/Item"}, {"$ref": "#/$defs/Text"}], "maxLength": 3},
+    "CountOrNumber": {"anyOf": [{"$ref": "#/$defs/Count"}, {"type": "number"}], "minimum": 3},
+    "CodeOrText": {"anyOf": [{"$ref": "#/$defs/Code"}, {"type": "string"}], "maxLength": 3},
+    "Loop": {"anyOf": [{"$ref": "#/$defs/Loop"}, {"type": "integer"}]},
+    "TextOrLoop": {"anyOf": [{"type": "string"}, {"$ref": "#/$defs/Loop"}], "maxLength": 3}
+  },
+  "properties": {
+    "text": {"$ref": "#/$defs/TextOrItem"},
+    "count": {"$ref": "#/$defs/CountOrNumber"},
+    "code": {"$ref": "#/$defs/CodeOrText"},
+    "loop": {"$ref": "#/$defs/TextOrLoop"}
+  }
+}

@@ -96,6 +96,7 @@ SEAMS: Final = (
         holders=(f"{_PACKAGE}.parser.openapi_scope",),
     ),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_field_constraints", "parse.drop_field_constraints"),
     Seam(
         f"{_PASSES}._shared",
         None,

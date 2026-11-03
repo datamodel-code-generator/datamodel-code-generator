@@ -1502,5 +1502,18 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         summary="Drops the None a type restates of the model it names when that model holds null itself.",
         condition="--omit-redundant-reference-null",
     ),
+    "omit_untaken_union_constraints": PassDecl(
+        "omit_untaken_union_constraints",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.MODEL_KIND, Fact.BASES}),
+        writes=frozenset({Fact.CONSTRAINTS}),
+        summary=(
+            "Drops the keywords beside a union that a member cannot take when every member keeps the check without"
+            " them."
+        ),
+        condition="--field-constraints, on an output that writes constraints as Field() arguments",
+    ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

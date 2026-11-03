@@ -1478,7 +1478,7 @@ def guarded_facts(finality: _Finality, facts: FinalFacts) -> FinalFacts:
     """Return ``facts`` with each model as the guarded view a decision reads; it reports the render facts read."""
     view = _ReadGuard(finality).view
     modules = tuple(ModuleFacts(item.module, tuple(map(view, item.live_models))) for item in facts.modules)
-    return FinalFacts(modules, tuple(model for item in modules for model in item.live_models))
+    return FinalFacts(modules, tuple(model for item in modules for model in item.live_models), facts.member_keywords)
 
 
 @contextmanager

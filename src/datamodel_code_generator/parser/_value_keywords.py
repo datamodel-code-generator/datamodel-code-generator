@@ -40,6 +40,7 @@ from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
+from datamodel_code_generator.model.base import ConstraintsBase
 from datamodel_code_generator.parser._intersection import declared_types, inherited_positional_tail
 from datamodel_code_generator.parser._null_facts import NullSources, dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
@@ -104,6 +105,7 @@ __all__ = [
     "has_prefix_items_tail_schema_or_boolean",
     "is_constraints_field",
     "is_fixed_length_tuple",
+    "is_union_schema",
     "keywords_taken",
     "literal_written",
     "mark_type_dependent_constraints",
@@ -115,6 +117,7 @@ __all__ = [
     "split_constraint_values",
     "suppress_array_length_constraints",
     "type_enforced_keywords",
+    "union_sibling_constraints",
 ]
 
 _CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
@@ -626,13 +629,28 @@ def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_
         parser.field_constraints
         and not (
             obj.ref
-            or obj.anyOf
-            or obj.oneOf
+            or is_union_schema(obj)
             or obj.allOf
             or obj.is_object
             or (obj.enum and not parser.ignore_enum_constraints and not _field_holds_literal(parser, data_type))
         )
     )
+
+
+def is_union_schema(obj: JsonSchemaObject) -> bool:
+    """Return whether a schema is a union of the schemas it lists (``anyOf`` or ``oneOf``)."""
+    return bool(obj.anyOf or obj.oneOf)
+
+
+def union_sibling_constraints(obj: JsonSchemaObject, constraints: object) -> dict[str, Any] | None:
+    """Return the constraint values a field writes from the keywords a union schema declares beside it, or None.
+
+    The decision phase decides them again once the members of the field's type are final
+    (``parser/_union_constraints.py``).
+    """
+    if not is_union_schema(obj) or not isinstance(constraints, ConstraintsBase):
+        return None
+    return constraints.model_dump(by_alias=True, exclude_none=True) or None
 
 
 def _field_holds_literal(parser: ValueKeywordsHost, data_type: DataType | None) -> bool:

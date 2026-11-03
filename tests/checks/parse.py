@@ -321,8 +321,8 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(original)
-    def seal_facts(self: Any, modules: Any) -> Any:
-        facts = original(self, modules)
+    def seal_facts(self: Any, modules: Any, member_keywords: Any) -> Any:
+        facts = original(self, modules, member_keywords)
         checks = PARSE_CHECKS.get()
         return facts if checks is None or checks.finality is None else _views(checks.finality, facts)
 
@@ -342,6 +342,16 @@ def drop_held_null(original: Callable[..., None]) -> Callable[..., None]:
         return original(self, viewed(model), viewed(field), [viewed(data_type) for data_type in data_types])
 
     return drop_held_null
+
+
+def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the field that the guarded view it gets names."""
+
+    @wraps(original)
+    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str]) -> None:
+        return original(self, viewed(model), viewed(field), keywords)
+
+    return drop_field_constraints
 
 
 def get_inherited_constructor_info(original: Callable[..., Any]) -> Callable[..., Any]:

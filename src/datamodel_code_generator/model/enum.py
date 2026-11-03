@@ -15,7 +15,14 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES
 from datamodel_code_generator._records import record
-from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
+from datamodel_code_generator.imports import (
+    IMPORT_ANY,
+    IMPORT_ENUM,
+    IMPORT_INT_ENUM,
+    IMPORT_STR_ENUM,
+    Import,
+    _import_path,
+)
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
 from datamodel_code_generator.python_literal import _semantic_value_text
@@ -27,6 +34,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
+    from datamodel_code_generator.model._views import ModelForm
     from datamodel_code_generator.reference import Reference
 
 
@@ -127,6 +135,17 @@ SUBCLASS_BASE_CLASSES: dict[Types, str] = {
     Types.byte: _BYTES,
     Types.string: _STR,
 }
+_SUBCLASS_VALUE_BASES: frozenset[str] = frozenset(SUBCLASS_BASE_CLASSES.values())
+"""The builtin bases ``--use-subclass-enum`` gives an enum for the values of its members."""
+_SPECIALIZED_VALUE_BASES: dict[str, str] = {_import_path(IMPORT_STR_ENUM): _STR, _import_path(IMPORT_INT_ENUM): _INT}
+"""The builtin type whose instances the members of a ``StrEnum`` and an ``IntEnum`` are, by the path of the class."""
+
+
+def _base_value_type(base: DataType) -> str | None:
+    """Return the builtin type a base of an enum makes the values of its members, or None."""
+    if (import_ := base.import_) is None:
+        return base.type if base.type in _SUBCLASS_VALUE_BASES else None
+    return _SPECIALIZED_VALUE_BASES.get(_import_path(import_))
 
 
 class Enum(DataModel):
@@ -192,6 +211,22 @@ class Enum(DataModel):
     def holds_null(self) -> bool:
         """Whether a member of the enum is None."""
         return any(get_raw_enum_member_value(field.default) is None for field in self.fields)
+
+    @property
+    @override
+    def form(self) -> ModelForm:
+        """An enum holds one of its members."""
+        return "enum"
+
+    @property
+    @override
+    def value_base(self) -> str | None:
+        """The builtin type the enum subclasses for the values of its members, or None for a plain ``Enum``.
+
+        It is the base ``--use-subclass-enum`` writes (``str`` of ``class E(str, Enum)``), or the value type of a
+        ``StrEnum`` or an ``IntEnum``.
+        """
+        return next((value for base in self.base_classes if (value := _base_value_type(base)) is not None), None)
 
     def get_member(self, field: DataModelFieldBase) -> Member:
         """Create a Member instance for the given field."""

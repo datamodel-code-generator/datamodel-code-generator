@@ -21,7 +21,10 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
-from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._constraint_applicability import (
+    TAG_LITERAL_UNTAKEN_KEYWORD,
+    UNION_SIBLING_CONSTRAINTS_KEY,
+)
 from datamodel_code_generator._container_kinds import (
     BUILTIN_CONTAINERS,
     CONTAINER_FLAGS,
@@ -1376,6 +1379,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                             model_field,
                             ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
                             type_dependent=root_type_field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY),
+                            union_siblings=root_type_field.__dict__.get(UNION_SIBLING_CONSTRAINTS_KEY),
                         )
 
                     replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001

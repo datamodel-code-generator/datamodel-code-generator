@@ -33,7 +33,11 @@ from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, _mro, cached_path_exists
 from datamodel_code_generator._caches import BoundedLru
-from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY, render_drop
+from datamodel_code_generator._constraint_applicability import (
+    UNION_SIBLING_CONSTRAINTS_KEY,
+    VALUES_AS_WRITTEN_KEY,
+    render_drop,
+)
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
@@ -151,6 +155,7 @@ if TYPE_CHECKING:
         RenderInputs,
         RenderReady,
     )
+    from datamodel_code_generator.model._views import ModelForm
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -609,6 +614,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the model and field that a constraint warning names; the field of a root model is its model."""
         owner = getattr(self.parent, "class_name", "")
         return f"{owner}.{self.name}" if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False) else owner
+
+    @property
+    def union_sibling_constraints(self) -> Mapping[str, Any] | None:
+        """Return the constraints the field writes from the keywords a schema declares beside a union, by keyword."""
+        return self.__dict__.get(UNION_SIBLING_CONSTRAINTS_KEY)
 
     @property
     def untaken_constraints(self) -> tuple[dict[str, Any], dict[str, str]]:
@@ -3035,6 +3045,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         A type that names it restates no None under ``--omit-redundant-reference-null``.
         """
         return (self.IS_ROOT_MODEL or self.IS_ALIAS) and len(fields := self.fields) == 1 and fields[0]._admits_none()  # noqa: SLF001
+
+    @property
+    def form(self) -> ModelForm:
+        """How the model holds its value: as a type alias, a root model or the fields of an object."""
+        return "alias" if self.IS_ALIAS else "root" if self.IS_ROOT_MODEL else "object"
+
+    @property
+    def value_base(self) -> str | None:
+        """The builtin type an enum subclasses for the values of its members; a model that is no enum has none."""
+        return None
 
     @classmethod
     def create_base_class_model(

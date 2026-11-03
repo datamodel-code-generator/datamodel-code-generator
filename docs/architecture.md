@@ -464,7 +464,7 @@ default, so the alias writes none.
 | `import_renamed_types` (`parser/_passes/cross_module.py`) | imports of types that a later module renamed |
 | `import_enum_member_literal_classes` (`parser/_passes/cross_module.py`) | imports for enum member literals |
 | `apply_generic_base_class` (`parser/_passes/cross_module.py`) | inserts the generated base model and rewrites base classes |
-| decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
+| decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`, `omit_untaken_union_constraints` behind `--field-constraints`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
 
 Render preparation, for the models each module had at the end of L5:
 
@@ -804,16 +804,22 @@ Provisional reads, from the explicit edges:
 ### Decision Phase
 
 The `decide` segment (`DECIDE`, entered at B1 right after `apply_generic_base_class`) runs the decisions of the
-parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds one decision, `omit_held_null`
+parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds two decisions. `omit_held_null`
 (`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
 root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
-model; the None it writes itself stays. A decision is a `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
+model; the None it writes itself stays. `omit_untaken_union_constraints` (`parser/_union_constraints.py`,
+`--field-constraints` on an output that writes constraints as `Field()` arguments, #6022): a keyword a schema declares
+beside a union leaves the field that holds the union when the value of a member cannot take it
+(`DataTypeManager.member_constraint_keywords`) and every member keeps the check without it (it holds the keyword
+itself, the keyword applies to none of its values, or it is None); otherwise the field keeps it. A decision is a
+`DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
 and the issue it fixes), the writer protocol of its
 writes (a `DecisionWriter`), `run(facts, writer)` and, for a decision behind an option, `when(parser)`. When a decision
 runs, `GenerationStore.seal_facts` builds the one `FinalFacts` of the parse: per output module, the models that render
 (unused models, which leave their modules later, are left out), as the read-only views of `model/_views.py`
-(`ModelView`, `FieldView`, `DataTypeView`, `ReferenceView`). The views list the facts final at B1 and rendered
+(`ModelView`, `FieldView`, `DataTypeView`, `ReferenceView`), and the keywords the value of a union member takes in the
+output model (`member_keywords`). The views list the facts final at B1 and rendered
 nullability through `admits_none`, never the `is_optional` that render preparation writes; presentation attributes are
 not part of them, and type checking rejects writes through a view. Every decision writes through `_DecisionWriter`, the
 one implementation of the writer protocols over the store, which records the models it changes (`DecisionOutcome`). A

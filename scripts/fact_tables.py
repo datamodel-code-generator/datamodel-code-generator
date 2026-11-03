@@ -696,6 +696,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModelFieldBase",
+        "UNION_SIBLING_CONSTRAINTS_KEY",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_constraints",),
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
         "_UNCONSTRAINED_UNION_MEMBERS_KEY",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),

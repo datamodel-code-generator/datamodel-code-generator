@@ -80,6 +80,7 @@ __all__ = [
     "TAG_LITERAL_UNTAKEN_KEYWORD",
     "TYPE_DEPENDENT_CONSTRAINTS_KEY",
     "TYPE_DEPENDENT_KEYWORDS",
+    "UNION_SIBLING_CONSTRAINTS_KEY",
     "ConstraintOptions",
     "DeclaredKinds",
     "OutputKeywords",
@@ -161,6 +162,8 @@ VALUES_AS_WRITTEN_KEY: Final = "_values_as_written"
 """The key under which a type, model or schema holding only the values a literal check admits keeps them as written."""
 TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 """The key under which a field keeps the declared constraints whose keywords depend on the type it emits."""
+UNION_SIBLING_CONSTRAINTS_KEY: Final = "_union_sibling_constraints"
+"""The key under which a field keeps the constraints it writes from the keywords a schema declares beside a union."""
 DROPPED_MULTIPLE_OF_KEY: Final = "_dropped_multiple_of"
 """The key under which a constrained type keeps the ``multipleOf`` it is written without, not being finite in it."""
 

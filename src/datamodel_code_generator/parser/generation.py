@@ -53,6 +53,7 @@ from typing_extensions import deprecated, override
 from datamodel_code_generator._constraint_applicability import (
     DROPPED_MULTIPLE_OF_KEY,
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    UNION_SIBLING_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
 )
 from datamodel_code_generator._graph_links import (
@@ -91,6 +92,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
@@ -1341,14 +1343,20 @@ class GenerationStore:  # noqa: PLR0904
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
-    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]]) -> FinalFacts:  # noqa: PLR6301
+    def seal_facts(  # noqa: PLR6301
+        self,
+        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
+        member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+    ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        A decision reads each model as its view (``model/_views.py``). This is the only construction of
-        ``FinalFacts``.
+        A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
+        ``member_keywords``. This is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
-        return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
+        return FinalFacts(
+            module_facts, tuple(model for facts in module_facts for model in facts.live_models), member_keywords
+        )
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)
     def register_model(self, model: DataModel) -> None:
@@ -1818,12 +1826,18 @@ class GenerationStore:  # noqa: PLR0904
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_constraints() instead.", category=None)
     def set_field_constraints(
-        field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
         field_.constraints = constraints
         if type_dependent is not None:
             field_.__dict__[TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent
+        if union_siblings is not None:
+            field_.__dict__[UNION_SIBLING_CONSTRAINTS_KEY] = union_siblings
         bump_field(field_)
 
     @staticmethod
@@ -2574,10 +2588,17 @@ class GraphBuilder:
         self._store.set_base_classes(model, base_classes)  # ty: ignore[deprecated]
 
     def set_field_constraints(
-        self, field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        self,
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
-        self._store.set_field_constraints(field_, constraints, type_dependent=type_dependent)  # ty: ignore[deprecated]
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
+        self._store.set_field_constraints(  # ty: ignore[deprecated]
+            field_, constraints, type_dependent=type_dependent, union_siblings=union_siblings
+        )
 
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""

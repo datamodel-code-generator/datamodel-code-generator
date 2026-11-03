@@ -445,7 +445,10 @@ VIEW_OWNERS: dict[type[Any], str] = {
 """The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
 VIEW_ACCESSORS = {
     "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+    "FieldView.union_sibling_constraints": "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
+    "ModelView.form": "the model kind, final at B1",
     "ModelView.holds_null": "the model kind, and the nullability of its root type or its enum members, final at B1",
+    "ModelView.value_base": "the model kind and the base classes of an enum, final at B1",
 }
 """The view members that read no row of their own, each with what it reads."""
 

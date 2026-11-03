@@ -12,12 +12,16 @@ reads of render facts.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-__all__ = ["DataTypeView", "FieldView", "ModelView", "ReferenceView"]
+__all__ = ["DataTypeView", "FieldView", "ModelForm", "ModelView", "ReferenceView"]
+
+ModelForm: TypeAlias = Literal["alias", "root", "enum", "object"]
+"""How a model holds its value: a type alias stands for the type of its field, a root model wraps the value of its
+field, an enum is one of its members and any other model holds its fields."""
 
 
 class ReferenceView(Protocol):
@@ -179,6 +183,10 @@ class FieldView(Protocol):
     def extras(self) -> Mapping[str, object]:
         """The field metadata: discriminator, default factory, init and class-variable markers among them."""
 
+    @property
+    def union_sibling_constraints(self) -> Mapping[str, object] | None:
+        """The constraints the field writes from the keywords a schema declares beside a union, by keyword."""
+
 
 class ModelView(Protocol):
     """A model as the decision phase reads it."""
@@ -218,3 +226,11 @@ class ModelView(Protocol):
     @property
     def holds_null(self) -> bool:
         """Whether the class holds null as its own value: a root model or alias admitting None, or an enum with None."""
+
+    @property
+    def form(self) -> ModelForm:
+        """How the model holds its value."""
+
+    @property
+    def value_base(self) -> str | None:
+        """The builtin type an enum subclasses for the values of its members (``str`` of a ``StrEnum``), or None."""
