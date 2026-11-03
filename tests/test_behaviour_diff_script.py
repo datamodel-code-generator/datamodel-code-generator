@@ -165,6 +165,40 @@ CLASSIFY_CASES = {
         "tests/data/jsonschema/keyword_directory_reference",
         [],
     ),
+    "generation_refused_output_with_working_module": (
+        Side(
+            generated=True,
+            signature={
+                "package": {
+                    "main": {"import_error": "SyntaxError: invalid syntax (main.py, line 7)"},
+                    "other": KEY_MAP_BEFORE,
+                }
+            },
+        ),
+        Side(generated=False, message="Error: Cannot import the module 'class' from module 'main'"),
+        "tests/data/jsonschema/keyword_sibling_reference",
+        [],
+    ),
+    "generation_refused_output_working_below_keyword": (
+        Side(
+            generated=True,
+            signature={
+                "package": {
+                    "main": {"import_error": "SyntaxError: invalid syntax (main.py, line 7)"},
+                    "class.k": KEY_MAP_BEFORE,
+                }
+            },
+        ),
+        Side(generated=False, message="Error: Cannot import the module 'class' from module 'main'"),
+        "tests/data/jsonschema/keyword_package_reference",
+        [],
+    ),
+    "generation_refused_output_without_signature": (
+        Side(generated=True, signature={"import_error": "signature timed out after 60s", "signature_failed": True}),
+        Side(generated=False, message="Error: Cannot import the module 'class' from module 'main'"),
+        "tests/data/jsonschema/keyword_slow_reference",
+        [],
+    ),
     "generation_refused_working_output": (
         Side(generated=True, signature=KEY_MAP_BEFORE),
         Side(generated=False, message="Error: Cannot import the module 'class' from module 'main'"),

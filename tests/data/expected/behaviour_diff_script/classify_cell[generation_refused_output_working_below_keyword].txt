@@ -1,0 +1,14 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "generation refused an output that failed to import: SyntaxError: invalid syntax (main.py, line 7)"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[import-path-removed] class.k:Key: from class.k import Key",
+    "[import-path-removed] class.k:KeyMap: from class.k import KeyMap",
+    "[module-added] : added",
+    "[module-removed] class.k: removed",
+    "[module-removed] main: removed"
+  ]
+}

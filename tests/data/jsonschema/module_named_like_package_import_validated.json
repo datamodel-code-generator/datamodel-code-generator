@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {"type": "object", "minProperties": 1, "properties": {"a": {"type": "integer"}}},
+    "pkg.BaseModel.Thing": {"type": "object", "properties": {"n": {"type": "integer"}}},
+    "pkg.api.Order": {"type": "object", "properties": {"thing": {"$ref": "#/$defs/pkg.BaseModel.Thing"}}}
+  }
+}

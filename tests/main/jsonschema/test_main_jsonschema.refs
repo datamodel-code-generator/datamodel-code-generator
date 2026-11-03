@@ -7593,6 +7593,8 @@ import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submo
 import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-exact-imports]/
 import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded].payloads.txt
 import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded]/
+import-validation-helper	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-validation-helper].payloads.txt
+import-validation-helper	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-validation-helper]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]

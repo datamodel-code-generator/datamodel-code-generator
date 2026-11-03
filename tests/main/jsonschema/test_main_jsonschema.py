@@ -4280,6 +4280,17 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
             )
         ),
         pytest.param(
+            "module_named_like_package_import_validated.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--generate-schema-validators", "--use-exact-imports"],
+            [
+                ("pkg.api", "Order", ['{"thing": {"n": 1}}']),
+                ("pkg", "Report", ['{"a": 1}', "{}"]),
+            ],
+            id="import-validation-helper",
+        ),
+        pytest.param(
             "module_named_like_package_import_unloaded.json",
             "msgspec.Struct",
             "3.10",
@@ -4313,8 +4324,9 @@ def test_main_jsonschema_submodule_hidden_by_package(
     the class of an enum member literal keeps its class bound too. Where ``pkg/__init__.py`` imports ``typing.Any``
     and the output loads ``pkg/Any.py`` (#6066), ``from . import Any`` gave ``typing.Any``, and once the submodule
     was loaded its name replaced the import that the classes of the ``__init__.py`` name: the import is now
-    ``Any_aliased``, unless no module loads ``pkg/Any.py``. The models are decoded after the first module named is
-    imported, in one import of the package.
+    ``Any_aliased``, unless no module loads ``pkg/Any.py``, and the validation helper of
+    ``--generate-schema-validators`` follows it (``BaseModel_aliased``). The models are decoded after the first module
+    named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
