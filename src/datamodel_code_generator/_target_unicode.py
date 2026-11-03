@@ -403,8 +403,7 @@ def is_importable_part(part: str, target: PythonVersion | None, *, row: ModulePa
             return not keyword.iskeyword(part)
         case "legacy-keyword-directory-kept":
             return is_identifier(part, target)
-        case _:
-            return is_python_name(part, target)
+    return is_python_name(part, target)
 
 
 def replace_non_word(value: str, target: PythonVersion | None) -> str:
