@@ -7570,6 +7570,9 @@ future-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by
 [test_main_jsonschema_time_delta]
 msgspec.Struct-time_delta_msgspec.py	main/jsonschema/time_delta_msgspec.py
 pydantic_v2.BaseModel-time_delta_pydantic_v2.py	main/jsonschema/time_delta_pydantic_v2.py
+[test_main_jsonschema_treat_dot_as_module_writes_importable_modules]
+dropped-import	main/jsonschema/main_jsonschema/treat_dot_as_module_writes_importable_modules[dropped-import]/
+no-treat-dot-as-module	main/jsonschema/main_jsonschema/treat_dot_as_module_writes_importable_modules[no-treat-dot-as-module]/
 [test_main_jsonschema_type_alias]
 	main/jsonschema/type_alias.py
 [test_main_jsonschema_type_alias_chain_model_default_object_ref]

@@ -222,7 +222,11 @@ from datamodel_code_generator.parser._passes._state import (
     _StructureState,
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
-from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS, builtin_name_bindings
+from datamodel_code_generator.parser._passes.imports import (
+    _FUTURE_IMPORTS,
+    builtin_name_bindings,
+    reject_unimportable_imports,
+)
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
@@ -1773,7 +1777,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 collect_data_type_names(data_type)
         return names
 
-    def __generate_forwarder_content(  # noqa: PLR6301
+    def __generate_forwarder_content(
         self,
         original_module: tuple[str, ...],
         names: Sequence[tuple[tuple[str, ...], str, str]],
@@ -1803,6 +1807,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 from_ = join_module(left, right)
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
+        self._reject_unimportable_imports(original_module, imports, is_init=is_init)
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"
 
     def __get_resolve_reference_action_parts(
@@ -2347,10 +2352,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if ctx.models:
             if config.with_import:
                 module_imports = self._import_ledger.rendered(ctx.imports)
+                self._reject_unimportable_imports(ctx.module, module_imports, is_init=ctx.is_init)
                 import_parts = [s for s in [module_future_imports_str, str(self.imports), str(module_imports)] if s]
                 result += [*import_parts, "\n"]
 
             if export_imports:
+                self._reject_unimportable_imports(ctx.module, export_imports, is_init=True)
                 result += [str(export_imports), ""]
                 for name in _init_exports.exported_names(ctx.models):
                     export_imports.add_export(name)
@@ -2397,6 +2404,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             source=ctx.models[0].file_path if ctx.models else None,
         )
 
+    def _reject_unimportable_imports(self, module: ModulePath, imports: Imports, *, is_init: bool) -> None:
+        """Refuse the import block of ``module`` where ``--treat-dot-as-module`` names a module Python cannot import."""
+        if self.treat_dot_as_module is True:
+            reject_unimportable_imports(
+                module, imports, is_init=is_init, target_python_version=self.target_python_version
+            )
+
     def _generate_empty_init_exports(
         self,
         results: dict[ModulePath, Result],
@@ -2413,6 +2427,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
             if (export_imports := self._init_export_imports(init_module, contexts, scope, config, set())) is None:
                 continue
+            self._reject_unimportable_imports(init_module, export_imports, is_init=True)
             import_parts = [s for s in [future_imports_str, str(self.imports)] if s] if config.with_import else []
             parts = import_parts + (["\n"] if import_parts else [])
             parts += [str(export_imports), "", export_imports.dump_all(multiline=True)]

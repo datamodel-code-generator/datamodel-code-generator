@@ -170,6 +170,11 @@ This is useful for:
 - Mirroring API versioning structure
 - Keeping related models together
 
+Each dot of a directory or file name of the input is a package, so `1.0/version.json` is written below `_1/0/`. Python
+cannot import a module by a part that is not an identifier (`0`), so a generated module that has to import one is
+refused: generation fails and names the module and the part. Use `--no-treat-dot-as-module`, which writes the dots as
+`_`, or rename the input. A module that nothing imports is written as before.
+
 When writing plain Python text to stdout with the standard renderer and without
 an explicit `--treat-dot-as-module` setting, historical automatic module
 inference is preserved whenever the final concatenated result remains usable. A

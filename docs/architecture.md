@@ -525,7 +525,7 @@ rule (`generic_base_class_import`), and the writes through the generation store
 imported under a stale import (`reimport_references`: drop it, release the names it leaves, write the expression again,
 under a `ReimportRow` named after the pass: collapsed holders, renamed types, removed reuse duplicates); the
 relative import text it writes, which the forwarders of `parser/base.py` write too, is `_module_paths.py` (`relative`,
-`join_module`, `exact_import`, `is_ancestor_package_reference`). The aliases imports take where a field name of the module hides the names they bind
+`join_module`, `exact_import`, `is_ancestor_package_reference`, `absolute`). The aliases imports take where a field name of the module hides the names they bind
 are `parser/_passes/_import_aliases.py` (`alias_shadowed_imports`), which writes them into every type, runtime
 expression, additional import and base class that carries the import.
 The import block that `_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
@@ -544,7 +544,11 @@ module writes for each model. Nothing is written from the plan yet; under the sa
 the plan writes and its imports must bind every planned import.
 
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
-model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
+model and formats the body. Under `--treat-dot-as-module` it first refuses each relative import block it writes (the
+module's, the `--all-exports-scope` exports and a forwarder's, `parser/_passes/imports.py:reject_unimportable_imports`)
+that names a module by a part that is not an identifier (`1.0` is the packages `_1` and `0`), which the output would write
+as a syntax error. It reads the final blocks, so an import a pass dropped (a collapsed root model) is not refused, and it
+leaves the layout of the modules as released. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering a type hint and collecting a field's imports write no
 nullability: `type_hint` renders the None of the type, of the nullable model it names and, for a union, of the members
