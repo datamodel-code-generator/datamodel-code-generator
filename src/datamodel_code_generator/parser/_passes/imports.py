@@ -418,6 +418,7 @@ def _released_name_imports(  # noqa: PLR0914
                 treat_dot_as_module=parser.treat_dot_as_module,
                 shared_imports=parser.imports,
             )
+            target.reserve_name(resolver)
             binding = resolver.add(target.full_path, target.import_).name
             if target.import_ == released_name:
                 imported[(*final, binding)] = None

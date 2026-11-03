@@ -2644,6 +2644,63 @@ client-protocols = "protocols.json"
     ] == [True, True, False]
 
 
+@pytest.mark.allow_direct_assert("checks which paths the failed run's recovery graph accepts")
+def test_watch_records_a_json_file_named_like_inline_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed configuration watches a JSON file whose name starts like inline JSON, as the option reads it first.
+
+    The option reads a file of that name before it reads the value as JSON, for a model option (`aliases`) and for a
+    target option (`client-protocols`); a name no file has is inline JSON and watches nothing.
+    """
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "input.json"
+aliases = "[aliases].json"
+client-protocols = "{protocols}.json"
+default-values = "{missing}.json"
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "[aliases].json").write_text("{}", encoding="utf-8")
+    (tmp_path / "{protocols}.json").write_text("{}", encoding="utf-8")
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(tmp_path)
+    arg_parser.parse_args([], namespace=main_module.namespace)
+
+    assert main_module._main([], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (
+            tmp_path / "input.json",
+            tmp_path / "[aliases].json",
+            tmp_path / "{protocols}.json",
+            tmp_path / "{missing}.json",
+        )
+    ] == [True, True, True, False]
+
+
+@pytest.mark.allow_direct_assert("checks which paths a raw config adds to the watch graph")
+def test_watch_dependencies_read_a_json_file_before_inline_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A raw config value that starts like inline JSON is a watched file where a file has that name."""
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "[aliases].json").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    dependencies = WatchDependencies()
+    dependencies.stage_raw_config({"aliases": "[aliases].json", "default_values": "[missing].json"})
+
+    assert [dependencies.includes(tmp_path / name) for name in ("[aliases].json", "[missing].json")] == [True, False]
+
+
 @pytest.mark.allow_direct_assert
 def test_batch_watch_excludes_a_shared_update_lock_from_events(
     monkeypatch: pytest.MonkeyPatch,

@@ -114,7 +114,7 @@ from datamodel_code_generator._cli_config import (
     _RawConfigValue,
     _template_data,
 )
-from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTORS, names_path
+from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTORS, names_file
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
@@ -893,13 +893,13 @@ def _record_raw_job_config_dependencies(
 
     Each value is read as the planned job reads it, by ``_resolve_relative_paths_from``: ``~`` expands, a path field is
     relative to the pyproject.toml directory, the JSON files of model options stay relative to the working directory,
-    and inline JSON is a value, not a file. Only lexical, as the plan may have failed before it read any file; a
-    ``~user`` that names no user is left unwatched.
+    and inline JSON is a value, not a file unless a file of that name exists (``names_file``). Only lexical, as the plan
+    may have failed before it read any file; a ``~user`` that names no user is left unwatched.
     """
     for raw_name, raw_value in config.items():
         if not isinstance(raw_name, str) or (name := field_name(raw_name)) not in (JSON_FIELDS | {"input"}):
             continue
-        if not names_path(name, raw_value):
+        if not names_file(name, raw_value):
             continue
         with suppress(RuntimeError):
             path = _resolve_relative_paths_from({name: raw_value}, base_path)[name]

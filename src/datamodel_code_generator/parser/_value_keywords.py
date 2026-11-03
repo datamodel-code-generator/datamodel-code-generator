@@ -34,7 +34,7 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,
     writes_beside_literal,
 )
-from datamodel_code_generator._container_kinds import CONTAINERS, MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
@@ -211,6 +211,19 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
             yield from _enforcing_leaves(member)
     else:
         yield (None, data_type.literals) if _is_value_literal(data_type) else (data_type.type, ())
+
+
+def can_hold_array(data_type: DataType, *, models: bool) -> bool:
+    """Return whether a value of the type, but ``None``, is an array itself: an array, a custom type or a union of them.
+
+    A model (a ``$ref``) is one too when ``models`` says so, whose field Pydantic cannot apply an item count to.
+    """
+    return (
+        data_type in ARRAYS
+        or (models and data_type.reference is not None)
+        or data_type.python_type is not None
+        or any(can_hold_array(member, models=models) for member in data_type.data_types if not _is_plain_none(member))
+    )
 
 
 def _imported_type_paths(data_type: DataType) -> Iterator[str]:

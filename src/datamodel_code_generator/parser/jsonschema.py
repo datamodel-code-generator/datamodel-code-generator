@@ -507,6 +507,10 @@ class _ConstraintSite:
     """Under ``--field-constraints`` (or as a preserved root) the lengths its schema declares for a fixed tuple stay on
     the field, with no item counts added to it, where an object property and the array builder leave them out (the
     tuple has them): row ``legacy-root-tuple-lengths``."""
+    counts_beside_models: bool
+    """The item counts that ``contains`` and boolean ``items`` imply stay on a field whose type is a model, where
+    Pydantic raises ``Unable to apply constraint`` when the model validates an array; a root field writes none there,
+    as in 0.88.0: row ``legacy-property-counts-beside-models``."""
     records_by_option: bool
     """It records the keywords it leaves out and those its type decides only under ``--field-constraints`` (#4997,
     0.87.0), where a property records them once it assembled any: row ``legacy-root-records-by-option``."""
@@ -520,6 +524,7 @@ _PROPERTY_SITE = _ConstraintSite(
     consumed_at_property=True,
     patterns_beside_literal=False,
     keeps_tuple_lengths=False,
+    counts_beside_models=True,
     records_by_option=False,
     empty_record=False,
 )
@@ -529,6 +534,7 @@ _ROOT_SITE = _ConstraintSite(
     consumed_at_property=False,
     patterns_beside_literal=True,
     keeps_tuple_lengths=True,
+    counts_beside_models=False,
     records_by_option=True,
     empty_record=True,
 )
@@ -6338,8 +6344,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Assemble the constraints a field of ``site`` writes from ``obj`` for its ``data_type``.
 
         The declared keywords the field takes, without those its type enforces at an object property, the hostname
-        pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple; a
-        heterogeneous type list takes none of the keywords and item counts, the property counts follow the map type.
+        pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple (a
+        field whose type is no array, such as a string, takes none); a heterogeneous type list takes none of the
+        keywords and item counts, the property counts follow the map type.
         ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
         constraints of a preserved root) replaces the declared ones.
         """
@@ -6379,7 +6386,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             site.keeps_tuple_lengths and (field_constraints or preserve) and self._is_fixed_length_tuple(obj)
         )
         if not (built or keeps_lengths):
-            if not skip and (item_counts := self._get_array_items_constraints(obj)):
+            if (
+                not skip
+                and (item_counts := self._get_array_items_constraints(obj))
+                and _value_keywords.can_hold_array(data_type, models=site.counts_beside_models)
+            ):
                 constraints = constraints or {}
                 constraints.update(item_counts)
             _value_keywords.suppress_array_length_constraints(self, constraints, obj)

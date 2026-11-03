@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "$ref": "#/$defs/Names",
+  "contains": true,
+  "minContains": 2,
+  "$defs": {
+    "Names": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

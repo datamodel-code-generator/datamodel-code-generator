@@ -35657,6 +35657,31 @@ def test_main_jsonschema_additional_import_named_like_module(output_dir: Path) -
     )
 
 
+def test_main_jsonschema_shared_import_named_like_module_and_model(output_dir: Path) -> None:
+    """Import a model from its module under an alias where a shared import binds the model's name too.
+
+    ``--additional-imports ipaddress.IPv4Address`` makes every module import the model ``OrderedDict`` from its module
+    ``IPv4Address``, and ``--external-ref-mapping common.json=collections`` makes every module write
+    ``from collections import OrderedDict``. The model keeps the name of the mapped type: it was bound after the import
+    of ``collections`` and gave the field typed by the mapped type the model.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "shared_import_named_like_model" / "api.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--additional-imports",
+            "ipaddress.IPv4Address",
+            "--external-ref-mapping",
+            "common.json=collections",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],

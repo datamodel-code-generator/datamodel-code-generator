@@ -103,6 +103,27 @@ def names_path(name: str, value: object) -> bool:
     return isinstance(value, str | Path) and not (name in JSON_FIELDS and str(value).lstrip().startswith(("{", "[")))
 
 
+def _path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def json_file(value: str | Path) -> Path | None:
+    """Return the file a JSON option value names, or None for inline JSON."""
+    return path if _path_is_file(path := Path(value).expanduser()) else None
+
+
+def names_file(name: str, value: object) -> bool:
+    """Return whether the value of a path or JSON field names a file that a job reads, which ``--watch`` watches.
+
+    ``names_path`` says so, and so does a JSON field whose inline-looking value is the name of an existing file too
+    (``[aliases].json``), as the JSON options read a file by that name before they read the value as JSON.
+    """
+    return names_path(name, value) or (isinstance(value, str | Path) and json_file(value) is not None)
+
+
 __all__ = [
     "CALLER_RELATIVE_PATH_FIELDS",
     "CLI_RESOLVED_PATH_FIELDS",
@@ -121,5 +142,7 @@ __all__ = [
     "WATCHED_PATH_FIELDS",
     "PathField",
     "WatchedAs",
+    "json_file",
+    "names_file",
     "names_path",
 ]

@@ -770,10 +770,12 @@ def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ..
 
     An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
     which OpenAPI 3.1 leaves to the API (any text) and OpenAPI 3.0 does not allow (its array must be empty). `scopes` is
-    None when the requirement lists no strings.
+    None when the requirement lists them as anything but an array of strings.
     """
+    if scopes is None:
+        return f"must list its scopes as an array of strings for scheme {name!r}"
     tokens = fact(declaration, "type") in _SCOPE_SCHEMES
-    if scopes is None or (tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes))):
+    if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
         return f"requires valid scope tokens for scheme {name!r}"
     if scopes and not tokens and openapi.startswith("3.0"):
         return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"

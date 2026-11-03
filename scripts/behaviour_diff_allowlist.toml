@@ -71,7 +71,7 @@ release_note = "the root model of an array item keeps the minItems of the item w
 input = "*field_constraint_sites*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "default", "required", "probe" ]
-match = "^\\[(?:constraints|default|required)\\] (?:mixed_type_map_property:)?Model:named: |^\\[probe\\] (?:mixed_type_map_property:)?Model: accept -> reject$"
+match = "^\\[constraints\\] (?:mixed_type_map_property:)?Model:named: (?P<old>.*) -> Annotated\\[(?P=old), MinLen\\(min_length=1\\), MaxLen\\(max_length=2\\)\\]$|^\\[default\\] (?:mixed_type_map_property:)?Model:named: '?None'? -> 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=1\\), MaxLen\\(max_length=2\\)\\]\\)'$|^\\[required\\] (?:mixed_type_map_property:)?Model:named: True -> False$|^\\[probe\\] (?:mixed_type_map_property:)?Model: accept -> reject$"
 reason = "a property map beside a type list that joins an array left out its minProperties and maxProperties, so the model accepted objects with too few or too many properties; it writes them as the root model of the same map does (schema-mismatch fix)"
 decision = "#5976"
 release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map, as the root model of the same map does"
@@ -80,7 +80,7 @@ release_note = "a property map whose type list joins an array keeps its minPrope
 input = "*object_maps*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "default", "required", "constructor-order" ]
-match = "^\\[(?:constraints|default|required)\\] type_array_maps:Model:pArrayOrNamesCount: |^\\[constructor-order\\] type_array_maps:Model: "
+match = "^\\[constraints\\] type_array_maps:Model:pArrayOrNamesCount: (?P<old>.*) -> Annotated\\[(?P=old), MinLen\\(min_length=1\\)\\]$|^\\[default\\] type_array_maps:Model:pArrayOrNamesCount: '?None'? -> 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=1\\)\\]\\)'$|^\\[required\\] type_array_maps:Model:pArrayOrNamesCount: True -> False$|^\\[constructor-order\\] type_array_maps:Model: \\[(?P<before>.*)'pArrayOrNamesCount', 'rArrayOrNamesCount', (?P<after>.*)\\] -> \\[(?P=before)'rArrayOrNamesCount', 'pArrayOrNamesCount', (?P=after)\\]$"
 reason = "a property map beside a type list that joins an array left out its minProperties, so the model accepted the empty object that the schema rejects; it writes it as the root model of the same map does, which a pydantic dataclass writes as a Field default and so places after the plain required fields (schema-mismatch fix)"
 decision = "#5976"
 release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map; a pydantic dataclass lists such a required field after its plain required fields, as it does any required field that carries a constraint"
@@ -89,7 +89,16 @@ release_note = "a property map whose type list joins an array keeps its minPrope
 input = "*type_union_constraints*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "default", "required", "probe" ]
-match = "^\\[(?:constraints|default|required)\\] keys_count_field:Root:value: |^\\[probe\\] keys_count_field:Root: accept -> reject$"
+match = "^\\[constraints\\] keys_count_field:Root:value: (?P<old>.*) -> Annotated\\[(?P=old), MinLen\\(min_length=1\\)\\]$|^\\[default\\] keys_count_field:Root:value: '?None'? -> 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=1\\)\\]\\)'$|^\\[required\\] keys_count_field:Root:value: True -> False$|^\\[probe\\] keys_count_field:Root: accept -> reject$"
 reason = "a property map beside a type list that joins an array left out its minProperties, so the model accepted the empty object that the schema rejects; it writes it as the root model of the same map does (schema-mismatch fix)"
 decision = "#5976"
 release_note = "a property map whose type list joins an array keeps its minProperties and maxProperties as the length of the map"
+
+[[accepted]]
+input = "*field_constraint_sites*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
+aspects = [ "constraints", "default", "required", "constructor-order" ]
+match = "^\\[constraints\\] (?:array_counts_beside_other_types:)?Model:tag: (?:Annotated\\[Union\\[None, str\\], MinLen\\(min_length=2\\)\\] -> Union\\[None, str\\]|Union\\[Annotated\\[str, Meta\\(min_length=2\\)\\], msgspec\\.UnsetType\\] -> Union\\[msgspec\\.UnsetType, str\\])$|^\\[default\\] (?:array_counts_beside_other_types:)?Model:tag: 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=2\\)\\]\\)' -> '?None'?$|^\\[required\\] (?:array_counts_beside_other_types:)?Model:tag: False -> True$|^\\[constructor-order\\] (?:array_counts_beside_other_types:)?Model: \\['label', 'names', 'tag', 'tags'\\] -> \\['label', 'tag', 'names', 'tags'\\]$"
+reason = "a string property beside contains and minContains, which JSON Schema ignores on a string, carried the minItems that they imply as min_length, so the model rejected the strings the schema accepts (a string of one character beside minContains 2); a field whose type holds no array takes no item counts (schema-mismatch fix)"
+decision = "#6032"
+release_note = "a property that holds no array (a string, a mapping) no longer gets the minItems or maxItems that contains, minContains or items: false imply as its length, so it no longer rejects the values the schema accepts"

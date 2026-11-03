@@ -45,8 +45,8 @@ _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]
 
 
 def _counted_repetition(space: str) -> str:
-    """Return the pattern of a counted repetition whose parts may be separated by ``space``."""
-    return rf"\{{{space}[0-9]+{space}(?:,{space}(?:[0-9]+{space})?)?\}}"
+    """Return the pattern of a counted repetition whose parts may be separated by ``space``, with its two counts."""
+    return rf"\{{{space}(?P<lower>[0-9]+){space}(?:,{space}(?:(?P<upper>[0-9]+){space})?)?\}}"
 
 
 def _regex_token(counted_repetition: str) -> str:
@@ -82,6 +82,14 @@ def has_lookaround(pattern: str) -> bool:
     return _compiled(_LOOKAROUND_PATTERN).search(pattern) is not None
 
 
+def _exceeds(lower: str | None, upper: str | None) -> bool:
+    """Return whether the digits ``lower`` stand for more than the digits ``upper``, compared as text, not parsed."""
+    if lower is None or upper is None:
+        return False
+    lower, upper = lower.lstrip("0"), upper.lstrip("0")
+    return (len(lower), lower) > (len(upper), upper)
+
+
 def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
     """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
     if (escape := match["escape"]) is not None:
@@ -90,7 +98,8 @@ def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, in
         return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
     if group := match["group"]:
         return True, _PY_311 if group == ">" else _PY_310
-    return match["brace"] is not None, _PY_311 if match["possessive"] else _PY_310
+    rejected = match["brace"] is not None or _exceeds(match["lower"], match["upper"])
+    return rejected, _PY_311 if match["possessive"] else _PY_310
 
 
 def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool, tuple[int, int]] | None:
@@ -101,7 +110,8 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
     consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
     octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
-    ``a`` and ``L`` flags, and braces that cannot start a counted repetition. Atomic groups and possessive
+    ``a`` and ``L`` flags, braces that cannot start a counted repetition and counted repetitions whose minimum
+    exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text). Atomic groups and possessive
     quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
     whitespace and comments the scan does not model, unless ``read_verbose`` reads the ones that start with a
     global ``(?x)`` group. Their comments run to the end of the line, also inside a character class, where Rust
