@@ -440,7 +440,7 @@ class _Operation(StepLock, Generic[T, P]):
             assert plan.immediate is not None
             assert plan.immediate_selector is not None
             result = accessed(plan.immediate, plan.immediate_selector, data, wire, refuse)
-            return _Step(_Phase.SUCCEEDED, not_before, result=result)
+            return _Step[T, P](_Phase.SUCCEEDED, not_before, result=result)
         raise refuse(StatusSelector(), "value")
 
     def _polled(
