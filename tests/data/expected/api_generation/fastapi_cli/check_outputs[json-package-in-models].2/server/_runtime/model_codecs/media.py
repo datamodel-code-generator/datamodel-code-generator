@@ -89,8 +89,7 @@ JSON_MEDIA_TYPE: Final = "application/json"
 QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
 LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
 """A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
-quote or a backslash, and any escaped one but a line feed, between double quotes. Row `legacy-lenient-quoted-string`: a
-cache helper reads Cache-Control with it too."""
+quote or a backslash, and any escaped one but a line feed, between double quotes."""
 STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)

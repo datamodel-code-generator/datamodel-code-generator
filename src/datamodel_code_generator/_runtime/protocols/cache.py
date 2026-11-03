@@ -20,7 +20,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.media import LENIENT_QUOTED, NOT_MODIFIED, TCHARS, ascii_digits, fields_without, normalized
+from ..model_codecs.media import NOT_MODIFIED, QUOTED, TCHARS, ascii_digits, fields_without, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
@@ -79,7 +79,7 @@ _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], st
     ("If-None-Match", "etag"),
     ("If-Modified-Since", "last-modified"),
 )
-_ITEM: Final = re.compile(rf"[ \t]*(?:({TCHARS})(?:=({TCHARS}|{LENIENT_QUOTED}))?)?[ \t]*(?:,|\Z)")
+_ITEM: Final = re.compile(rf"[ \t]*(?:({TCHARS})(?:=({TCHARS}|{QUOTED}))?)?[ \t]*(?:,|\Z)")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
 _MAX_TTL: Final = 300.0
