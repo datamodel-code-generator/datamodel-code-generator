@@ -28873,6 +28873,89 @@ def test_main_read_only_write_only_constrained_root_map(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("typing.TypedDict", ["--field-constraints"], id="typing.TypedDict"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_value(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose map values and union members are read as the model build reads them.
+
+    The additionalProperties of ``Holder`` are a $ref with a constraint beside it, which the output builds as a root
+    model (a field with constraints, or a root model that preserves them), and a oneOf or anyOf member of ``Unions`` is
+    mixed with the constraint of its parent, so it is one too: they hold one type and no fields, so the readOnly
+    property of ``Item`` is no field of them and neither holder splits. The values of ``Wrapping`` are root models of
+    an array of ``Item`` or object models with fields, and an anyOf member that is a $ref stays one, so ``Wrapping``
+    splits with ``Item``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_value.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = [
+        {
+            "holder": {
+                "map": {"a": {"name": "a"}},
+                "alias": {"b": {"name": "b"}},
+                "free": ["x", 1],
+                "count": 1,
+                "more": {"name": "c"},
+            },
+            "unions": {"choice": {"name": "d"}, "union": {"name": "e"}},
+            "wrapping": {
+                "rows": {"r": [{"name": "f"}]},
+                "inline": {"i": {"name": "g"}},
+                "members": [{"name": "h"}],
+            },
+            "item": {"name": "n"},
+        },
+        {"unions": {"choice": 1, "union": True}, "wrapping": {"members": 2}},
+    ]
+    invalid = [
+        {"holder": {"count": "x"}},
+        {"unions": {"choice": "x"}},
+        {"wrapping": {"rows": {"r": "x"}}},
+    ]
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    for payload in valid:
+        validator.validate(payload)
+    for payload in invalid:
+        with pytest.raises(SchemaValidationError):
+            validator.validate(payload)
+    with _generated_model(output_file, "rw_constrained_value", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for payload in valid:
+            validate(json.dumps(payload))
+        for payload in invalid:
+            with pytest.raises(error_type):
+                validate(json.dumps(payload))
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
 @pytest.mark.parametrize(
     "dedupe_args",

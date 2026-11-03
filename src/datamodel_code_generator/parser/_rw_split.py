@@ -1226,9 +1226,9 @@ def typed_field_site(
 
     A $ref beside sibling keywords is read merged with them, relative to the schema that defines the site: by the steps
     of the field table, and before the table chooses at the positions that ``merges_ref_first`` names (a property,
-    ``parse_object_fields``, and a oneOf or anyOf member, ``parse_combined_schema``), where the python-type row reads
-    the schema the $ref names. ``parent`` is the schema the item is an item or a member of, as ``parse_item`` gets it
-    there, which the rows that write the constraints of an item on a root model read.
+    ``parse_object_fields``), where the python-type row reads the schema the $ref names. ``parent`` is the schema
+    the item is an item, a member or a value of, as ``parse_item`` gets it there, which the rows that write the
+    constraints of an item on a root model read.
     """
     if not isinstance(item, JsonSchemaObject):
         return ()
