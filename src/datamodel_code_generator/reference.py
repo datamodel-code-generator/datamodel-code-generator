@@ -39,7 +39,10 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001  # Preserve the established reference export.
+from datamodel_code_generator._format_types import (
+    PythonVersion,  # Preserve the established reference export.
+    PythonVersionMin,
+)
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import join_pointer
@@ -473,12 +476,6 @@ def context_variable(setter: Callable[[T], None], current_value: T, new_value: T
         setter(previous_value)
 
 
-_BUILTIN_TYPE_ATTRIBUTES: frozenset[str] = frozenset(
-    name for cls in (str, int, float, bytes) for name in dir(cls) if not name.startswith("_")
-)
-"""The running interpreter's attributes of the builtin types, read only by a resolver without a target (API only)."""
-
-
 class FieldNameResolver:
     """Converts schema field names to valid Python identifiers."""
 
@@ -723,9 +720,8 @@ class EnumFieldNameResolver(FieldNameResolver):
     def __init__(self, **kwargs: Any) -> None:
         """Initialize with version-aware builtin type attributes."""
         super().__init__(**kwargs)
-        target = self.target_python_version
-        self._builtin_type_attributes = (
-            target_builtin_type_attributes(target.version_key) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
+        self._builtin_type_attributes = target_builtin_type_attributes(
+            (self.target_python_version or PythonVersionMin).version_key
         )
 
     @override

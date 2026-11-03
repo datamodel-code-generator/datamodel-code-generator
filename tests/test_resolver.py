@@ -13,7 +13,13 @@ from typing import cast
 
 import pytest
 
-from datamodel_code_generator.reference import FieldNameResolver, ModelResolver, ModelType, PydanticFieldNameResolver
+from datamodel_code_generator.reference import (
+    EnumFieldNameResolver,
+    FieldNameResolver,
+    ModelResolver,
+    ModelType,
+    PydanticFieldNameResolver,
+)
 from tests.conftest import assert_output
 from tests.data.python.model_resolver_pickle_types import (
     GLOBAL_REDUCE_MODEL_RESOLVER,
@@ -44,6 +50,17 @@ def test_get_valid_field_name(name: str, expected_resolved: str) -> None:
     """Test field name resolution to valid Python identifiers."""
     resolver = FieldNameResolver()
     assert expected_resolved == resolver.get_valid_name(name)
+
+
+def test_enum_field_name_resolver_without_a_target_reads_the_oldest_target() -> None:
+    """Name the members of a subclass enum by the builtin attributes of the oldest target, not of the host.
+
+    ``float.from_number`` exists from Python 3.14 only, so a resolver that read the running interpreter named the
+    member ``from_number_`` on 3.14 and ``from_number`` on 3.13. A resolver without a target reads the table of the
+    oldest supported target, as every resolver with a target reads the table of its own.
+    """
+    resolver = EnumFieldNameResolver(use_subclass_enum=True)
+    assert_output("".join(f"{name} -> {resolver.get_valid_name(name)}\n" for name in ("from_number", "upper", "plain")))
 
 
 def test_model_resolver_default_field_policy_is_lazy_and_compatible() -> None:
