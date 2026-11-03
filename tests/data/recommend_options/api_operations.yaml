@@ -1,0 +1,59 @@
+openapi: 3.2.0
+info:
+  title: Operations of OpenAPI 3.2
+  version: '1.0'
+paths:
+  x-internal:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  internal:
+                    type: string
+                    enum: [on, off]
+  /items:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /search:
+    query:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, closed]
+      responses:
+        '200':
+          description: OK
+    additionalOperations:
+      SEARCH:
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [open, closed]
+        responses:
+          '200':
+            description: OK

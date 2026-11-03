@@ -235,14 +235,16 @@ def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
 
 def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals:
     """Return the signals of a schema document, for the scopes the configuration generates."""
+    from datamodel_code_generator._document_reader import nesting_limit  # noqa: PLC0415
     from datamodel_code_generator._recommend._signals import measure_signals  # noqa: PLC0415
 
-    return measure_signals(
-        document,
-        kind,
-        openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
-        include_paths=config.openapi_include_paths or (),
-    )
+    with nesting_limit():
+        return measure_signals(
+            document,
+            kind,
+            openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
+            include_paths=config.openapi_include_paths or (),
+        )
 
 
 @dataclass(frozen=True, slots=True)

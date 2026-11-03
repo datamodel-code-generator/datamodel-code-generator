@@ -6,12 +6,14 @@ must give each response once as text; otherwise it is a schema error. Each reade
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
 the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
-(``is_multi_format_schema_object``) and the reference a discriminator mapping value names
-(``discriminator_mapping_ref``).
+(``is_multi_format_schema_object``), the reference a discriminator mapping value names (``discriminator_mapping_ref``)
+and the error a read of nested schemas ends in when it exceeds the Python recursion limit (``nesting_limit``).
 """
 
 from __future__ import annotations
 
+import sys
+from contextlib import contextmanager
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
@@ -21,7 +23,7 @@ from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._json_pointer import is_array_index
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Generator, Iterable, Mapping
 
     from datamodel_code_generator._source import YamlValue
 
@@ -37,6 +39,7 @@ __all__ = [
     "is_multi_format_schema_object",
     "member",
     "member_key",
+    "nesting_limit",
     "string_key",
     "string_keys",
 ]
@@ -129,6 +132,23 @@ def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: Ya
     except _ENDS_WALK[row]:
         return missing
     return value
+
+
+@contextmanager
+def nesting_limit() -> Generator[None]:
+    """Read the nested schemas of a document in the block; a read that exceeds the Python recursion limit is an error.
+
+    A document whose schemas nest too deep, or hold themselves through a YAML alias, ends in this error instead of a
+    traceback or a partial result, whichever reader walks it.
+    """
+    try:
+        yield
+    except RecursionError:
+        msg = (
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
+            f"limit ({sys.getrecursionlimit()})."
+        )
+        raise Error(msg) from None
 
 
 def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]) -> str:

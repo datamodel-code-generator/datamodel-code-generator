@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol, TypeVar
 
-from datamodel_code_generator import Error
+from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import named_location, redact_reference
@@ -461,16 +461,11 @@ def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
     A parse that exceeds the recursion limit on deeply nested schemas stops with an error, not a partial result.
     """
     try:
-        if run.suppress_parse_warnings:
-            parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
-        else:
-            parser.parse_raw()
-    except RecursionError:
-        msg = (
-            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
-            f"limit ({sys.getrecursionlimit()})."
-        )
-        raise Error(msg) from None
+        with nesting_limit():
+            if run.suppress_parse_warnings:
+                parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
+            else:
+                parser.parse_raw()
     finally:
         parser._close_http_fetch_session()  # noqa: SLF001
 

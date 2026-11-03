@@ -1,0 +1,10 @@
+openapi: 3.0.0
+info:
+  title: Schema that holds itself through a property
+  version: '1'
+components:
+  schemas:
+    A: &a
+      type: object
+      properties:
+        x: *a

@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "a": {"$ref": "#/definitions/Alpha"},
+    "b": {"$ref": "#/$defs/ShipmentTrackingNotificationPreferencesRecord"}
+  },
+  "definitions": {"Alpha": {"type": "object", "properties": {"x": {"type": "string"}}}},
+  "$defs": {"ShipmentTrackingNotificationPreferencesRecord": {"type": "object", "properties": {"y": {"type": "string"}}}}
+}

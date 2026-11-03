@@ -1116,6 +1116,14 @@ def test_malformed_input_error_messages(
             id="integer-additional-operation-referenced-api",
         ),
         pytest.param(
+            "additional_operations_list.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'additional_operations_list.yaml/#/paths//pets/additionalOperations': "
+            "API_INVALID_OBJECT: expected an object",
+            id="additional-operations-list-api",
+        ),
+        pytest.param(
             "integer_header_name.yaml",
             "openapi",
             ["--openapi-scopes", "api"],
@@ -1187,6 +1195,13 @@ def test_malformed_input_error_messages(
             "AsyncAPI message schemaFormat must be a string at "
             "integer_asyncapi_schema_format.yaml/#/channels/1/messages/petAdded",
             id="integer-asyncapi-channel-name-beside-invalid-schema-format",
+        ),
+        pytest.param(
+            "schema_alias_cycle_property.yaml",
+            "openapi",
+            [],
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit",
+            id="schema-alias-cycle",
         ),
         pytest.param(
             "ref_sibling_cycle.yaml",

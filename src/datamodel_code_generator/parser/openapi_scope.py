@@ -16,12 +16,11 @@ from datamodel_code_generator._document_reader import descend, string_key
 from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
-    PATH_ITEM_METHODS,
     PATHS_PARAMETERS,
-    QUERY_METHOD,
     effective_operation,
     effective_parameters,
     holds_path_item,
+    path_item_operations,
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
@@ -44,7 +43,6 @@ from datamodel_code_generator.parser.jsonschema import (
     _locate,
 )
 from datamodel_code_generator.parser.openapi import (
-    OPERATION_NAMES,
     OpenAPIParser,
     ParameterLocation,
     ReferenceObject,
@@ -64,7 +62,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._site_facts import SiteFacts
     from datamodel_code_generator.model import DataModel
 
-_FIXED_HTTP_METHODS = frozenset(method.upper() for method in PATH_ITEM_METHODS)
 _PARAMETER_LOCATIONS = frozenset(location.value for location in ParameterLocation)
 
 
@@ -867,17 +864,11 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _api_operations(self, target: _ApiObject) -> Generator[tuple[tuple[str, ...], YamlValue], None, None]:
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""
-        for method, value in target.value.items():
-            if method in OPERATION_NAMES or (method == QUERY_METHOD and self.schema_features.media_item_schema):
-                yield (method,), value
-                continue
-            if method != "additionalOperations" or not self.schema_features.media_item_schema:
-                continue
-            for additional, operation in _mapping(value, [*target.path, method]).items():
-                if additional in _FIXED_HTTP_METHODS:
-                    msg = "API_INVALID_OBJECT: fixed methods cannot appear in additionalOperations"
-                    raise SchemaParseError(msg, path=[*target.path, method, additional])
-                yield (method, additional), operation
+        yield from path_item_operations(
+            target.value,
+            openapi_32=self.schema_features.media_item_schema,
+            invalid=lambda message, tokens: SchemaParseError(message, path=[*target.path, *tokens]),
+        )
 
     def dispose(self) -> None:
         """Release API-only borrowed documents and use types with the parser graph."""
