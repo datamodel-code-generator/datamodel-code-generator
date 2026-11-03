@@ -108,6 +108,7 @@ from datamodel_code_generator._user_keys import (
     first_present,
     mapped_base_class,
     model_level_type_override,
+    scoped_key,
 )
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
@@ -1308,8 +1309,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Apply final class scopes after name allocation, retaining already resolved fallback aliases."""
         if class_name == original_class_name or not (aliases := self.config.aliases):
             return
-        prefix = class_field_key(class_name, "")
-        if not any(key.startswith(prefix) for key in aliases):
+        if not any(part == class_name for key in aliases for part, _ in scoped_key(key, row="every-dot")):
             return
         scoped_aliases = {
             field.original_name

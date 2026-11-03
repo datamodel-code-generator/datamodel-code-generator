@@ -1739,27 +1739,23 @@ class ModelResolver:  # noqa: PLR0904
             self.class_name_affix_scope != ClassNameAffixScope.All
         )
 
-    def _check_parent_scope_option(self, name: str, path: Sequence[str]) -> str:
-        # Check for parent-prefixed naming via either the legacy flag or the new naming strategy
-        use_parent_prefix = self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed
-        if use_parent_prefix and (parent_ref := self._find_parent_reference(path)):
-            return f"{parent_ref.name}_{name}"
-        return name
+    def _parent_prefixed(self, name: str, path: Sequence[str]) -> str:
+        """Return the name of a model at ``path`` with the name of its closest parent reference before it.
 
-    def _apply_full_path_naming(self, name: str, path: Sequence[str]) -> str:
-        """Build name from full schema path for FullPath strategy.
-
-        Uses the immediate parent reference to build a unique name.
-        For example: Order > properties > item becomes OrderItem
+        Row ``parent-prefixed`` (``--parent-scoped-naming`` or ``--naming-strategy parent-prefixed``) joins the two
+        names with ``_``; row ``full-path`` (``--naming-strategy full-path``) joins the parent's name and the name in
+        UpperCamelCase, so ``Order`` > ``properties`` > ``item`` becomes ``OrderItem``. Row ``legacy-both-prefixes``:
+        under both options the ``full-path`` prefix goes before the ``parent-prefixed`` one (#5666). A model without a
+        parent reference keeps its name.
         """
-        if self.naming_strategy != NamingStrategy.FullPath:
+        parent_prefixed = self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed
+        full_path = self.naming_strategy == NamingStrategy.FullPath
+        if not (parent_prefixed or full_path) or not (parent_ref := self._find_parent_reference(path)):
             return name
-
-        # Find the immediate parent reference to prefix the name
-        if parent_ref := self._find_parent_reference(path):
-            # Use immediate parent's name (CamelCase join without underscore)
-            return f"{parent_ref.name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
-
+        if parent_prefixed:
+            name = f"{parent_ref.name}_{name}"
+        if full_path:
+            name = f"{parent_ref.name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
         return name
 
     @staticmethod
@@ -1804,7 +1800,7 @@ class ModelResolver:  # noqa: PLR0904
                     self._update_reference_name(old_name, new_name)
                     break
 
-    def add(  # noqa: PLR0912, PLR0913, PLR0915
+    def add(  # noqa: PLR0912, PLR0913
         self,
         path: Sequence[str],
         original_name: str,
@@ -1851,8 +1847,7 @@ class ModelResolver:  # noqa: PLR0904
         if yields and (assigned := self.assigned_yielding_names.get(joined_path)) is not None:
             name, duplicate_name = assigned
         elif class_name:
-            name = self._check_parent_scope_option(name, path)
-            name = self._apply_full_path_naming(name, path)
+            name = self._parent_prefixed(name, path)
 
             # For PrimaryFirst strategy, check if this is a primary definition
             # Primary definitions get priority (don't need suffix), others get suffix when there's conflict
