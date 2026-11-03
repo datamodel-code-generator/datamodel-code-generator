@@ -4040,6 +4040,46 @@ def test_type_overrides_model_level_base_class(
             sys.modules.pop(module_name, None)
 
 
+@pytest.mark.parametrize("value", ["typing.Literal[1.5]", "str | None", "list[int]", "None"])
+def test_type_overrides_model_level_base_class_refuses_annotation(
+    output_file: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """Refuse a model-level override that replaces a base class with an annotation that is no class.
+
+    Up to 0.88.0 the annotation was written as the base, such as ``class Child(Literal[1.5]):``, and the module failed
+    to import.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=f"--type-overrides 'Base': {value!r} is no class, so it cannot replace Base as a base",
+        extra_args=["--type-overrides", json.dumps({"Base": value}), "--formatters", "builtin"],
+    )
+
+
+def test_type_overrides_model_level_base_class_takes_bare_class_name(output_file: Path) -> None:
+    """Replace a base class with a bare class name, such as ``Decimal``, as with its class path ``decimal.Decimal``."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"Base": "Decimal"}),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @freeze_time(TIMESTAMP)
 def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
     """Test model-level --type-overrides replaces dict key references."""

@@ -25,7 +25,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.enums import _pydantic_version_key
 from datamodel_code_generator.imports import Import, _import_key, _import_path
-from datamodel_code_generator.model.base import ConstraintsBase
+from datamodel_code_generator.model.base import BaseClassDataType, ConstraintsBase
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     TypeOverrideHost,
@@ -528,8 +528,27 @@ def mark_untaken_constraints(
     )
 
 
+def _is_class_name(annotation: DataType) -> bool:
+    """Return whether an override annotation is a bare class name, such as ``str`` or ``Decimal``, but not ``None``."""
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeBoundName,
+        PythonTypeName,
+    )
+
+    return (
+        annotation.python_type is not None
+        and isinstance(expression := annotation.python_type.expression, PythonTypeName | PythonTypeBoundName)
+        and expression.value != "None"
+    )
+
+
 def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) -> bool:
-    """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first."""
+    """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first.
+
+    A base class takes a class: a class path, or an annotation that is a bare class name such as ``str`` or
+    ``Decimal``. Any other annotation, such as ``typing.Literal[1, 2]``, ``list[int]``, ``str | None`` or ``None``, is
+    no class, and replacing a base class with it is an error.
+    """
     overridden = False
     if (reference := data_type.reference) and (
         override_import := parser._base_stand_in_imports.get(model_key_of(reference))  # noqa: SLF001
@@ -540,6 +559,12 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
             parser._graph_builder.override_type_import(data_type, override_import)  # noqa: SLF001
             parser._graph_builder.name_reference(data_type, override_import.binding_name)  # noqa: SLF001
             parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+        elif isinstance(data_type, BaseClassDataType) and not _is_class_name(annotation):
+            msg = (
+                f"--type-overrides {reference.name!r}: {_import_path(override_import)!r} is no class, so it cannot "
+                f"replace {reference.name} as a base class"
+            )
+            raise Error(msg)
         else:
             parser._graph_builder.name_reference(data_type, annotation.type_hint)  # noqa: SLF001
             parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
