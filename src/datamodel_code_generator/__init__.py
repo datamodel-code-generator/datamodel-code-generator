@@ -1879,7 +1879,7 @@ def _generate_with_atomic_remote_update(
             ),
             contexts,
             anchors,
-            make_directory=True,
+            existing_directory="empty-directory",
         )
         lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
         staged_config = config.model_copy(update=staging.updates)

@@ -1898,7 +1898,7 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
             (plan.resolved_output_root, plan.resolved_output_parent, plan.resolved_model_metadata_parent),
             contexts,
             anchors,
-            make_directory=False,
+            existing_directory="legacy-cli-staged-directory-uncreated",
         )
         staged_config = plan.config.model_copy(update=staging.updates)
         staged_config._logical_model_metadata = plan.config.emit_model_metadata  # noqa: SLF001
