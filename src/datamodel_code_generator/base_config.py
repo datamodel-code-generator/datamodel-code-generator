@@ -7,7 +7,6 @@ classes that are only needed once generation starts.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping, Sequence  # noqa: TC003 - used at runtime by Pydantic
 from pathlib import Path  # noqa: TC003 - used at runtime by Pydantic
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
@@ -92,20 +91,16 @@ def _validate_additional_import_paths(value: list[str] | None) -> list[str] | No
     return None if value is None else _import_paths("additional_imports", value)
 
 
-_DECORATOR_PATH_END: Final = re.compile(r"[()\[\]]")
-
-
 def _given(values: Iterable[str]) -> list[str]:
     """Return the values that give a path: those with text other than whitespace, which names none."""
     return [value for value in values if value.strip()]
 
 
-def _decorator_path(decorator: str) -> str:
-    """Return the path a class decorator names: its text after ``@`` and opening parentheses, up to its next bracket.
+def _decorator_paths(decorators: Iterable[str]) -> list[str]:
+    """Return the paths the class decorators name, read from their tokens by ``python_decorator_path``."""
+    from datamodel_code_generator._python_decorator import python_decorator_path  # noqa: PLC0415
 
-    The text after the path, such as the arguments of a call, is no path.
-    """
-    return _DECORATOR_PATH_END.split(decorator.removeprefix("@").lstrip(" \t("), maxsplit=1)[0]
+    return [python_decorator_path(decorator) for decorator in _given(decorators)]
 
 
 def _type_override_class_paths(type_overrides: Mapping[str, str]) -> Iterable[str]:
@@ -127,7 +122,7 @@ _NAMED_PATHS: Final[dict[str, Callable[[Any], Iterable[str]]]] = {
     "base_class_map": lambda base_class_map: _given(
         base for bases in base_class_map.values() for base in ((bases,) if isinstance(bases, str) else bases)
     ),
-    "class_decorators": lambda decorators: [_decorator_path(decorator) for decorator in _given(decorators)],
+    "class_decorators": _decorator_paths,
     "type_overrides": _type_override_class_paths,
 }
 """The paths each setting that names Python objects by path names; a value or entry of only whitespace names none."""
