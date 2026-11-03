@@ -1,0 +1,1 @@
+{"title": "KeywordDirectoryRoot", "type": "object", "properties": {"k": {"$ref": "class/k.json"}}}

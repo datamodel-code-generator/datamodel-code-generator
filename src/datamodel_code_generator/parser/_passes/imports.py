@@ -12,6 +12,7 @@ from __future__ import annotations
 import dataclasses
 import operator
 from itertools import chain
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 
 from typing_extensions import Protocol
@@ -33,7 +34,7 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_floor
-from datamodel_code_generator._target_unicode import is_identifier
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
@@ -1685,31 +1686,48 @@ def record_model_placement(
 
 
 def reject_unimportable_imports(
-    module: ModulePath, imports: Imports, *, is_init: bool, target_python_version: PythonVersion
+    module: ModulePath,
+    imports: Imports,
+    *,
+    is_init: bool,
+    target_python_version: PythonVersion,
+    treat_dot_as_module: bool,
 ) -> None:
-    """Refuse a relative import of ``module``'s block that is written with a part that is not an identifier.
+    """Refuse a relative import of ``module``'s block that is written with a part Python cannot import by.
 
-    ``--treat-dot-as-module`` writes each dot of a directory or file name as a package, so ``1.0`` is the packages
-    ``_1`` and ``0``, and ``from ._1.0 import version`` is a syntax error. The parts of the importing module's own path
-    are not written, and a relative import of them is valid. Renaming the module would move the file and every other
-    import of it, so the run fails and names the module and the part. An import is judged where its block is written: a
-    reference the parser planned and a later pass dropped (a collapsed root model) writes none. A part is an
-    identifier by the target's rules (``is_identifier``), as the name of a module is written. ``is_init`` makes
+    A part that is a keyword (a directory or file named ``class``) makes ``from .class import k`` a syntax error, and
+    ``--treat-dot-as-module`` (``treat_dot_as_module``) writes each dot of a directory or file name as a package, so
+    ``1.0`` is the packages ``_1`` and ``0``, and ``from ._1.0 import version`` is one too. The parts of the importing
+    module's own path are not written, and a relative import of them is valid. Renaming the module would move the file
+    and every other import of it, so the run fails and names the module and the part. An import is judged where its
+    block is written: a reference the parser planned and a later pass dropped (a collapsed root model) writes none.
+    Under ``--treat-dot-as-module`` a part is a name by the target's rules (``is_python_name``), as the name of a
+    module is written; without it the dots are ``_`` and a part is refused only for a keyword. ``is_init`` makes
     ``module`` a package ``__init__``.
     """
+    unimportable = (lambda part: not is_python_name(part, target_python_version)) if treat_dot_as_module else iskeyword
     importer = dotted_module(module)
     for from_ in sorted(name for name in imports if name and name.startswith(".")):
         written = from_.lstrip(".").split(".") if from_.strip(".") else []
         names = sorted(_stored_import(name)[0] for name in imports[from_])
-        parts = (*written, *names)
-        if (part := next((p for p in parts if not is_identifier(p, target_python_version)), None)) is not None:
+        if (part := next(filter(unimportable, (*written, *names)), None)) is not None:
             target = absolute(importer, from_, current_is_init=is_init)
             path = target if part in written else dotted_name(target, part)
             where = f"module {importer!r}" if importer else "the root package"
+            reason, hint = (
+                ("a Python keyword", "Rename the input.")
+                if iskeyword(part)
+                else (
+                    "not a Python identifier",
+                    (
+                        "--treat-dot-as-module writes each dot of a directory or file name as a package. Use "
+                        "--no-treat-dot-as-module, or rename the input."
+                    ),
+                )
+            )
             msg = (
-                f"Cannot import the module {path!r} from {where}: {part!r} is not a Python identifier, so the "
-                "import is a syntax error. --treat-dot-as-module writes each dot of a directory or file name as a "
-                "package. Use --no-treat-dot-as-module, or rename the input."
+                f"Cannot import the module {path!r} from {where}: {part!r} is {reason}, so the import is a syntax "
+                f"error. {hint}"
             )
             raise Error(msg)
 

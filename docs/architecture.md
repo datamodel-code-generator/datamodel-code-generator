@@ -544,10 +544,10 @@ module writes for each model. Nothing is written from the plan yet; under the sa
 the plan writes and its imports must bind every planned import.
 
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
-model and formats the body. Under `--treat-dot-as-module` it first refuses each relative import block it writes (the
-module's, the `--all-exports-scope` exports and a forwarder's, `parser/_passes/imports.py:reject_unimportable_imports`)
-that names a module by a part that is not an identifier (`1.0` is the packages `_1` and `0`), which the output would write
-as a syntax error. It reads the final blocks, so an import a pass dropped (a collapsed root model) is not refused, and it
+model and formats the body. It first refuses each relative import block it writes (the module's, the
+`--all-exports-scope` exports and a forwarder's, `parser/_passes/imports.py:reject_unimportable_imports`) that names a
+module by a part that is a keyword (a directory or file named `class`) or, under `--treat-dot-as-module`, not an
+identifier (`1.0` is the packages `_1` and `0`), which the output would write as a syntax error. It reads the final blocks, so an import a pass dropped (a collapsed root model) is not refused, and it
 leaves the layout of the modules as released. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering a type hint and collecting a field's imports write no
