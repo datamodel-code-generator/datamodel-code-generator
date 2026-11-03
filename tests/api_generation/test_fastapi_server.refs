@@ -187,6 +187,7 @@ reused_forms	main/generation_platform/cross/reused_forms.txt
 security	main/generation_platform/cross/security.txt
 streams	main/generation_platform/cross/streams.txt
 styles	main/generation_platform/cross/styles.txt
+tag_forms	main/generation_platform/cross/tag_forms.txt
 variants	main/generation_platform/cross/variants.txt
 [test_pydantic_codec_startup]
 pets-startup	main/generation_platform/codecs/pydantic/pets-startup.txt
