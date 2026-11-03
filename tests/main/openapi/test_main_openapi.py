@@ -9958,7 +9958,7 @@ def test_main_openapi_use_operation_id_as_name_not_found_operation_id(
         capsys=capsys,
         expected_stderr_contains=(
             "All operations must have an operationId when --use-operation-id-as-name is set. "
-            "The following path was missing an operationId:"
+            "The following path was missing an operationId: pets\n"
         ),
     )
 
