@@ -1,0 +1,7 @@
+name: filter
+in: query
+schema:
+  type: object
+  properties:
+    term: {$anchor: term, type: string, minLength: 1}
+    again: {$ref: "#term"}

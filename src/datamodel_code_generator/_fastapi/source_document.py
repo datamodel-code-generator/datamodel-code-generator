@@ -21,74 +21,20 @@ from datamodel_code_generator._document_reader import MISSING, as_mapping, desce
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
-from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
+from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
 from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._openapi_generation import SourceLease
+    from datamodel_code_generator._openapi_objects import Member
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import OperationContract
 
 JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | None"
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
-Child: TypeAlias = "tuple[str, str]"
 
-_MEDIA: Final[dict[str, Child]] = {
-    "schema": ("one", "schema"),
-    "itemSchema": ("one", "schema"),
-    "examples": ("map", "example"),
-    "encoding": ("map", "encoding"),
-    "prefixEncoding": ("list", "encoding"),
-    "itemEncoding": ("one", "encoding"),
-}
-_PARAMETER: Final[dict[str, Child]] = {
-    "schema": ("one", "schema"),
-    "content": ("map", "mediaType"),
-    "examples": ("map", "example"),
-}
-_CHILDREN: Final[dict[str, dict[str, Child]]] = {
-    "pathItem": {
-        **dict.fromkeys(PATH_ITEM_METHODS, ("one", "operation")),
-        "additionalOperations": ("map", "operation"),
-        "parameters": ("list", "parameter"),
-    },
-    "operation": {
-        "parameters": ("list", "parameter"),
-        "requestBody": ("one", "requestBody"),
-        "responses": ("map", "response"),
-        "callbacks": ("map", "callback"),
-    },
-    "parameter": _PARAMETER,
-    "header": _PARAMETER,
-    "mediaType": _MEDIA,
-    "encoding": {
-        "headers": ("map", "header"),
-        **{key: _MEDIA[key] for key in ("encoding", "prefixEncoding", "itemEncoding")},
-    },
-    "requestBody": {"content": ("map", "mediaType")},
-    "response": {"headers": ("map", "header"), "content": ("map", "mediaType"), "links": ("map", "link")},
-}
-_KINDS: Final = {
-    "pathItem": "pathItems",
-    "parameter": "parameters",
-    "header": "headers",
-    "mediaType": "mediaTypes",
-    "requestBody": "requestBodies",
-    "response": "responses",
-    "callback": "callbacks",
-    "example": "examples",
-    "link": "links",
-    "schema": "schemas",
-    "securityScheme": "securitySchemes",
-}
-_ROLES: Final = {kind: role for role, kind in _KINDS.items()}
-_HOLDERS: Final[dict[str, dict[str, Child]]] = {
-    **_CHILDREN,
-    "root": {"paths": ("map", "pathItem"), "webhooks": ("map", "pathItem"), "components": ("one", "components")},
-    "components": {kind: ("map", role) for kind, role in _ROLES.items()},
-}
 _DECLARING: Final = frozenset({"root", "schema"})
 _SINCE: Final = {"pathItems": (3, 1), "mediaTypes": (3, 2)}
 _KEPT: Final = "securitySchemes"
@@ -117,8 +63,8 @@ class SourceDocument:
         ]
         self.resources: dict[str, tuple[int, tuple[str, ...]]] = {}
         self.anchors: dict[tuple[str, str], tuple[int, tuple[str, ...]]] = {}
-        for index, document in enumerate(self.documents):
-            self.index(index, document, (self.uris[index], self.bases[index]))
+        for index in range(len(self.documents)):
+            self.index(index, "root")
         self.schemas = as_mapping(as_mapping(root.get("components")).get("schemas"))
         self.problems: dict[str, None] = {}
         self.wanted: dict[tuple[str, str], None] = {}
@@ -127,13 +73,17 @@ class SourceDocument:
         self.stack: set[int] = set()
         self.selected: frozenset[str] = frozenset()
 
-    def index(self, document: int, value: dict[str, YamlValue], names: tuple[str, ...]) -> None:
+    def index(self, document: int, role: str) -> None:
         """Record a document's resources and anchors, walking its schemas once with the resource each belongs to.
 
         The walk visits the objects that can hold schemas (see ``_holders``), never the data of `examples`, `default`
-        and the like. A document's root is an OpenAPI document or a schema.
+        and the like, from the document's root as an object of ``role``: ``root``, an OpenAPI document or a schema, or
+        the object a reference names the document as (``held``).
         """
-        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...], str]] = [((), value, names, "root")]
+        names = (self.uris[document], self.bases[document])
+        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...], str]] = [
+            ((), self.documents[document], names, role)
+        ]
         seen: set[tuple[int, str]] = set()
         for name in names:
             self.resources.setdefault(name, (document, ()))
@@ -151,6 +101,15 @@ class SourceDocument:
                         for name in around:
                             self.anchors.setdefault((name, anchor), (document, at))
             pending.extend(((*at, *path), child, around, member) for path, child, member in _holders(node, role))
+
+    def held(self, document: int, tokens: tuple[str, ...], role: str) -> None:
+        """Index a document that a reference to an object of ``role`` names at its root as that object.
+
+        Its root holds the object the reference's position expects, so the schemas of that object declare its resources
+        and anchors; a root read as a schema is indexed as ``root`` already. What an earlier walk recorded stays.
+        """
+        if not tokens and role not in _DECLARING:
+            self.index(document, role)
 
     def resolve(self, document: int, base: str, ref: str) -> tuple[int, tuple[str, ...], str] | None:
         """Return the document, pointer tokens, and resource base of what a reference names, or None.
@@ -216,7 +175,9 @@ class SourceDocument:
             if (str(kind), str(name)) in wanted and (str(kind), str(name)) not in copied
         ]:
             for kind, name, value in todo:
-                copied[kind, name] = self.copy(value, 0, base, ("components", kind, name), _ROLES.get(kind, "any"))
+                copied[kind, name] = self.copy(
+                    value, 0, base, ("components", kind, name), COMPONENT_ROLES.get(kind, "any")
+                )
         components: dict[str, JSON] = {}
         for key, value in source.items():
             kind = str(key)
@@ -278,13 +239,13 @@ class SourceDocument:
         """
         if role == "schema" and isinstance(own := value.get("$id"), str) and self.version >= (3, 1):
             base = urljoin(base, own)
-        children = _CHILDREN.get(role, {})
+        children = OBJECT_MEMBERS.get(role, {})
         copied: dict[str, JSON] = {}
         for key, child in value.items():
             name, place = str(key), (*at, str(key))
             if not self.json(child, place) or (role == "schema" and name == "$id" and isinstance(child, str)):
                 continue
-            if name == "$ref" and isinstance(child, str) and role in _KINDS:
+            if name == "$ref" and isinstance(child, str) and role in COMPONENT_KINDS:
                 copied[name] = self.reference(child, document, base, role, place)
             elif role == "schema":
                 copied[name] = self.schema_member(name, child, document, base, place)
@@ -310,7 +271,7 @@ class SourceDocument:
             value, document, base, at, "any" if name in INSTANCE_DATA_KEYWORDS or name.startswith("x-") else "schema"
         )
 
-    def members(self, value: YamlValue, document: int, base: str, at: tuple[str, ...], shape: Child) -> JSON:
+    def members(self, value: YamlValue, document: int, base: str, at: tuple[str, ...], shape: Member) -> JSON:
         """Return one object, or a list or map of objects, of a role, leaving out links to operations not served."""
         form, role = shape
         if form != "map" or not isinstance(value, dict):
@@ -367,7 +328,7 @@ class SourceDocument:
         self, value: dict[str, YamlValue], document: int, base: str, role: str
     ) -> tuple[int, str, dict[str, YamlValue]] | None:
         """Return the object a reference names when the version has no component kind for it, else None."""
-        since = _SINCE.get(_KINDS.get(role, ""))
+        since = _SINCE.get(COMPONENT_KINDS.get(role, ""))
         if (
             since is None
             or self.version >= since
@@ -375,6 +336,7 @@ class SourceDocument:
             or (resolved := self.resolve(document, base, ref)) is None
         ):
             return None
+        self.held(resolved[0], resolved[1], role)
         found = self.node(resolved[0], resolved[1])
         return (resolved[0], resolved[2], found) if isinstance(found, dict) and id(found) not in self.stack else None
 
@@ -400,7 +362,7 @@ class SourceDocument:
         key = (target, tokens)
         if (found := self.bundled.get(key)) is not None:
             return found
-        kind = _KINDS[role]
+        kind = COMPONENT_KINDS[role]
         node = self.node(target, tokens)
         if len(tokens) == 3 and tokens[0] == "components":  # ruff: ignore[magic-value-comparison] - components, kind, name.
             name = tokens[2]
@@ -414,6 +376,7 @@ class SourceDocument:
         unique, _ = first_free(name, lambda name: name in items or name in root, "underscore-from-2")
         self.bundled[key] = bundled = "#" + join_pointer(("components", kind, unique))
         items[unique] = None
+        self.held(target, tokens, role)
         items[unique] = self.copy(node, target, resource, tokens, role)
         return bundled
 
@@ -425,26 +388,14 @@ class SourceDocument:
 def _holders(node: dict[str, YamlValue], role: str) -> Iterator[tuple[tuple[str, ...], YamlValue, str]]:
     """Yield the members of an object of one role that can hold schemas, with their paths and roles.
 
-    A schema holds subschemas at its schema keywords only, so what `examples` and `default` hold is data. A callback
-    maps expressions to path items.
+    A schema holds subschemas at its schema keywords only, so what `examples` and `default` hold is data; the other
+    objects hold what ``object_members`` reads.
     """
     if role in _DECLARING:
         for keyword, value in node.items():
             for path, subschema in subschema_entries(str(keyword), value):
                 yield tuple(map(str, path)), subschema, "schema"
-    table = _HOLDERS.get(role, {})
-    for key, value in node.items():
-        name = str(key)
-        form, member = ("one", "pathItem") if role == "callback" else table.get(name, ("", ""))
-        match form, value:
-            case "one", _:
-                yield (name,), value, member
-            case "map", dict():
-                for item, child in value.items():
-                    yield (name, str(item)), child, member
-            case "list", list():
-                for index, child in enumerate(value):
-                    yield (name, str(index)), child, member
+    yield from object_members(node, role)
 
 
 def _uri(location: str) -> str:

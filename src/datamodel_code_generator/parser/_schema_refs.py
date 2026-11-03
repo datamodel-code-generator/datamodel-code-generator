@@ -97,6 +97,7 @@ __all__ = [
     "get_ref_raw_schema",
     "graph",
     "has_ref_cycle",
+    "hold_document_root",
     "intersect_ref_siblings",
     "intersect_ref_siblings_schema",
     "is_local_ref",
@@ -237,6 +238,7 @@ class SchemaRefsHost(Protocol):
     _dynamic_scope_pointer: str
     _dynamic_specialization_paths: set[tuple[str, ...]]
     _dynamic_specializations: dict[tuple[_TargetNode, frozenset[tuple[str, str]]], Reference]
+    _document_roles: dict[str, dict[str, None]]
     _embedded_resources: dict[tuple[str, str], dict[str, str]]
     _false_schema_refs: set[str] | None
     _has_embedded_schema_resources: bool
@@ -474,9 +476,29 @@ def get_ref_raw_schema(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, Y
     return read_ref_value(parser, resolved_ref)
 
 
-def ref_file_document(parser: SchemaRefsHost, file_part: str) -> dict[str, YamlValue]:
-    """Return the loaded document the file part of a reference key names: the document being parsed when it is empty."""
-    return parser._get_ref_body(file_part) if file_part else parser.raw_obj  # noqa: SLF001
+def hold_document_root(parser: SchemaRefsHost, file_part: str, role: str) -> None:
+    """Record that a reference names the root of the document at ``file_part`` as an OpenAPI object of ``role``.
+
+    The root holds the object the reference's position expects (OpenAPI: "a document containing a referenceable
+    Object at its root based on the expected type of the reference"), so the schemas of that object are resources of
+    the document (``_schema_documents.implicit_schema_resources``). The reference records it where it is followed,
+    before it loads the document; a document that a pointer into it loaded first keeps the resources it was prepared
+    with.
+    """
+    parser._document_roles.setdefault(parser._schema_resource_document([file_part]), {})[role] = None  # noqa: SLF001
+
+
+def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None = None) -> dict[str, YamlValue]:
+    """Return the loaded document the file part of a reference key names: the document being parsed when it is empty.
+
+    A reference that names the root of another document as an OpenAPI object passes its ``role``
+    (``hold_document_root``).
+    """
+    if not file_part:
+        return parser.raw_obj
+    if role is not None:
+        hold_document_root(parser, file_part, role)
+    return parser._get_ref_body(file_part)  # noqa: SLF001
 
 
 def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:

@@ -1,0 +1,10 @@
+name: filter
+in: query
+schema:
+  type: object
+  properties:
+    term:
+      $anchor: term
+      type: string
+    again:
+      $ref: "#term"

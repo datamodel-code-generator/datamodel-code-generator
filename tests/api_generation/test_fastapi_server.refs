@@ -33,6 +33,7 @@ tutorial	docs/tutorial/pytest.txt
 	main/generation_platform/fastapi/servers/entrypoint.txt
 	main/generation_platform/fastapi/servers/packages/entrypoint//*.py
 [test_fastapi_openapi]
+document-anchors	main/generation_platform/fastapi/openapi/document-anchors.txt
 document-bodies	main/generation_platform/fastapi/openapi/document-bodies.txt
 document-callbacks	main/generation_platform/fastapi/openapi/document-callbacks.txt
 document-legacy	main/generation_platform/fastapi/openapi/document-legacy.txt

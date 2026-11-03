@@ -14785,6 +14785,39 @@ def test_main_openapi_anchor_refs(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_anchor_refs_in_referenced_object_documents(output_file: Path) -> None:
+    """Resolve plain-name references to the $anchor of a schema that a document a reference names as an object holds.
+
+    A document named at its root as a Parameter, Request Body, Response or Path Item Object holds that object, so the
+    schemas the object holds declare its anchors, one below an `$id` included; up to 0.88.0 generation failed with
+    "Unresolved $id reference" (#6036).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_referenced_object_documents",
+        model_name="NotesPostRequest",
+        valid_json='{"title": "a", "subtitle": "b"}',
+        invalid_json=json.dumps({"subtitle": "x" * 21}),
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

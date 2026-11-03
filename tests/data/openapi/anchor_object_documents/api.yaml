@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Anchors of the objects other documents hold
+  version: "1.0"
+paths:
+  parameters:
+    - $ref: global_parameter.yaml
+  /notes:
+    parameters:
+      - $ref: parameter.yaml
+    post:
+      requestBody:
+        $ref: request_body.yaml
+      responses:
+        "200":
+          $ref: response.yaml
+  /tags:
+    $ref: path_item.yaml

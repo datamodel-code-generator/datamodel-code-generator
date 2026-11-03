@@ -14,6 +14,7 @@ from typing_extensions import Unpack, override
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
 from datamodel_code_generator._json_pointer import reference_tokens
+from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
     PATH_ITEM_METHODS,
     PATHS_PARAMETERS,
@@ -343,32 +344,36 @@ class ApiOpenAPIParser(OpenAPIParser):
             raise SchemaParseError(msg, path=[ref])
         return list(tokens)
 
-    def _resolve_api_object(self, value: YamlValue, path: list[str]) -> _ApiObject:
-        """Resolve each object-reference edge once, retaining its declaration identity."""
-        raw = _mapping(value, path)
-        return self._follow_references(_ApiObject(self._declared(raw), self.raw_obj, raw), set())
+    def _resolve_api_object(self, value: YamlValue, path: list[str], role: str) -> _ApiObject:
+        """Resolve each object-reference edge once, retaining its declaration identity.
 
-    def _follow_references(self, target: _ApiObject, seen: set[str]) -> _ApiObject:
+        ``role`` is the OpenAPI object the position of ``value`` holds, which a document a reference names at its root
+        holds too.
+        """
+        raw = _mapping(value, path)
+        return self._follow_references(_ApiObject(self._declared(raw), self.raw_obj, raw), set(), role)
+
+    def _follow_references(self, target: _ApiObject, seen: set[str], role: str | None) -> _ApiObject:
         """Follow an object's references, each in the context of the document that spells it."""
         while "$ref" in target.value:
             if not isinstance(ref := target.value["$ref"], str):
                 msg = "API_INVALID_OBJECT: reference must be a string"
                 raise SchemaParseError(msg, path=target.path)
             with self._api_object_context(target):
-                target = self._reference_target(ref, seen, target.path)
+                target = self._reference_target(ref, seen, target.path, role)
         return target
 
-    def _reference_target(self, ref: str, seen: set[str], path: list[str]) -> _ApiObject:
-        """Resolve one reference in the current document context to the object it names."""
+    def _reference_target(self, ref: str, seen: set[str], path: list[str], role: str | None) -> _ApiObject:
+        """Resolve one reference in the current document context to the object it names, an object of ``role``."""
         resolved = self._ref_path(ref)
         if resolved in seen:
             msg = "API_REFERENCE_CYCLE: object references do not reach a declaration"
             raise SchemaParseError(msg, path=path)
         seen.add(resolved)
-        document = resolved.partition("#")[0]
+        document, _, fragment = resolved.partition("#")
         raw_document = self._api_documents.get(document)
         if raw_document is None:
-            raw_document = ref_file_document(self, document)
+            raw_document = ref_file_document(self, document, None if fragment else role)
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
@@ -400,10 +405,10 @@ class ApiOpenAPIParser(OpenAPIParser):
         value = descend(self._api_documents.get(location.document), location.tokens, "canonical", None)
         return None if value is None else site_facts_of(value, location, self._schema_reference_location)
 
-    def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
+    def get_ref_model(self, ref: str, role: str | None = None) -> dict[str, YamlValue]:
         """Use the same object-reference boundary for ordinary parser leaves, resolving in the current context."""
         seen: set[str] = set()
-        return self._follow_references(self._reference_target(ref, seen, [ref]), seen).value
+        return self._follow_references(self._reference_target(ref, seen, [ref], role), seen, role).value
 
     @contextmanager
     def _api_object_context(self, target: _ApiObject) -> Generator[None, None, None]:
@@ -495,7 +500,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             entries = _mapping(components.get(category, {}), ["#/components", category])
             for key, value in self._named_components(entries, [*path_parts, "#/components", category]).items():
                 path = [*path_parts, "#/components", category, key]
-                target = self._resolve_api_object(value, path)
+                target = self._resolve_api_object(value, path, COMPONENT_ROLES[category])
                 name = self._get_model_name(key, "", suffix)
                 match category:
                     case "parameters" | "headers":
@@ -743,7 +748,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             for key, value in headers.items():
                 if self._ignores_content_type(target.value, headers, key, headers_path, "header"):
                     continue
-                header = self._resolve_api_object(value, [*target.path, "headers", key])
+                header = self._resolve_api_object(value, [*target.path, "headers", key], "header")
                 with self._visiting("header", key, header), self._api_object_context(header):
                     self._walk_parameter(
                         self._get_model_name((header_name or name) + key, "", "Header"),
@@ -762,7 +767,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         for index, value in enumerate(raw):
             parameter_path = [*path, str(index)]
             declared = _mapping(value, parameter_path)
-            parameter = self._resolve_api_object(declared, parameter_path)
+            parameter = self._resolve_api_object(declared, parameter_path, "parameter")
             with self._api_object_context(parameter):
                 key = self._parameter_key(parameter.value)
             if key is None:
@@ -798,7 +803,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 continue
             path = [*base_path, item_name]
             item = _mapping(value, path)
-            target = self._resolve_api_object(item, path)
+            target = self._resolve_api_object(item, path, "pathItem")
             candidate = self._get_model_name(item_name, "", "PathItem") if scope == "pathItems" else prefix or item_name
             self._walk_path_item(target, self._declared(item), candidate, global_parameters)
 
@@ -952,13 +957,13 @@ class ApiOpenAPIParser(OpenAPIParser):
                 with self._visiting("parameter", wire_name, parameter):
                     self._walk_parameter(candidate, parameter)
             if "requestBody" in operation:
-                body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"])
+                body = self._resolve_api_object(operation["requestBody"], [*path, "requestBody"], "requestBody")
                 with self._visiting("request_body", "requestBody", body):
                     self._walk_content(name + "Request", body, owner="request_body")
             for status, value in _mapping(operation.get("responses", {}), [*path, "responses"]).items():
                 response_path = [*path, "responses", str(status)]
                 suffix = str(status).capitalize() if self.use_status_code_in_response_name else ""
-                response = self._resolve_api_object(value, response_path)
+                response = self._resolve_api_object(value, response_path, "response")
                 with self._visiting("response", status, response):
                     self._walk_response(
                         name + "Response" + suffix, response, header_name=name + "Response" + str(status).capitalize()
@@ -986,7 +991,7 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Traverse callback expressions in declaration order without expanding cycles."""
-        target = self._resolve_api_object(raw, path)
+        target = self._resolve_api_object(raw, path, "callback")
         with self._visit_once(use_site, target) as walks:
             if walks:
                 ordinal = 0
@@ -995,7 +1000,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                         continue
                     ordinal += 1
                     expression_path = [*target.path, expression]
-                    child = self._resolve_api_object(_mapping(value, expression_path), expression_path)
+                    child = self._resolve_api_object(_mapping(value, expression_path), expression_path, "pathItem")
                     child_use = use_site.child("callbacks", path[-1], expression)
                     self._walk_path_item(child, child_use, prefix + str(ordinal), [])
 
@@ -1068,7 +1073,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
                         continue
                     property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
-                    header = self._resolve_api_object(header_value, [*property_path, "headers", key])
+                    header = self._resolve_api_object(header_value, [*property_path, "headers", key], "header")
                     with self._visiting("header", key, header), self._api_object_context(header):
                         candidate = (
                             name
