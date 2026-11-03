@@ -32,13 +32,13 @@ after names are final):
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
   (``type_override_classes``), while the class part of the other ``Class.field`` keys is what precedes their last dot
-  (``ConstructionKeys``).
+  (``ConstructionKeys``); ``scoped_key`` splits every key, by these rows and at every dot.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -46,12 +46,14 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ConstructionKeys",
+    "ScopedKeyRow",
     "class_field_key",
     "field_keys",
     "first_given",
     "first_present",
     "mapped_base_class",
     "model_level_type_override",
+    "scoped_key",
     "template_data_keys",
     "type_override_classes",
 ]
@@ -59,6 +61,7 @@ __all__ = [
 _ValueT = TypeVar("_ValueT")
 
 _SCOPE_SEPARATOR: Final = "."
+ScopedKeyRow: TypeAlias = Literal["first-dot", "legacy-last-dot", "every-dot"]
 
 
 def class_field_key(class_name: str, field_name: str | None) -> str:
@@ -71,6 +74,26 @@ def field_keys(class_name: str | None, *field_names: str) -> tuple[str, ...]:
     if class_name is None:
         return field_names
     return (*(class_field_key(class_name, field_name) for field_name in field_names), *field_names)
+
+
+def scoped_key(key: str, *, row: ScopedKeyRow) -> tuple[tuple[str, str], ...]:
+    """Return the (class part, field part) pairs that a ``Class.field`` key splits into at the dots the row reads.
+
+    ``class_field_key`` joins names that may hold a dot, so a key names one pair at each of its dots. Row ``every-dot``
+    gives them all, none for a key without a dot (``model_level_type_override``); the ``--aliases`` keys of a class
+    after name allocation (``Parser._apply_final_class_field_aliases``) and those of a wire name in the targets
+    (``_target_naming.py:TargetNames.aliased``) read it too. Row ``first-dot`` (``type_override_classes``) gives the
+    pair at the first dot, ``(key, "")`` for a key without one, and row ``legacy-last-dot`` (``ConstructionKeys``) the
+    pair at the last dot, ``("", key)`` for a key without one.
+    """
+    if row == "every-dot":
+        return tuple(
+            (key[:index], key[index + 1 :]) for index, character in enumerate(key) if character == _SCOPE_SEPARATOR
+        )
+    class_part, _, field_part = (
+        key.partition(_SCOPE_SEPARATOR) if row == "first-dot" else key.rpartition(_SCOPE_SEPARATOR)
+    )
+    return ((class_part, field_part),)
 
 
 def first_present(mapping: Mapping[str, _ValueT], keys: Iterable[str]) -> tuple[_ValueT | None, bool]:
@@ -98,12 +121,12 @@ def template_data_keys(reference_path: str, class_name: str) -> tuple[str, str]:
 
 def model_level_type_override(key: str) -> bool:
     """Return whether a ``--type-overrides`` key names a model (no class part) rather than one field of a class."""
-    return _SCOPE_SEPARATOR not in key
+    return not scoped_key(key, row="every-dot")
 
 
 def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
     """Return the class names ``--type-overrides`` keys name, by the part before the first dot (row ``first-dot``)."""
-    return frozenset(key.partition(_SCOPE_SEPARATOR)[0] for key in type_overrides)
+    return frozenset(class_name for key in type_overrides for class_name, _ in scoped_key(key, row="first-dot"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,7 +148,12 @@ class ConstructionKeys:
         """Collect the class names that the class-keyed and the field-keyed options of L1 name."""
         return cls(
             frozenset(key for keys in class_keyed for key in keys or ()),
-            frozenset(key.rpartition(_SCOPE_SEPARATOR)[0] for keys in field_keyed for key in keys or ()),
+            frozenset(
+                class_name
+                for keys in field_keyed
+                for key in keys or ()
+                for class_name, _ in scoped_key(key, row="legacy-last-dot")
+            ),
         )
 
     def name_any(self, names: AbstractSet[str]) -> bool:
