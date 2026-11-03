@@ -1414,6 +1414,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                                     field_type=type(root_type_field),
                                     mode="python-or-original-name",
                                     inline_variants=inline_variant_models(parser),
+                                    union_written=parser._tag_plan.union_written,  # noqa: SLF001
                                     enum_member_tags=parser.use_enum_values_in_discriminator,
                                 )
                                 == "tagged"
@@ -1773,6 +1774,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 field_type=type(field),
                 mode=site_mode(writes_argument=writes_argument),
                 inline_variants=inline_models,
+                union_written=plan.union_written,
                 enum_member_tags=parser.use_enum_values_in_discriminator,
             ),
         )
@@ -1790,7 +1792,13 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
         if writes_argument:
             decision.names = names = shared_site_names(names, field.data_type.data_types, namer)
             discriminator["propertyName"] = names.field_name
-        view = UnionView(names, mapping, "python-name" if writes_argument else "python-or-original-name", inline_models)
+        view = UnionView(
+            names,
+            mapping,
+            "python-name" if writes_argument else "python-or-original-name",
+            inline_models,
+            plan.union_written,
+        )
         field_name = names.field_name
 
         tags: list[DiscriminatorTag] = []

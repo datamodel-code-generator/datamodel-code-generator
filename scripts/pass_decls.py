@@ -491,7 +491,7 @@ APPLY_DISCRIMINATOR_TYPE = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
+    reads=_facts(Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
     writes=_facts(
         Fact.FIELD_SET,
         Fact.FIELD_TYPES,

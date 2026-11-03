@@ -36377,3 +36377,59 @@ def test_main_jsonschema_discriminator_mapping_dot_directory(output_dir: Path, e
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic_v2"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic_v2_dataclass"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-enum-values-in-discriminator"],
+            id="use-enum-values-in-discriminator",
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, extra_args: list[str]) -> None:
+    """Tag a discriminated union's variant with the value the schema of an allOf parent fixes for the tag property.
+
+    ``FunctionCall`` inherits ``type`` from ``FunctionBase``, a one-value enum, ``CustomCall`` from ``CustomBase``, a
+    ``const``, and ``NamedCall`` from ``FunctionCall`` two levels down; up to 0.88.0 each was tagged by its schema
+    name, ``Literal['FunctionCall']``, so the union rejected every payload the schema accepts (#5338). ``Dog`` and
+    ``Cat`` keep their names: the ``Literal['Pet']`` of their base is a tag the union ``Pets`` wrote, which ``Pet``'s
+    schema does not fix.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"discriminator_inherited_schema_tag_{'_'.join(extra_args).replace('.', '_')}",
+        model_name="Session",
+        valid_json=json.dumps({
+            "call": {"type": "custom", "input": "x"},
+            "named": {"type": "function", "label": "l"},
+            "animals": {"type": "Dog", "barks": True},
+        }),
+        invalid_json=json.dumps({"named": {"type": "NamedCall"}}),
+        expected_error_type="union_tag_invalid",
+    )
+
+
+def test_main_jsonschema_discriminator_inherited_schema_tag_msgspec(output_file: Path) -> None:
+    """Write the value an allOf parent's schema fixes as the tag literal of a msgspec Struct variant (#5338).
+
+    msgspec still cannot decode these unions: their base Structs keep ``type`` as a field, so no Struct is tagged.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the discriminated union"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )

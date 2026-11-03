@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session",
+  "type": "object",
+  "properties": {
+    "call": {"$ref": "#/$defs/Call"},
+    "named": {"$ref": "#/$defs/NamedOrCustom"},
+    "pets": {"$ref": "#/$defs/Pets"},
+    "animals": {"$ref": "#/$defs/Animals"}
+  },
+  "$defs": {
+    "FunctionType": {"type": "string", "enum": ["function"]},
+    "FunctionBase": {
+      "type": "object",
+      "properties": {"type": {"$ref": "#/$defs/FunctionType"}},
+      "required": ["type"]
+    },
+    "CustomBase": {
+      "type": "object",
+      "properties": {"type": {"const": "custom"}},
+      "required": ["type"]
+    },
+    "FunctionCall": {
+      "allOf": [{"$ref": "#/$defs/FunctionBase"}, {"type": "object", "properties": {"name": {"type": "string"}}}]
+    },
+    "CustomCall": {
+      "allOf": [{"$ref": "#/$defs/CustomBase"}, {"type": "object", "properties": {"input": {"type": "string"}}}]
+    },
+    "NamedCall": {
+      "allOf": [{"$ref": "#/$defs/FunctionCall"}, {"type": "object", "properties": {"label": {"type": "string"}}}]
+    },
+    "Call": {
+      "oneOf": [{"$ref": "#/$defs/FunctionCall"}, {"$ref": "#/$defs/CustomCall"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "NamedOrCustom": {
+      "oneOf": [{"$ref": "#/$defs/NamedCall"}, {"$ref": "#/$defs/CustomCall"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "Pet": {
+      "type": "object",
+      "properties": {"type": {"type": "string"}, "name": {"type": "string"}},
+      "required": ["type"]
+    },
+    "Robot": {
+      "type": "object",
+      "properties": {"type": {"type": "string"}, "model": {"type": "string"}},
+      "required": ["type"]
+    },
+    "Pets": {
+      "oneOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Robot"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "Dog": {
+      "allOf": [{"$ref": "#/$defs/Pet"}, {"type": "object", "properties": {"barks": {"type": "boolean"}}}]
+    },
+    "Cat": {
+      "allOf": [{"$ref": "#/$defs/Pet"}, {"type": "object", "properties": {"meows": {"type": "boolean"}}}]
+    },
+    "Animals": {
+      "oneOf": [{"$ref": "#/$defs/Dog"}, {"$ref": "#/$defs/Cat"}],
+      "discriminator": {"propertyName": "type"}
+    }
+  }
+}

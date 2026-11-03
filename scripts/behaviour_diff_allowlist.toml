@@ -110,3 +110,11 @@ match = "^\\[type\\] (?:[\\w.]+:)?(?:Cat|Dog|Bird|Fish):(?:pet_type|kind): Liter
 reason = "a discriminator mapping path through a directory whose name starts with a dot (./.defs/cat.json) was compared with the schema path after its leading dots were stripped as characters, so it matched no variant and each variant was tagged by its file name, Literal['cat.json#'], which rejected every payload the mapping selects it for; the paths are compared by segments now (schema-mismatch fix)"
 decision = "#5530"
 release_note = "a discriminator mapping value that goes through a directory named with a leading dot, such as ./.defs/cat.json or ../.defs/cat.json, now tags its variant with the mapping key instead of the file name"
+
+[[accepted]]
+input = "*discriminator_inherited_schema_tag*"
+aspects = [ "type", "payload-verdict" ]
+match = "^\\[type\\] (?:[\\w.]+:)?(?:FunctionCall|CustomCall|NamedCall):type: Literal\\['\\w+Call'\\] -> Literal\\['(?:function|custom)'\\]$|^\\[payload-verdict\\] payload v\\d+: reject -> accept$"
+reason = "a variant that takes its tag property from an allOf parent, as a one-value enum or a const there, was tagged by its schema name (Literal['FunctionCall']), so the union rejected every payload the schema accepts; it is tagged with the value the parent fixes now (schema-mismatch fix)"
+decision = "#5338"
+release_note = "a discriminated union's variant whose tag property an allOf parent fixes to one value (a one-value enum or a const) is tagged with that value instead of its schema name, so the union accepts the payloads the schema accepts"

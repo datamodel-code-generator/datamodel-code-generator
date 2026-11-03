@@ -20,8 +20,9 @@ loop replaces them:
 - ``legacy-decide-in-union-module``: a union is tagged when its module is processed, reading the variants of later
   modules before their reuse, collapse and renames; msgspec unions that a struct of a later module may still tag wait
   in :attr:`TagPlan.deferred_msgspec` while :attr:`TagPlan.defers_related` holds.
-- ``legacy-tag-from-earlier-union``: a variant keeps the tags of the first union that tags it, and its own tag includes
-  a tag an earlier union wrote (:attr:`TagPlan.first_tags`).
+- ``legacy-tag-from-earlier-union``: a variant keeps the tags of the first union that tags it, and its own tag, and
+  the tag a nested variant inherits, include a tag an earlier union wrote (:attr:`TagPlan.first_tags`); the tag the
+  schema of an ancestor fixes does not (:attr:`TagPlan.union_written`).
 - ``legacy-inline-variants-at-first-ask``: which inline variants take the tag they inherit is decided once, at the
   first collapse or apply that asks, over the parsed models as they are then (:attr:`TagPlan.inline_variants`).
 - ``legacy-predicted-tag-names``: msgspec layout flattening at L4 reads a superset of the tag fields L5 writes
@@ -114,6 +115,7 @@ __all__ = [
     "UnionSite",
     "UnionTagDecision",
     "UnionView",
+    "UnionWrittenTags",
     "ValidityMode",
     "VariantTags",
     "appended_takes_struct_tag",
@@ -141,6 +143,9 @@ __all__ = [
 
 InlineVariantTags: TypeAlias = "Mapping[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]]"
 """The fields with one tag of each inline variant that may take the tag it inherits, by variant id, with their tags."""
+
+UnionWrittenTags: TypeAlias = "AbstractSet[tuple[int, str]]"
+"""The variants whose tag field a union wrote, by variant id and tag property (``TagPlan.union_written``)."""
 
 DiscriminatorTag: TypeAlias = "tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]"
 """A msgspec struct a union tags, its tag field and the tag."""
@@ -360,21 +365,29 @@ def tags_of_variant(  # noqa: PLR0913
     *,
     inline_variants: InlineVariantTags,
     mode: TagFieldMatch,
+    property_name: str,
+    union_written: UnionWrittenTags,
 ) -> list[DiscriminatorValue]:
-    """Return the tags of a variant (``variant_tags``) from its tag fields, the mapping and its schema path."""
-    return [*variant_tags(source, _VariantTagFacts(variant, field_name, mapping, mode, inline_variants)).values]
+    """Return the tags of a variant (``variant_tags``) from its tag fields, its bases, the mapping and its schema path.
+
+    ``union_written`` holds the variants whose tag fields for ``property_name`` a union wrote (``TagPlan``).
+    """
+    facts = _VariantTagFacts(variant, field_name, mapping, mode, inline_variants, property_name, union_written)
+    return [*variant_tags(source, facts).values]
 
 
 @final
 @record
 class _VariantTagFacts:
-    """The facts of a variant that ``variant_tags`` reads, from its fields, the mapping and its schema path."""
+    """The facts of a variant that ``variant_tags`` reads, from its fields, bases, the mapping and its schema path."""
 
     model: DataModel
     field_name: str
     mapping: dict[str, str]
     field_name_mode: TagFieldMatch
     inline_models: InlineVariantTags
+    property_name: str
+    union_written: UnionWrittenTags
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
@@ -389,6 +402,24 @@ class _VariantTagFacts:
         return _find_discriminator_value(
             self.model.iter_all_fields(), self.field_name, field_name_mode=self.field_name_mode
         )
+
+    def inherited_schema_tag(self) -> DiscriminatorValue | None:
+        """Return the tag the schema of the nearest ancestor that fixes one gives, for a variant that is not inline.
+
+        An ancestor whose tag field a union wrote (``union_written``) fixes none, so a tag another union gave a base
+        is not the variant's. A model that reuse made an empty subclass inherits the fields of its own schema from its
+        reuse base, whose tag ``reused_tag`` reads, so its schema's ancestors are those above that base.
+        """
+        if _is_special_path(self.path_segment()):
+            return None
+        for ancestor in linearize_data_models([self.model])[1 if self.model.reused_reference is None else 2 :]:
+            if (id(ancestor), self.property_name) not in self.union_written and (
+                value := _find_discriminator_value(
+                    ancestor.fields, self.field_name, field_name_mode=self.field_name_mode
+                )
+            ) is not None:
+                return value
+        return None
 
     def inline_tag(self) -> DiscriminatorValue | None:
         """Return the tag an inline variant inherits as ``TagPlan.inline_variant_tags`` read it, where it takes it."""
@@ -422,6 +453,7 @@ class UnionView:
     mode: TagFieldMatch
     """``python-name`` where the union writes ``discriminator=``, else ``python-or-original-name``."""
     inline_variants: InlineVariantTags
+    union_written: UnionWrittenTags
 
     def tags(
         self, source: VariantTagSource, variant: DataModel, mapping: dict[str, str] | None = None
@@ -434,6 +466,8 @@ class UnionView:
             self.mapping if mapping is None else mapping,
             inline_variants=self.inline_variants,
             mode=self.mode,
+            property_name=self.names.property_name,
+            union_written=self.union_written,
         )
 
 
@@ -519,6 +553,7 @@ def site_validity(  # noqa: PLR0913
     field_type: type[DataModelFieldBase],
     mode: ValidityMode,
     inline_variants: InlineVariantTags,
+    union_written: UnionWrittenTags,
     enum_member_tags: bool,
 ) -> SiteStatus:
     """Return whether a union's variants let it be tagged (``tagged``), else why its discriminator is dropped.
@@ -553,6 +588,8 @@ def site_validity(  # noqa: PLR0913
             mapping,
             inline_variants=inline_variants,
             mode=mode,
+            property_name=names.property_name,
+            union_written=union_written,
         )
         if not values or not all(
             is_tag_value(value, bool_literals=capabilities.bool_tags)
@@ -1084,6 +1121,8 @@ class TagPlan:
     """What L5 decided at each union site, by field id."""
     first_tags: dict[tuple[int, str], VariantTags] = field(default_factory=dict)
     """The tags of discriminated union variants, by variant id and tag property."""
+    union_written: set[tuple[int, str]] = field(default_factory=set)
+    """The variants whose tag field a union wrote, as their own schemas fix no tag, by variant id and tag property."""
     reused_tag_fields: dict[int, DataModelFieldBase] = field(default_factory=dict)
     """The tag fields that a union with a reused variant annotates with a new tag, by field id."""
     deferred_msgspec: list[MsgspecUnion] = field(default_factory=list)
@@ -1098,6 +1137,7 @@ class TagPlan:
         self.inline_variants = None
         self.unions.clear()
         self.first_tags.clear()
+        self.union_written.clear()
         self.reused_tag_fields.clear()
         self.deferred_msgspec.clear()
         self.defers_related = False
@@ -1151,6 +1191,7 @@ class TagPlan:
                     field_type=type(field_),
                     mode=mode,
                     inline_variants=inline_models,
+                    union_written=self.union_written,
                     enum_member_tags=enum_member_tags,
                 )
                 == "tagged"
@@ -1176,7 +1217,8 @@ class TagPlan:
         """Remember the tags a union maps a variant to, unless the variant declares its own tag.
 
         The values of a later union come from the tag an earlier union wrote, so the tags it maps the variant to are
-        derived again from its mapping or the schema name (row ``legacy-tag-from-earlier-union``).
+        derived again from its mapping or the schema name (row ``legacy-tag-from-earlier-union``). The variant is also
+        one whose tag field a union writes (:attr:`union_written`).
         """
         property_name = view.names.property_name
         if (recorded := self.first_tags.get(key := (id(variant), property_name))) is not None:
@@ -1193,6 +1235,7 @@ class TagPlan:
             return
         if _find_discriminator_value(variant.fields, view.names.field_name, field_name_mode=view.mode) is None:
             self.first_tags[key] = VariantTags(variant, property_name, values, union_name, {})
+            self.union_written.add(key)
 
     def record_collapsed_tags(  # noqa: PLR0913
         self,
