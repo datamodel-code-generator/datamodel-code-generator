@@ -174,6 +174,29 @@ def test_schema_location_metadata(
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
+@pytest.mark.parametrize("update_lock", [False, True], ids=["direct", "staged"])
+def test_emit_model_metadata_expands_the_home_directory(
+    update_lock: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write `--emit-model-metadata=~/...` under the home directory, as `--output` is and a staged run publishes it."""
+    home = tmp_path / "home"
+    caller = tmp_path / "caller"
+    home.mkdir()
+    caller.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.chdir(caller)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=caller / "person.py",
+        input_file_type="jsonschema",
+        extra_args=["--emit-model-metadata=~/metadata.json", "--disable-timestamp", *(["--update-lock"] * update_lock)],
+        file_should_not_exist=caller / "~",
+        skip_code_validation=True,
+    )
+    assert_output((home / "metadata.json").read_text(encoding="utf-8"))
+
+
 def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
     """Locate the models of a dict input where it shares objects and holds a cycle, without changing the input."""
     inner: dict[str, Any] = {"type": "object", "properties": {"y": {"type": "integer"}}}

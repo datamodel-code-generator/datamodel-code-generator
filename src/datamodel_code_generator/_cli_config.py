@@ -181,10 +181,10 @@ def _get_config_class() -> type[Config]:
         @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
         @classmethod
         def validate_path(cls, value: Any) -> Path | None:
-            """Validate and resolve path."""
-            if value is None or isinstance(value, Path):
+            """Validate and resolve path; a path the parser already built only expands ``~``."""
+            if value is None:
                 return value  # pragma: no cover
-            return resolved(Path(value))
+            return value.expanduser() if isinstance(value, Path) else resolved(Path(value))
 
         @field_validator("url", mode="before")
         @classmethod
