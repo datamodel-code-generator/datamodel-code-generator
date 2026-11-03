@@ -91,7 +91,7 @@ class CacheEntry:
             _range(is_aware(instant), f"{name} must be timezone-aware")
         for name in ("freshness_seconds", "initial_age_seconds"):
             _kind(json_number(seconds := getattr(self, name)), name)
-            _range(usable_seconds(seconds, row="legacy-overflow-error"), f"{name} must be finite and not negative")
+            _range(usable_seconds(seconds), f"{name} must be finite and not negative")
             object.__setattr__(self, name, float(seconds))
 
 
