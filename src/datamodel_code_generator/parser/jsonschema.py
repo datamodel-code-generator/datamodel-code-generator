@@ -1264,7 +1264,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_type = self.parse_enum(name, obj, path, singular_name=singular_name)
         if _value_keywords.enum_as_literal_under(self, "all", obj, name, property_obj):
             self._literal_under_all_enum_reference_ids.update(
-                id(model.reference) for model in self.results[built:] if isinstance(model, Enum)
+                model_key_of(model.reference) for model in self.results[built:] if isinstance(model, Enum)
             )
         return data_type
 

@@ -792,6 +792,67 @@ def test_a_deep_copied_type_keeps_what_its_site_recorded(
     )
 
 
+def test_a_deep_copied_union_leaves_out_what_its_members_hold(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its union leaves out the keywords its members hold.
+
+    The copy names the root models of the branches by their model keys, so ``--field-constraints`` leaves the
+    keywords beside the union out of the field as it does without the copy (#5824).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class CopyingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if field.required:
+                        self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    parser = CopyingParser(
+        JSON_SCHEMA_DATA_PATH / "field_constraint_sites" / "union_root_keywords.json",
+        formatters=[Formatter.BUILTIN],
+        field_constraints=True,
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_a_deep_copied_type_keeps_the_msgspec_union_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its type keeps the hint of the msgspec union warning.
+
+    The copy names the enums its original names by their model keys, so the warnings about the unions msgspec refuses
+    still recommend ``--enum-field-as-literal all``, which writes those enums as Literal values (#5824).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.model import get_data_model_types
+
+    class CopyingParser(OpenAPIParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    model_types = get_data_model_types(DataModelType.MsgspecStruct, PythonVersion.PY_310)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        CopyingParser(
+            OPEN_API_DATA_PATH / "msgspec_enum_unions.yaml",
+            formatters=[Formatter.BUILTIN],
+            data_model_type=model_types.data_model,
+            data_model_root_type=model_types.root_model,
+            data_model_field_type=model_types.field_model,
+            data_type_manager_type=model_types.data_type_manager,
+            dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+            reuse_model=True,
+        ).parse()
+    assert_output("".join(f"{message}\n" for message in dict.fromkeys(str(warning.message) for warning in recorded)))
+
+
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
 def test_model_graph_check_reports_a_written_model_that_the_store_retired(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str

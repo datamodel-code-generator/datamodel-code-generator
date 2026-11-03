@@ -18,6 +18,6 @@ class NullOnly(RootModel[None]):
 
 
 class Model(BaseModel):
-    nullableRef: Optional[NullableString]
+    nullableRef: NullableString
     nonNullableRef: NonNullableString
-    nullOnlyRef: Optional[NullOnly]
+    nullOnlyRef: NullOnly
