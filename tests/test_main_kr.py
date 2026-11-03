@@ -966,6 +966,25 @@ def test_generate_pyproject_config_float_round_trip(tmp_path: Path, output_file:
     assert_output(config_output_file.read_text(encoding="utf-8"), expected_output_path)
 
 
+def test_pyproject_delimited_list_options_accept_toml_lists(tmp_path: Path, output_file: Path) -> None:
+    """Read the options the command line writes as a comma-separated string from pyproject.toml as TOML lists too."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        'additional-imports = ["typing.final", "functools.lru_cache"]\n'
+        'class-decorators = ["lru_cache(maxsize=1, typed=True)", " final "]\n'
+        'custom-formatters = ["tests.data.python.custom_formatters.add_comment"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp"],
+            skip_code_validation=True,
+        )
+
+
 def test_generate_pyproject_config_with_multiple_options(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-pyproject-config with various option types."""
     run_main_with_args(

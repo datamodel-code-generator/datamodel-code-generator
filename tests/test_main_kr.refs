@@ -236,6 +236,8 @@ modular	main_kr/multi_module_stdout/error.txt
 [test_pyproject_all_jobs_runs_every_job]
 	main/person.py
 	main_kr/jobs/strict.py
+[test_pyproject_delimited_list_options_accept_toml_lists]
+	main_kr/pyproject_delimited_list_options_accept_toml_lists.py
 [test_pyproject_job_command_header_uses_batch_invocation]
 	main_kr/jobs/strict_command_header.py
 [test_pyproject_job_custom_formatter_resolves_relative_resources_from_original_output]
