@@ -30,6 +30,7 @@ one-job	main/recommend_options/naming_hint.txt
 [test_recommend_options_compares_candidates]
 candidate-limit	main/main_recommend_options/recommend_options_compares_candidates[candidate-limit].stdout.txt
 contested-option	main/main_recommend_options/recommend_options_compares_candidates[contested-option].stdout.txt
+definitions-and-defs	main/main_recommend_options/recommend_options_compares_candidates[definitions-and-defs].stdout.txt
 diff-against	main/main_recommend_options/recommend_options_compares_candidates[diff-against].stdout.txt
 graphql	main/main_recommend_options/recommend_options_compares_candidates[graphql].stdout.txt
 input-model	main/main_recommend_options/recommend_options_compares_candidates[input-model].stdout.txt

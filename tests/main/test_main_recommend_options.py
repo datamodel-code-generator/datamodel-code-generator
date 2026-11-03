@@ -856,6 +856,12 @@ def test_recommend_options_small_schema_default(tmp_path: Path, capsys: pytest.C
             id="json-data",
         ),
         pytest.param(
+            [INPUT_PATH / "definitions_and_defs.json"],
+            ["--input", "definitions_and_defs.json", "--target-python-version", "3.14"],
+            ("full",),
+            id="definitions-and-defs",
+        ),
+        pytest.param(
             [INPUT_PATH / "validation.yaml"],
             ["--input", "validation.yaml", "--target-python-version", "3.14"],
             ("full",),
@@ -888,7 +894,9 @@ def test_recommend_options_compares_candidates(
     with it and the class names it changes; the report ends with the changes from the current configuration. Each
     candidate also counts the fields dcg warns it generates without some of their constraints: per module, so
     same-named classes of different modules count apart, and only in the parse whose models the generation keeps,
-    such as the repaired single module of dotted keys written to stdout.
+    such as the repaired single module of dotted keys written to stdout. A schema that holds components under both
+    ``definitions`` and ``$defs`` measures the names of both, so a class named after a long ``$defs`` key is a
+    component and no problem name.
     """
     _recommend(tmp_path, capsys, args, inputs=_inputs(*inputs), mode=mode)
 

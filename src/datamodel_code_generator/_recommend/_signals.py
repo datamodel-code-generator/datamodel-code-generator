@@ -243,6 +243,11 @@ def _uses_definitions(kind: SchemaKind) -> bool:
     return kind == "jsonschema"
 
 
+def definition_schemas(document: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the schemas of ``$defs`` and ``definitions`` by the text of their keys, as generation names them."""
+    return {str(key): value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()}
+
+
 def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = True) -> dict[str, Any]:
     """Return the named schemas of a document: $defs and definitions, or components/schemas.
 
@@ -251,9 +256,7 @@ def _components(document: Mapping[str, Any], kind: SchemaKind, *, read: bool = T
     the selected scopes do not read are named by the text of their key.
     """
     if _uses_definitions(kind):
-        return {
-            str(key): value for keyword in DEFINITION_KEYS for key, value in as_mapping(document.get(keyword)).items()
-        }
+        return definition_schemas(document)
     schemas = as_mapping(as_mapping(document.get("components")).get("schemas"))
     if read:
         string_keys(schemas, "component name" if kind == "openapi" else "name", _key_path("#/components/schemas"))
