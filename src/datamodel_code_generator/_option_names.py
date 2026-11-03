@@ -104,6 +104,23 @@ def json_ready(value: Any) -> Any:
     return value
 
 
+def compact_json(value: Mapping[str, Any]) -> str:
+    """Return a mapping option as the compact JSON text its command-line option reads."""
+    return json.dumps(json_ready(value), ensure_ascii=False, separators=(",", ":"))
+
+
+def mapping_argument(field: str, value: Mapping[str, Any]) -> str:
+    """Return the shell words that give a mapping to the option of a config field: its compact JSON, quoted.
+
+    ``--external-ref-mapping`` reads ``FILE_PATH=PYTHON_PACKAGE`` words instead.
+    """
+    import shlex  # noqa: PLC0415
+
+    if field == "external_ref_mapping":
+        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
+    return shlex.quote(compact_json(value))
+
+
 def toml_text(value: TomlValue) -> str:
     """Format a Python value as a TOML value string."""
     if isinstance(value, bool):

@@ -123,9 +123,11 @@ from datamodel_code_generator._option_names import (
     GENERATE_FIELD_NAMES,
     SENSITIVE_FIELDS,
     TomlValue,
+    compact_json,
     config_table,
     field_name,
     hyphenated,
+    mapping_argument,
     option_arguments,
     option_flag,
     shell_command,
@@ -986,12 +988,7 @@ def _pyproject_toml_value(key: str, value: object) -> TomlValue:
 
     if key not in JsonConfigSpecs.by_field_name or not isinstance(value, Mapping):
         return cast("TomlValue", value)
-    return _compact_json(value)
-
-
-def _compact_json(value: Mapping[str, Any]) -> str:
-    """Serialize a mapping option as the compact JSON text its CLI option accepts."""
-    return json.dumps(_json_ready(value), ensure_ascii=False, separators=(",", ":"))
+    return compact_json(value)
 
 
 def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
@@ -1273,13 +1270,6 @@ def _format_cli_value(value: str | list[str]) -> str:
     return f'"{value}"' if " " in value else value
 
 
-def _format_cli_mapping(key: str, value: Mapping[str, Any]) -> str:
-    """Format a pyproject table as the argument its CLI option accepts."""
-    if key == "external_ref_mapping":
-        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
-    return shlex.quote(_compact_json(value))
-
-
 def generate_cli_command(config: dict[str, TomlValue]) -> str:
     """Generate CLI command from pyproject.toml configuration."""
     from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
@@ -1290,7 +1280,7 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
         if key in EXCLUDED_CONFIG_OPTIONS:
             continue
         if isinstance(value, Mapping):
-            if argument := _format_cli_mapping(key, value):
+            if argument := mapping_argument(key, value):
                 parts.extend((option_flag(key), argument))
             continue
         match option_arguments(key, value, negative=_negative_option):

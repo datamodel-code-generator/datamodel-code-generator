@@ -4836,12 +4836,15 @@ def test_generate_prompt_with_options(capsys: pytest.CaptureFixture[str]) -> Non
 
 
 def test_generate_prompt_with_list_options(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test --generate-prompt with list options (e.g., --strict-types)."""
+    """Test --generate-prompt with list options (e.g., --strict-types), a list turned off, and a JSON mapping."""
     run_main_with_args(
         [
             "--strict-types",
             "str",
             "int",
+            "--no-deserialize-default-values",
+            "--model-name-map",
+            '{"A": "B"}',
             "--generate-prompt",
         ],
         expected_exit=Exit.OK,
