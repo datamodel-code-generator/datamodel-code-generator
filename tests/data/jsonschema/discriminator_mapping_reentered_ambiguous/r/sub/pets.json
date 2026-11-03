@@ -1,0 +1,8 @@
+{
+  "title": "Pets",
+  "oneOf": [{"$ref": "../cat.json"}, {"$ref": "../defs/cat.json"}],
+  "discriminator": {
+    "propertyName": "pet_type",
+    "mapping": {"h": "../cat.json", "c": "../../r/defs/cat.json"}
+  }
+}

@@ -85,14 +85,19 @@ def member_key(value: YamlValue, token: str) -> str | int:
     """Return the key under which a list or a mapping holds the member a token names, as row ``canonical`` reads it.
 
     A list holds it under the index the token spells. A mapping holds it under the token, else under the integer YAML
-    key the token is the index of. A token that names none gives itself.
+    key the token is the index of; a boolean or float key equal to that integer (``true:``, ``1.0:``) is no such key.
+    A token that names none gives itself.
     """
     if not is_array_index(token):
         return token
+    index = int(token)
     if isinstance(value, list):
-        return int(token)
+        return index
     mapping = cast("dict[object, YamlValue]", value)
-    return int(token) if token not in mapping and int(token) in mapping else token
+    if token in mapping or index not in mapping:
+        return token
+    held = next(key for key in mapping if key == index)
+    return index if type(held) is int else token
 
 
 def member(value: YamlValue, token: str, row: MemberRow) -> YamlValue:

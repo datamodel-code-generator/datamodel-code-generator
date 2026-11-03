@@ -174,3 +174,19 @@ match = "^\\[type\\] (?:[\\w.]+:)?(?:Field201|Ok|Created:code): .*\\bAny\\b.* ->
 reason = "a JSON pointer through a map with an unquoted 200: key, which YAML loads as an integer, compared the token 200 with the key as text, named nothing and resolved to Any with an unresolved $ref warning, so the model accepted every value; the token names the integer key now, as the recorded locations already read it (schema-mismatch fix)"
 decision = "#6073"
 release_note = "a $ref whose JSON pointer goes through a YAML map with integer keys, such as #/x-shared/responses/200/content/application~1json/schema, resolves to the schema it names instead of Any"
+
+[[accepted]]
+input = "*discriminator_mapping_reentered_*"
+aspects = [ "type", "config" ]
+match = "^\\[type\\] (?:[\\w.]+:)?(?:Cat|Bird|Fish|Tabby|WildCat|HouseCat):pet_type: Literal\\['[a-z]+\\.json#'\\] -> Literal\\['[a-z]'\\]$|^\\[config\\] (?:[\\w.]+:)?(?:Cat|Bird|Fish|Tabby|WildCat|HouseCat): \\{'tag': \"'[a-z]+\\.json#'\", 'tag_field': \"'pet_type'\"\\} -> \\{'tag': \"'[a-z]'\", 'tag_field': \"'pet_type'\"\\}$"
+reason = "a discriminator mapping path that leaves the directory of its document and comes back (../../r/defs/cat.json written in r/sub/main.json) was compared with the schema path of its variant (../defs/cat.json) without the directory of the document, so it matched no variant and each variant was tagged by its file name, Literal['cat.json#'], which rejected every payload the mapping selects it for; the path is resolved against the directory of its document now (schema-mismatch fix)"
+decision = "#6068"
+release_note = "a discriminator mapping value whose path leaves the directory of its document and comes back into a sibling directory, such as ../../r/defs/cat.json written in r/sub/main.json, now tags its variant with the mapping key instead of the file name"
+
+[[accepted]]
+input = "*discriminator_mapping_other_document*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['cat\\.yaml#'\\] -> Literal\\['c'\\]$"
+reason = "a discriminator whose mapping is declared in another document (./cat.yaml written in b/base.yaml, referenced from a/openapi.yaml) was compared with the variant's schema path without the directory of the declaring document, so the mapping matched no variant and the variant was tagged by its file name, Literal['cat.yaml#'], which rejected every payload the mapping selects it for; the path is resolved against the document that declares the mapping now (schema-mismatch fix)"
+decision = "#6068"
+release_note = "a discriminator mapping declared in another document than the union, such as ./cat.yaml in b/base.yaml used from a/openapi.yaml, now tags its variant with the mapping key instead of the file name"

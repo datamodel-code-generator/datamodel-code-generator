@@ -66,7 +66,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
-from scripts._behaviour_classify import CLASSES, Allowlist, Side, Verdict, classify_cell, diff  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_classify import CLASSES, SIGNATURE_FAILED, Allowlist, Side, Verdict, classify_cell, diff  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
@@ -568,11 +568,11 @@ def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> 
             check=False,
         )
     except subprocess.TimeoutExpired:
-        return {"import_error": f"signature timed out after {gate.timeout}s"}
+        return {"import_error": f"signature timed out after {gate.timeout}s", SIGNATURE_FAILED: True}
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
-        return {"import_error": "signature crashed: " + result.stderr.strip()[-200:]}
+        return {"import_error": "signature crashed: " + result.stderr.strip()[-200:], SIGNATURE_FAILED: True}
 
 
 def payloads_for(gate: Gate, cell: Cell) -> Path | None:

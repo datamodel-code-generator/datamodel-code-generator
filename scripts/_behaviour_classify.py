@@ -8,7 +8,8 @@
 - `crash-fix`: the release failed to generate or import, or every change is on a name the release could not use
   (no validator, a validator that raised on its own schema's example value where the candidate's does not, failed
   introspection, dcg's internal placeholder as a value) or on a payload it crashed on; a candidate that refuses to
-  generate an output the release wrote but could not import (a syntax error) fixes it too
+  generate an output the release wrote but could not use (no module that defines a name imports, a syntax error)
+  fixes it too
 - `accepted`: every behaviour change matches an owner-approved allowlist entry
 - `violation`: any other behaviour change, or the candidate fails where the release's output imported
 - `both-fail`: both sides fail
@@ -22,6 +23,7 @@ import fnmatch
 import json
 import re
 from dataclasses import dataclass, field
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Any
 
 try:
@@ -48,6 +50,8 @@ ITEM_KEYS = (
 )
 FIELD_KEYS = ("required", "alias", "validation_alias", "serialization_alias", "default")
 CLASSES = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in")
+SIGNATURE_FAILED = "signature_failed"
+"""The key of a signature that could not be taken: a timeout or unreadable output, not a module's import error."""
 
 
 @dataclass(frozen=True)
@@ -199,6 +203,28 @@ def diff(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
 def import_errors(signature: dict[str, Any]) -> dict[str, str]:
     """Return the import error of each module that failed to import."""
     return {module: sig["import_error"] for module, sig in _modules(signature).items() if "import_error" in sig}
+
+
+def _importable_by_name(module: str) -> bool:
+    """Return whether an import statement can name the module of the package at the dotted path ``module``."""
+    return all(part.isidentifier() and not iskeyword(part) for part in module.split("."))
+
+
+def unusable_output_error(signature: dict[str, Any]) -> str | None:
+    """Return an import error of an output that has no working part, or None when a part works or none is known.
+
+    A part works where its module imports, an import statement can name it (not below ``class/``), and it defines a
+    name; an output whose signature could not be taken (``SIGNATURE_FAILED``: a timeout or unreadable output) is not
+    known to fail.
+    """
+    if signature.get(SIGNATURE_FAILED) or not (errors := import_errors(signature)):
+        return None
+    working = (
+        module
+        for module, sig in _modules(signature).items()
+        if "import_error" not in sig and sig.get("items") and _importable_by_name(module)
+    )
+    return None if next(working, None) is not None else errors[min(errors)]
 
 
 def unusable_items(signature: dict[str, Any]) -> set[tuple[str, str]]:
@@ -365,11 +391,8 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
     if not base.generated:
         return Verdict("crash-fix", (f"generation fixed: {base.message[:120]}",))
     if not candidate.generated:
-        if broken := import_errors(base.signature or {}):
-            return Verdict(
-                "crash-fix",
-                (f"generation refused an output that failed to import: {broken[min(broken)][:120]}",),
-            )
+        if (broken := unusable_output_error(base.signature or {})) is not None:
+            return Verdict("crash-fix", (f"generation refused an output that failed to import: {broken[:120]}",))
         return Verdict("violation", (f"generation now fails: {candidate.message[:160]}",))
     if same_bytes:
         return Verdict("same")

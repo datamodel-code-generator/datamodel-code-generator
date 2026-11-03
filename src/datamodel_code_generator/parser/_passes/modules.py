@@ -158,6 +158,7 @@ from datamodel_code_generator.parser._tag_plan import (
     iter_root_default_unions,
     iter_tag_field_decisions,
     iter_union_sites,
+    located_mapping,
     mapped_struct_tag,
     nested_variant_tags,
     settle_site,
@@ -306,6 +307,10 @@ class ModulesHost(
     @property
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the types that override models and fields, by model name or scoped field name."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of model and field names."""
 
     @property
     def builtin_names(self) -> frozenset[str]:
@@ -920,6 +925,7 @@ def inline_variant_models(parser: InlineVariantHost) -> InlineVariantTags:
     return parser._tag_plan.inline_variant_tags(  # noqa: SLF001
         parser.results,
         field_namer(parser.model_resolver, parser.field_name_model_type),
+        parser.model_resolver,
         enum_member_tags=parser.use_enum_values_in_discriminator,
     )
 
@@ -1411,7 +1417,14 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                                 site_validity(
                                     copied_data_type.data_types,
                                     names,
-                                    discriminator.get("mapping", {}) if isinstance(discriminator, dict) else {},
+                                    located_mapping(
+                                        root_type_model,
+                                        discriminator.get("mapping"),
+                                        copied_data_type.data_types,
+                                        parser.model_resolver,
+                                    )
+                                    if isinstance(discriminator, dict)
+                                    else {},
                                     field_type=type(root_type_field),
                                     mode="python-or-original-name",
                                     inline_variants=inline_variant_models(parser),
@@ -1757,7 +1770,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
     plan = parser._tag_plan  # noqa: SLF001
     builder = parser._graph_builder  # noqa: SLF001
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
-    for site in iter_union_sites(models):
+    for site in iter_union_sites(models, parser.model_resolver):
         model, field = site.model, site.field
         inline_models = inline_variant_models(parser)
         names = site_names(site.property_name, namer)
@@ -2019,7 +2032,7 @@ def get_collapsed_unions(
         unions.append((
             site_display_name(parser, duplicate, duplicate_field),
             data_types,
-            discriminator.get("mapping", {}),
+            located_mapping(duplicate, discriminator.get("mapping"), data_types, parser.model_resolver),
         ))
     return unions
 
@@ -2494,7 +2507,9 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     for ctx in run.contexts:
         for model in ctx.models:
             for field in model.fields:
-                if (site := union_site(model, field)) is not None and (status := settle_site(site)) != "tagged":
+                if (site := union_site(model, field, parser.model_resolver)) is not None and (
+                    status := settle_site(site)
+                ) != "tagged":
                     parser._tag_plan.record_settled(site, status)  # noqa: SLF001
                     builder.drop_field_discriminator(field)
                 if parser.collapse_root_models:

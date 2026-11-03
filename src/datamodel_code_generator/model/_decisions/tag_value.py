@@ -17,7 +17,7 @@ import re
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
-from typing_extensions import assert_never
+from typing_extensions import Self, assert_never
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._records import record
@@ -78,6 +78,7 @@ __all__ = [
     "FieldTag",
     "FieldTagRule",
     "FieldTagSite",
+    "MappingPath",
     "MappingPathKey",
     "MappingPathRule",
     "ScalarTagKind",
@@ -95,6 +96,7 @@ __all__ = [
     "field_source_name",
     "field_tag",
     "is_tag_value",
+    "locate_mapping_path",
     "mapped_tags",
     "mapping_key_tag",
     "mapping_path_keys",
@@ -221,15 +223,16 @@ TagIdentity: TypeAlias = Literal["type-and-value", "legacy-python-equality"]
 MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 """Which keys a discriminator mapping path is matched by (``mapping_path_keys``).
 
-* ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
-  path starts with ``#/``, or by a path relative to the document, as written without its first segment and, unless
-  it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
+* ``selects``: a path that knows the location it names (``MappingPath.located``) only by that location, so an entry
+  names the file it resolves to and no other; a bare name only by the schema name; any other path by the part after
+  ``#/``, by a file name unless the path starts with ``#/``, or by a path relative to the document, as written without
+  its first segment and, unless it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
 * ``legacy-any-key``: by all of them, the bare name included, which can name more schemas; the layout prediction of
   msgspec base flattening (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the
   prediction.
 """
 
-MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
+MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative", "located"], str]
 """A key a mapping path and a schema path are matched by."""
 
 ScalarTagKind: TypeAlias = Literal["integer", "number", "boolean"]
@@ -409,8 +412,16 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
 def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tuple[MappingPathKey, ...]:
     """Return the keys a discriminator mapping path names a schema by (``MappingPathRule`` names the rules).
 
-    The keys are its name, the part after ``#/``, its file name and its path relative to the document.
+    The keys are its name, the part after ``#/``, its file name and its path relative to the document, or, where it
+    knows the location it names (``MappingPath``), that location alone; ``legacy-any-key`` adds it to the others.
     """
+    location: tuple[MappingPathKey, ...] = (
+        (("located", path.located.removesuffix("#")),)
+        if isinstance(path, MappingPath) and path.located is not None
+        else ()
+    )
+    if rule == "selects" and location:
+        return location
     if rule == "selects" and "/" not in path and "#" not in path:
         return (("name", path),)
     relative: MappingPathKey = ("relative", path[path.find("/") + 1 :])
@@ -420,9 +431,52 @@ def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tup
         keys: tuple[MappingPathKey, ...] = (("name", path), schema, file, relative)
     else:
         keys = (schema, relative) if path.startswith("#/") else (schema, file, relative)
-    if path.startswith("#") or (resolved := ("relative", _without_dot_segments(path))) == relative:
+    if path.startswith("#"):
         return keys
-    return (*keys, resolved)
+    resolved: MappingPathKey = ("relative", _without_dot_segments(path))
+    return (*keys, *(() if resolved == relative else (resolved,)), *location)
+
+
+@final
+class MappingPath(str):  # noqa: FURB189 - it must be a str wherever a mapping path is read
+    """A discriminator mapping path with the location it names, relative to the base of the parse (``located``).
+
+    The parser sets it where it reads the path from its document, as only that document says what a path names that
+    leaves its directory and comes back; it is None for a path that names no local file.
+    """
+
+    __slots__ = ("located",)
+
+    located: str | None
+
+    def __new__(cls, path: str, located: str | None = None) -> Self:
+        """Return the path, text as written, with the location it names."""
+        self = super().__new__(cls, path)
+        self.located = located
+        return self
+
+
+def locate_mapping_path(path: str, /, *, document: str, base: Sequence[str]) -> str:
+    """Return the path relative to ``base`` that a mapping path names when the ``document`` writes it.
+
+    ``base`` is the segments of the absolute directory of the base of the parse and ``document`` the path of the
+    document relative to it, as reference paths name it. The path is resolved against the directory of the document,
+    or against the base where it starts with ``/``, and its dot segments are removed (RFC 3986, section 5.2.4), so
+    ``../../r/defs/cat.json`` written in a document of ``/x/r/sub`` reads as ``../defs/cat.json``, the form of the
+    schema path of that file. A fragment stays as written.
+    """
+    file_part, marker, fragment = path.partition("#")
+    segments = [*base]
+    for segment in (*(() if file_part.startswith("/") else document.split("/")[:-1]), *file_part.split("/")):
+        if segment == "..":
+            del segments[max(len(segments) - 1, 1) :]
+        elif segment not in {"", "."}:
+            segments.append(segment)
+    shared = next(
+        (index for index, pair in enumerate(zip(base, segments, strict=False)) if pair[0] != pair[1]),
+        min(len(base), len(segments)),
+    )
+    return "/".join((*[".."] * (len(base) - shared), *segments[shared:])) + marker + fragment
 
 
 def _without_dot_segments(path: str) -> str:
@@ -445,7 +499,7 @@ def schema_path_keys(schema_path: str, /) -> tuple[MappingPathKey, ...]:
     """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``).
 
     Its path relative to the document is that of its file with the dot segments removed (``_without_dot_segments``),
-    also without its first segment.
+    also without its first segment; its location is the schema path itself, which is relative to the base of the parse.
     """
     relative = _without_dot_segments(schema_path[: schema_path.find("#")])
     return (
@@ -454,6 +508,7 @@ def schema_path_keys(schema_path: str, /) -> tuple[MappingPathKey, ...]:
         ("file", schema_path[:-1]),
         ("relative", relative),
         ("relative", "/".join(relative.split("/")[1:])),
+        ("located", schema_path.removesuffix("#")),
     )
 
 

@@ -4280,6 +4280,17 @@ _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATAL
             )
         ),
         pytest.param(
+            "module_named_like_package_import_validated.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--generate-schema-validators", "--use-exact-imports"],
+            [
+                ("pkg.api", "Order", ['{"thing": {"n": 1}}']),
+                ("pkg", "Report", ['{"a": 1}', "{}"]),
+            ],
+            id="import-validation-helper",
+        ),
+        pytest.param(
             "module_named_like_package_import_unloaded.json",
             "msgspec.Struct",
             "3.10",
@@ -4313,8 +4324,9 @@ def test_main_jsonschema_submodule_hidden_by_package(
     the class of an enum member literal keeps its class bound too. Where ``pkg/__init__.py`` imports ``typing.Any``
     and the output loads ``pkg/Any.py`` (#6066), ``from . import Any`` gave ``typing.Any``, and once the submodule
     was loaded its name replaced the import that the classes of the ``__init__.py`` name: the import is now
-    ``Any_aliased``, unless no module loads ``pkg/Any.py``. The models are decoded after the first module named is
-    imported, in one import of the package.
+    ``Any_aliased``, unless no module loads ``pkg/Any.py``, and the validation helper of
+    ``--generate-schema-validators`` follows it (``BaseModel_aliased``). The models are decoded after the first module
+    named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -36571,6 +36583,152 @@ def test_main_jsonschema_discriminator_mapping_dot_directory(output_dir: Path, e
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+REENTERED_DIRECTORY_UNIONS: tuple[tuple[str, str, str], ...] = (
+    ("sub.main", "Keeper", "sub/main.json"),
+    ("owner", "Owner", "owner.json"),
+)
+"""The module, the model and the schema of each union of ``discriminator_mapping_reentered_directory``."""
+
+REENTERED_AMBIGUOUS_UNIONS: tuple[tuple[str, str, str], ...] = (
+    ("sub.main", "Keeper", "sub/main.json"),
+    ("sub.pets", "Pets", "sub/pets.json"),
+)
+"""The module, the model and the schema of each union of ``discriminator_mapping_reentered_ambiguous``."""
+
+
+def _reentered_directory_verdict(decode: ABCCallable[[str], Any], document: str) -> str:
+    """Return whether a generated union decodes a JSON document."""
+    try:
+        decode(document)
+    except (ValidationError, msgspec.ValidationError):
+        return "rejects"
+    return "accepts"
+
+
+def _reentered_directory_verdicts(
+    output_dir: Path, fixture: str, unions: Sequence[tuple[str, str, str]], *, decodes_structs: bool
+) -> str:
+    """Return whether the mapping selects each tag of each union and whether the generated union accepts it.
+
+    The mapping of a union selects the variant of a tag it lists, and every variant accepts any other property, so a
+    document is valid exactly when its tag is a key of the mapping. A tag that is the file name of a variant, the tag
+    the variants took up to 0.88.0, is selected by no mapping.
+    """
+    root = JSON_SCHEMA_DATA_PATH / fixture / "r"
+    lines: list[str] = []
+    for module_path, model_name, schema_file in unions:
+        mapping = json.loads((root / schema_file).read_text(encoding="utf-8"))["discriminator"]["mapping"]
+        with _generated_package_module(output_dir, module_path) as module:
+            model = getattr(module, model_name)
+            decode = partial(msgspec.json.decode, type=model) if decodes_structs else _model_json_validator(model)
+            for tag in (*mapping, "cat.json#", "other"):
+                document = json.dumps({"pet_type": tag})
+                lines.append(
+                    f"{model_name} {document}: mapping {'selects' if tag in mapping else 'selects none'},"
+                    f" model {_reentered_directory_verdict(decode, document)}\n"
+                )
+    return "".join(lines)
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "decodes_structs"),
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], False, id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], True, id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_reentered_directory(
+    output_dir: Path, extra_args: list[str], decodes_structs: bool
+) -> None:
+    """Tag the variants a discriminator mapping names by a path that leaves a directory and comes back to it.
+
+    Read from ``sub/main.json`` of the base ``r``, the mapping path ``../../r/defs/cat.json`` goes up to the parent
+    of ``r`` and down into ``r`` again, as ``../../../discriminator_mapping_reentered_directory/r/defs/bird.json``
+    does from the parent of that, and ``../r/defs/fish.json`` from ``owner.json``: each names the file whose schema
+    path is ``defs/cat.json``. Up to 0.88.0 the paths were compared without the directory of the document that
+    writes them, so each variant was tagged by its file name, ``Literal['cat.json#']``, which no payload the
+    mapping selects it for carries (#6068).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_reentered_directory" / "r",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_output(
+        _reentered_directory_verdicts(
+            output_dir,
+            "discriminator_mapping_reentered_directory",
+            REENTERED_DIRECTORY_UNIONS,
+            decodes_structs=decodes_structs,
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "decodes_structs"),
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], False, id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], True, id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_reentered_ambiguous(
+    output_dir: Path, extra_args: list[str], decodes_structs: bool
+) -> None:
+    """Select a variant by the location a mapping path names alone, though its other keys match another variant.
+
+    The base ``r`` holds the schemas ``cat.json``, ``defs/cat.json`` and ``r/defs/cat.json``. Read from
+    ``sub/main.json``, ``../../r/defs/cat.json`` names the second and ``../r/defs/cat.json`` the third; the keys of
+    the path relative to the document, ``r/defs/cat.json`` once the dot segments are removed, also match the third, so
+    ``c`` selected both variants, and its file name ``cat.json`` is the file key of the first, so ``c`` selected that
+    one too from ``sub/pets.json``: the variants shared a tag, and the unions lost their ``discriminator=`` and took
+    any tag (#6068). A path that knows its location is matched by it alone.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_reentered_ambiguous" / "r",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_output(
+        _reentered_directory_verdicts(
+            output_dir,
+            "discriminator_mapping_reentered_ambiguous",
+            REENTERED_AMBIGUOUS_UNIONS,
+            decodes_structs=decodes_structs,
+        )
+    )
+
+
+def test_main_jsonschema_discriminator_mapping_reentered_directory_single_file(output_file: Path) -> None:
+    """Tag the variants of a union read from a file below the base, whose mapping leaves the base and comes back.
+
+    The base of ``r/sub/main.json`` is ``r/sub``, so ``../../r/defs/cat.json`` names the file of the schema path
+    ``../defs/cat.json`` (#6068).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_reentered_directory" / "r" / "sub" / "main.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "discriminator_mapping_reentered_directory_single_file", "Keeper") as model:
+        validate = _model_json_validator(model)
+        assert_output(
+            "".join(
+                f"{document}: model {_reentered_directory_verdict(validate, document)}\n"
+                for document in ('{"pet_type": "c"}', '{"pet_type": "d"}', '{"pet_type": "cat.json#"}')
+            )
+        )
 
 
 INHERITED_SCHEMA_TAG_DOCUMENTS: tuple[tuple[str, dict[str, Any]], ...] = (

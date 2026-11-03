@@ -56,7 +56,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, 
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
-from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
+from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ReferenceExpressionHost,
     reference_import_target,
@@ -306,6 +306,7 @@ _BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
 _BUILTIN_SUBMODULE_BINDINGS: Final = ImportProducer("builtin-submodule-bindings")
 _SUBMODULE_IMPORT_BINDINGS: Final = ImportProducer("submodule-import-bindings")
 _HIDDEN_SUBMODULES: Final = "hidden-submodules"
+_HIDDEN_SUBMODULE_IMPORT_BINDINGS: Final = ImportProducer("hidden-submodule-import-bindings")
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
 _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
@@ -1424,12 +1425,22 @@ def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _Finali
 
 
 def builtin_name_bindings(ledger: ModuleImportLedger, imports: Imports) -> dict[str, str]:
-    """Return the aliases that ``alias_builtins_hidden_by_submodules`` imported the builtins of a module under."""
+    """Return the aliases that a module's bare names take where a submodule of its package hides them.
+
+    ``alias_builtins_hidden_by_submodules`` imported the builtins under them, and ``import_models_of_hidden_submodules``
+    aliased the imports (``_alias_imports_hidden_by_loaded_submodules``); the models of the module are bound to them
+    as they are written (``bind_builtin_names``), and this is how the module code reads them.
+    """
     return {
         import_.import_: cast("str", import_.alias)
         for entry in ledger.entries(imports)
-        if entry.producer == _BUILTIN_SUBMODULE_BINDINGS and isinstance(entry.operation, Added)
-        for import_ in entry.operation.imports
+        for import_ in (
+            entry.operation.imports
+            if entry.producer == _BUILTIN_SUBMODULE_BINDINGS and isinstance(entry.operation, Added)
+            else (entry.operation.import_,)
+            if entry.producer == _HIDDEN_SUBMODULE_IMPORT_BINDINGS and isinstance(entry.operation, Aliased)
+            else ()
+        )
     }
 
 
@@ -1598,7 +1609,7 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
             parser._import_ledger.apply_alias(  # noqa: SLF001
                 ctx.imports,
                 Import(from_=from_, import_=_stored_import(name)[0], alias=alias),
-                ImportProducer(_HIDDEN_SUBMODULES),
+                _HIDDEN_SUBMODULE_IMPORT_BINDINGS,
             )
         for model in ctx.models:
             parser._graph_builder.bind_builtin_names(model, {**(model._builtin_name_bindings or {}), **bindings})  # noqa: SLF001

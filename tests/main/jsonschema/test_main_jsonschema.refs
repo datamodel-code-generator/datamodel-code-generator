@@ -6338,6 +6338,19 @@ pydantic_v2.dataclass-extra_args3	main/jsonschema/main_jsonschema/discriminator_
 [test_main_jsonschema_discriminator_mapping_dot_directory]
 msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_dot_directory[msgspec-tagged-unions]/
 pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_dot_directory[pydantic_v2]/
+[test_main_jsonschema_discriminator_mapping_reentered_ambiguous]
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions].txt
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions]/
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[pydantic_v2].txt	= main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[msgspec-tagged-unions].txt
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_ambiguous[pydantic_v2]/
+[test_main_jsonschema_discriminator_mapping_reentered_directory]
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[msgspec-tagged-unions].txt
+msgspec-tagged-unions	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[msgspec-tagged-unions]/
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[pydantic_v2].txt	= main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[msgspec-tagged-unions].txt
+pydantic_v2	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory[pydantic_v2]/
+[test_main_jsonschema_discriminator_mapping_reentered_directory_single_file]
+	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory_single_file.py
+	main/jsonschema/main_jsonschema/discriminator_mapping_reentered_directory_single_file.txt
 [test_main_jsonschema_discriminator_multiple_aliases_pydantic_v2]
 	main/jsonschema/jsonschema_discriminator_multiple_aliases_pydantic_v2.py
 [test_main_jsonschema_discriminator_no_literal_multiple_aliases_pydantic_v2]
@@ -7585,6 +7598,8 @@ import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submo
 import-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-pydantic_v2.BaseModel-exact-imports]/
 import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded].payloads.txt
 import-unloaded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-unloaded]/
+import-validation-helper	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-validation-helper].payloads.txt
+import-validation-helper	main/jsonschema/main_jsonschema/submodule_hidden_by_package[import-validation-helper]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]
