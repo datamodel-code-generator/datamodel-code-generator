@@ -234,6 +234,7 @@ openapi/discriminator_integer_no_mapping.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_lone_variant_tags.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_mapping_msgspec_tags.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_mapping_msgspec_untagged.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_mapping_other_document/a/cat.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_mapping_other_document/a/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_mapping_other_document/b/base.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_mapping_other_document/b/cat.yaml	yaml_fast_constructor/parity.txt

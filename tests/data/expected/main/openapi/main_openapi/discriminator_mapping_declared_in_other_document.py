@@ -18,9 +18,14 @@ class Dog(Pet):
 
 
 class Cat(Pet):
+    a_only: str | None = None
+    pet_type: Literal['e']
+
+
+class CatModel(Pet):
     x: str | None = None
     pet_type: Literal['c']
 
 
 class Owner(BaseModel):
-    pet: Cat | Dog | None = Field(None, discriminator='pet_type')
+    pet: CatModel | Dog | Cat | None = Field(None, discriminator='pet_type')
