@@ -1,0 +1,7 @@
+openapi: 3.1.0
+info:
+  title: Schemas that the Path Item Object a reference names holds
+  version: "1.0"
+paths:
+  /tags:
+    $ref: path_item.yaml

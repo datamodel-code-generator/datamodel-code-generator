@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shared",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "BarInner": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Bar": {
+          "$ref": "#/$defs/Bar"
+        },
+        "bars": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Bar"
+          }
+        }
+      }
+    },
+    "Bar": {
+      "$ref": "#/$defs/BarInner"
+    }
+  }
+}

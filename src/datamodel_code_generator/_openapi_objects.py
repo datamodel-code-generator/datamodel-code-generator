@@ -110,13 +110,25 @@ def object_members(node: Mapping[str, YamlValue], role: str) -> Iterator[tuple[t
 def held_schemas(node: YamlValue, role: str) -> Iterator[tuple[tuple[str, ...], dict[str, Any]]]:
     """Yield each schema an object of one role holds, with its path from the object, in document order.
 
-    The walk reads the objects between them through ``object_members``; a Reference Object holds none, a boolean
-    schema declares nothing, and what a schema holds is the schema walker's to read.
+    The path is the JSON pointer tokens of the schema; ``_document_reader.member_key`` names the key that holds each.
+    The walk reads the objects between them through ``object_members``; a Reference Object holds none, and its other
+    members are ignored, a boolean schema declares nothing, an object that holds itself (a YAML alias) is not
+    descended again, as ``SchemaGraph.index_document`` does not, and what a schema holds is the schema walker's to
+    read.
     """
+    return _held_below(node, role, set())
+
+
+def _held_below(node: YamlValue, role: str, ancestors: set[int]) -> Iterator[tuple[tuple[str, ...], dict[str, Any]]]:
+    """Yield the schemas ``held_schemas`` yields for an object, which is not one of its ``ancestors`` (by identity)."""
     if not isinstance(node, dict):
         return
     if role == "schema":
         yield (), node
         return
+    if "$ref" in node or id(node) in ancestors:
+        return
+    ancestors.add(id(node))
     for path, child, member in object_members(node, role):
-        yield from (((*path, *tokens), schema) for tokens, schema in held_schemas(child, member))
+        yield from (((*path, *tokens), schema) for tokens, schema in _held_below(child, member, ancestors))
+    ancestors.discard(id(node))

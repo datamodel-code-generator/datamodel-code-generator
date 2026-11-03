@@ -14818,6 +14818,71 @@ def test_main_openapi_anchor_refs_in_referenced_object_documents(output_file: Pa
     )
 
 
+def test_main_openapi_anchor_refs_in_path_item_document(output_file: Path) -> None:
+    """Resolve a plain-name reference in the Path Item Object a reference names, to the schema that holds the anchor.
+
+    The schema of a parameter in a list declares an `$id`, so the reference to its anchor is rewritten at a position in
+    a list (it stopped the run with a TypeError). The Reference Object beside it holds no schema, so the `$id` and
+    `$anchor` of its ignored `schema` name no resource and the reference reads the anchor of the parameter above it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document",
+        model_name="TagsGetParametersQuery",
+        valid_json='{"tag": {"label": "ab", "alias": "cd"}}',
+        invalid_json=json.dumps({"tag": {"alias": "x" * 6}}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself(output_file: Path) -> None:
+    """Resolve a plain-name reference in a Path Item Object that a callback of its own operation holds again.
+
+    A YAML alias makes the object reach itself through the callback, so the walk of the schemas it holds descends into
+    each object once on its path; it ran to the recursion limit and stopped the run.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_cyclic_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document_that_holds_itself",
+        model_name="EventsGetParametersQuery",
+        valid_json='{"event": {"kind": "ab", "again": "cd"}}',
+        invalid_json=json.dumps({"event": {"again": "x" * 9}}),
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

@@ -28811,6 +28811,68 @@ def test_main_read_only_write_only_constrained_item(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "constraint_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--field-constraints"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_root_map(
+    output_file: Path, output_model_type: str, constraint_args: list[str], dedupe_args: list[str]
+) -> None:
+    """Split the holder of an item that is a root model of an object map, whose values name a model with variants.
+
+    An item with properties and propertyNames, or a type list of object and null with properties under
+    ``--use-typed-nullable-map-values``, is the root model of a dict that additionalProperties types, so the walk reads
+    those values as the root model builds them and ``Holder`` splits with ``Value``; it stopped with "A Parser can not
+    resolve classes".
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_constrained_root_map.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *constraint_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--use-typed-nullable-map-values",
+        ],
+    )
+    valid = {
+        "holder": {
+            "inline": [{"b": {"name": "x"}}],
+            "named": [{"c": {"name": "y"}}],
+            "nullable": [{"d": {"name": "z"}}, None],
+            "count": 1,
+        }
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_constrained_root_map", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type == "pydantic_v2.BaseModel":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
 @pytest.mark.parametrize(
     "dedupe_args",
