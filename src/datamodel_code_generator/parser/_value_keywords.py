@@ -121,6 +121,7 @@ __all__ = [
     "split_constraint_values",
     "suppress_array_length_constraints",
     "type_enforced_keywords",
+    "type_list_keywords",
     "union_sibling_constraints",
 ]
 
@@ -236,6 +237,15 @@ def can_hold_array(data_type: DataType, *, models: bool) -> bool:
 def admits_array(obj: JsonSchemaObject) -> bool:
     """Return whether the types a schema declares admit an array: it declares none, or an array is one of them."""
     return obj.type is None or "array" in declared_types(obj.type)
+
+
+def type_list_keywords(obj: JsonSchemaObject) -> dict[str, Any]:
+    """Return the keywords a field whose schema lists an array beside other types keeps: ``uniqueItems``.
+
+    The other keywords would apply to every member of its type, but ``uniqueItems`` only to its array, which
+    ``--use-unique-items-as-set`` writes as a set as it writes a plain array; no output writes the keyword.
+    """
+    return {"uniqueItems": True} if obj.uniqueItems and admits_array(obj) else {}
 
 
 def _imported_type_paths(data_type: DataType) -> Iterator[str]:

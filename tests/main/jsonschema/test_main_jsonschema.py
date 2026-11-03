@@ -7434,6 +7434,49 @@ def test_main_unique_items_as_set_other_containers(output_model: str, extra_args
     assert_output("".join(verdicts), name="payloads")
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+def test_main_unique_items_as_set_type_list(output_model: str, tmp_path: Path, output_file: Path) -> None:
+    """Write the array member of a type list that declares ``uniqueItems`` as a set, as a plain array is written.
+
+    The member of a property, of a root model and of a type list with ``null``, with a list default that becomes a
+    set. Up to 0.88.0 the member of a type list stayed a list, which keeps the duplicates its schema rejects.
+    """
+    array = {"items": {"type": "integer"}, "uniqueItems": True}
+    input_file = tmp_path / "type_list.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "member": {"type": ["array", "object"], **array},
+                "nullable": {"type": ["array", "string", "null"], **array, "default": [1, 2]},
+                "root": {"$ref": "#/$defs/Root"},
+            },
+            "$defs": {"Root": {"type": ["array", "boolean"], **array}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", output_model, "--use-unique-items-as-set", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="unique_items_as_set_type_list",
+            model_name="Model",
+            valid_json='{"member": [1, 1, 2]}',
+            invalid_json='{"member": "text"}',
+            expected_error_type="dict_type",
+            expected_attribute_path=("member",),
+            expected_attribute_value={1, 2},
+        )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:
