@@ -79,6 +79,7 @@ from itertools import takewhile, zip_longest
 from pathlib import Path
 from threading import Lock
 from traceback import walk_stack
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, SupportsIndex
 from weakref import ref
 
@@ -469,6 +470,7 @@ _GRAPH_CLASSES: Final = (DataType, DataModelFieldBase, Reference, DataModel)
 _BRANCHES: Final[dict[type | tuple[type], tuple[_Branch, Any]]] = {}
 """The branch of ``_freeze`` of each type met, and of each class met as a value (by a tuple of the class), with the
 built-in base or the dataclass field names it reads."""
+_NO_ENTRIES: Final[Mapping[int, Any]] = MappingProxyType({})
 _ORDERING_READS: Final = decls.FIX_CONSTRUCTOR_FIELD_ORDERING.reads
 _FIELDS_ROW: Final = next(row for row in ATTRIBUTE_FACTS if (row.owner, row.attribute) == ("DataModel", "fields"))
 
@@ -759,16 +761,25 @@ class _Finality:
         return rows
 
     def _entries(
-        self, owner: object, entries: dict[int, _Entry], referenced: list[object], *, alias: bool = False
-    ) -> None:
+        self,
+        owner: object,
+        entries: dict[int, _Entry],
+        referenced: list[object],
+        *,
+        alias: bool = False,
+        stored: Mapping[int, _Entry] = _NO_ENTRIES,
+    ) -> bool:
         """Add the entries of ``owner`` and of the fields and data types it holds; data types of bases are ``base``.
 
-        With ``alias``, ``owner`` is a type alias and the entries outside its bases are ``alias``.
+        With ``alias``, ``owner`` is a type alias and the entries outside its bases are ``alias``. An object whose entry
+        in ``stored`` holds what its new entry would hold keeps that entry; return whether an object of ``stored`` got a
+        new entry. An object reads its base classes only when it holds a field or data type and belongs to no base.
         """
         pending: list[tuple[object, bool]] = [(owner, False)]
+        renewed = False
         while pending:
             item, base = pending.pop()
-            if id(item) in entries:
+            if (item_id := id(item)) in entries:
                 continue
             rows = self._rows(type(item))
             nested: list[Any] = []
@@ -776,26 +787,46 @@ class _Finality:
                 value if type(value := getter(item)) in _KEPT_TYPES else _freeze(value, nested)
                 for getter in rows.getters
             ])
-            entries[id(item)] = _Entry(item, rows.rows, values, base, alias and not base)
-            base_ids = {id(base_class) for base_class in getattr(item, "base_classes", ())}
+            own_alias = alias and not base
+            if (
+                (before := stored.get(item_id)) is not None
+                and values == before.values
+                and before.rows is rows.rows
+                and before.base is base
+                and before.alias is own_alias
+            ):
+                entries[item_id] = before
+            else:
+                entries[item_id] = _Entry(item, rows.rows, values, base, own_alias)
+                renewed = renewed or before is not None
+            base_ids: set[int] | None = None
             for child in nested:
-                if isinstance(child, _DESCENDED):
-                    pending.append((child, base or id(child) in base_ids))
-                else:
+                if not isinstance(child, _DESCENDED):
                     referenced.append(child)
+                    continue
+                if base_ids is None:
+                    base_ids = set() if base else {id(base_class) for base_class in getattr(item, "base_classes", ())}
+                pending.append((child, base or id(child) in base_ids))
+        return renewed
 
-    def _print(self, model: DataModel) -> _ModelPrint:
-        """Return the fingerprint of ``model``: the model, its fields and their types, and its bases."""
+    def _print(self, model: DataModel, old: _ModelPrint | None) -> tuple[_ModelPrint, bool]:
+        """Return the fingerprint of ``model`` (the model, its fields and their types, and its bases), given ``old``.
+
+        Also return whether an object of ``old`` got a new entry. The objects of ``old`` are held and name ``model``
+        as their owner already.
+        """
         entries: dict[int, _Entry] = {}
         referenced: list[object] = []
-        self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase))
+        stored = _NO_ENTRIES if old is None else old.entries
+        renewed = self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase), stored=stored)
         model_id = id(model)
         lists: dict[int, _GuardedList] = {}
         for object_id, entry in entries.items():
-            self.owners.setdefault(object_id, {})[model_id] = model
-            self.held[object_id] = entry.owner
+            if object_id not in stored:
+                self.owners.setdefault(object_id, {})[model_id] = model
+                self.held[object_id] = entry.owner
             self._guard_lists(entry.owner, lists)
-        return _ModelPrint(model, entries, tuple(referenced))
+        return _ModelPrint(model, entries, tuple(referenced)), renewed
 
     def _settle(self, models: Iterable[DataModel], run: _PassRun | None = None, *, reach: bool = False) -> None:
         """Compare ``models`` with their stored fingerprints, report what changed, and store the new ones.
@@ -811,10 +842,9 @@ class _Finality:
                 continue
             settled.add(model_id)
             self.loose.pop(model_id, None)
-            new = self._print(current)
-            old = self.prints.get(model_id)
+            new, renewed = self._print(current, old := self.prints.get(model_id))
             self.prints[model_id] = new
-            if old is not None:
+            if renewed and old is not None:
                 self._compare(old, new, run)
             for item in new.referenced:
                 if not isinstance(source := item.source if isinstance(item, Reference) else item, DataModel):
