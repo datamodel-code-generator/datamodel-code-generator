@@ -12,6 +12,7 @@ from datamodel_code_generator._config_fields import (
     PYPROJECT_PATH_FIELDS,
     TARGET_JSON_FIELDS,
     names_path,
+    option_path,
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
@@ -131,14 +132,15 @@ def _resolve_relative_paths_from(
 ) -> dict[str, Any]:
     """Resolve the relative paths of the given fields from a directory.
 
-    Only lexical: ``~`` expands, and inline JSON of a JSON field is a value, not a path.
+    Only lexical: ``~`` expands, and inline JSON of a JSON field is a value, not a path. A ``~user`` that names no user
+    raises ``Error``.
     """
     updates = {
         field_name: directory / resolved_path
         for field_name in fields
         if (path := config.get(field_name)) is not None
         and names_path(field_name, path)
-        and not (resolved_path := Path(path).expanduser()).is_absolute()
+        and not (resolved_path := option_path(field_name, path)).is_absolute()
     }
     if not updates:
         return config

@@ -904,7 +904,7 @@ def _record_raw_job_config_dependencies(
             continue
         if not names_file(name, raw_value):
             continue
-        with suppress(RuntimeError):
+        with suppress(Error):
             path = _resolve_relative_paths_from({name: raw_value}, base_path)[name]
             dependencies.add_recovery_file(Path(path))
 
@@ -2614,7 +2614,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             lambda: {"config": _hyphenated_config_data(pyproject_config), "arguments": shlex.split(command_output)},
         )
 
-    pyproject_config = _resolve_pyproject_relative_paths(pyproject_config, pyproject_path)
+    try:
+        pyproject_config = _resolve_pyproject_relative_paths(pyproject_config, pyproject_path)
+    except Error as e:
+        print(e.message, file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
 
     cli_config_args: dict[str, _RawConfigValue] = {}
     if _batch_config is not None:

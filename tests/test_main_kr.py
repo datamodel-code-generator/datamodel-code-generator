@@ -1540,6 +1540,93 @@ def test_pyproject_profile_rejects_non_table_profiles(tmp_path: Path, capsys: py
     _assert_file_does_not_exist(output_file)
 
 
+_UNKNOWN_USER_MESSAGE = "Invalid path for {option}: ~nouser_xyz/{name}: the user after '~' has no home directory\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@pytest.mark.parametrize(
+    ("pyproject", "args", "option"),
+    [
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput = "~nouser_xyz/in.json"\noutput = "o.py"\n'
+            'input-file-type = "jsonschema"\n',
+            [],
+            "--input",
+            id="pyproject-input",
+        ),
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput-file-type = "jsonschema"\nlockfile = "~nouser_xyz/in.json"\n'
+            '[tool.datamodel-codegen.jobs.m]\ninput = "in.json"\noutput = "o.py"\n',
+            ["--all-jobs"],
+            "--lockfile",
+            id="pyproject-base-of-jobs",
+        ),
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput-file-type = "jsonschema"\n'
+            '[tool.datamodel-codegen.jobs.m]\ninput = "~nouser_xyz/in.json"\noutput = "o.py"\n',
+            ["--all-jobs"],
+            "--input",
+            id="pyproject-job-input",
+        ),
+    ],
+)
+def test_pyproject_path_of_an_unknown_user_is_a_configuration_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    pyproject: str,
+    args: list[str],
+    option: str,
+) -> None:
+    """A ``~user`` that names no user in a pyproject.toml path ends in an error that names the option and the value."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+
+    run_main_with_args(
+        args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=_UNKNOWN_USER_MESSAGE.format(option=option, name="in.json"),
+    )
+
+    _assert_file_does_not_exist(tmp_path / "o.py")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@pytest.mark.parametrize(
+    ("option", "message"),
+    [
+        pytest.param("--output", _UNKNOWN_USER_MESSAGE.format(option="--output", name="x"), id="output"),
+        pytest.param(
+            "--custom-template-dir", _UNKNOWN_USER_MESSAGE.format(option="--custom-template-dir", name="x"), id="path"
+        ),
+        pytest.param("--lockfile", _UNKNOWN_USER_MESSAGE.format(option="--lockfile", name="x"), id="spelled-string"),
+        pytest.param(
+            "--emit-model-metadata",
+            _UNKNOWN_USER_MESSAGE.format(option="--emit-model-metadata", name="x"),
+            id="spelled-path",
+        ),
+        pytest.param(
+            "--aliases", "Unable to load alias mapping: Expecting value: line 1 column 1 (char 0)\n", id="json-file"
+        ),
+    ],
+)
+def test_command_line_path_of_an_unknown_user_is_a_configuration_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, option: str, message: str
+) -> None:
+    """A ``~user`` that names no user in a path option ends in a configuration error, not a RuntimeError."""
+    monkeypatch.chdir(tmp_path)
+
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        input_file_type="jsonschema",
+        extra_args=[option, "~nouser_xyz/x"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=message,
+    )
+
+
 @freeze_time("2019-07-26")
 def test_profile_overrides_base_config_shallow_merge(output_file: Path, tmp_path: Path) -> None:
     """Test that profile settings shallow-merge (replace) base settings for lists."""
