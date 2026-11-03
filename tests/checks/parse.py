@@ -245,7 +245,8 @@ def _checks(parser: object) -> AbstractContextManager[None]:
 def run_pass(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_pass``: a pass that runs is traced and runs inside the finality scope of its declaration.
 
-    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one.
+    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one, which the checks of a parse
+    make once for each pass spec (``ParseChecks.passes``).
     """
 
     @wraps(original)
@@ -253,6 +254,9 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
         trace, checks = TRACE.get(), PARSE_CHECKS.get()
         if trace is None and checks is None:
             return original(self, spec, parser, state)
+        passes = {} if checks is None else checks.passes
+        if (known := passes.get(id(spec))) is not None and known[0] is spec:
+            return original(self, known[1], parser, state)
         run, checked_models = spec.run, CHECKED_MODELS.get(spec.name)
 
         def instrumented(parser: object, state: object) -> None:
@@ -261,7 +265,8 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
             with NO_SCOPE if checks is None else checks.fact_pass(_DECLS[spec.name], models):
                 run(parser, state)
 
-        return original(self, replace(spec, run=instrumented), parser, state)
+        passes[id(spec)] = (spec, scoped := replace(spec, run=instrumented))
+        return original(self, scoped, parser, state)
 
     return run_pass
 
