@@ -1,0 +1,10 @@
+{
+  "valid": [
+    {"referenced": "aa", "fixed": "aa"},
+    {}
+  ],
+  "invalid": [
+    {"referenced": "b"},
+    {"fixed": "b"}
+  ]
+}
