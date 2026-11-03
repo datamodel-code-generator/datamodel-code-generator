@@ -1651,7 +1651,7 @@ class ModelResolver:  # noqa: PLR0904
         An empty component is left out before the anchor; after it, it is the empty token of a JSON pointer (a key
         ``""``) and stays, as a pointer's other tokens do, so that ``#/definitions/`` is not ``#/definitions``.
         """
-        if "" in path:
+        if not all(path):
             anchored = next((index for index, part in enumerate(path) if "#" in part), len(path))
             path = (*filter(None, path[: anchored + 1]), *path[anchored + 1 :])
         joined_path = "/".join(path).replace("/#", "#")
