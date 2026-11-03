@@ -10101,7 +10101,7 @@ def test_main_custom_file_header_duplicate_options(
             custom_file_header,
         ],
         capsys=capsys,
-        expected_stderr_contains="`--custom_file_header_path` can not be used with `--custom_file_header`.",
+        expected_stderr_contains="`--custom-file-header-path` can not be used with `--custom-file-header`.",
     )
 
 

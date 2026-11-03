@@ -311,7 +311,7 @@ def _get_config_class() -> type[Config]:
         def validate_custom_file_header(self: Self) -> Self:
             """Validate custom file header options are mutually exclusive."""
             if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                msg = "`--custom_file_header_path` can not be used with `--custom_file_header`."
+                msg = "`--custom-file-header-path` can not be used with `--custom-file-header`."
                 raise Error(msg)
             return self
 
