@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContainsTrueIntegralFloatCountConstraints",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "array",
+      "contains": true,
+      "minContains": 2.0,
+      "maxContains": 3.0
+    },
+    "fractional": {
+      "type": "array",
+      "contains": true,
+      "minContains": 2.5,
+      "maxContains": 3.5
+    }
+  },
+  "required": [
+    "values"
+  ]
+}

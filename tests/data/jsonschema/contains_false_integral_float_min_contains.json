@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContainsFalseIntegralFloatMinContains",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "array",
+      "contains": false,
+      "minContains": 1.0
+    }
+  },
+  "required": [
+    "values"
+  ]
+}

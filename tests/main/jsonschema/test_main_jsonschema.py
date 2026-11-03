@@ -19936,6 +19936,59 @@ def test_main_jsonschema_contains_false_min_contains_zero(output_file: Path) -> 
     )
 
 
+def test_main_jsonschema_contains_true_integral_float_count_constraints(output_file: Path) -> None:
+    """Read integral float minContains and maxContains as the integers they are.
+
+    ``minContains: 2.0`` and ``maxContains: 3.0`` were dropped, so the model accepted ``[]`` and ``[1, 2, 3, 4]``,
+    which the schema rejects (#5942). A fractional count still sets no length constraint.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "contains_true_integral_float_count_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="contains_true_integral_float_count_constraints",
+        model_name="ContainsTrueIntegralFloatCountConstraints",
+        valid_json='{"values":[1,2]}',
+        invalid_json='{"values":[1]}',
+        expected_error_type="too_short",
+        expected_attribute_path=("values",),
+        expected_attribute_value=[1, 2],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="contains_true_integral_float_count_constraints",
+        model_name="ContainsTrueIntegralFloatCountConstraints",
+        valid_json='{"values":[1,2,3]}',
+        invalid_json='{"values":[1,2,3,4]}',
+        expected_error_type="too_long",
+        expected_attribute_path=("values",),
+        expected_attribute_value=[1, 2, 3],
+    )
+
+
+def test_main_jsonschema_contains_false_integral_float_min_contains(output_file: Path) -> None:
+    """Test contains false with an integral float minContains rejects every array (#5942)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "contains_false_integral_float_min_contains.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="contains_false_integral_float_min_contains",
+        model_name="ContainsFalseIntegralFloatMinContains",
+        invalid_json='{"values":[]}',
+        expected_error_type="too_short",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--aliases"],
     option_description="""Apply custom field and class name aliases via inline JSON or a JSON file path.
