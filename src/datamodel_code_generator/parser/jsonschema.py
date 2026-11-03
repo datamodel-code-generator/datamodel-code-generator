@@ -2065,18 +2065,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import", self.target_python_version)
         )
 
-    def _get_target_runtime_symbol(self, module: str, qualname: str) -> PythonTypeRuntimeSymbol:
-        """Bind ``module.qualname`` through ``import module``, which import overrides cannot move.
-
-        The type the target must have is therefore checked here rather than in the emitted imports.
-        """
+    def _runtime_symbol(self, module: str, qualname: str, keyword: str) -> PythonTypeRuntimeSymbol:
+        """Return the runtime symbol ``module.qualname``, refusing a path whose names the target does not bind."""
         from datamodel_code_generator._python_type_annotation import (  # ruff: ignore[import-outside-top-level]
             PythonTypeRuntimeSymbol,
         )
 
-        parts = tuple(qualname.split("."))
-        self._get_target_python_type_path(f"{module}.{parts[0]}")
-        return PythonTypeRuntimeSymbol(module, parts)
+        _validate_schema_python_import_path(
+            f"{module}.{qualname}" if module else qualname, keyword, self.target_python_version
+        )
+        return PythonTypeRuntimeSymbol(module, tuple(qualname.split(".")))
+
+    def _get_target_runtime_symbol(self, module: str, qualname: str, keyword: str) -> PythonTypeRuntimeSymbol:
+        """Bind ``module.qualname`` through ``import module``, which import overrides cannot move.
+
+        The type the target must have is therefore checked here rather than in the emitted imports.
+        """
+        symbol = self._runtime_symbol(module, qualname, keyword)
+        self._get_target_python_type_path(f"{module}.{symbol.qualname_parts[0]}")
+        return symbol
 
     def _get_x_python_runtime_symbol(self, x_python_import: dict[str, Any]) -> PythonTypeRuntimeSymbol | None:
         """Retain nested runtime module boundaries."""
@@ -2085,6 +2092,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._get_target_runtime_symbol(
             x_python_import["module"],
             _validate_schema_python_import_path(qualname, "x-python-import qualname", self.target_python_version),
+            "x-python-import",
         )
 
     def _get_x_python_import_expression(
@@ -2103,7 +2111,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 PythonTypeModelField,
             )
 
-            expression: PythonTypeExpr = self._get_target_runtime_symbol(path["module"], path["qualname"])
+            expression: PythonTypeExpr = self._get_target_runtime_symbol(
+                path["module"], path["qualname"], "x-python-import native-field"
+            )
             for field in path["fields"]:
                 expression = PythonTypeModelField(
                     expression, field["name"], tuple(field["arguments"]), field["pydantic"]
@@ -2112,17 +2122,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return expression
         from datamodel_code_generator._python_type_annotation import (  # ruff: ignore[import-outside-top-level]
             PythonTypeQualifiedName,
-            PythonTypeRuntimeSymbol,
             rewrite_python_type_expr,
         )
 
         expression = cast("PythonTypeExpr", self._get_x_python_type(self._schema_object(x_python_import)))
         if symbol_definitions := x_python_import.get("symbols"):
             symbols = {
-                name: PythonTypeRuntimeSymbol(
-                    symbol["module"],
-                    tuple(symbol["qualname"].split(".")),
-                )
+                name: self._runtime_symbol(symbol["module"], symbol["qualname"], "x-python-import symbols")
                 for name, symbol in symbol_definitions.items()
             }
             expression = rewrite_python_type_expr(

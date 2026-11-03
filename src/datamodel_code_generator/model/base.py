@@ -125,7 +125,9 @@ from datamodel_code_generator.model._rendered_names import (
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
+    message_repr,
     represent_python_value,
+    stable_repr,
 )
 from datamodel_code_generator.reference import Reference, _BaseModel
 from datamodel_code_generator.types import (
@@ -354,7 +356,7 @@ def _normalize_template_data_keys(extra_template_data: dict[str, Any]) -> dict[s
             raise Error(_EXTRA_TEMPLATE_DATA_KEY_ERROR)
         normalized_key = _normalize_string(key)
         if normalized_key in normalized_template_data:
-            msg = f"extra template data contains duplicate key {normalized_key!r}"
+            msg = f"extra template data contains duplicate key {message_repr(normalized_key)}"
             raise Error(msg)
         normalized_template_data[normalized_key] = value
     return normalized_template_data
@@ -371,13 +373,13 @@ def _safe_dataclass_arguments(dataclass_arguments: Any) -> dict[str, bool]:
             raise Error(_DATACLASS_ARGUMENTS_KEY_ERROR)
         normalized_key = _normalize_string(key)
         if normalized_key not in _DATACLASS_ARGUMENT_NAMES:
-            msg = f"invalid dataclass argument {normalized_key!r}"
+            msg = f"invalid dataclass argument {message_repr(normalized_key)}"
             raise Error(msg)
         if type(value) is not bool:
-            msg = f"dataclass argument {normalized_key!r} must be a bool"
+            msg = f"dataclass argument {message_repr(normalized_key)} must be a bool"
             raise Error(msg)
         if normalized_key in safe_arguments:
-            msg = f"dataclass_arguments contains duplicate key {normalized_key!r}"
+            msg = f"dataclass_arguments contains duplicate key {message_repr(normalized_key)}"
             raise Error(msg)
         safe_arguments[normalized_key] = value
     return safe_arguments
@@ -978,12 +980,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             examples = self.extras.get("examples")
 
             if examples and isinstance(examples, list) and len(examples) > 1:
-                examples_str = "\n".join(f"- {e!r}" for e in examples)
+                examples_str = "\n".join(f"- {stable_repr(e)}" for e in examples)
                 parts.append(f"Examples:\n{examples_str}")
             elif example is not None:
-                parts.append(f"Example: {example!r}")
+                parts.append(f"Example: {stable_repr(example)}")
             elif examples and isinstance(examples, list) and len(examples) == 1:  # pragma: no branch
-                parts.append(f"Example: {examples[0]!r}")
+                parts.append(f"Example: {stable_repr(examples[0])}")
 
         if parts:
             return "\n\n".join(parts)
@@ -1640,7 +1642,7 @@ def _build_environment(loader: Any, *, auto_reload: bool = True) -> Environment:
     )
     env.filters["escape_docstring"] = escape_docstring  # For old custom templates
     env.filters["format_docstring"] = format_docstring
-    env.filters["repr"] = repr
+    env.filters["repr"] = stable_repr
     return env
 
 
@@ -2517,7 +2519,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> None:
         """Store typed additional-properties metadata and its dependencies."""
         del imports
-        expression = repr(str(type_hint)) if reference_classes else type_hint
+        expression = stable_repr(str(type_hint)) if reference_classes else type_hint
         extra_template_data[_ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY] = _make_internal_type_expression(
             type_hint,
             expression,
@@ -2828,7 +2830,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
         if not any(is_named_python_decorator(decorator, "deprecated") for decorator in self.decorators):
             message = f"{self.class_name} is deprecated."
-            self.decorators = [*self.decorators, f"@deprecated({message!r})"]
+            self.decorators = [*self.decorators, f"@deprecated({stable_repr(message)})"]
         self._additional_imports.append(Import.from_full_path(backport_path("python.deprecated_decorator")))
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:

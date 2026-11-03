@@ -8215,6 +8215,8 @@ field_constraints.py-extra_args0	main/jsonschema/number_constraints_on_numeric_s
 msgspec.py-extra_args1	main/jsonschema/number_constraints_on_numeric_string_formats/msgspec.py
 [test_main_parent_scoped_naming_backward_compat]
 	main/jsonschema/naming_strategy/parent_prefixed/output.py
+[test_main_paths_the_target_python_binds_are_written_whatever_python_runs]
+	main/jsonschema/paths_the_target_python_binds_are_written_whatever_python_runs.py
 [test_main_payload_runtime_compatibility]
 	main/jsonschema/payload_runtime_compatibility.py
 [test_main_pydantic_v2_dataclass_deprecated_model]

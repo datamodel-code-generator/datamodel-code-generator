@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import chain
 from math import isfinite, isnan
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Final, Protocol, cast
 
 from typing_extensions import Self, Sentinel
 
@@ -18,7 +18,7 @@ from datamodel_code_generator._python_syntax import (
     set_display,
     tuple_display,
 )
-from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_dotted_python_name, is_python_name
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_dotted_python_name, is_python_name, string_repr
 from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
 if TYPE_CHECKING:
@@ -322,7 +322,8 @@ def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | 
 def _represent_container(value: object, render: Callable[[Any], str], *, sort_sets_by_repr: bool) -> str | None:
     """Render a dict, list, tuple or set with ``render`` for its items; None for any other value.
 
-    Set items are ordered by type name, then by their ``repr`` or their rendered text.
+    Set items are ordered by type name, then by their ``repr`` or their rendered text; a string's ``repr`` is its
+    rendered text, as ``stable_repr`` writes it.
     """
     match value:
         case dict():
@@ -335,7 +336,7 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
             from operator import itemgetter  # noqa: PLC0415
 
             rows = [
-                (type(item).__name__, repr(item) if sort_sets_by_repr else text, text)
+                (type(item).__name__, repr(item) if sort_sets_by_repr and type(item) is not str else text, text)
                 for item in value
                 for text in (render(item),)
             ]
@@ -344,11 +345,41 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
     return None
 
 
+def stable_repr(value: object) -> str:
+    """Return ``repr()`` of a value as the newest target writes it, whatever interpreter runs.
+
+    ``repr()`` escapes the characters of a string that the running interpreter does not print, which follow its
+    Unicode version; here they follow the newest target's, in a string and in the tuples, lists, sets and dicts that
+    hold one, so a message or a literal reads the same on every interpreter. Any other value is its ``repr()``.
+    """
+    if type(value) is str:
+        return string_repr(value, NEWEST_TARGET)
+    if (display := _CONTAINER_REPRS.get(type(value))) is not None:
+        return display(value)
+    return repr(value)
+
+
+_CONTAINER_REPRS: Final[dict[type, Callable[[Any], str]]] = {
+    tuple: lambda value: tuple_display(map(stable_repr, value)),
+    list: lambda value: list_display(map(stable_repr, value)),
+    set: lambda value: set_display(map(stable_repr, value)),
+    dict: lambda value: dict_display((stable_repr(key), stable_repr(item)) for key, item in value.items()),
+}
+"""How ``stable_repr`` writes each container whose ``repr()`` holds the ``repr()`` of its items, as ``repr()`` does."""
+
+
+def message_repr(value: object) -> str:
+    """Return how a message quotes a value a user gave: ``stable_repr`` of it, a string read past its subclass."""
+    return stable_repr(_normalize_string(value) if isinstance(value, str) else value)
+
+
 def represent_python_value(value: Any) -> str:
     """Render a value as a Python expression safe for generated source."""
     match value:
         case PythonRuntimeExpression() | PythonCode():
             return value.code
+        case str() if type(value) is str:
+            return string_repr(value, NEWEST_TARGET)
         case float() if isnan(value):
             return "float('nan')"
         case float() if not isfinite(value):
@@ -371,7 +402,7 @@ def represent_untrusted_python_value(value: Any) -> str:
     if isinstance(value, float):
         return represent_python_value(float.__float__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, str):
-        return repr(_normalize_string(value))
+        return stable_repr(_normalize_string(value))
     if (rendered := _represent_container(value, represent_untrusted_python_value, sort_sets_by_repr=False)) is not None:
         return rendered
-    return repr(_normalize_string(str(value)))
+    return stable_repr(_normalize_string(str(value)))

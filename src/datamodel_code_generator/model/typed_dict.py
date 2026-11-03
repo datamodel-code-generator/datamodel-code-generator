@@ -35,6 +35,7 @@ from datamodel_code_generator.python_literal import (
     _InternalTypeExpression,
     represent_untrusted_public_type_name,
     represent_untrusted_python_value,
+    stable_repr,
 )
 from datamodel_code_generator.types import NOT_REQUIRED, READ_ONLY, REQUIRED
 
@@ -208,7 +209,7 @@ class TypedDict(DataModel):
             return
         typed_dict_kwargs: dict[str, str] = self._internal_template_data["typed_dict_kwargs"]
         type_hint = source.type_hint
-        extra_items = repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
+        extra_items = stable_repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
         self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
 
     @override

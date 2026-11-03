@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._python_syntax import list_display, subscript_text, tuple_display
-from datamodel_code_generator._target_unicode import is_python_name
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -32,7 +32,7 @@ class PythonTypeName(PythonTypeExpr):
     value: str
 
     def __post_init__(self) -> None:
-        if self.value != "None" and not is_python_name(self.value, rule="host"):
+        if self.value != "None" and not is_python_name(self.value, NEWEST_TARGET):
             msg = f"Python type name must be one identifier: {self.value!r}"
             raise ValueError(msg)
 
@@ -44,7 +44,7 @@ class PythonTypeQualifiedName(PythonTypeExpr):
     parts: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.parts or not all(is_python_name(part, rule="host") for part in self.parts):
+        if not self.parts or not all(is_python_name(part, NEWEST_TARGET) for part in self.parts):
             msg = f"Python qualified type name must contain identifiers: {self.parts!r}"
             raise ValueError(msg)
 
@@ -60,8 +60,8 @@ class PythonTypeRuntimeSymbol(PythonTypeExpr):
         module_parts = self.module.split(".") if self.module else ()
         if (
             not self.qualname_parts
-            or not all(is_python_name(part, rule="host") for part in self.qualname_parts)
-            or not all(is_python_name(part, rule="host") for part in module_parts)
+            or not all(is_python_name(part, NEWEST_TARGET) for part in self.qualname_parts)
+            or not all(is_python_name(part, NEWEST_TARGET) for part in module_parts)
         ):
             msg = f"Invalid runtime Python type identity: {self.module!r}, {self.qualname_parts!r}"
             raise ValueError(msg)
@@ -75,7 +75,7 @@ class PythonTypeMember(PythonTypeExpr):
     name: str
 
     def __post_init__(self) -> None:
-        if not is_python_name(self.name, rule="host"):
+        if not is_python_name(self.name, NEWEST_TARGET):
             msg = f"Python type member must be one identifier: {self.name!r}"
             raise ValueError(msg)
 
@@ -89,7 +89,7 @@ class PythonTypeBoundName(PythonTypeExpr):
     import_name: str
 
     def __post_init__(self) -> None:
-        if not is_python_name(self.value, rule="host") or not self.import_name:
+        if not is_python_name(self.value, NEWEST_TARGET) or not self.import_name:
             msg = f"Invalid bound Python type name: {self.value!r}, {self.import_from!r}, {self.import_name!r}"
             raise ValueError(msg)
 

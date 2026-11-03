@@ -23751,6 +23751,18 @@ _NAMES_SCHEMA = {"title": "Model", "type": "object", "properties": {"a": {"type"
         ),
         pytest.param(
             _NAMES_SCHEMA,
+            ["--type-overrides", json.dumps({"Model.a": f"mypkg.{_NEW_LETTER}T"})],
+            f"type_overrides must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}T'",
+            id="type-overrides",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
+            ["--class-decorators", f"@mypkg.{_NEW_LETTER}deco"],
+            f"class_decorators must be a Python import path composed of identifiers: 'mypkg.{_NEW_LETTER}deco'",
+            id="class-decorators",
+        ),
+        pytest.param(
+            _NAMES_SCHEMA,
             ["--validators", json.dumps({"Model": {"validators": [{"field": f"a{_NEW_LETTER}", "function": "m.f"}]}})],
             f"validators.0.field: must be a valid Python identifier: 'a{_NEW_LETTER}'",
             id="validator-field",
@@ -23806,6 +23818,45 @@ _NAMES_SCHEMA = {"title": "Model", "type": "object", "properties": {"a": {"type"
             [],
             f"x-python-import qualname must be a dotted Python identifier path: 'Outer.{_NEW_LETTER}T'",
             id="x-python-import-qualname",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {
+                    "T": {
+                        "type": "string",
+                        "x-python-import": {
+                            "module": "mypkg",
+                            "name": "T",
+                            "native-field": {"module": "mypkg", "qualname": f"Outer.{_NEW_LETTER}T", "fields": []},
+                        },
+                    }
+                },
+            },
+            [],
+            f"x-python-import native-field must be a dotted Python identifier path: 'mypkg.Outer.{_NEW_LETTER}T'",
+            id="x-python-import-native-field",
+        ),
+        pytest.param(
+            {
+                **_NAMES_SCHEMA,
+                "properties": {"a": {"$ref": "#/$defs/T"}},
+                "$defs": {
+                    "T": {
+                        "type": "string",
+                        "x-python-import": {
+                            "module": "typing",
+                            "name": "Literal",
+                            "x-python-type": "typing.Literal[mypkg.Kind.A]",
+                            "symbols": {"mypkg.Kind.A": {"module": "mypkg", "qualname": f"Kind.{_NEW_LETTER}A"}},
+                        },
+                    }
+                },
+            },
+            [],
+            f"x-python-import symbols must be a dotted Python identifier path: 'mypkg.Kind.{_NEW_LETTER}A'",
+            id="x-python-import-symbols",
         ),
     ],
 )
@@ -23879,6 +23930,40 @@ def test_main_names_the_target_python_binds_are_written(tmp_path: Path, output_f
             f"{_NEW_LETTER}Validated",
             "--target-python-version",
             "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+_PYTHON_314_LETTER = "\u1c89"
+"""U+1C89, a letter from Unicode 16 on: Python 3.14 parses a name holding it, Python 3.13 and older do not."""
+
+
+def test_main_paths_the_target_python_binds_are_written_whatever_python_runs(tmp_path: Path, output_file: Path) -> None:
+    """Write the class path of a type override and the path of a class decorator where the target Python binds them.
+
+    The parser and the tokenizer of a Python older than 3.14 do not read the names, which are read by the target's
+    identifier characters instead, so every Python that generates for 3.14 writes them.
+    """
+    input_file = tmp_path / "names.json"
+    input_file.write_text(json.dumps(_NAMES_SCHEMA), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--type-overrides",
+            json.dumps({"Model.a": f"mypkg.{_PYTHON_314_LETTER}T"}),
+            "--class-decorators",
+            f"@mypkg.{_PYTHON_314_LETTER}deco",
+            "--additional-imports",
+            "mypkg",
+            "--target-python-version",
+            "3.14",
             "--formatters",
             "builtin",
             "--disable-timestamp",

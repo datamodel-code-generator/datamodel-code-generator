@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, Validati
 
 from datamodel_code_generator._format_types import NEWEST_TARGET
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_python_name
+from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_python_name, message_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
@@ -30,7 +30,11 @@ class ValidatorMode(str, Enum):
 _VALIDATOR_MODE_VALUES = frozenset(mode.value for mode in ValidatorMode)
 
 _TARGET_CONTEXT_KEY: Final = "target_python_version"
-"""The key of the validation context that names the target Python whose names the validator names must be."""
+"""The key of the validation context that names the target Python whose names the validator names must be.
+
+A model passes it when it writes its validators (``normalize_validators``), and ``ValidatorDefinition`` validates an
+instance again for it; without it, the names are names of the newest target.
+"""
 
 
 def _context_target(info: ValidationInfo) -> PythonVersion:
@@ -41,7 +45,7 @@ def _context_target(info: ValidationInfo) -> PythonVersion:
 
 def _validate_python_identifier(value: str, target: PythonVersion) -> str:
     if (normalized_value := _normalized_safe_python_name(_normalize_string(value), target)) is None:
-        msg = f"must be a valid Python identifier: {value!r}"
+        msg = f"must be a valid Python identifier: {message_repr(value)}"
         raise ValueError(msg)
     return normalized_value
 
@@ -50,7 +54,7 @@ def _validate_dotted_python_identifier_path(value: str, target: PythonVersion) -
     if (
         normalized_value := _normalized_safe_python_name(value, target, dotted=True)
     ) is None or "." not in normalized_value:
-        msg = f"must be a dotted Python identifier path: {value!r}"
+        msg = f"must be a dotted Python identifier path: {message_repr(value)}"
         raise ValueError(msg)
     return normalized_value
 
@@ -62,7 +66,7 @@ def _validate_python_import_path(value: object, target: PythonVersion) -> str:
         or (normalized_value := _normalized_safe_python_name(_normalize_string(value).strip(), target, dotted=True))
         is None
     ):
-        msg = f"must be a Python import path composed of identifiers: {value!r}"
+        msg = f"must be a Python import path composed of identifiers: {message_repr(value)}"
         raise ValueError(msg)
     return normalized_value
 
@@ -72,7 +76,7 @@ def _validate_schema_python_import_path(value: Any, field_name: str, target: Pyt
     from datamodel_code_generator import Error  # noqa: PLC0415
 
     if not isinstance(value, str):
-        msg = f"{field_name} must be a dotted Python identifier path: {value!r}"
+        msg = f"{field_name} must be a dotted Python identifier path: {message_repr(value)}"
         raise Error(msg)
     try:
         return _validate_dotted_python_identifier_path(value, target)
@@ -82,11 +86,7 @@ def _validate_schema_python_import_path(value: Any, field_name: str, target: Pyt
 
 
 class ValidatorDefinition(BaseModel):
-    """Definition of a single validator.
-
-    Its names are names of the newest target Python, or of the target the validation context names, which a model
-    passes when it writes the validator; an instance is validated again for that target.
-    """
+    """Definition of a single validator."""
 
     model_config = ConfigDict(defer_build=True, revalidate_instances="always")
 

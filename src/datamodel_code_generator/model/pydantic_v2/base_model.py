@@ -141,6 +141,7 @@ from datamodel_code_generator.python_literal import (
     _text_constructor_expression,
     represent_python_value,
     represent_untrusted_python_value,
+    stable_repr,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, keep_node_records
 from datamodel_code_generator.types import _is_value_literal, chain_as_tuple
@@ -2378,8 +2379,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             mode = validator.get("mode", "after")
 
             prepared = {
-                "fields_str": ", ".join(repr(f) for f in fields),
-                "mode_str": f"mode={mode!r}",
+                "fields_str": ", ".join(stable_repr(f) for f in fields),
+                "mode_str": f"mode={stable_repr(mode)}",
                 "method_name": f"{function_name}_validator",
                 "function_name": function_name,
                 "mode": mode,

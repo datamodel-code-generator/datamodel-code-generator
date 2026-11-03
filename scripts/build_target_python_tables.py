@@ -38,13 +38,14 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "src/datamodel_code_generator/_target_unicode_data.py"
 STDLIB_OUTPUT = ROOT / "src/datamodel_code_generator/_target_stdlib_data.py"
-SET_NAMES = ("identifier_start", "identifier_continue", "word", "numeric", "assigned")
+SET_NAMES = ("identifier_start", "identifier_continue", "word", "numeric", "assigned", "unprintable")
 SET_DOCS = {
     "identifier_start": "Characters `str.isidentifier()` accepts first: XID_Start and the underscore.",
     "identifier_continue": "Characters `str.isidentifier()` accepts after the first: XID_Continue.",
     "word": "Characters the `re` pattern `\\\\w` matches.",
     "numeric": "Characters `str.isnumeric()` accepts.",
     "assigned": "Characters whose general category is not Cn.",
+    "unprintable": "Characters whose general category is not Cn that `str.isprintable()` refuses.",
 }
 HANGUL_SYLLABLES = range(0xAC00, 0xD7A4)
 SIGMA = "Σ"
@@ -90,6 +91,8 @@ def probe() -> dict[str, Any]:
             members["word"].append(code_point)
         if character.isnumeric():
             members["numeric"].append(code_point)
+        if not character.isprintable():
+            members["unprintable"].append(code_point)
         mappings = (character.upper(), character.lower(), character.title(), character.casefold())
         if (flags := _case_flags(character)) or any(mapping != character for mapping in mappings):
             case[code_point] = [*mappings, flags]
@@ -289,6 +292,7 @@ def render(tables: dict[str, Any]) -> str:
         '    "NUMERIC",',
         '    "TARGETS",',
         '    "UNICODE_VERSIONS",',
+        '    "UNPRINTABLE",',
         '    "WORD",',
         ")",
         "",
@@ -378,6 +382,11 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
             or rules.is_numeric(character, target) != character.isnumeric()
         ):
             problems.append(f"identifier or numeric rule differs for U+{code_point:04X}")
+    problems.extend(
+        f"string_repr differs for a text of {len(value)} characters starting {value[:2]!a}"
+        for value in (text, "'\u00e9\u0378\U0002fffe\\\t\n\r\x00\x7f")
+        if rules.string_repr(value, target) != repr(value)
+    )
     words = rules.target_pattern(r"(?:(?!_)\w)+", target).findall(text)
     if words != re.findall(r"[^\W_]+", text):
         problems.append("target_pattern differs for \\w")

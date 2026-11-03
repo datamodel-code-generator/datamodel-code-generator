@@ -37,6 +37,7 @@ from datamodel_code_generator._target_unicode import (
     host_identifiers,
     is_upper,
     lower,
+    string_repr,
     target_pattern,
 )
 from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
@@ -768,7 +769,7 @@ def _split_escaped_string_literal(content: str, max_length: int) -> list[str]:
 
 
 def _format_wrapped_string_literal(value: str, indent: str, line_length: int) -> str:
-    value_repr = repr(value)
+    value_repr = string_repr(value, NEWEST_TARGET)
     quote = value_repr[0]
     escaped = value_repr[1:-1] if quote in {"'", '"'} and value_repr.endswith(quote) else value_repr
     literal_indent = f"{indent}    "

@@ -23,6 +23,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._requirements import REQUIREMENTS
+from datamodel_code_generator._target_unicode import is_dotted_python_name
 from datamodel_code_generator.enums import _pydantic_version_key
 from datamodel_code_generator.imports import Import, _import_key, _import_path
 from datamodel_code_generator.model.base import BaseClassDataType, ConstraintsBase
@@ -31,6 +32,7 @@ from datamodel_code_generator.parser._passes._shared import (
     TypeOverrideHost,
     enum_site_override_import,
 )
+from datamodel_code_generator.python_literal import message_repr
 from datamodel_code_generator.types import _copy_data_type
 
 if TYPE_CHECKING:
@@ -302,7 +304,7 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                     if resolving_names is None:
                         resolving_names = set()
                     if name in resolving_names:
-                        msg = f"Cyclic x-python-import type expression involving {name!r}"
+                        msg = f"Cyclic x-python-import type expression involving {message_repr(name)}"
                         raise Error(msg)
                     resolving_names.add(name)
                     try:
@@ -341,27 +343,27 @@ def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr
     A value that names no type, such as an empty one, is an error, and so is a value with brackets that is no
     annotation, as neither has an import to write. A value without brackets names a class to import when it is a
     dotted path, or a bare name that no builtin and no standard-library type of the registry has; a bare name that one
-    has, or a union of names such as ``str | None``, is an annotation.
+    has, or a union of names such as ``str | None``, is an annotation. A name or a dotted path is read by the target's
+    identifier characters, which the parser of the Python that runs the generator may not know; the parser reads the
+    other values.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeName,
         PythonTypeQualifiedName,
     )
 
+    if "[" not in path and is_dotted_python_name(path, parser.target_python_version):
+        if "." in path or not (
+            parser._is_target_python_builtin_type(path)  # noqa: SLF001
+            or parser._resolve_type_import(path)  # noqa: SLF001
+        ):
+            return None
+        return PythonTypeName(path)
     expression = _parse_override_annotation(path)
     if expression is None and ("[" in path or _parse_override_annotation(path.strip()) is None):
-        msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
+        msg = f"--type-overrides value {message_repr(path)} must be a valid Python type annotation"
         raise Error(msg)
-    if "[" in path:
-        return expression
-    if expression is None or isinstance(expression, PythonTypeQualifiedName):
-        return None
-    if isinstance(expression, PythonTypeName) and not (
-        parser._is_target_python_builtin_type(expression.value)  # noqa: SLF001
-        or parser._resolve_type_import(expression.value)  # noqa: SLF001
-    ):
-        return None
-    return expression
+    return None if expression is None or isinstance(expression, PythonTypeQualifiedName) else expression
 
 
 def override_annotation(
@@ -573,10 +575,8 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
             parser._graph_builder.name_reference(data_type, override_import.binding_name)  # noqa: SLF001
             parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
         elif isinstance(data_type, BaseClassDataType) and not _is_class_name(annotation):
-            msg = (
-                f"--type-overrides {reference.name!r}: {_import_path(override_import)!r} is no class, so it cannot "
-                f"replace {reference.name} as a base class"
-            )
+            name, value = message_repr(reference.name), message_repr(_import_path(override_import))
+            msg = f"--type-overrides {name}: {value} is no class, so it cannot replace {reference.name} as a base class"
             raise Error(msg)
         else:
             parser._graph_builder.name_reference(data_type, annotation.type_hint)  # noqa: SLF001
