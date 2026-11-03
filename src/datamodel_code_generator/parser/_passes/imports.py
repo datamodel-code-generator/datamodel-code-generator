@@ -1583,6 +1583,18 @@ def submodules_hidden_by_packages(
     return result
 
 
+def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -> Iterator[tuple[str, str, list[str]]]:
+    """Yield each relative import block of the module ``importer`` in order, with the module it names.
+
+    A block is its module text (``..pkg``), the dotted name of the module that text names (``absolute``) and the names
+    it imports, sorted; a name reaches the submodule of that name where the module has one. ``is_init`` makes
+    ``importer`` a package ``__init__``.
+    """
+    for from_ in sorted(name for name in imports if name and name.startswith(".")):
+        names = sorted(_stored_import(name)[0] for name in imports[from_])
+        yield from_, absolute(importer, from_, current_is_init=is_init), names
+
+
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
     """Return the dotted names of the modules that the written modules import or import from.
 
@@ -1596,11 +1608,9 @@ def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set
         if ctx.models and state.config.all_exports_scope is not None:
             loaded.add(importer)
         is_init = _written_package(ctx, treat_dot_as_module=treat_dot_as_module) is not None
-        for from_, names in ctx.imports.items():
-            if from_ and from_.startswith("."):
-                target = absolute(importer, from_, current_is_init=is_init)
-                loaded.add(target)
-                loaded.update(dotted_name(target, _stored_import(name)[0]) for name in names)
+        for _, target, names in relative_import_targets(importer, ctx.imports, is_init=is_init):
+            loaded.add(target)
+            loaded.update(dotted_name(target, name) for name in names)
     return loaded
 
 
@@ -1868,11 +1878,9 @@ def reject_unimportable_imports(
     """
     unimportable = (lambda part: not is_python_name(part, target_python_version)) if treat_dot_as_module else iskeyword
     importer = dotted_module(module)
-    for from_ in sorted(name for name in imports if name and name.startswith(".")):
+    for from_, target, names in relative_import_targets(importer, imports, is_init=is_init):
         written = from_.lstrip(".").split(".") if from_.strip(".") else []
-        names = sorted(_stored_import(name)[0] for name in imports[from_])
         if (part := next(filter(unimportable, (*written, *names)), None)) is not None:
-            target = absolute(importer, from_, current_is_init=is_init)
             path = target if part in written else dotted_name(target, part)
             where = f"module {importer!r}" if importer else "the root package"
             reason, hint = (
