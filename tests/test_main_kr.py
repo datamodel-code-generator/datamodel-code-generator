@@ -2113,7 +2113,10 @@ output = "{output_path.as_posix()}"
 def test_pyproject_jobs_watch_records_raw_dependencies_after_invalid_plan(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep raw profile, JSON, and input paths observable when a batch plan is invalid."""
+    """Keep raw profile, JSON, and input paths observable when a batch plan is invalid.
+
+    An empty profile name, in a job or in `extends`, selects no profile, so the table `profiles.""` is not watched.
+    """
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
     pyproject_path = tmp_path / "pyproject.toml"
@@ -2133,8 +2136,11 @@ aliases = "base-profile-aliases.json"
 [tool.datamodel-codegen.profiles.root]
 aliases = "root-profile-aliases.json"
 
+[tool.datamodel-codegen.profiles.""]
+aliases = "empty-profile-aliases.json"
+
 [tool.datamodel-codegen.profiles.child]
-extends = ["base", "child", "invalid"]
+extends = ["base", "", "child", "invalid"]
 default-values = "child-defaults.json"
 
 [tool.datamodel-codegen.jobs.models]
@@ -2145,6 +2151,7 @@ aliases = []
 default-values = "job-defaults.json"
 
 [tool.datamodel-codegen.jobs.unprofiled]
+profile = ""
 input = "unprofiled-missing-schema.json"
 output = "unprofiled-output.py"
 aliases = "unprofiled-aliases.json"
@@ -2169,6 +2176,7 @@ aliases = "unprofiled-aliases.json"
         tmp_path / "unprofiled-missing-schema.json",
     ):
         assert dependencies.includes(dependency)
+    assert not dependencies.includes(tmp_path / "empty-profile-aliases.json")
 
     find_project_config = main_module._find_datamodel_codegen_project_config_with_path
 
@@ -5806,3 +5814,52 @@ snake-case-field = false
             expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_override.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
+
+
+def test_empty_profile_name_selects_no_profile(tmp_path: Path) -> None:
+    """Read the base settings for an empty profile name, never the table `profiles.""`.
+
+    An empty name selects no profile wherever a profile is selected: `--profile`, the profile of a job, and a parent of
+    `extends`, written as a string or in a list.
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[tool.datamodel-codegen]
+input = "schema.json"
+input-file-type = "jsonschema"
+disable-timestamp = true
+
+[tool.datamodel-codegen.profiles.""]
+class-name = "FromEmptyProfile"
+
+[tool.datamodel-codegen.profiles.string]
+extends = ""
+
+[tool.datamodel-codegen.profiles.list]
+extends = [""]
+
+[tool.datamodel-codegen.jobs.empty]
+input = "schema.json"
+output = "jobs/empty.py"
+profile = ""
+
+[tool.datamodel-codegen.jobs.list]
+input = "schema.json"
+output = "jobs/list.py"
+profile = "list"
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "schema.json").write_text(
+        '{"type": "object", "properties": {"a": {"type": "string"}}}', encoding="utf-8"
+    )
+
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+        for profile in ("", "string", "list"):
+            run_main_with_args(["--profile", profile, "--output", f"profiles/{profile or 'empty'}.py"])
+
+    written = sorted([*(tmp_path / "jobs").iterdir(), *(tmp_path / "profiles").iterdir()])
+    assert_output(
+        "".join(f"# {path.relative_to(tmp_path).as_posix()}\n{path.read_text(encoding='utf-8')}" for path in written)
+    )

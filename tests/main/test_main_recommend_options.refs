@@ -64,6 +64,7 @@ size-unknown	main/main_recommend_options/recommend_options_default_skips_large_c
 [test_recommend_options_for_projects]
 changes	main/main_recommend_options/recommend_options_for_projects[changes].stdout.txt
 current	main/main_recommend_options/recommend_options_for_projects[current].stdout.txt
+empty-profile	main/main_recommend_options/recommend_options_for_projects[empty-profile].stdout.txt	= main/main_recommend_options/recommend_options_for_projects[changes].stdout.txt
 job	main/main_recommend_options/recommend_options_for_projects[job].stdout.txt
 preset-argument	main/main_recommend_options/recommend_options_for_projects[preset-argument].stdout.txt
 preset-argument-json	main/main_recommend_options/recommend_options_for_projects[preset-argument-json].stdout.txt

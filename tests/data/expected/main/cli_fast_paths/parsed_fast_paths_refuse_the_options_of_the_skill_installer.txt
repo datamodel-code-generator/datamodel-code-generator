@@ -1,0 +1,72 @@
+{
+  "--output-format-json-schema config --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema generate-prompt --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema generation --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema model-metadata --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema recommend-options --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema structured-output --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--generate-prompt --skill-scope user": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema config --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema generate-prompt --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema generation --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema model-metadata --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema recommend-options --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--output-format-json-schema structured-output --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  },
+  "--generate-prompt --overwrite-skill": {
+    "code": 2,
+    "stdout": "",
+    "stderr": "Error: --skill-scope and --overwrite-skill require --install-skill\n"
+  }
+}

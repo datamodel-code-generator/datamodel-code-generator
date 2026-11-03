@@ -6,11 +6,11 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path  # noqa: TC003 - used at runtime by Pydantic
 from threading import RLock
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationInfo, field_validator
 
-from datamodel_code_generator._config_fields import DEFAULT_ENCODING
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, OUTPUT_PATH_FIELDS, option_path
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -104,6 +104,17 @@ class GenerateConfig(BaseGenerateConfig):
     _validate_schema_validator_base_class_name = field_validator("schema_validator_base_class_name")(
         validate_schema_validator_base_class_name
     )
+
+    @field_validator(*OUTPUT_PATH_FIELDS)
+    @classmethod
+    def expand_output_paths(cls, value: Path | None, info: ValidationInfo) -> Path | None:
+        """Read a leading ``~`` of a path the run writes as the home directory, as the command line reads it.
+
+        Every reader of the path then reads one place: the files written, and the checks that the outputs, the model
+        metadata and the remote lock are different paths that do not overlap. A ``~user`` that names no user raises
+        ``Error``, as on the command line (``option_path``).
+        """
+        return None if value is None else option_path(cast("str", info.field_name), value)
 
 
 def _rebuild_config_model(model_type: type[BaseModel], types_namespace: dict[str, Any]) -> None:

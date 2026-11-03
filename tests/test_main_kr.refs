@@ -18,6 +18,8 @@
 	main_kr/input_output/output.py
 [test_custom_formatters_kwargs_option]
 	main_kr/input_output/output.py
+[test_empty_profile_name_selects_no_profile]
+	main_kr/empty_profile_name_selects_no_profile.txt
 [test_encoding_option]
 	main_kr/encoding/output.py
 [test_fail_on_multi_module_stdout_single_file]

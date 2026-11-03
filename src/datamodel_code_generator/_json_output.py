@@ -94,7 +94,8 @@ def json_schema_path(name: str) -> JsonSchemaPath | None:
     """Return where the command line prints the JSON Schema ``name`` of ``--output-format-json-schema``, None for none.
 
     ``argv`` before the argument parser loads when the request is the whole command, ``parsed`` once the parser has read
-    the command, before ``--version`` and the skill options, ``main`` only where the command handles those options.
+    the command, before ``--version``, ``main`` only where the command handles ``--version``. On every path the options
+    of ``--install-skill`` are refused without it, as the command line refuses them.
     """
     return None if (source := _JSON_SCHEMAS.get(name)) is None else source.path
 
