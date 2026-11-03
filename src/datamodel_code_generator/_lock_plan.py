@@ -1,7 +1,8 @@
 """Where a run's remote lock lives and which policy its options give it, resolved without importing lock machinery.
 
-The command line, ``generate()`` and the target runs read the lock options here only. They differ in how a lockfile
-spelling becomes a path, and each difference is a named row of ``remote_lock_plan``:
+The command line, ``generate()`` and the target runs read the lock options here only. The default lockfile lies in
+the directory ``default_lock_parent`` names. The runs differ in how a lockfile spelling becomes a path, and each
+difference is a named row of ``remote_lock_plan``:
 
 * ``lexical`` (the command line): the lexical form (``_paths.lexical``) from the working directory, then resolved;
 * ``resolved`` (an update that ``generate()`` publishes with its artifacts): joined to the caller's directory, then
@@ -12,13 +13,12 @@ spelling becomes a path, and each difference is a named row of ``remote_lock_pla
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple
 
 from datamodel_code_generator._paths import lexical
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from datamodel_code_generator.base_config import BaseGenerateConfig
 
 LOCKFILE_NAME: Final = "datamodel-codegen.lock"
@@ -42,6 +42,17 @@ class RemoteLockPlan(NamedTuple):
     def read_only(self) -> bool:
         """Whether the policy never replaces the lock artifact."""
         return self.policy in {"verify", "locked"}
+
+
+def default_lock_parent(pyproject_path: Path | None, cwd: Path | None = None) -> Path:
+    """Return the directory of the default lockfile: the pyproject.toml directory, or ``cwd`` without one.
+
+    ``cwd`` is the working directory when omitted. The command line passes the pyproject.toml it read; ``generate()``
+    passes none, so its default lockfile lies in the caller's directory (#5585).
+    """
+    if pyproject_path is not None:
+        return pyproject_path.parent
+    return Path.cwd() if cwd is None else cwd
 
 
 def remote_lock_plan(config: BaseGenerateConfig, default_parent: Path, spelling: LockSpelling) -> RemoteLockPlan:

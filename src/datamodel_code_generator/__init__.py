@@ -1835,11 +1835,11 @@ def _prepare_atomic_generation_remote_lock(
     input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
 ) -> tuple[GenerateConfig, Path, RemoteReferenceLock]:
     """Prepare the existing atomic update policy without resolving the original config."""
-    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    canonical_lockfile = remote_lock_plan(config, caller_cwd, "resolved").canonical_path
+    canonical_lockfile = remote_lock_plan(config, default_lock_parent(None, caller_cwd), "resolved").canonical_path
     _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
@@ -1853,9 +1853,9 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
-    from datamodel_code_generator._paths import concrete_parent, resolved  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
+        artifact_roots,
         publish_staged_files,
         release_all,
         stage_outputs,
@@ -1870,16 +1870,7 @@ def _generate_with_atomic_remote_update(
     try:
         output, metadata = config.output, config.emit_model_metadata
         staging = stage_outputs(
-            output,
-            metadata,
-            (
-                None if output is None else resolved(output),
-                None if output is None else concrete_parent(output),
-                None if metadata is None else concrete_parent(metadata),
-            ),
-            contexts,
-            anchors,
-            make_directory=True,
+            output, metadata, artifact_roots(output, metadata), contexts, anchors, existing_directory="empty-directory"
         )
         lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
         staged_config = config.model_copy(update=staging.updates)
@@ -2053,9 +2044,9 @@ def _resolve_generation_remote_lock(
             getattr(remote_lock, "path", None),
         )
     else:
-        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+        from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-        plan = remote_lock_plan(config, caller_cwd, "legacy-api-lockfile-as-written")
+        plan = remote_lock_plan(config, default_lock_parent(None, caller_cwd), "legacy-api-lockfile-as-written")
         _validate_generation_path_conflicts(
             input_,
             config.output,
