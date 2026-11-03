@@ -18,6 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from datamodel_code_generator._container_kinds import CONTAINERS
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
@@ -79,10 +80,10 @@ def _omit_untaken_union_constraints(facts: FinalFacts, writer: UnionConstraintsW
     with. They all go when every
     member keeps each check without the field; otherwise the field keeps them all, and its output stays as it was.
     """
-    models = {id(model.reference): model for model in facts.live_models}
+    models = {model_key_of(model.reference): model for model in facts.live_models}
 
     def model_of(reference: ReferenceView) -> ModelView | None:
-        return models.get(id(reference))
+        return models.get(model_key_of(reference))
 
     for model in facts.live_models:
         for field in model.fields:

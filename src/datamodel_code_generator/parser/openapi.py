@@ -363,7 +363,7 @@ def _parameter_identity(name: str, location: str) -> tuple[str, str]:
 def _missing_operation_id(path_name: str) -> Error:
     """Return the error for an operation at ``path_name`` without the operationId --use-operation-id-as-name needs."""
     return Error(
-        "All operations must have an operationId when --use_operation_id_as_name is set."
+        "All operations must have an operationId when --use-operation-id-as-name is set. "
         f"The following path was missing an operationId: {path_name}"
     )
 

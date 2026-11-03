@@ -204,10 +204,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     typed_map_values_may_move_models: bool
 
     @property
-    def _literal_under_all_enum_reference_ids(self) -> set[int]:
-        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values.
+    def _literal_under_all_enum_reference_ids(self) -> set[ModelKey]:
+        """The model keys of the enums that ``--enum-field-as-literal all`` writes as Literal values.
 
-        Keyed by the identity of the Reference, not by model key, so a deep copy of a type is not among them (#5824).
+        A type whose Reference is a deep copy names its enum by the key of the original (#5824).
         """
 
     @property
@@ -555,18 +555,18 @@ writes every Enum among them as a Literal."""
 
 
 def _msgspec_enum_clashes(
-    data_types: Iterable[DataType], literal_enum_ids: Collection[int]
+    data_types: Iterable[DataType], literal_enum_ids: Collection[ModelKey]
 ) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind and its written members of a union that msgspec decodes once its Enums are written as Literal.
 
     msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
     values as its one int-like member, while it takes Literal values beside each other and beside str or int. A
     member of another str-like type, such as bytes, refuses a Literal of str values too, so it leaves the str side be.
-    ``literal_enum_ids`` holds the ids of the references of the Enums that ``--enum-field-as-literal all`` writes as a
-    Literal.
+    ``literal_enum_ids`` holds the model keys of the Enums that ``--enum-field-as-literal all`` writes as a Literal; the
+    Enums are told apart by model key, so a deep copy of a type names the Enum of its original.
     """
-    enums: dict[str, set[int]] = {"str": set(), "int": set()}
-    classes: dict[str, set[int]] = {"str": set(), "int": set()}
+    enums: dict[str, set[ModelKey]] = {"str": set(), "int": set()}
+    classes: dict[str, set[ModelKey]] = {"str": set(), "int": set()}
     names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
     others: set[str] = set()
     refused: set[str] = set()
@@ -576,10 +576,10 @@ def _msgspec_enum_clashes(
                 if (
                     kinds := {literal_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
                 ) in ({"str"}, {"int"}):
-                    enums[kind := kinds.pop()].add(id(source))
+                    enums[kind := kinds.pop()].add(key := model_key_of(source.reference))
                     names[kind][member.type_hint] = None
-                    if id(source.reference) not in literal_enum_ids:
-                        classes[kind].add(id(source))
+                    if key not in literal_enum_ids:
+                        classes[kind].add(key)
             elif source is None and not leaf.data_types and not leaf.enum_member_literals:
                 if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
                     refused.add("str")
@@ -596,7 +596,7 @@ def _msgspec_enum_clashes(
 
 
 def _msgspec_refused_union_enums(
-    data_type: DataType, literal_enum_ids: Collection[int]
+    data_type: DataType, literal_enum_ids: Collection[ModelKey]
 ) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
     if not (members := union_members(data_type)) or not (clashes := _msgspec_enum_clashes(members, literal_enum_ids)):
@@ -610,7 +610,7 @@ def _msgspec_refused_union_enums(
 
 
 def _msgspec_field_enum_clashes(
-    data_types: Iterable[DataType], literal_enum_ids: Collection[int]
+    data_types: Iterable[DataType], literal_enum_ids: Collection[ModelKey]
 ) -> dict[str, _MsgspecEnumClash]:
     """Return the clash of each kind that the unions among some types are refused for, the first union's."""
     clashes: dict[str, _MsgspecEnumClash] = {}
@@ -995,7 +995,9 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 None,
                 (
                     None if parser.use_msgspec_nullable_enum_alias else _msgspec_null_enum_message(model),
-                    _msgspec_mixed_enum_message(model, literal_under_all=id(model.reference) in literal_enum_ids),
+                    _msgspec_mixed_enum_message(
+                        model, literal_under_all=model_key_of(model.reference) in literal_enum_ids
+                    ),
                     _msgspec_wide_int_enum_message(model),
                 ),
             ):

@@ -8,15 +8,12 @@ location with its document URL redacted.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-__all__ = ["LocationRow", "is_url", "named_location", "redact_path", "redact_reference", "redact_url"]
-
-LocationRow: TypeAlias = Literal["redacted", "legacy-unredacted-locations"]
-"""How ``named_location`` writes a location: redacted, or as written, as the warnings of 0.87.0 print it."""
+__all__ = ["is_url", "named_location", "redact_path", "redact_reference", "redact_url"]
 
 _URL = re.compile(
     r"(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*://)(?P<authority>[^/?#]*)(?P<path>[^?#]*)(?P<rest>.*)", re.DOTALL
@@ -55,14 +52,12 @@ def redact_path(parts: Iterable[str]) -> str:
     return "/".join(redact_reference(part) for part in parts)
 
 
-def named_location(location: object, fallback: str, *, row: LocationRow = "redacted") -> str:
+def named_location(location: object, fallback: str) -> str:
     """Return how a message names a schema location: ``document#pointer``, or ``fallback`` when it is None.
 
-    Row ``redacted`` redacts the document URL of the text (``redact_reference``). Row ``legacy-unredacted-locations``
-    keeps the location as written, and the fallback as the caller gives it.
+    The document URL of the text is redacted (``redact_reference``).
     """
-    text = fallback if location is None else str(location)
-    return redact_reference(text) if row == "redacted" else text
+    return redact_reference(fallback if location is None else str(location))
 
 
 def is_url(ref: str) -> bool:

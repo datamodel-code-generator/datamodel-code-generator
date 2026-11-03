@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
@@ -46,10 +47,10 @@ def _omit_held_null(facts: FinalFacts, writer: HeldNullWriter) -> None:
     """Drop the None of every type of a live model that names a live model holding null.
 
     Which models hold null is read for every model before the first write, so a root model whose root names a model
-    holding null keeps holding null after its root loses the restated None. The holders stay keyed by the identity of
-    their Reference, not by model key, so a deep copy of a type keeps the restated None as before (#5824).
+    holding null keeps holding null after its root loses the restated None. The holders are keyed by model key, so a
+    type whose Reference is a deep copy names its holder as the original does (#5824).
     """
-    holders = {id(model.reference) for model in facts.live_models if model.holds_null}
+    holders = {model_key_of(model.reference) for model in facts.live_models if model.holds_null}
     if not holders:
         return
     for model in facts.live_models:
@@ -57,7 +58,7 @@ def _omit_held_null(facts: FinalFacts, writer: HeldNullWriter) -> None:
             if data_types := [
                 data_type
                 for data_type in _types(field.data_type)
-                if (reference := data_type.reference) is not None and id(reference) in holders
+                if (reference := data_type.reference) is not None and model_key_of(reference) in holders
             ]:
                 writer.drop_held_null(model, field, data_types)
 

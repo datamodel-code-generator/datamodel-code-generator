@@ -792,6 +792,67 @@ def test_a_deep_copied_type_keeps_what_its_site_recorded(
     )
 
 
+def test_a_deep_copied_union_leaves_out_what_its_members_hold(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its union leaves out the keywords its members hold.
+
+    The copy names the root models of the branches by their model keys, so ``--field-constraints`` leaves the
+    keywords beside the union out of the field as it does without the copy (#5824).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class CopyingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    if field.required:
+                        self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    parser = CopyingParser(
+        JSON_SCHEMA_DATA_PATH / "field_constraint_sites" / "union_root_keywords.json",
+        formatters=[Formatter.BUILTIN],
+        field_constraints=True,
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_a_deep_copied_type_keeps_the_msgspec_union_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its type keeps the hint of the msgspec union warning.
+
+    The copy names the enums its original names by their model keys, so the warnings about the unions msgspec refuses
+    still recommend ``--enum-field-as-literal all``, which writes those enums as Literal values (#5824).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.model import get_data_model_types
+
+    class CopyingParser(OpenAPIParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    model_types = get_data_model_types(DataModelType.MsgspecStruct, PythonVersion.PY_310)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        CopyingParser(
+            OPEN_API_DATA_PATH / "msgspec_enum_unions.yaml",
+            formatters=[Formatter.BUILTIN],
+            data_model_type=model_types.data_model,
+            data_model_root_type=model_types.root_model,
+            data_model_field_type=model_types.field_model,
+            data_type_manager_type=model_types.data_type_manager,
+            dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+            reuse_model=True,
+        ).parse()
+    assert_output("".join(f"{message}\n" for message in dict.fromkeys(str(warning.message) for warning in recorded)))
+
+
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
 def test_model_graph_check_reports_a_written_model_that_the_store_retired(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
@@ -3652,6 +3713,117 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
         output_should_not_exist=True,
     )
     assert_output(capsys.readouterr().err, EXPECTED_MAIN_PATH / "additional_imports_invalid.txt")
+
+
+@pytest.mark.parametrize(
+    ("option", "value", "message"),
+    [
+        pytest.param(
+            "--base-class",
+            "mypkg.1x",
+            "base_class must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="base-class",
+        ),
+        pytest.param(
+            "--base-class-map",
+            '{"Person": ["mypkg.Base", "mypkg.class"]}',
+            "base_class_map must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="base-class-map",
+        ),
+        pytest.param(
+            "--type-overrides",
+            '{"Person.firstName": "mypkg.1x"}',
+            "type_overrides must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="type-overrides",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.1x(letter_case=LetterCase.CAMEL)",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="class-decorators",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg . class  # comment",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="class-decorators-spaced-dot-comment",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco if flag else other",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco if flag else other'",
+            id="class-decorators-expression",
+        ),
+        pytest.param(
+            "--class-decorators",
+            '@mypkg."""deco',
+            'class_decorators must be a Python import path composed of identifiers: \'mypkg."""deco\'',
+            id="class-decorators-unterminated-string",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco\n  (flag)",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco\\n  (flag)'",
+            id="class-decorators-indented-line",
+        ),
+    ],
+)
+def test_main_refuses_named_path_with_non_identifier_part(
+    output_file: Path, capsys: pytest.CaptureFixture[str], option: str, value: str, message: str
+) -> None:
+    """Refuse an option that names a Python object by a dotted path with a part that is not an identifier (#6109).
+
+    ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its tokens
+    before the arguments of its call, without comments and the whitespace around a dot; a text that does not tokenize
+    there is a path as a whole.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[option, value],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+def test_generate_revalidates_mutated_named_paths() -> None:
+    """Refuse a base class path set on a public config after it was validated, as the parser reads it (#6109)."""
+    config = GenerateConfig(input_file_type=InputFileType.JsonSchema)
+    config.base_class = "mypkg.1x"
+    with pytest.raises(Error, match=r"base_class must be a Python import path composed of identifiers: 'mypkg\.1x'"):
+        generate(JSON_SCHEMA_DATA_PATH / "person.json", config=config)
+
+
+def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
+    """Keep the decorators and type overrides whose text after a path, or around it, is no path (#6109).
+
+    A decorator's path ends at its first bracket after its opening parentheses, so a call, a subscript and parentheses
+    are written as given, and a comment or whitespace around a dot is no part of it; a type override that spells an
+    annotation names no class to import, and an empty base class names none.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--class-decorators",
+            (
+                "@(mypkg.deco),mypkg.deco(letter_case=LetterCase.CAMEL),@registry[0].register,"
+                "@deprecated  # comment,@mypkg . decorator"
+            ),
+            "--additional-imports",
+            "mypkg,mypkg.LetterCase,mypkg.deprecated,mypkg.registry",
+            "--type-overrides",
+            '{"Person.firstName": "str | None"}',
+            "--base-class-map",
+            '{"Person": ""}',
+            "--formatters",
+            "builtin",
+        ],
+    )
 
 
 @pytest.mark.cli_doc(

@@ -190,7 +190,6 @@ def merge_schema_constraints(
                 named_location(
                     next((item.schema_location for item in items if item.schema_location), None),
                     "allOf",
-                    row="legacy-unredacted-locations",
                 ),
             ),
         )
