@@ -4135,6 +4135,132 @@ def test_main_jsonschema_builtin_submodule_beside_package_init(
     assert_output("\n".join(verdicts) + "\n", name="payloads")
 
 
+_ITEM_PAYLOADS = ['{"item": {"sku": "s", "kind": "book"}}', '{"item": {"sku": 1}}']
+_CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": "t"}}}', '{"featured": {"sku": 1}}']
+_DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
+_NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
+_ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "target_python_version", "extra_args", "decoded"),
+    [
+        *(
+            pytest.param(
+                "module_named_annotations.json",
+                output_model_type,
+                "3.10",
+                [],
+                _ANNOTATIONS_DECODED,
+                id=f"future-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "msgspec.Struct",
+            "3.14",
+            [],
+            _ANNOTATIONS_DECODED,
+            id="future-of-module-msgspec.Struct",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ["--read-const-beside-enum"],
+            [*_ANNOTATIONS_DECODED, ("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
+            id="future-enum-member-literal",
+            marks=_NEEDS_STR_ENUM,
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            _ANNOTATIONS_DECODED,
+            id="future-all-exports",
+        ),
+        pytest.param(
+            "module_named_annotations_exported.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--all-exports-scope", "children"],
+            [
+                ("api", "Order", ['{"items": [{"sku": "s"}]}', '{"items": [{"sku": 1}]}']),
+                ("", "Catalog", ['{"order": {"items": [{"sku": "s"}]}}']),
+            ],
+            id="future-all-exports-imported-first",
+        ),
+        *(
+            pytest.param(
+                "module_named_like_package_class.json",
+                output_model_type,
+                "3.10",
+                [],
+                [("pkg.api", "Order", _DETAIL_PAYLOADS), ("pkg", "Report", ['{"warn": {"detail": {"message": "m"}}}'])],
+                id=f"class-{output_model_type}",
+            )
+            for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
+        ),
+        pytest.param(
+            "module_named_annotations_in_empty_package.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [],
+            [("pkg.api", "Order", _ITEM_PAYLOADS)],
+            id="empty-package",
+        ),
+    ],
+)
+def test_main_jsonschema_submodule_hidden_by_package(
+    output_dir: Path,
+    input_name: str,
+    output_model_type: str,
+    target_python_version: str,
+    extra_args: list[str],
+    decoded: list[tuple[str, str, list[str]]],
+) -> None:
+    """Import a model of a submodule from the submodule where its package's ``__init__.py`` binds the submodule's name.
+
+    ``from . import annotations`` gave the ``__future__`` feature where the package's ``__init__.py`` writes
+    ``from __future__ import annotations``, the shared import or on Python 3.14 its own, and ``from . import Warn`` the
+    class ``Warn`` that ``pkg/__init__.py`` defines (#6009). The ``__init__.py`` keeps its own import of ``pkg.Warn``,
+    which runs before the class is defined and keeps the class bound once ``pkg.api`` imports the submodule, a package
+    whose ``__init__.py`` writes no model binds no such name, and a module that names an enum of ``annotations`` by an
+    enum member literal (``Literal[annotations.Kind.book]``) keeps importing the module, which the ``__init__.py``
+    loads first. Under ``--all-exports-scope`` the export imports of the ``__init__.py`` load the submodule: where they
+    run before ``api`` the old import worked and only its form changes; where ``from . import api`` runs first it
+    failed. The models are decoded after the first module named is imported, in one import of the package.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    verdicts = []
+    with _generated_package_module(output_dir, decoded[0][0]):
+        for module_path, model_name, payloads in decoded:
+            module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
+            verdicts += [
+                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+                for payload in payloads
+            ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
 @pytest.mark.parametrize(
     ("input_name", "model_name", "payloads"),

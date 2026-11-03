@@ -35,6 +35,7 @@ from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
+    IMPORT_ANNOTATIONS,
     IMPORT_LITERAL,
     Import,
     _aliased_name,
@@ -54,6 +55,7 @@ from datamodel_code_generator.parser._imports_plan import Added, ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ReferenceExpressionHost,
     reference_import_target,
+    register_reference_import,
     shared_import_bindings,
 )
 from datamodel_code_generator.parser._passes._shared import (
@@ -69,6 +71,8 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _declares_unique_items,
     _format_tags,
+    _get_data_type_target_full_name,
+    _get_model_module_name,
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _named_data_types,
@@ -95,11 +99,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ReuseGroups
+    from datamodel_code_generator.parser._passes._shared import ModuleNamesView
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
         ForwarderMap,
         ModuleContextView,
         ModulePath,
+        ParseConfigView,
         SortedDataModels,
         _FinalizeState,
     )
@@ -118,6 +124,7 @@ __all__ = [
     "builtin_name_bindings",
     "change_imported_model_name",
     "decide_config_items",
+    "import_models_of_hidden_submodules",
     "name_final_classes_of_additional_properties",
     "record_generated_class_names",
     "record_model_placement",
@@ -130,6 +137,7 @@ __all__ = [
     "replan_schema_validators_after_renames",
     "resolve_module_import_conflicts",
     "snapshot_model_imports",
+    "submodules_hidden_by_packages",
     "validate_explicit_field_aliases",
     "warn_about_decimal_defaults",
     "warn_about_dropped_constraints",
@@ -173,6 +181,9 @@ class ImportsHost(
         model_imports: dict[DataModel, tuple[Import, ...]],
     ) -> None:
         """Merge the imports that planning the helpers added into the imports of each module."""
+
+    def _writes_module_future_annotations(self, models: list[DataModel], config: Any) -> bool:
+        """Return whether a module writes ``from __future__ import annotations`` of its own, beside shared imports."""
 
 
 class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost, Protocol):
@@ -287,6 +298,7 @@ _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
 _BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
 _BUILTIN_SUBMODULE_BINDINGS: Final = ImportProducer("builtin-submodule-bindings")
 _SUBMODULE_IMPORT_BINDINGS: Final = ImportProducer("submodule-import-bindings")
+_HIDDEN_SUBMODULES: Final = "hidden-submodules"
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
 _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
@@ -1424,6 +1436,130 @@ def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]
             parser._import_ledger,  # noqa: SLF001
             parser.target_python_version.version_key,
         )
+
+
+def submodules_hidden_by_packages(
+    parser: ImportsHost[Any],
+    contexts: Sequence[ModuleContextView],
+    naming: ModuleNamesView,
+    config: ParseConfigView,
+) -> dict[ModulePath, frozenset[tuple[str, ...]]]:
+    """Return, by the file of each module, the modules it imports models from that their package hides from it.
+
+    ``from pkg import annotations`` gives what ``pkg/__init__.py`` binds as ``annotations`` once it binds the name
+    itself, not the submodule ``pkg.annotations``, which the import then never loads. The ``__init__.py`` of a package
+    that writes models binds the names of its ``__future__`` imports (``annotations``) before every other line, its
+    shared ones and on a target with native deferred annotations its own (``_writes_module_future_annotations``):
+    those hide the submodule from every module. It defines its classes after its imports, so a class hides the
+    submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
+    submodule: the submodule is then loaded before the class takes the name, and no later import of it replaces the
+    class. A module names the hidden modules by their module names, as ``reference_import_target`` reads them. The class
+    of an enum member literal is written before (``import_enum_member_literal_classes``), so a module that names a
+    model of the module by one keeps importing the module.
+    """
+    treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
+
+    def named_modules(models: Iterable[DataModel], *, literals: bool) -> set[tuple[str, ...]]:
+        return {
+            tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1])
+            for model in models
+            for data_type in (model.all_data_types if literals else _named_data_types(model))
+            if (reference := data_type._enum_member_literal_reference if literals else data_type.reference)  # noqa: SLF001
+            is not None
+        }
+
+    shared_future = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ == "__future__"}
+    inits = {
+        written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]: ctx
+        for ctx in contexts
+        if ctx.models and _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+    }
+    hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
+    for ctx in contexts:
+        parts = module_parts(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        if not (ctx.models and parts and (init := inits.get(package := parts[:-1])) is not None):
+            continue
+        name = parts[-1]
+        modules = {tuple(_get_model_module_name(model, module_names).split(".")) for model in ctx.models}
+        if name in shared_future or (
+            name == IMPORT_ANNOTATIONS.import_ and parser._writes_module_future_annotations(init.models, config)  # noqa: SLF001
+        ):
+            for found in hidden.setdefault(package, (set(), set())):
+                found.update(modules)
+        elif any(model.class_name == name for model in init.models) and any(
+            named[: len(module)] == module for named in named_modules(init.models, literals=False) for module in modules
+        ):
+            hidden.setdefault(package, (set(), set()))[1].update(modules)
+    if not hidden:
+        return {}
+    result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
+    for ctx in contexts:
+        package = (
+            written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)[:-1]
+            if _is_init_file(ctx, treat_dot_as_module=treat_dot_as_module)
+            else None
+        )
+        modules = {
+            module
+            for hidden_package, (from_init, from_others) in hidden.items()
+            for module in (from_init if hidden_package == package else from_others)
+        }
+        if modules := modules.difference(named_modules(ctx.models, literals=True)):
+            result[ctx.module] = frozenset(modules)
+    return result
+
+
+def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Import the models of a submodule from the submodule where its package hides it from the module.
+
+    ``from . import annotations``, which names the models of the module ``annotations`` (``annotations.Item``), gives
+    the ``__future__`` feature where the package's ``__init__.py`` writes ``from __future__ import annotations``, and a
+    class where it defines one of that name (``submodules_hidden_by_packages``). Such a model is imported from its
+    module (``from .annotations import Item``), as ``--use-exact-imports`` imports it, under the name the module's
+    resolver gives it once the module import released its name, and every use of the model follows. The use keeps an
+    expression, the class name where the import binds it, as the field render plans froze it written.
+    """
+    if not (hidden := submodules_hidden_by_packages(parser, state.contexts, state, state.config)):
+        return
+    ledger, module_names = parser._import_ledger, state.model_path_to_module_name  # noqa: SLF001
+    for ctx in state.contexts:
+        if not (modules := hidden.get(ctx.module)):
+            continue
+        imports = ctx.imports
+        users = [
+            (model, data_type, reference, stale)
+            for model in ctx.models
+            for data_type in _named_data_types(model)
+            if (reference := data_type.reference) is not None
+            and tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1]) in modules
+            and (stale := imports.reference_paths.get(reference.path)) is not None
+            and _module_binding(data_type.alias) == stale.binding_name
+        ]
+        if not users:
+            continue
+        for model, *_, stale in users:
+            ledger.remove(imports, stale, ImportProducer(_HIDDEN_SUBMODULES, model))
+        ledger.release_names(
+            imports,
+            ctx.scoped_model_resolver,
+            {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports)),
+        )
+        for model, data_type, reference, _ in users:
+            expression = register_reference_import(
+                reference,
+                _get_model_module_name(model, module_names),
+                _get_data_type_target_full_name(data_type, reference, module_names),
+                imports,
+                ctx.scoped_model_resolver,
+                init=ctx.is_init,
+                internal_modules=state.internal_modules,
+                producer=ImportProducer(_HIDDEN_SUBMODULES, model),
+                treat_dot_as_module=parser.treat_dot_as_module,
+                import_ledger=ledger,
+                shared_imports=parser.imports,
+                hidden_modules=modules,
+            )
+            parser._graph_builder.name_reference(data_type, expression or reference.short_name)  # noqa: SLF001
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:

@@ -344,6 +344,7 @@ alias_builtin_shadowing_module_imports
 alias_builtins_hidden_by_submodules
 bind_module_field_names
 change_imported_model_name
+import_models_of_hidden_submodules
 decide_config_items
 record_generated_class_names
 check_model_inheritance

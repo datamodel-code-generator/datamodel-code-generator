@@ -125,6 +125,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     treat_dot_as_module: bool | None,
     shared_imports: Imports | None,
     row: ImportPathRow = "reference",
+    hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> ReferenceImportTarget:
     """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
 
@@ -133,7 +134,8 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     not through the module imported from its package, where an import every module shares (``shared_imports``) binds
     the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
     name twice and ``from package import module`` would give what the package binds, not the module. The import then
-    binds the model's name, which another shared import may bind too (``beside_shared_import``).
+    binds the model's name, which another shared import may bind too (``beside_shared_import``). So is a model of one of
+    the ``hidden_modules``, whose package binds the module's name itself (``submodules_hidden_by_packages``).
     """
     beside_shared_import = False
     if base_class:
@@ -166,7 +168,9 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
             and _is_module_named_like_shared_import(shared_imports, import_, name)
         )
 
-        if imports_module and (is_internal_module or is_module_class_collision or named_like_shared_import):
+        if imports_module and (
+            is_internal_module or is_module_class_collision or named_like_shared_import or ref_module in hidden_modules
+        ):
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
@@ -191,6 +195,7 @@ def register_reference_import(  # noqa: PLR0913
     import_ledger: ModuleImportLedger,
     shared_imports: Imports,
     row: ImportPathRow = "reference",
+    hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> str | None:
     """Import a reference from another module and return its expression when it is not the class name.
 
@@ -209,6 +214,7 @@ def register_reference_import(  # noqa: PLR0913
         treat_dot_as_module=treat_dot_as_module,
         shared_imports=shared_imports,
         row=row,
+        hidden_modules=hidden_modules,
     )
     if target.same_module:
         return None

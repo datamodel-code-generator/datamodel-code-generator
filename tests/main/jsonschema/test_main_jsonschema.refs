@@ -7520,6 +7520,29 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/single_value_enum_as_const
 	main/jsonschema/stdin_root_id_refs.py
 [test_main_jsonschema_subclass_enum]
 	main/jsonschema/subclass_enum.py
+[test_main_jsonschema_submodule_hidden_by_package]
+class-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-dataclasses.dataclass].payloads.txt
+class-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-dataclasses.dataclass]/
+class-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-msgspec.Struct].payloads.txt
+class-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-msgspec.Struct]/
+class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-dataclasses.dataclass].payloads.txt
+class-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[class-pydantic_v2.BaseModel]/
+empty-package	main/jsonschema/main_jsonschema/submodule_hidden_by_package[empty-package].payloads.txt
+empty-package	main/jsonschema/main_jsonschema/submodule_hidden_by_package[empty-package]/
+future-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-all-exports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
+future-all-exports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-all-exports]/
+future-all-exports-imported-first	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-all-exports-imported-first].payloads.txt
+future-all-exports-imported-first	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-all-exports-imported-first]/
+future-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
+future-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass]/
+future-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-enum-member-literal].payloads.txt
+future-enum-member-literal	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-enum-member-literal]/
+future-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-msgspec.Struct].payloads.txt
+future-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-msgspec.Struct]/
+future-of-module-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-of-module-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-msgspec.Struct].payloads.txt
+future-of-module-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-of-module-msgspec.Struct]/
+future-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
+future-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]

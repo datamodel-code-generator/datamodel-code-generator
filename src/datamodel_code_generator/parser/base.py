@@ -1906,6 +1906,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for field in model.fields
         )
 
+    def _writes_module_future_annotations(self, models: list[DataModel], config: ParseConfig) -> bool:
+        """Return whether a module writes ``from __future__ import annotations`` of its own, beside the shared imports.
+
+        Only a target with native deferred annotations leaves it to the module, which needs it for its ``models``.
+        """
+        return (
+            self.target_python_version.has_native_deferred_annotations
+            and self._requires_explicit_deferred_annotations(models, config)
+        )
+
     def _get_module_future_imports(
         self,
         ctx: ModuleContext,
@@ -1913,10 +1923,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         future_imports_str: str,
     ) -> str:
         """Return future imports required by a single generated module."""
-        if not (
-            self.target_python_version.has_native_deferred_annotations
-            and self._requires_explicit_deferred_annotations(ctx.models, config)
-        ):
+        if not self._writes_module_future_annotations(ctx.models, config):
             return future_imports_str
         self._import_ledger.append(ctx.imports, IMPORT_ANNOTATIONS, _DEFERRED_ANNOTATIONS)
         future_imports = self._import_ledger.extract_future(ctx.imports, _FUTURE_IMPORTS)
@@ -2244,6 +2251,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module_to_import: dict[ModulePath, Imports],
         forwarder_modules: Collection[ModulePath],
         with_import: bool,  # noqa: FBT001
+        config: ParseConfig,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module.
 
@@ -2251,7 +2261,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module, which ``_process_single_module`` hands over.
         """
         state = _FinalizeState(
-            contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules, with_import
+            contexts,
+            unused_models,
+            model_to_module_models,
+            module_to_import,
+            forwarder_modules,
+            with_import,
+            config,
+            internal_modules,
+            model_path_to_module_name,
         )
         memo = self.generation_store._memo  # noqa: SLF001
         current = {RENDER_READY: RenderReady(type(self), memo), PARSE_MEMO: memo}

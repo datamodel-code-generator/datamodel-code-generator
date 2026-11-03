@@ -1,0 +1,2 @@
+{"item": {"sku": "s", "kind": "book"}}: accepted Order(item=Item(sku='s'))
+{"item": {"sku": 1}}: rejected ValidationError
