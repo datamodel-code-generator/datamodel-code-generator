@@ -1237,6 +1237,8 @@ openapi/datetime_local.yaml::components.schemas.LocalEvent	payloads/native_numer
 openapi/default_values_parameters.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/deprecated_field.yaml::components.schemas.Service	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator.yaml::components.schemas.ObjectBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_alias_generator.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_alias_generator.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.BarItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.FooItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3106,6 +3108,8 @@ openapi/datetime_local.yaml::components.schemas.LocalEvent	payloads/native_numer
 openapi/default_values_parameters.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/deprecated_field.yaml::components.schemas.Service	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator.yaml::components.schemas.ObjectBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_alias_generator.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_alias_generator.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.BarItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_allof_no_subtypes.yaml::components.schemas.FooItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

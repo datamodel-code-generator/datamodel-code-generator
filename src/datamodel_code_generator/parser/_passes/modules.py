@@ -1929,6 +1929,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                             new_data_type,
                             name=field_name,
                             alias=names.alias,
+                            original_name=names.property_name,
                             source_name=names.property_name,
                             class_name=discriminator_model.name,
                             required=True,
