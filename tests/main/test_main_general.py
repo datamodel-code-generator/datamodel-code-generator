@@ -754,26 +754,35 @@ def test_model_graph_check_reports_a_copied_reference(
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options"),
+    ("input_path", "options"),
     [
-        pytest.param("ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"),
-        pytest.param("numeric_constraint_precision/non_finite_multiple_of.json", {}, id="dropped-multiple-of"),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision/non_finite_multiple_of.json",
+            {},
+            id="dropped-multiple-of",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "redundant_reference_null.yaml", {}, id="no-default"),
     ],
 )
 def test_a_deep_copied_type_keeps_what_its_site_recorded(
-    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_name: str, options: dict[str, bool]
+    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_path: Path, options: dict[str, bool]
 ) -> None:
     """A custom parser that types a field with a deep copy of its type keeps what the site recorded on the type.
 
     ``--omit-redundant-reference-null`` marks the None of ``nullOnlyRef`` as the one the schema it references admits,
     and a ``multipleOf`` of 1e400 that Pydantic refuses is recorded on its type for the warning of the field; the copy
-    carries those records, so the output and the warnings are the ones without the copy.
+    carries those records, so the output and the warnings are the ones without the copy. A copied root model that
+    declares no default keeps declaring none: up to 0.88.0 the copy of its default marker was written as the default of
+    ``Use.name_d`` (``Field(<object object at 0x...>)``).
     """
     from copy import deepcopy
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
-    class CopyingParser(JsonSchemaParser):
+    class CopyingParser(OpenAPIParser if input_path.is_relative_to(OPEN_API_DATA_PATH) else JsonSchemaParser):
         def parse_raw(self) -> None:
             super().parse_raw()
             for model in self.results:
@@ -781,7 +790,7 @@ def test_a_deep_copied_type_keeps_what_its_site_recorded(
                     self.generation_store.replace_field_type(field, deepcopy(field.data_type))
 
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
-    parser = CopyingParser(JSON_SCHEMA_DATA_PATH / input_name, formatters=[Formatter.BUILTIN], **options)
+    parser = CopyingParser(input_path, formatters=[Formatter.BUILTIN], **options)
     assert_output(cast("str", parser.parse()))
     assert_output(
         "".join(

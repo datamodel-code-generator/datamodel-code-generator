@@ -5,6 +5,8 @@
 [test_a_deep_copied_type_keeps_what_its_site_recorded]
 dropped-multiple-of	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[dropped-multiple-of].txt
 dropped-multiple-of	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[dropped-multiple-of].warnings.txt	= main/jsonschema/numeric_constraint_precision/non_finite_multiple_of_left_out_accepts_non_multiples[annotated].warnings.txt
+no-default	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[no-default].txt
+no-default	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[no-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 null	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[null].txt
 null	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[null].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_a_deep_copied_union_leaves_out_what_its_members_hold]
