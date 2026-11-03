@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._config_fields import (
-    JSON_FIELDS,
     PYPROJECT_API_PATH_FIELDS,
     PYPROJECT_PATH_FIELDS,
     TARGET_JSON_FIELDS,
+    names_path,
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
@@ -127,6 +127,25 @@ def _normalize_pyproject_config(config: Mapping[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _resolve_relative_paths_from(
+    config: dict[str, Any], directory: Path, fields: frozenset[str] = PYPROJECT_PATH_FIELDS
+) -> dict[str, Any]:
+    """Resolve the relative paths of the given fields from a directory.
+
+    Only lexical: ``~`` expands, and inline JSON of a JSON field is a value, not a path.
+    """
+    updates = {
+        field_name: directory / resolved_path
+        for field_name in fields
+        if (path := config.get(field_name)) is not None
+        and names_path(field_name, path)
+        and not (resolved_path := Path(path).expanduser()).is_absolute()
+    }
+    if not updates:
+        return config
+    return {**config, **updates}
+
+
 def _resolve_pyproject_relative_paths(
     config: dict[str, Any], pyproject_path: Path | None, fields: frozenset[str] = PYPROJECT_PATH_FIELDS
 ) -> dict[str, Any]:
@@ -136,18 +155,7 @@ def _resolve_pyproject_relative_paths(
     """
     if pyproject_path is None:
         return config
-
-    config_directory = pyproject_path.parent
-    updates = {
-        field_name: config_directory / resolved_path
-        for field_name in fields
-        if isinstance(path := config.get(field_name), str | Path)
-        and not (field_name in JSON_FIELDS and str(path).lstrip().startswith(("{", "[")))
-        and not (resolved_path := Path(path).expanduser()).is_absolute()
-    }
-    if not updates:
-        return config
-    return {**config, **updates}
+    return _resolve_relative_paths_from(config, pyproject_path.parent, fields)
 
 
 def load_pyproject_config(

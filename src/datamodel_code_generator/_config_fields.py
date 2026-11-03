@@ -10,6 +10,7 @@ and the watch delay are read from here.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
@@ -93,6 +94,15 @@ DEFAULT_ENCODING: Final = "utf-8"
 DEFAULT_WATCH_DELAY: Final = 0.5
 """The seconds ``--watch`` waits for changes to settle before it regenerates, when no delay is given."""
 
+
+def names_path(name: str, value: object) -> bool:
+    """Return whether the value of a path or JSON field names a path.
+
+    A string or a path does, except inline JSON in a JSON field, which is read as the value itself, not as a file.
+    """
+    return isinstance(value, str | Path) and not (name in JSON_FIELDS and str(value).lstrip().startswith(("{", "[")))
+
+
 __all__ = [
     "CALLER_RELATIVE_PATH_FIELDS",
     "CLI_RESOLVED_PATH_FIELDS",
@@ -111,4 +121,5 @@ __all__ = [
     "WATCHED_PATH_FIELDS",
     "PathField",
     "WatchedAs",
+    "names_path",
 ]
