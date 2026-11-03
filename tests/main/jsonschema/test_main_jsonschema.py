@@ -2167,14 +2167,18 @@ def test_main_remote_ref_allows_private_network_with_explicit_allow(
     assert_httpx_get_kwargs(httpx_get_mock, expected_url="http://127.0.0.1/schema.json")
 
 
-def test_main_missing_local_ref_error_message(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test that missing local $ref files produce a clear error message."""
+@pytest.mark.parametrize("as_uri", [pytest.param(False, id="path"), pytest.param(True, id="file-uri")])
+def test_main_missing_local_ref_error_message(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], *, as_uri: bool
+) -> None:
+    """Test that a missing local $ref file, by path or by file URI, produces the same clear error message."""
+    missing = (tmp_path / "nonexistent.json").resolve()
     schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Test",
         "type": "object",
         "properties": {
-            "ref_field": {"$ref": "nonexistent.json#/definitions/Thing"},
+            "ref_field": {"$ref": f"{missing.as_uri() if as_uri else missing.name}#/definitions/Thing"},
         },
     }
     input_file = tmp_path / "schema.json"
@@ -2185,9 +2189,10 @@ def test_main_missing_local_ref_error_message(tmp_path: Path, capsys: pytest.Cap
         input_path=input_file,
         output_path=output_file,
         input_file_type="jsonschema",
+        extra_args=["--allow-remote-refs"] if as_uri else None,
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="$ref file not found: " + str(tmp_path / "nonexistent.json"),
+        expected_stderr_contains=f"$ref file not found: {missing}\n",
     )
 
 
