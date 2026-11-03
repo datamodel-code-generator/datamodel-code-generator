@@ -26,6 +26,8 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
   drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
   every constraint of a field whose type holds it outside a container when they write the field, with a warning.
+* ``legacy-engine-string-types-only`` (``engine_pattern_types``): the regex engine choice reads the pattern of
+  ``str``, ``constr``, ``StrictStr``, ``bytes`` and ``StrictBytes`` only, not of the other types that take it.
 * ``legacy-msgspec-float-bounds`` (``integer_bound``): the check of a msgspec union reads the bound of a float member
   as the float it is, so an integral bound past ``2**53`` is the integer of its binary value, where the schema models
   read the decimal that is written.
@@ -92,6 +94,7 @@ __all__ = [
     "declared_keywords",
     "declared_string_keywords_taken",
     "enforced_keywords",
+    "engine_pattern_types",
     "exact_float",
     "field_form_zero_bound",
     "holds_number_format",
@@ -210,6 +213,16 @@ _NO_STRING_KEYWORD_FORMAT_TYPES: Final[frozenset[str]] = frozenset({
 _STRING_FORMAT_TYPES: Final[frozenset[str]] = frozenset({"string", "byte", "binary", "password", "email", "hostname"})
 _STRING_KEYWORDS_KEPT_TYPE: Final = "pydantic.AnyUrl"
 """The type that takes every keyword a declared string holds (row ``legacy-anyurl-keeps-string-keywords``)."""
+_ENGINE_UNREAD_PATTERN_TYPES: Final[frozenset[str]] = frozenset({
+    "pydantic.EmailStr",
+    "pydantic.Base64Str",
+    "pydantic.Base64Bytes",
+    "pydantic.EncodedBytes",
+    "typing.AnyStr",
+    "collections.abc.ByteString",
+})
+"""The types that take ``pattern`` whose pattern the regex engine choice does not read (row
+``legacy-engine-string-types-only``)."""
 
 _BASE64_DECODED_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS
 """The keywords a type that decodes base64 text takes, as written beside it in every release: Pydantic checks them on
@@ -731,6 +744,21 @@ def unlisted_type_keywords(*, known: bool) -> frozenset[str]:
     itself; a type the generator cannot classify keeps the keywords the schema declares.
     """
     return NO_KEYWORDS if known else TYPE_DEPENDENT_KEYWORDS
+
+
+def engine_pattern_types(output: OutputKeywords) -> frozenset[str]:
+    """Return the names of the types whose ``pattern`` the regex engine choice reads, as a data type holds them.
+
+    They are the types that take ``pattern`` in ``output``, whose pattern the output model compiles, by the last part
+    of their path (``constr``). Row ``legacy-engine-string-types-only``: the types of ``_ENGINE_UNREAD_PATTERN_TYPES``
+    (``EmailStr``, the base64 types, ``AnyStr``, ``ByteString``) are left out, so a model keeps the default engine for
+    a pattern on them that Rust's engine rejects.
+    """
+    return frozenset(
+        path.rpartition(".")[2]
+        for path, keywords in output.type_keywords.items()
+        if "pattern" in keywords and path not in _ENGINE_UNREAD_PATTERN_TYPES
+    )
 
 
 def shape_meta_keywords(*, mapping: bool, unconstrained: bool) -> frozenset[str] | None:

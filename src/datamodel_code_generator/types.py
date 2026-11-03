@@ -1899,47 +1899,20 @@ class DataTypeManager(ABC):
         annotation does. With ``number_values`` the keywords that a number value of the type meets are returned
         instead: those a member takes, as a number validates as that member, where the ``Literal`` of a const or an
         enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an explicit
-        ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
+        ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches. A type that names a model takes them
+        all, as the model's own type decides them (row ``legacy-reference-takes-every-keyword`` of
+        ``_constraint_keywords``).
         """
-        if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
-            return keywords
-        if data_type.data_types:
-            return _applicability.member_keywords(
-                (
-                    cls.constraint_keywords(
-                        member,
-                        target_version,
-                        number_values=number_values,
-                        target_model_version=target_model_version,
-                    )
-                    for member in data_type.data_types
-                    if not _is_plain_none(member)
-                ),
-                number_values=number_values,
-            )
-        if _is_value_literal(data_type):
-            if number_values:
-                return _applicability.literal_number_keywords(
-                    literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
-                    has_non_string_value=any(type(value) is not str for value in data_type.literals),
-                )
-            return cls._literal_keywords(
-                {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in data_type.literals if value is not None},
+        return cast(
+            "frozenset[str]",
+            cls._constraint_keywords(
+                data_type,
                 target_version,
-            )
-        if data_type.python_type is None:
-            import_ = data_type.import_
-            return cls.type_constraint_keywords(
-                _import_path(import_) if import_ and import_.from_ else data_type.type or "",
-                target_version,
+                None,
+                frozenset(),
                 number_values=number_values,
                 target_model_version=target_model_version,
-            )
-        return cls._annotation_constraint_keywords(
-            data_type.python_type.expression,
-            target_version,
-            number_values=number_values,
-            target_model_version=target_model_version,
+            ),
         )
 
     @classmethod
@@ -1952,39 +1925,100 @@ class DataTypeManager(ABC):
     ) -> frozenset[str] | None:
         """Return the type-dependent keywords the value a union member validates to takes, or None for None.
 
-        A union takes what every member other than None takes, and an alias of None counts as None. A type alias
+        These are the keywords of ``constraint_keywords``, where a type that names a model reads the model
+        (``_constraint_keywords`` with ``model_of``).
+        """
+        return cls._constraint_keywords(data_type, target_version, model_of, seen)
+
+    @classmethod
+    def _constraint_keywords(  # noqa: PLR0911, PLR0913
+        cls,
+        data_type: DataTypeView,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None] | None,
+        seen: frozenset[int],
+        *,
+        number_values: bool = False,
+        target_model_version: TargetPydanticVersion | str | None = None,
+    ) -> frozenset[str] | None:
+        """Return the keywords of ``constraint_keywords``, reading the model a type names with ``model_of``.
+
+        Without ``model_of`` a type that names a model takes every keyword (row
+        ``legacy-reference-takes-every-keyword``: the L1 field assembly and msgspec read it so), and the answer is
+        never None. With it, the value the type validates to decides: a union takes what every member other than None
+        takes, and the type None, an alias of it and a union of only those give None. A type alias
         (``ModelView.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
         ``StrEnum``, an ``IntEnum``) takes what that type takes; any other model, a root model, an object model, a
-        dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A type that names no
-        model takes what ``constraint_keywords`` answers, and so do a model ``model_of`` does not hold, an alias
-        without a field and an alias the type names again inside itself, which take them all.
+        dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A model ``model_of``
+        does not hold, an alias without a field and an alias the type names again inside itself (``seen``) take them
+        all, as without ``model_of``.
         """
         node = cast("DataType", data_type)
-        if (reference := data_type.reference) is None:
+        if model_of is not None:
+            if (reference := node.reference) is not None:
+                if (model := None if id(reference) in seen else model_of(reference)) is None:
+                    return cls.constraint_keywords(node, target_version)
+                if model.form == "alias":
+                    fields = model.fields
+                    return (
+                        cls._constraint_keywords(fields[0].data_type, target_version, model_of, seen | {id(reference)})
+                        if fields
+                        else cls.constraint_keywords(node, target_version)
+                    )
+                return (
+                    _applicability.NO_KEYWORDS
+                    if (value_base := model.value_base) is None
+                    else cls.type_constraint_keywords(value_base, target_version)
+                )
             if _is_plain_none(node):
                 return None
-            if not data_type.data_types or cls._shape_constraint_keywords(node) is not None:
-                return cls.constraint_keywords(node, target_version)
+        if (keywords := cls._shape_constraint_keywords(node)) is not None:
+            return keywords
+        if node.data_types:
             members = [
                 keywords
-                for member in data_type.data_types
-                if (keywords := cls.member_constraint_keywords(member, target_version, model_of, seen)) is not None
+                for member in node.data_types
+                if not _is_plain_none(member)
+                and (
+                    keywords := cls._constraint_keywords(
+                        member,
+                        target_version,
+                        model_of,
+                        seen,
+                        number_values=number_values,
+                        target_model_version=target_model_version,
+                    )
+                )
+                is not None
             ]
-            return _applicability.member_keywords(members, number_values=False) if members else None
-        if (model := None if id(reference) in seen else model_of(reference)) is None:
-            return cls.constraint_keywords(node, target_version)
-        if model.form == "alias":
-            fields = model.fields
             return (
-                cls.member_constraint_keywords(fields[0].data_type, target_version, model_of, seen | {id(reference)})
-                if fields
-                else cls.constraint_keywords(node, target_version)
+                _applicability.member_keywords(members, number_values=number_values)
+                if members or model_of is None
+                else None
             )
-        value_base = model.value_base
-        return (
-            _applicability.NO_KEYWORDS
-            if value_base is None
-            else cls.type_constraint_keywords(value_base, target_version)
+        if _is_value_literal(node):
+            if number_values:
+                return _applicability.literal_number_keywords(
+                    literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
+                    has_non_string_value=any(type(value) is not str for value in node.literals),
+                )
+            return cls._literal_keywords(
+                {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in node.literals if value is not None},
+                target_version,
+            )
+        if node.python_type is None:
+            import_ = node.import_
+            return cls.type_constraint_keywords(
+                _import_path(import_) if import_ and import_.from_ else node.type or "",
+                target_version,
+                number_values=number_values,
+                target_model_version=target_model_version,
+            )
+        return cls._annotation_constraint_keywords(
+            node.python_type.expression,
+            target_version,
+            number_values=number_values,
+            target_model_version=target_model_version,
         )
 
     @classmethod
