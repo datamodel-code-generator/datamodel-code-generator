@@ -69,6 +69,8 @@ ANYURL_WITHOUT_CONSTRAINTS = pytest.mark.filterwarnings("ignore:fields holding A
             pytest.param("union_root_url_keywords", ["--field-constraints", *args], marks=ANYURL_WITHOUT_CONSTRAINTS)
             for args in (["--use-type-alias"], ["--output-model-type", "pydantic_v2.dataclass"])
         ),
+        ("union_array_string_lengths", []),
+        ("union_array_string_lengths", ["--collapse-root-models"]),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -87,7 +89,8 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     value raises no ``TypeError`` (#6022), also where a root model collapses into a union of one member. Where a member
     would lose the check, as a string, a ``str`` enum or an ``AnyUrl`` that writes no copy of it, the field keeps
     today's output, whose ``TypeError`` for the other members stays (#6053); the payloads of those fields use the
-    members that keep the check.
+    members that keep the check. Without ``--field-constraints``, a string length beside a union of an array and a
+    string limits the string only, at a property and at the items of an array, as 0.88.0 wrote it (#6189).
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(

@@ -943,6 +943,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
+        self._merged_duplicates: dict[int, list[DataModel]] = {}
+        """The duplicates deduplication and reuse merged into each model, by the id of that model."""
         self._collapsed_reuse_users: dict[int, tuple[DataType, Reference]] = {}
         self._self_named_root_models: list[DataModel] = []
         """The root models whose root names the model itself, which the deduplication of root models dropped while
