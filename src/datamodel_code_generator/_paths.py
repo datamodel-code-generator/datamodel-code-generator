@@ -60,10 +60,14 @@ def resolved(path: Path, base: Path | None = None) -> Path:
     """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved.
 
     A symlink loop stays as written from the link that starts it, on every Python version (``os.path.realpath``;
-    ``Path.resolve`` raises ``RuntimeError`` there before Python 3.13).
+    ``Path.resolve`` raises ``RuntimeError`` there before Python 3.13). An existing path whose links name nothing that
+    exists, such as ``/dev/stdin`` reading a pipe (``pipe:[...]``), keeps its lexical form, which opens it.
     """
     expanded = path.expanduser()
-    return Path(os.path.realpath(expanded if base is None else base / expanded))
+    joined = expanded if base is None else base / expanded
+    if (real := Path(os.path.realpath(joined))).exists() or not joined.exists():
+        return real
+    return Path(os.path.abspath(joined))  # noqa: PTH100
 
 
 def existing_ancestor(
