@@ -206,6 +206,8 @@ _TEMPLATE_DATA_MODEL_VALUE_ERRORS: dict[str, str] = {
     "decorators": "decorators must be a list of strings",
     "methods": "methods must be a list of strings",
 }
+_TEMPLATE_DATA_OVERRIDABLE_KEYS: frozenset[str] = frozenset({*_TEMPLATE_DATA_MODEL_VALUE_ERRORS, "base_class"})
+_TEMPLATE_DATA_RENAME_HINT = "; rename a model with --model-name-map or --class-name"
 _DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset(DataclassArguments.__annotations__)
 _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
     "class_body_lines",
@@ -3349,8 +3351,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return {**self.extra_template_data, **self._internal_template_data}
 
     def _render_with_template_data(self, *, use_custom_template: bool, **render_arguments: Any) -> str:
-        """Render with the template data over the arguments the model passes, but for the values it merged itself."""
+        """Render with the template data over the arguments the model passes, but for the values it merged itself.
+
+        The template data replaces ``base_class`` and the merged values only. The other arguments, such as the
+        ``class_name``, the ``fields`` and the ``path``, are what other models reference and the parser decided, so
+        template data of the same name is refused.
+        """
         template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
+        if refused := sorted(template_data.keys() & render_arguments.keys() - _TEMPLATE_DATA_OVERRIDABLE_KEYS):
+            msg = f"extra template data cannot set {', '.join(refused)}, which the generator decides for the model"
+            raise Error(msg + (_TEMPLATE_DATA_RENAME_HINT if "class_name" in refused else ""))
         return self._render(**{
             **render_arguments,
             **{key: value for key, value in template_data.items() if key not in _TEMPLATE_DATA_MODEL_VALUE_ERRORS},

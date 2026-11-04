@@ -12746,6 +12746,8 @@ The template data of one model (`--extra-template-data '{"Pet": {...}}'`, or `#a
 generator passes to its template under the same name: `description`, `decorators` and `methods` replace the model's own
 (`decorators` and `methods` are lists of strings, the lines of code the template writes), `dataclass_arguments` merge
 over the arguments the options give it, and `base_class` replaces the text of the base classes the model writes.
+The other values, such as `class_name`, `fields` and `path`, are what other models reference and the parser decided, so
+template data of the same name is refused; rename a model with `--model-name-map` or `--class-name`.
 
 ---
 
