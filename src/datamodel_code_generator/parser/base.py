@@ -424,6 +424,28 @@ def dump_templates(templates: list[DataModel]) -> str:
     return "\n\n\n".join(str(m) for m in templates)
 
 
+def _forward_root_model_aliases(models: Sequence[DataModel]) -> set[ModelKey]:
+    """Return the keys of the RootModel aliases of a module whose value names a model at their own or a later position.
+
+    The module writes such a name quoted, and Pydantic resolves it only when the alias is rebuilt: the alias is no
+    class, so no class of the module rebuilds it, and every use of it fails as not fully defined until then.
+    """
+    keys = [model_key_of(model.reference) for model in models]
+    positions = {key: index for index, key in enumerate(keys)}
+    return {
+        key
+        for index, (key, model) in enumerate(zip(keys, models, strict=True))
+        if model.is_alias
+        and model.REQUIRES_FIELD_DEPENDENCY_ORDERING
+        and any(
+            positions.get(model_key_of(reference), -1) >= index
+            for field in model.fields
+            for data_type in field.data_type.all_data_types
+            if (reference := data_type.reference) is not None
+        )
+    }
+
+
 ReferenceMapSet = dict[str, set[str]]
 _NO_RECURSION: Final = RecursionFacts(require_update=frozenset(), circular_roots=frozenset())
 
@@ -1965,6 +1987,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     for model in models
                 ),
             )
+        required_keys_in_module |= _forward_root_model_aliases(models)
 
         return [
             "\n",
