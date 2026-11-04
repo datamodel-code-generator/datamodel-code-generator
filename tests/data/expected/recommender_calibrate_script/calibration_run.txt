@@ -178,20 +178,20 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 | Value | Calibration wins | Holdout wins | Losses | Status |
 |---|---|---|---|---|
 | `naming_strategy="full-path"` | 1/2 | 0/1 | config +0, shop +0 | not proposed |
-| `enum_field_as_literal="all"` | 2/2 | 1/1 | - | not proposed: imports fail on config, pets, shop; not import-checked on broken |
+| `enum_field_as_literal="all"` | 2/2 | 1/1 | - | not proposed: not import-checked on broken |
 | `use_title_as_name=true` | 0/2 | 0/1 | shop +2 | not proposed |
 
 ## Import check
 
 | Schema | Configurations | Arguments | Result |
 |---|---|---|---|
-| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --naming-strategy full-path --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
+| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | ok |
+| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --naming-strategy full-path --enum-field-as-literal all` | ok |
+| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | ok |
+| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | ok |
 
 ## Proposed rotation
 
@@ -409,7 +409,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "labels": [
         "recommended"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "pets"
     },
     {
@@ -430,7 +430,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "labels": [
         "grid best"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "pets"
     },
     {
@@ -449,7 +449,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "labels": [
         "preset + enum_field_as_literal=\"all\""
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "pets"
     },
     {
@@ -468,7 +468,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "labels": [
         "recommended"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "shop"
     },
     {
@@ -488,7 +488,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "grid best",
         "preset + enum_field_as_literal=\"all\""
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "shop"
     },
     {
@@ -507,7 +507,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "labels": [
         "recommended"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "config"
     },
     {
@@ -527,7 +527,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "grid best",
         "preset + enum_field_as_literal=\"all\""
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "config"
     }
   ],
@@ -558,7 +558,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "decision": "enum-shape",
       "eligible": true,
       "losses": {},
-      "status": "not proposed: imports fail on config, pets, shop; not import-checked on broken",
+      "status": "not proposed: not import-checked on broken",
       "values": {
         "enum_field_as_literal": "all"
       },

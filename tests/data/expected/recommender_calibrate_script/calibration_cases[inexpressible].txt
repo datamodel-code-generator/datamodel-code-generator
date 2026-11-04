@@ -3,7 +3,7 @@ exit=0
 fetch shop@v1: fetched
 fetch config@v1: fetched, 1 external $ref stubbed
 run 2 schemas x (recommendation + 12 grid configurations)
-regret: shop 0, config 0; threshold proposals: 3; preset proposals: 0
+regret: shop 0, config 0; threshold proposals: 3; preset proposals: 1
 wrote report.md, scores.json, calibration.json, rules.diff
 
 --- stderr
@@ -144,7 +144,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 | Value | Calibration wins | Holdout wins | Losses | Status |
 |---|---|---|---|---|
 | `naming_strategy="full-path"` | 0/1 | 0/1 | config +0, shop +0 | not proposed |
-| `enum_field_as_literal="all"` | 1/1 | 1/1 | - | not proposed: imports fail on config, shop |
+| `enum_field_as_literal="all"` | 1/1 | 1/1 | - | proposed |
 | `use_subclass_enum=false` | 0/0 | 0/0 | - | not proposed |
 | `use_title_as_name=true` | 0/1 | 0/1 | shop +2 | not proposed |
 
@@ -152,10 +152,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 
 | Schema | Configurations | Arguments | Result |
 |---|---|---|---|
-| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
-| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202 |
+| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261104 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261104 --enum-field-as-literal all` | ok |
 
 ## Changes since the last calibration
 
@@ -341,7 +341,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "labels": [
         "recommended"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "shop"
     },
     {
@@ -361,7 +361,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "grid best",
         "preset + enum_field_as_literal=\"all\""
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "shop"
     },
     {
@@ -380,7 +380,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "labels": [
         "recommended"
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "config"
     },
     {
@@ -400,7 +400,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "grid best",
         "preset + enum_field_as_literal=\"all\""
       ],
-      "result": "generation failed: python -m datamodel_code_generator: error: argument --preset: invalid choice: 'standard-py310-20261104' (choose from standard-py310-20260619, standard-py311-202",
+      "result": "ok",
       "schema": "config"
     }
   ],
@@ -431,7 +431,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "decision": "enum-shape",
       "eligible": true,
       "losses": {},
-      "status": "not proposed: imports fail on config, shop",
+      "status": "proposed",
       "values": {
         "enum_field_as_literal": "all"
       },
