@@ -227,7 +227,7 @@ release_note = "a closed array written as a list, and msgspec's dict of an objec
 [[accepted]]
 input = "*discriminator_mapping_other_document*"
 aspects = [ "type" ]
-match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['c', 'e'\\] -> Literal\\['e'\\]$"
-reason = "a discriminator mapping declared in b/base.yaml (c: ./cat.yaml) was located against the directory of the document holding the union, a/, so a/cat.yaml's Cat also took the tag c, which the schema gives to b/cat.yaml's CatModel; the mapping is read against the document that declares it now, so Cat keeps only its own tag e (schema-mismatch fix)"
+match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['c', 'e'\\] -> Literal\\['e'\\]$|^\\[type\\] (?:[\\w.]+:)?CatModel:pet_type: Literal\\['cat\\.yaml#'\\] -> Literal\\['c'\\]$"
+reason = "a discriminator mapping declared in b/base.yaml (c: ./cat.yaml) was located against the directory of the document holding the union, a/, so a/cat.yaml's Cat also took the tag c, which the schema gives to b/cat.yaml's CatModel; the mapping is read against the document that declares it now, so Cat keeps only its own tag e and b/cat.yaml's CatModel takes the tag c the mapping gives it instead of its file name (schema-mismatch fix)"
 decision = "#6159"
 release_note = "a discriminator mapping declared in another document than the union is read against that document, so a variant no longer takes a tag the mapping gives another variant"
