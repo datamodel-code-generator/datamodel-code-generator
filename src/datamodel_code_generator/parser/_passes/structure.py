@@ -134,10 +134,6 @@ class StructureHost(
         """The function that generates class names, if configured."""
 
     @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of the model names."""
-
-    @property
     def custom_formatter(self) -> list[str] | None:
         """The custom formatter modules, if configured."""
 
