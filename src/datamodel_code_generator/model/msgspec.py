@@ -185,6 +185,11 @@ _NONE_VALUE = Why(RuleId("D11.msgspec.none-unset"))
 _NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use-annotated")
 
 
+def _renamed_field_name_refused(name: str) -> bool:
+    """Return whether msgspec refuses a renamed field name: a backslash, a double quote or a control character."""
+    return any(char in '\\"' or char < " " for char in name)
+
+
 @final
 @record(eq=False)
 class _StructConversion:
@@ -450,8 +455,10 @@ class Struct(DataModel):
     def render_module_code(cls, models: list[DataModel]) -> str:
         """Reject incompatible generated Struct layouts before rendering a module."""
         for model in models:
-            if isinstance(model, cls) and len(model.base_classes) > 1:
-                cls._validate_base_layouts(model)
+            if isinstance(model, cls):
+                cls._validate_renamed_field_names(model)
+                if len(model.base_classes) > 1:
+                    cls._validate_base_layouts(model)
         return ""
 
     @staticmethod
@@ -588,6 +595,21 @@ class Struct(DataModel):
                 f"{stable_repr(other.class_name)} and {stable_repr(base.class_name)}."
             )
             raise Error(msg)
+
+    def _validate_renamed_field_names(self) -> None:
+        """Refuse a field that renames to a name msgspec refuses (``_renamed_field_name_refused``).
+
+        The generated module could not be imported: ``field(name=...)`` raises ``ValueError``.
+        """
+        for field in self.fields:
+            if field.alias is not None and not field.is_class_var and _renamed_field_name_refused(field.alias):
+                msg = (
+                    f"msgspec.Struct model {stable_repr(self.class_name)} cannot express its field "
+                    f"{stable_repr(field.name)} named {stable_repr(field.alias)}: msgspec refuses a renamed field name "
+                    "that contains a backslash, a double quote or a control character. Rename the property or use "
+                    "another --output-model-type."
+                )
+                raise Error(msg)
 
     def add_base_class_kwarg(self, name: str, value: str) -> None:
         """Add keyword argument to base class constructor."""
