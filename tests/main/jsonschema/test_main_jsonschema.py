@@ -1684,6 +1684,17 @@ def test_main_jsonschema_anchor_in_nested_subschemas(extra_args: list[str], outp
     )
 
 
+def test_main_jsonschema_anchor_under_escaped_entry_name(output_file: Path) -> None:
+    """Resolve a `$ref` to an `$anchor` under a `$defs` or `dependentSchemas` entry whose name holds `/` or `~`."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "anchor_under_escaped_entry_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [

@@ -797,7 +797,7 @@ def parse_id(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]
             if keyword == "$defs" and path[-1] == "#":
                 continue
             for entry, raw in subschema_entries(keyword, obj.extras.get(keyword)):
-                child_path = [*path, *map(str, entry)]
+                child_path = [*path, *map(escape_token, map(str, entry))]
                 validate = partial(parser._validate_schema_object, raw, child_path)  # noqa: SLF001
                 child = parser._shared_object(raw, parser.SCHEMA_OBJECT_TYPE, validate)  # noqa: SLF001
                 parser._traverse_schema_objects(child, child_path, add_ids)  # noqa: SLF001

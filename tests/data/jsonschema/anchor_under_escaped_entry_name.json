@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "nested": {
+      "type": "object",
+      "$defs": {
+        "a/b": {"$anchor": "slashed", "type": "object", "properties": {"e": {"type": "string"}}},
+        "a": {"type": "object", "properties": {"b": {"type": "object", "properties": {"f": {"type": "integer"}}}}}
+      }
+    },
+    "dependent": {
+      "type": "object",
+      "dependentSchemas": {
+        "x~y": {"$anchor": "tilded", "type": "object", "properties": {"d": {"type": "integer"}}}
+      }
+    },
+    "slashed": {"$ref": "#slashed"},
+    "tilded": {"$ref": "#tilded"},
+    "pointed": {"$ref": "#/properties/dependent/dependentSchemas/x~0y"}
+  }
+}

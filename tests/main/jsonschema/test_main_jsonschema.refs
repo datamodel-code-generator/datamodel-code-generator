@@ -6070,6 +6070,8 @@ schema-validators	main/jsonschema/main_jsonschema/anchor_in_nested_subschemas[sc
 	main/jsonschema/main_jsonschema/anchor_in_one_of.py
 [test_main_jsonschema_anchor_ref]
 	main/jsonschema/anchor_ref.py
+[test_main_jsonschema_anchor_under_escaped_entry_name]
+	main/jsonschema/main_jsonschema/anchor_under_escaped_entry_name.py
 [test_main_jsonschema_anyof_const_enum_descriptions]
 	main/jsonschema/anyof_const_enum_descriptions.py
 [test_main_jsonschema_anyof_const_enum_nested]
