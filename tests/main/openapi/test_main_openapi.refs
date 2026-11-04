@@ -1349,6 +1349,8 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/fixed_length_array_tuples_disabled.py
 [test_main_openapi_generic_base_class_other_packages]
 	main/openapi/main_openapi/generic_base_class_other_packages/
+[test_main_openapi_generic_base_class_package_cycle]
+	main/openapi/main_openapi/generic_base_class_package_cycle/
 [test_main_openapi_ignored_content_type_header_refs]
 	main/openapi/main_openapi/ignored_content_type_header_refs.py
 [test_main_openapi_include_info_version]

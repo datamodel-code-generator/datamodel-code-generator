@@ -14019,6 +14019,24 @@ def test_main_openapi_reuse_scope_tree_imports(input_file: str, output_model_typ
     )
 
 
+def test_main_openapi_generic_base_class_package_cycle(output_dir: Path) -> None:
+    """Write the generic base class in the package whose models a submodule imports, so that importing it runs none."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_package_cycle.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     """Test dot notation with deep inheritance from ancestor packages (issue #2039)."""
     run_main_and_assert(

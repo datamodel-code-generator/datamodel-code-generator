@@ -849,7 +849,10 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(Fact.BASES),
     writes=_facts(Fact.BASES, Fact.MODELS_EXIST),
-    summary="Inserts the generated base model and rewrites the base classes; B1 follows.",
+    summary=(
+        "Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and "
+        "rewrites the base classes; B1 follows."
+    ),
 )
 
 ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(

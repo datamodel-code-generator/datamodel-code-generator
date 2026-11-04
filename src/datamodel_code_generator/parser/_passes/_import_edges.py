@@ -19,7 +19,8 @@ Once every module is rendered, the written import blocks of each module in the o
 (``written_import_blocks``) and the names its definitions read of other modules as it runs make an ``ImportPlan``.
 ``failing_import_reads`` runs the import of each module as Python does and finds a name read of a module that is still
 running, which fails; ``import_cycle_seeds`` turns such failures into what a parse again lays out otherwise: the
-modules of the import cycle merged into an ``_internal`` module.
+generic base class in a module that runs none of the modules that import it, else the modules of the import cycle
+merged into an ``_internal`` module.
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ import dataclasses
 from collections import defaultdict
 from typing import TYPE_CHECKING, Final, TypeAlias
 
-from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     absolute,
@@ -60,6 +61,7 @@ if TYPE_CHECKING:
 __all__ = [
     "NO_IMPORT_CYCLE_SEEDS",
     "FailingRead",
+    "GenericBaseClassPlacement",
     "ImportBlock",
     "ImportCycleSeeds",
     "ImportLine",
@@ -112,14 +114,31 @@ class FailingRead:
 
 
 @record
+class GenericBaseClassPlacement:
+    """Where the generic base class is written and which modules take it.
+
+    ``module`` is the dotted name of the module that holds the class named ``name``; ``candidates`` are the modules
+    with a model that takes it as a base, in the order its placement picks from, each by dotted name and module path;
+    ``users`` are the modules that import it.
+    """
+
+    module: str
+    name: str
+    candidates: tuple[tuple[str, ModulePath], ...]
+    users: frozenset[str]
+
+
+@record
 class ImportCycleSeeds:
     """What a parse again of a run lays out otherwise, so that every module it writes imports.
 
     ``merges`` are the modules, by module path, that merge into an ``_internal`` module beside the merges that the
-    references between models make.
+    references between models make; ``base_class_module`` is the module path of the module that holds the generic
+    base class.
     """
 
     merges: tuple[frozenset[ModulePath], ...] = ()
+    base_class_module: ModulePath | None = None
 
 
 NO_IMPORT_CYCLE_SEEDS: Final = ImportCycleSeeds()
@@ -197,12 +216,17 @@ def inherits_one_of(model: DataModel, models: Collection[DataModel]) -> bool:
     return any(reference.source in models for base in model.base_classes if (reference := base.reference))
 
 
-def generic_base_class_module(targets: Sequence[Sequence[DataModel]]) -> int:
+def generic_base_class_module(
+    targets: Sequence[Sequence[DataModel]], modules: Sequence[ModulePath], seeded: ModulePath | None = None
+) -> int:
     """Return the position of the module that holds the generic base class, among the modules of ``targets``.
 
-    ``targets`` holds the models of each module that take the class. It goes to the first module with a model that
-    inherits none of them, or to the first module when every one inherits another.
+    ``targets`` holds the models of each module that take the class, and ``modules`` the module path of each. It goes
+    to the ``seeded`` module where it is one of them (``import_cycle_seeds``), else to the first module with a model
+    that inherits none of them, or to the first module when every one inherits another.
     """
+    if seeded in modules:
+        return modules.index(seeded)
     every_target = {model for models in targets for model in models}
     return next(
         (
@@ -473,19 +497,51 @@ def _joined_sets(sets: Iterable[Collection[ModulePath]]) -> tuple[frozenset[Modu
     return tuple(sorted(map(frozenset, joined), key=min))
 
 
+def _free_base_class_module(plan: ImportPlan, base_class: GenericBaseClassPlacement) -> ModulePath | None:
+    """Return the first candidate module of ``base_class`` that runs no other module that takes or imports the class.
+
+    It reaches them through the blocks of its other imports, as the modules that import the class from it would run
+    while it still runs; None where every candidate does.
+    """
+    graph = _import_graph(plan, frozenset({(base_class.module, base_class.name)}))
+    takers = base_class.users | {module for module, _ in base_class.candidates}
+    return next(
+        (
+            path
+            for module, path in base_class.candidates
+            if takers.isdisjoint(set(reach([module], lambda node: graph.get(node, ()))) - {module})
+        ),
+        None,
+    )
+
+
 def import_cycle_seeds(
     failures: Sequence[FailingRead],
     plan: ImportPlan,
     seeds: ImportCycleSeeds,
     layout: Mapping[str, frozenset[ModulePath]],
+    base_class: GenericBaseClassPlacement | None = None,
 ) -> ImportCycleSeeds | None:
     """Return what a parse again lays out otherwise so that the ``failures`` of ``plan`` import, or None if nothing.
 
-    A failure merges the modules of the import cycle that holds the reader and the module it reads: each written
-    module stands for the modules of the module structure that ``layout`` gives it (an ``_internal`` module for the
-    modules of its merge, an empty package for none). The merges of ``seeds`` grow and never shrink, so a run is
-    parsed again at most once per module.
+    A failure that runs an import of the generic base class (``base_class``) moves the class, once, to the first of
+    its ``candidates`` that reaches no other module that takes or imports it through the blocks of the other imports:
+    those modules then import it from a module that runs none of them. Any other failure merges the modules of the
+    import cycle that holds the reader and the module it reads: each written module stands for the modules of the
+    module structure that ``layout`` gives it (an ``_internal`` module for the modules of its merge, an empty package
+    for none). The merges of ``seeds`` grow and never shrink, so a run is parsed again at most once per module.
     """
+    if (
+        base_class is not None
+        and seeds.base_class_module is None
+        and any(
+            target == base_class.module and base_class.name in names
+            for failure in failures
+            for _, target, names in failure.lines
+        )
+        and (path := _free_base_class_module(plan, base_class)) is not None
+    ):
+        return dataclasses.replace(seeds, base_class_module=path)
     component_of = {
         module: frozenset(component)
         for component in strongly_connected_components(_import_graph(plan))

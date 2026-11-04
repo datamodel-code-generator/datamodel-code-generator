@@ -65,6 +65,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
     shared_import_bindings,
 )
 from datamodel_code_generator.parser._passes._import_edges import (
+    GenericBaseClassPlacement,
     _written_package,
     failing_import_reads,
     import_cycle_seeds,
@@ -122,7 +123,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ReuseGroups
-    from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
+    from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds, ImportPlan
     from datamodel_code_generator.parser._passes._shared import ModuleNamesView
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
@@ -2090,6 +2091,38 @@ def _structure_modules(
     }
 
 
+def _generic_base_class_placement(
+    base: DataModel | None,
+    contexts: Sequence[ModuleContextView],
+    plan: ImportPlan,
+    written_module: Callable[[ModulePath], str],
+) -> GenericBaseClassPlacement | None:
+    """Return where the generic base class ``base`` is written, which modules take it and which import it."""
+    if base is None or (holder := next((ctx for ctx in contexts if any(m is base for m in ctx.models)), None)) is None:
+        return None
+    module, key = written_module(holder.module), model_key_of(base.reference)
+    return GenericBaseClassPlacement(
+        module,
+        base.class_name,
+        tuple(
+            (written_module(ctx.module), ctx.module_key)
+            for ctx in contexts
+            if any(
+                model_key_of(reference) == key
+                for model in ctx.models
+                for base_class in model.base_classes
+                if (reference := base_class.reference) is not None
+            )
+        ),
+        frozenset(
+            importer
+            for importer, blocks in plan.blocks.items()
+            for target, lines in blocks
+            if target == module and any(name == base.class_name for name, _ in lines)
+        ),
+    )
+
+
 def check_import_reads(  # noqa: PLR0913
     parser: RenderHost[Any, Any, Any],
     results: Mapping[ModulePath, object],
@@ -2105,8 +2138,9 @@ def check_import_reads(  # noqa: PLR0913
     order the formatters write them) and the names its definitions read of the modules it imports as it runs
     (``_definition_reads``; with custom templates, which decide what a class body evaluates, none). Pydantic builds a
     class as it is defined, so its annotations count even where the module defers them. Where a module fails to
-    import (``failing_import_reads``, ``fails_to_import``), the parse again merges the modules of that import cycle
-    into an ``_internal`` module (``import_cycle_seeds``); an output whose every module imports is parsed once.
+    import (``failing_import_reads``, ``fails_to_import``), the parse again moves the generic base class where its
+    import ran into the failure, or merges the modules of that import cycle into an ``_internal`` module
+    (``import_cycle_seeds``); an output whose every module imports is parsed once.
     """
     treat_dot_as_module = parser.treat_dot_as_module
 
@@ -2156,4 +2190,5 @@ def check_import_reads(  # noqa: PLR0913
         plan,
         parser._import_cycle_seeds,  # noqa: SLF001
         _structure_modules(contexts, forwarder_map, written_module),
+        _generic_base_class_placement(parser._generic_base_model, contexts, plan, written_module),  # noqa: SLF001
     )
