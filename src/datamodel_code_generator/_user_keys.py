@@ -50,8 +50,8 @@ after names are final):
   parse are those of the yielding names at L2; the renames after L2, which ``GenerationStore.rename_model`` records,
   decide nothing, so a key that names a name one of them gave matches no model.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
-  (``type_override_classes``), while the class part of the other ``Class.field`` keys is what precedes their last dot
-  (``ConstructionKeys``); ``scoped_key`` splits every key, by these rows and at every dot.
+  (``type_override_classes``), while a ``Class.field`` key of the other options names a class at each of its dots
+  (``ConstructionKeys``, the lookups); ``scoped_key`` splits every key, by these rows.
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ _ValueT = TypeVar("_ValueT")
 
 _SCOPE_SEPARATOR: Final = "."
 _PATH_KEY_MARKER: Final = "#"
-ScopedKeyRow: TypeAlias = Literal["first-dot", "legacy-last-dot", "every-dot"]
+ScopedKeyRow: TypeAlias = Literal["first-dot", "every-dot"]
 ClassKeyRow: TypeAlias = Literal["predicted", "reference-name", "original-name", "class-name"]
 TypeOverrideRow: TypeAlias = Literal["class-name", "reference-name", "predicted-class-name"]
 _TYPE_OVERRIDE_CLASS_KEYS: Final[dict[TypeOverrideRow, ClassKeyRow]] = {
@@ -150,19 +150,17 @@ def scoped_key(key: str, *, row: ScopedKeyRow) -> tuple[tuple[str, str], ...]:
     """Return the (class part, field part) pairs that a ``Class.field`` key splits into at the dots the row reads.
 
     ``class_field_key`` joins names that may hold a dot, so a key names one pair at each of its dots. Row ``every-dot``
-    gives them all, none for a key without a dot (``model_level_type_override``); the ``--aliases`` keys of a class
-    after name allocation (``Parser._apply_final_class_field_aliases``) and those of a wire name in the targets
+    gives them all, none for a key without a dot (``model_level_type_override``); the class names the L1 rows key
+    (``ConstructionKeys``), the ``--aliases`` keys of a class after name allocation
+    (``Parser._apply_final_class_field_aliases``) and those of a wire name in the targets
     (``_target_naming.py:TargetNames.aliased``) read it too. Row ``first-dot`` (``type_override_classes``) gives the
-    pair at the first dot, ``(key, "")`` for a key without one, and row ``legacy-last-dot`` (``ConstructionKeys``) the
-    pair at the last dot, ``("", key)`` for a key without one.
+    pair at the first dot, ``(key, "")`` for a key without one.
     """
     if row == "every-dot":
         return tuple(
             (key[:index], key[index + 1 :]) for index, character in enumerate(key) if character == _SCOPE_SEPARATOR
         )
-    class_part, _, field_part = (
-        key.partition(_SCOPE_SEPARATOR) if row == "first-dot" else key.rpartition(_SCOPE_SEPARATOR)
-    )
+    class_part, _, field_part = key.partition(_SCOPE_SEPARATOR)
     return ((class_part, field_part),)
 
 
@@ -223,8 +221,8 @@ class ConstructionKeys:
     class_names: frozenset[str] = frozenset()
     """The keys of ``--base-class-map``, ``--extra-template-data`` and ``--validators``."""
     field_scopes: frozenset[str] = frozenset()
-    """The class parts, before the last dot, of the ``--aliases``, ``--serialization-aliases`` and
-    ``--default-value-overrides`` keys."""
+    """The class parts of the ``--aliases``, ``--serialization-aliases`` and ``--default-value-overrides`` keys, at
+    each of their dots, as the lookups join a class name and a field name that may hold a dot."""
 
     @classmethod
     def of(
@@ -239,7 +237,7 @@ class ConstructionKeys:
                 class_name
                 for keys in field_keyed
                 for key in keys or ()
-                for class_name, _ in scoped_key(key, row="legacy-last-dot")
+                for class_name, _ in scoped_key(key, row="every-dot")
             ),
         )
 

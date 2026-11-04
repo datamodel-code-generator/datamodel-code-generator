@@ -1499,6 +1499,8 @@ default	main/openapi/msgspec_nullable_enum/openapi_31_pydantic_v2.py
 [test_main_openapi_nullable_map_value_class_keyed_options]
 Tags	main/openapi/nullable_map_value_class_keys/Tags.py
 Tags1	main/openapi/nullable_map_value_class_keys/Tags1.py
+[test_main_openapi_nullable_map_value_dotted_field_keys]
+	main/openapi/openapi_nullable_map_value_dotted_field_keys.py
 [test_main_openapi_nullable_map_value_import_cycle]
 	main/openapi/nullable_map_value_cycle/pydantic_v2//*.py
 [test_main_openapi_nullable_map_value_import_cycle_reuse_model]

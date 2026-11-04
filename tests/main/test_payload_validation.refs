@@ -1631,6 +1631,8 @@ openapi/nullable_map_value_class_keys.yaml::components.schemas.Holder	payloads/n
 openapi/nullable_map_value_class_keys.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_collapse_roots.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_collapse_roots.yaml::components.schemas.Label	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_map_value_dotted_field_keys.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_map_value_dotted_field_keys.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_model_name_map.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_model_name_map.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_parameter_nested.yaml::components.schemas.Entry	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3512,6 +3514,8 @@ openapi/nullable_map_value_class_keys.yaml::components.schemas.Holder	payloads/n
 openapi/nullable_map_value_class_keys.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_collapse_roots.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_collapse_roots.yaml::components.schemas.Label	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_map_value_dotted_field_keys.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_map_value_dotted_field_keys.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_model_name_map.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_model_name_map.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_parameter_nested.yaml::components.schemas.Entry	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

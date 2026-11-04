@@ -405,6 +405,7 @@ openapi/nullable_map_value_class_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_collapse_roots.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_cycle.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_cycle_reuse.yaml	yaml_fast_constructor/parity.txt
+openapi/nullable_map_value_dotted_field_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_layout.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_model_name_map.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_module_names.yaml	yaml_fast_constructor/parity.txt

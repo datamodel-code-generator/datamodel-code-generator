@@ -5726,6 +5726,31 @@ def test_main_openapi_nullable_map_value_class_keyed_options(output_file: Path, 
     )
 
 
+def test_main_openapi_nullable_map_value_dotted_field_keys(output_file: Path) -> None:
+    """Apply ``Class.field`` keys whose field name holds a dot to a map value model under its final name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_dotted_field_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--aliases",
+            json.dumps({"Tags1.a.b": "ab"}),
+            "--serialization-aliases",
+            json.dumps({"Tags1.c.d": "cd"}),
+            "--default-values",
+            json.dumps({"Tags1.a.b": "x"}),
+            "--use-typed-nullable-map-values",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_nullable_map_value_primary_first(output_file: Path) -> None:
     """Keep the 0.83.0 name of a primary model that an external map value took first under primary-first naming."""
     run_main_and_assert(
