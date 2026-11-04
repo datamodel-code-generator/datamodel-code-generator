@@ -271,7 +271,7 @@ class SchemaRefsHost(Protocol):
 
     @property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: every row without --intersect-allof-keywords."""
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
 
     @property
     def _schema_graph(self) -> SchemaGraphBuilder | None:
@@ -1120,6 +1120,7 @@ def intersect_ref_siblings(
         concatenating_row(target, siblings),
         ref_siblings_are_parts=siblings_are_parts,
         legacy_rows=parser._legacy_intersection,  # noqa: SLF001
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
     parser._warn_intersection(where, intersection)  # noqa: SLF001
     return intersection.keywords, intersection.unsatisfiable

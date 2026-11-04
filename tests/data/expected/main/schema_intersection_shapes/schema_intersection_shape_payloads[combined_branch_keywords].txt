@@ -1,0 +1,396 @@
+pydantic_v2.BaseModel default bound 7 accepted
+pydantic_v2.BaseModel default bound "s" accepted
+pydantic_v2.BaseModel default bound 3 accepted
+pydantic_v2.BaseModel default length "ab" accepted
+pydantic_v2.BaseModel default length 5 accepted
+pydantic_v2.BaseModel default length "abcdef" accepted
+pydantic_v2.BaseModel default pattern "ab" accepted
+pydantic_v2.BaseModel default pattern 1 accepted
+pydantic_v2.BaseModel default pattern "xb" accepted
+pydantic_v2.BaseModel default pattern "ac" rejected
+pydantic_v2.BaseModel default multiple 6 accepted
+pydantic_v2.BaseModel default multiple "s" accepted
+pydantic_v2.BaseModel default multiple 3 accepted
+pydantic_v2.BaseModel default multiple 4 rejected
+pydantic_v2.BaseModel default typed "a" accepted
+pydantic_v2.BaseModel default typed "abcd" accepted
+pydantic_v2.BaseModel default typed "" accepted
+pydantic_v2.BaseModel default typed 5 accepted
+pydantic_v2.BaseModel default values "b" accepted
+pydantic_v2.BaseModel default values 1 accepted
+pydantic_v2.BaseModel default values "a" accepted
+pydantic_v2.BaseModel default values "c" rejected
+pydantic_v2.BaseModel default values 2 rejected
+pydantic_v2.BaseModel default ref_branch 5 accepted
+pydantic_v2.BaseModel default ref_branch "s" accepted
+pydantic_v2.BaseModel default ref_branch 3 rejected
+pydantic_v2.BaseModel default ref_enum 1 accepted
+pydantic_v2.BaseModel default ref_enum 2 accepted
+pydantic_v2.BaseModel default ref_enum "a" accepted
+pydantic_v2.BaseModel default ref_enum 3 rejected
+pydantic_v2.BaseModel default dead "x" accepted
+pydantic_v2.BaseModel default dead 1 accepted
+pydantic_v2.BaseModel default dead "" rejected
+pydantic_v2.dataclass default bound 7 accepted
+pydantic_v2.dataclass default bound "s" accepted
+pydantic_v2.dataclass default bound 3 accepted
+pydantic_v2.dataclass default length "ab" accepted
+pydantic_v2.dataclass default length 5 accepted
+pydantic_v2.dataclass default length "abcdef" accepted
+pydantic_v2.dataclass default pattern "ab" accepted
+pydantic_v2.dataclass default pattern 1 accepted
+pydantic_v2.dataclass default pattern "xb" accepted
+pydantic_v2.dataclass default pattern "ac" rejected
+pydantic_v2.dataclass default multiple 6 accepted
+pydantic_v2.dataclass default multiple "s" accepted
+pydantic_v2.dataclass default multiple 3 accepted
+pydantic_v2.dataclass default multiple 4 rejected
+pydantic_v2.dataclass default typed "a" accepted
+pydantic_v2.dataclass default typed "abcd" accepted
+pydantic_v2.dataclass default typed "" accepted
+pydantic_v2.dataclass default typed 5 accepted
+pydantic_v2.dataclass default values "b" accepted
+pydantic_v2.dataclass default values 1 accepted
+pydantic_v2.dataclass default values "a" accepted
+pydantic_v2.dataclass default values "c" rejected
+pydantic_v2.dataclass default values 2 rejected
+pydantic_v2.dataclass default ref_branch 5 accepted
+pydantic_v2.dataclass default ref_branch "s" accepted
+pydantic_v2.dataclass default ref_branch 3 rejected
+pydantic_v2.dataclass default ref_enum 1 accepted
+pydantic_v2.dataclass default ref_enum 2 accepted
+pydantic_v2.dataclass default ref_enum "a" accepted
+pydantic_v2.dataclass default ref_enum 3 rejected
+pydantic_v2.dataclass default dead "x" accepted
+pydantic_v2.dataclass default dead 1 accepted
+pydantic_v2.dataclass default dead "" rejected
+msgspec.Struct default bound 7 import error
+msgspec.Struct default bound "s" import error
+msgspec.Struct default bound 3 import error
+msgspec.Struct default length "ab" import error
+msgspec.Struct default length 5 import error
+msgspec.Struct default length "abcdef" import error
+msgspec.Struct default pattern "ab" import error
+msgspec.Struct default pattern 1 import error
+msgspec.Struct default pattern "xb" import error
+msgspec.Struct default pattern "ac" import error
+msgspec.Struct default multiple 6 import error
+msgspec.Struct default multiple "s" import error
+msgspec.Struct default multiple 3 import error
+msgspec.Struct default multiple 4 import error
+msgspec.Struct default typed "a" import error
+msgspec.Struct default typed "abcd" import error
+msgspec.Struct default typed "" import error
+msgspec.Struct default typed 5 import error
+msgspec.Struct default values "b" import error
+msgspec.Struct default values 1 import error
+msgspec.Struct default values "a" import error
+msgspec.Struct default values "c" import error
+msgspec.Struct default values 2 import error
+msgspec.Struct default ref_branch 5 import error
+msgspec.Struct default ref_branch "s" import error
+msgspec.Struct default ref_branch 3 import error
+msgspec.Struct default ref_enum 1 import error
+msgspec.Struct default ref_enum 2 import error
+msgspec.Struct default ref_enum "a" import error
+msgspec.Struct default ref_enum 3 import error
+msgspec.Struct default dead "x" import error
+msgspec.Struct default dead 1 import error
+msgspec.Struct default dead "" import error
+pydantic_v2.BaseModel --field-constraints bound 7 accepted
+pydantic_v2.BaseModel --field-constraints bound "s" accepted
+pydantic_v2.BaseModel --field-constraints bound 3 accepted
+pydantic_v2.BaseModel --field-constraints length "ab" accepted
+pydantic_v2.BaseModel --field-constraints length 5 accepted
+pydantic_v2.BaseModel --field-constraints length "abcdef" accepted
+pydantic_v2.BaseModel --field-constraints pattern "ab" accepted
+pydantic_v2.BaseModel --field-constraints pattern 1 accepted
+pydantic_v2.BaseModel --field-constraints pattern "xb" accepted
+pydantic_v2.BaseModel --field-constraints pattern "ac" rejected
+pydantic_v2.BaseModel --field-constraints multiple 6 accepted
+pydantic_v2.BaseModel --field-constraints multiple "s" accepted
+pydantic_v2.BaseModel --field-constraints multiple 3 accepted
+pydantic_v2.BaseModel --field-constraints multiple 4 rejected
+pydantic_v2.BaseModel --field-constraints typed "a" accepted
+pydantic_v2.BaseModel --field-constraints typed "abcd" accepted
+pydantic_v2.BaseModel --field-constraints typed "" accepted
+pydantic_v2.BaseModel --field-constraints typed 5 accepted
+pydantic_v2.BaseModel --field-constraints values "b" accepted
+pydantic_v2.BaseModel --field-constraints values 1 accepted
+pydantic_v2.BaseModel --field-constraints values "a" accepted
+pydantic_v2.BaseModel --field-constraints values "c" rejected
+pydantic_v2.BaseModel --field-constraints values 2 rejected
+pydantic_v2.BaseModel --field-constraints ref_branch 5 accepted
+pydantic_v2.BaseModel --field-constraints ref_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints ref_branch 3 rejected
+pydantic_v2.BaseModel --field-constraints ref_enum 1 accepted
+pydantic_v2.BaseModel --field-constraints ref_enum 2 accepted
+pydantic_v2.BaseModel --field-constraints ref_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints ref_enum 3 rejected
+pydantic_v2.BaseModel --field-constraints dead "x" accepted
+pydantic_v2.BaseModel --field-constraints dead 1 accepted
+pydantic_v2.BaseModel --field-constraints dead "" rejected
+pydantic_v2.BaseModel --use-annotated bound 7 accepted
+pydantic_v2.BaseModel --use-annotated bound "s" accepted
+pydantic_v2.BaseModel --use-annotated bound 3 accepted
+pydantic_v2.BaseModel --use-annotated length "ab" accepted
+pydantic_v2.BaseModel --use-annotated length 5 accepted
+pydantic_v2.BaseModel --use-annotated length "abcdef" accepted
+pydantic_v2.BaseModel --use-annotated pattern "ab" accepted
+pydantic_v2.BaseModel --use-annotated pattern 1 accepted
+pydantic_v2.BaseModel --use-annotated pattern "xb" accepted
+pydantic_v2.BaseModel --use-annotated pattern "ac" rejected
+pydantic_v2.BaseModel --use-annotated multiple 6 accepted
+pydantic_v2.BaseModel --use-annotated multiple "s" accepted
+pydantic_v2.BaseModel --use-annotated multiple 3 accepted
+pydantic_v2.BaseModel --use-annotated multiple 4 rejected
+pydantic_v2.BaseModel --use-annotated typed "a" accepted
+pydantic_v2.BaseModel --use-annotated typed "abcd" accepted
+pydantic_v2.BaseModel --use-annotated typed "" accepted
+pydantic_v2.BaseModel --use-annotated typed 5 accepted
+pydantic_v2.BaseModel --use-annotated values "b" accepted
+pydantic_v2.BaseModel --use-annotated values 1 accepted
+pydantic_v2.BaseModel --use-annotated values "a" accepted
+pydantic_v2.BaseModel --use-annotated values "c" rejected
+pydantic_v2.BaseModel --use-annotated values 2 rejected
+pydantic_v2.BaseModel --use-annotated ref_branch 5 accepted
+pydantic_v2.BaseModel --use-annotated ref_branch "s" accepted
+pydantic_v2.BaseModel --use-annotated ref_branch 3 rejected
+pydantic_v2.BaseModel --use-annotated ref_enum 1 accepted
+pydantic_v2.BaseModel --use-annotated ref_enum 2 accepted
+pydantic_v2.BaseModel --use-annotated ref_enum "a" accepted
+pydantic_v2.BaseModel --use-annotated ref_enum 3 rejected
+pydantic_v2.BaseModel --use-annotated dead "x" accepted
+pydantic_v2.BaseModel --use-annotated dead 1 accepted
+pydantic_v2.BaseModel --use-annotated dead "" rejected
+pydantic_v2.BaseModel --collapse-root-models bound 7 accepted
+pydantic_v2.BaseModel --collapse-root-models bound "s" accepted
+pydantic_v2.BaseModel --collapse-root-models bound 3 accepted
+pydantic_v2.BaseModel --collapse-root-models length "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models length 5 accepted
+pydantic_v2.BaseModel --collapse-root-models length "abcdef" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern 1 accepted
+pydantic_v2.BaseModel --collapse-root-models pattern "xb" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern "ac" rejected
+pydantic_v2.BaseModel --collapse-root-models multiple 6 accepted
+pydantic_v2.BaseModel --collapse-root-models multiple "s" accepted
+pydantic_v2.BaseModel --collapse-root-models multiple 3 accepted
+pydantic_v2.BaseModel --collapse-root-models multiple 4 rejected
+pydantic_v2.BaseModel --collapse-root-models typed "a" accepted
+pydantic_v2.BaseModel --collapse-root-models typed "abcd" accepted
+pydantic_v2.BaseModel --collapse-root-models typed "" accepted
+pydantic_v2.BaseModel --collapse-root-models typed 5 accepted
+pydantic_v2.BaseModel --collapse-root-models values "b" accepted
+pydantic_v2.BaseModel --collapse-root-models values 1 accepted
+pydantic_v2.BaseModel --collapse-root-models values "a" accepted
+pydantic_v2.BaseModel --collapse-root-models values "c" rejected
+pydantic_v2.BaseModel --collapse-root-models values 2 rejected
+pydantic_v2.BaseModel --collapse-root-models ref_branch 5 accepted
+pydantic_v2.BaseModel --collapse-root-models ref_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models ref_branch 3 rejected
+pydantic_v2.BaseModel --collapse-root-models ref_enum 1 accepted
+pydantic_v2.BaseModel --collapse-root-models ref_enum 2 accepted
+pydantic_v2.BaseModel --collapse-root-models ref_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models ref_enum 3 rejected
+pydantic_v2.BaseModel --collapse-root-models dead "x" accepted
+pydantic_v2.BaseModel --collapse-root-models dead 1 accepted
+pydantic_v2.BaseModel --collapse-root-models dead "" rejected
+msgspec.Struct --collapse-root-models bound 7 import error
+msgspec.Struct --collapse-root-models bound "s" import error
+msgspec.Struct --collapse-root-models bound 3 import error
+msgspec.Struct --collapse-root-models length "ab" import error
+msgspec.Struct --collapse-root-models length 5 import error
+msgspec.Struct --collapse-root-models length "abcdef" import error
+msgspec.Struct --collapse-root-models pattern "ab" import error
+msgspec.Struct --collapse-root-models pattern 1 import error
+msgspec.Struct --collapse-root-models pattern "xb" import error
+msgspec.Struct --collapse-root-models pattern "ac" import error
+msgspec.Struct --collapse-root-models multiple 6 import error
+msgspec.Struct --collapse-root-models multiple "s" import error
+msgspec.Struct --collapse-root-models multiple 3 import error
+msgspec.Struct --collapse-root-models multiple 4 import error
+msgspec.Struct --collapse-root-models typed "a" import error
+msgspec.Struct --collapse-root-models typed "abcd" import error
+msgspec.Struct --collapse-root-models typed "" import error
+msgspec.Struct --collapse-root-models typed 5 import error
+msgspec.Struct --collapse-root-models values "b" import error
+msgspec.Struct --collapse-root-models values 1 import error
+msgspec.Struct --collapse-root-models values "a" import error
+msgspec.Struct --collapse-root-models values "c" import error
+msgspec.Struct --collapse-root-models values 2 import error
+msgspec.Struct --collapse-root-models ref_branch 5 import error
+msgspec.Struct --collapse-root-models ref_branch "s" import error
+msgspec.Struct --collapse-root-models ref_branch 3 import error
+msgspec.Struct --collapse-root-models ref_enum 1 import error
+msgspec.Struct --collapse-root-models ref_enum 2 import error
+msgspec.Struct --collapse-root-models ref_enum "a" import error
+msgspec.Struct --collapse-root-models ref_enum 3 import error
+msgspec.Struct --collapse-root-models dead "x" import error
+msgspec.Struct --collapse-root-models dead 1 import error
+msgspec.Struct --collapse-root-models dead "" import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length "abcdef" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern "xb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern "ac" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs multiple 6 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs multiple "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs multiple 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs multiple 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs typed "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs typed "abcd" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs typed "" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs typed 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_enum 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_enum 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_enum "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_enum 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs dead "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs dead 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs dead "" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length "abcdef" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern "xb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern "ac" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs multiple 6 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs multiple "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs multiple 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs multiple 4 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs typed "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs typed "abcd" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs typed "" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs typed 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_enum 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_enum 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_enum "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_enum 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs dead "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs dead 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs dead "" rejected
+msgspec.Struct --use-site-models-for-constrained-refs bound 7 import error
+msgspec.Struct --use-site-models-for-constrained-refs bound "s" import error
+msgspec.Struct --use-site-models-for-constrained-refs bound 3 import error
+msgspec.Struct --use-site-models-for-constrained-refs length "ab" import error
+msgspec.Struct --use-site-models-for-constrained-refs length 5 import error
+msgspec.Struct --use-site-models-for-constrained-refs length "abcdef" import error
+msgspec.Struct --use-site-models-for-constrained-refs pattern "ab" import error
+msgspec.Struct --use-site-models-for-constrained-refs pattern 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs pattern "xb" import error
+msgspec.Struct --use-site-models-for-constrained-refs pattern "ac" import error
+msgspec.Struct --use-site-models-for-constrained-refs multiple 6 import error
+msgspec.Struct --use-site-models-for-constrained-refs multiple "s" import error
+msgspec.Struct --use-site-models-for-constrained-refs multiple 3 import error
+msgspec.Struct --use-site-models-for-constrained-refs multiple 4 import error
+msgspec.Struct --use-site-models-for-constrained-refs typed "a" import error
+msgspec.Struct --use-site-models-for-constrained-refs typed "abcd" import error
+msgspec.Struct --use-site-models-for-constrained-refs typed "" import error
+msgspec.Struct --use-site-models-for-constrained-refs typed 5 import error
+msgspec.Struct --use-site-models-for-constrained-refs values "b" import error
+msgspec.Struct --use-site-models-for-constrained-refs values 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs values "a" import error
+msgspec.Struct --use-site-models-for-constrained-refs values "c" import error
+msgspec.Struct --use-site-models-for-constrained-refs values 2 import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch 5 import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch "s" import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch 3 import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_enum 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_enum 2 import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_enum "a" import error
+msgspec.Struct --use-site-models-for-constrained-refs ref_enum 3 import error
+msgspec.Struct --use-site-models-for-constrained-refs dead "x" import error
+msgspec.Struct --use-site-models-for-constrained-refs dead 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs dead "" import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length "abcdef" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern "xb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern "ac" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple 6 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple 4 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs typed "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs typed "abcd" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs typed "" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs typed 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_enum 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_enum 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_enum 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs dead "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs dead 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs dead "" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length "abcdef" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern "xb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern "ac" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs multiple 6 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs multiple "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs multiple 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs multiple 4 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs typed "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs typed "abcd" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs typed "" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs typed 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_enum 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_enum 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_enum 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs dead "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs dead 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs dead "" rejected

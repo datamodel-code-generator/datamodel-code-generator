@@ -41,6 +41,7 @@ What other options should I use?
 - `--ignore-enum-constraints`: Ignore enum constraints and use base string type instead of Enum classes.
 - `--import-overrides`: Override modules for generated imports by symbol name.
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
+- `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
@@ -533,6 +534,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         and the constraints of the root, item and map value
                         positions of an `allOf`. Without it, the keyword of
                         the last part wins where the parts disagree
+  --intersect-combined-schema-keywords
+                        Combine the keywords of every part of a combined
+                        schema as JSON Schema validates them, as --intersect-
+                        allof-keywords does (this option turns it on), and
+                        also: the keywords beside an `anyOf` or `oneOf` in
+                        each branch, and no `enum` value that the merged
+                        `type` rejects. Without it these keep the output of
+                        0.88.0
   --keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would

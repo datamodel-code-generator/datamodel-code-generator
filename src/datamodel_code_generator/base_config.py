@@ -208,7 +208,8 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
 
     A setting is unset unless `explicit` names it. msgspec models use `Annotated` constraints, `use_annotated` writes
     the constraints as field constraints, and an unset `field_constraints` follows `use_annotated`, so the command
-    line and `generate()` keep the same constraints.
+    line and `generate()` keep the same constraints. `intersect_combined_schema_keywords` turns on
+    `intersect_allof_keywords`, also where a preset sets it.
     """
     use_annotated = config.use_annotated
     implied: dict[str, bool] = {}
@@ -216,7 +217,12 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
         implied["use_annotated"] = use_annotated = True
     if "field_constraints" not in explicit:
         implied["field_constraints"] = use_annotated
-    implied.update(implied_options({"use_annotated": use_annotated}))
+    implied.update(
+        implied_options({
+            "use_annotated": use_annotated,
+            "intersect_combined_schema_keywords": config.intersect_combined_schema_keywords,
+        })
+    )
     return implied
 
 
@@ -349,6 +355,7 @@ class BaseGenerateConfig(BaseModel):
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
+    intersect_combined_schema_keywords: bool = False
     read_nullable_beside_type_list: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False

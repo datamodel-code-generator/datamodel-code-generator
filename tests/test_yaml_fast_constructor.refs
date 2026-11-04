@@ -532,6 +532,7 @@ openapi/root_model_default_primitive.yaml	yaml_fast_constructor/parity.txt
 openapi/same_name_objects.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_extensions.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_extensions_enum.yaml	yaml_fast_constructor/parity.txt
+openapi/schema_intersection/combined_branch_nullable_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/discriminator_narrowing.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/discriminator_narrowing_inline.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/inherited_override_null_oas31.yaml	yaml_fast_constructor/parity.txt

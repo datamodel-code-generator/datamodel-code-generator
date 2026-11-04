@@ -317,6 +317,7 @@ class ParserConfig(BaseModel):
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
+    intersect_combined_schema_keywords: bool = False
     read_nullable_beside_type_list: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False

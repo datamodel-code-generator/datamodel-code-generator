@@ -277,7 +277,7 @@ class AllOfValuesHost(Protocol):
 
     @property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: every row without --intersect-allof-keywords."""
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
 
     @property
     def _null_mode(self) -> NullMode:
@@ -672,7 +672,11 @@ def intersect_all_of_value_parts(
         const_part := next((dump for dump in dumps if "const" in dump.get(extras_key, {})), None)
     ):
         row_extras["const"] = added["const"] = const_part[extras_key]["const"]
-    intersection = _intersect_dumps(dumps, row)
+    intersection = _intersect_dumps(
+        dumps,
+        row,
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+    )
     keywords = intersection.keywords
     if where is not None:
         parser._warn_intersection(where, intersection, _ALL_OF_PARTS)  # noqa: SLF001

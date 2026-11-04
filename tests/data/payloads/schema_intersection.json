@@ -6757,5 +6757,122 @@
         ]
       }
     }
+  },
+  "combined_branch_keywords": {
+    "model": "Model",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "length": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "pattern": {
+        "valid": [
+          "ab",
+          1
+        ],
+        "invalid": [
+          "xb",
+          "ac"
+        ]
+      },
+      "multiple": {
+        "valid": [
+          6,
+          "s"
+        ],
+        "invalid": [
+          3,
+          4
+        ]
+      },
+      "typed": {
+        "valid": [
+          "a",
+          "abcd",
+          ""
+        ],
+        "invalid": [
+          5
+        ]
+      },
+      "values": {
+        "valid": [
+          "b",
+          1
+        ],
+        "invalid": [
+          "a",
+          "c",
+          2
+        ]
+      },
+      "ref_branch": {
+        "valid": [
+          5,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "ref_enum": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          "a",
+          3
+        ]
+      },
+      "dead": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1,
+          ""
+        ]
+      }
+    }
+  },
+  "combined_branch_nullable_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "own": {
+        "valid": [
+          9,
+          "ab"
+        ],
+        "invalid": [
+          10,
+          "abcd"
+        ]
+      }
+    }
   }
 }

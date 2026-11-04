@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: t
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        bound:
+          nullable: true
+          minimum: 5
+          anyOf:
+            - type: integer
+              minimum: 1
+            - type: string
+        own:
+          nullable: true
+          maximum: 9
+          maxLength: 2
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 20
+            - type: string
+              maxLength: 5
+    Pet:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+          maxLength: 10
+      oneOf:
+        - properties:
+            kind:
+              enum: [cat]
+            name:
+              maxLength: 20
+        - properties:
+            kind:
+              enum: [dog]
+            bark:
+              type: boolean
+          required: [bark]

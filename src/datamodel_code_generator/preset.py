@@ -838,6 +838,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the type of a field."
         ),
     ),
+    PresetOptionGroup(
+        title="Combined schema keywords intersected",
+        config=PresetConfig(intersect_combined_schema_keywords=True),
+        description=(
+            "Combine the keywords beside an anyOf or oneOf with each branch as JSON Schema validates them, and keep "
+            "no enum value that the merged type rejects."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1110,7 +1118,9 @@ def render_presets_markdown() -> str:
             "declares, or that of the document that references it, so the keywords beside a `$ref` and the version's "
             "features apply as that version says in every document of a run, and "
             "`--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, "
-            "such as draft 7 or OpenAPI 3.0, is read as its target alone."
+            "such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: "
+            "the keywords beside an anyOf or oneOf are combined with each branch as JSON Schema validates them, and no "
+            "enum value that the merged type rejects is kept."
         ),
         "",
         (

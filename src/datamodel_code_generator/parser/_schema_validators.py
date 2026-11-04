@@ -53,9 +53,9 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _is_false_all_of
 from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
-    _get_json_value_type,
     _intersect_dumps,
     _is_object_only_type,
+    _json_value_admitted,
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import get_special_path
@@ -565,15 +565,7 @@ def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tu
     if item.type is None:
         return values
     schema_types = admitted_types(declared_types(item.type))
-    return (
-        tuple(
-            value
-            for value in values
-            if _get_json_value_type(value) in schema_types
-            or (isinstance(value, float) and value.is_integer() and "integer" in schema_types)
-        )
-        or None
-    )
+    return tuple(value for value in values if _json_value_admitted(schema_types, value)) or None
 
 
 def _input_names(names_by_property: Mapping[str, tuple[str, ...]] | None, name: str) -> tuple[str, ...]:

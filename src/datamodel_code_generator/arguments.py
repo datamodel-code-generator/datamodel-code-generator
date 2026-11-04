@@ -819,6 +819,13 @@ _flag(
     "the constraints of the root, item and map value positions of an `allOf`. "
     "Without it, the keyword of the last part wins where the parts disagree",
 )
+_flag(
+    typing_options,
+    "--intersect-combined-schema-keywords",
+    help="Combine the keywords of every part of a combined schema as JSON Schema validates them, as "
+    "--intersect-allof-keywords does (this option turns it on), and also: the keywords beside an `anyOf` or `oneOf` "
+    "in each branch, and no `enum` value that the merged `type` rejects. Without it these keep the output of 0.88.0",
+)
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _flag(
     typing_options,

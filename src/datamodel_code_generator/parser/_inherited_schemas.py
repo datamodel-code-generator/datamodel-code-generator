@@ -254,7 +254,7 @@ class InheritedSchemasHost(Protocol):
 
     @property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: every row without --intersect-allof-keywords."""
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
 
     @property
     def _legacy_rw_variants(self) -> frozenset[str]:
@@ -1316,6 +1316,7 @@ def inherited_override_schema(
         [parent_dict, child_dict],
         parser._inherited_override_row(parent_dict, child_dict),  # noqa: SLF001
         legacy_rows=parser._legacy_intersection,  # noqa: SLF001
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
     parser._warn_intersection(where, intersection)  # noqa: SLF001
     merged_property = parser._schema_object(intersection.keywords)  # noqa: SLF001

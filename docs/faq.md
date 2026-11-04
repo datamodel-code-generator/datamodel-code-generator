@@ -671,6 +671,34 @@ class Holder(BaseModel):
     data: Text | None = None
 ```
 
+### `--intersect-combined-schema-keywords`
+
+| | |
+|---|---|
+| Option | `--intersect-combined-schema-keywords` (turns on `--intersect-allof-keywords`) |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416) |
+
+**Affects:** keywords beside an `anyOf` or `oneOf` that a branch declares too. They apply to every value, whichever branch it meets, but each branch is parsed with them merged in and the branch's value wins, so `minimum: 5` beside a branch with `minimum: 1` accepts `3`. With the option each branch is the intersection of both, as `--intersect-allof-keywords` writes it for an `allOf`: the tightest bound, the conjunction of the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, nested `properties` alike; a `nullable` beside the `anyOf` stays with each branch. Where parts meet (these branches, a `$ref` with siblings, an inherited override, the members of an `allOf`) an `enum` also loses the values the merged `type` rejects, so an Enum can become an `IntEnum` or `StrEnum`. A `$ref` branch without siblings of its own keeps its referenced type.
+
+Schema: `{"minimum": 5, "anyOf": [{"type": "integer", "minimum": 1}, {"type": "string"}]}`.
+
+Without the option (same as 0.88.0):
+
+```python
+class Bound(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
+```
+
+With the option:
+
+```python
+class Bound(RootModel[conint(ge=5)]):
+    root: conint(ge=5)
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

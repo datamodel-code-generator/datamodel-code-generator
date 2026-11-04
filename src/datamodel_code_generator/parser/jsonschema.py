@@ -148,6 +148,7 @@ from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
@@ -253,7 +254,7 @@ from datamodel_code_generator.parser._inherited_schemas import (
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     INTERSECTED_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    LEGACY_ROWS,
+    LEGACY_ROWS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     POSITIONAL_SCHEMA_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     KeywordIntersection,
     all_of_member_row,
@@ -270,6 +271,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_multiple_of,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_types,
     intersects_all_of_constraints,
+    kept_legacy_rows,
     merge_inherited_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
     merge_inherited_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     warn_unsatisfiable,
@@ -696,6 +698,11 @@ def _field_union_row(
 
 def _parse_no_object_kind(parser: JsonSchemaParser, site: _Site) -> None:
     """Parse nothing: the schema of the site is not of an object kind."""
+
+
+def _without_nullable(dump: dict[str, Any]) -> dict[str, Any]:
+    """Return a dumped schema without its ``nullable``."""
+    return {key: value for key, value in dump.items() if key != "nullable"}
 
 
 def _mark_copied_nullable(
@@ -2290,8 +2297,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @cached_property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: every row without --intersect-allof-keywords."""
-        return frozenset() if self.intersects_allof_keywords else frozenset(LEGACY_ROWS)
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
+        options = {
+            "intersect_allof_keywords": self.intersects_allof_keywords,
+            "intersect_combined_schema_keywords": self.intersects_combined_schema_keywords,
+        }
+        return kept_legacy_rows({**options, **implied_options(options)})
 
     def _type_has_null(self, obj: JsonSchemaObject) -> bool:
         """Return ``JsonSchemaObject.type_has_null``, false where a ``type`` excludes the null of its members.
@@ -3812,7 +3823,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return parts
         dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
         row = {keyword: value for dump in dumps for keyword, value in dump.items()}
-        unsatisfiable = _intersect_dumps(dumps, row).unsatisfiable
+        unsatisfiable = _intersect_dumps(
+            dumps, row, removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection
+        ).unsatisfiable
         if "legacy-all-of-site-form" not in self._legacy_intersection:
             self._warn_unsatisfiable(
                 named_location(obj.schema_location, "allOf"),
@@ -3917,10 +3930,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             self,
                             target_attribute,
                             self._schema_object(
-                                all_of_member_row(
+                                self._combined_branch_row(
                                     base_object,
                                     member.model_dump(exclude_unset=True, by_alias=True),
-                                    intersect_bounds=False,
+                                    named_location(target_attribute.schema_location, target_attribute_name),
+                                    target_attribute_name,
                                 ),
                             ),
                         ),
@@ -3932,6 +3946,28 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             )
         return combined_schemas, refs
+
+    def _combined_branch_row(
+        self, outer: dict[str, Any], branch: dict[str, Any], where: str, keyword: str
+    ) -> dict[str, Any]:
+        """Return the schema a branch of a combined schema is parsed as, from the keywords beside it and its own.
+
+        The row is their merge (``all_of_member_row`` without bounds), in which the branch's value of a keyword wins.
+        Unless ``legacy-combined-branch-row`` is kept, the branch is the intersection of both over that row, keyword
+        by keyword, with a warning naming ``where`` for keywords without a common value. ``nullable`` is no part of
+        it: the row's value stays, so the union reads the null of a copied ``nullable`` as the null rule does (row
+        ``combined-branch`` of ``parser/_null_facts.py``).
+        """
+        row = all_of_member_row(outer, branch, intersect_bounds=False)
+        if "legacy-combined-branch-row" in self._legacy_intersection:
+            return row
+        intersection = _intersect_dumps(
+            [_without_nullable(outer), _without_nullable(branch)],
+            _without_nullable(row),
+            removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection,
+        )
+        self._warn_intersection(where, intersection, f"the keywords beside its {keyword} and its own keywords")
+        return intersection.keywords | ({"nullable": row["nullable"]} if "nullable" in row else {})
 
     def parse_combined_schema(
         self,

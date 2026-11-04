@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 56 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
@@ -36,6 +36,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 | Source | Kind | Condition | Target | Note |
 |--------|------|-----------|--------|------|
+| [`--intersect-combined-schema-keywords`](typing-customization.md#intersect-combined-schema-keywords) | Implies | Always | [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords) enabled | - |
 | [`--use-annotated`](typing-customization.md#use-annotated) | Implies | Always | [`--field-constraints`](field-customization.md#field-constraints) enabled | - |
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.11+` | `--use-specialized-enum` requires `--target-python-version` 3.11 or higher. |
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
@@ -232,6 +233,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--input-model-ref-strategy`](base-options.md#input-model-ref-strategy)
 - [`--install-skill`](utility-options.md#install-skill)
 - [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords)
+- [`--intersect-combined-schema-keywords`](typing-customization.md#intersect-combined-schema-keywords)
 
 ### J {#j}
 

@@ -12,7 +12,11 @@ from typing import TYPE_CHECKING, Final
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-IMPLIED_OPTIONS: Final[dict[str, str]] = {"use_annotated": "field_constraints", "use_type_alias_type": "use_type_alias"}
+IMPLIED_OPTIONS: Final[dict[str, str]] = {
+    "use_annotated": "field_constraints",
+    "use_type_alias_type": "use_type_alias",
+    "intersect_combined_schema_keywords": "intersect_allof_keywords",
+}
 """The option each option turns on when it is enabled, over any value given for that option."""
 
 
