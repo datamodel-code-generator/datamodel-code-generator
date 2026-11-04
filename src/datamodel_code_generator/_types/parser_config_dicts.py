@@ -169,6 +169,7 @@ class ParserConfigDict(TypedDict):
     order_constructor_fields_by: NotRequired[Sequence[ConstructorFieldOrder]]
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
+    merge_shared_variant_tags: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]
     tag_msgspec_by_payload_name: NotRequired[bool]
     use_msgspec_nullable_enum_alias: NotRequired[bool]

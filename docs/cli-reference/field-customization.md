@@ -16,6 +16,7 @@
 | [`--field-include-all-keys`](#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydan... |
 | [`--infer-union-variant-names`](#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of the... |
+| [`--merge-shared-variant-tags`](#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently eve... |
 | [`--no-alias`](#no-alias) | Disable Field alias generation for non-Python-safe property ... |
 | [`--no-deserialize-default-values`](#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing sel... |
 | [`--omit-redundant-constraints`](#omit-redundant-constraints) | Do not write a constraint again beside a type that already e... |
@@ -2114,6 +2115,404 @@ Existing generated output is preserved unless this option is enabled.
 
         class WebhookEnvelope(BaseModel):
             event: Event | Event1
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--merge-shared-variant-tags` {#merge-shared-variant-tags}
+
+Give a variant that discriminated unions tag differently every tag they give it.
+
+A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
+that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
+every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
+the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
+its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input discriminator_merged_variant_tags.yaml --merge-shared-variant-tags # (1)!
+    ```
+
+    1. :material-arrow-left: `--merge-shared-variant-tags` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: Variants Shared by Discriminated Unions
+      version: 1.0.0
+    paths: {}
+    components:
+      schemas:
+        Holder:
+          type: object
+          properties:
+            byName:
+              $ref: '#/components/schemas/ByName'
+            byKey:
+              $ref: '#/components/schemas/ByKey'
+            stock:
+              $ref: '#/components/schemas/Stock'
+            herd:
+              $ref: '#/components/schemas/Herd'
+            pet:
+              $ref: '#/components/schemas/Pet'
+            animal:
+              $ref: '#/components/schemas/Animal'
+            forward:
+              $ref: '#/components/schemas/Forward'
+            backward:
+              $ref: '#/components/schemas/Backward'
+            mixed:
+              $ref: '#/components/schemas/Mixed'
+        Cat:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            meow: {type: string}
+        Dog:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            bark: {type: string}
+        ByName:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+        ByKey:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: '#/components/schemas/Cat'
+              dog: '#/components/schemas/Dog'
+        Cow:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            moo: {type: string}
+        Pig:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            oink: {type: string}
+        Stock:
+          oneOf:
+            - $ref: '#/components/schemas/Cow'
+            - $ref: '#/components/schemas/Pig'
+          discriminator:
+            propertyName: kind
+            mapping:
+              cow: '#/components/schemas/Cow'
+              pig: '#/components/schemas/Pig'
+        Herd:
+          oneOf:
+            - $ref: '#/components/schemas/Cow'
+            - $ref: '#/components/schemas/Pig'
+          discriminator:
+            propertyName: kind
+        Fox:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            den: {type: string}
+        Owl:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            nest: {type: string}
+        Pet:
+          oneOf:
+            - $ref: '#/components/schemas/Fox'
+            - $ref: '#/components/schemas/Owl'
+          discriminator:
+            propertyName: kind
+            mapping:
+              fox: '#/components/schemas/Fox'
+              owl: '#/components/schemas/Owl'
+        Animal:
+          oneOf:
+            - $ref: '#/components/schemas/Fox'
+            - $ref: '#/components/schemas/Owl'
+          discriminator:
+            propertyName: kind
+            mapping:
+              vulpine: '#/components/schemas/Fox'
+              avian: '#/components/schemas/Owl'
+        Red:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            hue: {type: integer}
+        Blue:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            depth: {type: integer}
+        Forward:
+          oneOf:
+            - $ref: '#/components/schemas/Red'
+            - $ref: '#/components/schemas/Blue'
+          discriminator:
+            propertyName: kind
+            mapping:
+              a: '#/components/schemas/Red'
+              b: '#/components/schemas/Blue'
+        Backward:
+          oneOf:
+            - $ref: '#/components/schemas/Red'
+            - $ref: '#/components/schemas/Blue'
+          discriminator:
+            propertyName: kind
+            mapping:
+              b: '#/components/schemas/Red'
+              a: '#/components/schemas/Blue'
+        Name:
+          type: string
+        Mixed:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Name'
+          discriminator:
+            propertyName: kind
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_merged_variant_tags.yaml
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Cat(BaseModel):
+            kind: Literal['Cat', 'cat']
+            meow: str | None = None
+
+
+        class Dog(BaseModel):
+            kind: Literal['Dog', 'dog']
+            bark: str | None = None
+
+
+        class ByName(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class ByKey(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class Cow(BaseModel):
+            kind: Literal['cow', 'Cow']
+            moo: str | None = None
+
+
+        class Pig(BaseModel):
+            kind: Literal['pig', 'Pig']
+            oink: str | None = None
+
+
+        class Stock(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Herd(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Fox(BaseModel):
+            kind: Literal['fox', 'vulpine']
+            den: str | None = None
+
+
+        class Owl(BaseModel):
+            kind: Literal['owl', 'avian']
+            nest: str | None = None
+
+
+        class Pet(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Animal(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Red(BaseModel):
+            kind: Literal['a']
+            hue: int | None = None
+
+
+        class Blue(BaseModel):
+            kind: Literal['b']
+            depth: int | None = None
+
+
+        class Forward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Backward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Name(RootModel[str]):
+            root: str
+
+
+        class Mixed(RootModel[Cat | Name]):
+            root: Cat | Name
+
+
+        class Holder(BaseModel):
+            byName: ByName | None = None
+            byKey: ByKey | None = None
+            stock: Stock | None = None
+            herd: Herd | None = None
+            pet: Pet | None = None
+            animal: Animal | None = None
+            forward: Forward | None = None
+            backward: Backward | None = None
+            mixed: Mixed | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_merged_variant_tags.yaml
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Cat(BaseModel):
+            kind: Literal['Cat']
+            meow: str | None = None
+
+
+        class Dog(BaseModel):
+            kind: Literal['Dog']
+            bark: str | None = None
+
+
+        class ByName(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class ByKey(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class Cow(BaseModel):
+            kind: Literal['cow']
+            moo: str | None = None
+
+
+        class Pig(BaseModel):
+            kind: Literal['pig']
+            oink: str | None = None
+
+
+        class Stock(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Herd(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Fox(BaseModel):
+            kind: Literal['fox']
+            den: str | None = None
+
+
+        class Owl(BaseModel):
+            kind: Literal['owl']
+            nest: str | None = None
+
+
+        class Pet(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Animal(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Red(BaseModel):
+            kind: Literal['a']
+            hue: int | None = None
+
+
+        class Blue(BaseModel):
+            kind: Literal['b']
+            depth: int | None = None
+
+
+        class Forward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Backward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Name(RootModel[str]):
+            root: str
+
+
+        class Mixed(RootModel[Cat | Name]):
+            root: Cat | Name
+
+
+        class Holder(BaseModel):
+            byName: ByName | None = None
+            byKey: ByKey | None = None
+            stock: Stock | None = None
+            herd: Herd | None = None
+            pet: Pet | None = None
+            animal: Animal | None = None
+            forward: Forward | None = None
+            backward: Backward | None = None
+            mixed: Mixed | None = None
         ```
 
         <!-- fmt: on -->

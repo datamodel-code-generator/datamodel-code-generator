@@ -16917,3 +16917,101 @@ def test_main_openapi_discriminator_typed_mapping_keys_msgspec(output_file: Path
     assert_output(
         "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
     )
+
+
+MERGED_VARIANT_TAGS_PAYLOAD: dict[str, dict[str, str]] = {
+    "byName": {"kind": "cat"},
+    "byKey": {"kind": "Dog"},
+    "stock": {"kind": "Pig"},
+    "herd": {"kind": "cow"},
+    "pet": {"kind": "vulpine"},
+    "animal": {"kind": "owl"},
+}
+"""A document whose variants each union selects by the tag another union gives them."""
+
+
+@pytest.mark.cli_doc(
+    options=["--merge-shared-variant-tags"],
+    option_description="""Give a variant that discriminated unions tag differently every tag they give it.
+
+A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
+that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
+every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
+the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
+its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.""",
+    input_schema="openapi/discriminator_merged_variant_tags.yaml",
+    cli_args=["--merge-shared-variant-tags"],
+    golden_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py",
+    comparison_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].py",
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--merge-shared-variant-tags"], id="pydantic_v2-merged"),
+        pytest.param("pydantic_v2.dataclass", ["--merge-shared-variant-tags"], id="pydantic_v2_dataclass-merged"),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Merge the tags of a variant that discriminated unions tag differently under ``--merge-shared-variant-tags``.
+
+    ``ByName`` tags ``Cat`` by its name and ``ByKey`` by the mapping key ``cat``; ``Herd`` and ``Stock`` do the same in
+    the other order, and ``Pet`` and ``Animal`` map ``Fox`` to ``fox`` and ``vulpine``. Without the option each variant
+    keeps the first union's tag and the other union rejects every document that selects it (#5361, #4666); with it
+    each variant takes every tag, so every union decodes its documents. ``Forward`` and ``Backward`` map ``a`` and ``b``
+    the other way round, so merging would give ``Red`` and ``Blue`` both tags: they keep the first union's, with the
+    warning. ``Mixed`` lists a string beside ``Cat``, so it is a plain union and gives ``Cat`` no tag.
+    """
+    with pytest.warns(
+        UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                *extra_args,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"merge_shared_variant_tags_{output_model_type.replace('.', '_')}",
+            model_name="Holder",
+            valid_json=json.dumps(MERGED_VARIANT_TAGS_PAYLOAD),
+            invalid_json=json.dumps({"byName": {"kind": "vulpine"}}),
+            expected_error_type="union_tag_invalid",
+        )
+
+
+def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
+    """Leave msgspec Structs as they are under ``--merge-shared-variant-tags``, as a Struct takes one tag."""
+    common = ["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    with pytest.warns(UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=common,
+        )
+    with pytest.warns(UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=tmp_path / "merged.py",
+            input_file_type="openapi",
+            extra_args=[*common, "--merge-shared-variant-tags"],
+            expected_output=output_file.read_text(encoding="utf-8"),
+        )

@@ -785,7 +785,7 @@ The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal 
 
 The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
 
-The 20261104 presets keep the 20261027 options.
+The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes every tag they give it, so each union decodes the documents it selects the variant by.
 
 ## Override Preset Options
 
@@ -5493,6 +5493,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5523,7 +5524,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5557,6 +5558,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `standard-py311-20261104`
 
@@ -5590,6 +5592,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5621,7 +5624,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5656,6 +5659,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `standard-py312-20261104`
 
@@ -5689,6 +5693,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5720,7 +5725,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5755,6 +5760,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `standard-py313-20261104`
 
@@ -5788,6 +5794,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5819,7 +5826,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5854,6 +5861,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `standard-py314-20261104`
 
@@ -5887,6 +5895,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5918,7 +5927,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5953,6 +5962,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `standard-py315-20261104`
 
@@ -5986,6 +5996,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -6017,7 +6028,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -6052,6 +6063,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 
 ### `practical-py310-20261104`
 
@@ -6086,6 +6098,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6127,7 +6140,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6161,6 +6174,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6198,6 +6212,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6240,7 +6255,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6275,6 +6290,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6312,6 +6328,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6354,7 +6371,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6389,6 +6406,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6426,6 +6444,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6468,7 +6487,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6503,6 +6522,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6540,6 +6560,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6582,7 +6603,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6617,6 +6638,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6654,6 +6676,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     intersect-allof-keywords = true
     keep-enum-member-values = true
     keep-field-defaults-off-branch-roots = true
+    merge-shared-variant-tags = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6696,7 +6719,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6731,6 +6754,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Shared parent wrappers collapsed | `--collapse-shared-parent-wrappers` | Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first. |
+| Shared variant tags merged | `--merge-shared-variant-tags` | Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -23881,7 +23905,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 45 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 33 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
@@ -24122,6 +24146,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### M {#m}
 
+- [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags)
 - [`--model-extra-keys`](model-customization.md#model-extra-keys)
 - [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix)
 - [`--model-name-map`](model-customization.md#model-name-map)
@@ -34209,6 +34234,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/field-custom
 | [`--field-include-all-keys`](#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydan... |
 | [`--infer-union-variant-names`](#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of the... |
+| [`--merge-shared-variant-tags`](#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently eve... |
 | [`--no-alias`](#no-alias) | Disable Field alias generation for non-Python-safe property ... |
 | [`--no-deserialize-default-values`](#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing sel... |
 | [`--omit-redundant-constraints`](#omit-redundant-constraints) | Do not write a constraint again beside a type that already e... |
@@ -36307,6 +36333,404 @@ Existing generated output is preserved unless this option is enabled.
 
         class WebhookEnvelope(BaseModel):
             event: Event | Event1
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--merge-shared-variant-tags` {#merge-shared-variant-tags}
+
+Give a variant that discriminated unions tag differently every tag they give it.
+
+A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
+that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
+every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
+the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
+its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input discriminator_merged_variant_tags.yaml --merge-shared-variant-tags # (1)!
+    ```
+
+    1. :material-arrow-left: `--merge-shared-variant-tags` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: Variants Shared by Discriminated Unions
+      version: 1.0.0
+    paths: {}
+    components:
+      schemas:
+        Holder:
+          type: object
+          properties:
+            byName:
+              $ref: '#/components/schemas/ByName'
+            byKey:
+              $ref: '#/components/schemas/ByKey'
+            stock:
+              $ref: '#/components/schemas/Stock'
+            herd:
+              $ref: '#/components/schemas/Herd'
+            pet:
+              $ref: '#/components/schemas/Pet'
+            animal:
+              $ref: '#/components/schemas/Animal'
+            forward:
+              $ref: '#/components/schemas/Forward'
+            backward:
+              $ref: '#/components/schemas/Backward'
+            mixed:
+              $ref: '#/components/schemas/Mixed'
+        Cat:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            meow: {type: string}
+        Dog:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            bark: {type: string}
+        ByName:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+        ByKey:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: '#/components/schemas/Cat'
+              dog: '#/components/schemas/Dog'
+        Cow:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            moo: {type: string}
+        Pig:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            oink: {type: string}
+        Stock:
+          oneOf:
+            - $ref: '#/components/schemas/Cow'
+            - $ref: '#/components/schemas/Pig'
+          discriminator:
+            propertyName: kind
+            mapping:
+              cow: '#/components/schemas/Cow'
+              pig: '#/components/schemas/Pig'
+        Herd:
+          oneOf:
+            - $ref: '#/components/schemas/Cow'
+            - $ref: '#/components/schemas/Pig'
+          discriminator:
+            propertyName: kind
+        Fox:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            den: {type: string}
+        Owl:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            nest: {type: string}
+        Pet:
+          oneOf:
+            - $ref: '#/components/schemas/Fox'
+            - $ref: '#/components/schemas/Owl'
+          discriminator:
+            propertyName: kind
+            mapping:
+              fox: '#/components/schemas/Fox'
+              owl: '#/components/schemas/Owl'
+        Animal:
+          oneOf:
+            - $ref: '#/components/schemas/Fox'
+            - $ref: '#/components/schemas/Owl'
+          discriminator:
+            propertyName: kind
+            mapping:
+              vulpine: '#/components/schemas/Fox'
+              avian: '#/components/schemas/Owl'
+        Red:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            hue: {type: integer}
+        Blue:
+          type: object
+          required: [kind]
+          properties:
+            kind: {type: string}
+            depth: {type: integer}
+        Forward:
+          oneOf:
+            - $ref: '#/components/schemas/Red'
+            - $ref: '#/components/schemas/Blue'
+          discriminator:
+            propertyName: kind
+            mapping:
+              a: '#/components/schemas/Red'
+              b: '#/components/schemas/Blue'
+        Backward:
+          oneOf:
+            - $ref: '#/components/schemas/Red'
+            - $ref: '#/components/schemas/Blue'
+          discriminator:
+            propertyName: kind
+            mapping:
+              b: '#/components/schemas/Red'
+              a: '#/components/schemas/Blue'
+        Name:
+          type: string
+        Mixed:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Name'
+          discriminator:
+            propertyName: kind
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_merged_variant_tags.yaml
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Cat(BaseModel):
+            kind: Literal['Cat', 'cat']
+            meow: str | None = None
+
+
+        class Dog(BaseModel):
+            kind: Literal['Dog', 'dog']
+            bark: str | None = None
+
+
+        class ByName(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class ByKey(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class Cow(BaseModel):
+            kind: Literal['cow', 'Cow']
+            moo: str | None = None
+
+
+        class Pig(BaseModel):
+            kind: Literal['pig', 'Pig']
+            oink: str | None = None
+
+
+        class Stock(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Herd(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Fox(BaseModel):
+            kind: Literal['fox', 'vulpine']
+            den: str | None = None
+
+
+        class Owl(BaseModel):
+            kind: Literal['owl', 'avian']
+            nest: str | None = None
+
+
+        class Pet(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Animal(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Red(BaseModel):
+            kind: Literal['a']
+            hue: int | None = None
+
+
+        class Blue(BaseModel):
+            kind: Literal['b']
+            depth: int | None = None
+
+
+        class Forward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Backward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Name(RootModel[str]):
+            root: str
+
+
+        class Mixed(RootModel[Cat | Name]):
+            root: Cat | Name
+
+
+        class Holder(BaseModel):
+            byName: ByName | None = None
+            byKey: ByKey | None = None
+            stock: Stock | None = None
+            herd: Herd | None = None
+            pet: Pet | None = None
+            animal: Animal | None = None
+            forward: Forward | None = None
+            backward: Backward | None = None
+            mixed: Mixed | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_merged_variant_tags.yaml
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Cat(BaseModel):
+            kind: Literal['Cat']
+            meow: str | None = None
+
+
+        class Dog(BaseModel):
+            kind: Literal['Dog']
+            bark: str | None = None
+
+
+        class ByName(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class ByKey(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='kind')
+
+
+        class Cow(BaseModel):
+            kind: Literal['cow']
+            moo: str | None = None
+
+
+        class Pig(BaseModel):
+            kind: Literal['pig']
+            oink: str | None = None
+
+
+        class Stock(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Herd(RootModel[Cow | Pig]):
+            root: Cow | Pig = Field(..., discriminator='kind')
+
+
+        class Fox(BaseModel):
+            kind: Literal['fox']
+            den: str | None = None
+
+
+        class Owl(BaseModel):
+            kind: Literal['owl']
+            nest: str | None = None
+
+
+        class Pet(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Animal(RootModel[Fox | Owl]):
+            root: Fox | Owl = Field(..., discriminator='kind')
+
+
+        class Red(BaseModel):
+            kind: Literal['a']
+            hue: int | None = None
+
+
+        class Blue(BaseModel):
+            kind: Literal['b']
+            depth: int | None = None
+
+
+        class Forward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Backward(RootModel[Red | Blue]):
+            root: Red | Blue = Field(..., discriminator='kind')
+
+
+        class Name(RootModel[str]):
+            root: str
+
+
+        class Mixed(RootModel[Cat | Name]):
+            root: Cat | Name
+
+
+        class Holder(BaseModel):
+            byName: ByName | None = None
+            byKey: ByKey | None = None
+            stock: Stock | None = None
+            herd: Herd | None = None
+            pet: Pet | None = None
+            animal: Animal | None = None
+            forward: Forward | None = None
+            backward: Backward | None = None
+            mixed: Mixed | None = None
         ```
 
         <!-- fmt: on -->
@@ -64933,6 +65357,7 @@ datamodel-codegen [OPTIONS]
 | [`--field-include-all-keys`](field-customization.md#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydantic v2 only). |
 | [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` ... |
+| [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently every tag they give it. |
 | [`--no-alias`](field-customization.md#no-alias) | Disable Field alias generation for non-Python-safe property names. |
 | [`--no-deserialize-default-values`](field-customization.md#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing selected types. |
 | [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) | Do not write a constraint again beside a type that already enforces it. |
@@ -65263,6 +65688,7 @@ All options sorted alphabetically:
 - [`--list-experimental`](utility-options.md#list-experimental) - List registered experimental features
 - [`--locked`](general-options.md#locked) - Require an existing remote lock and validate each fetched re...
 - [`--lockfile`](general-options.md#lockfile) - Select the remote reference integrity lock file (experimenta...
+- [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags) - Give a variant that discriminated unions tag differently eve...
 - [`--model-extra-keys`](model-customization.md#model-extra-keys) - Add model-level schema extensions to ConfigDict json_schema_...
 - [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix) - Strip x- prefix from model-level schema extensions and add t...
 - [`--model-name-map`](model-customization.md#model-name-map) - Rename generated model classes from a JSON mapping.
@@ -68519,6 +68945,38 @@ See [Root Models and Type Aliases](root-model-and-type-alias.md) for details.
 📎 Related: [#2505](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2505)
 
 ---
+
+## Opt-in behaviour changes in 0.89.0
+
+The opt-in options of 0.89.0, listed as in [Opt-in behaviour changes in 0.87.0](#opt-in-behaviour-changes-in-0870). Without them the output is byte-identical to 0.88.0. The `20261104` preset sets every option in this section, and keeps the options of the `20261027` preset (see [Presets](presets.md)).
+
+### `--merge-shared-variant-tags`
+
+| | |
+|---|---|
+| Option | `--merge-shared-variant-tags` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5361](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5361), [#4666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4666) |
+
+**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects every document that selects the variant, with a warning. With the option its tag field takes every tag the unions give it. A variant keeps the first union's tag where a union would then give two of its variants one tag, and msgspec Structs, which take one tag, are unchanged.
+
+Schema: `ByName` is a `oneOf` of `Cat` and `Dog` discriminated by `kind` without a mapping, and `ByKey` lists the same variants with the mapping `{"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}`.
+
+Without the option (same as 0.88.0), `ByKey` rejects `{"kind": "cat"}`:
+
+```python
+class Cat(BaseModel):
+    kind: Literal['Cat']
+```
+
+With the option:
+
+```python
+class Cat(BaseModel):
+    kind: Literal['Cat', 'cat']
+```
 
 ## Opt-in behaviour changes in 0.87.0
 

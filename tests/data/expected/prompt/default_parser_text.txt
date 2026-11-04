@@ -85,6 +85,7 @@
 - `--field-include-all-keys`: Include all schema keys in Field() json_schema_extra.
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
+- `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-snake-case-field`

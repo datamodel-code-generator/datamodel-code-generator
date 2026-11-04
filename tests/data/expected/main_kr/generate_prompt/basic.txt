@@ -85,6 +85,7 @@
 - `--field-include-all-keys`: Include all schema keys in Field() json_schema_extra.
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
+- `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-snake-case-field`
@@ -492,6 +493,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         change a member value, such as 2.5 in an IntEnum;
                         without it the base follows the schema type, as in
                         0.86.0
+  --merge-shared-variant-tags
+                        Give a variant that several discriminated unions tag
+                        differently (for example one by a mapping key, one by
+                        the schema name) every tag they give it, so each union
+                        decodes the documents its discriminator selects; such
+                        a union also accepts the tags the other unions give
+                        the variant. A variant keeps the tag of the first
+                        union, as without the option (as in 0.88.0), where a
+                        union listing it would then give two of its variants
+                        one tag, and msgspec Structs, which take one tag, keep
+                        it too.
   --omit-redundant-constraints
                         Do not write a constraint again beside a type that
                         already enforces it: the bound of a zero-bound class

@@ -93,6 +93,7 @@ Field naming, aliases, defaults, and constraints.
 - `--use-site-models-for-constrained-refs`: Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out
 - `--set-default-enum-member` (deprecated): Deprecated: --set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
 - `--use-enum-values-in-discriminator`: Use enum member literals in discriminator fields instead of string literals
+- `--merge-shared-variant-tags`: Give a variant that several discriminated unions tag differently (for example one by a mapping key, one by the schema name) every tag they give it, so each union decodes the documents its discriminator selects; such a union also accepts the tags the other unions give the variant. A variant keeps the tag of the first union, as without the option (as in 0.88.0), where a union listing it would then give two of its variants one tag, and msgspec Structs, which take one tag, keep it too.
 - `--capitalise-enum-members`: Capitalize field names on enum
 - `--capitalize-enum-members`: Capitalize field names on enum
 - `--empty-enum-field-name`: Set field name when enum value is empty (default: `_`)

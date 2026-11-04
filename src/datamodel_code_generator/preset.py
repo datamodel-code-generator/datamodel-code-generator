@@ -770,7 +770,17 @@ _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
-_STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (*_STANDARD_20261027_OPTION_GROUPS,)
+_STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261027_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Shared variant tags merged",
+        config=PresetConfig(merge_shared_variant_tags=True),
+        description=(
+            "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the "
+            "schema name, every tag they give it, so each union decodes the documents it selects the variant by."
+        ),
+    ),
+)
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
@@ -1027,7 +1037,11 @@ def render_presets_markdown() -> str:
             "to a referenced schema gets its own model of the values all parts admit instead of the referenced type."
         ),
         "",
-        "The 20261104 presets keep the 20261027 options.",
+        (
+            "The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that "
+            "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
+            "every tag they give it, so each union decodes the documents it selects the variant by."
+        ),
         "",
         "## Override Preset Options",
         "",

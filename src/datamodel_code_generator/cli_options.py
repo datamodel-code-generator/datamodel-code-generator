@@ -377,7 +377,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-field-description-example --use-attribute-docstrings --use-inline-field-description",
         "--use-single-line-docstring --field-constraints --omit-redundant-constraints",
         "--use-site-models-for-constrained-refs --field-extra-keys --field-extra-keys-without-x-prefix",
-        "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator",
+        "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator --merge-shared-variant-tags",
         "--field-type-collision-strategy",
     ),
     **_opts(_C.TYPING, "--use-union-operator --no-use-union-operator", group=_G.TYPE_SYNTAX),

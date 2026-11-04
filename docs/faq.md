@@ -410,6 +410,38 @@ See [Root Models and Type Aliases](root-model-and-type-alias.md) for details.
 
 ---
 
+## Opt-in behaviour changes in 0.89.0
+
+The opt-in options of 0.89.0, listed as in [Opt-in behaviour changes in 0.87.0](#opt-in-behaviour-changes-in-0870). Without them the output is byte-identical to 0.88.0. The `20261104` preset sets every option in this section, and keeps the options of the `20261027` preset (see [Presets](presets.md)).
+
+### `--merge-shared-variant-tags`
+
+| | |
+|---|---|
+| Option | `--merge-shared-variant-tags` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5361](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5361), [#4666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4666) |
+
+**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects every document that selects the variant, with a warning. With the option its tag field takes every tag the unions give it. A variant keeps the first union's tag where a union would then give two of its variants one tag, and msgspec Structs, which take one tag, are unchanged.
+
+Schema: `ByName` is a `oneOf` of `Cat` and `Dog` discriminated by `kind` without a mapping, and `ByKey` lists the same variants with the mapping `{"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}`.
+
+Without the option (same as 0.88.0), `ByKey` rejects `{"kind": "cat"}`:
+
+```python
+class Cat(BaseModel):
+    kind: Literal['Cat']
+```
+
+With the option:
+
+```python
+class Cat(BaseModel):
+    kind: Literal['Cat', 'cat']
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

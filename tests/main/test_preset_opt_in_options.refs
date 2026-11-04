@@ -18,6 +18,8 @@ keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_
 keep-enum-member-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
+merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
+merge-shared-variant-tags-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
 omit-redundant-reference-null-practical	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 omit-redundant-reference-null-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 openapi-ref-components-as-definitions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-practical].py

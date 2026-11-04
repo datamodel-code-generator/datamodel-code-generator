@@ -1398,6 +1398,15 @@ paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	
 	main/openapi/main_openapi/max_items_enum_without_option.py
 [test_main_openapi_max_min]
 	main/openapi/max_min_number.py
+[test_main_openapi_merge_shared_variant_tags]
+pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].py
+pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].warnings.txt
+pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py
+pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
+pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].py
+pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
+[test_main_openapi_merge_shared_variant_tags_msgspec]
+	main/openapi/main_openapi/merge_shared_variant_tags_msgspec.py
 [test_main_openapi_model_name_map_key_of_numbered_name]
 both-variants	main/openapi/openapi_model_name_map_key_of_numbered_name.py
 duplicate-name-suffix-in-module	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[duplicate-name-suffix-in-module].py

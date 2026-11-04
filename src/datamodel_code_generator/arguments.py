@@ -857,6 +857,15 @@ _flag(
     "--use-enum-values-in-discriminator",
     help="Use enum member literals in discriminator fields instead of string literals",
 )
+_flag(
+    typing_options,
+    "--merge-shared-variant-tags",
+    help="Give a variant that several discriminated unions tag differently (for example one by a mapping key, one by "
+    "the schema name) every tag they give it, so each union decodes the documents its discriminator selects; such a "
+    "union also accepts the tags the other unions give the variant. A variant keeps the tag of the first union, as "
+    "without the option (as in 0.88.0), where a union listing it would then give two of its variants one tag, and "
+    "msgspec Structs, which take one tag, keep it too.",
+)
 _toggle(
     typing_options,
     "--use-standard-collections",
