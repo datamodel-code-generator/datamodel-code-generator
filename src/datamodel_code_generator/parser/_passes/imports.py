@@ -152,6 +152,7 @@ __all__ = [
     "check_import_reads",
     "decide_config_items",
     "import_models_of_hidden_submodules",
+    "modules_hidden_by_imports",
     "name_final_classes_of_additional_properties",
     "record_generated_class_names",
     "record_model_placement",
@@ -1627,6 +1628,47 @@ def submodules_hidden_by_packages(
     return result
 
 
+def modules_hidden_by_imports(
+    imports: Imports, module_imports: Iterable[tuple[tuple[str, ...], str]]
+) -> frozenset[tuple[str, ...]]:
+    """Return the modules of ``module_imports`` whose binding an import of ``imports`` that names no model binds too.
+
+    ``from . import BaseModel``, which names the models of the module ``BaseModel`` (``BaseModel.Thing``), and
+    ``from pydantic import BaseModel`` bind one name, so the later of the two names what the module writes for both.
+    ``module_imports`` holds each module that the module imports by a binding, by its module name, with that binding.
+    The imports of models never share a name, as the module's resolver names them all.
+    """
+    models = {_import_key(import_) for import_ in imports.reference_paths.values()}
+    bound = {binding for key, binding in _import_bindings(imports) if key not in models}
+    return frozenset(module for module, binding in module_imports if binding in bound)
+
+
+def _submodules_hidden_by_imports(
+    contexts: Iterable[ModuleContextView], module_names: Mapping[str, str]
+) -> dict[ModulePath, frozenset[tuple[str, ...]]]:
+    """Return, by the file of each module, the modules it imports models from by a name another of its imports binds.
+
+    A module named like an import that every module shares is imported from at once (``reference_import_target``),
+    but the other imports of a module are final only now (``modules_hidden_by_imports``).
+    """
+    result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
+    for ctx in contexts:
+        imports = ctx.imports
+        if modules := modules_hidden_by_imports(
+            imports,
+            (
+                (tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1]), binding)
+                for model in ctx.models
+                for data_type in _named_data_types(model)
+                if (written := _written_reference(data_type)) is not None
+                and (stale := imports.reference_paths.get((reference := written[0]).path)) is not None
+                and (binding := _module_binding(written[1])) == stale.binding_name
+            ),
+        ):
+            result[ctx.module] = modules
+    return result
+
+
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
     """Return the dotted names of the modules that the written modules import or import from (``module_import_edges``).
 
@@ -1700,14 +1742,15 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
 
 
 def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
-    """Import the models of a submodule from the submodule where its package hides it from the module.
+    """Import the models of a submodule from the submodule where its package or another import hides it from the module.
 
     ``from . import annotations``, which names the models of the module ``annotations`` (``annotations.Item``), gives
     the ``__future__`` feature where the package's ``__init__.py`` writes ``from __future__ import annotations``, and a
-    class where it defines one of that name (``submodules_hidden_by_packages``). Such a model is imported from its
-    module (``from .annotations import Item``), as ``--use-exact-imports`` imports it, under the name the module's
-    resolver gives it once the module import released its name, and every use of the model follows, the class of an
-    enum member literal (``Literal[annotations.Kind.book]``, ``_written_reference``) and the enum members that
+    class where it defines one of that name (``submodules_hidden_by_packages``), and ``from pydantic import BaseModel``
+    where the module imports ``from . import BaseModel`` too (``modules_hidden_by_imports``). Such a model is imported
+    from its module (``from .annotations import Item``), as ``--use-exact-imports`` imports it, under the name the
+    module's resolver gives it once the module import released its name, and every use of the model follows, the class
+    of an enum member literal (``Literal[annotations.Kind.book]``, ``_written_reference``) and the enum members that
     ``set_default_enum_member`` wrote into defaults included (``_follow_renamed_enum_references``). A literal took the
     place of a type that named its enum, whose import of the module stays counted, so a literal's enum drops every count
     of its import of the module (``_held_count``). The name keeps
@@ -1717,7 +1760,14 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     import binds it, as the field render plans froze it written.
     """
     _alias_imports_hidden_by_loaded_submodules(parser, state)
-    if not (hidden := submodules_hidden_by_packages(parser, state.contexts, state, state.config)):
+    by_packages = submodules_hidden_by_packages(parser, state.contexts, state, state.config)
+    by_imports = _submodules_hidden_by_imports(state.contexts, state.model_path_to_module_name)
+    if not (
+        hidden := {
+            module: by_packages.get(module, frozenset()) | by_imports.get(module, frozenset())
+            for module in by_packages.keys() | by_imports.keys()
+        }
+    ):
         return
     ledger, module_names = parser._import_ledger, state.model_path_to_module_name  # noqa: SLF001
     for ctx in state.contexts:
