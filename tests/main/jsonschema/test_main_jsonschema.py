@@ -28585,6 +28585,65 @@ def test_unique_items_set_typed_dict(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.PydanticV2BaseModel.value,
+        DataModelType.DataclassesDataclass.value,
+        DataModelType.MsgspecStruct.value,
+    ],
+)
+@pytest.mark.parametrize(
+    "reuse_args",
+    [
+        pytest.param(["--reuse-model"], id="subclass"),
+        pytest.param(["--reuse-model", "--collapse-reuse-models"], id="collapse"),
+    ],
+)
+def test_main_jsonschema_reuse_model_merged_bases_mro(
+    output_model_type: str, reuse_args: list[str], output_file: Path
+) -> None:
+    """List the bases a reuse merge changes in an order Python creates the class from, each once."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_model_merged_bases_mro.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *reuse_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2Dataclass.value, DataModelType.MsgspecStruct.value],
+)
+def test_main_jsonschema_reuse_scope_tree_merged_bases(output_model_type: str, output_dir: Path) -> None:
+    """Name a base once where tree-scope reuse merges two bases of a model into one shared model."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_merged_bases",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.benchmark
 def test_main_allof_mro(output_file: Path) -> None:
     """Test allOf with diamond inheritance pattern produces valid Python MRO."""

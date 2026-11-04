@@ -2239,6 +2239,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _DICT_KEYS_TAKE_ROOT_TYPE: ClassVar[bool] = False
     """Whether a dict key that names a model of the class may take its root type (hashability): the class wraps one
     root value, and its instances can be dict keys only when frozen."""
+    _PYTHON_CHECKS_BASES: ClassVar[bool] = True
+    """Whether Python creates the class from its bases, refusing a base listed twice and bases whose orders C3 cannot
+    merge; a TypedDict merges the keys of its bases itself."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -3662,6 +3665,24 @@ def inherited_root_field(model: DataModel) -> DataModelFieldBase:
     return model.fields[0]
 
 
+def python_base_classes(model: DataModel) -> list[BaseClassDataType] | None:
+    """Return the bases Python creates the class of ``model`` from, where it refuses those the model lists, or None.
+
+    Python refuses a generated base listed twice and bases whose orders C3 cannot merge (`_mro.linearize`, row
+    ``python``); the bases are then listed once each, descendants first as `sort_data_models_for_mro` orders them.
+    """
+    if not model._PYTHON_CHECKS_BASES or (  # noqa: SLF001
+        _mro.linearize([model], _model_key_of_model, _find_base_classes, rule="python") is not None
+    ):
+        return None
+    bases = list({id(base.reference) if base.reference else id(base): base for base in model.base_classes}.values())
+    order = {
+        model_key_of(source.reference): index
+        for index, source in enumerate(sort_data_models_for_mro(_find_base_classes_of(bases)))
+    }
+    return sorted(bases, key=lambda base: order.get(model_key_of(base.reference), 0) if base.reference else 0)
+
+
 _ClassVarRow: TypeAlias = Literal["declared", "no-place"]
 """How a class variable counts among the fields a model has with its bases.
 
@@ -3755,4 +3776,9 @@ _rebuild_model_with_datamodel_namespace(DataModelFieldBase)
 
 def _find_base_classes(model: DataModel) -> list[DataModel]:
     """Get direct base class DataModels."""
-    return [b.reference.source for b in model.base_classes if b.reference and isinstance(b.reference.source, DataModel)]
+    return _find_base_classes_of(model.base_classes)
+
+
+def _find_base_classes_of(base_classes: Iterable[BaseClassDataType]) -> list[DataModel]:
+    """Return the generated models ``base_classes`` name."""
+    return [b.reference.source for b in base_classes if b.reference and isinstance(b.reference.source, DataModel)]
