@@ -6,7 +6,7 @@
 |--------|-------------|
 | [`--aliases`](#aliases) | Apply custom field and class name aliases via inline JSON or... |
 | [`--capitalize-enum-members`](#capitalize-enum-members) | Capitalize enum member names to UPPER_CASE format. |
-| [`--capitalize-numbered-enum-members`](#capitalize-numbered-enum-members) | Capitalize also the number an enum member takes when its cap... |
+| [`--capitalize-numbered-enum-members`](#capitalize-numbered-enum-members) | Capitalize the numbered name an enum member takes when its n... |
 | [`--default-values`](#default-values) | Override field default values via inline JSON or a JSON file... |
 | [`--deserialize-default-values`](#deserialize-default-values) | Deserialize selected direct scalar field defaults into their... |
 | [`--empty-enum-field-name`](#empty-enum-field-name) | Name for empty string enum field values. |
@@ -534,7 +534,7 @@ naming conventions for constants.
 
 ## `--capitalize-numbered-enum-members` {#capitalize-numbered-enum-members}
 
-Capitalize also the number an enum member takes when its capitalized name is taken.
+Capitalize the numbered name an enum member takes when its name is taken.
 
 Under `--capitalize-enum-members` the members `a` and `A` both capitalize to `A`, so the second one is numbered, and
 the number goes on the name as written: `a_1`. With `--capitalize-numbered-enum-members` the numbered name is
