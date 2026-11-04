@@ -1,0 +1,45 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
+  components                       4, 0 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           2 oneOf/anyOf, 2 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (4 of 4); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261027
+
+Add (1 option)
+  --merge-shared-variant-tags   [unions.merge-shared-variant-tags]
+      Discriminated unions tag 2 variants differently, for example one by a mapping key and one by
+      the schema name. A variant has one tag field, so without merged tags it keeps the tags of the
+      first union, and the other union rejects every document that selects the variant by its own
+      tag; merged, the variant takes every tag its unions give it.
+      measured: #5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the
+      option ByKey rejected {"kind": "cat"}, with it Cat takes Literal['Cat', 'cat'] and both unions
+      decode their documents
+      measured: #4666: a variant two discriminator mappings tag differently; with the option each
+      union decodes its own tag
+
+Your configuration
+  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261104
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input shared_variant_tags.yaml --merge-shared-variant-tags --preset standard-py314-20261027
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "shared_variant_tags.yaml"
+  merge-shared-variant-tags = true
+  preset = "standard-py314-20261027"

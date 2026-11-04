@@ -146,6 +146,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
+- Not covered: unions.merge-shared-variant-tags (decision shared-variant-tags has no grid axis)
 - Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
 - Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
 
@@ -888,7 +889,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -1562,7 +1564,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -1841,6 +1844,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "decision union-variant-names has no grid axis",
       "decision": "union-variant-names",
       "rule": "unions.name-variants-after-tags"
+    },
+    {
+      "covered": "decision shared-variant-tags has no grid axis",
+      "decision": "shared-variant-tags",
+      "rule": "unions.merge-shared-variant-tags"
     },
     {
       "covered": "optional, not calibrated",
