@@ -200,7 +200,12 @@ _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
 _EXTRA_TEMPLATE_DATA_KEY_ERROR = "extra template data keys must be strings"
 _DATACLASS_ARGUMENTS_MAPPING_ERROR = "dataclass_arguments must be a dictionary"
 _DATACLASS_ARGUMENTS_KEY_ERROR = "dataclass_arguments keys must be strings"
-_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY = "dataclass_arguments"
+_TEMPLATE_DATA_MODEL_VALUE_ERRORS: dict[str, str] = {
+    "dataclass_arguments": _DATACLASS_ARGUMENTS_MAPPING_ERROR,
+    "description": "description must be a string",
+    "decorators": "decorators must be a list of strings",
+    "methods": "methods must be a list of strings",
+}
 _DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset(DataclassArguments.__annotations__)
 _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
     "class_body_lines",
@@ -2607,7 +2612,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             raise Exception(msg)  # noqa: TRY002
 
         self._custom_template_dir: Path | None = custom_template_dir
-        self.decorators: list[str] = decorators or []
         self._additional_imports: list[Import] = []
         self.custom_base_class = custom_base_class
         if base_classes:
@@ -2646,13 +2650,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
             if all_model_extra_template_data:
                 _copy_all_model_data(all_model_extra_template_data, self.extra_template_data)
-        self.dataclass_arguments: DataclassArguments = self._with_template_dataclass_arguments(
-            dataclass_arguments if dataclass_arguments is not None else {}
+        self.dataclass_arguments: DataclassArguments = self._with_template_value(
+            "dataclass_arguments", dataclass_arguments if dataclass_arguments is not None else {}
         )
-
-        self.methods: list[str] = methods or []
-
-        self.description = description
+        self.decorators: list[str] = self._with_template_value("decorators", decorators or [])
+        self.methods: list[str] = self._with_template_value("methods", methods or [])
+        self.description: str | None = self._with_template_value("description", description)
         for field in self.fields:
             field.parent = self
             field.invalidate_semantic_caches(invalidate_parent=False)
@@ -2662,13 +2665,23 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self._nullable: bool = nullable
         self._treat_dot_as_module: bool | None = treat_dot_as_module
 
-    def _with_template_dataclass_arguments(self, arguments: DataclassArguments) -> DataclassArguments:
-        """Return the options' decorator arguments with the ``dataclass_arguments`` of the template data over them."""
-        if (template_arguments := self.extra_template_data.get(_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY)) is None:
-            return arguments
-        if not isinstance(template_arguments, dict):
-            raise Error(_DATACLASS_ARGUMENTS_MAPPING_ERROR)
-        return {**arguments, **template_arguments}
+    def _with_template_value(self, key: str, value: Any) -> Any:
+        """Return the value the options give the model with the one of the template data over it.
+
+        The ``dataclass_arguments`` merge key by key, the ``description``, ``decorators`` and ``methods`` replace.
+        """
+        if (template_value := self.extra_template_data.get(key)) is None:
+            return value
+        match key:
+            case "dataclass_arguments" if isinstance(template_value, dict):
+                return {**value, **template_value}
+            case "description" if isinstance(template_value, str):
+                return template_value
+            case "decorators" | "methods" if isinstance(template_value, list) and all(
+                isinstance(item, str) for item in template_value
+            ):
+                return list(template_value)
+        raise Error(_TEMPLATE_DATA_MODEL_VALUE_ERRORS[key])
 
     def _validate_fields(self, fields: list[DataModelFieldBase]) -> list[DataModelFieldBase]:
         names: set[str] = set()
@@ -3335,20 +3348,21 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             return self.extra_template_data
         return {**self.extra_template_data, **self._internal_template_data}
 
-    def _render_template_data(self, *, use_custom_template: bool) -> dict[str, Any]:
-        """Return the template data a render passes beside the model's ``dataclass_arguments``, which merge its own."""
+    def _render_with_template_data(self, *, use_custom_template: bool, **render_arguments: Any) -> str:
+        """Render with the template data over the arguments the model passes, but for the values it merged itself."""
         template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
-        if _DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY not in template_data:
-            return template_data
-        return {key: value for key, value in template_data.items() if key != _DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY}
+        return self._render(**{
+            **render_arguments,
+            **{key: value for key, value in template_data.items() if key not in _TEMPLATE_DATA_MODEL_VALUE_ERRORS},
+        })
 
     @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the model to a string using the template."""
         use_custom_template = self._uses_custom_root_template
-        extra_template_data = self._render_template_data(use_custom_template=use_custom_template)
         rendered_class_name = class_name or self.class_name
-        rendered = self._render(
+        rendered = self._render_with_template_data(
+            use_custom_template=use_custom_template,
             class_name=rendered_class_name,
             fields=self._template_fields(use_custom_template=use_custom_template),
             decorators=self.decorators,
@@ -3361,7 +3375,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
                 else _safe_dataclass_arguments(self.dataclass_arguments)
             ),
             path=self.path,
-            **extra_template_data,
         )
         if self._field_name_bindings is None:
             return rendered
