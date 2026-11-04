@@ -14,6 +14,12 @@ verify	main/run_paths/lockfile_symlink_loop[verify].txt
 generate	main/run_paths/lockfile_through_a_directory_symlink_and_parent[generate].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 model	main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 target	main/run_paths/lockfile_through_a_directory_symlink_and_parent[target].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
+[test_output_on_a_missing_root]
+jobs	main/run_paths/output_on_a_missing_root[jobs].txt
+lockfile	main/run_paths/output_on_a_missing_root[lockfile].txt
+metadata	main/run_paths/output_on_a_missing_root[metadata].txt
+output	main/run_paths/output_on_a_missing_root[output].txt	= main/run_paths/output_on_a_missing_root[metadata].txt
+target	main/run_paths/output_on_a_missing_root[target].txt
 [test_project_lock_update_from_a_subdirectory]
 command-line	main/run_paths/project_lock_update_from_a_subdirectory[command-line].txt
 generate	main/run_paths/project_lock_update_from_a_subdirectory[generate].txt	= main/run_paths/project_lock_update_from_a_subdirectory[command-line].txt
