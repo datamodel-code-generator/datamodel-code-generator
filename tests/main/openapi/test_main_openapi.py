@@ -548,6 +548,34 @@ def test_main_openapi_discriminator_mapping_declared_in_other_document(output_fi
         )
 
 
+def test_main_openapi_discriminator_mapping_declared_in_other_document_directory(output_dir: Path) -> None:
+    """Tag the variants that an import cycle merges into ``_internal.py`` by the mapping another document declares.
+
+    The directory ``a`` is the input, so the documents of ``b`` that ``a`` reaches and that reach ``a`` back merge into
+    ``_internal.py``, which moves the paths of their models there. The tags are still read from the paths of their
+    schemas: up to 0.88.0 they were read from the moved paths, so no mapping path named a variant and each was tagged
+    by its moved path, ``Literal['_internal.Cat_1']``, and the union rejected every payload (#6178).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_other_document" / "a",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    for tag, extra, model in (("c", "x", "Cat_1"), ("d", "y", "Dog"), ("e", "a_only", "Cat")):
+        assert_generated_model_json_validation(
+            output_dir / "_internal.py",
+            module_name="discriminator_mapping_other_document_directory_internal",
+            model_name="Owner",
+            valid_json=json.dumps({"pet": {"pet_type": tag, extra: "1"}}),
+            invalid_json=json.dumps({"pet": {"pet_type": f"_internal.{model}"}}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("pet", "pet_type"),
+            expected_attribute_value=tag,
+            expected_repr=f"Owner(pet={model}(pet_type='{tag}', {extra}='1'))",
+        )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

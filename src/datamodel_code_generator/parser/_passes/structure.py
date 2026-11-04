@@ -45,6 +45,7 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._state import Forwarder, _ModuleNames
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, declared_union_tags
+from datamodel_code_generator.reference import schema_path_of
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
@@ -700,6 +701,7 @@ def rename_and_relocate_scc_models(
                 new_path=f"{internal_module_str}.{new_class_name}",
                 new_file_path=internal_path,
                 scheme="internal-module",
+                schema_path=schema_path_of(model.reference),
             )
             if id(model) in new_class_names:
                 module_class_mappings[model_to_original_module[id(model)]].append((original_class_name, new_class_name))

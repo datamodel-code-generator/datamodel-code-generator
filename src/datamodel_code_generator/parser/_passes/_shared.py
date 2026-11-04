@@ -70,7 +70,13 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import _text_constructor_expression, stable_repr
-from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
+from datamodel_code_generator.reference import (
+    _SPECIAL_PATH_FORMAT,
+    ModelType,
+    _source_path,
+    _special_path,
+    schema_path_of,
+)
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
@@ -969,10 +975,16 @@ def add_model_path_to_list(
 
 
 def _get_schema_path(model: DataModel | Reference) -> str:
-    """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-    source = model if isinstance(model, DataModel) else model.source
+    """Return the path of the schema a model is generated from, through read and write variants and reuse.
+
+    It is the path the model had before the merge of an import cycle moved it (``schema_path_of``).
+    """
+    if isinstance(model, DataModel):
+        source, reference = model, model.reference
+    else:
+        source, reference = model.source, model
     reused = source.reused_reference if isinstance(source, DataModel) else None
-    return _source_path((reused or model).path)
+    return _source_path(schema_path_of(reused or reference))
 
 
 def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
