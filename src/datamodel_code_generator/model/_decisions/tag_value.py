@@ -197,7 +197,8 @@ VariantTagRule: TypeAlias = Literal[
 
 * ``merged-shared-tags``: under ``--merge-shared-variant-tags``, every tag the discriminated unions listing the
   variant give it, where they give it different tags and each of them keeps distinct tags with them
-  (``parser/_tag_plan.py:TagPlan.merged_variant_tags``); not for a nested variant.
+  (``parser/_tag_plan.py:TagPlan.merged_variant_tags``), also for a nested variant, whose tag field a union listing it
+  writes as a ``Literal`` of them all, so a union nesting that union reads every one of them as its tags.
 * ``own-field``: the variant's own tag field (``field_tag``).
 * ``reused-schema-field``: the tag field of the model that reuse replaced with the variant, an empty subclass whose
   base can carry the tag another union wrote.
@@ -402,7 +403,7 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
     Otherwise, and for ``union``, the tag the schema of an ancestor fixes decides, else the mapping keys, else the
     replaced model's tag, else the tag an inline variant inherits, else the path segment.
     """
-    if source != "nested" and (merged := facts.merged_tags()) is not None:
+    if (merged := facts.merged_tags()) is not None:
         return VariantTags(tuple(merged), "merged-shared-tags")
     if source != "union":
         if (own := facts.own_tag()) is not None:

@@ -1420,6 +1420,9 @@ pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags
 pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
 [test_main_openapi_merge_shared_variant_tags_msgspec]
 	main/openapi/main_openapi/merge_shared_variant_tags_msgspec.py
+[test_main_openapi_merge_shared_variant_tags_nested]
+pydantic_v2.BaseModel	main/openapi/main_openapi/merge_shared_variant_tags_nested[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/openapi/main_openapi/merge_shared_variant_tags_nested[pydantic_v2.dataclass].py
 [test_main_openapi_model_name_map_key_of_numbered_name]
 both-variants	main/openapi/openapi_model_name_map_key_of_numbered_name.py
 duplicate-name-suffix-in-module	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[duplicate-name-suffix-in-module].py

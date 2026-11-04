@@ -17052,6 +17052,43 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_merge_shared_variant_tags_nested(output_file: Path, output_model_type: str) -> None:
+    """Keep a union discriminated that nests a union of variants whose tags ``--merge-shared-variant-tags`` merges.
+
+    ``DogOrBird`` tags ``Dog`` and ``Bird`` by their names and ``ByKey`` by the mapping keys, so each takes both tags.
+    ``Outer`` lists ``Cat`` beside ``DogOrBird``, and ``inline`` lists ``Cat`` beside an inline choice of ``Dog`` and
+    ``Bird``: both read every tag of a nested variant, which stay distinct, so they stay discriminated as without the
+    option.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_merged_nested_variant_tags.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--merge-shared-variant-tags",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"merge_shared_variant_tags_nested_{output_model_type.replace('.', '_')}",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "outer": {"kind": "dog", "bark": "woof"},
+            "byKey": {"kind": "Bird"},
+            "inline": {"kind": "bird", "wing": "left"},
+        }),
+        invalid_json=json.dumps({"outer": {"kind": "fox"}}),
+        expected_error_type="union_tag_invalid",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--keep-first-character-of-path-keys"],
     option_description="""Strip only a leading slash from a paths key when naming its operation models.
