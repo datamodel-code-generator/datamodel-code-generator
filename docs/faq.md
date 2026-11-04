@@ -776,7 +776,7 @@ named: dict[str, str] | UnsetType = UNSET
 With the option:
 
 ```python
-named: dict[Annotated[str, Meta(pattern='^[a-z]+$')], str] | UnsetType = UNSET
+named: dict[Annotated[str, Meta(pattern="^[a-z]+$")], str] | UnsetType = UNSET
 ```
 
 ### `--rename-submodules-hidden-by-classes`
