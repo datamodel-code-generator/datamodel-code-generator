@@ -1,0 +1,1 @@
+base_class_map must be a Python import path composed of identifiers: '.base.1x'

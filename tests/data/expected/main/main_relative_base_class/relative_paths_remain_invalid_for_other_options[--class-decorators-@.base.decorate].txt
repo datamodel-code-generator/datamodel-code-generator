@@ -1,0 +1,1 @@
+class_decorators must be a Python import path composed of identifiers: '.base.decorate'

@@ -64,16 +64,17 @@ def _validate_dotted_python_identifier_path(value: str, target: PythonVersion) -
     return normalized_value
 
 
-def _validate_python_import_path(value: object, target: PythonVersion) -> str:
-    """Validate an import path with an optional dotted symbol suffix, its names being names of the target Python."""
-    if (
-        not isinstance(value, str)
-        or (normalized_value := _normalized_safe_python_name(_normalize_string(value).strip(), target, dotted=True))
-        is None
-    ):
-        msg = f"must be a Python import path composed of identifiers: {message_repr(value)}"
-        raise ValueError(msg)
-    return normalized_value
+def _validate_python_import_path(value: object, target: PythonVersion, *, allow_relative: bool = False) -> str:
+    """Validate target Python names joined by dots, allowing module-qualified relative paths when requested."""
+    if isinstance(value, str):
+        normalized_value = _normalize_string(value).strip()
+        names = normalized_value.lstrip(".") if allow_relative else normalized_value
+        if (not normalized_value.startswith(".") or "." in names) and _normalized_safe_python_name(
+            names, target, dotted=True
+        ) is not None:
+            return normalized_value
+    msg = f"must be a Python import path composed of identifiers: {message_repr(value)}"
+    raise ValueError(msg)
 
 
 def _validate_schema_python_import_path(value: Any, field_name: str, target: PythonVersion) -> str:

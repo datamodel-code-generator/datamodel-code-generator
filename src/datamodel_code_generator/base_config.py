@@ -76,12 +76,16 @@ def _import_paths(field: str, paths: Iterable[object], target: PythonVersion) ->
     """Return the import paths a setting gives as plain strings, raising its error for one that is not identifiers.
 
     Each path is read by ``validators._validate_python_import_path``: names of the target Python joined by dots.
+    Base-class settings also accept module-qualified relative imports.
     """
     from datamodel_code_generator import Error  # noqa: PLC0415
     from datamodel_code_generator.validators import _validate_python_import_path  # noqa: PLC0415
 
     try:
-        return [_validate_python_import_path(path, target) for path in paths]
+        return [
+            _validate_python_import_path(path, target, allow_relative=field in {"base_class", "base_class_map"})
+            for path in paths
+        ]
     except ValueError as exc:
         msg = f"{field} {exc}"
         raise Error(msg) from None
@@ -137,13 +141,13 @@ _NAMED_PATHS: Final[dict[str, Callable[[Any], Iterable[str]]]] = {
 
 
 def _check_named_paths(field: str, value: Any, target: PythonVersion) -> None:
-    """Refuse a value of a setting ``_NAMED_PATHS`` lists that names a path other than target names joined by dots."""
+    """Refuse paths outside the setting-specific rules in ``_import_paths``."""
     if value:
         _import_paths(field, _NAMED_PATHS[field](value), target)
 
 
 def validate_named_paths(value: Any, info: ValidationInfo) -> Any:
-    """Refuse a setting whose value names a Python object by a path that is not names of the target joined by dots.
+    """Validate paths for a setting through the rules in ``_import_paths``.
 
     The command line, ``generate()`` and the parser configs accept the same paths, read by ``_import_paths`` for the
     newest target, and the parser refuses the names its target does not bind.
@@ -153,7 +157,7 @@ def validate_named_paths(value: Any, info: ValidationInfo) -> Any:
 
 
 def _check_config_named_paths(config: object, target: PythonVersion) -> None:
-    """Refuse a config whose settings name a path other than names of the target joined by dots, as its validators do.
+    """Apply the setting-specific rules in ``_import_paths`` to a config, as its validators do.
 
     The parsers check the config they read for the run's target, so that a config changed after validation is refused
     as well.
