@@ -166,3 +166,44 @@ def test_project_lock_update_from_a_subdirectory(run: str, tmp_path: Path, monke
     else:
         run_main_with_args([])
     assert_output(_lock_files(tmp_path))
+
+
+_MISSING_ROOT_RUNS = {
+    "output": ["--output", "{missing}/out.py", "--update-lock"],
+    "metadata": ["--output", "out.py", "--emit-model-metadata", "{missing}/meta.json", "--update-lock"],
+    "lockfile": ["--output", "out.py", "--lockfile", "{missing}/x.lock", "--update-lock"],
+    "jobs": ["--all-jobs"],
+    "target": [
+        *("--output", "models.py", "--generate-client", "httpx2", "--client-output", "{missing}/client"),
+        *("--client-package", "client", "--client-model-package", "models"),
+    ],
+}
+
+
+@pytest.mark.abnormal_path("only Windows has a root that does not exist, a missing drive or share")
+@pytest.mark.parametrize("run", _MISSING_ROOT_RUNS)
+def test_output_on_a_missing_root(
+    run: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that stages an output on a root that does not exist names the root instead of testing it again (#5722)."""
+    root = Path(tmp_path.anchor)
+    missing = (root / f"dcg-missing-root-{tmp_path.name}").as_posix()
+    exists, is_dir = Path.exists, Path.is_dir
+    monkeypatch.setattr(Path, "exists", lambda path, *args, **kwargs: path != root and exists(path, *args, **kwargs))
+    monkeypatch.setattr(Path, "is_dir", lambda path, *args, **kwargs: path != root and is_dir(path, *args, **kwargs))
+    monkeypatch.chdir(tmp_path)
+    source = DATA_PATH / "openapi" / "api.yaml"
+    if run == "jobs":
+        Path("pyproject.toml").write_text(
+            "[tool.datamodel-codegen.jobs.models]\n"
+            f"input = '{source.as_posix()}'\ninput-file-type = 'openapi'\noutput = '{missing}/out.py'\n",
+            encoding="utf-8",
+        )
+        options = _MISSING_ROOT_RUNS[run]
+    else:
+        options = [
+            *("--input", str(source), "--input-file-type", "openapi"),
+            *(option.format(missing=missing) for option in _MISSING_ROOT_RUNS[run]),
+        ]
+    run_main_with_args(options, expected_exit=Exit.ERROR)
+    assert_output(capsys.readouterr().err.replace(repr(str(root)), "'<root>'"))

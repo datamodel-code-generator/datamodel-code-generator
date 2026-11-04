@@ -23,6 +23,7 @@ from datamodel_code_generator._paths import (
     concrete_parent,
     existing_ancestor,
     lexical,
+    missing_root,
     output_files,
     resolved,
     same_file,
@@ -140,7 +141,7 @@ def _open_target_directory(
 
 def publication_anchor(path: Path) -> PublicationAnchor:
     """Snapshot and hold the deepest existing concrete directory for *path*."""
-    path = existing_ancestor(path, at_root="legacy-unbounded-ancestor-walk")
+    path = existing_ancestor(path, error=missing_root)
     if os.name == "nt":  # pragma: no cover - Windows uses checked path fallback
         path_stat = path.stat()
         return PublicationAnchor(path, (path_stat.st_dev, path_stat.st_ino), None)
@@ -183,9 +184,7 @@ def staging_directory_for(
     location = lexical(target, cwd)
     if around is not None and (outer := resolved(around, cwd)) in resolved(target, cwd).parents:
         location = outer
-    parent = existing_ancestor(
-        location.parent, test="legacy-staging-parent-may-be-a-file", at_root="legacy-unbounded-ancestor-walk"
-    )
+    parent = existing_ancestor(location.parent, test="legacy-staging-parent-may-be-a-file", error=missing_root)
     return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)
 
 
@@ -621,9 +620,7 @@ def _create_directory(directory: Path) -> bool:
 def _create_target_parent(target: Path, created_directories: list[Path]) -> None:
     """Create a target parent while recording only transaction-owned directories."""
     missing_directories: list[Path] = []
-    existing_ancestor(
-        target.parent, test="exists", at_root="legacy-unbounded-ancestor-walk", missing=missing_directories
-    )
+    existing_ancestor(target.parent, test="exists", error=missing_root, missing=missing_directories)
     for directory in reversed(missing_directories):
         if _create_directory(directory):
             created_directories.append(directory)

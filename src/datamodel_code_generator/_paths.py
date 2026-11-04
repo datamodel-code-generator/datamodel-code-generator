@@ -33,6 +33,7 @@ before it copies, compares or publishes anything.
 
 from __future__ import annotations
 
+import errno
 import os
 from operator import attrgetter
 from pathlib import Path
@@ -42,7 +43,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
-AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 FileOrder = Literal["path", "name"]
 OutputLayout = Literal["module", "package"]
 
@@ -74,7 +74,6 @@ def existing_ancestor(
     path: Path,
     *,
     test: AncestorTest = "directory",
-    at_root: AtRoot = "root",
     error: Callable[[Path], Exception] | None = None,
     missing: list[Path] | None = None,
 ) -> Path:
@@ -83,12 +82,11 @@ def existing_ancestor(
     Rows of ``test``: ``directory`` holds for an existing directory (an anchor, a temporary file, a watch root);
     ``exists`` for any existing path, so the parents below it are the ones a publication creates;
     ``legacy-staging-parent-may-be-a-file`` (private staging, #5618) as ``exists``, so staging under a regular file
-    fails naming its random private directory. Rows of ``at_root``, for a root that fails the test (a missing drive):
-    ``root`` returns it, or raises ``error(root)`` when given; ``legacy-unbounded-ancestor-walk`` (the publication
-    walks) keeps testing it.
+    fails naming its random private directory. A root that fails the test (a missing drive) is returned, or raises
+    ``error(root)`` when given (``missing_root`` for the publication walks).
     """
     while not (path.is_dir() if test == "directory" else path.exists()):
-        if (parent := path.parent) == path and at_root == "root":
+        if (parent := path.parent) == path:
             if error is not None:
                 raise error(path)
             return path
@@ -96,6 +94,11 @@ def existing_ancestor(
             missing.append(path)
         path = parent
     return path
+
+
+def missing_root(root: Path) -> FileNotFoundError:
+    """Return the error of a walk that reaches a root that does not exist, such as a missing drive, naming the root."""
+    return FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(root))
 
 
 def concrete_parent(path: Path) -> Path:
