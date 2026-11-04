@@ -5733,6 +5733,17 @@ def test_main_openapi_nullable_map_value_model_name_map(
             "string_type",
             id="read-write-variant-beside-a-renamed-model",
         ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_deleted_common_part.json",
+            "jsonschema",
+            '{"Pet1": "Animal"}',
+            [],
+            "Other",
+            '{"pet":{"w":1}}',
+            '{"pet":{"w":"a"}}',
+            "int_parsing",
+            id="name-of-a-deleted-common-part",
+        ),
     ],
 )
 def test_main_openapi_model_name_map_key_of_numbered_name(

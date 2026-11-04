@@ -2049,9 +2049,14 @@ class ModelResolver:  # noqa: PLR0904
         return self.references.get(self.resolve_ref(path))
 
     def delete(self, path: Sequence[str] | str) -> None:
-        """Delete a reference by path if it exists, together with the name it yields."""
-        if (reference := self.references.pop(self.resolve_ref(path), None)) is not None:
+        """Delete a reference by path if it exists, together with the name it yields and its recorded allocation.
+
+        A deleted model is no model of the output, so no class-name key of ``--model-name-map`` names it there.
+        """
+        if (reference := self.references.pop(resolved := self.resolve_ref(path), None)) is not None:
             self._release_reference_name(reference)
+            if (record := self.model_name_record) is not None:
+                record.allocated[:] = [allocation for allocation in record.allocated if allocation[0] != resolved]
 
     def delete_names(self, names: AbstractSet[str]) -> None:
         """Delete the references holding any of ``names``, whatever paths they were added under."""
@@ -2258,7 +2263,8 @@ class ModelResolver:  # noqa: PLR0904
         """Return a duplicate candidate free also in the module of a yielding reference, after those given before.
 
         Candidates before the last one given stay skipped even when a name among them is released later, which only
-        numbers a later model of a map value higher.
+        numbers a later model of a map value higher. While names are reserved, whether a candidate is free depends on
+        the model asking, so the start hints are not read, as for the other models.
         """
         hint_key = (name, suffix or "", numbering, prefix)
         unique_name, self._yielding_name_start_hints[hint_key] = first_free(
@@ -2266,7 +2272,7 @@ class ModelResolver:  # noqa: PLR0904
             partial(self._name_taken, row="yielding-module", prefix=prefix, path=path),
             numbering,
             suffix=suffix,
-            start=self._yielding_name_start_hints.get(hint_key, 0),
+            start=0 if self._reserved_names else self._yielding_name_start_hints.get(hint_key, 0),
         )
         return unique_name
 
