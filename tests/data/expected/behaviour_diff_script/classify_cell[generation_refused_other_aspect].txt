@@ -1,0 +1,11 @@
+{
+  "cls": "violation",
+  "notes": [
+    "generation now fails: Cannot write the class 'Warn' in the root package beside the module 'Warn'"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-removed] Key: removed",
+    "[name-removed] KeyMap: removed"
+  ]
+}

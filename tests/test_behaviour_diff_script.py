@@ -205,6 +205,26 @@ CLASSIFY_CASES = {
         "tests/data/jsonschema/keyword_file_name_reference",
         [],
     ),
+    "generation_refused_accepted": (
+        Side(generated=True, signature=KEY_MAP_BEFORE),
+        Side(generated=False, message="Cannot write the class 'Warn' in the root package beside the module 'Warn'"),
+        "tests/data/jsonschema/module_named_like_root_class.json",
+        [
+            {
+                "input": "*module_named_like_*",
+                "aspects": ["generation"],
+                "match": "^\\[generation\\] : now fails: Cannot write the class ",
+                "reason": "the module replaced the class",
+                "decision": "#6067",
+            }
+        ],
+    ),
+    "generation_refused_other_aspect": (
+        Side(generated=True, signature=KEY_MAP_BEFORE),
+        Side(generated=False, message="Cannot write the class 'Warn' in the root package beside the module 'Warn'"),
+        "tests/data/jsonschema/module_named_like_root_class.json",
+        [{"input": "*module_named_like_*", "aspects": ["type"], "reason": "a type change", "decision": "#6067"}],
+    ),
     "both_fail": (Side(generated=False), Side(generated=False), "tests/data/jsonschema/broken.json", []),
     "import_fixed": (
         Side(generated=True, signature={"import_error": "NameError: name 'Node' is not defined"}),

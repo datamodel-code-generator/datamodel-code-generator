@@ -5,7 +5,8 @@
 # A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
-# decision, release_note.
+# decision, release_note. The aspect `generation` accepts a generation the owner decided to refuse; its change line is
+# `[generation] : now fails: <the error>`.
 # `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
 # `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
@@ -263,6 +264,14 @@ match = "^\\[type\\] (?:union_root_keywords:)?Item\\d*: Annotated\\[Union\\[Anno
 reason = "the type alias of an array item that is anyOf string or integer beside maxLength 3 wrote the keyword on the union as well as on its string branch, so Pydantic raised TypeError (Unable to apply constraint 'max_length' to supplied value 5) for the integers the schema accepts; the union leaves out a keyword that each branch keeps or does not take (crash fix)"
 decision = "#6022"
 release_note = "under --field-constraints a length, pattern or bound keyword beside anyOf or oneOf is left out of the union when every member keeps it or cannot take it, so a model no longer raises TypeError for an integer or root-model value the schema accepts"
+
+[[accepted]]
+input = "tests/data/jsonschema/module_named_like_*"
+aspects = [ "generation" ]
+match = "^\\[generation\\] : now fails: Cannot write the class '[^']+' in .+ beside the module '[^']+' "
+reason = "a class written in a package beside a module of the same name was replaced by the module once anything imported it, so the models that reference the class failed to decode; generation stops with an error that asks to rename the class or the module instead of writing that output (owner decision: error by default, an opt-in rename comes as --rename-submodules-hidden-by-classes)"
+decision = "#6067"
+release_note = "generation stops with an error instead of writing a class in a package beside a module of the same name, which importing the module replaced, so the models that use the class failed to import or decode"
 
 [[base_skip]]
 input = "tests/data/jsonschema/json_pointer_empty_token.json"

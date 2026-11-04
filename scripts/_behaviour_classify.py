@@ -10,7 +10,9 @@
   introspection, dcg's internal placeholder as a value) or on a payload it crashed on; a candidate that refuses to
   generate an output the release wrote but could not use (no module that defines a name imports, a syntax error)
   fixes it too
-- `accepted`: every behaviour change matches an owner-approved allowlist entry
+- `accepted`: every behaviour change matches an owner-approved allowlist entry; a candidate that refuses an output
+  the release's output imported is accepted by an entry with the aspect `generation` (its change line is
+  `[generation] : now fails: <error>`)
 - `violation`: any other behaviour change, or the candidate fails where the release's output imported
 - `both-fail`: both sides fail
 - `base-skipped`: the release is known to hang on the input (`[[base_skip]]`), so it did not run; the candidate
@@ -440,6 +442,10 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
     if not candidate.generated:
         if (broken := unusable_output_error(base.signature or {})) is not None:
             return Verdict("crash-fix", (f"generation refused an output that failed to import: {broken[:120]}",))
+        refusal = Change("", "", "generation", f"now fails: {candidate.message}")
+        if (index := allowlist.match(input_path, backend, refusal)) is not None:
+            reason = allowlist.entries[index].get("reason", "")[:60]
+            return Verdict("accepted", (f"accepted ({reason}) {refusal.line()[:200]}",), frozenset({index}))
         return Verdict("violation", (f"generation now fails: {candidate.message[:160]}",))
     if same_bytes:
         return Verdict("same")

@@ -1,0 +1,13 @@
+{
+  "cls": "accepted",
+  "notes": [
+    "accepted (the module replaced the class) [generation] : now fails: Cannot write the class 'Warn' in the root package beside the module 'Warn'"
+  ],
+  "accepted_by": [
+    0
+  ],
+  "changes": [
+    "[name-removed] Key: removed",
+    "[name-removed] KeyMap: removed"
+  ]
+}
