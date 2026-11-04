@@ -853,6 +853,7 @@ class AvroParser(JsonSchemaParser):
                             None,
                             has_default=False,
                             class_name=class_key("class-name", model.reference),
+                            output_names=self.model_resolver.output_names(model.reference.path),
                         )
                         if has_default_override:
                             continue

@@ -167,7 +167,7 @@ from datamodel_code_generator._source import (
     load_data_from_path,
 )
 from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
-from datamodel_code_generator._user_keys import class_key, template_data_keys
+from datamodel_code_generator._user_keys import ClassScope, class_key, template_data_keys
 from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -1882,12 +1882,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         effective_has_default: bool | None = None,
         use_default_with_required: bool = False,
         class_name: str | None = None,
+        output_names: tuple[str, ...] = (),
     ) -> DataModelFieldBase:
         """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords.
+
+        Its serialization alias is keyed by ``class_name``, then by the names the class has in the output
+        (``output_names``).
 
         The field, and its type where no nested build recorded one (a const the field types itself), record the
         location of ``field`` as their origin (``reference.field_origin_of``, ``reference.type_origin_of``).
         """
+        scope = None if class_name is None else ClassScope(class_name, output_names)
         if field is None:
             model_field = self._build_field(
                 "property",
@@ -1895,7 +1900,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 name=field_name,
                 alias=alias,
                 source_name=original_field_name,
-                class_name=class_name,
+                scope=scope,
                 default=effective_default,
                 required=required,
                 original_name=original_field_name,
@@ -1918,7 +1923,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             name=field_name,
             alias=alias,
             source_name=original_field_name,
-            class_name=class_name,
+            scope=scope,
             default=default_value,
             required=required,
             constraints=constraints,
@@ -3590,12 +3595,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         required_field_name: str,
         excludes: set[str],
         base_classes: list[Reference],
-        class_name: str,
+        scope: ClassScope,
         inherited_fields: dict[str, DataModelFieldBase] | None = None,
     ) -> DataModelFieldBase:
         """Build a field for a required name that is not declared in properties."""
         return _inherited_schemas.build_missing_required_field(
-            self, required_field_name, excludes, base_classes, class_name, inherited_fields
+            self, required_field_name, excludes, base_classes, scope, inherited_fields
         )
 
     def _is_root_model_schema(self, obj: JsonSchemaObject) -> bool:
@@ -4219,10 +4224,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 key: value for key, value in inherited_properties.items() if key not in python_overrides
             }
             inherited_required_names = inherited_required_names.difference(python_overrides)
+        scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
         if obj.properties:
             fields.extend(
                 _inherited_schemas.parse_fields_beside_parents(
-                    self, obj, base_classes, inherited_properties, path, class_key("predicted", name)
+                    self, obj, base_classes, inherited_properties, path, scope
                 )
             )
         if base_classes:
@@ -4276,12 +4282,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self._apply_inherited_field_default(
                             resolved_field,
                             _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
-                            class_name=class_key("predicted", name),
+                            scope=scope,
                         )
                     fields[index] = resolved_field
                     continue
                 if self.model_resolver.default_value_overrides:
-                    field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = class_key("predicted", name)
+                    field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = scope
                 self._graph_builder.replace_field_type(field, self.data_type())
         original_class_name = name
         name = self._apply_title_as_name(name, obj)  # pragma: no cover
@@ -4316,7 +4322,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     required_name,
                     excludes={field.name for field in fields if field.name},
                     base_classes=base_classes,
-                    class_name=class_key("predicted", name),
+                    scope=scope,
                     inherited_fields=inherited_fields,
                 )
                 fields.append(field)
@@ -4325,7 +4331,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.data_model_type.finalize_required_inherited_field(field)
         self._apply_final_class_field_aliases(
             fields,
-            class_key("reference-name", reference),
+            self.model_resolver.class_scope("reference-name", reference, reference.path),
             class_key("predicted", original_class_name),
             base_classes,
         )
@@ -4347,7 +4353,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         required_names: list[str],
         fields: list[DataModelFieldBase],
         base_classes: list[Reference],
-        class_name: str,
+        scope: ClassScope,
         declared_property_names: frozenset[str],
     ) -> None:
         """Preserve the source position of required-only fields in inline allOf items."""
@@ -4362,7 +4368,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 required_field_name,
                 excludes={field.name for field in fields if field.name},
                 base_classes=base_classes,
-                class_name=class_name,
+                scope=scope,
             )
             fields.append(field)
             existing_field_names.update({required_field_name, field.name or required_field_name})
@@ -4418,8 +4424,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         base_classes.append(ref)
                         self.extra_template_data[ref.path]["is_base_class"] = True
             else:
+                scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
-                    self, all_of_item, parent_refs, parent_properties, path, class_key("predicted", name)
+                    self, all_of_item, parent_refs, parent_properties, path, scope
                 )
                 if object_fields:
                     fields.extend(object_fields)
@@ -4430,7 +4437,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             required_names=all_of_item.required,
                             fields=fields,
                             base_classes=parent_refs,
-                            class_name=class_key("predicted", name),
+                            scope=scope,
                             declared_property_names=declared_property_names,
                         )
                 self._parse_all_of_item(
@@ -4522,7 +4529,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             data_model_root_type,
             reference=reference,
             fields=fields,
-            custom_base_class=self._resolve_base_class(custom_base_class_name, obj.custom_base_path),
+            custom_base_class=self._resolve_base_class(
+                ClassScope(custom_base_class_name, self.model_resolver.output_names(reference.path)),
+                obj.custom_base_path,
+            ),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -4961,17 +4971,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         named_after_key = self.model_resolver.named_after(self.model_resolver.join_path(tuple(path)), variant_name)
         return key if named_after_key else None
 
-    def parse_object_fields(
+    def parse_object_fields(  # noqa: PLR0914
         self,
         obj: JsonSchemaObject,
         path: list[str],
         module_name: Optional[str] = None,  # noqa: UP045
         class_name: Optional[str] = None,  # noqa: UP045
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> list[DataModelFieldBase]:
         """Parse object properties into a list of data model fields.
 
         A field of a boolean property schema records where ``obj`` declares it, ``properties/<name>``, as its origin.
+        The class keys of the options read ``class_name``, then the class's names in the output (``output_names``).
         """
+        scope = None if class_name is None else ClassScope(class_name, output_names)
         properties: dict[str, JsonSchemaObject | bool] = {} if obj.properties is None else obj.properties
         requires: set[str] = {*()} if obj.required is None else {*obj.required}
         fields: list[DataModelFieldBase] = []
@@ -4984,6 +4998,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 excludes=exclude_field_names,
                 model_type=self.field_name_model_type,
                 class_name=class_name,
+                output_names=output_names,
             )
             modular_name = dotted_name(module_name, field_name)
 
@@ -4996,7 +5011,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     name=field_name,
                     alias=alias,
                     source_name=original_field_name,
-                    class_name=class_name,
+                    scope=scope,
                     required=False if self.force_optional_for_required_fields else original_field_name in requires,
                     original_name=original_field_name,
                 )
@@ -5023,7 +5038,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 field.default,
                 has_default=field.has_default,
                 required=required,
-                class_name=class_name,
+                scope=scope,
             )
             fields.append(
                 self.get_object_field(
@@ -5037,11 +5052,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     effective_has_default=effective_has_default,
                     use_default_with_required=use_default_with_required,
                     class_name=class_name,
+                    output_names=output_names,
                 )
             )
         if self.config.aliases:
             for field in fields:
-                field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_name
+                field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = scope
         return fields
 
     def _typed_extra_field_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
@@ -5249,7 +5265,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.set_schema_id(reference.path, obj)
         self._preload_property_refs_for_rw_models(obj)
         fields = self.parse_object_fields(
-            obj, path, _inherited_schemas.inferred_module_name(self, class_name), class_name=class_name
+            obj,
+            path,
+            _inherited_schemas.inferred_module_name(self, class_name),
+            class_name=class_name,
+            output_names=self.model_resolver.output_names(reference.path),
         )
         has_declared_fields = bool(fields)
         if has_declared_fields and (

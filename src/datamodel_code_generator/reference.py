@@ -60,8 +60,10 @@ from datamodel_code_generator._target_unicode import (
 )
 from datamodel_code_generator._url_redaction import is_url, redact_path, redact_reference
 from datamodel_code_generator._user_keys import (
+    ClassScope,
     ModelNameRecord,
     class_key,
+    class_scope,
     field_keys,
     first_given,
     first_present,
@@ -78,7 +80,7 @@ if TYPE_CHECKING:
 
     import inflect
 
-    from datamodel_code_generator._user_keys import ModelNameKeys
+    from datamodel_code_generator._user_keys import ClassKeyRow, ModelNameKeys, ModelNames
     from datamodel_code_generator.model import base as model_base
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
@@ -528,14 +530,28 @@ class FieldNameResolver:
         self.no_alias = no_alias
         self.use_subclass_enum: bool = use_subclass_enum
 
-    def prepare_explicit_field_aliases(self, fields: list[model_base.DataModelFieldBase], reference: Reference) -> None:
-        """Retain selected explicit aliases until all emitted field names are finalized."""
+    def prepare_explicit_field_aliases(
+        self,
+        fields: list[model_base.DataModelFieldBase],
+        reference: Reference,
+        *,
+        output_names: tuple[str, ...] = (),
+    ) -> None:
+        """Retain selected explicit aliases until all emitted field names are finalized.
+
+        A field that recorded no class is keyed by the original name of ``reference``, then by ``output_names``, the
+        names the class has in the output.
+        """
         aliases = self.aliases
         for field in fields:
             if (original_name := _wire_name(field)) is None:
                 continue
-            class_name = field.__dict__.get(_ALIAS_RESOLUTION_CLASS_NAME_KEY, class_key("original-name", reference))
-            if isinstance(alias := first_given(aliases, field_keys(class_name, original_name)), str):
+            scope = (
+                field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]
+                if _ALIAS_RESOLUTION_CLASS_NAME_KEY in field.__dict__
+                else ClassScope(class_key("original-name", reference), output_names)
+            )
+            if isinstance(alias := first_given(aliases, field_keys(scope, original_name)), str):
                 field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY] = (alias, original_name)
             else:
                 field.__dict__.pop(_EXPLICIT_FIELD_ALIAS_KEY, None)
@@ -692,6 +708,8 @@ class FieldNameResolver:
         excludes: set[str] | None = None,
         path: list[str] | None = None,
         class_name: str | None = None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> tuple[str, str | list[str] | None]:
         """Get valid field name and original alias if different.
 
@@ -704,6 +722,7 @@ class FieldNameResolver:
             excludes: Set of names to avoid when generating valid names.
             path: Unused, kept for backward compatibility.
             class_name: Optional class name for scoped alias resolution.
+            output_names: The names the class has in the output, scoped after ``class_name``.
 
         Returns:
             A tuple of (python_field_name, alias_or_aliases) where:
@@ -712,7 +731,7 @@ class FieldNameResolver:
               or list[str] for multiple aliases (Pydantic v2 AliasChoices).
         """
         del path
-        for key in field_keys(class_name or None, field_name):
+        for key in field_keys(class_scope(class_name, output_names), field_name):
             if (resolved_alias := self._resolve_alias_value(field_name, self.aliases.get(key), excludes)) is not None:
                 return resolved_alias
 
@@ -1069,6 +1088,7 @@ class ModelResolver:  # noqa: PLR0904
         self._found_model_name_keys: set[str] = set()
         self._released_model_names: set[str] = set()
         self.assigned_yielding_names: Mapping[str, tuple[str, str | None]] = {}
+        self.final_name_keys: Mapping[str, tuple[str, ...]] = {}
         self.final_yielding_names: dict[str, tuple[str, str | None]] = {}
         self.yielding_name_changes: set[str] = set()
         self._new_references_yield = False
@@ -1140,6 +1160,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_found_model_name_keys", set())
         self.__dict__.setdefault("_released_model_names", set())
         self.__dict__.setdefault("assigned_yielding_names", {})
+        self.__dict__.setdefault("final_name_keys", {})
         self.__dict__.setdefault("final_yielding_names", {})
         self.__dict__.setdefault("yielding_name_changes", set())
         self.__dict__.setdefault("_new_references_yield", False)
@@ -2272,7 +2293,9 @@ class ModelResolver:  # noqa: PLR0904
         self, fields: list[model_base.DataModelFieldBase], reference: Reference, model_type: ModelType
     ) -> None:
         """Record explicit choices before model transforms can combine fields."""
-        self._field_name_resolvers[model_type].prepare_explicit_field_aliases(fields, reference)
+        self._field_name_resolvers[model_type].prepare_explicit_field_aliases(
+            fields, reference, output_names=self.output_names(reference.path)
+        )
 
     @staticmethod
     def validate_explicit_field_aliases(
@@ -2289,13 +2312,15 @@ class ModelResolver:  # noqa: PLR0904
         """Return a unique class field name without creating a Reference."""
         return self._get_unique_name(self.get_valid_field_name(name, model_type=ModelType.CLASS))
 
-    def get_valid_field_name_and_alias(
+    def get_valid_field_name_and_alias(  # noqa: PLR0913
         self,
         field_name: str,
         excludes: set[str] | None = None,
         model_type: ModelType = ModelType.PYDANTIC,
         path: list[str] | None = None,
         class_name: str | None = None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> tuple[str, str | list[str] | None]:
         """Get a valid field name and alias for the specified model type.
 
@@ -2305,6 +2330,7 @@ class ModelResolver:  # noqa: PLR0904
             model_type: The type of model (PYDANTIC, ENUM, or CLASS).
             path: Unused, kept for backward compatibility.
             class_name: Optional class name for scoped alias resolution.
+            output_names: The names the class has in the output, scoped after ``class_name``.
 
         Returns:
             A tuple of (python_field_name, alias_or_aliases) where:
@@ -2314,8 +2340,16 @@ class ModelResolver:  # noqa: PLR0904
         """
         del path
         return self._field_name_resolvers[model_type].get_valid_field_name_and_alias(
-            field_name, excludes, class_name=class_name
+            field_name, excludes, class_name=class_name, output_names=output_names
         )
+
+    def output_names(self, path: str) -> tuple[str, ...]:
+        """Return the names the model at schema ``path`` has in the output that keys name (``final_name_keys``)."""
+        return self.final_name_keys.get(path, ())
+
+    def class_scope(self, row: ClassKeyRow, model: ModelNames | str, path: str) -> ClassScope:
+        """Return the scope of the model at schema ``path``: its name by ``row``, then its output names keyed."""
+        return ClassScope(class_key(row, model), self.output_names(path))
 
     def resolve_default_value(
         self,
@@ -2323,10 +2357,17 @@ class ModelResolver:  # noqa: PLR0904
         original_default: Any,
         has_default: bool,  # noqa: FBT001
         class_name: str | None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> tuple[Any, bool]:
-        """Resolve default value for a field, applying overrides if configured."""
+        """Resolve default value for a field, applying overrides if configured.
+
+        ``output_names`` are the names the class has in the output, scoped after ``class_name``.
+        """
         if self.default_value_overrides:
-            value, found = first_present(self.default_value_overrides, field_keys(class_name or None, field_name))
+            value, found = first_present(
+                self.default_value_overrides, field_keys(class_scope(class_name, output_names), field_name)
+            )
             if found:
                 return value, True
         return original_default, has_default

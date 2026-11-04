@@ -40,7 +40,7 @@ from datamodel_code_generator._reference_graph import (
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
-from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
+from datamodel_code_generator._user_keys import class_field_key, model_type_override
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
@@ -175,6 +175,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
@@ -490,7 +491,7 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
         data_type: DataType,
         *,
         source_name: str | None = None,
-        class_name: str | None = None,
+        scope: ClassScope | None = None,
         **facts: Unpack[FieldFacts],
     ) -> DataModelFieldBase:
         """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
@@ -1941,7 +1942,9 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                             alias=names.alias,
                             original_name=names.property_name,
                             source_name=names.property_name,
-                            class_name=class_key("reference-name", discriminator_model.reference),
+                            scope=parser.model_resolver.class_scope(
+                                "reference-name", discriminator_model.reference, discriminator_model.reference.path
+                            ),
                             required=True,
                         ),
                         "tag",
@@ -1949,8 +1952,8 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     ),
                 )
                 if parser.config.aliases:
-                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_key(
-                        "class-name", discriminator_model.reference
+                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = parser.model_resolver.class_scope(
+                        "class-name", discriminator_model.reference, discriminator_model.reference.path
                     )
                     parser.model_resolver.prepare_explicit_field_aliases(
                         [discriminator_field], discriminator_model.reference, parser.field_name_model_type

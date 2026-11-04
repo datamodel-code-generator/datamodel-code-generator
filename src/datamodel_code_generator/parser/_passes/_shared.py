@@ -79,6 +79,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator import AllOfMergeMode, ReuseScope
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
@@ -550,14 +551,14 @@ def apply_inherited_field_default(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,
-    class_name: str,
+    scope: ClassScope,
     model_resolver: ModelResolver,
     apply_default_values_for_required_fields: bool,
 ) -> None:
     """Resolve an inherited schema default in the derived class scope."""
     if model_resolver.default_value_overrides and (raw := raw_schema_default(inherited_field)) is not None:
         field.default, field.has_default = model_resolver.resolve_default_value(
-            field.original_name or field.name or "", *raw, class_name=class_name
+            field.original_name or field.name or "", *raw, class_name=scope.name, output_names=scope.output_names
         )
         match field.default:
             case dict() | list() | set():
@@ -643,15 +644,15 @@ def override_required_field(
                     original_field, identity=placeholder_identity(model_field), required=True
                 )
             default_source = original_field
-            if not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
-                class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
+            if not (scope := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
+                scope := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
             ):
                 default_source = inherited_default_source(host.allof_merge_mode, model_field, original_field)
-            if class_name:
+            if scope:
                 apply_inherited_field_default(
                     copied_original_field,
                     default_source,
-                    class_name=class_name,
+                    scope=scope,
                     model_resolver=host.model_resolver,
                     apply_default_values_for_required_fields=host.apply_default_values_for_required_fields,
                 )
