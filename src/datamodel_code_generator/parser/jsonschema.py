@@ -92,6 +92,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator._alias_generators import generate_alias  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator._constraint_applicability import (
+    LENGTH_KEYWORD_ORDER,
     LITERAL_DECIDABLE_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     NO_KEYWORDS,
     NUMBER_KEYWORD_ORDER,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -6553,11 +6554,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 constraints = assembled
             elif self.is_constraints_field(obj, data_type) or (site.holds_schema and (field_constraints or preserve)):
                 constraints, untaken = self._split_constraint_values(obj, data_type)
-                if site.consumed_at_property:
-                    for key in property_consumed_keywords(
-                        self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, data_type.type
-                    ):
-                        constraints.pop(key, None)
+                for key in self._keywords_left_out(obj, data_type, site, reads_declared=field_constraints or preserve):
+                    constraints.pop(key, None)
             if constraints is not None and field_constraints and obj.format == "hostname":
                 constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
             if (
@@ -6595,6 +6593,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             dropped_counts,
             records,
         )
+
+    def _keywords_left_out(
+        self, obj: JsonSchemaObject, data_type: DataType, site: _ConstraintSite, *, reads_declared: bool
+    ) -> tuple[str, ...]:
+        """Return the keywords a field of ``site`` leaves out of those it takes from ``obj`` itself.
+
+        An object property leaves out the keywords its own type's class enforces (row
+        ``legacy-consumed-at-object-property``). A root field that reads the keywords of an array without
+        ``--field-constraints`` (``reads_declared``), as the array branch of a union beside ``maxLength``, leaves out
+        the string lengths, which apply to strings only, as 0.88.0 did.
+        """
+        consumed = (
+            property_consumed_keywords(self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, data_type.type)
+            if site.consumed_at_property
+            else ()
+        )
+        lengths = LENGTH_KEYWORD_ORDER if site.holds_schema and not reads_declared and obj.is_array else ()
+        return (*consumed, *lengths)
 
     def _mark_assembled_constraints(
         self, field: DataModelFieldBase, assembled: _AssembledConstraints, obj: JsonSchemaObject, data_type: DataType
