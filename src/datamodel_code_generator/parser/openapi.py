@@ -43,6 +43,7 @@ from datamodel_code_generator._openapi_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue
+from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser import _union_tags
@@ -1170,7 +1171,7 @@ class OpenAPIParser(JsonSchemaParser):
                 field_name=parameter_name,
                 excludes=exclude_field_names,
                 model_type=self.field_name_model_type,
-                class_name=name,
+                class_name=class_key("predicted", name),
             )
             if parameter.schema_:
                 field_schema = self._site_schema(parameter.schema_, merge_ref_siblings=True)
@@ -1203,7 +1204,7 @@ class OpenAPIParser(JsonSchemaParser):
                 field_schema.default if field_schema else None,
                 has_default=field_schema.has_default if field_schema else False,
                 required=parameter.required,
-                class_name=reference.name,
+                class_name=class_key("reference-name", reference),
             )
             fields.append(
                 self.get_object_field(
@@ -1216,7 +1217,7 @@ class OpenAPIParser(JsonSchemaParser):
                     effective_default=effective_default,
                     effective_has_default=effective_has_default,
                     use_default_with_required=use_default_with_required,
-                    class_name=reference.name,
+                    class_name=class_key("reference-name", reference),
                 )
             )
 
@@ -1229,7 +1230,7 @@ class OpenAPIParser(JsonSchemaParser):
             model = self._create_data_model(
                 fields=fields,
                 reference=reference,
-                custom_base_class=self._resolve_base_class(name),
+                custom_base_class=self._resolve_base_class(class_key("predicted", name)),
                 custom_template_dir=self.custom_template_dir,
                 extra_template_data=self.extra_template_data,
                 keyword_only=self.keyword_only,

@@ -2630,7 +2630,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if extra_template_data is not None:
             # The supplied defaultdict will either create a new entry,
             # or already contain a predefined entry for this type
-            path_key, name_key = template_data_keys(self.reference.path, self.name)
+            path_key, name_key = template_data_keys(self.reference)
             self.extra_template_data = extra_template_data[path_key]
             self.extra_template_data.update(extra_template_data[name_key])
         else:

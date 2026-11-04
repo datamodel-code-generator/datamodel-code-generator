@@ -1114,6 +1114,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
                     class_name=True,
                     unique=True,
                 ).name,
+                scheme="imported-name",
             )
             state.renamed_models = True
 

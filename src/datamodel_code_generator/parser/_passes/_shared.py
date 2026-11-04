@@ -48,7 +48,6 @@ from datamodel_code_generator.model.base import (
     _effective_field_owners,
     _find_base_classes,
     _ModelKeys,
-    _path_identity_keys,
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
@@ -90,12 +89,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes._state import (
-        ModuleContextView,
-        ModulePath,
-        _FinalizeState,
-        _RenamedType,
-    )
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _FinalizeState
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
@@ -1263,29 +1257,6 @@ def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataMode
         for base_model in _find_base_classes(derived_model):
             derived_models[keys.of(base_model)].append(derived_model)
     return derived_models
-
-
-class RenamedTypesHost(Protocol):
-    """The class names renamed types had, which the passes that rename a type record."""
-
-    @property
-    def _renamed_type_paths(self) -> dict[str, list[_RenamedType]]:
-        """The class names renamed types had, by the path imports of them were added under."""
-
-    @property
-    def _renamed_types(self) -> dict[ModelKey, list[_RenamedType]]:
-        """The class names renamed types had, by model key."""
-
-
-def record_renamed_type(host: RenamedTypesHost, model: DataModel, renamed_type: _RenamedType) -> None:
-    """Record a class name that ``model`` had before a rename, under its model key and its current path.
-
-    A model that shares its path with the root model it took the name of, or with the inner model that took its name,
-    records it under the key of that model too (row ``legacy-replaced-root-shares-path``).
-    """
-    for key in _path_identity_keys(model):
-        host._renamed_types.setdefault(key, []).append(renamed_type)  # noqa: SLF001
-    host._renamed_type_paths.setdefault(model.path, []).append(renamed_type)  # noqa: SLF001
 
 
 class BaseStandInHost(Protocol):

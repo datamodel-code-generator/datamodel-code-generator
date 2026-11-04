@@ -29,6 +29,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
@@ -1751,7 +1752,7 @@ def parse_inherited_schema_fields(
     """
     inherited_properties = parser._get_inherited_property_map(parent_refs)  # noqa: SLF001
     reference = get_inherited_field_owner_reference(parser, reference, schema)
-    class_name = reference.name
+    class_name = class_key("reference-name", reference)
     fields: list[DataModelFieldBase] = []
     owner_path = [] if "legacy-rw-unowned-parent-fields" in parser._legacy_rw_variants else [reference.path]  # noqa: SLF001
 

@@ -25,6 +25,7 @@ from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
+from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
@@ -192,7 +193,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             name=field_name,
             alias="__typename",
             source_name="__typename",
-            class_name=name,
+            class_name=class_key("predicted", name),
             default=name,
             required=False,
             use_one_literal_as_default=True,
@@ -249,7 +250,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             model_type=self.data_model_root_type,
             reference=self.references[enum_object.name],
             fields=[self._build_field("bare", data_type, required=True)],
-            custom_base_class=self._resolve_base_class(enum_object.name),
+            custom_base_class=self._resolve_base_class(class_key("predicted", enum_object.name)),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -406,12 +407,12 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 original_field_name,
                 excludes=exclude_field_names,
                 model_type=self.field_name_model_type,
-                class_name=obj.name,
+                class_name=class_key("predicted", obj.name),
             )
             exclude_field_names.add(field_name_)
 
             data_model_field_type = self.parse_field(
-                field_name_, alias, field, original_field_name, class_name=obj.name
+                field_name_, alias, field, original_field_name, class_name=class_key("predicted", obj.name)
             )
             fields.append(data_model_field_type)
 
@@ -435,7 +436,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             reference=self.references[obj.name],
             fields=fields,
             base_classes=base_classes,
-            custom_base_class=self._resolve_base_class(obj.name),
+            custom_base_class=self._resolve_base_class(class_key("predicted", obj.name)),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -470,7 +471,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             self.data_model_union_type,
             reference=self.references[union_object.name],
             fields=fields,
-            custom_base_class=self._resolve_base_class(union_object.name),
+            custom_base_class=self._resolve_base_class(class_key("predicted", union_object.name)),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -573,7 +574,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                         ),
                         wire_name,
                         source_name=wire_name,
-                        class_name=obj.name,
+                        class_name=class_key("predicted", obj.name),
                         row="rename",
                     )
                     excludes.add(cast("str", field.name))
@@ -611,7 +612,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 ),
                 "__typename",
                 source_name="__typename",
-                class_name=obj.name,
+                class_name=class_key("predicted", obj.name),
                 row="rename",
             )
 

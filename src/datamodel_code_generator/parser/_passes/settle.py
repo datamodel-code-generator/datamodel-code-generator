@@ -399,7 +399,9 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
     """Give the names that yield to ``--model-name-map`` their final form, and record the reuse groups plan.
 
     The models whose names yield, and the site models of the parse, yield the canonical place of a group of
-    duplicates to the others too.
+    duplicates to the others too. The parse again with the final names (row ``legacy-reparse-for-final-names``)
+    follows the renames of the yielding names alone (row ``legacy-reparse-yielding-only``), not those that the
+    generation store records after them (``GenerationStore.renames``).
     """
     parser._reuse_groups = ReuseGroups(  # noqa: SLF001
         site_models=frozenset(parser._site_model_keys),  # noqa: SLF001
