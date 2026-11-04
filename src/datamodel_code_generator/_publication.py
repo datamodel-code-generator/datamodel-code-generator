@@ -16,7 +16,7 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 from secrets import token_hex
-from typing import TYPE_CHECKING, Literal, NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 from datamodel_code_generator._paths import (
     concrete,
@@ -41,8 +41,6 @@ if TYPE_CHECKING:
 _unlink = os.unlink
 _replace = os.replace
 _rmdir = os.rmdir
-
-MissingMetadata = Literal["fail", "legacy-api-skips-missing-metadata"]
 
 
 class PublicationAnchor(NamedTuple):
@@ -259,22 +257,17 @@ class StagedOutputs(NamedTuple):
             if artifact is not None
         }
 
-    def files(self, missing_metadata: MissingMetadata) -> Iterator[StagedFile]:
+    def files(self) -> Iterator[StagedFile]:
         """Pair every staged file with its target, the output's before the metadata's.
 
         The output pairs through ``StagedArtifact.files`` (a missing staged output pairs nothing). The metadata pairs
-        by row: ``fail`` (the command line) pairs the staged file without looking, so a missing one fails the
-        publication; ``legacy-api-skips-missing-metadata`` (``generate()``, fix #5620) pairs it like the output, so a
-        missing one pairs nothing and the other files publish.
+        as staged, without looking, so one that is missing when the run publishes (another process removed it) fails
+        the publication and nothing is published.
         """
         if self.output is not None:
             yield from self.output.files()
-        if (metadata := self.metadata) is None:
-            return
-        if missing_metadata == "fail":
+        if (metadata := self.metadata) is not None:
             yield StagedFile(metadata.staged, metadata.target, metadata.parent / metadata.target.name, metadata.anchor)
-        else:
-            yield from metadata.files()
 
 
 def artifact_roots(

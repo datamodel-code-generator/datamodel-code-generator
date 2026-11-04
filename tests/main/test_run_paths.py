@@ -265,3 +265,33 @@ def test_generate_output_below_a_file(update_lock: bool, tmp_path: Path) -> None
         )
     written = sorted(path.name for path in tmp_path.iterdir() if path != blocker)
     assert_output(f"{_rooted(str(raised.value), tmp_path)}\nwritten: {written}\n")
+
+
+@pytest.mark.abnormal_path("only another process removes a staged file before the run publishes it")
+@pytest.mark.parametrize("run", ["command-line", "generate"])
+def test_missing_staged_model_metadata_publishes_nothing(
+    run: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A staged model metadata file that is gone when the run publishes fails the publication of every file (#5620)."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("datamodel_code_generator._write_model_metadata", lambda *_args: None)
+    if run == "generate":
+        with pytest.raises(FileNotFoundError):
+            generate(
+                PERSON,
+                input_file_type=InputFileType.JsonSchema,
+                output=Path("out.py"),
+                emit_model_metadata=Path("meta.json"),
+                update_lock=True,
+            )
+    else:
+        run_main_with_args(
+            [
+                *("--input", str(PERSON), "--input-file-type", "jsonschema", "--output", "out.py"),
+                *("--emit-model-metadata", "meta.json", "--update-lock"),
+            ],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains="Error: could not publish batch output: ",
+        )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")

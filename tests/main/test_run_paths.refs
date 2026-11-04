@@ -17,6 +17,9 @@ verify	main/run_paths/lockfile_symlink_loop[verify].txt
 generate	main/run_paths/lockfile_through_a_directory_symlink_and_parent[generate].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 model	main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 target	main/run_paths/lockfile_through_a_directory_symlink_and_parent[target].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
+[test_missing_staged_model_metadata_publishes_nothing]
+command-line	main/run_paths/missing_staged_model_metadata_publishes_nothing[command-line].txt	= main/generation_platform/generate/nothing-written.txt
+generate	main/run_paths/missing_staged_model_metadata_publishes_nothing[generate].txt	= main/generation_platform/generate/nothing-written.txt
 [test_output_below_a_file]
 jobs	main/run_paths/output_below_a_file[jobs].txt
 lockfile	main/run_paths/output_below_a_file[lockfile].txt
