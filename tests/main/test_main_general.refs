@@ -881,6 +881,8 @@ python-3.12	main/type_overrides_target_312.py
 	main/main_general/type_overrides_model_level_base_class_takes_bare_class_name.py
 [test_type_overrides_model_level_dict_key]
 	main/type_overrides_dict_key.py
+[test_type_overrides_model_level_dotted_schema_name]
+	main/main_general/type_overrides_model_level_dotted_schema_name/
 [test_type_overrides_model_level_from_file]
 	main/type_overrides_model_level.py
 [test_type_overrides_nested_types]

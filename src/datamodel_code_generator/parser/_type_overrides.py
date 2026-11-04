@@ -611,7 +611,7 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
     overridden = False
     if (reference := data_type.reference) and (
         override_import := parser._base_stand_in_imports.get(model_key_of(reference))  # noqa: SLF001
-        or model_type_override(parser._model_type_override_imports, reference, row="reference-name")  # noqa: SLF001
+        or model_type_override(parser._model_type_override_imports, reference, row="class-name")  # noqa: SLF001
         or enum_site_override_import(parser, reference)
     ):
         annotation = parser._override_annotation(override_import)  # noqa: SLF001
