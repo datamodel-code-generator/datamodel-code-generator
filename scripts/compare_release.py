@@ -29,7 +29,6 @@ import importlib
 import json
 import os
 import re
-import resource
 import shlex
 import shutil
 import signal
@@ -58,6 +57,8 @@ DEFAULT_TYPES = (
 COMMON_ARGS = ("--disable-timestamp", "--formatters", "black", "isort")
 WARM_IMPORTS = ("black", "isort", "pydantic", "msgspec", "graphql", "yaml")
 MODULAR_OUTPUT_ERRORS = ("--output <directory>", "require an output directory")
+# The exit code of a run that hit its memory cap: like a timeout it is not cached, since another cap may let it finish.
+OUT_OF_MEMORY = 125
 CACHE_FORMAT = 2
 
 
@@ -76,6 +77,9 @@ def _exit_code(main: Callable[[list[str]], Any], argv: list[str]) -> int:
         if exc.code is None:
             return 0
         return exc.code if isinstance(exc.code, int) else 1
+    except MemoryError:
+        traceback.print_exc()
+        return OUT_OF_MEMORY
     except Exception:  # ruff: ignore[blind-except] - report any generator crash as a failed run
         traceback.print_exc()
         return 1
@@ -100,8 +104,12 @@ def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     signal.alarm(job["timeout"])
     if limit := job.get("memory_mb"):
-        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down.
-        resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
+        import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork that runs this child
+
+        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down;
+        # where the platform refuses the cap (macOS), the run goes uncapped.
+        with contextlib.suppress(ValueError, OSError):
+            resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.dup2(log, 1)
     os.dup2(log, 2)
@@ -316,7 +324,9 @@ class Runner:
             job["args"] = [*args, "--output", str(out / "pkg")]
             rc = worker.run(job)
         if rc != 0:
-            return Outcome(ok=False, error=self._error(rc, log), tree={}, import_error="", cacheable=rc > 0)
+            return Outcome(
+                ok=False, error=self._error(rc, log), tree={}, import_error="", cacheable=rc > 0 and rc != OUT_OF_MEMORY
+            )
         import_error = ""
         if self.import_check:
             import_log = tmp / f"{self.side.name}-import.log"
@@ -328,6 +338,8 @@ class Runner:
     def _error(self, rc: int, log: Path) -> str:
         if rc == -signal.SIGALRM:
             return f"timed out after {self.timeout}s"
+        if rc == OUT_OF_MEMORY:
+            return f"ran out of its {self.memory_mb} MB"
         return _last_line(log)
 
     def close(self) -> None:
