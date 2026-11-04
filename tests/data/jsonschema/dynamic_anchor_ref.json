@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {"$ref": "#T"}
+  },
+  "$defs": {
+    "First": {"$dynamicAnchor": "T", "type": "object", "properties": {"first": {"type": "integer"}}}
+  }
+}

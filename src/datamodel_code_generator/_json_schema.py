@@ -196,6 +196,10 @@ REF_PRE_PASS_POSITIONS: Final = tuple(
 
 In the legacy order it meets references in, which the names of the references it registers follow.
 """
+ID_PASS_POSITIONS: Final = ("contains", "not", "if", "dependentSchemas", "$defs")
+"""The positions the identifier pass also descends into, beyond those of the reference pre-pass: an anchor names its
+schema wherever it sits in the resource (#6216); ``if`` without --generate-schema-validators only, and ``$defs`` below
+the document root, whose definitions the parser reads itself."""
 
 
 def declared_types(value: object) -> tuple[str, ...]:

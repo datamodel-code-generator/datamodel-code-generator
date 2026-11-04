@@ -1655,6 +1655,35 @@ def test_main_jsonschema_anchor_in_one_of(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_dynamic_anchor_ref(output_file: Path) -> None:
+    """Resolve a `$ref` to the plain-name fragment a `$dynamicAnchor` declares, as to an `$anchor` (#6216)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_anchor_ref.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--generate-schema-validators"], id="schema-validators"),
+    ],
+)
+def test_main_jsonschema_anchor_in_nested_subschemas(extra_args: list[str], output_file: Path) -> None:
+    """Resolve a `$ref` to an `$anchor` under `contains`, `not`, `if`, `dependentSchemas` or a nested `$defs`."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "anchor_in_nested_subschemas.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [

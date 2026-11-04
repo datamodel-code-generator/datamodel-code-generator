@@ -7451,7 +7451,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _schema_documents.parse_ref(self, obj, path)
 
     def parse_id(self, obj: JsonSchemaObject, path: list[str]) -> None:
-        """Recursively parse all $id fields in a schema object."""
+        """Recursively parse all $id and anchor fields in a schema object, also under ``ID_PASS_POSITIONS``."""
         return _schema_documents.parse_id(self, obj, path)
 
     @contextmanager

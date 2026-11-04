@@ -24,10 +24,11 @@ from __future__ import annotations
 import json
 from copy import copy
 from dataclasses import replace
+from functools import partial
 from itertools import chain
 from operator import is_not
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
 
 from typing_extensions import Protocol
@@ -35,7 +36,12 @@ from typing_extensions import Protocol
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._document_reader import member_key
 from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    ID_PASS_POSITIONS,
+    NAMESPACE_DEFINITION_KEYS,
+    subschema_entries,
+)
 from datamodel_code_generator._openapi_objects import held_schemas
 from datamodel_code_generator._paths import file_uri_path, files_under
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
@@ -122,6 +128,8 @@ __all__ = [
     "schema_resource_document",
     "schema_resource_identifier",
 ]
+
+_ValidatedT = TypeVar("_ValidatedT")
 
 
 def _single_value_enum_as_const(
@@ -356,11 +364,17 @@ class SchemaDocumentsHost(Protocol):
     ) -> tuple[str | None, object]:
         """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects."""
 
+    def _shared_object(self, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]) -> _ValidatedT:
+        """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
+
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether an explicit root class name with a leading underscore keeps its spelling."""
 
     def _source_path_for_diagnostics(self, source_path: Path | None = None) -> str:
         """Return source context without changing parser path semantics."""
+
+    def _validate_schema_object(self, raw: dict[str, YamlValue] | YamlValue, path: list[str]) -> JsonSchemaObject:
+        """Validate raw data as JsonSchemaObject with path context in errors; a too deep nesting stops the parse."""
 
     def _traverse_schema_objects(
         self,
@@ -756,11 +770,12 @@ def mount_converted_schema(
 
 
 def add_id_callback(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
-    """Add $id and $anchor to model resolver."""
+    """Add $id, $anchor and $dynamicAnchor to model resolver."""
     if obj.id:
         parser.model_resolver.add_id(obj.id, path)
-    if obj.anchor:
-        parser.model_resolver.add_id(f"#{obj.anchor}", path)
+    for anchor in (obj.anchor, obj.dynamicAnchor):
+        if anchor:
+            parser.model_resolver.add_id(f"#{anchor}", path)
 
 
 def parse_ref(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
@@ -772,8 +787,22 @@ def parse_ref(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str
 
 
 def parse_id(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
-    """Recursively parse all $id fields in a schema object."""
-    parser._traverse_schema_objects(obj, path, parser._add_id_callback)  # noqa: SLF001
+    """Recursively parse all $id and anchor fields in a schema object, also under ``ID_PASS_POSITIONS``."""
+
+    def add_ids(obj: JsonSchemaObject, path: list[str]) -> None:
+        parser._add_id_callback(obj, path)  # noqa: SLF001
+        for keyword in ID_PASS_POSITIONS:
+            if keyword == "if" and parser.config.generate_schema_validators:
+                continue
+            if keyword == "$defs" and path[-1] == "#":
+                continue
+            for entry, raw in subschema_entries(keyword, obj.extras.get(keyword)):
+                child_path = [*path, *map(str, entry)]
+                validate = partial(parser._validate_schema_object, raw, child_path)  # noqa: SLF001
+                child = parser._shared_object(raw, parser.SCHEMA_OBJECT_TYPE, validate)  # noqa: SLF001
+                parser._traverse_schema_objects(child, child_path, add_ids)  # noqa: SLF001
+
+    parser._traverse_schema_objects(obj, path, add_ids)  # noqa: SLF001
 
 
 def get_context_source_path_parts(parser: SchemaDocumentsHost) -> Iterator[tuple[Source, list[str]]]:

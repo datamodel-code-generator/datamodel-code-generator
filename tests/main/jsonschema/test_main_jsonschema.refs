@@ -6063,6 +6063,9 @@ allof_mapping_ref_sibling_type	main/jsonschema/main_jsonschema/allof_mapping_wit
 	main/jsonschema/allof_scalar_roots.py
 [test_main_jsonschema_allof_with_true_schema]
 	main/jsonschema/allof_with_true_schema.py
+[test_main_jsonschema_anchor_in_nested_subschemas]
+default	main/jsonschema/main_jsonschema/anchor_in_nested_subschemas[default].py
+schema-validators	main/jsonschema/main_jsonschema/anchor_in_nested_subschemas[schema-validators].py	= main/jsonschema/main_jsonschema/anchor_in_nested_subschemas[default].py
 [test_main_jsonschema_anchor_in_one_of]
 	main/jsonschema/main_jsonschema/anchor_in_one_of.py
 [test_main_jsonschema_anchor_ref]
@@ -6395,6 +6398,8 @@ treat-dot-as-module	main/jsonschema/main_jsonschema/dotted_directory_reference[t
 [test_main_jsonschema_duration]
 msgspec.Struct-duration_msgspec.py	main/jsonschema/duration_msgspec.py
 pydantic_v2.BaseModel-duration_pydantic_v2.py	main/jsonschema/duration_pydantic_v2.py
+[test_main_jsonschema_dynamic_anchor_ref]
+	main/jsonschema/main_jsonschema/dynamic_anchor_ref.py
 [test_main_jsonschema_dynamic_ref]
 	main/jsonschema/dynamic_ref.py	= main/jsonschema/dynamic_ref_pydantic_v2.py
 [test_main_jsonschema_dynamic_ref_allof_base_class]

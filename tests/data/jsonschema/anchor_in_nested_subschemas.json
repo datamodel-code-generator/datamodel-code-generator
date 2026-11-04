@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "holder": {
+      "type": "array",
+      "contains": {"$anchor": "contained", "type": "object", "properties": {"a": {"type": "integer"}}}
+    },
+    "negated": {
+      "not": {"$anchor": "negation", "type": "object", "properties": {"b": {"type": "string"}}}
+    },
+    "conditional": {
+      "if": {"$anchor": "condition", "type": "object", "properties": {"c": {"type": "boolean"}}}
+    },
+    "dependent": {
+      "type": "object",
+      "dependentSchemas": {
+        "d": {"$anchor": "dependency", "type": "object", "properties": {"d": {"type": "integer"}}}
+      }
+    },
+    "nested": {
+      "type": "object",
+      "$defs": {
+        "Inner": {"$anchor": "inner", "type": "object", "properties": {"e": {"type": "string"}}}
+      }
+    },
+    "contained": {"$ref": "#contained"},
+    "negation": {"$ref": "#negation"},
+    "condition": {"$ref": "#condition"},
+    "dependency": {"$ref": "#dependency"},
+    "inner": {"$ref": "#inner"}
+  }
+}
