@@ -133,7 +133,7 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse]] = OperationPlan(
     path='/uploads',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('id', codec=model_bindings.codec_18), PartPlan('title', codec=model_bindings.codec_19), PartPlan('count', codec=model_bindings.codec_20), PartPlan('tags', repeated=True, codec=model_bindings.codec_21), PartPlan('meta', 'json', codec=model_bindings.codec_22), PartPlan('photo'), PartPlan('pages', repeated=True)), additional=PartPlan('', codec=model_bindings.codec_23))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('id', codec=model_bindings.codec_18), PartPlan('title', codec=model_bindings.codec_19), PartPlan('count', codec=model_bindings.codec_20), PartPlan('tags', repeated=True, codec=model_bindings.codec_21), PartPlan('meta', 'json', codec=model_bindings.codec_22), PartPlan('photo'), PartPlan('pages', repeated=True, text=True)), additional=PartPlan('', codec=model_bindings.codec_23))),), default='multipart/form-data', required=True),
 )
 
 OPERATION_8: Final[OperationPlan[ReadUploadResponse]] = OperationPlan(

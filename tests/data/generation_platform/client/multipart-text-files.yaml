@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info:
+  title: Binary form-data members typed by overrides
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: sendFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Files"}
+      responses:
+        "204":
+          description: Stored.
+  /stamps:
+    post:
+      operationId: sendStamp
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Stamp"}
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Files:
+      type: object
+      required: [file, raw]
+      properties:
+        file: {type: string, format: binary}
+        raw: {type: string, format: binary}
+        icon: {type: string, contentMediaType: image/png}
+    Stamp:
+      type: object
+      required: [taken]
+      properties:
+        taken: {type: string, format: binary}
