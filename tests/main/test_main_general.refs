@@ -347,6 +347,8 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 20261104-practical-314-formatters170	main/formatter_policy/practical-314-ruff-check.py
 20261104-practical-315-formatters171	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261104-practical-315-formatters171	main/formatter_policy/practical-315-builtin.py	= main/formatter_policy/practical-314-black.py
+20261104-practical-315-formatters172	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261104-practical-315-formatters172	main/formatter_policy/practical-315-black.py	= main/formatter_policy/practical-314-black.py
 20261104-practical-315-formatters173	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261104-practical-315-formatters173	main/formatter_policy/practical-315-ruff-check.py	= main/formatter_policy/practical-314-ruff-check.py
 20261104-standard-310-formatters138	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -381,6 +383,8 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 20261104-standard-314-formatters152	main/formatter_policy/standard-314-ruff-check.py
 20261104-standard-315-formatters153	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261104-standard-315-formatters153	main/formatter_policy/standard-315-builtin.py	= main/formatter_policy/standard-314-black.py
+20261104-standard-315-formatters154	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261104-standard-315-formatters154	main/formatter_policy/standard-315-black.py	= main/formatter_policy/standard-314-black.py
 20261104-standard-315-formatters155	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261104-standard-315-formatters155	main/formatter_policy/standard-315-ruff-check.py	= main/formatter_policy/standard-314-ruff-check.py
 [test_check_directory_extra_file]
