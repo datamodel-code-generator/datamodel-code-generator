@@ -70891,14 +70891,14 @@ Without the option (same as 0.88.0), `ByKey` rejects `{"kind": "cat"}`:
 
 ```python
 class Cat(BaseModel):
-    kind: Literal['Cat']
+    kind: Literal["Cat"]
 ```
 
 With the option:
 
 ```python
 class Cat(BaseModel):
-    kind: Literal['Cat', 'cat']
+    kind: Literal["Cat", "cat"]
 ```
 
 ### `--use-encoded-str-for-constrained-base64`
@@ -70924,10 +70924,7 @@ lengths: Annotated[Base64Str | None, Field(max_length=8, min_length=4)] = None
 With the option:
 
 ```python
-lengths: (
-    Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)]
-    | None
-) = None
+lengths: Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)] | None = None
 ```
 
 ### `--use-duplicate-name-suffix-for-every-collision`
@@ -70976,16 +70973,16 @@ Without the option (same as 0.88.0):
 
 ```python
 class E(Enum):
-    A = 'a'
-    a_1 = 'A'
+    A = "a"
+    a_1 = "A"
 ```
 
 With the option:
 
 ```python
 class E(Enum):
-    A = 'a'
-    A_1 = 'A'
+    A = "a"
+    A_1 = "A"
 ```
 
 ### `--keep-first-character-of-path-keys`
@@ -71034,7 +71031,7 @@ Without the option (same as 0.88.0):
 
 ```python
 class PingPublishPayload(RootModel[str]):
-    root: str = Field(..., title='Model')
+    root: str = Field(..., title="Model")
 ```
 
 With the option:

@@ -6,6 +6,7 @@ the next release to the 20261027 presets.
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -332,7 +333,10 @@ def test_preset_sets_opt_in_option(
     family: str,
     tmp_path: Path,
 ) -> None:
-    """Generate with a dated preset and with the preset before it plus the options it adds: the output is the same."""
+    """Generate with a dated preset and with the preset before it plus the options it adds: the output is the same.
+
+    The py312 presets may write Python 3.12 syntax, which only Python 3.12 and later compile.
+    """
     previous, options = PRESET_RELEASES[release]
     preset_output = tmp_path / "preset"
     options_output = tmp_path / "options"
@@ -348,12 +352,14 @@ def test_preset_sets_opt_in_option(
         output_path=preset_output,
         input_file_type=input_file_type,
         extra_args=["--preset", f"{family}-py312-{release}", *common],
+        skip_code_validation=sys.version_info < (3, 12),
     )
     run_main_and_assert(
         input_path=input_path,
         output_path=options_output,
         input_file_type=input_file_type,
         extra_args=["--preset", f"{family}-py312-{previous}", *common, *options],
+        skip_code_validation=sys.version_info < (3, 12),
         **(
             {"expected_directory": preset_output}
             if input_path.is_dir()
