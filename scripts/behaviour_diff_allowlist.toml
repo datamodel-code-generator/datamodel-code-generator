@@ -15,7 +15,7 @@
 base = "0.89.0"
 
 [[accepted]]
-input = "tests/data/jsonschema/module_named_like_*"
+input = "tests/data/jsonschema/*module_named_like_*"
 aspects = [ "generation" ]
 match = "^\\[generation\\] : now fails: Cannot write the class '[^']+' in .+ beside the module '[^']+' "
 reason = "a class written in a package beside a module of the same name was replaced by the module once anything imported it, so the models that reference the class failed to decode; generation stops with an error that asks to rename the class or the module instead of writing that output (owner decision: error by default, an opt-in rename comes as --rename-submodules-hidden-by-classes)"
