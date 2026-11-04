@@ -3889,6 +3889,30 @@ def test_type_overrides_model_level(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"],
+)
+def test_type_overrides_model_level_collapse_root_models(output_file: Path, output_model_type: str) -> None:
+    """Replace a root model a model-level override names wherever it is used, also when root models collapse."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_collapsed_root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--type-overrides",
+            '{"Code": "mypkg.Code"}',
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 def test_type_overrides_model_level_dotted_schema_name(output_dir: Path) -> None:
     """Replace a schema with a dotted name by its class name, in its module and in the modules that use it."""
     run_main_and_assert(

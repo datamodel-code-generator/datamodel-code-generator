@@ -27,6 +27,7 @@ __all__ = [
 
 KeepRule: TypeAlias = Literal[
     "no-root-field",
+    "type-override",
     "circular",
     "runtime-object-validation",
     "fieldless-site-regex-engine",
@@ -39,6 +40,8 @@ KeepRule: TypeAlias = Literal[
 """Why collapse keeps a root model named at a site.
 
 * ``no-root-field``: the root model has no root field to inline.
+* ``type-override``: a model-level ``--type-overrides`` key replaces the root model, so its holders take the type of
+  the override, as they do without collapse.
 * ``circular``: the root model is circular (L4 ``set_circular_root_model_paths``) and cannot be fully inlined.
 * ``runtime-object-validation``: the root model owns runtime object rules, which would be lost with it.
 * ``fieldless-site-regex-engine``: the root model is the model of a site that earlier releases wrote as a model
@@ -67,6 +70,8 @@ class CollapseSiteFacts:
 
     has_root_field: bool = False
     """The root model has a root field; every other fact is False when it has none."""
+    type_overridden: bool = False
+    """A model-level ``--type-overrides`` key names the root model (``_user_keys.model_type_override``)."""
     circular: bool = False
     runtime_object_validation: bool = False
     needs_model_regex_engine: bool = False
@@ -94,6 +99,8 @@ def keeps_root_model_named(facts: CollapseSiteFacts, /) -> KeepRule | None:  # n
     """Return the rule that keeps the root model named at a site, or None when collapse inlines it there."""
     if not facts.has_root_field:
         return "no-root-field"
+    if facts.type_overridden:
+        return "type-override"
     if facts.circular:
         return "circular"
     if facts.runtime_object_validation:

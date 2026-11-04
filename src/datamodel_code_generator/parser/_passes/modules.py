@@ -415,6 +415,10 @@ class CollapseHost(
     """The options, run state and hooks of the parser that collapsing root models reads and writes."""
 
     @property
+    def _model_type_override_imports(self) -> dict[str, Import]:
+        """The imports of the types that override models, by model name; collapse keeps the models they replace."""
+
+    @property
     def _collapses_list_item_root_models(self) -> bool:
         """Whether collapse inlines the root models that list items name."""
 
@@ -1238,6 +1242,12 @@ def collapse_site_facts(
     constrained_root = _has_root_field_constraints(root_field)
     return CollapseSiteFacts(
         has_root_field=True,
+        type_overridden=model_type_override(
+            parser._model_type_override_imports,  # noqa: SLF001
+            root_model.reference,
+            row="class-name",
+        )
+        is not None,
         circular=model_key_of(root_model.reference) in circular_root_models,
         runtime_object_validation=root_model.has_runtime_object_validation,
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),

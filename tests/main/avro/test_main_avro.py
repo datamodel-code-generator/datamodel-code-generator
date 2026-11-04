@@ -635,6 +635,28 @@ def test_avro_decimal_defaults_preserve_raw_input(output_file: Path, fixture: st
     assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
 
 
+@pytest.mark.parametrize("collapse_args", [[], ["--collapse-root-models"]], ids=["named", "collapsed"])
+def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path, collapse_args: list[str]) -> None:
+    """Keep the physical defaults of the fixed types that model-level overrides replace, also when roots collapse."""
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "fixed_type_overrides_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--type-overrides",
+            json.dumps({"Money": "builtins.bytes", "Dur": "builtins.bytes"}),
+            *collapse_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("fixture", "expected_file", "extra_args", "warning"),
     [
