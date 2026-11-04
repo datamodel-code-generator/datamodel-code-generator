@@ -7492,6 +7492,53 @@ def test_main_unique_items_as_set_type_list(output_model: str, tmp_path: Path, o
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(
+            ["--reuse-model"],
+            "Root(labels=Labels(names=[2, 1, 2], note=None), history=History(names=[2, 1, 2], note=None), "
+            "tags=Tags(names={1, 2}), marks=Marks(names={1, 2}))",
+            id="subclass",
+        ),
+        pytest.param(
+            ["--reuse-model", "--collapse-reuse-models"],
+            "Root(labels=Labels(names=[2, 1, 2], note=None), history=Labels(names=[2, 1, 2], note=None), "
+            "tags=Tags(names={1, 2}), marks=Tags(names={1, 2}))",
+            id="collapse",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_type_list_merged(
+    extra_args: list[str], expected_repr: str, output_file: Path
+) -> None:
+    """Keep the array of a type list a list where reuse merges into its model one that declares no ``uniqueItems``.
+
+    ``History`` declares none and merges into ``Labels`` (an empty subclass, or removed under
+    ``--collapse-reuse-models``), so ``names`` stays the list 0.88.0 wrote and keeps the duplicates ``History`` admits;
+    ``Marks`` declares it as ``Tags`` does, so their ``names`` is a set.
+    """
+    name = "unique_items_type_list_merged"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--use-unique-items-as-set", *extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    names = '{"names": [2, 1, 2]}'
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Root",
+        valid_json=f'{{"labels": {names}, "history": {names}, "tags": {names}, "marks": {names}}}',
+        invalid_json='{"tags": {"names": "text"}}',
+        expected_error_type="bool_parsing",
+        expected_repr=expected_repr,
+    )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:

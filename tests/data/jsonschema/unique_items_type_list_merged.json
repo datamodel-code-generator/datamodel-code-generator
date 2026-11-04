@@ -1,0 +1,85 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "labels": {
+      "$ref": "#/$defs/Labels"
+    },
+    "history": {
+      "$ref": "#/$defs/History"
+    },
+    "tags": {
+      "$ref": "#/$defs/Tags"
+    },
+    "marks": {
+      "$ref": "#/$defs/Marks"
+    }
+  },
+  "$defs": {
+    "Labels": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": [
+            "array",
+            "string"
+          ],
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "History": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": [
+            "array",
+            "string"
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "Tags": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": [
+            "array",
+            "boolean"
+          ],
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "Marks": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": [
+            "array",
+            "boolean"
+          ],
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}
