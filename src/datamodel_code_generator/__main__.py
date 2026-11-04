@@ -2894,7 +2894,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     if config.output is not None and generate_output is not None:
         layout = output_layout(generate_output)
-        if config.diff_against is None and (refusal := layout_refusal(layout, _batch_original_output or config.output)):
+        if refusal := layout_refusal(
+            layout, _batch_original_output or config.output, compares=config.diff_against is not None
+        ):
             print(refusal, file=sys.stderr)  # noqa: T201
             return cleanup_and_return(Exit.ERROR)
         if config.check and is_directory_output and (layout or output_layout(config.output)) == "module":

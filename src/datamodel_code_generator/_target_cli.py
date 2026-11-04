@@ -166,9 +166,16 @@ def _run(  # noqa: PLR0913, PLR0917
             kind = "input-diff"
             effective = effective.model_copy(update={"input_filename": "<input>"})
             with unmatched_model_name_keys_unreported():
-                baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
+                baseline = plan_target(
+                    config.diff_against, model_config=effective, config=target, generator=generator, compares=True
+                )
             project = plan_target(
-                source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
+                source,
+                model_config=effective,
+                config=target,
+                generator=generator,
+                timestamp=baseline.timestamp,
+                compares=True,
             ).project
             comparison = _compare_target(
                 project, config.output, target.output, config.encoding, baseline=baseline.project

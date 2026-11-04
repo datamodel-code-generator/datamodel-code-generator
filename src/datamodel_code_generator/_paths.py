@@ -163,11 +163,14 @@ def output_files(path: Path, pattern: str = "*") -> list[tuple[tuple[str, ...], 
     return [(file.relative_to(path).parts, file) for file in files_under(path, pattern)]
 
 
-def layout_refusal(layout: OutputLayout | None, destination: Path) -> str | None:
+def layout_refusal(layout: OutputLayout | None, destination: Path, *, compares: bool = False) -> str | None:
     """Return why an output of ``layout`` cannot replace what ``destination`` holds, or None.
 
-    One module cannot replace an existing directory, a package an existing file.
+    One module cannot replace an existing directory, a package an existing file. A comparison against another input
+    (``compares``) reads no destination, so it refuses nothing.
     """
+    if compares:
+        return None
     if layout == "module" and destination.is_dir():
         return SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR
     if layout == "package" and destination.is_file():
