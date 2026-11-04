@@ -1391,12 +1391,7 @@ class GenerationStore:  # noqa: PLR0904
         return self._builder
 
     def enter_phase(self, phase: Phase) -> None:
-        """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here.
-
-        Entering the parse starts a run, which forgets the renames of an earlier run (``renames``).
-        """
-        if phase is Phase.PARSE:
-            self._renames.clear()
+        """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
     @property
