@@ -11,6 +11,11 @@ The parse resolver (``Parser.model_resolver``) names models at L1. A pass that r
   ``--duplicate-name-suffix`` map or ``Model``, and a name is always kept as written.
 * ``field-type`` (L5 ``modules.py:change_field_name``, ``rename_named_type``, ``rename_fields_hiding_types``): a name
   taken is numbered after the name without its number suffix; field names follow ``--snake-case-field``.
+* ``imported-name`` (the resolver of a module, made by ``Parser._process_single_module``, that the module and import
+  passes name the imports and import aliases of the module with): a name taken by a field of the module or an
+  earlier binding is numbered.
+* ``forwarder`` (``imports.py:_released_name_imports``): replays ``imported-name`` for the models a forwarder binds
+  in the released layout, around their field names.
 """
 
 from __future__ import annotations
@@ -24,7 +29,7 @@ if TYPE_CHECKING:
 
 __all__ = ["NameScheme", "scheme_resolver"]
 
-NameScheme = Literal["module", "flattened-module", "field-type"]
+NameScheme = Literal["module", "flattened-module", "field-type", "imported-name", "forwarder"]
 
 _LEGACY_MODULE_SUFFIX: Final = "Model"
 
@@ -45,9 +50,9 @@ def scheme_resolver(  # noqa: PLR0913
     """Return a resolver that allocates names under ``scheme`` around ``exclude_names``.
 
     ``keeps_names`` is read by ``module``, ``duplicate_name_suffix_map`` by ``flattened-module`` and
-    ``snake_case_field`` by ``field-type``.
+    ``snake_case_field`` by ``field-type``; ``imported-name`` and ``forwarder`` take the resolver defaults.
     """
-    options: dict[str, Any] = {"snake_case_field": snake_case_field, "remove_suffix_number": True}
+    options: dict[str, Any] = {}
     match scheme:
         case "module":
             options = {
@@ -60,6 +65,6 @@ def scheme_resolver(  # noqa: PLR0913
                 "custom_class_name_generator": _keep_name,
                 "duplicate_name_suffix_map": duplicate_name_suffix_map,
             }
-        case _:  # "field-type": the resolver defaults
-            pass
+        case "field-type":
+            options = {"snake_case_field": snake_case_field, "remove_suffix_number": True}
     return ModelResolver(exclude_names=exclude_names, target_python_version=target_python_version, **options)
