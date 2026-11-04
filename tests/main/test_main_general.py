@@ -15,6 +15,7 @@ import warnings
 from argparse import ArgumentTypeError, BooleanOptionalAction, Namespace
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from io import StringIO
 from pathlib import Path
 from threading import Event
@@ -90,9 +91,11 @@ from tests.conftest import (
     validate_generated_code,
 )
 from tests.main.conftest import (
+    AVRO_DATA_PATH,
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_MAIN_PATH,
+    GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     PROTOBUF_DATA_PATH,
@@ -3932,6 +3935,202 @@ def test_type_overrides_model_level_dotted_schema_name(output_dir: Path) -> None
         runtime_validation_module="b",
         runtime_validation_model_name="Owner",
         runtime_validation_data={"pet": "1.5"},
+    )
+
+
+def _class_keyed_options(*class_names: str) -> list[str]:
+    """Return the options read while models are built, each keyed by every class of ``class_names`` and its ``name``."""
+    return [
+        "--base-class-map",
+        json.dumps(dict.fromkeys(class_names, "base.Base")),
+        "--extra-template-data",
+        json.dumps({class_name: {"config": {"frozen": True}} for class_name in class_names}),
+        "--validators",
+        json.dumps({
+            class_name: {"validators": [{"field": "name", "function": "base.check"}]} for class_name in class_names
+        }),
+        "--aliases",
+        json.dumps({f"{class_name}.name": "label" for class_name in class_names}),
+        "--serialization-aliases",
+        json.dumps({f"{class_name}.name": "wire_name" for class_name in class_names}),
+        "--default-values",
+        json.dumps({f"{class_name}.name": "x" for class_name in class_names}),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type", "extra_args"),
+    [
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys_builders.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet", "Dog", "Name", "Pets", "Kind"),
+            ],
+            id="builders-keyed-by-schema-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys_builders.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet_1", "Dog_1", "Name_1", "Pets_1", "Kind_1"),
+            ],
+            id="builders-keyed-by-output-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet_1"),
+                "--base-class-map",
+                json.dumps({"Pet_1": "base.Output", "Pet": "base.Schema"}),
+                "--aliases",
+                json.dumps({"Pet_1.name": "output_label", "Pet.name": "schema_label"}),
+            ],
+            id="schema-name-key-before-output-name-key",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_model_name_map.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--model-name-map",
+                json.dumps({"Pet": "Cat"}),
+                *_class_keyed_options("Cat_1"),
+            ],
+            id="model-name-map-value-renamed",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "collapse_root_models_parent_class_keys.json",
+            "jsonschema",
+            [
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+                "--base-class-map",
+                json.dumps({"Wrap": "base.Base"}),
+                "--aliases",
+                json.dumps({"Wrap.name": "label"}),
+            ],
+            id="inner-model-named-after-collapsed-root",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "field_type_collision_read_write_variant.yaml",
+            "openapi",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--read-only-write-only-model-type",
+                "request-response",
+                *_class_keyed_options("PetRequest_1"),
+            ],
+            id="read-write-variant",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_same_name_documents" / "openapi.yaml",
+            "openapi",
+            _class_keyed_options("PetModel"),
+            id="same-name-documents",
+        ),
+        pytest.param(
+            GRAPHQL_DATA_PATH / "field_type_collision.graphql",
+            "graphql",
+            ["--field-type-collision-strategy", "rename-type", *_class_keyed_options("Pet_1")],
+            id="graphql-type",
+        ),
+        pytest.param(
+            AVRO_DATA_PATH / "field_type_collision.avsc",
+            "avro",
+            ["--field-type-collision-strategy", "rename-type", *_class_keyed_options("Pet_1")],
+            id="avro-record",
+        ),
+    ],
+)
+def test_class_keyed_options_name_renamed_classes(
+    output_file: Path, input_path: Path, input_file_type: str, extra_args: list[str]
+) -> None:
+    """Apply an option keyed by a class name to the class that has the name in the output after a late rename.
+
+    A key of the name a model was built under applies before a key of the name it ends with (#5418).
+    """
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_class_keyed_options_name_renamed_class_in_module(output_dir: Path) -> None:
+    """Apply a dotted class key to the class a field-type collision renames in its module (#5418)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "field_type_collision_dotted_module.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-type-collision-strategy",
+            "rename-type",
+            *_class_keyed_options("a.Pet_1"),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_class_keyed_options_name_renamed_class_payload(output_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Validate payloads with the class a field-type collision renames, configured by keys of its output name.
+
+    The type override names the field by the name the alias gives it (#5418).
+    """
+    monkeypatch.syspath_prepend(str(PYTHON_DATA_PATH))
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-type-collision-strategy",
+            "rename-type",
+            "--base-class-map",
+            json.dumps({"Pet_1": "explicit_alias_base.NamespaceBase"}),
+            "--extra-template-data",
+            json.dumps({"Pet_1": {"config": {"frozen": True}}}),
+            "--aliases",
+            json.dumps({"Pet_1.name": "nm"}),
+            "--type-overrides",
+            json.dumps({"Pet_1.nm": "decimal.Decimal"}),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_class_keyed_options_renamed_class",
+        model_name="Model",
+        valid_json='{"Pet": {"name": "1.5"}}',
+        invalid_json='{"Pet": {"name": "x"}}',
+        expected_error_type="decimal_parsing",
+        expected_attribute_path=("Pet", "nm"),
+        expected_attribute_value=Decimal("1.5"),
     )
 
 

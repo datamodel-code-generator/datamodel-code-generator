@@ -115,6 +115,10 @@ class PipelineHost(
         """The error of each import the target Python version lacks, by imported module and name."""
 
     @property
+    def _translates_final_name_keys(self) -> bool:
+        """Whether the run records the output names keys name (``imports.translate_final_name_keys``)."""
+
+    @property
     def order_constructor_fields_by_final_names(self) -> bool:
         """Whether constructor ordering runs once the fields have their final names."""
 
@@ -671,6 +675,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 "record_generated_class_names",
                 late(imports.record_generated_class_names),
                 when=lambda self, _: collecting_class_names() or self.model_resolver.model_name_record is not None,
+            ),
+            PassSpec(
+                "translate_final_name_keys",
+                late(imports.translate_final_name_keys),
+                when=lambda self, _: self._translates_final_name_keys,
             ),
             PassSpec(
                 "record_model_placement",

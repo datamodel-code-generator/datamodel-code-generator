@@ -35,6 +35,13 @@ defaults and serialization aliases, the forward schemas of allOf, ``Parser._appl
 ``class-name`` after construction (the aliases of a reused tag field, whose serialization alias reads
 ``reference-name``, the tag field names and the Avro default overrides).
 
+A class key of the options read at L1 (``ConstructionKeys``) also names the model whose name in the output it is,
+where a rename after L2 (``GenerationStore.renames``) gave the model that name: L6 ``translate_final_name_keys``
+records the name by the path the model had at L2, ``__init__.py:_parse_generation_run`` parses the input once more,
+and every lookup of the model at that path compares the class part with that name after the name of its row
+(``ClassScope``, ``ModelResolver.class_scope``); the template data of the name joins that of the path, before the
+entry of the name of its row.
+
 Rows that keep today's output where the options disagree (each one waits for the option that resolves every key once,
 after names are final):
 
@@ -42,9 +49,6 @@ after names are final):
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
   name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
-* ``legacy-reparse-yielding-only`` (``parser/_passes/settle.py:settle_yielding_names``): the renames that decide that
-  parse are those of the yielding names at L2; the renames after L2, which ``GenerationStore.rename_model`` records,
-  decide nothing, so a key that names a name one of them gave matches no model.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
   (``type_override_classes``), while a ``Class.field`` key of the other options names a class at each of its dots
   (``ConstructionKeys``, the lookups); ``scoped_key`` splits every key, by these rows.

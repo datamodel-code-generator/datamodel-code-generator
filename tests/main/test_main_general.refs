@@ -357,6 +357,20 @@ pydantic_v2_dataclass	main/class_decorators_pydantic_v2_dataclass.py
 	main/class_decorators_dataclass.py
 [test_class_decorators_without_at_prefix]
 	main/class_decorators_dataclass.py
+[test_class_keyed_options_name_renamed_class_in_module]
+	main/main_general/class_keyed_options_name_renamed_class_in_module/
+[test_class_keyed_options_name_renamed_class_payload]
+	main/main_general/class_keyed_options_name_renamed_class_payload.py
+[test_class_keyed_options_name_renamed_classes]
+avro-record	main/main_general/class_keyed_options_name_renamed_classes[avro-record].py
+builders-keyed-by-output-names	main/main_general/class_keyed_options_name_renamed_classes[builders-keyed-by-output-names].py
+builders-keyed-by-schema-names	main/main_general/class_keyed_options_name_renamed_classes[builders-keyed-by-schema-names].py	= main/main_general/class_keyed_options_name_renamed_classes[builders-keyed-by-output-names].py
+graphql-type	main/main_general/class_keyed_options_name_renamed_classes[graphql-type].py
+inner-model-named-after-collapsed-root	main/main_general/class_keyed_options_name_renamed_classes[inner-model-named-after-collapsed-root].py
+model-name-map-value-renamed	main/main_general/class_keyed_options_name_renamed_classes[model-name-map-value-renamed].py
+read-write-variant	main/main_general/class_keyed_options_name_renamed_classes[read-write-variant].py
+same-name-documents	main/main_general/class_keyed_options_name_renamed_classes[same-name-documents].py
+schema-name-key-before-output-name-key	main/main_general/class_keyed_options_name_renamed_classes[schema-name-key-before-output-name-key].py
 [test_cli_input_overrides_pyproject_url]
 	main/cli_input_overrides_pyproject_url.py
 [test_cli_no_use_annotated_clears_only_implicit_field_constraints]

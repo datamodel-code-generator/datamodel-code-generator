@@ -1,0 +1,9 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {"w": {"$ref": "#/$defs/Wrap"}},
+  "$defs": {
+    "Wrap": {"$ref": "#/$defs/Inner"},
+    "Inner": {"type": "object", "properties": {"name": {"type": "string"}}}
+  }
+}

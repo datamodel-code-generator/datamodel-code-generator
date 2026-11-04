@@ -1975,6 +1975,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     openapi_parser_factory: OpenAPIParserFactory | None = None,
     model_name_keys: ModelNameKeys | None = None,
     records_model_names: bool = False,
+    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
@@ -2010,6 +2011,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         document_roles=document_roles,
         model_name_keys=model_name_keys,
         records_model_names=records_model_names,
+        final_name_keys=final_name_keys,
     )
     return parser
 
@@ -2323,13 +2325,15 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     document_roles: DocumentRoles = (),
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
+    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse once more with a fresh parser that reuses the first parse's ``caches`` of documents and base path.
 
     By default the values of nullable maps are untyped as earlier releases did, or typed under given names. The values
     of nullable maps get models that give their names to every other model. Options keyed by class name are looked up
     while models are created, so a run whose map value models end under other names, which such options name, is
-    parsed again with those models named as they end.
+    parsed again with those models named as they end; one whose models renamed after L2 end under names such keys
+    name is parsed again with those names as further names of their paths (``final_name_keys``).
 
     A run keeps these values untyped when typing them changes where models are written, the files written, or the
     models a collapse keeps; the decision covers the whole run, so every input of a directory run is then untyped.
@@ -2377,6 +2381,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 openapi_parser_factory=openapi_parser_factory,
                 model_name_keys=model_name_keys,
                 records_model_names=records_model_names,
+                final_name_keys=final_name_keys,
             )
             try:
                 results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
@@ -2680,6 +2685,23 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             document_roles = parser.run_context.document_roles
             _dispose_capture_parser(parser, capture, discard=True)
             del parser
+            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
+                config,
+                _prepare_generation_extra_template_data(config),
+                caches,
+                preserve_circular_root_models=preserve_circular_root_models,
+                untyped_nullable_maps=False,
+                yielding_names=yielding_names,
+                document_roles=document_roles,
+            )
+        if final_name_keys := parser.final_name_keys_to_assign:
+            caches = _reparse_caches(parser)
+            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
+            yielding_names = parser.run_context.yielding_names
+            document_roles = parser.run_context.document_roles
+            _dispose_capture_parser(parser, capture, discard=True)
+            del parser
+            parse_again = partial(parse_again, final_name_keys=final_name_keys)
             parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
                 config,
                 _prepare_generation_extra_template_data(config),

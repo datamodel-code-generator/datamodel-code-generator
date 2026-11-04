@@ -310,6 +310,8 @@ class ModelRename:
     """The class name the model has after the rename."""
     scheme: RenameScheme | None
     """The scheme of the rename; None for a caller that names none."""
+    reference_name: str
+    """The reference name the model had before the rename."""
 
 
 @record
@@ -1767,7 +1769,7 @@ class GenerationStore:  # noqa: PLR0904
         """
         from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
 
-        class_name_before, path_before = model.class_name, model.reference.path
+        class_name_before, path_before, name_before = model.class_name, model.reference.path, model.reference.name
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
         )
@@ -1781,6 +1783,7 @@ class GenerationStore:  # noqa: PLR0904
                 path_before,
                 model.class_name,
                 scheme,
+                name_before,
             )
         )
 

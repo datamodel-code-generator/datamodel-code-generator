@@ -1408,6 +1408,21 @@ RECORD_GENERATED_CLASS_NAMES = PassDecl(
     reads=_facts(RenderFact.CLASS_NAMES),
     condition="class names are collected, or the run records what it names",
 )
+TRANSLATE_FINAL_NAME_KEYS = PassDecl(
+    "translate_final_name_keys",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.BOOKKEEPING,
+    reads=_facts(RenderFact.CLASS_NAMES),
+    condition=(
+        "a key of the options read at L1 exists, a model was renamed after L2, and the run neither applies such names"
+        " nor records what it names"
+    ),
+    summary=(
+        "Records the output names of the models renamed after L2 that keys of the options read at L1 name, by the"
+        " path the model had at L2, for the parse again that gives them to those models."
+    ),
+)
 RECORD_MODEL_PLACEMENT = PassDecl(
     "record_model_placement",
     Phase.IMPORTS,
