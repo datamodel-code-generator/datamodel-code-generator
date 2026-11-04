@@ -1,0 +1,6 @@
+cats {"kind": "cat"}: Cat
+cats {"kind": "Cat"}: rejected
+cats {"kind": "dog"}: Dog
+kitties {"kind": "kitty"}: Cat
+kitties {"kind": "Cat"}: rejected
+kitties {"kind": "dog"}: Dog

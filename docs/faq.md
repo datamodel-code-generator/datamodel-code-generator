@@ -424,7 +424,7 @@ The opt-in options of 0.90.0, listed as in [Opt-in behaviour changes in 0.87.0](
 | Release | 0.90.0 |
 | Issue | [#5361](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5361), [#4666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4666) |
 
-**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects every document that selects the variant, with a warning. With the option its tag field takes every tag the unions give it. A variant keeps the first union's tag where a union would then give two of its variants one tag, and msgspec Structs, which take one tag, are unchanged.
+**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects the documents that select the variant by a tag it does not keep, with a warning. With the option its tag field takes every tag the unions give it that the pattern of the tag field admits. A variant keeps the first union's tag where a union would then give two of its variants one tag, a nested one included, and msgspec Structs, which take one tag, are unchanged.
 
 Schema: `ByName` is a `oneOf` of `Cat` and `Dog` discriminated by `kind` without a mapping, and `ByKey` lists the same variants with the mapping `{"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}`.
 

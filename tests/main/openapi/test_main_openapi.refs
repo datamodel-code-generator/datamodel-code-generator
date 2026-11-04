@@ -1418,6 +1418,16 @@ pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_
 pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
 pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].py
 pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
+[test_main_openapi_merge_shared_variant_tags_limits]
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].decoded.txt
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].py
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].decoded.txt
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].py
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].warnings.txt
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].decoded.txt	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].decoded.txt
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].py	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].py
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].warnings.txt
 [test_main_openapi_merge_shared_variant_tags_msgspec]
 	main/openapi/main_openapi/merge_shared_variant_tags_msgspec.py
 [test_main_openapi_merge_shared_variant_tags_nested]

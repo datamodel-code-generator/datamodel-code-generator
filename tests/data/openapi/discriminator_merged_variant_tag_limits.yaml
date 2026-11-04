@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: Limits of Merging the Tags of Shared Variants
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        byKey:
+          $ref: '#/components/schemas/ByKey'
+        byName:
+          $ref: '#/components/schemas/ByName'
+        outer:
+          $ref: '#/components/schemas/Outer'
+        other:
+          $ref: '#/components/schemas/Other'
+        forward:
+          $ref: '#/components/schemas/Forward'
+        backward:
+          $ref: '#/components/schemas/Backward'
+        maybe:
+          oneOf:
+            - $ref: '#/components/schemas/Red'
+            - $ref: '#/components/schemas/Blue'
+            - $ref: '#/components/schemas/Green'
+            - type: 'null'
+          discriminator:
+            propertyName: kind
+            mapping:
+              a: '#/components/schemas/Red'
+              b: '#/components/schemas/Blue'
+              c: '#/components/schemas/Green'
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, pattern: '^cat$'}
+        meow: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, pattern: '^dog$'}
+        bark: {type: string}
+    ByKey:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    ByName:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+    Ant:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        legs: {type: integer}
+    Bee:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [bee]}
+        legs: {type: integer}
+    Wasp:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [wasp]}
+    Moth:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+    BeeOrWasp:
+      oneOf:
+        - $ref: '#/components/schemas/Bee'
+        - $ref: '#/components/schemas/Wasp'
+      discriminator:
+        propertyName: kind
+        mapping:
+          bee: '#/components/schemas/Bee'
+          wasp: '#/components/schemas/Wasp'
+    Outer:
+      oneOf:
+        - $ref: '#/components/schemas/Ant'
+        - $ref: '#/components/schemas/BeeOrWasp'
+      discriminator:
+        propertyName: kind
+        mapping:
+          ant: '#/components/schemas/Ant'
+          bee: '#/components/schemas/Bee'
+          wasp: '#/components/schemas/Wasp'
+    Other:
+      oneOf:
+        - $ref: '#/components/schemas/Ant'
+        - $ref: '#/components/schemas/Moth'
+      discriminator:
+        propertyName: kind
+        mapping:
+          bee: '#/components/schemas/Ant'
+          moth: '#/components/schemas/Moth'
+    Red:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        hue: {type: integer}
+    Blue:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        depth: {type: integer}
+    Green:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        leaf: {type: integer}
+    Forward:
+      oneOf:
+        - $ref: '#/components/schemas/Red'
+        - $ref: '#/components/schemas/Blue'
+        - $ref: '#/components/schemas/Green'
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: '#/components/schemas/Red'
+          b: '#/components/schemas/Blue'
+          c: '#/components/schemas/Green'
+    Backward:
+      oneOf:
+        - $ref: '#/components/schemas/Red'
+        - $ref: '#/components/schemas/Blue'
+        - $ref: '#/components/schemas/Green'
+      discriminator:
+        propertyName: kind
+        mapping:
+          b: '#/components/schemas/Red'
+          a: '#/components/schemas/Blue'
+          d: '#/components/schemas/Green'

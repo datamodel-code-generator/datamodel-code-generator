@@ -2236,11 +2236,13 @@ Existing generated output is preserved unless this option is enabled.
 Give a variant that discriminated unions tag differently every tag they give it.
 
 A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
-union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
-that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
-every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
-the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
-its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects the documents
+that select the variant by a tag it does not keep, and a warning says so. With `--merge-shared-variant-tags` its tag
+field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
+union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
+left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
+union would then give two of its variants one tag, a nested one included, as crossing mappings do, and msgspec Structs,
+which take one tag, are unchanged.
 
 !!! tip "Usage"
 

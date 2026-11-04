@@ -16970,11 +16970,13 @@ MERGED_VARIANT_TAGS_PAYLOAD: dict[str, dict[str, str]] = {
     option_description="""Give a variant that discriminated unions tag differently every tag they give it.
 
 A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
-union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
-that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
-every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
-the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
-its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.""",
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects the documents
+that select the variant by a tag it does not keep, and a warning says so. With `--merge-shared-variant-tags` its tag
+field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
+union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
+left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
+union would then give two of its variants one tag, a nested one included, as crossing mappings do, and msgspec Structs,
+which take one tag, are unchanged.""",
     input_schema="openapi/discriminator_merged_variant_tags.yaml",
     cli_args=["--merge-shared-variant-tags"],
     golden_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py",
@@ -17087,6 +17089,81 @@ def test_main_openapi_merge_shared_variant_tags_nested(output_file: Path, output
         invalid_json=json.dumps({"outer": {"kind": "fox"}}),
         expected_error_type="union_tag_invalid",
     )
+
+
+MERGED_VARIANT_TAG_LIMIT_PAYLOADS: dict[str, dict[str, list[dict[str, Any]]]] = {
+    "discriminator_merged_variant_tag_limits": {
+        "byKey": [{"kind": "cat"}, {"kind": "dog"}],
+        "byName": [{"kind": "Cat"}, {"kind": "cat"}],
+        "outer": [{"kind": "ant"}, {"kind": "bee", "legs": 6}, {"kind": "wasp"}],
+        "other": [{"kind": "bee", "legs": 6}, {"kind": "moth"}],
+        "forward": [{"kind": "a"}, {"kind": "c"}],
+        "backward": [{"kind": "d"}],
+        "maybe": [{"kind": "c"}, {"kind": "d"}],
+    },
+    "discriminator_merged_collapsed_variant_tags": {
+        "cats": [{"kind": "cat"}, {"kind": "Cat"}, {"kind": "dog"}],
+        "kitties": [{"kind": "kitty"}, {"kind": "Cat"}, {"kind": "dog"}],
+    },
+}
+"""Documents of each union of the inputs, which the generated ``Holder`` decodes into the variant it records."""
+
+
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param("discriminator_merged_variant_tag_limits", [], id="limits"),
+        pytest.param("discriminator_merged_variant_tag_limits", ["--field-constraints"], id="limits-field_constraints"),
+        pytest.param(
+            "discriminator_merged_collapsed_variant_tags",
+            ["--reuse-model", "--collapse-reuse-models"],
+            id="collapsed_reuse",
+        ),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_limits(output_file: Path, name: str, extra_args: list[str]) -> None:
+    """Merge under ``--merge-shared-variant-tags`` only the tags each union decodes, as its schema reads them.
+
+    ``Cat`` and ``Dog`` take their tags by the mapping of ``ByKey`` and by their names in ``ByName``, which the pattern
+    of their tag fields rejects, so they keep the mapped tags, which the field forms write without the pattern and a
+    model builds. ``Other`` maps ``bee`` to ``Ant``, which ``Outer`` lists beside the nested ``Bee`` it maps ``bee`` to,
+    so ``Ant`` keeps ``ant`` and ``Outer`` stays discriminated. ``Forward`` and ``Backward`` cross ``a`` and ``b`` but
+    map ``Green`` to ``c`` and ``d``, so ``Green`` takes both, also where ``maybe`` lists it beside null. Collapsed
+    reuse writes ``Kitties`` with ``Cat`` for the equal ``Kitty``, which it maps to ``kitty``, so ``Cat`` takes ``cat``
+    and ``kitty`` and no other tag.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is UserWarning})),
+        name="warnings",
+    )
+    decoded = []
+    with _generated_model(output_file, name, "Holder") as holder:
+        validate = _model_json_validator(holder)
+        for property_name, documents in MERGED_VARIANT_TAG_LIMIT_PAYLOADS[name].items():
+            for document in documents:
+                try:
+                    value = getattr(validate(json.dumps({property_name: document})), property_name)
+                except pydantic.ValidationError:
+                    result = "rejected"
+                else:
+                    while (root := getattr(value, "root", None)) is not None:
+                        value = root
+                    result = type(value).__name__
+                decoded.append(f"{property_name} {json.dumps(document)}: {result}\n")
+    assert_output("".join(decoded), name="decoded")
 
 
 @pytest.mark.cli_doc(
