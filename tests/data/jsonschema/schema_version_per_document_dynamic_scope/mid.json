@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/mid.json",
+  "$defs": {
+    "Mid": {
+      "type": "object",
+      "properties": {"score": {"$ref": "leaf.json#/definitions/Score"}}
+    }
+  }
+}

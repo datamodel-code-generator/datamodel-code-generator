@@ -7438,6 +7438,8 @@ per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document[pe
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[first-read]/
 per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[per-document]/
 single-value-enum-as-const	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[single-value-enum-as-const]/
+[test_main_jsonschema_read_schema_version_per_document_dynamic_scope]
+	main/jsonschema/main_jsonschema/read_schema_version_per_document_dynamic_scope.py
 [test_main_jsonschema_read_schema_version_per_document_explicit_version]
 	main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version/
 [test_main_jsonschema_read_schema_version_per_document_property_count]

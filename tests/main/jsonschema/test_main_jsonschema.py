@@ -39383,6 +39383,30 @@ def test_main_jsonschema_read_schema_version_per_document_property_count(
         )
 
 
+def test_main_jsonschema_read_schema_version_per_document_dynamic_scope(output_file: Path) -> None:
+    """Read a document that declares no version by the version of the document that refers to it wherever it loads.
+
+    The ``$dynamicAnchor`` of the 2020-12 root makes the parser follow the references of ``mid.json`` into
+    ``leaf.json`` before parsing them; ``leaf.json`` takes 2020-12 from ``mid.json`` there too, so ``Score`` keeps the
+    ``maximum`` beside its allOf ``$ref`` and rejects 11.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document_dynamic_scope" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--read-schema-version-per-document", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="read_schema_version_per_document_dynamic_scope",
+        model_name="Root",
+        valid_json=json.dumps({"mid": {"score": 10}}),
+        invalid_json=json.dumps({"mid": {"score": 11}}),
+        expected_error_type="less_than_equal",
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],

@@ -2914,7 +2914,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Enter the resolution context of the document that a resolved reference points into."""
         document = self._schema_resource_document(_ref_path_parts(file_part))
         path_parts = self._schema_resource_path_parts.get(document) or _ref_path_parts(file_part)
-        with self._schema_document_context(path_parts):
+        with _schema_documents.referenced_document_context(self, self._schema_document_context(path_parts)):
             raw = self._prepare_schema_resources(_schema_refs.ref_file_document(self, file_part), path_parts)
             with self.root_id_context(raw):
                 yield document, raw
@@ -3087,7 +3087,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with (
             self.model_resolver.current_base_path_context(base_path),
             self.model_resolver.base_url_context(file_part or self.model_resolver.base_url),
-            self.model_resolver.current_root_context(root_path),
+            _schema_documents.referenced_document_context(self, self.model_resolver.current_root_context(root_path)),
         ):
             yield
 
@@ -7536,6 +7536,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._schema_resource_root_bases: dict[str, str] = registry.root_bases
         self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
         self._document_dialects: dict[str, DocumentDialect] = {}
+        self._referring_dialect: DocumentDialect | None = None
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
