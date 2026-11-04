@@ -8618,6 +8618,64 @@ def test_main_nested_array_item_counts(output_model: str, tmp_path: Path, output
         )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("msgspec.Struct", []),
+    ],
+)
+def test_main_all_of_value_site_keywords(
+    output_model: str, extra_args: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Write the keywords of the parts of an allOf value site on its root model, which keeps the form it is written in.
+
+    A lone member, a type beside a keyword part and an array member write their bounds as the root field's constraints
+    wherever the type does not enforce them itself; parts that no value meets and parts with an ``enum`` keep their
+    output. Up to 0.88.0 the root took its constraints from the allOf site, which declares none, so ``Numbers`` dropped
+    its ``minItems`` without a warning, and under --field-constraints and in msgspec every type dropped its bounds.
+    """
+    input_file = tmp_path / "all_of_value_sites.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "text": {"allOf": [{"type": "string", "maxLength": 3}]},
+                "split": {"allOf": [{"type": "string"}, {"maxLength": 3}]},
+                "number": {"allOf": [{"type": "integer", "maximum": 3}]},
+                "numbers": {"allOf": [{"type": "array", "items": {"type": "integer"}, "minItems": 2}]},
+                "conflict": {"allOf": [{"type": "string", "maxLength": 3}, {"type": "string", "minLength": 5}]},
+                "literal": {"allOf": [{"type": "string", "enum": ["a", "bb"]}, {"maxLength": 1}]},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", output_model, *extra_args, "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="all_of_value_site_keywords",
+            model_name="Model",
+            valid_json='{"text": "abc", "split": "ab", "number": 3, "numbers": [1, 2]}',
+            invalid_json='{"numbers": [1]}',
+            expected_error_type="too_short",
+            invalid_keyword_arguments=[
+                ({"text": "abcd"}, "string_too_long"),
+                ({"split": "abcd"}, "string_too_long"),
+                ({"number": 4}, "less_than_equal"),
+            ],
+        )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:

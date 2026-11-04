@@ -70,19 +70,19 @@ NullableItem: TypeAlias = Any
 NullableMap: TypeAlias = Any
 
 
-OuterProp: TypeAlias = Annotated[int, Meta(description='site', le=9)]
+OuterProp: TypeAlias = Annotated[int, Meta(description='site', ge=0, le=9)]
 
 
-OuterItem: TypeAlias = Annotated[int, Meta(description='site', le=9)]
+OuterItem: TypeAlias = Annotated[int, Meta(description='site', ge=0, le=9)]
 
 
 OuterMap: TypeAlias = Annotated[int, Meta(description='site', ge=0, le=9)]
 
 
-MultipleProp: TypeAlias = int
+MultipleProp: TypeAlias = Annotated[int, Meta(multiple_of=6)]
 
 
-MultipleItem: TypeAlias = int
+MultipleItem: TypeAlias = Annotated[int, Meta(multiple_of=6)]
 
 
 MultipleMap: TypeAlias = Annotated[int, Meta(multiple_of=6)]

@@ -104,6 +104,7 @@ __all__ = [
     "is_all_of_value_part",
     "is_root_model_schema",
     "layers_on_reference",
+    "legacy_site_keywords",
     "merge_all_of_object",
     "merge_all_of_root_schema",
     "merge_all_of_root_value_children",
@@ -701,6 +702,38 @@ def intersect_all_of_value_parts(
         else:
             keywords.pop(keyword)
     return parser._schema_object(keywords)  # noqa: SLF001
+
+
+def legacy_site_keywords(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    """Return the keywords that the root field of an allOf value site writes where the site keeps its earlier form.
+
+    Under ``legacy-all-of-site-form`` the site is typed by the form it is written in, built from the site schema, which
+    declares none of the keywords of its parts; its root field writes the intersection of its parts, as the site does
+    without the row, where they are the values of a site that some value meets (``_satisfiable_all_of_value_parts``)
+    without references, literals, two item schemas or two formats (``intersects_value_parts``). The intersection
+    declares no ``type``, so the type of that earlier form decides which keywords the field takes (``Any`` takes none),
+    and the field leaves out those its type enforces itself; nor the patterns of two parts, whose lookaheads under
+    ``legacy-lookahead-patterns`` no engine is checked to run. None for every other site, whose root writes none.
+    """
+    parts: list[JsonSchemaObject] = []
+    if (
+        "legacy-all-of-site-form" not in parser._legacy_intersection  # noqa: SLF001
+        or not collect_all_of_value_parts(parser, obj, parts)
+        or parser._satisfiable_all_of_value_parts(obj) is None  # noqa: SLF001
+        or not intersects_value_parts(parser, parts, literals=False)
+    ):
+        return None
+    left_out = (
+        {"type"} if len({part.pattern for part in parts if part.pattern is not None}) <= 1 else {"type", "pattern"}
+    )
+    keywords = intersect_all_of_value_parts(parser, parts, all_of_value_row(parser, obj), None)
+    return parser._schema_object(  # noqa: SLF001
+        {
+            keyword: value
+            for keyword, value in keywords.model_dump(exclude_unset=True, by_alias=True).items()
+            if keyword not in left_out
+        }
+    )
 
 
 def intersect_typed_value_parts(

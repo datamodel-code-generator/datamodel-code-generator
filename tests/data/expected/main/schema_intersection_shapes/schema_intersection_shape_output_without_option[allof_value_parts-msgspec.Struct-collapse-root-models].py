@@ -13,10 +13,13 @@ NestedMap: TypeAlias = Annotated[int, Meta(ge=1, le=3)]
 NestedUntypedMap: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-OuterItem: TypeAlias = Annotated[int, Meta(description='site', le=9)]
+OuterItem: TypeAlias = Annotated[int, Meta(description='site', ge=0, le=9)]
 
 
 OuterMap: TypeAlias = Annotated[int, Meta(description='site', ge=0, le=9)]
+
+
+MultipleItem: TypeAlias = Annotated[int, Meta(multiple_of=6)]
 
 
 MultipleMap: TypeAlias = Annotated[int, Meta(multiple_of=6)]
@@ -62,11 +65,11 @@ class Model(Struct):
     nullable_prop: Any | UnsetType = UNSET
     nullable_items: list[Any] | UnsetType = UNSET
     nullable_map: dict[str, Any] | UnsetType = UNSET
-    outer_prop: Annotated[int, Meta(description='site', le=9)] | UnsetType = UNSET
+    outer_prop: Annotated[int, Meta(description='site', ge=0, le=9)] | UnsetType = UNSET
     outer_items: list[OuterItem] | UnsetType = UNSET
     outer_map: dict[str, OuterMap] | UnsetType = UNSET
-    multiple_prop: int | UnsetType = UNSET
-    multiple_items: list[int] | UnsetType = UNSET
+    multiple_prop: Annotated[int, Meta(multiple_of=6)] | UnsetType = UNSET
+    multiple_items: list[MultipleItem] | UnsetType = UNSET
     multiple_map: dict[str, MultipleMap] | UnsetType = UNSET
     const_conflict_prop: str | UnsetType = UNSET
     const_conflict_items: list[str] | UnsetType = UNSET

@@ -154,8 +154,8 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         ),
         "legacy-all-of-site-form": (
             "an allOf site of value parts keeps its earlier form, unwarned where they conflict (a model without fields "
-            "only where their intersection admits an object), and a `$ref` member's sibling `enum` or `const` does "
-            "not narrow its literals"
+            "only where their intersection admits an object), its root writing the keywords of parts some value "
+            "meets, and a `$ref` member's sibling `enum` or `const` does not narrow its literals"
         ),
         "legacy-all-of-null-as-written": (
             "null is read as written where parts meet: a `type` without null keeps the null members beside it and "

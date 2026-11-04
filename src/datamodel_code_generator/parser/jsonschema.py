@@ -7020,6 +7020,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     referenced_value := _all_of_values.all_of_reference_value_schema(self, obj)
                 ) is not None:
                     value_obj = constraint_obj = referenced_value
+                elif (site_keywords := _all_of_values.legacy_site_keywords(self, obj)) is not None:
+                    constraint_obj = site_keywords
                 data_type = (
                     self._enum_literal(
                         value_obj, _value_keywords.literal_written(self, constraint_obj, value_obj.enum, writes=writes)

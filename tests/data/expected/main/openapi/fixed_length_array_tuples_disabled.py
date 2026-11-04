@@ -8,11 +8,11 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class AllOfVector(RootModel[list[str]]):
-    root: list[str]
+    root: list[str] = Field(..., max_length=2, min_length=2)
 
 
 class AllOfEmpty(RootModel[list[str]]):
-    root: list[str]
+    root: list[str] = Field(..., max_length=0, min_length=0)
 
 
 class InlineObjectItem(BaseModel):
