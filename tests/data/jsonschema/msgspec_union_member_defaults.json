@@ -17,6 +17,10 @@
     "listOfStructs": {
       "anyOf": [{"$ref": "#/$defs/PodList"}, {"$ref": "#/$defs/PodSpec"}],
       "default": [{"a": "w"}]
+    },
+    "objectBesideListOfStructs": {
+      "anyOf": [{"$ref": "#/$defs/PodList"}, {"$ref": "#/$defs/PodSpec"}],
+      "default": {"a": "q"}
     }
   },
   "$defs": {

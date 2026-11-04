@@ -10,3 +10,4 @@ textOrBytes: refused by msgspec
 textOrDuration: refused by msgspec
 structOrList: decoded
 textOrNumber: decoded
+textOrIntLiteral: decoded

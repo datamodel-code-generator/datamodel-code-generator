@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from enum import Enum
+from typing import Literal
 
 from msgspec import UNSET, Struct, UnsetType
 
@@ -26,3 +27,4 @@ class Model(Struct):
     textOrDuration: timedelta | TextOrDuration | UnsetType = UNSET
     structOrList: Spec | list[str] | UnsetType = UNSET
     textOrNumber: str | float | UnsetType = UNSET
+    textOrIntLiteral: str | Literal[1] | UnsetType = UNSET

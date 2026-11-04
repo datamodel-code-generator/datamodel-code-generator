@@ -506,7 +506,7 @@ def _builtin_default_formatter_config(output_path: Path | None, *, enabled: bool
         yield
         return
     pyproject_toml = _builtin_default_formatter_config_path(output_path)
-    if pyproject_toml.is_file():
+    if pyproject_toml.is_file() or not pyproject_toml.parent.is_dir():
         yield
         return
     pyproject_toml.write_text(_BUILTIN_FORMATTER_CONFIG, encoding="utf-8")

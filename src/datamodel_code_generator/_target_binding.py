@@ -2993,7 +2993,8 @@ class _UseFacts(_SchemaUses):
     ) -> TextShape:
         """Return how the values of a union of objects are written as text: the members of its objects, merged by name.
 
-        A name several objects declare has the kind they agree on, and none (refused, ``_kind``) when they differ. Other
+        A name several objects declare has the kind they agree on, and none (refused, ``_kind``) when they differ; an
+        object that does not declare it but allows other properties of one kind takes part in that agreement too. Other
         properties are those of the objects that allow them, in their kind when all agree on one, else any string; an
         object with pattern properties has no members and allows any string.
         """
@@ -3005,6 +3006,11 @@ class _UseFacts(_SchemaUses):
             for member in shape.members:
                 merged[member.name] = _agreed(merged[member.name], member) if member.name in merged else member
         others = [MemberShape("") if shape.problem else shape.additional for shape in shapes]
+        for shape, other in zip(shapes, others, strict=True):
+            if other is not None and other.kind is not None:
+                declared = {member.name for member in shape.members}
+                for name in merged.keys() - declared:
+                    merged[name] = _agreed(merged[name], other)
         allowed = [other for other in others if other is not None]
         additional = (
             None

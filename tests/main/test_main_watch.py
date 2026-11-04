@@ -2347,15 +2347,15 @@ def test_watch_dependencies_accept_events_with_unresolvable_paths(
     input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
     dependencies = WatchDependencies()
     dependencies.add_file(input_file)
-    original_resolve = Path.resolve
+    original_realpath = os.path.realpath
 
-    def raise_value_error(path: Path, *args: object, **kwargs: object) -> Path:
-        if path == input_file:
+    def raise_value_error(path: str | os.PathLike[str], *args: object, **kwargs: object) -> str:
+        if Path(path) == input_file:
             msg = "unresolvable"
             raise ValueError(msg)
-        return original_resolve(path, *args, **kwargs)
+        return original_realpath(path, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "resolve", raise_value_error)
+    monkeypatch.setattr(os.path, "realpath", raise_value_error)
 
     assert dependencies.accepts_event(input_file)
 
@@ -4173,10 +4173,10 @@ def test_watch_dependencies_handle_path_resolution_errors(monkeypatch: pytest.Mo
     unresolved_path = tmp_path / "unresolved.json"
     resolution_error = "unresolvable"
 
-    def raise_resolution_error(_path: Path, *_args: object, **_kwargs: object) -> Path:
+    def raise_resolution_error(_path: str | os.PathLike[str], *_args: object, **_kwargs: object) -> str:
         raise OSError(resolution_error)
 
-    monkeypatch.setattr(Path, "resolve", raise_resolution_error)
+    monkeypatch.setattr(os.path, "realpath", raise_resolution_error)
     assert _path_variants(unresolved_path) == frozenset({unresolved_path})
 
     def raise_samefile_error(_path: Path, _other: Path) -> bool:

@@ -28,7 +28,7 @@ OPERATION_0: Final[OperationPlan[SendFilesResponse]] = OperationPlan(
     path='/files',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('file', text=True), PartPlan('raw'), PartPlan('icon', text=True)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('file', text=True), PartPlan('raw'), PartPlan('icon', text=True), PartPlan('notes', text=True, content_types=('text/plain; charset=iso-8859-1',))), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
 )
 
 OPERATION_1: Final[OperationPlan[SendStampResponse]] = OperationPlan(

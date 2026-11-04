@@ -1116,14 +1116,15 @@ def _format_bit_or_annotation_assignment(
 
 
 def _iter_subscript_elements(node: ast.Subscript) -> list[ast.AST]:
-    if isinstance(node.slice, ast.Tuple):
+    """Return the elements of a subscript's slice; the empty tuple of ``tuple[()]`` is its one element."""
+    if isinstance(node.slice, ast.Tuple) and node.slice.elts:
         return list(node.slice.elts)
     return [node.slice]
 
 
 def _subscript_comma(subscript: ast.Subscript) -> str:
-    """Return the comma after each element of a split subscript: one only when its slice is a tuple."""
-    return "," if isinstance(subscript.slice, ast.Tuple) else ""
+    """Return the comma after each element of a split subscript: one only when its slice is a tuple of elements."""
+    return "," if isinstance(subscript.slice, ast.Tuple) and subscript.slice.elts else ""
 
 
 def _element_lines(  # noqa: PLR0913

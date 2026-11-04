@@ -1,0 +1,1 @@
+base_skip entry 1 (tests/data/*.json): bases '<=0.86.0' is not a list of versions (0.88.0) or maximums (<=0.88.0)

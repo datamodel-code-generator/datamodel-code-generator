@@ -31,3 +31,6 @@ class Model(Struct):
     listOfStructs: PodList | PodSpec | UnsetType = field(
         default_factory=lambda: convert([{'a': 'w'}], type=PodList)
     )
+    objectBesideListOfStructs: PodList | PodSpec | UnsetType = field(
+        default_factory=lambda: convert({'a': 'q'}, type=PodSpec)
+    )

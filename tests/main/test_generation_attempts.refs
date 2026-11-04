@@ -16,6 +16,8 @@ dispose_failed	main/generation_platform/no-retained-graph.txt
 emit_failed	main/generation_platform/attempt_emit_failed.txt	?
 emit_failed	main/generation_platform/no-retained-graph.txt
 emit_failed	main/generation_platform/windows/attempt_emit_failed.txt	?
+emit_failed	main/generation_platform/windows/attempt_emit_failed.txt	?	@formatter=builtin,python=3.10	= main/generation_platform/attempt_emit_failed.txt
+emit_failed	main/generation_platform/windows/attempt_emit_failed.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/attempt_emit_failed.txt
 freeze_and_dispose_failed	main/generation_platform/attempt_freeze_and_dispose_failed.txt	= main/generation_platform/attempt_freeze_failed.txt
 freeze_and_dispose_failed	main/generation_platform/no-retained-graph.txt
 freeze_failed	main/generation_platform/attempt_freeze_failed.txt

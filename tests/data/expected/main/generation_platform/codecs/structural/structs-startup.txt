@@ -1,4 +1,5 @@
 warning UserWarning: msgspec cannot decode the enum Ratio: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+warning UserWarning: msgspec cannot decode the union Moment.at: it holds the str-like members Literal['now'], datetime, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 not-struct: ValidationError
 renamed: ValidationError
 required-disagrees: ValidationError

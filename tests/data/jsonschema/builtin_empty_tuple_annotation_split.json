@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EmptyTupleSplit",
+  "type": "object",
+  "required": ["anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx"],
+  "properties": {
+    "anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx": {"type": "string", "x-python-type": "tuple[()]"}
+  }
+}

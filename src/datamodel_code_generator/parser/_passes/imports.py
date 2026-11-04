@@ -725,12 +725,15 @@ def _msgspec_member_slot(leaf: DataType) -> tuple[str, object] | None:
         slot = "dict", leaf.type_hint
     elif leaf in ARRAYS:
         slot = "array", leaf.type_hint
-    elif not leaf.data_types and not leaf.enum_member_literals:
-        if leaf.literals:
-            if any(literal_value_kind(literal) == "str" for literal in leaf.literals):
-                slot = "str", "str"
-        elif leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
-            slot = "str", leaf.type
+    elif leaf.literals and not leaf.data_types and not leaf.enum_member_literals:
+        if any(literal_value_kind(literal) == "str" for literal in leaf.literals):
+            slot = "str", "str"
+    elif (
+        not leaf.data_types
+        and not leaf.enum_member_literals
+        and (leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS)
+    ):
+        slot = "str", leaf.type
     return slot
 
 

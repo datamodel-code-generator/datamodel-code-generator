@@ -51,8 +51,28 @@ paths:
               other: {contentType: text/plain}
       responses:
         "204": {description: Done.}
+  /either-extra:
+    get:
+      operationId: getEitherExtra
+      parameters:
+        - name: q
+          in: query
+          style: form
+          explode: true
+          schema:
+            oneOf:
+              - {$ref: "#/components/schemas/ClosedCount"}
+              - {type: object, additionalProperties: {type: string}}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
+    ClosedCount:
+      type: object
+      additionalProperties: false
+      required: [x]
+      properties:
+        x: {type: integer}
     Counted:
       type: object
       properties:

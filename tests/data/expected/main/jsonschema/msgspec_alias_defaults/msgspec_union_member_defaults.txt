@@ -13,13 +13,17 @@
       {
         "a": "w"
       }
-    ]
+    ],
+    "objectBesideListOfStructs": {
+      "a": "q"
+    }
   },
   "default_types": {
     "listBesideStruct": "list",
     "objectBesideList": "PodSpec",
     "listBesideAlias": "list",
-    "listOfStructs": "list"
+    "listOfStructs": "list",
+    "objectBesideListOfStructs": "PodSpec"
   },
   "valid": {
     "listBesideStruct": {
@@ -33,7 +37,10 @@
       {
         "a": "w"
       }
-    ]
+    ],
+    "objectBesideListOfStructs": {
+      "a": "q"
+    }
   },
   "invalid": "rejected: Expected `str`, got `int` - at `$.listBesideStruct[0]`"
 }

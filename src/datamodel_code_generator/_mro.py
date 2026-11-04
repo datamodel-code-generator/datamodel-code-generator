@@ -40,18 +40,16 @@ MemberRule: TypeAlias = Literal["collected", "nearest"]
 
 
 def resolve_members(
-    order: Sequence[_T], members_of: Callable[[_T], Iterable[_M]], key: Callable[[_M], _K | None]
+    order: Sequence[_T], members_of: Callable[[_T], Iterable[_M]], key: Callable[[_M], _K]
 ) -> dict[_K, tuple[_T, _M]]:
     """Return the member each key resolves to and its owner, searching ``order``: a class, then its bases in order.
 
-    The first owner that declares a key gives its member, at the place where the last one declares it; a member whose
-    key is None is left out.
+    The first owner that declares a key gives its member, at the place where the last one declares it.
     """
     resolved: dict[_K, tuple[_T, _M]] = {}
     for owner in reversed(order):
         for member in members_of(owner):
-            if (member_key := key(member)) is not None:
-                resolved[member_key] = owner, member
+            resolved[key(member)] = owner, member
     return resolved
 
 
