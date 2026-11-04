@@ -3,6 +3,9 @@
 [test_generate_lock_update_keeps_a_symlinked_lockfile]
 output	main/run_paths/generate_lock_update_keeps_a_symlinked_lockfile[output].txt
 stdout	main/run_paths/generate_lock_update_keeps_a_symlinked_lockfile[stdout].txt	= main/run_paths/generate_lock_update_keeps_a_symlinked_lockfile[output].txt
+[test_generate_output_below_a_file]
+direct	main/run_paths/generate_output_below_a_file[direct].txt
+staged	main/run_paths/generate_output_below_a_file[staged].txt	= main/run_paths/generate_output_below_a_file[direct].txt
 [test_input_dev_stdin_reads_a_pipe]
 existing-output	main/run_paths/input_dev_stdin_reads_a_pipe[existing-output].txt
 new-output	main/run_paths/input_dev_stdin_reads_a_pipe[new-output].txt	= main/run_paths/input_dev_stdin_reads_a_pipe[existing-output].txt
@@ -14,6 +17,13 @@ verify	main/run_paths/lockfile_symlink_loop[verify].txt
 generate	main/run_paths/lockfile_through_a_directory_symlink_and_parent[generate].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 model	main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
 target	main/run_paths/lockfile_through_a_directory_symlink_and_parent[target].txt	= main/run_paths/lockfile_through_a_directory_symlink_and_parent[model].txt
+[test_output_below_a_file]
+jobs	main/run_paths/output_below_a_file[jobs].txt
+lockfile	main/run_paths/output_below_a_file[lockfile].txt
+metadata	main/run_paths/output_below_a_file[metadata].txt	= main/run_paths/generate_output_below_a_file[direct].txt
+output	main/run_paths/output_below_a_file[output].txt
+staged-metadata	main/run_paths/output_below_a_file[staged-metadata].txt
+staged-output	main/run_paths/output_below_a_file[staged-output].txt	= main/run_paths/output_below_a_file[staged-metadata].txt
 [test_output_on_a_missing_root]
 jobs	main/run_paths/output_on_a_missing_root[jobs].txt
 lockfile	main/run_paths/output_on_a_missing_root[lockfile].txt

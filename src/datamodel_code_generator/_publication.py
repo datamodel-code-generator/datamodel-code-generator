@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Literal, NamedTuple, cast
 from datamodel_code_generator._paths import (
     concrete,
     concrete_parent,
+    creation_root,
     existing_ancestor,
     lexical,
     missing_root,
@@ -179,13 +180,12 @@ def staging_directory_for(
 
     A relative target is joined to ``cwd`` (the working directory when omitted). With ``around``, a target inside that
     output is staged beside the output instead, so a render writes nothing into it. The directory is made in the
-    deepest existing parent, by row ``legacy-staging-parent-may-be-a-file`` of ``existing_ancestor``.
+    deepest existing parent (``creation_root``), which must be a directory.
     """
     location = lexical(target, cwd)
     if around is not None and (outer := resolved(around, cwd)) in resolved(target, cwd).parents:
         location = outer
-    parent = existing_ancestor(location.parent, test="legacy-staging-parent-may-be-a-file", error=missing_root)
-    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=parent)
+    return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=creation_root(location.parent))
 
 
 def staged_artifact_path(directory: Path, target: Path, default_name: str, *, make_directory: bool) -> Path:

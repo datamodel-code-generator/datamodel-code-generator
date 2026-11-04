@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import InputFileType, generate, load_pyproject_config
+from datamodel_code_generator import Error, InputFileType, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
@@ -19,6 +19,14 @@ if TYPE_CHECKING:
 
 PERSON = DATA_PATH / "jsonschema" / "person.json"
 SYMLINKS = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+
+
+def _rooted(text: str, root: Path) -> str:
+    """Spell a run's directory in its messages as ``<root>``, with ``/`` between the parts below it on every OS."""
+    root = root.resolve()
+    for spelling in (repr(str(root))[1:-1], str(root), root.as_posix()):
+        text = text.replace(spelling, "<root>")
+    return text.replace("<root>\\\\", "<root>/").replace("<root>\\", "<root>/")
 
 
 def _lock_files(root: Path) -> str:
@@ -56,7 +64,7 @@ def test_lockfile_symlink_loop(
         ],
         expected_exit=expected_exit,
     )
-    stderr = capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>")
+    stderr = _rooted(capsys.readouterr().err, tmp_path)
     assert_output(f"{stderr}{_lock_files(tmp_path)}out.py written: {Path('out.py').is_file()}\n")
 
 
@@ -207,3 +215,53 @@ def test_output_on_a_missing_root(
         ]
     run_main_with_args(options, expected_exit=Exit.ERROR)
     assert_output(capsys.readouterr().err.replace(repr(str(root)), "'<root>'"))
+
+
+_BLOCKED_RUNS = {
+    "output": ["--output", "blocker/out.py"],
+    "metadata": ["--output", "out.py", "--emit-model-metadata", "blocker/meta.json"],
+    "staged-output": ["--output", "blocker/out.py", "--update-lock"],
+    "staged-metadata": ["--output", "out.py", "--emit-model-metadata", "blocker/meta.json", "--update-lock"],
+    "lockfile": ["--output", "out.py", "--lockfile", "blocker/x.lock", "--update-lock"],
+    "jobs": ["--all-jobs"],
+}
+
+
+@pytest.mark.parametrize("run", _BLOCKED_RUNS)
+def test_output_below_a_file(
+    run: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that writes below a regular file names that file the same way every time and writes nothing (#5618)."""
+    monkeypatch.chdir(tmp_path)
+    Path("blocker").write_text("", encoding="utf-8")
+    if run == "jobs":
+        Path("pyproject.toml").write_text(
+            "[tool.datamodel-codegen.jobs.models]\n"
+            f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'out.py'\n"
+            "emit-model-metadata = 'blocker/meta.json'\n",
+            encoding="utf-8",
+        )
+        options = _BLOCKED_RUNS[run]
+    else:
+        options = ["--input", str(PERSON), "--input-file-type", "jsonschema", *_BLOCKED_RUNS[run]]
+    run_main_with_args(options, expected_exit=Exit.ERROR)
+    stderr = _rooted(capsys.readouterr().err, tmp_path)
+    written = sorted(path.name for path in tmp_path.iterdir() if path.name not in {"blocker", "pyproject.toml"})
+    assert_output(f"{stderr}written: {written}\n")
+
+
+@pytest.mark.parametrize("update_lock", [False, True], ids=["direct", "staged"])
+def test_generate_output_below_a_file(update_lock: bool, tmp_path: Path) -> None:
+    """`generate()` refuses a model metadata path below a regular file with an error that names the file (#5618)."""
+    (blocker := tmp_path / "blocker").write_text("", encoding="utf-8")
+    with pytest.raises(Error) as raised:
+        generate(
+            PERSON,
+            input_file_type=InputFileType.JsonSchema,
+            output=tmp_path / "out.py",
+            emit_model_metadata=blocker / "meta.json",
+            update_lock=update_lock,
+            lockfile=tmp_path / "x.lock",
+        )
+    written = sorted(path.name for path in tmp_path.iterdir() if path != blocker)
+    assert_output(f"{_rooted(str(raised.value), tmp_path)}\nwritten: {written}\n")
