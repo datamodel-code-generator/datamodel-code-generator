@@ -37,7 +37,7 @@ from datamodel_code_generator._document_reader import MISSING, as_mapping, desce
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._module_paths import written_path
-from datamodel_code_generator._mro import linearize, resolve_members
+from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
@@ -2380,10 +2380,13 @@ class _Models:
             )
             if order is None or any(owner in unknown for owner in order):
                 continue
-            fields = resolve_members(
+            fields = collect_members(
                 order[::-1] if functional else order,
                 lambda owner: models[owner].fields,
                 _wire_name if functional else lambda field: self.slots[id(field)].name,
+                bases.__getitem__,
+                lambda item: item,
+                rule="nearest" if functional else model._BASE_FIELDS,  # noqa: SLF001
             )
             members = self.variant_exclusions(
                 model, symbol, [self.member(symbol, models[owner], field) for owner, field in fields.values()]

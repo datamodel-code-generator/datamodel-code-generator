@@ -28644,6 +28644,25 @@ def test_main_jsonschema_reuse_scope_tree_merged_bases(output_model_type: str, o
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.DataclassesDataclass.value,
+        DataModelType.PydanticV2Dataclass.value,
+        DataModelType.MsgspecStruct.value,
+    ],
+)
+def test_main_jsonschema_diamond_inherited_field_override(output_model_type: str, output_file: Path) -> None:
+    """Order constructor fields by the field a diamond's first base collects, as the class collects them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "diamond_inherited_field_override.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.benchmark
 def test_main_allof_mro(output_file: Path) -> None:
     """Test allOf with diamond inheritance pattern produces valid Python MRO."""

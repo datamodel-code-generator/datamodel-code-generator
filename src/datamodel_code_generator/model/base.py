@@ -2239,6 +2239,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _DICT_KEYS_TAKE_ROOT_TYPE: ClassVar[bool] = False
     """Whether a dict key that names a model of the class may take its root type (hashability): the class wraps one
     root value, and its instances can be dict keys only when frozen."""
+    _BASE_FIELDS: ClassVar[_mro.MemberRule] = "collected"
+    """How a model of the class takes the fields it does not declare from its bases (`_mro.collect_members`): as
+    dataclasses, Pydantic and msgspec collect them; TypedDict output keeps the nearest declaration."""
     _PYTHON_CHECKS_BASES: ClassVar[bool] = True
     """Whether Python creates the class from its bases, refusing a base listed twice and bases whose orders C3 cannot
     merge; a TypedDict merges the keys of its bases itself."""
@@ -3721,16 +3724,26 @@ def _fields_of(model: DataModel) -> list[DataModelFieldBase]:
 
 
 def _effective_field_owners(
-    model: DataModel, ancestors: Sequence[DataModel], *, class_vars: _ClassVarRow = "declared"
+    model: DataModel,
+    ancestors: Sequence[DataModel],
+    *,
+    class_vars: _ClassVarRow = "declared",
+    stand_ins: Mapping[int, Reference | None] | None = None,
 ) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
     """Return the field each name of ``model`` resolves to with its bases, and the model that declares it.
 
-    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`). A
-    name keeps the place where the farthest of them declares it and takes the nearest declaration, the model's own
-    last (`_mro.resolve_members`); unnamed fields are left out. ``class_vars`` names how a class variable counts.
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`),
+    ``stand_ins`` the bases overrides replaced. A name keeps the place where the farthest of them declares it and
+    takes the declaration the class of the model's row takes (``_BASE_FIELDS``), the model's own first; unnamed fields
+    are left out. ``class_vars`` names how a class variable counts.
     """
-    return _mro.resolve_members(
-        (model, *ancestors), _fields_of, _named_field if class_vars == "declared" else _named_instance_field
+    return _mro.collect_members(
+        (model, *ancestors),
+        _fields_of,
+        _named_field if class_vars == "declared" else _named_instance_field,
+        lambda base: direct_base_models(base, stand_ins),
+        _model_key_of_model,
+        rule=model._BASE_FIELDS,  # noqa: SLF001
     )
 
 

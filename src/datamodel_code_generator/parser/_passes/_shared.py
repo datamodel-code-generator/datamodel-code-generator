@@ -1368,7 +1368,11 @@ def get_inherited_constructor_info(
                         inherited_stripped_none_names.add(field_name)
     effective_fields = {
         name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
-        for name, (owner, field) in _effective_field_owners(model, inherited_models).items()
+        for name, (owner, field) in _effective_field_owners(
+            model,
+            inherited_models,
+            stand_ins={} if early else host._base_stand_ins,  # noqa: SLF001
+        ).items()
     }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
     return _InheritedConstructorInfo(

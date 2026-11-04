@@ -1,0 +1,6 @@
+{"$defs": {
+ "A": {"type": "object", "properties": {"p": {"type": "integer", "default": 1}, "q": {"type": "integer"}}, "required": ["q"]},
+ "B": {"allOf": [{"$ref": "#/$defs/A"}, {"type": "object", "properties": {"p": {"type": "string"}}, "required": ["p"]}]},
+ "C": {"allOf": [{"$ref": "#/$defs/A"}, {"type": "object", "properties": {"r": {"type": "integer"}}, "required": ["r"]}]},
+ "D": {"allOf": [{"$ref": "#/$defs/C"}, {"$ref": "#/$defs/B"}, {"type": "object", "properties": {"s": {"type": "integer"}}, "required": ["s"]}]}},
+ "type": "object", "properties": {"d": {"$ref": "#/$defs/D"}}}

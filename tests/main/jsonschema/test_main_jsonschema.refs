@@ -6327,6 +6327,10 @@ custom_template_root_docstring_escaping.json-pydantic_v2.BaseModel-custom_templa
 	main/jsonschema/jsonschema_default_values_override.py
 [test_main_jsonschema_definitions_namespace]
 	main/jsonschema/definitions_v2_namespace.py
+[test_main_jsonschema_diamond_inherited_field_override]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/diamond_inherited_field_override[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/diamond_inherited_field_override[msgspec.Struct].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/diamond_inherited_field_override[pydantic_v2.dataclass].py
 [test_main_jsonschema_discriminated_oneof_allof_cycle]
 	main/jsonschema/jsonschema_discriminated_oneof_allof_cycle.py
 [test_main_jsonschema_discriminated_oneof_allof_cycle_use_union_operator]
